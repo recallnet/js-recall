@@ -3,20 +3,20 @@
 import Image from "next/image";
 import React from "react";
 
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { CompetitionsCollapsible } from "@/components/competitions-collapsible";
+import {CompetitionsCollapsible} from "@/components/competitions-collapsible";
 import CompetitionsSkeleton from "@/components/competitions-skeleton";
-import { FeaturedCompetition } from "@/components/featured-competition";
-import { FooterSection } from "@/components/footer-section";
-import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { getSocialLinksArray } from "@/data/social";
-import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
-import { CompetitionStatus } from "@/types";
-import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
+import {FeaturedCompetition} from "@/components/featured-competition";
+import {FooterSection} from "@/components/footer-section";
+import {JoinSwarmSection} from "@/components/join-swarm-section";
+import {getSocialLinksArray} from "@/data/social";
+import {useCompetitions, useUserCompetitions} from "@/hooks/useCompetitions";
+import {CompetitionStatus} from "@/types";
+import {mergeCompetitionsWithUserData} from "@/utils/competition-utils";
 
 export default function CompetitionsPage() {
-  const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
+  const {data: activeCompetitions, isLoading: isLoadingActiveCompetitions} =
     useCompetitions({
       status: CompetitionStatus.Active,
     });
@@ -28,12 +28,12 @@ export default function CompetitionsPage() {
     status: CompetitionStatus.Pending,
   });
 
-  const { data: endedCompetitions, isLoading: isLoadingEndedCompetitions } =
+  const {data: endedCompetitions, isLoading: isLoadingEndedCompetitions} =
     useCompetitions({
       status: CompetitionStatus.Ended,
     });
 
-  const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
+  const {data: userCompetitions, isLoading: isLoadingUserCompetitions} =
     useUserCompetitions();
 
   if (
@@ -51,9 +51,9 @@ export default function CompetitionsPage() {
 
   const featuredCompetitionWithAgents = featuredCompetition
     ? mergeCompetitionsWithUserData(
-        [featuredCompetition],
-        userCompetitions?.competitions ?? [],
-      )[0]
+      [featuredCompetition],
+      userCompetitions?.competitions ?? [],
+    )[0]
     : null;
 
   return (
@@ -67,6 +67,7 @@ export default function CompetitionsPage() {
       <div className="relative flex flex-col gap-8 sm:flex-row">
         <div className="absolute z-0 h-full w-full">
           <Video />
+          <div className="w-full sm:w-2/3 sm:h-full h-1/2 relative bg-[radial-gradient(ellipse_at_center,_transparent_40%,_black_80%)] sm:bg-[radial-gradient(ellipse_at_center,_transparent_30%,_black_90%)]" />
         </div>
         <div className="z-10 mb-10 flex w-full flex-col items-center justify-between gap-8">
           <div className="mt-30 sm:mt-15 flex max-w-[434px] flex-col items-center gap-2">
@@ -126,7 +127,7 @@ export default function CompetitionsPage() {
   );
 }
 
-const Video: React.FC<{ className?: string }> = ({ className }) => {
+const Video: React.FC<{className?: string}> = ({className}) => {
   return (
     <video
       autoPlay
