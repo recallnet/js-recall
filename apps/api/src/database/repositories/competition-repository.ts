@@ -18,7 +18,7 @@ import {
   competitionAgents,
   competitions,
   competitionsLeaderboard,
-  rewards, // Add this
+  rewards,
 } from "@/database/schema/core/defs.js";
 import {
   InsertCompetition,

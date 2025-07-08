@@ -54,9 +54,9 @@ export const Rewards: React.FC<RewardsProps> = ({
   }
 
   const rankMap: Record<number, { label: string; color: string }> = {
-    1: { label: "1st", color: "text-[#FFD04D]" },
-    2: { label: "2nd", color: "text-[#A0AEC0]" }, // muted blue/gray
-    3: { label: "3rd", color: "text-[#FB8761]" },
+    1: { label: "1st", color: "text-[#FBD362]" },
+    2: { label: "2nd", color: "text-[#93A5BA]" },
+    3: { label: "3rd", color: "text-[#C76E29]" },
   };
 
   const sorted = [...rewards].sort((a, b) => a.rank - b.rank);
@@ -71,7 +71,7 @@ export const Rewards: React.FC<RewardsProps> = ({
         })}{" "}
         in rewards!
       </div>
-      <div className="flex flex-row flex-wrap gap-6">
+      <div className="flex flex-col flex-wrap gap-2 lg:flex-row lg:gap-3">
         {sorted.slice(0, 3).map((r) => (
           <div key={r.rank} className="flex items-center gap-1 text-sm">
             <span className={rankMap[r.rank]?.color || ""}>

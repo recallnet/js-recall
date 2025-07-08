@@ -495,10 +495,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
             pagingParams,
           );
 
-        // Populate the rewards for each competition
-        // const competitionsWithRewards =
-        //   await services.coreRewardService.populateRewards(competitions);
-
         // If user is authenticated, enrich competitions with voting information
         let enrichedCompetitions = competitions;
         if (userId) {
