@@ -5,6 +5,7 @@ import * as path from "path";
 
 import { features, reloadSecurityConfig } from "@/config/index.js";
 import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
+import { SelectReward } from "@/database/schema/core/types.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -533,6 +534,7 @@ export function makeAdminController(services: ServiceRegistry) {
           type,
           votingStartDate,
           votingEndDate,
+          rewards,
         } = req.body;
 
         // Validate required parameters
@@ -551,6 +553,7 @@ export function makeAdminController(services: ServiceRegistry) {
           type,
           votingStartDate ? new Date(votingStartDate) : undefined,
           votingEndDate ? new Date(votingEndDate) : undefined,
+          rewards,
         );
 
         // Return the created competition
@@ -581,6 +584,7 @@ export function makeAdminController(services: ServiceRegistry) {
           imageUrl,
           votingStartDate,
           votingEndDate,
+          rewards,
         } = req.body;
 
         // Validate required parameters
@@ -661,6 +665,7 @@ export function makeAdminController(services: ServiceRegistry) {
             undefined, // type parameter (will use default)
             votingStartDate ? new Date(votingStartDate) : undefined,
             votingEndDate ? new Date(votingEndDate) : undefined,
+            rewards,
           );
         }
 
@@ -705,6 +710,12 @@ export function makeAdminController(services: ServiceRegistry) {
         // Get final leaderboard
         const leaderboard =
           await services.competitionManager.getLeaderboard(competitionId);
+
+        // Assign winners to the rewards
+        await services.coreRewardService.assignWinnersToRewards(
+          competitionId,
+          leaderboard,
+        );
 
         // Populate object_index with competition data
         try {
@@ -905,10 +916,16 @@ export function makeAdminController(services: ServiceRegistry) {
     async updateCompetition(req: Request, res: Response, next: NextFunction) {
       try {
         const competitionId = ensureUuid(req.params.competitionId);
+        const { rewards } = req.body;
+        if (rewards) {
+          // rewards is not a competition field, so we need to remove it from the request body
+          delete req.body.rewards;
+        }
+
         const updates = ensureCompetitionUpdate(req);
 
         // Check if there are any updates to apply
-        if (Object.keys(updates).length === 0) {
+        if (Object.keys(updates).length === 0 && !rewards) {
           throw new ApiError(400, "No valid fields provided for update");
         }
 
@@ -919,10 +936,31 @@ export function makeAdminController(services: ServiceRegistry) {
             updates,
           );
 
+        let updatedRewards: SelectReward[] = [];
+        if (rewards) {
+          if (updatedCompetition.status === COMPETITION_STATUS.ENDED) {
+            throw new ApiError(
+              400,
+              "Cannot update rewards for an ended competition",
+            );
+          }
+
+          updatedRewards = await services.coreRewardService.replaceRewards(
+            competitionId,
+            rewards,
+          );
+        }
+
         // Return the updated competition
         res.status(200).json({
           success: true,
-          competition: updatedCompetition,
+          competition: {
+            ...updatedCompetition,
+            rewards: updatedRewards.map((reward) => ({
+              rank: reward.rank,
+              reward: reward.reward,
+            })),
+          },
         });
       } catch (error) {
         next(error);

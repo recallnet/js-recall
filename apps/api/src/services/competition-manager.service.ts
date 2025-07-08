@@ -23,8 +23,12 @@ import {
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
-import { UpdateCompetition } from "@/database/schema/core/types.js";
+import {
+  SelectReward,
+  UpdateCompetition,
+} from "@/database/schema/core/types.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
+import { CoreRewardService } from "@/services/core-reward.service.js";
 import {
   AgentManager,
   AgentRankService,
@@ -66,6 +70,7 @@ export class CompetitionManager {
   private configurationService: ConfigurationService;
   private agentRankService: AgentRankService;
   private voteManager: VoteManager;
+  private coreRewardService: CoreRewardService;
 
   constructor(
     balanceManager: BalanceManager,
@@ -75,6 +80,7 @@ export class CompetitionManager {
     configurationService: ConfigurationService,
     agentRankService: AgentRankService,
     voteManager: VoteManager,
+    coreRewardService: CoreRewardService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -83,6 +89,7 @@ export class CompetitionManager {
     this.configurationService = configurationService;
     this.agentRankService = agentRankService;
     this.voteManager = voteManager;
+    this.coreRewardService = coreRewardService;
     // Load active competition on initialization
     this.loadActiveCompetition();
   }
@@ -125,6 +132,7 @@ export class CompetitionManager {
     type: CompetitionType = COMPETITION_TYPE.TRADING,
     votingStartDate?: Date,
     votingEndDate?: Date,
+    rewards?: Record<number, number>,
   ) {
     const id = uuidv4();
     const competition = {
@@ -147,10 +155,21 @@ export class CompetitionManager {
 
     await createCompetition(competition);
 
+    let createdRewards: SelectReward[] = [];
+    if (rewards) {
+      createdRewards = await this.coreRewardService.createRewards(id, rewards);
+    }
+
     console.log(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}`,
     );
-    return competition;
+    return {
+      ...competition,
+      rewards: createdRewards.map((reward) => ({
+        rank: reward.rank,
+        reward: reward.reward,
+      })),
+    };
   }
 
   /**

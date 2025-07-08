@@ -18,6 +18,7 @@ import {
   competitionAgents,
   competitions,
   competitionsLeaderboard,
+  rewards, // Add this
 } from "@/database/schema/core/defs.js";
 import {
   InsertCompetition,
@@ -50,6 +51,44 @@ import { PartialExcept } from "./types.js";
  * Competition Repository
  * Handles database operations for competitions
  */
+
+/**
+ * Builds the base competition query with rewards included
+ * @returns A query builder for competitions with rewards
+ */
+function buildCompetitionWithRewardsQuery() {
+  return db
+    .select({
+      crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      rewards: sql<
+        | Array<{ rank: number; reward: number; agentId: string | null }>
+        | undefined
+      >`
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'rank', ${rewards.rank},
+              'reward', ${rewards.reward},
+              'agentId', ${rewards.agentId}
+            ) ORDER BY ${rewards.rank}
+          ) FILTER (WHERE ${rewards.id} IS NOT NULL),
+          NULL
+        )
+      `.as("rewards"),
+      ...getTableColumns(competitions),
+    })
+    .from(tradingCompetitions)
+    .innerJoin(
+      competitions,
+      eq(tradingCompetitions.competitionId, competitions.id),
+    )
+    .leftJoin(rewards, eq(competitions.id, rewards.competitionId))
+    .groupBy(
+      tradingCompetitions.competitionId,
+      competitions.id,
+      tradingCompetitions.crossChainTradingType,
+    );
+}
 
 /**
  * allowable order by database columns
@@ -86,16 +125,7 @@ export async function findAll() {
  * @param id The ID to search for
  */
 export async function findById(id: string) {
-  const [result] = await db
-    .select({
-      crossChainTradingType: tradingCompetitions.crossChainTradingType,
-      ...getTableColumns(competitions),
-    })
-    .from(tradingCompetitions)
-    .innerJoin(
-      competitions,
-      eq(tradingCompetitions.competitionId, competitions.id),
-    )
+  const [result] = await buildCompetitionWithRewardsQuery()
     .where(eq(competitions.id, id))
     .limit(1);
   return result;
@@ -990,17 +1020,7 @@ export async function findByStatus({
     const total = countResult[0]?.count ?? 0;
 
     // Data query with dynamic building
-    let dataQuery = db
-      .select({
-        crossChainTradingType: tradingCompetitions.crossChainTradingType,
-        ...getTableColumns(competitions),
-      })
-      .from(tradingCompetitions)
-      .innerJoin(
-        competitions,
-        eq(tradingCompetitions.competitionId, competitions.id),
-      )
-      .$dynamic();
+    let dataQuery = buildCompetitionWithRewardsQuery().$dynamic();
 
     if (status) {
       dataQuery = dataQuery.where(eq(competitions.status, status));
