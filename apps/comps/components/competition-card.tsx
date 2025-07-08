@@ -4,17 +4,17 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
-import {Badge} from "@recallnet/ui2/components/badge";
-import {Card} from "@recallnet/ui2/components/card";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { Badge } from "@recallnet/ui2/components/badge";
+import { Card } from "@recallnet/ui2/components/card";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {useCompetitionAgents} from "@/hooks/useCompetitionAgents";
-import {CompetitionStatus, UserCompetition} from "@/types";
+import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { CompetitionStatus, UserCompetition } from "@/types";
 
-import {formatCompetitionDates} from "../utils/competition-utils";
-import {CompetitionActions} from "./competition-actions";
-import {CompetitionStatusBanner} from "./competition-status-banner";
-import {ParticipantsAvatars} from "./participants-avatars";
+import { formatCompetitionDates } from "../utils/competition-utils";
+import { CompetitionActions } from "./competition-actions";
+import { CompetitionStatusBanner } from "./competition-status-banner";
+import { ParticipantsAvatars } from "./participants-avatars";
 
 interface CompetitionCardProps {
   competition: UserCompetition;
@@ -25,7 +25,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   competition,
   className,
 }) => {
-  const {data: topLeaders} = useCompetitionAgents(competition.id, {
+  const { data: topLeaders } = useCompetitionAgents(competition.id, {
     limit: 5,
   });
 
@@ -38,7 +38,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
     <Card
       cropSize={35}
       corner="bottom-right"
-      className={cn("bg-card flex w-full flex-col group", className)}
+      className={cn("bg-card group flex w-full flex-col", className)}
     >
       <CompetitionStatusBanner status={competition.status} />
 
@@ -98,10 +98,12 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
           <div className="relative h-full w-full overflow-hidden">
             {competition.imageUrl && (
               <Image
-                src={"https://png.pngtree.com/thumb_back/fh260/background/20240715/pngtree-crypto-trade-btc-bitcoin-illustration-for-graphics-marketing-promotion-image_16011614.jpg"}
+                src={
+                  "https://png.pngtree.com/thumb_back/fh260/background/20240715/pngtree-crypto-trade-btc-bitcoin-illustration-for-graphics-marketing-promotion-image_16011614.jpg"
+                }
                 alt="Competition"
                 fill={true}
-                className="object-cover group-hover:scale-105 transition ease-in-out duration-800"
+                className="duration-800 object-cover transition ease-in-out group-hover:scale-105"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = "none";
