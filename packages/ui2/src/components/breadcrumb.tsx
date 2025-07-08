@@ -1,14 +1,14 @@
-import { SlashIcon } from "@radix-ui/react-icons";
-import { Slot } from "@radix-ui/react-slot";
+import {SlashIcon} from "@radix-ui/react-icons";
+import {Slot} from "@radix-ui/react-slot";
 import * as React from "react";
 
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-function Breadcrumb({ ...props }: React.ComponentProps<"nav">) {
+function Breadcrumb({...props}: React.ComponentProps<"nav">) {
   return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
 }
 
-function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
+function BreadcrumbList({className, ...props}: React.ComponentProps<"ol">) {
   return (
     <ol
       data-slot="breadcrumb-list"
@@ -21,7 +21,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
   );
 }
 
-function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
+function BreadcrumbItem({className, ...props}: React.ComponentProps<"li">) {
   return (
     <li
       data-slot="breadcrumb-item"
@@ -52,14 +52,14 @@ function BreadcrumbLink({
   );
 }
 
-function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
+function BreadcrumbPage({className, ...props}: React.ComponentProps<"span">) {
   return (
     <span
       data-slot="breadcrumb-page"
       role="link"
       aria-disabled="true"
       aria-current="page"
-      className={cn("text-secondary-foreground font-normal", className)}
+      className={cn("text-gray-600 foreground font-normal", className)}
       {...props}
     />
   );
@@ -78,7 +78,7 @@ function BreadcrumbSeparator({
       className={cn("[&>svg]:size-3.5", className)}
       {...props}
     >
-      {children ?? <SlashIcon />}
+      {children ?? <div className="w-[1px] h-5 bg-gray-200 rigin-center rotate-40 mx-2"></div>}
     </li>
   );
 }
