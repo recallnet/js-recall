@@ -26,7 +26,7 @@ export const useApiKey = (agentId: string) =>
  */
 export const useSandboxApiKey = (agentId: string) =>
   useQuery({
-    queryKey: ["agent", "api-key", agentId],
+    queryKey: ["agent", "sandbox-api-key", agentId],
     queryFn: async (): Promise<AgentApiKeyResponse> => {
       return apiClient.getAgentSandboxApiKey(agentId);
     },
