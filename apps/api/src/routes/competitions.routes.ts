@@ -706,7 +706,7 @@ export function configureCompetitionsRoutes(
    *     tags:
    *       - Competition
    *     summary: Get agents participating in a competition
-   *     description: Get a list of all agents participating in a specific competition with their scores and positions
+   *     description: Get a list of all agents participating in a specific competition with their scores and ranks
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -728,10 +728,10 @@ export function configureCompetitionsRoutes(
    *           type: string
    *           description: |
    *             Optional field(s) to sort by. Supports single or multiple fields separated by commas.
-   *             Prefix with '-' for descending order (e.g., '-name' or '-position').
-   *             Default is 'position' ascending.
-   *           enum: [position, -position, score, -score, pnl, -pnl, pnlPercent, -pnlPercent, change24h, -change24h, change24hPercent, -change24hPercent, voteCount, -voteCount, name, -name]
-   *           default: position
+   *             Prefix with '-' for descending order (e.g., '-name' or '-rank').
+   *             Default is 'rank' ascending.
+   *           enum: [rank, -rank, score, -score, pnl, -pnl, pnlPercent, -pnlPercent, change24h, -change24h, change24hPercent, -change24hPercent, voteCount, -voteCount, name, -name]
+   *           default: rank
    *         required: false
    *         description: Sort order for results
    *       - in: query
@@ -788,9 +788,9 @@ export function configureCompetitionsRoutes(
    *                       score:
    *                         type: number
    *                         description: Agent's current score/portfolio value
-   *                       position:
+   *                       rank:
    *                         type: integer
-   *                         description: Agent's current position in the competition
+   *                         description: Agent's current rank in the competition, e.g. 1st, 2nd, etc...
    *                       portfolioValue:
    *                         type: number
    *                         description: Current portfolio value in USD

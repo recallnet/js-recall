@@ -1,6 +1,6 @@
 import { Rating, rate, rating } from "openskill";
 
-import * as agentRankRepo from "@/database/repositories/agentrank-repository.js";
+import * as agentScoreRepo from "@/database/repositories/agentscore-repository.js";
 import * as competitionRepo from "@/database/repositories/competition-repository.js";
 
 /**
@@ -28,7 +28,7 @@ export class AgentRankService {
         return;
       }
 
-      const currentRanks = await agentRankRepo.getAllAgentRanks();
+      const currentRanks = await agentScoreRepo.getAllAgentRanks();
 
       const ratings: Record<string, Rating> = {};
 
@@ -66,7 +66,7 @@ export class AgentRankService {
         };
       });
 
-      const updatedRanks = await agentRankRepo.batchUpdateAgentRanks(
+      const updatedRanks = await agentScoreRepo.batchUpdateAgentRanks(
         batchUpdateData,
         competitionId,
       );

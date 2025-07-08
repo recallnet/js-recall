@@ -813,7 +813,7 @@ export async function getAgentCompetitionRanking(
       (a, b) => Number(b.totalValue) - Number(a.totalValue),
     );
 
-    // Find the agent's position (1-based ranking)
+    // Find the agent's rank (1-based ranking)
     const agentIndex = sortedSnapshots.findIndex(
       (snapshot) => snapshot.agentId === agentId,
     );

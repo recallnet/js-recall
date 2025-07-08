@@ -379,9 +379,9 @@ export function makeAgentController(services: ServiceRegistry) {
           console.log(
             `[AgentController] No portfolio snapshots found for agent ${agentId} in competition ${activeCompetition.id}`,
           );
-          // Request a snapshot asynchronously (don't await)
+          // Request a snapshot for this agent asynchronously (don't await)
           services.portfolioSnapshotter
-            .takePortfolioSnapshots(activeCompetition.id)
+            .takePortfolioSnapshotForAgent(activeCompetition.id, agentId)
             .catch((error) => {
               console.error(
                 `[AgentController] Error taking snapshot for agent ${agentId}:`,

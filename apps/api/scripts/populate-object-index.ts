@@ -26,8 +26,8 @@ async function populateObjectIndex(options: PopulateOptions) {
         case SYNC_DATA_TYPE.TRADE:
           await services.objectIndexService.populateTrades(competitionId);
           break;
-        case SYNC_DATA_TYPE.AGENT_RANK_HISTORY:
-          await services.objectIndexService.populateAgentRankHistory(
+        case SYNC_DATA_TYPE.AGENT_SCORE_HISTORY:
+          await services.objectIndexService.populateAgentScoreHistory(
             competitionId,
           );
           break;
@@ -41,8 +41,8 @@ async function populateObjectIndex(options: PopulateOptions) {
             competitionId,
           );
           break;
-        case SYNC_DATA_TYPE.AGENT_RANK:
-          await services.objectIndexService.populateAgentRank(); // No competitionId
+        case SYNC_DATA_TYPE.AGENT_SCORE:
+          await services.objectIndexService.populateAgentScore(); // No competitionId
           break;
         default:
           console.warn(`Unknown data type: ${dataType}`);
@@ -83,7 +83,7 @@ function parseArgs() {
 const defaultOptions: PopulateOptions = {
   dataTypes: [
     SYNC_DATA_TYPE.TRADE,
-    SYNC_DATA_TYPE.AGENT_RANK_HISTORY,
+    SYNC_DATA_TYPE.AGENT_SCORE_HISTORY,
     SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD,
   ],
   batchSize: 1000,

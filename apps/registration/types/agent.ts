@@ -115,7 +115,7 @@ export interface AgentCompetition {
   description: string;
   imageUrl: string;
   score: number;
-  position: number;
+  rank: number;
   portfolioValue: number;
   active: boolean;
   deactivationReason?: string;
