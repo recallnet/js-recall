@@ -3,7 +3,7 @@ import { AgentCompetitionMetadata, Competition } from "./competition";
 
 export interface BestPlacement {
   competitionId: string;
-  position: number;
+  rank: number;
   participants: number;
 }
 
