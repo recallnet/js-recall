@@ -14,6 +14,7 @@ import { CompetitionActions } from "./competition-actions";
 import { CompetitionStatusBanner } from "./competition-status-banner";
 import { TopLeadersList } from "./featured-competition/top-leaders-list";
 import { ParticipantsAvatars } from "./participants-avatars";
+import { Rewards } from "./rewards";
 
 interface FeaturedCompetitionProps {
   competition: UserCompetition;
@@ -59,22 +60,26 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
 
       <div className="flex border-b">
         <div className="w-full border-r p-6">
-          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+          <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
             Duration
           </h3>
-          <p className="text-xl font-semibold">{duration}</p>
+          <p className="font-semibold">{duration}</p>
         </div>
         <div className="w-full p-6">
-          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+          <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
             Reward
           </h3>
-          <p className="text-xl font-semibold">TBA</p>
+          {competition.rewards ? (
+            <Rewards rewards={competition.rewards} />
+          ) : (
+            <p className="font-semibold">TBA</p>
+          )}
         </div>
       </div>
 
       <div className="flex gap-8 border-b">
         <div className="w-full p-6">
-          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+          <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
             {competition.status === CompetitionStatus.Active
               ? "Participants"
               : "Pre-Registered"}
@@ -88,8 +93,8 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
             <span className="text-sm">-</span>
           )}
         </div>
-        <div className="w-full justify-items-end p-6">
-          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+        <div className="w-full justify-items-end p-6 text-right">
+          <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
             Your Agents
           </h3>
           {competition.agents.length > 0 ? (
