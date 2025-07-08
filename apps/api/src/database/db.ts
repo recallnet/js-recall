@@ -6,13 +6,53 @@ import { reset, seed } from "drizzle-seed";
 import fs from "fs";
 import path from "path";
 import { Pool } from "pg";
+import client from "prom-client";
 import { fileURLToPath } from "url";
 
 import { config } from "@/config/index.js";
 import schema from "@/database/schema/index.js";
+import { getTraceId } from "@/lib/trace-context.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Prometheus metrics for database operations - check if already registered
+const getOrCreateDbMetrics = () => {
+  // Try to get existing metrics first
+  const existingDuration = client.register.getSingleMetric(
+    "db_query_duration_ms",
+  ) as client.Histogram<string>;
+  const existingTotal = client.register.getSingleMetric(
+    "db_queries_total",
+  ) as client.Counter<string>;
+
+  if (existingDuration && existingTotal) {
+    return { dbQueryDuration: existingDuration, dbQueryTotal: existingTotal };
+  }
+
+  // If metrics don't exist, create them
+  const dbQueryDuration = new client.Histogram({
+    name: "db_query_duration_ms",
+    help: "Duration of database queries in ms",
+    labelNames: ["operation"],
+    buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000],
+  });
+
+  const dbQueryTotal = new client.Counter({
+    name: "db_queries_total",
+    help: "Total number of database queries",
+    labelNames: ["operation", "status"],
+  });
+
+  return { dbQueryDuration, dbQueryTotal };
+};
+
+const { dbQueryDuration, dbQueryTotal } = getOrCreateDbMetrics();
+
+/**
+ * DEPRECATED: logDbOperation is no longer needed since we have transparent logging
+ * All database queries are now automatically logged via the drizzle logger
+ */
 
 const sslConfig = (() => {
   // If SSL is disabled in config, don't use SSL
@@ -54,10 +94,52 @@ const pool = new Pool({
   ...sslConfig,
 });
 
+// Create custom logger to transparently intercept ALL database queries
+const dbLogger = {
+  logQuery: (query: string, params: unknown[]) => {
+    void params; // Acknowledge parameter exists but we don't use it
+    const traceId = getTraceId() || "no-trace";
+    const startTime = performance.now();
+
+    // Extract operation type from SQL query
+    const operation = query.trim().split(" ")[0]?.toUpperCase() || "UNKNOWN";
+
+    const endTime = performance.now();
+    const durationMs = endTime - startTime;
+
+    // Update Prometheus metrics
+    dbQueryDuration.observe({ operation }, durationMs);
+    dbQueryTotal.inc({ operation, status: "success" });
+
+    // Environment-aware logging
+    const isDev = config.server.nodeEnv === "development";
+    if (isDev) {
+      console.log(
+        `[${traceId}] [DB] ${operation} - ${durationMs.toFixed(2)}ms`,
+      );
+    } else {
+      console.log(
+        JSON.stringify({
+          traceId,
+          type: "db",
+          operation,
+          duration: durationMs,
+          status: "success",
+          timestamp: new Date().toISOString(),
+        }),
+      );
+    }
+  },
+};
+
+// Create and export the database instance with transparent logging
 export const db = drizzle({
   client: pool,
   schema,
+  logger: dbLogger,
 });
+
+// NOTE: logDbOperation export removed - all queries now automatically logged
 
 console.log(
   "[DatabaseConnection] Connected to PostgreSQL using connection URL",

@@ -1210,6 +1210,19 @@ export class ApiClient {
   }
 
   /**
+   * Get Prometheus metrics
+   * @returns A promise that resolves to the metrics response (plain text)
+   */
+  async getMetrics(): Promise<string | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/metrics");
+      return response.data as string;
+    } catch (error) {
+      return this.handleApiError(error, "get metrics");
+    }
+  }
+
+  /**
    * Generic API request method for custom endpoints
    * @param method HTTP method (get, post, put, delete)
    * @param path API path
