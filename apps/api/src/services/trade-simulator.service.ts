@@ -403,17 +403,17 @@ export class TradeSimulator {
                 New ${toToken} Balance: ${await this.balanceManager.getBalance(agentId, toToken)}
             `);
 
-      // Trigger a portfolio snapshot after successful trade execution
+      // Trigger a portfolio snapshot for the trading agent only
       // We run this asynchronously without awaiting to avoid delaying the trade response
       this.portfolioSnapshotter
-        .takePortfolioSnapshots(competitionId)
+        .takePortfolioSnapshotForAgent(competitionId, agentId)
         .catch((error) => {
           console.error(
-            `[TradeSimulator] Error taking portfolio snapshot after trade: ${error.message}`,
+            `[TradeSimulator] Error taking portfolio snapshot for agent ${agentId} after trade: ${error.message}`,
           );
         });
       console.log(
-        `[TradeSimulator] Portfolio snapshot triggered for competition ${competitionId} after trade`,
+        `[TradeSimulator] Portfolio snapshot triggered for agent ${agentId} in competition ${competitionId} after trade`,
       );
 
       return {

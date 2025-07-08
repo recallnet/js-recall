@@ -390,12 +390,12 @@ export class CompetitionManager {
       isComputedSort,
     );
 
-    // Get leaderboard data for the competition to get scores and positions
+    // Get leaderboard data for the competition to get scores and ranks
     const leaderboard = await this.getLeaderboard(competitionId);
     const leaderboardMap = new Map(
       leaderboard.map((entry, index) => [
         entry.agentId,
-        { score: entry.value, position: index + 1 },
+        { score: entry.value, rank: index + 1 },
       ]),
     );
 
@@ -425,7 +425,7 @@ export class CompetitionManager {
       const isActive = agent.status === "active";
       const leaderboardData = leaderboardMap.get(agent.id);
       const score = leaderboardData?.score ?? 0;
-      const position = leaderboardData?.position ?? 0;
+      const rank = leaderboardData?.rank ?? 0;
       const voteCount = voteCountsMap.get(agent.id) ?? 0;
       const metrics = bulkMetrics.get(agent.id) || {
         pnl: 0,
@@ -439,16 +439,16 @@ export class CompetitionManager {
         name: agent.name,
         description: agent.description,
         imageUrl: agent.imageUrl,
-        score: score,
+        score,
         active: isActive,
         deactivationReason: !isActive ? agent.deactivationReason : null,
-        position: position,
+        rank,
         portfolioValue: score,
         pnl: metrics.pnl,
         pnlPercent: metrics.pnlPercent,
         change24h: metrics.change24h,
         change24hPercent: metrics.change24hPercent,
-        voteCount: voteCount,
+        voteCount,
       };
     });
 

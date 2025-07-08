@@ -709,7 +709,7 @@ export function makeAdminController(services: ServiceRegistry) {
         // Populate object_index with competition data
         try {
           await services.objectIndexService.populateTrades(competitionId);
-          await services.objectIndexService.populateAgentRankHistory(
+          await services.objectIndexService.populateAgentScoreHistory(
             competitionId,
           );
           await services.objectIndexService.populateCompetitionsLeaderboard(
@@ -754,7 +754,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         const defaultDataTypes = [
           SYNC_DATA_TYPE.TRADE,
-          SYNC_DATA_TYPE.AGENT_RANK_HISTORY,
+          SYNC_DATA_TYPE.AGENT_SCORE_HISTORY,
           SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD,
         ];
         let typesToSync: string[] = defaultDataTypes;
@@ -788,8 +788,8 @@ export function makeAdminController(services: ServiceRegistry) {
                   validatedCompetitionId,
                 );
                 break;
-              case SYNC_DATA_TYPE.AGENT_RANK_HISTORY:
-                await services.objectIndexService.populateAgentRankHistory(
+              case SYNC_DATA_TYPE.AGENT_SCORE_HISTORY:
+                await services.objectIndexService.populateAgentScoreHistory(
                   validatedCompetitionId,
                 );
                 break;
@@ -803,8 +803,8 @@ export function makeAdminController(services: ServiceRegistry) {
                   validatedCompetitionId,
                 );
                 break;
-              case SYNC_DATA_TYPE.AGENT_RANK:
-                await services.objectIndexService.populateAgentRank();
+              case SYNC_DATA_TYPE.AGENT_SCORE:
+                await services.objectIndexService.populateAgentScore();
                 break;
               default:
                 console.warn(`Unknown data type: ${dataType}`);
@@ -982,6 +982,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Format leaderboard with agent and owner names
         const formattedLeaderboard = leaderboard.map((entry, index) => ({
+          // Note, this might not be needed since it's just repeating the index of the array
           rank: index + 1,
           agentId: entry.agentId,
           agentName: agentMap.get(entry.agentId)?.name || "Unknown Agent",

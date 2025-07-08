@@ -31,7 +31,7 @@ export type TAgentDbSortFields = z.infer<typeof AgentDbSortFields>;
  * Agent computed fields (post-query aggregation) that can be used for sorting
  */
 export const AGENT_COMPUTED_FIELDS = [
-  "position",
+  "rank",
   "score",
   "portfolioValue",
   "pnl",
@@ -46,7 +46,7 @@ export const AGENT_COMPUTED_FIELDS = [
  */
 export const AgentComputedSortFields = makeSortFieldSchema(
   AGENT_COMPUTED_FIELDS,
-).default("position");
+).default("rank");
 
 /**
  * Agent computed sort fields type
@@ -59,7 +59,7 @@ export type TAgentComputedSortFields = z.infer<typeof AgentComputedSortFields>;
 export const AgentSortField = makeSortFieldSchema([
   ...AGENT_DB_FIELDS,
   ...AGENT_COMPUTED_FIELDS,
-]).default("position");
+]).default("rank");
 
 /**
  * Agent query schema (database fields and computed fields)

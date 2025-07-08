@@ -21,7 +21,7 @@ export interface AgentStatus {
   agentId: string;
   name: string;
   score: number;
-  position: number;
+  rank: number;
   joinedDate: string;
   rewards: Reward[];
   metadata: {

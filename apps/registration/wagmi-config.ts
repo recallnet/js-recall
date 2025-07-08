@@ -1,25 +1,29 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { getDefaultConfig } from "connectkit";
 import { Config, createConfig, http } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+import { mainnet } from "wagmi/chains";
 
-export const clientConfig: () => Config = () =>
-  getDefaultConfig({
+export const clientConfig: () => Config = () => {
+  const configParams = getDefaultConfig({
     appName: "Recall Registration Portal",
     appDescription: "Register your AI agent for Recall competitions",
-    appUrl: "https://register.recall.network", // Update with your actual domain
-    appIcon: "https://register.recall.network/favicon.ico", // Update with your actual icon
-    projectId:
+    appUrl:
+      process.env.NEXT_PUBLIC_FRONTEND_URL || "https://register.recall.network",
+    appIcon: "https://register.recall.network/favicon.ico",
+    walletConnectProjectId:
       process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
       "your_walletconnect_project_id",
-    chains: [baseSepolia],
+    chains: [mainnet],
     ssr: true,
   });
 
+  return createConfig(configParams);
+};
+
 export const serverConfig = () =>
   createConfig({
-    chains: [baseSepolia],
+    chains: [mainnet],
     ssr: true,
     transports: {
-      [baseSepolia.id]: http(),
+      [mainnet.id]: http(),
     },
   }) as Config;

@@ -400,6 +400,7 @@ export interface EnhancedCompetition {
   pnl: number;
   pnlPercent: number;
   totalTrades: number;
+  // TODO: dry out the type for best placement
   bestPlacement?: {
     rank: number;
     totalAgents: number;
@@ -607,8 +608,8 @@ export type CompetitionType = z.infer<typeof CompetitionTypeSchema>;
  */
 export const SYNC_DATA_TYPE_VALUES = [
   "trade",
-  "agent_rank_history",
-  "agent_rank",
+  "agent_score_history",
+  "agent_score",
   "competitions_leaderboard",
   "portfolio_snapshot",
 ] as const;
@@ -618,8 +619,8 @@ export const SYNC_DATA_TYPE_VALUES = [
  */
 export const SYNC_DATA_TYPE = {
   TRADE: "trade",
-  AGENT_RANK_HISTORY: "agent_rank_history",
-  AGENT_RANK: "agent_rank",
+  AGENT_SCORE_HISTORY: "agent_score_history",
+  AGENT_SCORE: "agent_score",
   COMPETITIONS_LEADERBOARD: "competitions_leaderboard",
   PORTFOLIO_SNAPSHOT: "portfolio_snapshot",
 } as const;
@@ -664,7 +665,7 @@ export type PagingParams = z.infer<typeof PagingParamsSchema>;
  */
 export const CompetitionAgentsParamsSchema = z.object({
   filter: z.string().optional(),
-  sort: z.string().default("position"),
+  sort: z.string().default("rank"),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
 });

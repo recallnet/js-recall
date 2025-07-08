@@ -40,7 +40,6 @@ export default function Home() {
 
   // Handle next button from profile form
   const handleProfileNext = (data: ProfileFormData) => {
-    console.log("Profile data:", data);
     setProfileData(data);
 
     // Redirect directly to account page after profile completion
