@@ -21,6 +21,16 @@ export function ImagePreview({ imageUrl }: ImagePreviewProps) {
     setImageError(false);
   };
 
+  const isValidUrl = (str: string) => {
+    try {
+      new URL(str);
+      return true;
+      //eslint-disable-next-line
+    } catch (e) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     setImageError(false);
   }, [imageUrl]);
@@ -36,7 +46,7 @@ export function ImagePreview({ imageUrl }: ImagePreviewProps) {
     >
       {imageUrl ? (
         <>
-          {!imageError && (
+          {!imageError && isValidUrl(imageUrl) && (
             <Image
               src={imageUrl}
               alt="Avatar Preview"
