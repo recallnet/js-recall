@@ -36,7 +36,7 @@ export default function AgentPage({
     });
   }, []);
 
-  if (isLoadingAgent) return <LoadingAgentProfile />;
+  if (isLoadingAgent || !agent) return <LoadingAgentProfile />;
 
   return (
     <>
