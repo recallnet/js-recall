@@ -6,13 +6,14 @@ import {
   InsertEmailVerificationToken,
   SelectEmailVerificationToken,
 } from "@/database/schema/core/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 /**
  * Creates a new email verification token
  * @param token The token data to insert
  * @returns The inserted token
  */
-export async function createEmailVerificationToken(
+async function createEmailVerificationTokenImpl(
   token: InsertEmailVerificationToken,
 ): Promise<SelectEmailVerificationToken> {
   const [insertedToken] = await db
@@ -32,7 +33,7 @@ export async function createEmailVerificationToken(
  * @param tokenString The token string to search for
  * @returns The token if found, undefined otherwise
  */
-export async function findEmailVerificationTokenByToken(
+async function findEmailVerificationTokenByTokenImpl(
   tokenString: string,
 ): Promise<SelectEmailVerificationToken | undefined> {
   const tokens = await db
@@ -49,7 +50,7 @@ export async function findEmailVerificationTokenByToken(
  * @param tokenId The ID of the token to mark as used
  * @returns The updated token
  */
-export async function markTokenAsUsed(
+async function markTokenAsUsedImpl(
   tokenId: string,
 ): Promise<SelectEmailVerificationToken | undefined> {
   const [updatedToken] = await db
@@ -60,3 +61,25 @@ export async function markTokenAsUsed(
 
   return updatedToken;
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+export const createEmailVerificationToken = createTimedRepositoryFunction(
+  createEmailVerificationTokenImpl,
+  "EmailVerificationRepository",
+  "createEmailVerificationToken",
+);
+
+export const findEmailVerificationTokenByToken = createTimedRepositoryFunction(
+  findEmailVerificationTokenByTokenImpl,
+  "EmailVerificationRepository",
+  "findEmailVerificationTokenByToken",
+);
+
+export const markTokenAsUsed = createTimedRepositoryFunction(
+  markTokenAsUsedImpl,
+  "EmailVerificationRepository",
+  "markTokenAsUsed",
+);

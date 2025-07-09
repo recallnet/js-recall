@@ -38,8 +38,8 @@ export function loggingMiddleware(
     const endTime = process.hrtime.bigint();
     const durationMs = Number(endTime - startTime) / 1_000_000;
 
-    // Determine route for metrics (compatible with existing route structure)
-    const route = req.route?.path || req.path;
+    // Determine route for metrics (include router's mount prefix for accuracy)
+    const route = req.baseUrl + (req.route?.path || "") || req.path;
     const method = req.method;
     const statusCode = res.statusCode.toString();
 

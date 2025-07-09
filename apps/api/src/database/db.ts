@@ -18,36 +18,26 @@ const __dirname = path.dirname(__filename);
 
 // Prometheus metrics for database operations - check if already registered
 const getOrCreateDbMetrics = () => {
-  // Try to get existing metrics first
-  const existingDuration = client.register.getSingleMetric(
-    "db_query_duration_ms",
-  ) as client.Histogram<string>;
+  // Try to get existing metric first
   const existingTotal = client.register.getSingleMetric(
     "db_queries_total",
   ) as client.Counter<string>;
 
-  if (existingDuration && existingTotal) {
-    return { dbQueryDuration: existingDuration, dbQueryTotal: existingTotal };
+  if (existingTotal) {
+    return { dbQueryTotal: existingTotal };
   }
 
-  // If metrics don't exist, create them
-  const dbQueryDuration = new client.Histogram({
-    name: "db_query_duration_ms",
-    help: "Duration of database queries in ms",
-    labelNames: ["operation"],
-    buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000],
-  });
-
+  // If metric doesn't exist, create it
   const dbQueryTotal = new client.Counter({
     name: "db_queries_total",
     help: "Total number of database queries",
     labelNames: ["operation", "status"],
   });
 
-  return { dbQueryDuration, dbQueryTotal };
+  return { dbQueryTotal };
 };
 
-const { dbQueryDuration, dbQueryTotal } = getOrCreateDbMetrics();
+const { dbQueryTotal } = getOrCreateDbMetrics();
 
 /**
  * DEPRECATED: logDbOperation is no longer needed since we have transparent logging
@@ -94,36 +84,59 @@ const pool = new Pool({
   ...sslConfig,
 });
 
+/*
+ * DATABASE QUERY TIMING ALTERNATIVES:
+ *
+ * Pool.query() has 7 complex overloads making wrapping difficult.
+ * For database query timing, consider these approaches:
+ *
+ * 1. SERVICE-LAYER TIMING (Recommended):
+ *    - Wrap database calls in manager services with performance.now()
+ *    - Example: const start = performance.now(); const result = await db.select();
+ *    - Gives end-to-end timing including Drizzle overhead
+ *
+ * 2. POSTGRESQL CONFIGURATION:
+ *    - Enable: log_statement = 'all' and log_duration = on
+ *    - Add: log_min_duration_statement = 100 (log queries > 100ms)
+ *    - Location: postgresql.conf or via ALTER SYSTEM
+ *
+ * 3. PG_STAT_STATEMENTS EXTENSION:
+ *    - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+ *    - Query pg_stat_statements view for aggregated timing data
+ *
+ * 4. APM/MONITORING TOOLS:
+ *    - DataDog, New Relic, Grafana, or Sentry Performance
+ *    - Database connection monitoring and query analysis
+ */
+
 // Create custom logger to transparently intercept ALL database queries
 const dbLogger = {
   logQuery: (query: string, params: unknown[]) => {
     void params; // Acknowledge parameter exists but we don't use it
     const traceId = getTraceId() || "no-trace";
-    const startTime = performance.now();
 
     // Extract operation type from SQL query
     const operation = query.trim().split(" ")[0]?.toUpperCase() || "UNKNOWN";
 
-    const endTime = performance.now();
-    const durationMs = endTime - startTime;
+    // Note: Drizzle's logger interface is called AFTER query execution,
+    // so we cannot accurately measure query timing here. The timing would
+    // be near-zero since no actual database operation happens in this function.
+    // For accurate query timing, consider using database-level monitoring
+    // or application-level timing at the service layer.
 
-    // Update Prometheus metrics
-    dbQueryDuration.observe({ operation }, durationMs);
+    // Update Prometheus metrics (count only, no timing)
     dbQueryTotal.inc({ operation, status: "success" });
 
-    // Environment-aware logging
+    // Environment-aware logging (without timing)
     const isDev = config.server.nodeEnv === "development";
     if (isDev) {
-      console.log(
-        `[${traceId}] [DB] ${operation} - ${durationMs.toFixed(2)}ms`,
-      );
+      console.log(`[${traceId}] [DB] ${operation}`);
     } else {
       console.log(
         JSON.stringify({
           traceId,
           type: "db",
           operation,
-          duration: durationMs,
           status: "success",
           timestamp: new Date().toISOString(),
         }),

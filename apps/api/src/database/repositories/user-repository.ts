@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "@/database/db.js";
 import { users } from "@/database/schema/core/defs.js";
 import { InsertUser, SelectUser } from "@/database/schema/core/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { UserSearchParams } from "@/types/index.js";
 
 import { PartialExcept } from "./types.js";
@@ -17,7 +18,7 @@ import { PartialExcept } from "./types.js";
  * Create a new user
  * @param user User to create
  */
-export async function create(user: InsertUser): Promise<SelectUser> {
+async function createImpl(user: InsertUser): Promise<SelectUser> {
   try {
     const now = new Date();
     const normalizedWalletAddress = user.walletAddress.toLowerCase();
@@ -47,7 +48,7 @@ export async function create(user: InsertUser): Promise<SelectUser> {
  * @param walletAddress The wallet address of the user to create
  * @returns The newly created user object
  */
-export async function createUserFromWallet(
+async function createUserFromWalletImpl(
   walletAddress: string,
 ): Promise<SelectUser> {
   try {
@@ -83,7 +84,7 @@ export async function createUserFromWallet(
 /**
  * Find all users
  */
-export async function findAll(): Promise<SelectUser[]> {
+async function findAllImpl(): Promise<SelectUser[]> {
   try {
     return await db.select().from(users);
   } catch (error) {
@@ -96,7 +97,7 @@ export async function findAll(): Promise<SelectUser[]> {
  * Find a user by ID
  * @param id User ID to find
  */
-export async function findById(id: string): Promise<SelectUser | undefined> {
+async function findByIdImpl(id: string): Promise<SelectUser | undefined> {
   try {
     const [result] = await db.select().from(users).where(eq(users.id, id));
     return result;
@@ -110,7 +111,7 @@ export async function findById(id: string): Promise<SelectUser | undefined> {
  * Find a user by wallet address
  * @param walletAddress The wallet address to search for
  */
-export async function findByWalletAddress(
+async function findByWalletAddressImpl(
   walletAddress: string,
 ): Promise<SelectUser | undefined> {
   try {
@@ -131,9 +132,7 @@ export async function findByWalletAddress(
  * Find a user by email
  * @param email The email to search for
  */
-export async function findByEmail(
-  email: string,
-): Promise<SelectUser | undefined> {
+async function findByEmailImpl(email: string): Promise<SelectUser | undefined> {
   try {
     const [result] = await db
       .select()
@@ -151,7 +150,7 @@ export async function findByEmail(
  * Update a user
  * @param user User data to update (must include id)
  */
-export async function update(
+async function updateImpl(
   user: PartialExcept<InsertUser, "id">,
 ): Promise<SelectUser> {
   try {
@@ -184,7 +183,7 @@ export async function update(
  * @param id User ID to delete
  * @returns true if user was deleted, false otherwise
  */
-export async function deleteUser(id: string): Promise<boolean> {
+async function deleteUserImpl(id: string): Promise<boolean> {
   try {
     const [result] = await db.delete(users).where(eq(users.id, id)).returning();
 
@@ -200,7 +199,7 @@ export async function deleteUser(id: string): Promise<boolean> {
  * @param searchParams Object containing search parameters
  * @returns Array of users matching the search criteria
  */
-export async function searchUsers(
+async function searchUsersImpl(
   searchParams: UserSearchParams,
 ): Promise<SelectUser[]> {
   try {
@@ -245,7 +244,7 @@ export async function searchUsers(
 /**
  * Count all users
  */
-export async function count(): Promise<number> {
+async function countImpl(): Promise<number> {
   try {
     const [result] = await db.select({ count: drizzleCount() }).from(users);
     return result?.count ?? 0;
@@ -254,3 +253,72 @@ export async function count(): Promise<number> {
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const create = createTimedRepositoryFunction(
+  createImpl,
+  "UserRepository",
+  "create",
+);
+
+export const createUserFromWallet = createTimedRepositoryFunction(
+  createUserFromWalletImpl,
+  "UserRepository",
+  "createUserFromWallet",
+);
+
+export const findAll = createTimedRepositoryFunction(
+  findAllImpl,
+  "UserRepository",
+  "findAll",
+);
+
+export const findById = createTimedRepositoryFunction(
+  findByIdImpl,
+  "UserRepository",
+  "findById",
+);
+
+export const findByWalletAddress = createTimedRepositoryFunction(
+  findByWalletAddressImpl,
+  "UserRepository",
+  "findByWalletAddress",
+);
+
+export const findByEmail = createTimedRepositoryFunction(
+  findByEmailImpl,
+  "UserRepository",
+  "findByEmail",
+);
+
+export const update = createTimedRepositoryFunction(
+  updateImpl,
+  "UserRepository",
+  "update",
+);
+
+export const deleteUser = createTimedRepositoryFunction(
+  deleteUserImpl,
+  "UserRepository",
+  "deleteUser",
+);
+
+export const searchUsers = createTimedRepositoryFunction(
+  searchUsersImpl,
+  "UserRepository",
+  "searchUsers",
+);
+
+export const count = createTimedRepositoryFunction(
+  countImpl,
+  "UserRepository",
+  "count",
+);

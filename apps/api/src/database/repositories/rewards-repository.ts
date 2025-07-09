@@ -13,15 +13,14 @@ import {
   SelectRewardsRoot,
   SelectRewardsTree,
 } from "@/database/schema/voting/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 /**
  * Get all rewards for a specific epoch
  * @param epochId The epoch ID (UUID) to get rewards for
  * @returns Array of rewards for the epoch
  */
-export async function getRewardsByEpoch(
-  epochId: string,
-): Promise<SelectReward[]> {
+async function getRewardsByEpochImpl(epochId: string): Promise<SelectReward[]> {
   try {
     return await db.select().from(rewards).where(eq(rewards.epoch, epochId));
   } catch (error) {
@@ -35,7 +34,7 @@ export async function getRewardsByEpoch(
  * @param rewardsToInsert Array of rewards to insert
  * @returns Array of inserted rewards
  */
-export async function insertRewards(
+async function insertRewardsImpl(
   rewardsToInsert: InsertReward[],
 ): Promise<SelectReward[]> {
   try {
@@ -51,7 +50,7 @@ export async function insertRewards(
  * @param entries Array of tree entries to insert
  * @returns Array of inserted entries
  */
-export async function insertRewardsTree(
+async function insertRewardsTreeImpl(
   entries: {
     id?: string;
     epoch: string;
@@ -79,7 +78,7 @@ export async function insertRewardsTree(
  * @param rootEntry The root entry to insert containing epoch, rootHash, and tx
  * @returns The inserted root entry
  */
-export async function insertRewardsRoot(
+async function insertRewardsRootImpl(
   rootEntry: InsertRewardsRoot,
 ): Promise<SelectRewardsRoot> {
   try {
@@ -104,7 +103,7 @@ export async function insertRewardsRoot(
  * @param epochId The epoch ID (UUID) to get tree nodes for
  * @returns Array of tree nodes with level, idx, and hash
  */
-export async function getRewardsTreeByEpoch(
+async function getRewardsTreeByEpochImpl(
   epochId: string,
 ): Promise<SelectRewardsTree[]> {
   try {
@@ -117,3 +116,37 @@ export async function getRewardsTreeByEpoch(
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+export const getRewardsByEpoch = createTimedRepositoryFunction(
+  getRewardsByEpochImpl,
+  "RewardsRepository",
+  "getRewardsByEpoch",
+);
+
+export const insertRewards = createTimedRepositoryFunction(
+  insertRewardsImpl,
+  "RewardsRepository",
+  "insertRewards",
+);
+
+export const insertRewardsTree = createTimedRepositoryFunction(
+  insertRewardsTreeImpl,
+  "RewardsRepository",
+  "insertRewardsTree",
+);
+
+export const insertRewardsRoot = createTimedRepositoryFunction(
+  insertRewardsRootImpl,
+  "RewardsRepository",
+  "insertRewardsRoot",
+);
+
+export const getRewardsTreeByEpoch = createTimedRepositoryFunction(
+  getRewardsTreeByEpochImpl,
+  "RewardsRepository",
+  "getRewardsTreeByEpoch",
+);

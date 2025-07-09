@@ -11,6 +11,7 @@ import {
   InsertAgentScore,
   InsertAgentScoreHistory,
 } from "@/database/schema/ranking/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { AgentMetadata } from "@/types/index.js";
 
 /**
@@ -37,7 +38,7 @@ export interface AgentRankInfo {
  * the agent information and rank score.
  * @returns An array of objects with agent ID, name, and rank score
  */
-export async function getAllAgentRanks(): Promise<AgentRankInfo[]> {
+async function getAllAgentRanksImpl(): Promise<AgentRankInfo[]> {
   console.log("[AgentRankRepository] getAllAgentRanks called");
 
   try {
@@ -85,7 +86,7 @@ export async function getAllAgentRanks(): Promise<AgentRankInfo[]> {
  * @param agentId The ID of the agent to get the rank for
  * @returns The agent's simplified rank information (id, rank, score) or null if not found
  */
-export async function getAgentRankById(agentId: string): Promise<{
+async function getAgentRankByIdImpl(agentId: string): Promise<{
   id: string;
   rank: number;
   score: number;
@@ -135,7 +136,7 @@ export async function getAgentRankById(agentId: string): Promise<{
   }
 }
 
-export async function batchUpdateAgentRanks(
+async function batchUpdateAgentRanksImpl(
   dataArray: Array<Omit<InsertAgentScore, "id" | "createdAt" | "updatedAt">>,
   competitionId: string,
 ): Promise<InsertAgentScore[]> {
@@ -225,7 +226,7 @@ export async function batchUpdateAgentRanks(
  * Get all agent rank history records
  * @param competitionId Optional competition ID to filter by
  */
-export async function getAllAgentRankHistory(competitionId?: string) {
+async function getAllAgentRankHistoryImpl(competitionId?: string) {
   try {
     const query = db
       .select()
@@ -249,7 +250,7 @@ export async function getAllAgentRankHistory(competitionId?: string) {
 /**
  * Get all raw agent ranks (without joins)
  */
-export async function getAllRawAgentRanks() {
+async function getAllRawAgentRanksImpl() {
   try {
     return await db.select().from(agentScore).orderBy(desc(agentScore.ordinal));
   } catch (error) {
@@ -257,3 +258,42 @@ export async function getAllRawAgentRanks() {
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const getAllAgentRanks = createTimedRepositoryFunction(
+  getAllAgentRanksImpl,
+  "AgentScoreRepository",
+  "getAllAgentRanks",
+);
+
+export const getAgentRankById = createTimedRepositoryFunction(
+  getAgentRankByIdImpl,
+  "AgentScoreRepository",
+  "getAgentRankById",
+);
+
+export const batchUpdateAgentRanks = createTimedRepositoryFunction(
+  batchUpdateAgentRanksImpl,
+  "AgentScoreRepository",
+  "batchUpdateAgentRanks",
+);
+
+export const getAllAgentRankHistory = createTimedRepositoryFunction(
+  getAllAgentRankHistoryImpl,
+  "AgentScoreRepository",
+  "getAllAgentRankHistory",
+);
+
+export const getAllRawAgentRanks = createTimedRepositoryFunction(
+  getAllRawAgentRanksImpl,
+  "AgentScoreRepository",
+  "getAllRawAgentRanks",
+);

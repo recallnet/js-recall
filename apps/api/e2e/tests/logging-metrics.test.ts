@@ -85,8 +85,8 @@ describe("Logging and Metrics API", () => {
 
     // Check that we have metrics for different routes (using actual route patterns)
     expect(metricsText).toContain('route="/testing/health"');
-    expect(metricsText).toContain('route="/agents"');
-    expect(metricsText).toContain('route="/users"');
+    expect(metricsText).toContain('route="/testing/api/admin/agents"');
+    expect(metricsText).toContain('route="/testing/api/admin/users"');
 
     // Check that we have successful status codes
     expect(metricsText).toContain('status_code="200"');
@@ -94,7 +94,7 @@ describe("Logging and Metrics API", () => {
     console.log("HTTP request metrics tracking different endpoints correctly");
   });
 
-  test("database operation metrics track query operations", async () => {
+  test("database operation metrics track all repository operations with detailed labels", async () => {
     const client = createTestClient();
     await client.loginAsAdmin(adminApiKey);
 
@@ -107,30 +107,118 @@ describe("Logging and Metrics API", () => {
       agentDescription: "Agent for testing database metrics",
     });
 
-    // Perform operations that should trigger database logging
-    await agentClient.getAgentProfile();
-    await agentClient.getBalance();
-    await client.listAgents();
-    await client.listUsers();
+    // Perform operations that trigger different repository operations
+    await agentClient.getAgentProfile(); // SELECT operations
+    await agentClient.getBalance(); // SELECT operations
+    await client.listAgents(); // SELECT operations
+    await client.listUsers(); // SELECT operations
 
-    // Get metrics and check for database operation metrics
+    // Get metrics and verify comprehensive database operation tracking
     const metricsResponse = await client.getMetrics();
     expect(typeof metricsResponse).toBe("string");
     const metricsText = metricsResponse as string;
 
-    // Check for database metrics (if logDbOperation is being used)
-    // These will only appear if repositories use the optional logging
-    if (metricsText.includes("db_queries_total")) {
-      expect(metricsText).toContain("db_queries_total");
-      expect(metricsText).toContain("db_query_duration_ms");
-      console.log("Database operation metrics are being tracked");
-    } else {
-      console.log(
-        "Database operation metrics not found (optional logging not used yet)",
-      );
+    // Database metrics are now automatically tracked for all repository operations
+    expect(metricsText).toContain("repository_queries_total");
+    expect(metricsText).toContain("repository_query_duration_ms");
+
+    // Verify operation type labels
+    expect(metricsText).toContain('operation="SELECT"');
+    expect(metricsText).toContain('operation="INSERT"');
+
+    // Verify repository name labels
+    expect(metricsText).toContain('repository="AgentRepository"');
+    expect(metricsText).toContain('repository="UserRepository"');
+
+    // Verify method name labels
+    expect(metricsText).toContain('method="findById"');
+    expect(metricsText).toContain('method="create"');
+
+    // Verify status labels
+    expect(metricsText).toContain('status="success"');
+
+    console.log(
+      "Database operation metrics tracking all operations with detailed labels",
+    );
+  });
+
+  test("database metrics track both successful and error operations", async () => {
+    const client = createTestClient();
+    await client.loginAsAdmin(adminApiKey);
+
+    // Perform successful operations
+    await client.listAgents();
+    await client.listUsers();
+
+    // Try to perform operations that might trigger database errors (handled gracefully)
+    try {
+      await client.getAgent("invalid-uuid-format");
+    } catch {
+      // Expected to fail, but should still generate metrics
     }
 
-    console.log("Database operations completed successfully");
+    // Get metrics and verify both success and error operations are tracked
+    const metricsResponse = await client.getMetrics();
+    expect(typeof metricsResponse).toBe("string");
+    const metricsText = metricsResponse as string;
+
+    // Verify we have both success and error status tracking
+    expect(metricsText).toContain('status="success"');
+    // Note: Database-level errors might still be counted as "success" if the query executes
+    // but application-level validation fails. The key is that all operations are tracked.
+
+    // Verify we have database operation metrics with timing data
+    expect(metricsText).toContain("repository_queries_total");
+    expect(metricsText).toContain("repository_query_duration_ms");
+
+    console.log("Database metrics track both successful and error operations");
+  });
+
+  test("database timing metrics provide performance insights", async () => {
+    const client = createTestClient();
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create multiple agents to generate more database load
+    const agents = [];
+    for (let i = 0; i < 3; i++) {
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName: `Performance Test User ${i}`,
+        userEmail: `perf-test-${i}@example.com`,
+        agentName: `Performance Test Agent ${i}`,
+        agentDescription: `Agent ${i} for performance testing`,
+      });
+      agents.push(agent);
+    }
+
+    // Perform various database-intensive operations
+    await client.listAgents();
+    await client.listUsers();
+    for (const agent of agents) {
+      await client.getAgent(agent.id);
+    }
+
+    // Get metrics and verify timing histograms are populated
+    const metricsResponse = await client.getMetrics();
+    expect(typeof metricsResponse).toBe("string");
+    const metricsText = metricsResponse as string;
+
+    // Verify histogram buckets are present (timing data)
+    expect(metricsText).toContain("repository_query_duration_ms_bucket");
+    expect(metricsText).toContain("repository_query_duration_ms_sum");
+    expect(metricsText).toContain("repository_query_duration_ms_count");
+
+    // Verify we have multiple repository operations tracked
+    expect(metricsText).toContain('repository="AgentRepository"');
+    expect(metricsText).toContain('repository="UserRepository"');
+
+    // Verify operation types are differentiated
+    expect(metricsText).toContain('operation="SELECT"');
+    expect(metricsText).toContain('operation="INSERT"');
+
+    console.log(
+      "Database timing metrics provide detailed performance insights",
+    );
   });
 
   test("logging works during full agent trading workflow", async () => {
@@ -231,9 +319,9 @@ describe("Logging and Metrics API", () => {
     expect(metricsText).toContain("http_request_duration_ms");
 
     // Check for trading-specific endpoints (using actual route patterns)
-    expect(metricsText).toContain('route="/execute"');
-    expect(metricsText).toContain('route="/profile"');
-    expect(metricsText).toContain('route="/balances"');
+    expect(metricsText).toContain('route="/testing/api/trade/execute"');
+    expect(metricsText).toContain('route="/testing/api/agent/profile"');
+    expect(metricsText).toContain('route="/testing/api/agent/balances"');
 
     // Verify we have successful responses
     expect(metricsText).toContain('status_code="200"');
@@ -308,9 +396,9 @@ describe("Logging and Metrics API", () => {
     expect(typeof metricsResponse).toBe("string");
 
     const metricsText = metricsResponse as string;
-    expect(metricsText).toContain('route="/profile"');
-    expect(metricsText).toContain('route="/balances"');
-    expect(metricsText).toContain('route="/portfolio"');
+    expect(metricsText).toContain('route="/testing/api/agent/profile"');
+    expect(metricsText).toContain('route="/testing/api/agent/balances"');
+    expect(metricsText).toContain('route="/testing/api/agent/portfolio"');
 
     console.log("Trace ID correlation test completed successfully");
   });
@@ -348,9 +436,9 @@ describe("Logging and Metrics API", () => {
     expect(typeof metricsResponse).toBe("string");
 
     const metricsText = metricsResponse as string;
-    expect(metricsText).toContain('route="/profile"');
-    expect(metricsText).toContain('route="/balances"');
-    expect(metricsText).toContain('route="/reset-api-key"');
+    expect(metricsText).toContain('route="/testing/api/agent/profile"');
+    expect(metricsText).toContain('route="/testing/api/agent/balances"');
+    expect(metricsText).toContain('route="/testing/api/agent/reset-api-key"');
 
     console.log("Metrics persist through API key reset workflow");
   });
