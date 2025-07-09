@@ -481,4 +481,36 @@ export class UserManager {
       return null;
     }
   }
+
+  /**
+   * Verify a user's email by creating a new verification token and sending it
+   * @param userId The ID of the user to verify email for
+   * @returns The created verification token
+   */
+  async verifyEmail(userId: string): Promise<void> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+
+      if (!user.email) {
+        throw new Error(`User ${userId} does not have an email address`);
+      }
+
+      await this.sendEmailVerification(user);
+
+      console.log(
+        `[UserManager] Email verification initiated for user ${userId}`,
+      );
+    } catch (error) {
+      console.error(
+        `[UserManager] Error verifying email for user ${userId}:`,
+        error,
+      );
+      throw new Error(
+        `Failed to verify email: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
 }

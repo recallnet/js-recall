@@ -3061,4 +3061,45 @@ describe("User API", () => {
     expect(agentFoxtrotRank).toBe(agentHotelRank);
     expect(agentFoxtrotRank).toBe(1);
   });
+
+  describe("Email Verification", () => {
+    test("unauthenticated user cannot verify email", async () => {
+      // Create unauthenticated client
+      const unauthenticatedClient = createTestClient();
+
+      // Try to verify email without authentication
+      const unauthResponse = await unauthenticatedClient.verifyEmail();
+      expect(unauthResponse.success).toBe(false);
+      expect((unauthResponse as ErrorResponse).status).toBe(401);
+    });
+
+    test("email verification endpoint returns consistent response structure", async () => {
+      // Create a SIWE-authenticated client
+      const { client: siweClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Response Structure Test User",
+        userEmail: "response-structure-test@example.com",
+      });
+
+      // Test response structure with invalid token (we know this will fail)
+      const response = await siweClient.verifyEmail();
+
+      // Verify response structure regardless of success/failure
+      expect(response).toHaveProperty("success");
+      expect(typeof response.success).toBe("boolean");
+
+      if (response.success) {
+        // Success response structure
+        expect(response).toHaveProperty("message");
+        expect(typeof response.message).toBe("string");
+      } else {
+        // Error response structure
+        const errorResponse = response as ErrorResponse;
+        expect(errorResponse).toHaveProperty("error");
+        expect(errorResponse).toHaveProperty("status");
+        expect(typeof errorResponse.error).toBe("string");
+        expect(typeof errorResponse.status).toBe("number");
+      }
+    });
+  });
 });

@@ -71,10 +71,10 @@ describe("Email Verification API", () => {
       },
     );
 
-    // Should redirect to profile page with success message
+    // Should redirect to verify-email page with success message
     expect(verifyResponse.status).toBe(302);
     expect(verifyResponse.headers["location"]).toContain(
-      `${config.app.url}/profile?success=true`,
+      `${config.app.url}/verify-email?success=true`,
     );
     expect(verifyResponse.headers["location"]).toContain(
       "message=Email%20verified%20successfully",
@@ -122,10 +122,10 @@ describe("Email Verification API", () => {
       },
     );
 
-    // Should redirect to profile page with success message
+    // Should redirect to verify-email page with success message
     expect(verifyResponse.status).toBe(302);
     expect(verifyResponse.headers["location"]).toContain(
-      `${config.app.url}/profile?success=true`,
+      `${config.app.url}/verify-email?success=true`,
     );
     expect(verifyResponse.headers["location"]).toContain(
       "message=Email%20verified%20successfully",
@@ -147,10 +147,10 @@ describe("Email Verification API", () => {
       },
     );
 
-    // Should redirect to profile page with error message
+    // Should redirect to verify-email page with error message
     expect(verifyResponse.status).toBe(302);
     expect(verifyResponse.headers["location"]).toContain(
-      `${config.app.url}/profile?success=false`,
+      `${config.app.url}/verify-email?success=false`,
     );
     expect(verifyResponse.headers["location"]).toContain(
       "message=Invalid%20verification%20token",
@@ -186,10 +186,10 @@ describe("Email Verification API", () => {
       },
     );
 
-    // Should redirect to profile page with error message
+    // Should redirect to verify-email page with error message
     expect(verifyResponse.status).toBe(302);
     expect(verifyResponse.headers["location"]).toContain(
-      `${config.app.url}/profile?success=false`,
+      `${config.app.url}/verify-email?success=false`,
     );
     expect(verifyResponse.headers["location"]).toContain(
       "message=Token%20has%20expired",
@@ -227,10 +227,10 @@ describe("Email Verification API", () => {
       },
     );
 
-    // Should redirect to profile page with error message
+    // Should redirect to verify-email page with error message
     expect(verifyResponse.status).toBe(302);
     expect(verifyResponse.headers["location"]).toContain(
-      `${config.app.url}/profile?success=false`,
+      `${config.app.url}/verify-email?success=false`,
     );
     expect(verifyResponse.headers["location"]).toContain(
       "message=Token%20has%20already%20been%20used",
@@ -262,10 +262,10 @@ describe("Email Verification API", () => {
       },
     );
 
-    // Should redirect to profile page with error message
+    // Should redirect to verify-email page with error message
     expect(verifyResponse.status).toBe(302);
     expect(verifyResponse.headers["location"]).toContain(
-      `${config.app.url}/profile?success=false`,
+      `${config.app.url}/verify-email?success=false`,
     );
     expect(verifyResponse.headers["location"]).toContain(
       "message=Token%20is%20not%20associated%20with%20a%20user%20or%20agent",
@@ -279,10 +279,10 @@ describe("Email Verification API", () => {
       validateStatus: null,
     });
 
-    // Should redirect to profile page with error message
+    // Should redirect to verify-email page with error message
     expect(verifyResponse.status).toBe(302);
     expect(verifyResponse.headers["location"]).toContain(
-      `${config.app.url}/profile?success=false`,
+      `${config.app.url}/verify-email?success=false`,
     );
     expect(verifyResponse.headers["location"]).toContain(
       "message=Token%20is%20required",
@@ -356,10 +356,10 @@ describe("Email Verification API", () => {
       },
     );
 
-    // Should redirect to profile page with success message
+    // Should redirect to verify-email page with success message
     expect(verifyResponse.status).toBe(302);
     expect(verifyResponse.headers["location"]).toContain(
-      `${config.app.url}/profile?success=true`,
+      `${config.app.url}/verify-email?success=true`,
     );
     expect(verifyResponse.headers["location"]).toContain(
       "message=Email%20verified%20successfully",
@@ -446,10 +446,10 @@ describe("Email Verification API", () => {
       },
     );
 
-    // Should redirect to profile page with success message
+    // Should redirect to verify-email page with success message
     expect(verifyResponse.status).toBe(302);
     expect(verifyResponse.headers["location"]).toContain(
-      `${config.app.url}/profile?success=true`,
+      `${config.app.url}/verify-email?success=true`,
     );
     expect(verifyResponse.headers["location"]).toContain(
       "message=Email%20verified%20successfully",
