@@ -144,11 +144,25 @@ function wrapRepositoryFunction<
         status: "success",
       });
 
-      // Development logging
+      // Environment-aware logging
       const isDev = config.server.nodeEnv === "development";
       if (isDev) {
+        // Development: Human-readable console logs
         console.log(
           `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms`,
+        );
+      } else {
+        // Production: Structured JSON logs
+        console.log(
+          JSON.stringify({
+            traceId,
+            repository: repositoryName,
+            method: methodName,
+            operation,
+            duration: durationMs,
+            status: "success",
+            timestamp: new Date().toISOString(),
+          }),
         );
       }
 
@@ -168,11 +182,25 @@ function wrapRepositoryFunction<
         status: "error",
       });
 
-      // Development error logging with timing
+      // Environment-aware error logging with timing
       const isDev = config.server.nodeEnv === "development";
       if (isDev) {
+        // Development: Human-readable error logs
         console.log(
           `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms - ERROR`,
+        );
+      } else {
+        // Production: Structured JSON error logs
+        console.log(
+          JSON.stringify({
+            traceId,
+            repository: repositoryName,
+            method: methodName,
+            operation,
+            duration: durationMs,
+            status: "error",
+            timestamp: new Date().toISOString(),
+          }),
         );
       }
 
