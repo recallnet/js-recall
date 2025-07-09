@@ -88,12 +88,24 @@ app.set("trust proxy", true);
 app.use(
   cors({
     origin: function (origin, fn) {
-      if (
-        !origin ||
-        config.app.url === origin ||
-        // Note: the frontend app URL above should already be included in the `corsOrigins` config
-        config.app.corsOrigins.includes(origin)
-      ) {
+      // Allow any localhost port in development mode
+      if (config.server.nodeEnv === "development") {
+        const localhostRegex = /^http?:\/\/localhost(:\d+)?$/i;
+        if (!origin || localhostRegex.test(origin)) {
+          fn(null, true);
+        } else {
+          fn(new ApiError(403, "Forbidden"));
+        }
+        return;
+      }
+
+      // See Express CORS docs for details: https://expressjs.com/en/resources/middleware/cors.html#configuration-options
+      const baseDomain = config?.app?.domain?.startsWith(".")
+        ? config?.app?.domain?.substring(1)
+        : config?.app?.domain;
+      const escapedDomain = baseDomain?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const domainRegex = new RegExp(`${escapedDomain}$`, "i");
+      if (!origin || domainRegex.test(origin)) {
         fn(null, true);
       } else {
         fn(new ApiError(403, "Forbidden"));

@@ -1,28 +1,35 @@
 import axios from "axios";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { config } from "@/config/index.js";
-
-import { ApiClient } from "../utils/api-client.js";
-import { getBaseUrl } from "../utils/server.js";
+import { ApiClient } from "@/e2e/utils/api-client.js";
+import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-} from "../utils/test-helpers.js";
+} from "@/e2e/utils/test-helpers.js";
 
 describe("CORS Configuration", () => {
   const baseUrl = getBaseUrl();
-  const corsOrigins = config.app.corsOrigins;
+  const domain = config.app.domain;
+  const corsOrigins = [
+    `https://foo${domain}`,
+    `https://bar${domain}`,
+    `https://${domain!.substring(1)}`, // The primary domain (removing the leading dot)
+  ];
 
   // Admin client for creating users/agents
   let adminClient: ApiClient;
   let adminApiKey: string;
 
+  beforeAll(async () => {
+    expect(domain).to.be.equal(".example.com");
+  });
+
   beforeEach(async () => {
-    expect(corsOrigins.length).toBe(2); // `.env.test` should have 2 faux origins
     await cleanupTestState();
     // Create admin account directly using the setup endpoint
     const response = await axios.post(`${baseUrl}/api/admin/setup`, {
@@ -54,6 +61,10 @@ describe("CORS Configuration", () => {
       }),
       axios.get(testEndpoint, {
         headers: { Origin: corsOrigins[1] },
+        validateStatus: () => true,
+      }),
+      axios.get(testEndpoint, {
+        headers: { Origin: corsOrigins[2] },
         validateStatus: () => true,
       }),
     ]);
