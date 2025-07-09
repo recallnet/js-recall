@@ -17,7 +17,7 @@ import { makeVoteController } from "@/controllers/vote.controller.js";
 import { migrateDb } from "@/database/db.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
-import errorHandler from "@/middleware/errorHandler.js";
+import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
 import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
@@ -87,7 +87,30 @@ app.set("trust proxy", true);
 
 app.use(
   cors({
-    origin: config.app.url,
+    origin: function (origin, fn) {
+      // Allow any localhost port in development mode
+      if (config.server.nodeEnv === "development") {
+        const localhostRegex = /^http?:\/\/localhost(:\d+)?$/i;
+        if (!origin || localhostRegex.test(origin)) {
+          fn(null, true);
+        } else {
+          fn(new ApiError(403, "Forbidden"));
+        }
+        return;
+      }
+
+      // See Express CORS docs for details: https://expressjs.com/en/resources/middleware/cors.html#configuration-options
+      const baseDomain = config?.app?.domain?.startsWith(".")
+        ? config?.app?.domain?.substring(1)
+        : config?.app?.domain;
+      const escapedDomain = baseDomain?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const domainRegex = new RegExp(`${escapedDomain}$`, "i");
+      if (!origin || domainRegex.test(origin)) {
+        fn(null, true);
+      } else {
+        fn(new ApiError(403, "Forbidden"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
