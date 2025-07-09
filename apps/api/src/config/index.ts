@@ -160,7 +160,9 @@ export const config = {
   },
   // Frontend app configuration for interfacing with the server
   app: {
+    // Session management and email verification settings for the frontend competitions app
     url: process.env.FRONTEND_URL || "http://localhost:3001", // TODO: resolve frontend/backend default ports
+    // CORS multi-origin requests and cookie domain
     domain: process.env.DOMAIN,
     cookieName: process.env.COOKIE_NAME || "session",
     sessionPassword:
