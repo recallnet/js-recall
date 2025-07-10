@@ -48,25 +48,27 @@ export function loggingMiddleware(
     httpRequestDuration.observe(labels, durationMs);
     httpRequestTotal.inc(labels);
 
-    // Structured logging for all environments
-    const isDev = config.server.nodeEnv === "development";
-    if (isDev) {
-      // Detailed logging in development
-      console.log(
-        `[${traceId}] ${method} ${req.originalUrl} - ${durationMs.toFixed(2)}ms - ${statusCode}`,
-      );
-    } else {
-      // Concise structured logging in production (for log aggregation)
-      console.log(
-        JSON.stringify({
-          traceId,
-          method,
-          path: req.originalUrl,
-          duration: durationMs,
-          statusCode,
-          timestamp: new Date().toISOString(),
-        }),
-      );
+    // Structured logging for all environments with sampling
+    if (Math.random() < config.logging.httpSampleRate) {
+      const isDev = config.server.nodeEnv === "development";
+      if (isDev) {
+        // Detailed logging in development
+        console.log(
+          `[${traceId}] ${method} ${req.originalUrl} - ${durationMs.toFixed(2)}ms - ${statusCode}`,
+        );
+      } else {
+        // Concise structured logging in production (for log aggregation)
+        console.log(
+          JSON.stringify({
+            traceId,
+            method,
+            path: req.originalUrl,
+            duration: durationMs,
+            statusCode,
+            timestamp: new Date().toISOString(),
+          }),
+        );
+      }
     }
   });
 

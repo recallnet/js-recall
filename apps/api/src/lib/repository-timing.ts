@@ -9,6 +9,15 @@ let metricsCache: {
   dbQueryTotal: client.Counter<string>;
 } | null = null;
 
+/**
+ * Simple sampling function for logging
+ * @param sampleRate - Number between 0.0 and 1.0 (0.01 = 1%, 1.0 = 100%)
+ * @returns true if this operation should be logged
+ */
+function shouldSample(sampleRate: number): boolean {
+  return Math.random() < sampleRate;
+}
+
 // Get or create database timing metrics (reuse existing metrics from db.ts)
 const getDbMetrics = () => {
   // Return cached metrics if they exist
@@ -144,26 +153,28 @@ function wrapRepositoryFunction<
         status: "success",
       });
 
-      // Environment-aware logging
-      const isDev = config.server.nodeEnv === "development";
-      if (isDev) {
-        // Development: Human-readable console logs
-        console.log(
-          `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms`,
-        );
-      } else {
-        // Production: Structured JSON logs
-        console.log(
-          JSON.stringify({
-            traceId,
-            repository: repositoryName,
-            method: methodName,
-            operation,
-            duration: durationMs,
-            status: "success",
-            timestamp: new Date().toISOString(),
-          }),
-        );
+      // Environment-aware logging with sampling
+      if (shouldSample(config.logging.repositorySampleRate)) {
+        const isDev = config.server.nodeEnv === "development";
+        if (isDev) {
+          // Development: Human-readable console logs
+          console.log(
+            `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms`,
+          );
+        } else {
+          // Production: Structured JSON logs
+          console.log(
+            JSON.stringify({
+              traceId,
+              repository: repositoryName,
+              method: methodName,
+              operation,
+              duration: durationMs,
+              status: "success",
+              timestamp: new Date().toISOString(),
+            }),
+          );
+        }
       }
 
       return result as Awaited<ReturnType<TFunc>>;
@@ -182,26 +193,28 @@ function wrapRepositoryFunction<
         status: "error",
       });
 
-      // Environment-aware error logging with timing
-      const isDev = config.server.nodeEnv === "development";
-      if (isDev) {
-        // Development: Human-readable error logs
-        console.log(
-          `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms - ERROR`,
-        );
-      } else {
-        // Production: Structured JSON error logs
-        console.log(
-          JSON.stringify({
-            traceId,
-            repository: repositoryName,
-            method: methodName,
-            operation,
-            duration: durationMs,
-            status: "error",
-            timestamp: new Date().toISOString(),
-          }),
-        );
+      // Environment-aware error logging with timing and sampling
+      if (shouldSample(config.logging.repositorySampleRate)) {
+        const isDev = config.server.nodeEnv === "development";
+        if (isDev) {
+          // Development: Human-readable error logs
+          console.log(
+            `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms - ERROR`,
+          );
+        } else {
+          // Production: Structured JSON error logs
+          console.log(
+            JSON.stringify({
+              traceId,
+              repository: repositoryName,
+              method: methodName,
+              operation,
+              duration: durationMs,
+              status: "error",
+              timestamp: new Date().toISOString(),
+            }),
+          );
+        }
       }
 
       throw error;

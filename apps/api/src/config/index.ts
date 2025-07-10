@@ -258,6 +258,16 @@ export const config = {
   // Maximum trade size as percentage of portfolio value
   // Defaults to 25% if not specified
   maxTradePercentage: parseInt(process.env.MAX_TRADE_PERCENTAGE || "25", 10),
+  // Logging configuration
+  logging: {
+    // Sample rate for repository timing logs (0.0 to 1.0)
+    // 0.1 = 10% of operations logged - good balance of visibility vs volume
+    repositorySampleRate: parseFloat(
+      process.env.REPOSITORY_LOG_SAMPLE_RATE || "0.1",
+    ),
+    // Sample rate for HTTP request logs (0.0 to 1.0)
+    httpSampleRate: parseFloat(process.env.HTTP_LOG_SAMPLE_RATE || "0.1"),
+  },
 };
 
 /**

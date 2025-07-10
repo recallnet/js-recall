@@ -5,6 +5,7 @@
  */
 import fs from "fs";
 import path from "path";
+import client from "prom-client";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
 import { ServiceRegistry } from "@/services/index.js";
@@ -194,6 +195,49 @@ afterAll(async () => {
       log("[Global Teardown] Scheduler service stopped");
     }
 
+    // Clean up logging infrastructure resources
+    log("[Global Teardown] Cleaning up logging infrastructure...");
+
+    // Clear Prometheus metrics registry to prevent conflicts between test runs
+    try {
+      const metricsToRemove = [
+        "http_request_duration_ms",
+        "http_requests_total",
+        "repository_query_duration_ms",
+        "repository_queries_total",
+        "db_queries_total",
+      ];
+
+      let removedCount = 0;
+      for (const metricName of metricsToRemove) {
+        try {
+          const existingMetric = client.register.getSingleMetric(metricName);
+          if (existingMetric) {
+            client.register.removeSingleMetric(metricName);
+            removedCount++;
+          }
+        } catch (error) {
+          void error; // Metric might not exist, which is fine
+        }
+      }
+
+      if (removedCount > 0) {
+        log(
+          `[Global Teardown] Removed ${removedCount} Prometheus metrics from registry`,
+        );
+      }
+    } catch (error) {
+      log(
+        `[Global Teardown] Warning: Error cleaning up Prometheus metrics: ${error}`,
+      );
+    }
+
+    // Force garbage collection if available (helps with AsyncLocalStorage cleanup)
+    if (global.gc) {
+      global.gc();
+      log("[Global Teardown] Forced garbage collection");
+    }
+
     // Clean up any generated ROOT_ENCRYPTION_KEY from .env.test to prevent git commits
     try {
       const envTestPath = path.resolve(__dirname, "../../.env.test");
@@ -222,8 +266,9 @@ afterAll(async () => {
       );
     }
 
-    // Add a small delay to allow any pending operations to complete
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Add a longer delay to allow logging infrastructure and database connections to clean up
+    // This is especially important in CI environments where rapid test cycles can cause resource conflicts
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Clean up database state
     await dbManager.cleanupTestState();
