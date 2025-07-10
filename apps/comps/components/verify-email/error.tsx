@@ -5,12 +5,15 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@recallnet/ui2/components/button";
 import { toast } from "@recallnet/ui2/components/toast";
 
+import { useVerifyEmail } from "@/hooks/useVerifyEmail";
+
 const WAIT_SECONDS = 60;
 
 export default function ErrorVerifyEmail() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
   const [firstTimeClicked, setFirstTimeClicked] = useState(false);
+  const { mutate: verifyEmail } = useVerifyEmail();
 
   const handleVideoEnded = () => {
     if (videoRef.current) videoRef.current.pause();
@@ -20,15 +23,28 @@ export default function ErrorVerifyEmail() {
     setFirstTimeClicked(true);
     setEmailVerifyClicked(true);
 
-    toast.success(
-      <div className="flex flex-col">
-        <span>Verification Email Sent</span>
-        <span className="text-primary-foreground font-normal">
-          An email has been sent to your inbox.
-        </span>
-      </div>,
-    );
-    setTimeout(setEmailVerifyClicked, WAIT_SECONDS * 1000, false); //wait 60 seconds
+    verifyEmail(undefined, {
+      onSuccess: (res) => {
+        if (res.success) {
+          toast.success(
+            <div className="flex flex-col">
+              <span>Verification Email Sent</span>
+              <span className="text-primary-foreground font-normal">
+                An email has been sent to your inbox.
+              </span>
+            </div>,
+          );
+          setTimeout(setEmailVerifyClicked, 60 * 1000, false); //wait 60 seconds
+        } else {
+          toast.error(res.message);
+        }
+      },
+      onError: (res) => {
+        toast.error("Failed to send verification email", {
+          description: res.message,
+        });
+      },
+    });
   };
 
   return (

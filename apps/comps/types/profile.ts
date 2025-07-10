@@ -25,3 +25,8 @@ export interface UpdateProfileRequest {
     website?: string;
   };
 }
+
+export interface VerifyEmailResponse {
+  success: boolean;
+  message: string;
+}

@@ -27,6 +27,7 @@ import {
   UpdateAgentResponse,
   UpdateProfileRequest,
   UserCompetitionsResponse,
+  VerifyEmailResponse,
   VoteResponse,
   VotesResponse,
   VotingStateResponse,
@@ -385,6 +386,17 @@ export class ApiClient {
 
   /**
    * Update user profile
+   * @param data - Profile data
+   * @returns Updated profile
+   */
+  async verifyEmail(): Promise<VerifyEmailResponse> {
+    return this.request<VerifyEmailResponse>("/user/verify-email", {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Verifies user email
    * @param data - Profile data
    * @returns Updated profile
    */

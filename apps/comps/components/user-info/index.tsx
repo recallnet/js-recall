@@ -17,6 +17,7 @@ import { Input } from "@recallnet/ui2/components/input";
 import { toast } from "@recallnet/ui2/components/toast";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
+import { useVerifyEmail } from "@/hooks/useVerifyEmail";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
@@ -42,6 +43,7 @@ export default function UserInfoSection({
 }: UserInfoSectionProps) {
   const [editField, setEditField] = useState<"email" | "website" | null>(null);
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
+  const { mutate: verifyEmail } = useVerifyEmail();
   const verified = false;
 
   const form = useForm<FormData>({
@@ -77,15 +79,28 @@ export default function UserInfoSection({
   const sendEmailVerify = () => {
     setEmailVerifyClicked(true);
 
-    toast.success(
-      <div className="flex flex-col">
-        <span>Verification Email Sent</span>
-        <span className="text-primary-foreground font-normal">
-          An email has been sent to your inbox.
-        </span>
-      </div>,
-    );
-    setTimeout(setEmailVerifyClicked, 60 * 1000, false); //wait 60 seconds
+    verifyEmail(undefined, {
+      onSuccess: (res) => {
+        if (res.success) {
+          toast.success(
+            <div className="flex flex-col">
+              <span>Verification Email Sent</span>
+              <span className="text-primary-foreground font-normal">
+                An email has been sent to your inbox.
+              </span>
+            </div>,
+          );
+          setTimeout(setEmailVerifyClicked, 60 * 1000, false); //wait 60 seconds
+        } else {
+          toast.error(res.message);
+        }
+      },
+      onError: (res) => {
+        toast.error("Failed to send verification email", {
+          description: res.message,
+        });
+      },
+    });
   };
 
   return (
