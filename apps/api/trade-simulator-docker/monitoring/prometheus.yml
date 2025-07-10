@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "recall-api"
+    scheme: http # Use 'https' for production APIs
+    static_configs:
+      - targets: ["host.docker.internal:3000"] # Replace with your API host:port
+    metrics_path: "/api/metrics" # Replace with '/${API_PREFIX}/api/metrics' if using API_PREFIX
+    bearer_token: "YOUR_ADMIN_API_KEY_HERE" # Replace with your actual admin API key
+    scrape_interval: 30s
+    scrape_timeout: 10s
