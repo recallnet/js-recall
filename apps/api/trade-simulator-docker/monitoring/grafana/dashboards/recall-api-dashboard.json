@@ -76,8 +76,8 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum by (repository) (rate(repository_queries_total[5m]))",
-          "legendFormat": "{{repository}}"
+          "expr": "sum(rate(repository_queries_total[5m]))",
+          "legendFormat": "Total Queries"
         }
       ],
       "fieldConfig": {
@@ -233,8 +233,8 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "rate(repository_queries_total[5m])",
-          "legendFormat": "{{repository}} {{operation}}"
+          "expr": "sum by (repository) (rate(repository_queries_total[5m]))",
+          "legendFormat": "{{repository}}"
         }
       ],
       "fieldConfig": {
@@ -258,7 +258,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "rate(repository_queries_total{status=\"success\"}[5m]) / rate(repository_queries_total[5m]) * 100",
+          "expr": "sum(rate(repository_queries_total{status=\"success\"}[5m])) / sum(rate(repository_queries_total[5m])) * 100",
           "legendFormat": "Success Rate"
         }
       ],
@@ -301,8 +301,8 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "rate(repository_queries_total[5m])",
-          "legendFormat": "{{operation}} ({{status}})"
+          "expr": "sum by (operation) (rate(repository_queries_total[5m]))",
+          "legendFormat": "{{operation}}"
         }
       ],
       "fieldConfig": {
@@ -318,6 +318,56 @@
         "w": 12,
         "x": 12,
         "y": 24
+      }
+    },
+    {
+      "id": 11,
+      "title": "Database Query Success/Error Rate by Status",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(repository_queries_total[5m]))",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "qps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      }
+    },
+    {
+      "id": 12,
+      "title": "Database Query Methods by Repository",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (repository, method) (rate(repository_queries_total[5m]))",
+          "legendFormat": "{{repository}}.{{method}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "qps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
       }
     }
   ],
