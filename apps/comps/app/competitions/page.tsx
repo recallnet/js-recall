@@ -64,9 +64,10 @@ export default function CompetitionsPage() {
         </div>
       )}
 
-      <div className="relative flex flex-col gap-8 sm:flex-row">
+      <div className="relative flex flex-col gap-8 sm:h-[684px] sm:flex-row">
         <div className="absolute z-0 h-full w-full">
           <Video />
+          <div className="relative h-1/2 w-full bg-[radial-gradient(ellipse_at_center,_transparent_40%,_black_80%)] sm:h-full sm:bg-[radial-gradient(ellipse_at_center,_transparent_30%,_black_90%)]" />
         </div>
         <div className="z-10 mb-10 flex w-full flex-col items-center justify-between gap-8">
           <div className="mt-30 sm:mt-15 flex max-w-[434px] flex-col items-center gap-2">

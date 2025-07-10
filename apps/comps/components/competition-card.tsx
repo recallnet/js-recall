@@ -38,7 +38,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
     <Card
       cropSize={35}
       corner="bottom-right"
-      className={cn("bg-card flex w-full flex-col", className)}
+      className={cn("bg-card group flex w-full flex-col", className)}
     >
       <CompetitionStatusBanner status={competition.status} />
 
@@ -95,13 +95,13 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
               <p className="text-xl font-semibold">TBA</p>
             </div>
           </div>
-          <div className="relative h-full w-full">
+          <div className="relative h-full w-full overflow-hidden">
             {competition.imageUrl && (
               <Image
                 src={competition.imageUrl}
                 alt="Competition"
                 fill={true}
-                className="object-cover"
+                className="duration-800 object-cover transition ease-in-out group-hover:scale-105"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = "none";

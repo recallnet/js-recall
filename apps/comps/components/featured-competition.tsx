@@ -35,7 +35,10 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
   );
 
   return (
-    <Card className="bg-card w-full" cropSize={0}>
+    <Card
+      className="bg-card group w-full opacity-95 transition duration-500 ease-in-out hover:opacity-100"
+      cropSize={0}
+    >
       <CompetitionStatusBanner status={competition.status} />
 
       <div className="flex flex-col gap-2 border-b p-6">
