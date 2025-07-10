@@ -448,6 +448,66 @@ export async function getAgentCompetitionRecord(
 }
 
 /**
+ * Get competition records for multiple agents efficiently
+ * This replaces N calls to getAgentCompetitionRecord with a single bulk operation
+ * @param competitionId Competition ID
+ * @param agentIds Array of agent IDs to get records for
+ * @returns Array of agent competition records
+ */
+export async function getBulkAgentCompetitionRecords(
+  competitionId: string,
+  agentIds: string[],
+): Promise<
+  Array<{
+    agentId: string;
+    status: CompetitionAgentStatus;
+    deactivationReason: string | null;
+    deactivatedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }>
+> {
+  if (agentIds.length === 0) {
+    return [];
+  }
+
+  try {
+    console.log(
+      `[CompetitionRepository] getBulkAgentCompetitionRecords called for ${agentIds.length} agents in competition ${competitionId}`,
+    );
+
+    const result = await db
+      .select({
+        agentId: competitionAgents.agentId,
+        status: competitionAgents.status,
+        deactivationReason: competitionAgents.deactivationReason,
+        deactivatedAt: competitionAgents.deactivatedAt,
+        createdAt: competitionAgents.createdAt,
+        updatedAt: competitionAgents.updatedAt,
+      })
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          inArray(competitionAgents.agentId, agentIds),
+        ),
+      );
+
+    console.log(
+      `[CompetitionRepository] Retrieved ${result.length} competition records for ${agentIds.length} agents`,
+    );
+
+    return result;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in getBulkAgentCompetitionRecords:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Update an agent's status in a competition
  * @param competitionId Competition ID
  * @param agentId Agent ID
@@ -616,7 +676,7 @@ export async function createPortfolioTokenValue(
 }
 
 /**
- * Get latest portfolio snapshots for all agents in a competition
+ * Get latest portfolio snapshots for all active agents in a competition
  * @param competitionId Competition ID
  */
 export async function getLatestPortfolioSnapshots(competitionId: string) {
@@ -627,7 +687,19 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
         maxTimestamp: max(portfolioSnapshots.timestamp).as("max_timestamp"),
       })
       .from(portfolioSnapshots)
-      .where(eq(portfolioSnapshots.competitionId, competitionId))
+      .innerJoin(
+        competitionAgents,
+        and(
+          eq(portfolioSnapshots.agentId, competitionAgents.agentId),
+          eq(portfolioSnapshots.competitionId, competitionAgents.competitionId),
+        ),
+      )
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competitionId),
+          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+        ),
+      )
       .groupBy(portfolioSnapshots.agentId)
       .as("latest_snapshots");
 

@@ -88,72 +88,47 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
-        // Get leaderboard
-        const leaderboard =
-          await services.competitionManager.getLeaderboard(competitionId);
+        // Get leaderboard data (active and inactive agents)
+        const leaderboardData =
+          await services.competitionManager.getLeaderboardWithInactiveAgents(
+            competitionId,
+          );
 
-        // Get all agents
+        // Get all agents for mapping IDs to names
         const agents = await services.agentManager.getAllAgents();
-
-        // Create map of all agents
         const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
 
-        // Separate active and inactive agents based on per-competition status
-        const activeLeaderboard = [];
-        const inactiveAgents = [];
+        // Build active leaderboard with ranks
+        const activeLeaderboard = leaderboardData.activeAgents.map(
+          (entry, index) => {
+            const agent = agentMap.get(entry.agentId);
+            return {
+              rank: index + 1,
+              agentId: entry.agentId,
+              agentName: agent ? agent.name : "Unknown Agent",
+              portfolioValue: entry.value,
+              active: true,
+              deactivationReason: null,
+            };
+          },
+        );
 
-        // Process each agent in the leaderboard
-        for (const entry of leaderboard) {
+        // Build inactive agents list
+        const inactiveAgents = leaderboardData.inactiveAgents.map((entry) => {
           const agent = agentMap.get(entry.agentId);
-          // Check per-competition status instead of global agent status
-          const isActiveInCompetition =
-            await services.competitionManager.isAgentActiveInCompetition(
-              competitionId,
-              entry.agentId,
-            );
-
-          // Get the actual deactivation reason from the database if inactive
-          let deactivationReason = null;
-          if (!isActiveInCompetition) {
-            const competitionRecord =
-              await services.competitionManager.getAgentCompetitionRecord(
-                competitionId,
-                entry.agentId,
-              );
-            deactivationReason =
-              competitionRecord?.deactivationReason ||
-              "Not actively participating in this competition";
-          }
-
-          const leaderboardEntry = {
+          return {
             agentId: entry.agentId,
             agentName: agent ? agent.name : "Unknown Agent",
             portfolioValue: entry.value,
-            active: isActiveInCompetition,
-            deactivationReason,
+            active: false,
+            deactivationReason: entry.deactivationReason,
           };
-
-          if (!isActiveInCompetition) {
-            // Add to inactive agents without rank
-            inactiveAgents.push(leaderboardEntry);
-          } else {
-            // Add to active leaderboard
-            activeLeaderboard.push(leaderboardEntry);
-          }
-        }
-
-        // Assign ranks to active agents
-        const rankedActiveLeaderboard = activeLeaderboard.map(
-          (entry, index) => ({
-            rank: index + 1,
-            ...entry,
-          }),
-        );
+        });
 
         res.status(200).json({
           success: true,
           competition,
-          leaderboard: rankedActiveLeaderboard,
+          leaderboard: activeLeaderboard,
           inactiveAgents: inactiveAgents,
           hasInactiveAgents: inactiveAgents.length > 0,
         });

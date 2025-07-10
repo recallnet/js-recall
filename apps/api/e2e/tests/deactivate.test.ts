@@ -408,4 +408,145 @@ describe("Agent Deactivation API", () => {
     // Verify the hasInactiveAgents flag is false
     expect(leaderboardFinal.hasInactiveAgents).toBe(false);
   });
+
+  test("disqualified agents rankings are immediately consistent", async () => {
+    // This test specifically validates the fix for the GitHub issue #812
+    // where disqualified agents would cause ranking inconsistencies
+
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register two agents for the competition
+    const { client: client1, agent: agent1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Top Performer",
+      });
+    const { client: client2, agent: agent2 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Second Place",
+      });
+
+    // Create competition with both agents
+    const competitionName = `Ranking Consistency Test ${Date.now()}`;
+    const competition = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent1.id, agent2.id],
+    );
+
+    // Make trades to establish different portfolio values
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+
+    // Agent1: Keep high portfolio value (no trades - maintains starting balance)
+    // Agent2: Burn tokens to guarantee lower portfolio value and rank 2
+    await client2.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: "0x000000000000000000000000000000000000dead", // Burn address
+      amount: "100",
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Burn tokens to ensure second place ranking",
+    });
+
+    // Wait for trades to process
+    await wait(1000);
+
+    // Get initial competition agents to verify rankings
+    const initialAgentsResponse = await client1.getCompetitionAgents(
+      competition.competition.id,
+    );
+    expect(initialAgentsResponse.success).toBe(true);
+
+    if ("agents" in initialAgentsResponse) {
+      expect(initialAgentsResponse.agents.length).toBe(2);
+
+      // Find each agent's position
+      const agent1Data = initialAgentsResponse.agents.find(
+        (a) => a.id === agent1.id,
+      );
+      const agent2Data = initialAgentsResponse.agents.find(
+        (a) => a.id === agent2.id,
+      );
+
+      expect(agent1Data).toBeDefined();
+      expect(agent2Data).toBeDefined();
+
+      // Verify initial rankings (agent1 should be rank 1 with higher portfolio, agent2 should be rank 2 after burning tokens)
+      expect(agent1Data?.rank).toBe(1);
+      expect(agent2Data?.rank).toBe(2);
+    }
+
+    // Now remove the top performing agent (agent1)
+    const removeReason = "Disqualified for ranking consistency test";
+    const removeResponse = await adminClient.removeAgentFromCompetition(
+      competition.competition.id,
+      agent1.id,
+      removeReason,
+    );
+    expect(removeResponse.success).toBe(true);
+
+    // Immediately check the competition agents again (this is the critical test)
+    // Before our fix, agent2 would still show position 2 even though they're the only agent
+    // After our fix, agent2 should show position 1
+    const afterRemovalResponse = await client2.getCompetitionAgents(
+      competition.competition.id,
+    );
+    expect(afterRemovalResponse.success).toBe(true);
+
+    if ("agents" in afterRemovalResponse) {
+      // Should only have 1 agent now (agent2)
+      expect(afterRemovalResponse.agents.length).toBe(1);
+
+      const remainingAgent = afterRemovalResponse.agents[0];
+      expect(remainingAgent?.id).toBe(agent2.id);
+
+      // This is the key assertion - the remaining agent should have rank 1, not rank 2
+      // This validates that our fix properly filters disqualified agents from ranking calculations
+      expect(remainingAgent?.rank).toBe(1);
+
+      // Agent should still be marked as active
+      expect(remainingAgent?.active).toBe(true);
+
+      // Verify the removed agent is not in the response at all
+      const removedAgentData = afterRemovalResponse.agents.find(
+        (a) => a.id === agent1.id,
+      );
+      expect(removedAgentData).toBeUndefined();
+    }
+
+    // Double-check via the pagination metadata
+    if ("pagination" in afterRemovalResponse) {
+      expect(afterRemovalResponse.pagination.total).toBe(1);
+    }
+
+    // ADDITIONAL TEST: Verify the leaderboard endpoint also shows correct rankings immediately
+    // This ensures our fix works across all ranking-related APIs
+    const leaderboardResponse = await client2.getCompetitionLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+
+    if ("leaderboard" in leaderboardResponse) {
+      // Should only have 1 agent in active leaderboard
+      expect(leaderboardResponse.leaderboard.length).toBe(1);
+
+      const leaderboardAgent = leaderboardResponse.leaderboard[0];
+      expect(leaderboardAgent?.agentId).toBe(agent2.id);
+
+      // Critical assertion: leaderboard should also show rank 1 immediately
+      expect(leaderboardAgent?.rank).toBe(1);
+      expect(leaderboardAgent?.active).toBe(true);
+
+      // Should have 1 inactive agent (the removed agent1)
+      expect(leaderboardResponse.inactiveAgents.length).toBe(1);
+      expect(leaderboardResponse.hasInactiveAgents).toBe(true);
+
+      // Verify the removed agent appears in inactive agents array
+      const inactiveAgent = leaderboardResponse.inactiveAgents[0];
+      expect(inactiveAgent?.agentId).toBe(agent1.id);
+      expect(inactiveAgent?.active).toBe(false);
+      expect(inactiveAgent?.deactivationReason).toContain(removeReason);
+    }
+  });
 });
