@@ -76,8 +76,8 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "rate(repository_queries_total[5m])",
-          "legendFormat": "{{repository}}.{{method}}"
+          "expr": "sum by (repository) (rate(repository_queries_total[5m]))",
+          "legendFormat": "{{repository}}"
         }
       ],
       "fieldConfig": {
