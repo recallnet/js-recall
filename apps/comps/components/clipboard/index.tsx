@@ -25,17 +25,19 @@ export const Clipboard = ({
 
   //outer div is necesary because copy icon for some reason reduces its size because the tooltip
   return (
-    <div className="relative">
+    <div>
       <Tooltip content={copied ? "Copied!" : "Copy"}>
         <div
           className={cn(
-            "flex cursor-pointer items-center justify-between rounded border px-3 py-2 text-sm text-gray-500",
+            "flex cursor-pointer items-center justify-between gap-2 rounded border px-3 py-2 text-sm text-gray-500",
             className,
           )}
           onClick={handleCopy}
         >
-          <p className="mr-2 truncate">{text}</p>
-          <CopyIcon className="text-muted-foreground absolute right-3 ml-2 h-4 w-4 cursor-pointer" />
+          <p className="truncate">{text}</p>
+          <div className="relative h-4 w-10">
+            <CopyIcon className="text-muted-foreground absolute right-1 h-4 w-4 cursor-pointer" />
+          </div>
         </div>
       </Tooltip>
     </div>
