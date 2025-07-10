@@ -1,7 +1,7 @@
 import { config } from "@/config/index.js";
 import {
+  batchCreatePortfolioTokenValues,
   createPortfolioSnapshot,
-  createPortfolioTokenValue,
   findAll,
   getAgentPortfolioSnapshots,
   getCompetitionAgents,
@@ -156,9 +156,9 @@ export class PortfolioSnapshotter {
       totalValue,
     });
 
-    // Store token values
-    for (const [token, data] of Object.entries(valuesByToken)) {
-      await createPortfolioTokenValue({
+    // Store token values in batch
+    const tokenValuesToInsert = Object.entries(valuesByToken).map(
+      ([token, data]) => ({
         portfolioSnapshotId: snapshot.id,
         tokenAddress: token,
         amount: data.amount,
@@ -166,8 +166,10 @@ export class PortfolioSnapshotter {
         price: data.price,
         symbol: data.symbol,
         specificChain: data.specificChain,
-      });
-    }
+      }),
+    );
+
+    await batchCreatePortfolioTokenValues(tokenValuesToInsert);
 
     console.log(
       `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} - Total value: $${totalValue.toFixed(2)}`,

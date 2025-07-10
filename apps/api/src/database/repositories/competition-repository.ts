@@ -646,28 +646,35 @@ async function createPortfolioSnapshotImpl(snapshot: InsertPortfolioSnapshot) {
 }
 
 /**
- * Create a portfolio token value
- * @param tokenValue Portfolio token value data including amount, price, symbol, and specific chain
+ * Insert multiple portfolio token values in a batch operation
+ * @param tokenValues Array of portfolio token values to insert
+ * @returns Array of inserted portfolio token values
  */
-async function createPortfolioTokenValueImpl(
-  tokenValue: InsertPortfolioTokenValue,
+async function batchCreatePortfolioTokenValuesImpl(
+  tokenValues: Omit<InsertPortfolioTokenValue, "id">[],
 ) {
+  if (!tokenValues.length) {
+    return [];
+  }
+
   try {
-    const [result] = await db
+    console.log(
+      `[CompetitionRepository] Batch inserting ${tokenValues.length} portfolio token values`,
+    );
+
+    const results = await db
       .insert(portfolioTokenValues)
-      .values(tokenValue)
+      .values(tokenValues)
       .returning();
 
-    if (!result) {
-      throw new Error(
-        "Failed to create portfolio token value - no result returned",
-      );
-    }
+    console.log(
+      `[CompetitionRepository] Successfully inserted ${results.length} portfolio token values`,
+    );
 
-    return result;
+    return results;
   } catch (error) {
     console.error(
-      "[CompetitionRepository] Error in createPortfolioTokenValue:",
+      "[CompetitionRepository] Error batch inserting portfolio token values:",
       error,
     );
     throw error;
@@ -1483,10 +1490,10 @@ export const createPortfolioSnapshot = createTimedRepositoryFunction(
   "createPortfolioSnapshot",
 );
 
-export const createPortfolioTokenValue = createTimedRepositoryFunction(
-  createPortfolioTokenValueImpl,
+export const batchCreatePortfolioTokenValues = createTimedRepositoryFunction(
+  batchCreatePortfolioTokenValuesImpl,
   "CompetitionRepository",
-  "createPortfolioTokenValue",
+  "batchCreatePortfolioTokenValues",
 );
 
 export const getLatestPortfolioSnapshots = createTimedRepositoryFunction(
