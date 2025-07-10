@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { useAgentApiKey, useSandboxAgentApiKey } from "@/hooks";
+import { useApiKey } from "@/hooks/useApiKey";
+import { useSandboxAgentApiKey } from "@/hooks/useSandbox";
 import { Agent } from "@/types";
 
 import { CopyButton } from "../copy-button";
@@ -59,7 +60,7 @@ export const Credentials = ({
   agent: Agent;
   className?: string;
 }) => {
-  const { data: apiKey, isLoading } = useAgentApiKey(agent.id);
+  const { data: apiKey, isLoading } = useApiKey(agent.id);
   const { data: sandboxApiKey, isLoading: sandboxLoading } =
     useSandboxAgentApiKey(agent.name);
 
@@ -80,7 +81,7 @@ export const Credentials = ({
         <ApiKeyRow
           label="Sandbox API Key"
           tooltip="Sandbox Agent API Key"
-          apiKey={sandboxApiKey?.agent?.apiKey}
+          apiKey={sandboxApiKey?.agent.apiKey}
           isLoading={sandboxLoading}
         />
       )}

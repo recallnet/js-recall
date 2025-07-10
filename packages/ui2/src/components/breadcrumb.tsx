@@ -1,4 +1,3 @@
-import { SlashIcon } from "@radix-ui/react-icons";
 import { Slot } from "@radix-ui/react-slot";
 import * as React from "react";
 
@@ -59,7 +58,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
       role="link"
       aria-disabled="true"
       aria-current="page"
-      className={cn("text-secondary-foreground font-normal", className)}
+      className={cn("foreground font-normal text-gray-600", className)}
       {...props}
     />
   );
@@ -78,7 +77,9 @@ function BreadcrumbSeparator({
       className={cn("[&>svg]:size-3.5", className)}
       {...props}
     >
-      {children ?? <SlashIcon />}
+      {children ?? (
+        <div className="rigin-center rotate-40 mx-2 h-5 w-[1px] bg-gray-200"></div>
+      )}
     </li>
   );
 }

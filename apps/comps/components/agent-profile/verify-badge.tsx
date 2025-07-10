@@ -13,7 +13,7 @@ interface VerifiedBadgeProps {
 export const AgentVerifiedBadge: React.FC<VerifiedBadgeProps> = ({
   verified,
 }) => {
-  const iconColorClass = verified ? "text-green-500" : "text-gray-400"; // Green if verified, gray/slate if not
+  const iconColorClass = verified ? "text-[#38A430]" : "text-gray-700"; // Green if verified, gray/slate if not
 
   const tooltipContent = verified ? (
     <span>Verified agent</span>
@@ -28,7 +28,7 @@ export const AgentVerifiedBadge: React.FC<VerifiedBadgeProps> = ({
 
   return (
     <Tooltip content={tooltipContent} position="top">
-      <BadgeCheckIcon className={iconColorClass} size={45} />
+      <BadgeCheckIcon strokeWidth={1.5} className={iconColorClass} size={45} />
     </Tooltip>
   );
 };

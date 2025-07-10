@@ -2,12 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
 import { useUser } from "@/state/atoms";
-import {
-  AgentApiKeyResponse,
-  AgentsResponse,
-  GetAgentsParams,
-  UpdateAgentRequest,
-} from "@/types";
+import { AgentsResponse, GetAgentsParams, UpdateAgentRequest } from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -42,20 +37,6 @@ export const useUserAgents = (params: GetAgentsParams = {}) => {
     placeholderData: (prev) => prev,
   });
 };
-
-/**
- * Hook to fetch agents with pagination and filtering
- * @param params Query parameters for agents endpoint
- * @returns Query result with agents data
- */
-export const useAgentApiKey = (agentId: string) =>
-  useQuery({
-    queryKey: ["agent", "api-key", agentId],
-    queryFn: async (): Promise<AgentApiKeyResponse> => {
-      return apiClient.getAgentApiKey(agentId);
-    },
-    placeholderData: (prev) => prev,
-  });
 
 /**
  * Hook to update agents

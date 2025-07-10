@@ -5,6 +5,7 @@ interface BigNumberDisplayProps {
   decimals: number;
   displayDecimals?: number;
   compact?: boolean;
+  className?: string;
 }
 
 export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
@@ -12,6 +13,7 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
   decimals,
   displayDecimals = 1,
   compact = true,
+  className,
 }) => {
   try {
     let numberToFormat: number;
@@ -23,7 +25,7 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
       numberToFormat = parseFloat(value);
       if (isNaN(numberToFormat)) {
         console.error("Error parsing decimal string input:", value);
-        return <span>Error</span>;
+        return <span className={className}>Error</span>;
       }
     } else {
       // Case 2: Value is a bigint or a string representing a whole integer (smallest units)
@@ -36,7 +38,7 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
         if (!/^-?\d+$/.test(value)) {
           // Allows negative integers
           console.error("Invalid integer string for BigInt conversion:", value);
-          return <span>Error</span>;
+          return <span className={className}>Error</span>;
         }
         tempBigIntValue = BigInt(value);
       }
@@ -60,7 +62,7 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
       numberToFormat = parseFloat(numStr);
       if (isNaN(numberToFormat)) {
         console.error("Error constructing number from BigInt parts:", numStr);
-        return <span>Error</span>;
+        return <span className={className}>Error</span>;
       }
     }
 
@@ -78,10 +80,10 @@ export const BigNumberDisplay: React.FC<BigNumberDisplayProps> = ({
     const formatter = new Intl.NumberFormat("en", formatterOptions);
     const formattedValue = formatter.format(numberToFormat);
 
-    return <span>{formattedValue}</span>;
+    return <span className={className}>{formattedValue}</span>;
   } catch (error) {
     console.error("Error formatting BigInt:", error);
-    return <span>Error</span>;
+    return <span className={className}>Error</span>;
   }
 };
 

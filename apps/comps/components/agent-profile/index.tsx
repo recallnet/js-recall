@@ -15,9 +15,11 @@ import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
 import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
 
+import BigNumberDisplay from "../bignumber";
 import { BreadcrumbNav } from "../breadcrumb-nav";
+import { Clipboard } from "../clipboard";
 import { AgentImage } from "./agent-image";
-import AgentInfo from "./agent-info";
+import AgentBestPlacement from "./best-placement";
 import CompetitionTable from "./comps-table";
 import Credentials from "./credentials";
 import { EditAgentField } from "./edit-field";
@@ -88,12 +90,15 @@ export default function AgentProfile({
       }
     };
 
-  const { data: compsData } = useAgentCompetitions(id, {
+  const options = {
     sort: sortString,
-    status,
     limit,
     offset,
-  });
+  };
+  const { data: compsData } = useAgentCompetitions(
+    id,
+    status === "all" ? options : { ...options, status },
+  );
   const { total } = compsData?.pagination || { total: 0 };
 
   const competitions: (Competition & { trophies: Trophy[] })[] =
@@ -119,28 +124,35 @@ export default function AgentProfile({
 
       <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
         <Card
-          className="xs:col-span-1 xs:mr-8 col-span-3 flex h-[550px] flex-col items-center justify-between bg-gray-900 p-8"
+          className="xs:col-span-1 xs:mr-8 between relative col-span-3 h-[550px] bg-[#11121A]"
           corner="top-left"
           cropSize={45}
         >
-          <div className="flex w-full justify-end">
+          <div className="absolute right-10 top-10 flex w-full justify-end">
             <ShareAgent agentId={agent.id} />
           </div>
-          {isUserAgent ? (
-            <AgentImage
-              agentImage={agent?.imageUrl || "/agent-placeholder.png"}
-              onSave={handleSaveChange("imageUrl")}
-            />
-          ) : (
-            <MirrorImage
-              image={agent.imageUrl || "/agent-placeholder.png"}
-              width={160}
-              height={160}
-            />
+          <div className="top-30 absolute right-[50%] translate-x-[50%]">
+            {isUserAgent ? (
+              <AgentImage
+                agentImage={agent?.imageUrl || "/agent-placeholder.png"}
+                onSave={handleSaveChange("imageUrl")}
+              />
+            ) : (
+              <MirrorImage
+                image={agent.imageUrl || "/agent-placeholder.png"}
+                width={170}
+                height={170}
+              />
+            )}
+          </div>
+          {agent.walletAddress && (
+            <div className="px-15 xs:px-10 pb-15 absolute bottom-0 right-[50%] w-full translate-x-[50%] md:px-20">
+              <Clipboard
+                text={agent.walletAddress || ""}
+                className="text-secondary-foreground w-full rounded-[10px] border-gray-600 border-gray-700 px-3 py-2 text-lg hover:text-gray-300"
+              />
+            </div>
           )}
-          <span className="w-50 text-secondary-foreground mt-20 text-center text-lg">
-            Calm accumulation of elite assets.
-          </span>
         </Card>
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
           <div className="relative flex w-full grow flex-col border-b p-6">
@@ -176,8 +188,9 @@ export default function AgentProfile({
 
             <div
               className={cn(
-                "mt-3 min-h-40 w-full overflow-y-auto overflow-x-visible px-2 py-2",
+                "mt-3 min-h-40 w-full overflow-y-auto overflow-x-visible py-2",
                 isUserAgent ? "max-h-[70px]" : "h-[150px] max-h-[136px]",
+                trophies.length > 0 && "px-2",
               )}
             >
               <div className="flex flex-wrap justify-start gap-x-5 gap-y-4">
@@ -187,28 +200,36 @@ export default function AgentProfile({
                   ))
                 ) : (
                   <span className="text-secondary-foreground">
-                    This agent hasn&apos;t earned trophies yet.
+                    This agent hasn’t earned trophies yet.
                   </span>
                 )}
               </div>
             </div>
-            {isUserAgent && (
-              <AgentInfo className="mt-auto w-full" agent={agent} />
-            )}
           </div>
-          <div className="flex h-[99px] flex-col items-start gap-2 border-b px-6 py-6 text-sm">
-            <span className="text-secondary-foreground w-full text-left font-semibold uppercase">
-              Best Placement
-            </span>
-            <span className="text-secondary-foreground w-full text-left">
-              {agent.stats?.bestPlacement
-                ? `🥇 ${agent.stats.bestPlacement.rank} of ${agent.stats.bestPlacement.totalAgents}`
-                : "No completed yet"}
-            </span>
+          <div className="flex h-[99px] w-full border-b">
+            <div className="flex flex-1 flex-col items-start gap-2 border-r px-6 py-6 text-xs">
+              <span className="text-secondary-foreground w-full text-nowrap text-left font-semibold uppercase">
+                Best Placement
+              </span>
+              <AgentBestPlacement
+                rank={agent.stats.bestPlacement?.rank}
+                places={agent.stats.bestPlacement?.totalAgents}
+              />
+            </div>
+            <div className="flex flex-1 flex-col px-6 py-6">
+              <span className="text-secondary-foreground w-full text-nowrap text-left text-xs font-semibold uppercase">
+                TOTAL VOTES
+              </span>
+              <BigNumberDisplay
+                className="mt-1 font-semibold"
+                value={agent.stats.totalVotes.toString()}
+                decimals={0}
+              />
+            </div>
           </div>
           <div className="flex w-full">
             <div className="flex w-1/2 flex-col items-start p-5">
-              <span className="text-secondary-foreground w-full text-left text-xs font-semibold uppercase">
+              <span className="text-secondary-foreground w-full truncate text-left text-xs font-semibold uppercase">
                 Completed Comps
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-bold">
@@ -216,16 +237,16 @@ export default function AgentProfile({
               </span>
             </div>
             <div className="flex w-1/2 flex-col items-start border-l p-5">
-              <span className="text-secondary-foreground w-full text-left text-xs font-semibold uppercase">
+              <span className="text-secondary-foreground w-full text-nowrap text-left text-xs font-semibold uppercase">
                 Agent Rank
               </span>
-              <span className="text-secondary-foreground w-full text-left">
+              <span className="text-secondary-foreground mt-1 w-full text-left text-sm">
                 Not rated yet
               </span>
             </div>
           </div>
         </div>
-        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-sm lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:border-l-0">
+        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-xs lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:border-l-0">
           <div
             className={cn(
               "flex flex-col items-start gap-2 border-b p-6",
@@ -248,7 +269,7 @@ export default function AgentProfile({
                 agent description
               </span>
             )}
-            <span className="text-secondary-foreground break-all">
+            <span className="text-primary-foreground break-all">
               {agent.description || "No profile created yet"}
             </span>
           </div>
@@ -324,10 +345,10 @@ export default function AgentProfile({
               All
             </TabsTrigger>
             <TabsTrigger
-              value="ongoing"
+              value="active"
               className={cn(
                 "rounded border border-green-500 p-2",
-                status === "ongoing"
+                status === "active"
                   ? "text-primary-foreground bg-green-500"
                   : "text-green-500",
               )}
@@ -335,10 +356,10 @@ export default function AgentProfile({
               Ongoing
             </TabsTrigger>
             <TabsTrigger
-              value="upcoming"
+              value="pending"
               className={cn(
                 "rounded border border-blue-500 p-2 text-black",
-                status === "upcoming"
+                status === "pending"
                   ? "text-primary-foreground bg-blue-500"
                   : "text-blue-500",
               )}
