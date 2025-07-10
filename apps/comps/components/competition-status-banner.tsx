@@ -51,9 +51,7 @@ export const CompetitionStatusBanner: React.FC<
         />
 
         <StatusIcon className="h-4 w-4" />
-        <span className="text-sm font-semibold transition-all duration-500 ease-out group-hover:translate-y-full group-hover:opacity-0">
-          {statusConfig.text}
-        </span>
+        <span className="text-sm font-semibold">{statusConfig.text}</span>
       </div>
     </div>
   );

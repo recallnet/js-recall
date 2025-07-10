@@ -98,9 +98,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
           <div className="relative h-full w-full overflow-hidden">
             {competition.imageUrl && (
               <Image
-                src={
-                  "https://png.pngtree.com/thumb_back/fh260/background/20240715/pngtree-crypto-trade-btc-bitcoin-illustration-for-graphics-marketing-promotion-image_16011614.jpg"
-                }
+                src={competition.imageUrl}
                 alt="Competition"
                 fill={true}
                 className="duration-800 object-cover transition ease-in-out group-hover:scale-105"
