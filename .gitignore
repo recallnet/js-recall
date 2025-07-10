@@ -52,6 +52,9 @@ apps/api/**/*.log
 apps/api/*.log
 apps/api/baseline/*.sql
 
+# Local dev artifacts
+monitoring/bearer_token.txt
+
 # Misc
 .DS_Store
 *.pem
