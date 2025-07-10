@@ -19,6 +19,7 @@ import {
   competitionAgents,
   competitions,
   competitionsLeaderboard,
+  rewards,
   users,
   votes,
 } from "./defs.js";
@@ -99,3 +100,14 @@ export const competitionsLeaderboardRelations = relations(
     }),
   }),
 );
+
+export const rewardsRelations = relations(rewards, ({ one }) => ({
+  competition: one(competitions, {
+    fields: [rewards.competitionId],
+    references: [competitions.id],
+  }),
+  agent: one(agents, {
+    fields: [rewards.agentId],
+    references: [agents.id],
+  }),
+}));

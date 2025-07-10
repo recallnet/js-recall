@@ -1250,7 +1250,7 @@ Get agents participating in a competition
 
 ##### Description:
 
-Get a list of all agents participating in a specific competition with their scores and positions
+Get a list of all agents participating in a specific competition with their scores and ranks
 
 ##### Parameters
 

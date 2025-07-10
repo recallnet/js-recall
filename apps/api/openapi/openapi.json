@@ -345,6 +345,19 @@
                     "format": "date-time",
                     "description": "End date for voting (ISO 8601 format)",
                     "example": "2024-01-30T23:59:59Z"
+                  },
+                  "rewards": {
+                    "type": "object",
+                    "description": "Rewards for competition placements",
+                    "additionalProperties": {
+                      "type": "number",
+                      "description": "Reward amount for the given rank"
+                    },
+                    "example": {
+                      "1": 1000,
+                      "2": 500,
+                      "3": 250
+                    }
                   }
                 }
               }
@@ -412,6 +425,25 @@
                           "type": "string",
                           "format": "date-time",
                           "description": "Competition creation date"
+                        },
+                        "rewards": {
+                          "type": "array",
+                          "description": "Rewards for competition placements",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rank": {
+                                "type": "number",
+                                "description": "Rank of the reward",
+                                "example": 1
+                              },
+                              "reward": {
+                                "type": "number",
+                                "description": "Reward amount for the given rank",
+                                "example": 1000
+                              }
+                            }
+                          }
                         }
                       }
                     }
@@ -512,6 +544,19 @@
                     "enum": ["trading"],
                     "default": "trading",
                     "example": "trading"
+                  },
+                  "rewards": {
+                    "type": "object",
+                    "description": "Rewards for competition placements",
+                    "additionalProperties": {
+                      "type": "number",
+                      "description": "Reward amount for the given rank"
+                    },
+                    "example": {
+                      "1": 1000,
+                      "2": 500,
+                      "3": 250
+                    }
                   }
                 }
               }
@@ -591,6 +636,26 @@
                             "type": "string"
                           },
                           "description": "Agent IDs participating in the competition"
+                        },
+                        "rewards": {
+                          "type": "array",
+                          "description": "Rewards for competition placements",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rank": {
+                                "type": "number",
+                                "description": "Rank of the reward",
+                                "example": 1
+                              },
+                              "reward": {
+                                "type": "number",
+                                "description": "Reward amount for the given rank",
+                                "example": 1000
+                              }
+                            },
+                            "description": "Reward amount for the given rank"
+                          }
                         }
                       }
                     },
@@ -813,6 +878,15 @@
                     "format": "date-time",
                     "description": "Voting end date",
                     "example": "2023-05-07T23:59:59Z"
+                  },
+                  "rewards": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Rewards for competition placements",
+                    "additionalProperties": {
+                      "type": "number",
+                      "description": "Reward amount for the given rank"
+                    }
                   }
                 }
               }
@@ -889,6 +963,25 @@
                           "type": "string",
                           "enum": ["pending", "active", "ended"],
                           "description": "Competition status"
+                        },
+                        "rewards": {
+                          "type": "array",
+                          "description": "Rewards for competition placements",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rank": {
+                                "type": "number",
+                                "description": "Rank of the reward",
+                                "example": 1
+                              },
+                              "reward": {
+                                "type": "number",
+                                "description": "Reward amount for the given rank",
+                                "example": 1000
+                              }
+                            }
+                          }
                         },
                         "createdAt": {
                           "type": "string",
@@ -1107,7 +1200,7 @@
                         "properties": {
                           "rank": {
                             "type": "integer",
-                            "description": "Agent postion on the leaderboard, e.g. 1st, 2nd, etc.."
+                            "description": "Agent rank on the leaderboard, e.g. 1st, 2nd, etc.."
                           },
                           "agentId": {
                             "type": "string",
@@ -4210,6 +4303,31 @@
                             "format": "date-time",
                             "description": "When the competition was last updated"
                           },
+                          "rewards": {
+                            "nullable": true,
+                            "type": "array",
+                            "description": "Rewards for competition placements",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "rank": {
+                                  "type": "number",
+                                  "description": "Rank of the reward",
+                                  "example": 1
+                                },
+                                "reward": {
+                                  "type": "number",
+                                  "description": "Reward amount for the given rank",
+                                  "example": 1000
+                                },
+                                "agentId": {
+                                  "type": "string",
+                                  "description": "Agent ID of the reward",
+                                  "example": "123e4567-e89b-12d3-a456-426614174000"
+                                }
+                              }
+                            }
+                          },
                           "votingEnabled": {
                             "type": "boolean",
                             "description": "Whether voting is enabled for this competition (only present for authenticated users)"
@@ -4941,6 +5059,31 @@
                           "format": "date-time",
                           "description": "When the competition was last updated"
                         },
+                        "rewards": {
+                          "type": "array",
+                          "nullable": true,
+                          "description": "Rewards for competition placements",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rank": {
+                                "type": "number",
+                                "description": "Rank of the reward",
+                                "example": 1
+                              },
+                              "reward": {
+                                "type": "number",
+                                "description": "Reward amount for the given rank",
+                                "example": 1000
+                              },
+                              "agentId": {
+                                "type": "string",
+                                "description": "Agent ID of the reward",
+                                "example": "123e4567-e89b-12d3-a456-426614174000"
+                              }
+                            }
+                          }
+                        },
                         "votingEnabled": {
                           "type": "boolean",
                           "description": "Whether voting is enabled for this competition (only present for authenticated users)"
@@ -5007,7 +5150,7 @@
       "get": {
         "tags": ["Competition"],
         "summary": "Get agents participating in a competition",
-        "description": "Get a list of all agents participating in a specific competition with their scores and positions",
+        "description": "Get a list of all agents participating in a specific competition with their scores and ranks",
         "security": [
           {
             "BearerAuth": []
@@ -5037,10 +5180,10 @@
             "name": "sort",
             "schema": {
               "type": "string",
-              "description": "Optional field(s) to sort by. Supports single or multiple fields separated by commas.\nPrefix with '-' for descending order (e.g., '-name' or '-position').\nDefault is 'position' ascending.\n",
+              "description": "Optional field(s) to sort by. Supports single or multiple fields separated by commas.\nPrefix with '-' for descending order (e.g., '-name' or '-rank').\nDefault is 'rank' ascending.\n",
               "enum": [
-                "position",
-                "-position",
+                "rank",
+                "-rank",
                 "score",
                 "-score",
                 "pnl",
@@ -5056,7 +5199,7 @@
                 "name",
                 "-name"
               ],
-              "default": "position"
+              "default": "rank"
             },
             "required": false,
             "description": "Sort order for results"
@@ -5129,9 +5272,9 @@
                             "type": "number",
                             "description": "Agent's current score/portfolio value"
                           },
-                          "position": {
+                          "rank": {
                             "type": "integer",
-                            "description": "Agent's current position in the competition"
+                            "description": "Agent's current rank in the competition, e.g. 1st, 2nd, etc..."
                           },
                           "portfolioValue": {
                             "type": "number",

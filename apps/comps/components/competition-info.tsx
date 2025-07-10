@@ -8,14 +8,12 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { Competition } from "@/types/competition";
 
 import { CompetitionStatusBadge } from "./competition-status-badge";
+import { Rewards } from "./rewards";
 
 export interface CompetitionInfoProps {
   competition: Competition;
   className?: string;
 }
-
-const rainbowTextClass =
-  "bg-gradient-to-r from-[#FB8761] via-[#FFD04D] via-[#52C966] to-[#4D49CF] bg-clip-text text-transparent font-bold";
 
 const CellTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <span className="text-secondary-foreground text-xs font-semibold uppercase tracking-widest">
@@ -44,24 +42,18 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
     ? competition.description?.slice(0, SHORT_DESC_LENGTH) + "..."
     : competition.description;
 
-  const rewardAmount = 0;
-  const rewardCurrency = "USD";
-
   return (
     <section className={cn(className, "border text-white")}>
       <div className="grid grid-cols-2 border-b">
-        <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
+        <div className="flex flex-col items-start gap-2 border-r p-[25px]">
           <CellTitle>Reward</CellTitle>
-          <span className={rainbowTextClass}>
-            $
-            {rewardAmount.toLocaleString(undefined, {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 2,
-            })}{" "}
-            {rewardCurrency}
-          </span>
+          {competition.rewards ? (
+            <Rewards rewards={competition.rewards} />
+          ) : (
+            <p className="text-xl font-semibold">TBA</p>
+          )}
         </div>
-        <div className="flex flex-col items-start justify-center gap-2 p-[25px]">
+        <div className="flex flex-col items-start gap-2 p-[25px]">
           <div className="flex w-full items-center justify-between">
             <CellTitle>Status</CellTitle>
             <CompetitionStatusBadge status={competition.status} />

@@ -5,6 +5,7 @@ import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
+import { CoreRewardService } from "@/services/core-reward.service.js";
 import { EmailVerificationService } from "@/services/email-verification.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
@@ -41,6 +42,7 @@ class ServiceRegistry {
   private _objectIndexService: ObjectIndexService;
   private _emailService: EmailService;
   private _emailVerificationService: EmailVerificationService;
+  private _coreRewardService: CoreRewardService;
 
   constructor() {
     // Initialize services in dependency order
@@ -85,6 +87,9 @@ class ServiceRegistry {
       this._agentManager,
     );
 
+    // Initialize core reward service (no dependencies)
+    this._coreRewardService = new CoreRewardService();
+
     this._competitionManager = new CompetitionManager(
       this._balanceManager,
       this._tradeSimulator,
@@ -93,6 +98,7 @@ class ServiceRegistry {
       this._configurationService,
       this._agentRankService,
       this._voteManager,
+      this._coreRewardService,
     );
 
     // Initialize LeaderboardService with required dependencies
@@ -182,6 +188,10 @@ class ServiceRegistry {
   get emailVerificationService(): EmailVerificationService {
     return this._emailVerificationService;
   }
+
+  get coreRewardService(): CoreRewardService {
+    return this._coreRewardService;
+  }
 }
 
 // Export service types for convenience
@@ -203,6 +213,7 @@ export {
   TradeSimulator,
   UserManager,
   VoteManager,
+  CoreRewardService,
 };
 
 export default ServiceRegistry;
