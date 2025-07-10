@@ -13,8 +13,14 @@ const traceStorage = new AsyncLocalStorage<TraceContext>();
  * @returns Current trace ID or 'unknown' if not available
  */
 export function getTraceId(): string {
-  const context = traceStorage.getStore();
-  return context?.traceId || "unknown";
+  try {
+    const context = traceStorage.getStore();
+    return context?.traceId || "unknown";
+  } catch {
+    // AsyncLocalStorage might not be available during app initialization
+    // This is normal and expected during database setup, migrations, etc.
+    return "init";
+  }
 }
 
 /**
@@ -22,8 +28,13 @@ export function getTraceId(): string {
  * @returns Start time in nanoseconds or current time if not available
  */
 export function getRequestStartTime(): bigint {
-  const context = traceStorage.getStore();
-  return context?.startTime || process.hrtime.bigint();
+  try {
+    const context = traceStorage.getStore();
+    return context?.startTime || process.hrtime.bigint();
+  } catch {
+    // Fallback to current time if AsyncLocalStorage is not available
+    return process.hrtime.bigint();
+  }
 }
 
 /**
