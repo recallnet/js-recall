@@ -114,7 +114,8 @@ export class ApiClient {
         this.adminApiKey &&
         (config.url?.startsWith("/api/admin") ||
           config.url?.includes("admin") ||
-          config.url?.includes("competition")) &&
+          config.url?.includes("competition") ||
+          config.url?.includes("metrics")) &&
         this.adminApiKey !== this.apiKey
       ) {
         config.headers["Authorization"] = `Bearer ${this.adminApiKey}`;

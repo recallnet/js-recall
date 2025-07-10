@@ -214,7 +214,7 @@ const userRoutes = configureUserRoutes(userController, voteController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
-const metricsRoutes = configureMetricsRoutes();
+const metricsRoutes = configureMetricsRoutes(adminMiddleware);
 
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
