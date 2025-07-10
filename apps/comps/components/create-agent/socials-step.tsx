@@ -99,7 +99,11 @@ export function SocialsStep({ onBack, isSubmitting, form }: SocialsStepProps) {
         <Button variant="outline" onClick={onBack} className="px-10">
           BACK
         </Button>
-        <Button type="submit" disabled={isSubmitting} className="px-10">
+        <Button
+          type="submit"
+          disabled={isSubmitting || !imageValid}
+          className="px-10"
+        >
           {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
         </Button>
       </div>
