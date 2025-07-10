@@ -114,7 +114,8 @@ export class ApiClient {
         this.adminApiKey &&
         (config.url?.startsWith("/api/admin") ||
           config.url?.includes("admin") ||
-          config.url?.includes("competition")) &&
+          config.url?.includes("competition") ||
+          config.url?.includes("metrics")) &&
         this.adminApiKey !== this.apiKey
       ) {
         config.headers["Authorization"] = `Bearer ${this.adminApiKey}`;
@@ -1206,6 +1207,19 @@ export class ApiClient {
       return response.data as DetailedHealthCheckResponse;
     } catch (error) {
       return this.handleApiError(error, "get detailed health status");
+    }
+  }
+
+  /**
+   * Get Prometheus metrics
+   * @returns A promise that resolves to the metrics response (plain text)
+   */
+  async getMetrics(): Promise<string | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/metrics");
+      return response.data as string;
+    } catch (error) {
+      return this.handleApiError(error, "get metrics");
     }
   }
 

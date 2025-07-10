@@ -35,6 +35,7 @@ import {
   InsertPortfolioSnapshot,
   InsertPortfolioTokenValue,
 } from "@/database/schema/trading/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import {
   COMPETITION_AGENT_STATUS,
   COMPETITION_STATUS,
@@ -68,7 +69,7 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
 /**
  * Find all competitions
  */
-export async function findAll() {
+async function findAllImpl() {
   return await db
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
@@ -85,7 +86,7 @@ export async function findAll() {
  * Find a competition by ID
  * @param id The ID to search for
  */
-export async function findById(id: string) {
+async function findByIdImpl(id: string) {
   const [result] = await db
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
@@ -105,7 +106,7 @@ export async function findById(id: string) {
  * Create a new competition
  * @param competition Competition to create
  */
-export async function create(
+async function createImpl(
   competition: InsertCompetition &
     Omit<InsertTradingCompetition, "competitionId">,
 ) {
@@ -135,7 +136,7 @@ export async function create(
  * Update an existing competition and trading_competition in a transaction
  * @param competition Competition to update
  */
-export async function update(
+async function updateImpl(
   competition: PartialExcept<InsertCompetition, "id"> &
     Partial<Omit<InsertTradingCompetition, "competitionId">>,
 ) {
@@ -172,7 +173,7 @@ export async function update(
  * @param competitionId Competition ID
  * @param updateData Update data for the competition
  */
-export async function updateOne(
+async function updateOneImpl(
   competitionId: string,
   updateData: UpdateCompetition,
 ) {
@@ -202,7 +203,7 @@ export async function updateOne(
  * @param competitionId Competition ID
  * @param agentId Agent ID to add
  */
-export async function addAgentToCompetition(
+async function addAgentToCompetitionImpl(
   competitionId: string,
   agentId: string,
 ) {
@@ -232,7 +233,7 @@ export async function addAgentToCompetition(
  * @param agentId Agent ID to remove
  * @returns Boolean indicating if a row was deleted
  */
-export async function removeAgentFromCompetition(
+async function removeAgentFromCompetitionImpl(
   competitionId: string,
   agentId: string,
   reason?: string,
@@ -282,7 +283,7 @@ export async function removeAgentFromCompetition(
  * @param competitionId Competition ID
  * @param agentIds Array of agent IDs
  */
-export async function addAgents(competitionId: string, agentIds: string[]) {
+async function addAgentsImpl(competitionId: string, agentIds: string[]) {
   const now = new Date();
   const values = agentIds.map((agentId) => ({
     competitionId,
@@ -304,7 +305,7 @@ export async function addAgents(competitionId: string, agentIds: string[]) {
  * @param competitionId Competition ID
  * @param status Optional status filter - defaults to active only
  */
-export async function getAgents(
+async function getAgentsImpl(
   competitionId: string,
   status: CompetitionAgentStatus = COMPETITION_AGENT_STATUS.ACTIVE,
 ) {
@@ -331,11 +332,11 @@ export async function getAgents(
  * @param competitionId Competition ID
  * @param status Optional status filter - defaults to active only
  */
-export async function getCompetitionAgents(
+async function getCompetitionAgentsImpl(
   competitionId: string,
   status?: CompetitionAgentStatus,
 ) {
-  return getAgents(competitionId, status);
+  return getAgentsImpl(competitionId, status);
 }
 
 /**
@@ -344,7 +345,7 @@ export async function getCompetitionAgents(
  * @param agentId Agent ID
  * @returns boolean indicating if agent is active in the competition
  */
-export async function isAgentActiveInCompetition(
+async function isAgentActiveInCompetitionImpl(
   competitionId: string,
   agentId: string,
 ): Promise<boolean> {
@@ -377,7 +378,7 @@ export async function isAgentActiveInCompetition(
  * @param agentId Agent ID
  * @returns The agent's status in the competition, or null if not found
  */
-export async function getAgentCompetitionStatus(
+async function getAgentCompetitionStatusImpl(
   competitionId: string,
   agentId: string,
 ): Promise<CompetitionAgentStatus | null> {
@@ -409,7 +410,7 @@ export async function getAgentCompetitionStatus(
  * @param agentId Agent ID
  * @returns The agent's competition record or null if not found
  */
-export async function getAgentCompetitionRecord(
+async function getAgentCompetitionRecordImpl(
   competitionId: string,
   agentId: string,
 ): Promise<{
@@ -515,7 +516,7 @@ export async function getBulkAgentCompetitionRecords(
  * @param reason Optional reason for the status change
  * @returns boolean indicating if the update was successful
  */
-export async function updateAgentCompetitionStatus(
+async function updateAgentCompetitionStatusImpl(
   competitionId: string,
   agentId: string,
   status: CompetitionAgentStatus,
@@ -563,7 +564,7 @@ export async function updateAgentCompetitionStatus(
     return wasUpdated;
   } catch (error) {
     console.error(
-      "[CompetitionRepository] Error in updateAgentCompetitionStatus:",
+      "[CompetitionRepository] Error in updateAgentCompetitionStatusImpl:",
       error,
     );
     throw error;
@@ -577,12 +578,12 @@ export async function updateAgentCompetitionStatus(
  * @param reason Optional reason for leaving
  * @returns boolean indicating if the update was successful
  */
-export async function markAgentAsWithdrawn(
+async function markAgentAsWithdrawnImpl(
   competitionId: string,
   agentId: string,
   reason?: string,
 ): Promise<boolean> {
-  return updateAgentCompetitionStatus(
+  return updateAgentCompetitionStatusImpl(
     competitionId,
     agentId,
     COMPETITION_AGENT_STATUS.WITHDRAWN,
@@ -593,7 +594,7 @@ export async function markAgentAsWithdrawn(
 /**
  * Find active competition
  */
-export async function findActive() {
+async function findActiveImpl() {
   try {
     const [result] = await db
       .select({
@@ -618,9 +619,7 @@ export async function findActive() {
  * Create a portfolio snapshot
  * @param snapshot Portfolio snapshot data
  */
-export async function createPortfolioSnapshot(
-  snapshot: InsertPortfolioSnapshot,
-) {
+async function createPortfolioSnapshotImpl(snapshot: InsertPortfolioSnapshot) {
   try {
     const [result] = await db
       .insert(portfolioSnapshots)
@@ -650,7 +649,7 @@ export async function createPortfolioSnapshot(
  * Create a portfolio token value
  * @param tokenValue Portfolio token value data including amount, price, symbol, and specific chain
  */
-export async function createPortfolioTokenValue(
+async function createPortfolioTokenValueImpl(
   tokenValue: InsertPortfolioTokenValue,
 ) {
   try {
@@ -679,7 +678,7 @@ export async function createPortfolioTokenValue(
  * Get latest portfolio snapshots for all active agents in a competition
  * @param competitionId Competition ID
  */
-export async function getLatestPortfolioSnapshots(competitionId: string) {
+async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
   try {
     const subquery = db
       .select({
@@ -718,7 +717,7 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
     return result.map((row) => row.portfolio_snapshots);
   } catch (error) {
     console.error(
-      "[CompetitionRepository] Error in getLatestPortfolioSnapshots:",
+      "[CompetitionRepository] Error in getLatestPortfolioSnapshotsImpl:",
       error,
     );
     throw error;
@@ -732,7 +731,7 @@ export async function getLatestPortfolioSnapshots(competitionId: string) {
  * @param agentIds Array of agent IDs to get snapshots for
  * @returns Array of portfolio snapshots for all specified agents
  */
-export async function getBulkAgentPortfolioSnapshots(
+async function getBulkAgentPortfolioSnapshotsImpl(
   competitionId: string,
   agentIds: string[],
 ) {
@@ -775,7 +774,7 @@ export async function getBulkAgentPortfolioSnapshots(
  * @param competitionId Competition ID
  * @param agentId Agent ID
  */
-export async function getAgentPortfolioSnapshots(
+async function getAgentPortfolioSnapshotsImpl(
   competitionId: string,
   agentId: string,
 ) {
@@ -806,10 +805,7 @@ export async function getAgentPortfolioSnapshots(
  * @param agentId Agent ID
  * @returns Object with newest and oldest snapshots, or null if no snapshots found
  */
-export async function getBoundedSnapshots(
-  competitionId: string,
-  agentId: string,
-) {
+async function getBoundedSnapshotsImpl(competitionId: string, agentId: string) {
   try {
     // Create subqueries for newest and oldest snapshots
     const newestQuery = db
@@ -868,13 +864,13 @@ export async function getBoundedSnapshots(
  * @param competitionId Competition ID
  * @returns Object with rank and totalAgents, or undefined if no ranking data available
  */
-export async function getAgentCompetitionRanking(
+async function getAgentCompetitionRankingImpl(
   agentId: string,
   competitionId: string,
 ): Promise<{ rank: number; totalAgents: number } | undefined> {
   try {
     // Get all latest portfolio snapshots for the competition
-    const snapshots = await getLatestPortfolioSnapshots(competitionId);
+    const snapshots = await getLatestPortfolioSnapshotsImpl(competitionId);
 
     if (snapshots.length === 0) {
       return undefined; // No snapshots = no ranking data
@@ -913,7 +909,7 @@ export async function getAgentCompetitionRanking(
  * Get portfolio token values for a snapshot
  * @param snapshotId Snapshot ID
  */
-export async function getPortfolioTokenValues(snapshotId: number) {
+async function getPortfolioTokenValuesImpl(snapshotId: number) {
   try {
     return await db
       .select()
@@ -932,7 +928,7 @@ export async function getPortfolioTokenValues(snapshotId: number) {
  * Get all portfolio snapshots
  * @param competitionId Optional competition ID to filter by
  */
-export async function getAllPortfolioSnapshots(competitionId?: string) {
+async function getAllPortfolioSnapshotsImpl(competitionId?: string) {
   try {
     const query = db
       .select()
@@ -957,7 +953,7 @@ export async function getAllPortfolioSnapshots(competitionId?: string) {
  * Get portfolio token values for multiple snapshots
  * @param snapshotIds Array of snapshot IDs
  */
-export async function getPortfolioTokenValuesByIds(snapshotIds: number[]) {
+async function getPortfolioTokenValuesByIdsImpl(snapshotIds: number[]) {
   try {
     if (snapshotIds.length === 0) {
       return [];
@@ -979,7 +975,7 @@ export async function getPortfolioTokenValuesByIds(snapshotIds: number[]) {
 /**
  * Count total number of competitions
  */
-export async function count() {
+async function countImpl() {
   try {
     const [result] = await db
       .select({ count: sql<number>`count(*)` })
@@ -997,7 +993,7 @@ export async function count() {
  * @param agentId The ID of the agent
  * @returns The number of finished competitions the agent has participated in
  */
-export async function countAgentCompetitions(agentId: string): Promise<number> {
+async function countAgentCompetitionsImpl(agentId: string): Promise<number> {
   try {
     const [result] = await db
       .select({ count: drizzleCount() })
@@ -1029,7 +1025,7 @@ export async function countAgentCompetitions(agentId: string): Promise<number> {
  * @param params Pagination parameters
  * @returns Object containing competitions array and total count
  */
-export async function findByStatus({
+async function findByStatusImpl({
   status,
   params,
 }: {
@@ -1098,7 +1094,7 @@ export async function findByStatus({
  * @param agentId The agent ID
  * @returns The agent best placement
  */
-export async function findBestPlacementForAgent(agentId: string) {
+async function findBestPlacementForAgentImpl(agentId: string) {
   try {
     const [rankResult] = await db
       .select()
@@ -1152,7 +1148,7 @@ export async function findBestPlacementForAgent(agentId: string) {
  * @param entries Array of leaderboard entries to insert
  * @returns Array of inserted leaderboard entries
  */
-export async function batchInsertLeaderboard(
+async function batchInsertLeaderboardImpl(
   entries: (Omit<InsertCompetitionsLeaderboard, "id"> & { pnl?: number })[],
 ) {
   if (!entries.length) {
@@ -1211,7 +1207,7 @@ export async function batchInsertLeaderboard(
  * @param competitionId The competition ID
  * @returns Array of leaderboard entries sorted by rank
  */
-export async function findLeaderboardByCompetition(competitionId: string) {
+async function findLeaderboardByCompetitionImpl(competitionId: string) {
   try {
     return await db
       .select()
@@ -1232,7 +1228,7 @@ export async function findLeaderboardByCompetition(competitionId: string) {
  * @param competitionId The competition ID
  * @returns Array of leaderboard entries sorted by rank
  */
-export async function findLeaderboardByTradingComp(competitionId: string) {
+async function findLeaderboardByTradingCompImpl(competitionId: string) {
   try {
     return await db
       .select({
@@ -1262,7 +1258,7 @@ export async function findLeaderboardByTradingComp(competitionId: string) {
  * Get all competitions leaderboard entries
  * @param competitionId Optional competition ID to filter by
  */
-export async function getAllCompetitionsLeaderboard(competitionId?: string) {
+async function getAllCompetitionsLeaderboardImpl(competitionId?: string) {
   try {
     const query = db
       .select()
@@ -1289,7 +1285,7 @@ export async function getAllCompetitionsLeaderboard(competitionId?: string) {
  * @param competitionId Competition ID
  * @returns Array of agent IDs
  */
-export async function getAllCompetitionAgents(
+async function getAllCompetitionAgentsImpl(
   competitionId: string,
 ): Promise<string[]> {
   try {
@@ -1315,7 +1311,7 @@ export async function getAllCompetitionAgents(
  * @param agentIds Array of agent IDs to get rankings for
  * @returns Map of agent ID to ranking data
  */
-export async function getBulkAgentCompetitionRankings(
+async function getBulkAgentCompetitionRankingsImpl(
   competitionId: string,
   agentIds: string[],
 ): Promise<Map<string, { rank: number; totalAgents: number }>> {
@@ -1329,7 +1325,7 @@ export async function getBulkAgentCompetitionRankings(
     );
 
     // Get ALL latest portfolio snapshots for the competition ONCE
-    const snapshots = await getLatestPortfolioSnapshots(competitionId);
+    const snapshots = await getLatestPortfolioSnapshotsImpl(competitionId);
 
     if (snapshots.length === 0) {
       return new Map(); // No snapshots = no ranking data
@@ -1375,3 +1371,228 @@ export async function getBulkAgentCompetitionRankings(
     return new Map();
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const findAll = createTimedRepositoryFunction(
+  findAllImpl,
+  "CompetitionRepository",
+  "findAll",
+);
+
+export const findById = createTimedRepositoryFunction(
+  findByIdImpl,
+  "CompetitionRepository",
+  "findById",
+);
+
+export const create = createTimedRepositoryFunction(
+  createImpl,
+  "CompetitionRepository",
+  "create",
+);
+
+export const update = createTimedRepositoryFunction(
+  updateImpl,
+  "CompetitionRepository",
+  "update",
+);
+
+export const updateOne = createTimedRepositoryFunction(
+  updateOneImpl,
+  "CompetitionRepository",
+  "updateOne",
+);
+
+export const addAgentToCompetition = createTimedRepositoryFunction(
+  addAgentToCompetitionImpl,
+  "CompetitionRepository",
+  "addAgentToCompetition",
+);
+
+export const removeAgentFromCompetition = createTimedRepositoryFunction(
+  removeAgentFromCompetitionImpl,
+  "CompetitionRepository",
+  "removeAgentFromCompetition",
+);
+
+export const addAgents = createTimedRepositoryFunction(
+  addAgentsImpl,
+  "CompetitionRepository",
+  "addAgents",
+);
+
+export const getAgents = createTimedRepositoryFunction(
+  getAgentsImpl,
+  "CompetitionRepository",
+  "getAgents",
+);
+
+export const getCompetitionAgents = createTimedRepositoryFunction(
+  getCompetitionAgentsImpl,
+  "CompetitionRepository",
+  "getCompetitionAgents",
+);
+
+export const isAgentActiveInCompetition = createTimedRepositoryFunction(
+  isAgentActiveInCompetitionImpl,
+  "CompetitionRepository",
+  "isAgentActiveInCompetition",
+);
+
+export const getAgentCompetitionStatus = createTimedRepositoryFunction(
+  getAgentCompetitionStatusImpl,
+  "CompetitionRepository",
+  "getAgentCompetitionStatus",
+);
+
+export const getAgentCompetitionRecord = createTimedRepositoryFunction(
+  getAgentCompetitionRecordImpl,
+  "CompetitionRepository",
+  "getAgentCompetitionRecord",
+);
+
+export const updateAgentCompetitionStatus = createTimedRepositoryFunction(
+  updateAgentCompetitionStatusImpl,
+  "CompetitionRepository",
+  "updateAgentCompetitionStatus",
+);
+
+export const markAgentAsWithdrawn = createTimedRepositoryFunction(
+  markAgentAsWithdrawnImpl,
+  "CompetitionRepository",
+  "markAgentAsWithdrawn",
+);
+
+export const findActive = createTimedRepositoryFunction(
+  findActiveImpl,
+  "CompetitionRepository",
+  "findActive",
+);
+
+export const createPortfolioSnapshot = createTimedRepositoryFunction(
+  createPortfolioSnapshotImpl,
+  "CompetitionRepository",
+  "createPortfolioSnapshot",
+);
+
+export const createPortfolioTokenValue = createTimedRepositoryFunction(
+  createPortfolioTokenValueImpl,
+  "CompetitionRepository",
+  "createPortfolioTokenValue",
+);
+
+export const getLatestPortfolioSnapshots = createTimedRepositoryFunction(
+  getLatestPortfolioSnapshotsImpl,
+  "CompetitionRepository",
+  "getLatestPortfolioSnapshots",
+);
+
+export const getBulkAgentPortfolioSnapshots = createTimedRepositoryFunction(
+  getBulkAgentPortfolioSnapshotsImpl,
+  "CompetitionRepository",
+  "getBulkAgentPortfolioSnapshots",
+);
+
+export const getAgentPortfolioSnapshots = createTimedRepositoryFunction(
+  getAgentPortfolioSnapshotsImpl,
+  "CompetitionRepository",
+  "getAgentPortfolioSnapshots",
+);
+
+export const getBoundedSnapshots = createTimedRepositoryFunction(
+  getBoundedSnapshotsImpl,
+  "CompetitionRepository",
+  "getBoundedSnapshots",
+);
+
+export const getAgentCompetitionRanking = createTimedRepositoryFunction(
+  getAgentCompetitionRankingImpl,
+  "CompetitionRepository",
+  "getAgentCompetitionRanking",
+);
+
+export const getPortfolioTokenValues = createTimedRepositoryFunction(
+  getPortfolioTokenValuesImpl,
+  "CompetitionRepository",
+  "getPortfolioTokenValues",
+);
+
+export const getAllPortfolioSnapshots = createTimedRepositoryFunction(
+  getAllPortfolioSnapshotsImpl,
+  "CompetitionRepository",
+  "getAllPortfolioSnapshots",
+);
+
+export const getPortfolioTokenValuesByIds = createTimedRepositoryFunction(
+  getPortfolioTokenValuesByIdsImpl,
+  "CompetitionRepository",
+  "getPortfolioTokenValuesByIds",
+);
+
+export const count = createTimedRepositoryFunction(
+  countImpl,
+  "CompetitionRepository",
+  "count",
+);
+
+export const countAgentCompetitions = createTimedRepositoryFunction(
+  countAgentCompetitionsImpl,
+  "CompetitionRepository",
+  "countAgentCompetitions",
+);
+
+export const findByStatus = createTimedRepositoryFunction(
+  findByStatusImpl,
+  "CompetitionRepository",
+  "findByStatus",
+);
+
+export const findBestPlacementForAgent = createTimedRepositoryFunction(
+  findBestPlacementForAgentImpl,
+  "CompetitionRepository",
+  "findBestPlacementForAgent",
+);
+
+export const batchInsertLeaderboard = createTimedRepositoryFunction(
+  batchInsertLeaderboardImpl,
+  "CompetitionRepository",
+  "batchInsertLeaderboard",
+);
+
+export const findLeaderboardByCompetition = createTimedRepositoryFunction(
+  findLeaderboardByCompetitionImpl,
+  "CompetitionRepository",
+  "findLeaderboardByCompetition",
+);
+
+export const findLeaderboardByTradingComp = createTimedRepositoryFunction(
+  findLeaderboardByTradingCompImpl,
+  "CompetitionRepository",
+  "findLeaderboardByTradingComp",
+);
+
+export const getAllCompetitionsLeaderboard = createTimedRepositoryFunction(
+  getAllCompetitionsLeaderboardImpl,
+  "CompetitionRepository",
+  "getAllCompetitionsLeaderboard",
+);
+
+export const getAllCompetitionAgents = createTimedRepositoryFunction(
+  getAllCompetitionAgentsImpl,
+  "CompetitionRepository",
+  "getAllCompetitionAgents",
+);
+
+export const getBulkAgentCompetitionRankings = createTimedRepositoryFunction(
+  getBulkAgentCompetitionRankingsImpl,
+  "CompetitionRepository",
+  "getBulkAgentCompetitionRankings",
+);

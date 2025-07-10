@@ -3,6 +3,7 @@ import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
 import { db } from "@/database/db.js";
 import { admins } from "@/database/schema/core/defs.js";
 import { InsertAdmin, SelectAdmin } from "@/database/schema/core/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SearchAdminsParams } from "@/types/index.js";
 
 import { PartialExcept } from "./types.js";
@@ -16,7 +17,7 @@ import { PartialExcept } from "./types.js";
  * Create a new admin
  * @param admin Admin to create
  */
-export async function create(admin: InsertAdmin): Promise<SelectAdmin> {
+async function createImpl(admin: InsertAdmin): Promise<SelectAdmin> {
   try {
     const now = new Date();
     const [result] = await db
@@ -42,7 +43,7 @@ export async function create(admin: InsertAdmin): Promise<SelectAdmin> {
 /**
  * Find all admins
  */
-export async function findAll(): Promise<SelectAdmin[]> {
+async function findAllImpl(): Promise<SelectAdmin[]> {
   try {
     return await db.select().from(admins);
   } catch (error) {
@@ -55,7 +56,7 @@ export async function findAll(): Promise<SelectAdmin[]> {
  * Find an admin by ID
  * @param id Admin ID to find
  */
-export async function findById(id: string): Promise<SelectAdmin | undefined> {
+async function findByIdImpl(id: string): Promise<SelectAdmin | undefined> {
   try {
     const [result] = await db.select().from(admins).where(eq(admins.id, id));
     return result;
@@ -69,7 +70,7 @@ export async function findById(id: string): Promise<SelectAdmin | undefined> {
  * Find an admin by username
  * @param username The username to search for
  */
-export async function findByUsername(
+async function findByUsernameImpl(
   username: string,
 ): Promise<SelectAdmin | undefined> {
   try {
@@ -89,7 +90,7 @@ export async function findByUsername(
  * Find an admin by email
  * @param email The email to search for
  */
-export async function findByEmail(
+async function findByEmailImpl(
   email: string,
 ): Promise<SelectAdmin | undefined> {
   try {
@@ -109,7 +110,7 @@ export async function findByEmail(
  * Find an admin by API key
  * @param apiKey The API key to search for
  */
-export async function findByApiKey(
+async function findByApiKeyImpl(
   apiKey: string,
 ): Promise<SelectAdmin | undefined> {
   try {
@@ -129,7 +130,7 @@ export async function findByApiKey(
  * Update an admin
  * @param admin Admin data to update (must include id)
  */
-export async function update(
+async function updateImpl(
   admin: PartialExcept<InsertAdmin, "id">,
 ): Promise<SelectAdmin> {
   try {
@@ -159,7 +160,7 @@ export async function update(
  * @param id Admin ID to delete
  * @returns true if admin was deleted, false otherwise
  */
-export async function deleteAdmin(id: string): Promise<boolean> {
+async function deleteAdminImpl(id: string): Promise<boolean> {
   try {
     const [result] = await db
       .delete(admins)
@@ -178,10 +179,7 @@ export async function deleteAdmin(id: string): Promise<boolean> {
  * @param id Admin ID
  * @param apiKey New API key
  */
-export async function setApiKey(
-  id: string,
-  apiKey: string,
-): Promise<SelectAdmin> {
+async function setApiKeyImpl(id: string, apiKey: string): Promise<SelectAdmin> {
   try {
     const now = new Date();
     const [result] = await db
@@ -208,7 +206,7 @@ export async function setApiKey(
  * Update last login timestamp for an admin
  * @param id Admin ID
  */
-export async function updateLastLogin(id: string): Promise<SelectAdmin> {
+async function updateLastLoginImpl(id: string): Promise<SelectAdmin> {
   try {
     const now = new Date();
     const [result] = await db
@@ -236,7 +234,7 @@ export async function updateLastLogin(id: string): Promise<SelectAdmin> {
  * @param id Admin ID
  * @param passwordHash New password hash
  */
-export async function updatePassword(
+async function updatePasswordImpl(
   id: string,
   passwordHash: string,
 ): Promise<SelectAdmin> {
@@ -267,7 +265,7 @@ export async function updatePassword(
  * @param searchParams Object containing search parameters
  * @returns Array of admins matching the search criteria
  */
-export async function searchAdmins(
+async function searchAdminsImpl(
   searchParams: SearchAdminsParams,
 ): Promise<SelectAdmin[]> {
   try {
@@ -309,7 +307,7 @@ export async function searchAdmins(
 /**
  * Count all admins
  */
-export async function count(): Promise<number> {
+async function countImpl(): Promise<number> {
   try {
     const [result] = await db.select({ count: drizzleCount() }).from(admins);
     return result?.count ?? 0;
@@ -318,3 +316,90 @@ export async function count(): Promise<number> {
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const create = createTimedRepositoryFunction(
+  createImpl,
+  "AdminRepository",
+  "create",
+);
+
+export const findAll = createTimedRepositoryFunction(
+  findAllImpl,
+  "AdminRepository",
+  "findAll",
+);
+
+export const findById = createTimedRepositoryFunction(
+  findByIdImpl,
+  "AdminRepository",
+  "findById",
+);
+
+export const findByUsername = createTimedRepositoryFunction(
+  findByUsernameImpl,
+  "AdminRepository",
+  "findByUsername",
+);
+
+export const findByEmail = createTimedRepositoryFunction(
+  findByEmailImpl,
+  "AdminRepository",
+  "findByEmail",
+);
+
+export const findByApiKey = createTimedRepositoryFunction(
+  findByApiKeyImpl,
+  "AdminRepository",
+  "findByApiKey",
+);
+
+export const update = createTimedRepositoryFunction(
+  updateImpl,
+  "AdminRepository",
+  "update",
+);
+
+export const deleteAdmin = createTimedRepositoryFunction(
+  deleteAdminImpl,
+  "AdminRepository",
+  "deleteAdmin",
+);
+
+export const setApiKey = createTimedRepositoryFunction(
+  setApiKeyImpl,
+  "AdminRepository",
+  "setApiKey",
+);
+
+export const updateLastLogin = createTimedRepositoryFunction(
+  updateLastLoginImpl,
+  "AdminRepository",
+  "updateLastLogin",
+);
+
+export const updatePassword = createTimedRepositoryFunction(
+  updatePasswordImpl,
+  "AdminRepository",
+  "updatePassword",
+);
+
+export const searchAdmins = createTimedRepositoryFunction(
+  searchAdminsImpl,
+  "AdminRepository",
+  "searchAdmins",
+);
+
+export const count = createTimedRepositoryFunction(
+  countImpl,
+  "AdminRepository",
+  "count",
+);

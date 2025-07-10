@@ -22,6 +22,7 @@ import {
   trades,
   tradingCompetitionsLeaderboard,
 } from "@/database/schema/trading/defs.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import {
   COMPETITION_AGENT_STATUS,
   COMPETITION_STATUS,
@@ -40,7 +41,7 @@ import {
  * @returns Object containing the total number of active agents, trades, volume,
  * competitions, and competition IDs for active or ended competitions.
  */
-export async function getGlobalStats(type: CompetitionType): Promise<{
+async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   activeAgents: number;
   totalTrades: number;
   totalVolume: number;
@@ -122,7 +123,7 @@ export async function getGlobalStats(type: CompetitionType): Promise<{
  * @param agentIds Array of agent IDs to get metrics for
  * @returns Array of agent metrics with all required data
  */
-export async function getBulkAgentMetrics(agentIds: string[]): Promise<
+async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
   Array<{
     agentId: string;
     name: string;
@@ -376,7 +377,7 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
  * Uses separate aggregation queries to avoid Cartesian product issues
  * @returns Array of agent metrics with all required data
  */
-export async function getOptimizedGlobalAgentMetrics(): Promise<
+async function getOptimizedGlobalAgentMetricsImpl(): Promise<
   Array<{
     id: string;
     name: string;
@@ -458,3 +459,30 @@ export async function getOptimizedGlobalAgentMetrics(): Promise<
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const getGlobalStats = createTimedRepositoryFunction(
+  getGlobalStatsImpl,
+  "LeaderboardRepository",
+  "getGlobalStats",
+);
+
+export const getBulkAgentMetrics = createTimedRepositoryFunction(
+  getBulkAgentMetricsImpl,
+  "LeaderboardRepository",
+  "getBulkAgentMetrics",
+);
+
+export const getOptimizedGlobalAgentMetrics = createTimedRepositoryFunction(
+  getOptimizedGlobalAgentMetricsImpl,
+  "LeaderboardRepository",
+  "getOptimizedGlobalAgentMetrics",
+);
