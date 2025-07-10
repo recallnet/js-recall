@@ -36,6 +36,7 @@
     "setup:admin": "tsx scripts/setup-admin.ts",
     "setup:all": "tsx scripts/setup-everything.ts",
     "register:agent": "tsx scripts/register-agent.ts",
+    "reset:agent:keys": "tsx scripts/reset-all-agent-api-keys.ts",
     "register:user": "tsx scripts/register-user.ts",
     "edit:agent": "tsx scripts/edit-agent.ts",
     "edit:user": "tsx scripts/edit-user.ts",
