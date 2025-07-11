@@ -158,7 +158,7 @@ export async function killExistingServers(): Promise<void> {
         command = "bash";
         args = [
           "-c",
-          `(lsof -i:${testPort} -t | xargs -r kill -9) && (lsof -i:${metricsPort} -t | xargs -r kill -9)`,
+          `(lsof -i:${testPort} -t | xargs -r kill -9); (lsof -i:${metricsPort} -t | xargs -r kill -9)`,
         ];
       }
 
