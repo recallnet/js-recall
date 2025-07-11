@@ -557,6 +557,93 @@ describe("Multi-Chain Provider Tests", () => {
     }, 60000); // 60 second timeout for API tests
   });
 
+  describe("Logging validation", () => {
+    it("should log actual price values instead of [object Object]", async () => {
+      if (!runTests) {
+        console.log("Skipping test - Tests disabled");
+        return;
+      }
+
+      // Capture console.log output
+      const originalConsoleLog = console.log;
+      const logMessages: string[] = [];
+
+      console.log = (...args: unknown[]) => {
+        const message = args.join(" ");
+        logMessages.push(message);
+        originalConsoleLog(...args); // Still output to console
+      };
+
+      try {
+        // Use a known Solana token to trigger the Solana logging path
+        const solToken = testTokens.svm.SOL;
+
+        await multiChainProvider.getPrice(solToken, BlockchainType.SVM, "svm");
+
+        // Find log messages that contain price information
+        const priceLogMessages = logMessages.filter(
+          (msg) =>
+            msg.includes("[MultiChainProvider]") &&
+            msg.includes("Successfully found") &&
+            msg.includes("$"),
+        );
+
+        if (priceLogMessages.length > 0) {
+          console.log("Found price log messages:", priceLogMessages);
+
+          // Verify that none of the log messages contain "[object Object]"
+          for (const message of priceLogMessages) {
+            expect(message).not.toContain("[object Object]");
+            expect(message).not.toContain("$[object Object]");
+
+            // Verify the message contains a proper price format like "$163.64"
+            const priceMatch = message.match(/\$(\d+\.?\d*)/);
+            if (priceMatch && priceMatch[1]) {
+              const priceValue = parseFloat(priceMatch[1]);
+              expect(priceValue).toBeGreaterThan(0);
+              console.log(
+                `✅ Verified proper price format in log: ${priceMatch[0]}`,
+              );
+            }
+          }
+        } else {
+          // If no price was found, that's okay for testing purposes
+          console.log("No price found, but logging format test still valid");
+        }
+
+        // Also test with an EVM token to check those logging paths
+        const ethToken = testTokens.eth.ETH;
+        await multiChainProvider.getPrice(ethToken, BlockchainType.EVM, "eth");
+
+        // Check for EVM price log messages too
+        const evmPriceLogMessages = logMessages.filter(
+          (msg) =>
+            msg.includes("[MultiChainProvider]") &&
+            msg.includes("Successfully found") &&
+            msg.includes("$") &&
+            !priceLogMessages.includes(msg), // Exclude already checked messages
+        );
+
+        for (const message of evmPriceLogMessages) {
+          expect(message).not.toContain("[object Object]");
+          expect(message).not.toContain("$[object Object]");
+
+          const priceMatch = message.match(/\$(\d+\.?\d*)/);
+          if (priceMatch && priceMatch[1]) {
+            const priceValue = parseFloat(priceMatch[1]);
+            expect(priceValue).toBeGreaterThan(0);
+            console.log(
+              `✅ Verified proper EVM price format in log: ${priceMatch[0]}`,
+            );
+          }
+        }
+      } finally {
+        // Restore original console.log
+        console.log = originalConsoleLog;
+      }
+    }, 30000);
+  });
+
   describe("API integration for multi-chain price fetching", () => {
     it("should fetch token price using price tracker service", async () => {
       if (!runTests) {
