@@ -335,7 +335,7 @@ export function makeAgentController(services: ServiceRegistry) {
           // If we have a snapshot, use it
           if (agentSnapshots.length > 0) {
             // Get the most recent snapshot
-            const latestSnapshot = agentSnapshots[agentSnapshots.length - 1]!;
+            const latestSnapshot = agentSnapshots[0]!;
 
             // Get the token values for this snapshot
             const tokenValues = await getPortfolioTokenValues(
