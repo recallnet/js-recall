@@ -1,35 +1,36 @@
 "use client";
 
-import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
-import { isFuture } from "date-fns";
-import { ArrowUpRight, ChevronRight } from "lucide-react";
+import {useDebounce, useWindowScroll} from "@uidotdev/usehooks";
+import {isFuture} from "date-fns";
+import {ArrowUpRight, ChevronRight} from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { AgentsTable } from "@/components/agents-table";
-import { BasicCompetitionCard } from "@/components/basic-competition-card";
-import { BreadcrumbNav } from "@/components/breadcrumb-nav";
-import { CountdownClock } from "@/components/clock";
-import { CompetitionInfo } from "@/components/competition-info";
+import {AgentsTable} from "@/components/agents-table";
+import {BasicCompetitionCard} from "@/components/basic-competition-card";
+import {BreadcrumbNav} from "@/components/breadcrumb-nav";
+import {CountdownClock} from "@/components/clock";
+import {CompetitionInfo} from "@/components/competition-info";
 import CompetitionSkeleton from "@/components/competition-skeleton";
-import { CompetitionVotingBanner } from "@/components/competition-voting-banner";
-import { FooterSection } from "@/components/footer-section";
-import { JoinCompetitionButton } from "@/components/join-competition-button";
-import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { UserVote } from "@/components/user-vote";
-import { getSocialLinksArray } from "@/data/social";
-import { useCompetition } from "@/hooks/useCompetition";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { AgentCompetition } from "@/types";
+import {CompetitionVotingBanner} from "@/components/competition-voting-banner";
+import {FooterSection} from "@/components/footer-section";
+import {JoinCompetitionButton} from "@/components/join-competition-button";
+import {JoinSwarmSection} from "@/components/join-swarm-section";
+import {UserVote} from "@/components/user-vote";
+import {getSocialLinksArray} from "@/data/social";
+import {useCompetition} from "@/hooks/useCompetition";
+import {useCompetitionAgents} from "@/hooks/useCompetitionAgents";
+import {AgentCompetition} from "@/types";
 
 export default function CompetitionPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{id: string}>;
 }) {
-  const { id } = React.use(params);
+  const {id} = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
@@ -90,13 +91,13 @@ export default function CompetitionPage({
   }
 
   return (
-    <div style={{ marginTop: "-40px" }}>
+    <div style={{marginTop: "-40px"}}>
       <CompetitionVotingBanner competition={competition} />
       <BreadcrumbNav
         items={[
-          { label: "Recall", href: "/" },
-          { label: "Competitions", href: "/competitions" },
-          { label: competition.name },
+          {label: "Recall", href: "/"},
+          {label: "Competitions", href: "/competitions"},
+          {label: competition.name},
         ]}
         className="mb-10 mt-10"
       />
@@ -105,14 +106,20 @@ export default function CompetitionPage({
         <div className="md:w-1/2">
           <CompetitionInfo competition={competition} />
           <div className="mt-5 flex w-full flex-row justify-center gap-4">
-            <Button
-              variant="outline"
-              className="w-1/2 justify-between"
-              size="lg"
+            <a
+              href='https://discord.com/invite/recallnet'
+              target='_blank'
+              rel='noreferrer'
+              className={
+                cn("w-1/2 justify-between flex justify-center items-center",
+                  "border border-gray-400 text-secondary-foreground text-sm",
+                  "hover:bg-blue-700 hover:text-white transition duration-500 ease-in-out"
+                )
+              }
             >
               <span className="font-semibold">Join Discord</span>{" "}
               <ArrowUpRight className="ml-2" size={18} />
-            </Button>
+            </a>
             <JoinCompetitionButton
               competitionId={id}
               variant="ghost"
