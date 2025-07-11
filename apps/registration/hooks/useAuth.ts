@@ -41,12 +41,12 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
-      return apiClient.login(data);
+      const result = await apiClient.login(data);
+      return result;
     },
     onSuccess: () => {
       setUserAtom({ user: null, status: "authenticated" });
 
-      // Trigger profile refetch
       queryClient.invalidateQueries({ queryKey: ["profile"] });
 
       // Trigger competitions refetch
@@ -55,7 +55,8 @@ export const useLogin = () => {
       // Invalidate nonce cache after successful login
       queryClient.invalidateQueries({ queryKey: ["nonce"] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error(`❌ [LOGIN] Login mutation failed:`, error);
       // Invalidate nonce cache after failed login to ensure fresh nonce on retry
       queryClient.invalidateQueries({ queryKey: ["nonce"] });
     },
@@ -165,13 +166,15 @@ export const useUserSession = (): UserSessionState => {
       return { isInitialized: false };
     }
 
-    return {
+    const state = {
       isInitialized: true,
       user: authState.user,
       isAuthenticated,
       isProfileUpdated,
       isLoading: profileIsLoading,
     };
+
+    return state;
   }, [
     isClient,
     authState.user,

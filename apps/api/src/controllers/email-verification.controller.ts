@@ -21,7 +21,7 @@ export function makeEmailVerificationController(services: ServiceRegistry) {
 
         if (!token || typeof token !== "string") {
           return res.redirect(
-            `${config.app.url}/profile?success=false&message=${encodeURIComponent("Token is required")}`,
+            `${config.app.url}/verify-email?success=false&message=${encodeURIComponent("Token is required")}`,
           );
         }
 
@@ -50,12 +50,12 @@ export function makeEmailVerificationController(services: ServiceRegistry) {
           }
 
           return res.redirect(
-            `${config.app.url}/profile?success=false&message=${encodeURIComponent(message)}`,
+            `${config.app.url}/verify-email?success=false&message=${encodeURIComponent(message)}`,
           );
         }
 
         return res.redirect(
-          `${config.app.url}/profile?success=true&message=${encodeURIComponent(result.value.message)}`,
+          `${config.app.url}/verify-email?success=true&message=${encodeURIComponent(result.value.message)}`,
         );
       } catch (error) {
         next(error);

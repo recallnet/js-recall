@@ -180,23 +180,23 @@ async function endCompetition() {
 
       sortedLeaderboard.forEach((entry, index) => {
         const agentName = agentMap.get(entry.agentId) || "Unknown Agent";
-        let position = `${index + 1}. `;
-        let positionColor = colors.reset;
+        let rank = `${index + 1}. `;
+        let rankColor = colors.reset;
 
-        // Highlight top 3 positions
+        // Highlight top 3 finishers
         if (index === 0) {
-          position = `🥇 `;
-          positionColor = colors.yellow;
+          rank = `🥇 `;
+          rankColor = colors.yellow;
         } else if (index === 1) {
-          position = `🥈 `;
-          positionColor = colors.blue;
+          rank = `🥈 `;
+          rankColor = colors.blue;
         } else if (index === 2) {
-          position = `🥉 `;
-          positionColor = colors.green;
+          rank = `🥉 `;
+          rankColor = colors.green;
         }
 
         console.log(
-          `${positionColor}${position}${agentName}${colors.reset}: ${colors.cyan}${entry.value.toFixed(2)} USD${colors.reset}`,
+          `${rankColor}${rank}${agentName}${colors.reset}: ${colors.cyan}${entry.value.toFixed(2)} USD${colors.reset}`,
         );
       });
 

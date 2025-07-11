@@ -25,13 +25,13 @@ export function configureEmailVerificationRoutes(
    *         description: The verification token from the email
    *     responses:
    *       302:
-   *         description: Redirects to frontend user profile page
+   *         description: Redirects to frontend user verify email page
    *         headers:
    *           Location:
    *             schema:
    *               type: string
-   *             description: URL to the frontend user profile page with query parameters
-   *             example: "http://localhost:3001/profile?success=true&message=Email%20verified%20successfully%20for%20user"
+   *             description: URL to the frontend verify email page with query parameters
+   *             example: "http://localhost:3001/verify-email?success=true&message=Email%20verified%20successfully%20for%20user"
    *         content:
    *           text/html:
    *             schema:

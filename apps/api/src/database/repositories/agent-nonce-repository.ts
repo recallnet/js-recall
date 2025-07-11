@@ -2,6 +2,7 @@ import { eq, lt } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import { agentNonces } from "@/database/schema/core/defs.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 export interface InsertAgentNonce {
   id: string;
@@ -26,9 +27,7 @@ export interface SelectAgentNonce {
  * @param nonce The nonce data to insert
  * @returns The created nonce record
  */
-export async function create(
-  nonce: InsertAgentNonce,
-): Promise<SelectAgentNonce> {
+async function createImpl(nonce: InsertAgentNonce): Promise<SelectAgentNonce> {
   const [created] = await db.insert(agentNonces).values(nonce).returning();
   if (!created) {
     throw new Error("Failed to create agent nonce");
@@ -41,7 +40,7 @@ export async function create(
  * @param nonce The nonce string to search for
  * @returns The nonce record if found, undefined otherwise
  */
-export async function findByNonce(
+async function findByNonceImpl(
   nonce: string,
 ): Promise<SelectAgentNonce | undefined> {
   const [found] = await db
@@ -56,7 +55,7 @@ export async function findByNonce(
  * Mark a nonce as used
  * @param nonce The nonce string to mark as used
  */
-export async function markAsUsed(nonce: string): Promise<void> {
+async function markAsUsedImpl(nonce: string): Promise<void> {
   await db
     .update(agentNonces)
     .set({ usedAt: new Date() })
@@ -67,7 +66,7 @@ export async function markAsUsed(nonce: string): Promise<void> {
  * Delete expired nonces
  * @returns The number of deleted records
  */
-export async function deleteExpired(): Promise<number> {
+async function deleteExpiredImpl(): Promise<number> {
   const result = await db
     .delete(agentNonces)
     .where(lt(agentNonces.expiresAt, new Date()));
@@ -78,6 +77,40 @@ export async function deleteExpired(): Promise<number> {
  * Delete all nonces for an agent
  * @param agentId The agent ID whose nonces to delete
  */
-export async function deleteByAgentId(agentId: string): Promise<void> {
+async function deleteByAgentIdImpl(agentId: string): Promise<void> {
   await db.delete(agentNonces).where(eq(agentNonces.agentId, agentId));
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+export const create = createTimedRepositoryFunction(
+  createImpl,
+  "AgentNonceRepository",
+  "create",
+);
+
+export const findByNonce = createTimedRepositoryFunction(
+  findByNonceImpl,
+  "AgentNonceRepository",
+  "findByNonce",
+);
+
+export const markAsUsed = createTimedRepositoryFunction(
+  markAsUsedImpl,
+  "AgentNonceRepository",
+  "markAsUsed",
+);
+
+export const deleteExpired = createTimedRepositoryFunction(
+  deleteExpiredImpl,
+  "AgentNonceRepository",
+  "deleteExpired",
+);
+
+export const deleteByAgentId = createTimedRepositoryFunction(
+  deleteByAgentIdImpl,
+  "AgentNonceRepository",
+  "deleteByAgentId",
+);

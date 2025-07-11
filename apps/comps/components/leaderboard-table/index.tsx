@@ -63,7 +63,7 @@ export function LeaderboardTable({
                   onToggleSort={() => handleSortChange("score")}
                   sortState={sortState["score"]}
                 >
-                  AgentRank
+                  Score
                 </SortableTableHeader>
                 <SortableTableHeader
                   className="pl-10 text-white"

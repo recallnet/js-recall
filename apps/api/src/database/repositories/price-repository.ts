@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/database/db.js";
 import { prices } from "@/database/schema/trading/defs.js";
 import { InsertPrice } from "@/database/schema/trading/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChain } from "@/types/index.js";
 
 /**
@@ -14,7 +15,7 @@ import { SpecificChain } from "@/types/index.js";
  * @param priceData The price data to store
  * @returns The created price record
  */
-export async function create(priceData: InsertPrice) {
+async function createImpl(priceData: InsertPrice) {
   console.log(
     `[PriceRepository] Storing price for ${priceData.token}: $${priceData.price}${priceData.chain ? ` on chain ${priceData.chain}` : ""}${priceData.specificChain ? ` (${priceData.specificChain})` : ""}`,
   );
@@ -45,10 +46,7 @@ export async function create(priceData: InsertPrice) {
  * @param specificChain Specific chain to filter by
  * @returns The latest price record or null if not found
  */
-export async function getLatestPrice(
-  token: string,
-  specificChain: SpecificChain,
-) {
+async function getLatestPriceImpl(token: string, specificChain: SpecificChain) {
   console.log(
     `[PriceRepository] Getting latest price for ${token}${specificChain ? ` on ${specificChain}` : ""}`,
   );
@@ -82,7 +80,7 @@ export async function getLatestPrice(
  * @param specificChain Optional specific chain to filter by
  * @returns Array of price records
  */
-export async function getPriceHistory(
+async function getPriceHistoryImpl(
   token: string,
   hours: number,
   specificChain?: SpecificChain,
@@ -116,7 +114,7 @@ export async function getPriceHistory(
  * @param specificChain Optional specific chain to filter by
  * @returns The average price or null if no data
  */
-export async function getAveragePrice(
+async function getAveragePriceImpl(
   token: string,
   hours: number,
   specificChain?: SpecificChain,
@@ -149,7 +147,7 @@ export async function getAveragePrice(
  * @param specificChain Optional specific chain to filter by
  * @returns The price change percentage or null if insufficient data
  */
-export async function getPriceChangePercentage(
+async function getPriceChangePercentageImpl(
   token: string,
   hours: number,
   specificChain?: SpecificChain,
@@ -189,7 +187,7 @@ export async function getPriceChangePercentage(
 /**
  * Count total number of price records
  */
-export async function count() {
+async function countImpl() {
   try {
     const [result] = await db
       .select({ count: sql<number>`count(*)` })
@@ -201,3 +199,43 @@ export async function count() {
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+export const create = createTimedRepositoryFunction(
+  createImpl,
+  "PriceRepository",
+  "create",
+);
+
+export const getLatestPrice = createTimedRepositoryFunction(
+  getLatestPriceImpl,
+  "PriceRepository",
+  "getLatestPrice",
+);
+
+export const getPriceHistory = createTimedRepositoryFunction(
+  getPriceHistoryImpl,
+  "PriceRepository",
+  "getPriceHistory",
+);
+
+export const getAveragePrice = createTimedRepositoryFunction(
+  getAveragePriceImpl,
+  "PriceRepository",
+  "getAveragePrice",
+);
+
+export const getPriceChangePercentage = createTimedRepositoryFunction(
+  getPriceChangePercentageImpl,
+  "PriceRepository",
+  "getPriceChangePercentage",
+);
+
+export const count = createTimedRepositoryFunction(
+  countImpl,
+  "PriceRepository",
+  "count",
+);

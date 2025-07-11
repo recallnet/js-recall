@@ -764,6 +764,52 @@ export function configureUserRoutes(
 
   /**
    * @openapi
+   * /api/user/verify-email:
+   *   post:
+   *     summary: Initiate email verification for the authenticated user
+   *     description: Creates a new email verification token and sends a verification email to the user's email address
+   *     tags:
+   *       - User
+   *     security:
+   *       - SIWESession: []
+   *     responses:
+   *       200:
+   *         description: Email verification initiated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: "Email verification initiated successfully"
+   *       400:
+   *         description: User does not have an email address
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "User does not have an email address"
+   *       401:
+   *         description: User not authenticated
+   *       404:
+   *         description: User not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.post("/verify-email", userController.verifyEmail);
+
+  /**
+   * @openapi
    * /api/user/competitions:
    *   get:
    *     summary: Get competitions for user's agents

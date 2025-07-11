@@ -3,11 +3,15 @@ import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
 import { agents } from "@/database/schema/core/defs.js";
-import { agentRank, agentRankHistory } from "@/database/schema/ranking/defs.js";
 import {
-  InsertAgentRank,
-  InsertAgentRankHistory,
+  agentScore,
+  agentScoreHistory,
+} from "@/database/schema/ranking/defs.js";
+import {
+  InsertAgentScore,
+  InsertAgentScoreHistory,
 } from "@/database/schema/ranking/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { AgentMetadata } from "@/types/index.js";
 
 /**
@@ -34,7 +38,7 @@ export interface AgentRankInfo {
  * the agent information and rank score.
  * @returns An array of objects with agent ID, name, and rank score
  */
-export async function getAllAgentRanks(): Promise<AgentRankInfo[]> {
+async function getAllAgentRanksImpl(): Promise<AgentRankInfo[]> {
   console.log("[AgentRankRepository] getAllAgentRanks called");
 
   try {
@@ -45,12 +49,12 @@ export async function getAllAgentRanks(): Promise<AgentRankInfo[]> {
         description: agents.description,
         metadata: agents.metadata,
         name: agents.name,
-        mu: agentRank.mu,
-        sigma: agentRank.sigma,
-        ordinal: agentRank.ordinal,
+        mu: agentScore.mu,
+        sigma: agentScore.sigma,
+        ordinal: agentScore.ordinal,
       })
-      .from(agentRank)
-      .innerJoin(agents, eq(agentRank.agentId, agents.id));
+      .from(agentScore)
+      .innerJoin(agents, eq(agentScore.agentId, agents.id));
 
     return rows.map((agent) => {
       return {
@@ -82,7 +86,7 @@ export async function getAllAgentRanks(): Promise<AgentRankInfo[]> {
  * @param agentId The ID of the agent to get the rank for
  * @returns The agent's simplified rank information (id, rank, score) or null if not found
  */
-export async function getAgentRankById(agentId: string): Promise<{
+async function getAgentRankByIdImpl(agentId: string): Promise<{
   id: string;
   rank: number;
   score: number;
@@ -94,11 +98,11 @@ export async function getAgentRankById(agentId: string): Promise<{
   try {
     const result = await db.execute(sql`
       WITH ranked_agents AS (
-        SELECT 
+        SELECT
           agent_id as id,
           ordinal as score,
           row_number() OVER (ORDER BY ordinal DESC) as rank
-        FROM agent_rank
+        FROM agent_score
       )
       SELECT id, rank, score
       FROM ranked_agents
@@ -132,10 +136,10 @@ export async function getAgentRankById(agentId: string): Promise<{
   }
 }
 
-export async function batchUpdateAgentRanks(
-  dataArray: Array<Omit<InsertAgentRank, "id" | "createdAt" | "updatedAt">>,
+async function batchUpdateAgentRanksImpl(
+  dataArray: Array<Omit<InsertAgentScore, "id" | "createdAt" | "updatedAt">>,
   competitionId: string,
-): Promise<InsertAgentRank[]> {
+): Promise<InsertAgentScore[]> {
   if (dataArray.length === 0) {
     console.log("[AgentRankRepository] No agent ranks to update in batch");
     return [];
@@ -148,7 +152,7 @@ export async function batchUpdateAgentRanks(
 
     return await db.transaction(async (tx) => {
       // Prepare rank data with IDs
-      const rankDataArray: InsertAgentRank[] = dataArray.map((data) => ({
+      const rankDataArray: InsertAgentScore[] = dataArray.map((data) => ({
         id: uuidv4(),
         agentId: data.agentId,
         mu: data.mu,
@@ -157,7 +161,7 @@ export async function batchUpdateAgentRanks(
       }));
 
       // Prepare history data with IDs
-      const historyDataArray: InsertAgentRankHistory[] = dataArray.map(
+      const historyDataArray: InsertAgentScoreHistory[] = dataArray.map(
         (data) => ({
           id: uuidv4(),
           agentId: data.agentId,
@@ -172,10 +176,10 @@ export async function batchUpdateAgentRanks(
       const results = await Promise.all(
         rankDataArray.map(async (rankData) => {
           const [result] = await tx
-            .insert(agentRank)
+            .insert(agentScore)
             .values(rankData)
             .onConflictDoUpdate({
-              target: agentRank.agentId,
+              target: agentScore.agentId,
               set: {
                 mu: rankData.mu,
                 sigma: rankData.sigma,
@@ -197,7 +201,7 @@ export async function batchUpdateAgentRanks(
 
       // Batch insert history entries
       const historyResults = await tx
-        .insert(agentRankHistory)
+        .insert(agentScoreHistory)
         .values(historyDataArray)
         .returning();
 
@@ -222,15 +226,15 @@ export async function batchUpdateAgentRanks(
  * Get all agent rank history records
  * @param competitionId Optional competition ID to filter by
  */
-export async function getAllAgentRankHistory(competitionId?: string) {
+async function getAllAgentRankHistoryImpl(competitionId?: string) {
   try {
     const query = db
       .select()
-      .from(agentRankHistory)
-      .orderBy(desc(agentRankHistory.createdAt));
+      .from(agentScoreHistory)
+      .orderBy(desc(agentScoreHistory.createdAt));
 
     if (competitionId) {
-      query.where(eq(agentRankHistory.competitionId, competitionId));
+      query.where(eq(agentScoreHistory.competitionId, competitionId));
     }
 
     return await query;
@@ -246,11 +250,50 @@ export async function getAllAgentRankHistory(competitionId?: string) {
 /**
  * Get all raw agent ranks (without joins)
  */
-export async function getAllRawAgentRanks() {
+async function getAllRawAgentRanksImpl() {
   try {
-    return await db.select().from(agentRank).orderBy(desc(agentRank.ordinal));
+    return await db.select().from(agentScore).orderBy(desc(agentScore.ordinal));
   } catch (error) {
     console.error("[AgentRankRepository] Error in getAllRawAgentRanks:", error);
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const getAllAgentRanks = createTimedRepositoryFunction(
+  getAllAgentRanksImpl,
+  "AgentScoreRepository",
+  "getAllAgentRanks",
+);
+
+export const getAgentRankById = createTimedRepositoryFunction(
+  getAgentRankByIdImpl,
+  "AgentScoreRepository",
+  "getAgentRankById",
+);
+
+export const batchUpdateAgentRanks = createTimedRepositoryFunction(
+  batchUpdateAgentRanksImpl,
+  "AgentScoreRepository",
+  "batchUpdateAgentRanks",
+);
+
+export const getAllAgentRankHistory = createTimedRepositoryFunction(
+  getAllAgentRankHistoryImpl,
+  "AgentScoreRepository",
+  "getAllAgentRankHistory",
+);
+
+export const getAllRawAgentRanks = createTimedRepositoryFunction(
+  getAllRawAgentRanksImpl,
+  "AgentScoreRepository",
+  "getAllRawAgentRanks",
+);

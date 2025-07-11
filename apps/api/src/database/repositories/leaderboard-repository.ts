@@ -17,11 +17,12 @@ import {
   competitionsLeaderboard,
   votes,
 } from "@/database/schema/core/defs.js";
-import { agentRank } from "@/database/schema/ranking/defs.js";
+import { agentScore } from "@/database/schema/ranking/defs.js";
 import {
   trades,
   tradingCompetitionsLeaderboard,
 } from "@/database/schema/trading/defs.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import {
   COMPETITION_AGENT_STATUS,
   COMPETITION_STATUS,
@@ -40,7 +41,7 @@ import {
  * @returns Object containing the total number of active agents, trades, volume,
  * competitions, and competition IDs for active or ended competitions.
  */
-export async function getGlobalStats(type: CompetitionType): Promise<{
+async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   activeAgents: number;
   totalTrades: number;
   totalVolume: number;
@@ -122,7 +123,7 @@ export async function getGlobalStats(type: CompetitionType): Promise<{
  * @param agentIds Array of agent IDs to get metrics for
  * @returns Array of agent metrics with all required data
  */
-export async function getBulkAgentMetrics(agentIds: string[]): Promise<
+async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
   Array<{
     agentId: string;
     name: string;
@@ -160,10 +161,10 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
         description: agents.description,
         imageUrl: agents.imageUrl,
         metadata: agents.metadata,
-        globalScore: agentRank.ordinal,
+        globalScore: agentScore.ordinal,
       })
       .from(agents)
-      .leftJoin(agentRank, eq(agents.id, agentRank.agentId))
+      .leftJoin(agentScore, eq(agents.id, agentScore.agentId))
       .where(inArray(agents.id, agentIds));
 
     // Query 2: Competition counts (only completed competitions)
@@ -272,24 +273,24 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       bestPnlQuery,
     ]);
 
-    // Query 6: Get actual rank positions - need to get all ranks first then calculate positions
+    // Query 6: Get actual ranks - need to get all ranks first then calculate
     const allRanksQuery = db
       .select({
-        agentId: agentRank.agentId,
-        ordinal: agentRank.ordinal,
+        agentId: agentScore.agentId,
+        ordinal: agentScore.ordinal,
       })
-      .from(agentRank)
-      .orderBy(agentRank.ordinal);
+      .from(agentScore)
+      .orderBy(agentScore.ordinal);
 
     const allRanksResult = await allRanksQuery;
 
-    // Calculate rank positions
-    const rankPositionsMap = new Map<string, number>();
+    // Calculate ranks
+    const ranksMap = new Map<string, number>();
     allRanksResult
       .sort((a, b) => (b.ordinal || 0) - (a.ordinal || 0)) // Sort by ordinal DESC
       .forEach((rank, index) => {
         if (agentIds.includes(rank.agentId)) {
-          rankPositionsMap.set(rank.agentId, index + 1);
+          ranksMap.set(rank.agentId, index + 1);
         }
       });
 
@@ -339,7 +340,7 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
       const totalTrades = tradeCountsMap.get(agentId) ?? 0;
       const bestPlacement = bestPlacementMap.get(agentId) ?? null;
       const bestPnl = bestPnlMap.get(agentId)?.pnl ?? null;
-      const globalRank = rankPositionsMap.get(agentId) ?? null;
+      const globalRank = ranksMap.get(agentId) ?? null;
 
       return {
         agentId,
@@ -376,7 +377,7 @@ export async function getBulkAgentMetrics(agentIds: string[]): Promise<
  * Uses separate aggregation queries to avoid Cartesian product issues
  * @returns Array of agent metrics with all required data
  */
-export async function getOptimizedGlobalAgentMetrics(): Promise<
+async function getOptimizedGlobalAgentMetricsImpl(): Promise<
   Array<{
     id: string;
     name: string;
@@ -399,10 +400,10 @@ export async function getOptimizedGlobalAgentMetrics(): Promise<
         description: agents.description,
         imageUrl: agents.imageUrl,
         metadata: agents.metadata,
-        score: agentRank.ordinal,
+        score: agentScore.ordinal,
       })
-      .from(agentRank)
-      .innerJoin(agents, eq(agentRank.agentId, agents.id));
+      .from(agentScore)
+      .innerJoin(agents, eq(agentScore.agentId, agents.id));
 
     if (agentsWithScores.length === 0) {
       return [];
@@ -458,3 +459,30 @@ export async function getOptimizedGlobalAgentMetrics(): Promise<
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const getGlobalStats = createTimedRepositoryFunction(
+  getGlobalStatsImpl,
+  "LeaderboardRepository",
+  "getGlobalStats",
+);
+
+export const getBulkAgentMetrics = createTimedRepositoryFunction(
+  getBulkAgentMetricsImpl,
+  "LeaderboardRepository",
+  "getBulkAgentMetrics",
+);
+
+export const getOptimizedGlobalAgentMetrics = createTimedRepositoryFunction(
+  getOptimizedGlobalAgentMetricsImpl,
+  "LeaderboardRepository",
+  "getOptimizedGlobalAgentMetrics",
+);

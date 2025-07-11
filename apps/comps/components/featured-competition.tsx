@@ -24,9 +24,9 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
 }) => {
   const { data: topLeaders, isLoading } = useCompetitionAgents(competition.id, {
     // TODO: we have to make sure all agents are included in the results
-    //  because position is calculated "on-the-fly".
+    //  because rank is calculated "on-the-fly".
     limit: 50,
-    sort: "position",
+    sort: "rank",
   });
 
   const duration = formatCompetitionDates(
@@ -35,7 +35,10 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
   );
 
   return (
-    <Card className="bg-card w-full" cropSize={0}>
+    <Card
+      className="bg-card group w-full opacity-95 transition duration-500 ease-in-out hover:opacity-100"
+      cropSize={0}
+    >
       <CompetitionStatusBanner status={competition.status} />
 
       <div className="flex flex-col gap-2 border-b p-6">

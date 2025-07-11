@@ -126,7 +126,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
         header: () => "Rank",
         cell: ({ row }) =>
           row.original.agent.stats.rank ? (
-            <RankBadge position={row.original.agent.stats.rank} />
+            <RankBadge rank={row.original.agent.stats.rank} />
           ) : (
             <span className="text-xs text-slate-400">-</span>
           ),

@@ -3,6 +3,7 @@ import { and, desc, count as drizzleCount, eq } from "drizzle-orm";
 import { db } from "@/database/db.js";
 import { trades } from "@/database/schema/trading/defs.js";
 import { InsertTrade } from "@/database/schema/trading/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 /**
  * Trade Repository
@@ -13,7 +14,7 @@ import { InsertTrade } from "@/database/schema/trading/types.js";
  * Create a new trade
  * @param trade Trade to create
  */
-export async function create(trade: InsertTrade) {
+async function createImpl(trade: InsertTrade) {
   try {
     const [result] = await db
       .insert(trades)
@@ -40,7 +41,7 @@ export async function create(trade: InsertTrade) {
  * @param limit Optional result limit
  * @param offset Optional result offset
  */
-export async function getAgentTrades(
+async function getAgentTradesImpl(
   agentId: string,
   limit?: number,
   offset?: number,
@@ -73,7 +74,7 @@ export async function getAgentTrades(
  * @param limit Optional result limit
  * @param offset Optional result offset
  */
-export async function getCompetitionTrades(
+async function getCompetitionTradesImpl(
   competitionId: string,
   limit?: number,
   offset?: number,
@@ -104,7 +105,7 @@ export async function getCompetitionTrades(
  * Count trades for an agent
  * @param agentId Agent ID
  */
-export async function countAgentTrades(agentId: string) {
+async function countAgentTradesImpl(agentId: string) {
   try {
     const [result] = await db
       .select({ count: drizzleCount() })
@@ -124,7 +125,7 @@ export async function countAgentTrades(agentId: string) {
  * @param competitionId Competition ID
  * @returns Number of trades for the agent in the competition
  */
-export async function countAgentTradesInCompetition(
+async function countAgentTradesInCompetitionImpl(
   agentId: string,
   competitionId: string,
 ): Promise<number> {
@@ -152,7 +153,7 @@ export async function countAgentTradesInCompetition(
 /**
  * Count all trades
  */
-export async function count() {
+async function countImpl() {
   try {
     const [result] = await db.select({ count: drizzleCount() }).from(trades);
 
@@ -167,7 +168,7 @@ export async function count() {
  * Get all trades
  * @param competitionId Optional competition ID to filter by
  */
-export async function getAllTrades(competitionId?: string) {
+async function getAllTradesImpl(competitionId?: string) {
   try {
     const query = db.select().from(trades).orderBy(desc(trades.timestamp));
 
@@ -181,3 +182,49 @@ export async function getAllTrades(competitionId?: string) {
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+export const create = createTimedRepositoryFunction(
+  createImpl,
+  "TradeRepository",
+  "create",
+);
+
+export const getAgentTrades = createTimedRepositoryFunction(
+  getAgentTradesImpl,
+  "TradeRepository",
+  "getAgentTrades",
+);
+
+export const getCompetitionTrades = createTimedRepositoryFunction(
+  getCompetitionTradesImpl,
+  "TradeRepository",
+  "getCompetitionTrades",
+);
+
+export const countAgentTrades = createTimedRepositoryFunction(
+  countAgentTradesImpl,
+  "TradeRepository",
+  "countAgentTrades",
+);
+
+export const countAgentTradesInCompetition = createTimedRepositoryFunction(
+  countAgentTradesInCompetitionImpl,
+  "TradeRepository",
+  "countAgentTradesInCompetition",
+);
+
+export const count = createTimedRepositoryFunction(
+  countImpl,
+  "TradeRepository",
+  "count",
+);
+
+export const getAllTrades = createTimedRepositoryFunction(
+  getAllTradesImpl,
+  "TradeRepository",
+  "getAllTrades",
+);

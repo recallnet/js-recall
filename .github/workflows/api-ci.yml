@@ -226,6 +226,7 @@ jobs:
           TEST_HOST=${{ steps.detect-env.outputs.test_host }}
           NODE_ENV=test
           PORT=3001
+          DOMAIN=.example.com
 
           # API Configuration
           API_DOMAIN=http://localhost:3001

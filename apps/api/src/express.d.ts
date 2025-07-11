@@ -16,6 +16,7 @@ declare global {
         name: string;
       };
       competitionId?: string;
+      traceId?: string; // Added for logging correlation
     }
   }
 }

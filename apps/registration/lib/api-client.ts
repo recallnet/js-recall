@@ -21,7 +21,11 @@ import {
   UserCompetitionsResponse,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+// Use proxy endpoint when we have a separate API base URL to leverage Next.js rewrites
+// This eliminates cross-origin cookie issues on mobile by making all API calls same-origin
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+  ? "/backend-api"
+  : "/api";
 
 /**
  * Base HTTP error class with status code support
@@ -127,7 +131,6 @@ export class ApiClient {
 
       const errorMessage =
         data.error || `Request failed with status ${response.status}`;
-
       // Create appropriate error based on status code
       switch (response.status) {
         case 400:
@@ -149,7 +152,9 @@ export class ApiClient {
       }
     }
 
-    return response.json() as Promise<T>;
+    const responseData = (await response.json()) as T;
+
+    return responseData;
   }
 
   /**
@@ -184,10 +189,12 @@ export class ApiClient {
    * @returns Login response
    */
   async login(data: LoginRequest): Promise<LoginResponse> {
-    return this.request<LoginResponse>("/auth/login", {
+    const result = await this.request<LoginResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
     });
+
+    return result;
   }
 
   /**

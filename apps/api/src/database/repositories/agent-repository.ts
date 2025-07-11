@@ -17,6 +17,7 @@ import {
   competitionsLeaderboard,
 } from "@/database/schema/core/defs.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { transformToTrophy } from "@/lib/trophy-utils.js";
 import {
   AgentCompetitionsParams,
@@ -74,7 +75,7 @@ export const COMPUTED_SORT_FIELDS = [
  * Create a new agent
  * @param agent Agent to create
  */
-export async function create(agent: InsertAgent): Promise<SelectAgent> {
+async function createImpl(agent: InsertAgent): Promise<SelectAgent> {
   try {
     const now = new Date();
     const normalizedWalletAddress = agent.walletAddress?.toLowerCase();
@@ -100,7 +101,7 @@ export async function create(agent: InsertAgent): Promise<SelectAgent> {
 /**
  * Find all agents
  */
-export async function findAll(
+async function findAllImpl(
   pagingParams?: PagingParams,
 ): Promise<SelectAgent[]> {
   try {
@@ -128,7 +129,7 @@ export async function findAll(
  * @param agentId the ID of the agent used for lookup
  * @param params the filtering, sorting, and paging parameters
  */
-export async function findAgentCompetitions(
+async function findAgentCompetitionsImpl(
   agentId: string,
   params: AgentCompetitionsParams,
 ) {
@@ -205,7 +206,7 @@ export async function findAgentCompetitions(
  * @param isComputedSort Whether computed sorting is handled at the service layer (needs "full" results)
  * @returns Object containing agents array and total count
  */
-export async function findByCompetition(
+async function findByCompetitionImpl(
   competitionId: string,
   params: AgentQueryParams,
   isComputedSort: boolean = false,
@@ -279,7 +280,7 @@ export async function findByCompetition(
  * Find an agent by ID
  * @param id Agent ID to find
  */
-export async function findById(id: string): Promise<SelectAgent | undefined> {
+async function findByIdImpl(id: string): Promise<SelectAgent | undefined> {
   try {
     const [result] = await db.select().from(agents).where(eq(agents.id, id));
     return result;
@@ -293,7 +294,7 @@ export async function findById(id: string): Promise<SelectAgent | undefined> {
  * Find agents by owner ID
  * @param ownerId Owner ID to search for
  */
-export async function findByOwnerId(
+async function findByOwnerIdImpl(
   ownerId: string,
   pagingParams: PagingParams,
 ): Promise<SelectAgent[]> {
@@ -321,7 +322,7 @@ export async function findByOwnerId(
  * Find an agent by API key
  * @param apiKey The API key to search for
  */
-export async function findByApiKey(
+async function findByApiKeyImpl(
   apiKey: string,
 ): Promise<SelectAgent | undefined> {
   try {
@@ -342,7 +343,7 @@ export async function findByApiKey(
  * @param walletAddress the wallet address to filter by
  * @param pagingParams pagination parameters
  */
-export async function findByWallet({
+async function findByWalletImpl({
   walletAddress,
   pagingParams,
 }: {
@@ -376,7 +377,7 @@ export async function findByWallet({
  * @param name characters to use in the ilike pattern
  * @param pagingParams pagination parameters
  */
-export async function findByName({
+async function findByNameImpl({
   name,
   pagingParams,
 }: {
@@ -407,7 +408,7 @@ export async function findByName({
  * Update an agent
  * @param agent Agent data to update (must include id)
  */
-export async function update(
+async function updateImpl(
   agent: PartialExcept<InsertAgent, "id">,
 ): Promise<SelectAgent> {
   try {
@@ -440,7 +441,7 @@ export async function update(
  * @param id Agent ID to delete
  * @returns true if agent was deleted, false otherwise
  */
-export async function deleteAgent(id: string): Promise<boolean> {
+async function deleteAgentImpl(id: string): Promise<boolean> {
   try {
     const [result] = await db
       .delete(agents)
@@ -459,7 +460,7 @@ export async function deleteAgent(id: string): Promise<boolean> {
  * @param agentId Agent ID
  * @param competitionId Competition ID
  */
-export async function isAgentInCompetition(
+async function isAgentInCompetitionImpl(
   agentId: string,
   competitionId: string,
 ): Promise<boolean> {
@@ -487,7 +488,7 @@ export async function isAgentInCompetition(
  * @param agentId Agent ID to deactivate
  * @param reason Reason for deactivation
  */
-export async function deactivateAgent(
+async function deactivateAgentImpl(
   agentId: string,
   reason: string,
 ): Promise<SelectAgent> {
@@ -519,7 +520,7 @@ export async function deactivateAgent(
  * Reactivate an agent
  * @param agentId Agent ID to reactivate
  */
-export async function reactivateAgent(agentId: string): Promise<SelectAgent> {
+async function reactivateAgentImpl(agentId: string): Promise<SelectAgent> {
   try {
     const now = new Date();
     const [result] = await db
@@ -547,7 +548,7 @@ export async function reactivateAgent(agentId: string): Promise<SelectAgent> {
  * @param searchParams Object containing search parameters
  * @returns Array of agents matching the search criteria
  */
-export async function searchAgents(
+async function searchAgentsImpl(
   searchParams: AgentSearchParams,
 ): Promise<SelectAgent[]> {
   try {
@@ -592,7 +593,7 @@ export async function searchAgents(
 /**
  * Count all agents
  */
-export async function count(): Promise<number> {
+async function countImpl(): Promise<number> {
   try {
     const [result] = await db.select({ count: drizzleCount() }).from(agents);
     return result?.count ?? 0;
@@ -605,7 +606,7 @@ export async function count(): Promise<number> {
 /**
  * Count agents with a given wallet address
  */
-export async function countByWallet(walletAddress: string): Promise<number> {
+async function countByWalletImpl(walletAddress: string): Promise<number> {
   try {
     const [result] = await db
       .select({ count: drizzleCount() })
@@ -621,7 +622,7 @@ export async function countByWallet(walletAddress: string): Promise<number> {
 /**
  * Count agents with a given name
  */
-export async function countByName(name: string): Promise<number> {
+async function countByNameImpl(name: string): Promise<number> {
   try {
     const [result] = await db
       .select({ count: drizzleCount() })
@@ -637,7 +638,7 @@ export async function countByName(name: string): Promise<number> {
 /**
  * Count competitions for a given agent
  */
-export async function countAgentCompetitionsForStatus(
+async function countAgentCompetitionsForStatusImpl(
   agentId: string,
   status: CompetitionStatus[],
 ): Promise<number> {
@@ -665,7 +666,7 @@ export async function countAgentCompetitionsForStatus(
 /**
  * Find all inactive agents
  */
-export async function findInactiveAgents(): Promise<SelectAgent[]> {
+async function findInactiveAgentsImpl(): Promise<SelectAgent[]> {
   try {
     return await db.select().from(agents).where(eq(agents.status, "suspended"));
   } catch (error) {
@@ -681,7 +682,7 @@ export async function findInactiveAgents(): Promise<SelectAgent[]> {
  * @param params Query parameters for filtering, sorting, and pagination
  * @returns Object containing competitions array, total count, and computed sort flag
  */
-export async function findUserAgentCompetitions(
+async function findUserAgentCompetitionsImpl(
   agentIds: string[],
   params: AgentCompetitionsParams,
 ) {
@@ -825,7 +826,7 @@ export async function findUserAgentCompetitions(
  * @param agentIds Array of agent IDs to get trophies for
  * @returns Array of trophies grouped by agentId
  */
-export async function getBulkAgentTrophies(agentIds: string[]): Promise<
+async function getBulkAgentTrophiesImpl(agentIds: string[]): Promise<
   {
     agentId: string;
     trophies: Array<{
@@ -923,3 +924,144 @@ export async function getBulkAgentTrophies(agentIds: string[]): Promise<
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const create = createTimedRepositoryFunction(
+  createImpl,
+  "AgentRepository",
+  "create",
+);
+
+export const findAll = createTimedRepositoryFunction(
+  findAllImpl,
+  "AgentRepository",
+  "findAll",
+);
+
+export const findAgentCompetitions = createTimedRepositoryFunction(
+  findAgentCompetitionsImpl,
+  "AgentRepository",
+  "findAgentCompetitions",
+);
+
+export const findByCompetition = createTimedRepositoryFunction(
+  findByCompetitionImpl,
+  "AgentRepository",
+  "findByCompetition",
+);
+
+export const findById = createTimedRepositoryFunction(
+  findByIdImpl,
+  "AgentRepository",
+  "findById",
+);
+
+export const findByOwnerId = createTimedRepositoryFunction(
+  findByOwnerIdImpl,
+  "AgentRepository",
+  "findByOwnerId",
+);
+
+export const findByApiKey = createTimedRepositoryFunction(
+  findByApiKeyImpl,
+  "AgentRepository",
+  "findByApiKey",
+);
+
+export const findByWallet = createTimedRepositoryFunction(
+  findByWalletImpl,
+  "AgentRepository",
+  "findByWallet",
+);
+
+export const findByName = createTimedRepositoryFunction(
+  findByNameImpl,
+  "AgentRepository",
+  "findByName",
+);
+
+export const update = createTimedRepositoryFunction(
+  updateImpl,
+  "AgentRepository",
+  "update",
+);
+
+export const deleteAgent = createTimedRepositoryFunction(
+  deleteAgentImpl,
+  "AgentRepository",
+  "deleteAgent",
+);
+
+export const isAgentInCompetition = createTimedRepositoryFunction(
+  isAgentInCompetitionImpl,
+  "AgentRepository",
+  "isAgentInCompetition",
+);
+
+export const deactivateAgent = createTimedRepositoryFunction(
+  deactivateAgentImpl,
+  "AgentRepository",
+  "deactivateAgent",
+);
+
+export const reactivateAgent = createTimedRepositoryFunction(
+  reactivateAgentImpl,
+  "AgentRepository",
+  "reactivateAgent",
+);
+
+export const searchAgents = createTimedRepositoryFunction(
+  searchAgentsImpl,
+  "AgentRepository",
+  "searchAgents",
+);
+
+export const count = createTimedRepositoryFunction(
+  countImpl,
+  "AgentRepository",
+  "count",
+);
+
+export const countByWallet = createTimedRepositoryFunction(
+  countByWalletImpl,
+  "AgentRepository",
+  "countByWallet",
+);
+
+export const countByName = createTimedRepositoryFunction(
+  countByNameImpl,
+  "AgentRepository",
+  "countByName",
+);
+
+export const countAgentCompetitionsForStatus = createTimedRepositoryFunction(
+  countAgentCompetitionsForStatusImpl,
+  "AgentRepository",
+  "countAgentCompetitionsForStatus",
+);
+
+export const findInactiveAgents = createTimedRepositoryFunction(
+  findInactiveAgentsImpl,
+  "AgentRepository",
+  "findInactiveAgents",
+);
+
+export const findUserAgentCompetitions = createTimedRepositoryFunction(
+  findUserAgentCompetitionsImpl,
+  "AgentRepository",
+  "findUserAgentCompetitions",
+);
+
+export const getBulkAgentTrophies = createTimedRepositoryFunction(
+  getBulkAgentTrophiesImpl,
+  "AgentRepository",
+  "getBulkAgentTrophies",
+);

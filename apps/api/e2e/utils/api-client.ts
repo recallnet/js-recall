@@ -114,7 +114,8 @@ export class ApiClient {
         this.adminApiKey &&
         (config.url?.startsWith("/api/admin") ||
           config.url?.includes("admin") ||
-          config.url?.includes("competition")) &&
+          config.url?.includes("competition") ||
+          config.url?.includes("metrics")) &&
         this.adminApiKey !== this.apiKey
       ) {
         config.headers["Authorization"] = `Bearer ${this.adminApiKey}`;
@@ -1210,6 +1211,19 @@ export class ApiClient {
   }
 
   /**
+   * Get Prometheus metrics
+   * @returns A promise that resolves to the metrics response (plain text)
+   */
+  async getMetrics(): Promise<string | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/metrics");
+      return response.data as string;
+    } catch (error) {
+      return this.handleApiError(error, "get metrics");
+    }
+  }
+
+  /**
    * Generic API request method for custom endpoints
    * @param method HTTP method (get, post, put, delete)
    * @param path API path
@@ -1634,6 +1648,20 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get object index");
+    }
+  }
+
+  /**
+   * Verify user email with token
+   * Requires SIWE session authentication
+   * @param token Email verification token
+   */
+  async verifyEmail(): Promise<ApiResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/user/verify-email");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "verify email");
     }
   }
 }

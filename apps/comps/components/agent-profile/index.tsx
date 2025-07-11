@@ -149,7 +149,7 @@ export default function AgentProfile({
             <div className="px-15 xs:px-10 pb-15 absolute bottom-0 right-[50%] w-full translate-x-[50%] md:px-20">
               <Clipboard
                 text={agent.walletAddress || ""}
-                className="rder-gray-600 text-secondary-foreground w-full rounded-[10px] border-gray-700 px-4 py-2 text-lg hover:text-gray-300"
+                className="text-secondary-foreground w-full rounded-[10px] border-gray-600 border-gray-700 px-3 py-2 text-lg hover:text-gray-300"
               />
             </div>
           )}

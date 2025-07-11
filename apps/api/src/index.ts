@@ -17,7 +17,8 @@ import { makeVoteController } from "@/controllers/vote.controller.js";
 import { migrateDb } from "@/database/db.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
-import errorHandler from "@/middleware/errorHandler.js";
+import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
+import { loggingMiddleware } from "@/middleware/logging.middleware.js";
 import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
@@ -30,6 +31,7 @@ import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
 import { configureEmailVerificationRoutes } from "@/routes/email-verification.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
+import { configureMetricsRoutes } from "@/routes/metrics.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
 import { configureUserRoutes } from "@/routes/user.routes.js";
@@ -87,12 +89,39 @@ app.set("trust proxy", true);
 
 app.use(
   cors({
-    origin: config.app.url,
+    origin: function (origin, fn) {
+      // Allow any localhost port in development mode
+      if (config.server.nodeEnv === "development") {
+        const localhostRegex = /^http?:\/\/localhost(:\d+)?$/i;
+        if (!origin || localhostRegex.test(origin)) {
+          fn(null, true);
+        } else {
+          fn(new ApiError(403, "Forbidden"));
+        }
+        return;
+      }
+
+      // See Express CORS docs for details: https://expressjs.com/en/resources/middleware/cors.html#configuration-options
+      const baseDomain = config?.app?.domain?.startsWith(".")
+        ? config?.app?.domain?.substring(1)
+        : config?.app?.domain;
+      const escapedDomain = baseDomain?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const domainRegex = new RegExp(`${escapedDomain}$`, "i");
+      if (!origin || domainRegex.test(origin)) {
+        fn(null, true);
+      } else {
+        fn(new ApiError(403, "Forbidden"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
+// Add logging middleware after basic setup but before authentication
+app.use(loggingMiddleware);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -185,6 +214,7 @@ const userRoutes = configureUserRoutes(userController, voteController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
+const metricsRoutes = configureMetricsRoutes(adminMiddleware);
 
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
@@ -200,6 +230,7 @@ apiRouter.use("/user", userRoutes);
 apiRouter.use("/agent", agentRoutes);
 apiRouter.use("/agents", agentsRoutes);
 apiRouter.use("/leaderboard", leaderboardRoutes);
+apiRouter.use("/metrics", metricsRoutes);
 
 // Mount the API router with the prefix + /api path
 app.use(`${apiBasePath}/api`, apiRouter);

@@ -1107,7 +1107,7 @@
                         "properties": {
                           "rank": {
                             "type": "integer",
-                            "description": "Agent rank on the leaderboard"
+                            "description": "Agent postion on the leaderboard, e.g. 1st, 2nd, etc.."
                           },
                           "agentId": {
                             "type": "string",
@@ -2344,13 +2344,13 @@
                       "type": "string",
                       "enum": [
                         "trade",
-                        "agent_rank_history",
+                        "agent_score_history",
                         "competitions_leaderboard",
                         "portfolio_snapshot",
-                        "agent_rank"
+                        "agent_score"
                       ]
                     },
-                    "description": "Types of data to sync (defaults to trade, agent_rank_history, competitions_leaderboard)"
+                    "description": "Types of data to sync (defaults to trade, agent_score_history, competitions_leaderboard)"
                   }
                 }
               }
@@ -2434,8 +2434,8 @@
               "type": "string",
               "enum": [
                 "trade",
-                "agent_rank_history",
-                "agent_rank",
+                "agent_score_history",
+                "agent_score",
                 "competitions_leaderboard",
                 "portfolio_snapshot"
               ]

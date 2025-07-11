@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "@/database/db.js";
 import { competitions, votes } from "@/database/schema/core/defs.js";
 import { InsertVote, SelectVote } from "@/database/schema/core/types.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { COMPETITION_STATUS } from "@/types/index.js";
 
 /**
@@ -17,7 +18,7 @@ import { COMPETITION_STATUS } from "@/types/index.js";
  * @returns The created vote record
  * @throws Error if vote creation fails or if duplicate vote exists
  */
-export async function createVote(vote: InsertVote): Promise<SelectVote> {
+async function createVoteImpl(vote: InsertVote): Promise<SelectVote> {
   try {
     const now = new Date();
     const data: InsertVote = {
@@ -52,7 +53,7 @@ export async function createVote(vote: InsertVote): Promise<SelectVote> {
  * @param competitionId The competition ID
  * @returns The vote record if found, undefined otherwise
  */
-export async function findVoteByUserAgentCompetition(
+async function findVoteByUserAgentCompetitionImpl(
   userId: string,
   agentId: string,
   competitionId: string,
@@ -86,7 +87,7 @@ export async function findVoteByUserAgentCompetition(
  * @param competitionId Optional competition ID to filter by
  * @returns Array of vote records
  */
-export async function findVotesByUser(
+async function findVotesByUserImpl(
   userId: string,
   competitionId?: string,
 ): Promise<SelectVote[]> {
@@ -115,7 +116,7 @@ export async function findVotesByUser(
  * @param competitionId The competition ID
  * @returns Array of vote records
  */
-export async function findVotesByCompetition(
+async function findVotesByCompetitionImpl(
   competitionId: string,
 ): Promise<SelectVote[]> {
   try {
@@ -138,7 +139,7 @@ export async function findVotesByCompetition(
  * @param competitionId The competition ID
  * @returns Number of votes for the agent in the competition
  */
-export async function countVotesByAgent(
+async function countVotesByAgentImpl(
   agentId: string,
   competitionId: string,
 ): Promise<number> {
@@ -163,9 +164,7 @@ export async function countVotesByAgent(
  * @param competitionId The competition ID
  * @returns Number of votes for the agent in the competition
  */
-export async function countTotalVotesForAgent(
-  agentId: string,
-): Promise<number> {
+async function countTotalVotesForAgentImpl(agentId: string): Promise<number> {
   try {
     const [result] = await db
       .select({ count: drizzleCount() })
@@ -184,7 +183,7 @@ export async function countTotalVotesForAgent(
  * @param competitionId The competition ID
  * @returns Array of objects with agentId and voteCount
  */
-export async function getVoteCountsByCompetition(
+async function getVoteCountsByCompetitionImpl(
   competitionId: string,
 ): Promise<{ agentId: string; voteCount: number }[]> {
   try {
@@ -219,7 +218,7 @@ export async function getVoteCountsByCompetition(
  * @param competitionId The competition ID
  * @returns Array of vote records (should be 0 or 1 in current design)
  */
-export async function getUserVotesForCompetition(
+async function getUserVotesForCompetitionImpl(
   userId: string,
   competitionId: string,
 ): Promise<SelectVote[]> {
@@ -248,7 +247,7 @@ export async function getUserVotesForCompetition(
  * @param competitionId The competition ID
  * @returns True if user has voted in the competition, false otherwise
  */
-export async function hasUserVotedInCompetition(
+async function hasUserVotedInCompetitionImpl(
   userId: string,
   competitionId: string,
 ): Promise<boolean> {
@@ -276,7 +275,7 @@ export async function hasUserVotedInCompetition(
  * @param competitionId The competition ID
  * @returns The vote record if found, undefined otherwise
  */
-export async function getUserVoteForCompetition(
+async function getUserVoteForCompetitionImpl(
   userId: string,
   competitionId: string,
 ): Promise<SelectVote | undefined> {
@@ -303,7 +302,7 @@ export async function getUserVoteForCompetition(
  * Count total votes in the system
  * @returns Total number of votes
  */
-export async function count(): Promise<number> {
+async function countImpl(): Promise<number> {
   try {
     const [result] = await db.select({ count: drizzleCount() }).from(votes);
     return result?.count || 0;
@@ -318,7 +317,7 @@ export async function count(): Promise<number> {
  * @param agentId The agent ID
  * @returns Total number of votes for the agent across all finished competitions
  */
-export async function countTotalVotesByAgent(agentId: string): Promise<number> {
+async function countTotalVotesByAgentImpl(agentId: string): Promise<number> {
   try {
     const [result] = await db
       .select({ count: drizzleCount() })
@@ -337,3 +336,84 @@ export async function countTotalVotesByAgent(agentId: string): Promise<number> {
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const createVote = createTimedRepositoryFunction(
+  createVoteImpl,
+  "VoteRepository",
+  "createVote",
+);
+
+export const findVoteByUserAgentCompetition = createTimedRepositoryFunction(
+  findVoteByUserAgentCompetitionImpl,
+  "VoteRepository",
+  "findVoteByUserAgentCompetition",
+);
+
+export const findVotesByUser = createTimedRepositoryFunction(
+  findVotesByUserImpl,
+  "VoteRepository",
+  "findVotesByUser",
+);
+
+export const findVotesByCompetition = createTimedRepositoryFunction(
+  findVotesByCompetitionImpl,
+  "VoteRepository",
+  "findVotesByCompetition",
+);
+
+export const countVotesByAgent = createTimedRepositoryFunction(
+  countVotesByAgentImpl,
+  "VoteRepository",
+  "countVotesByAgent",
+);
+
+export const countTotalVotesForAgent = createTimedRepositoryFunction(
+  countTotalVotesForAgentImpl,
+  "VoteRepository",
+  "countTotalVotesForAgent",
+);
+
+export const getVoteCountsByCompetition = createTimedRepositoryFunction(
+  getVoteCountsByCompetitionImpl,
+  "VoteRepository",
+  "getVoteCountsByCompetition",
+);
+
+export const getUserVotesForCompetition = createTimedRepositoryFunction(
+  getUserVotesForCompetitionImpl,
+  "VoteRepository",
+  "getUserVotesForCompetition",
+);
+
+export const hasUserVotedInCompetition = createTimedRepositoryFunction(
+  hasUserVotedInCompetitionImpl,
+  "VoteRepository",
+  "hasUserVotedInCompetition",
+);
+
+export const getUserVoteForCompetition = createTimedRepositoryFunction(
+  getUserVoteForCompetitionImpl,
+  "VoteRepository",
+  "getUserVoteForCompetition",
+);
+
+export const count = createTimedRepositoryFunction(
+  countImpl,
+  "VoteRepository",
+  "count",
+);
+
+export const countTotalVotesByAgent = createTimedRepositoryFunction(
+  countTotalVotesByAgentImpl,
+  "VoteRepository",
+  "countTotalVotesByAgent",
+);

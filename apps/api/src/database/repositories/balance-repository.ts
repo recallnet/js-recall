@@ -3,6 +3,7 @@ import { and, count as drizzleCount, eq } from "drizzle-orm";
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { balances } from "@/database/schema/trading/defs.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChain } from "@/types/index.js";
 
 /**
@@ -13,7 +14,7 @@ import { SpecificChain } from "@/types/index.js";
 /**
  * Count all balances
  */
-export async function count() {
+async function countImpl() {
   const res = await db.select({ count: drizzleCount() }).from(balances);
   if (!res.length) {
     throw new Error("No count result returned");
@@ -29,7 +30,7 @@ export async function count() {
  * @param specificChain Specific chain for the token
  * @param symbol Token symbol
  */
-export async function saveBalance(
+async function saveBalanceImpl(
   agentId: string,
   tokenAddress: string,
   amount: number,
@@ -76,7 +77,7 @@ export async function saveBalance(
  * @param agentId Agent ID
  * @param tokenAddress Token address
  */
-export async function getBalance(agentId: string, tokenAddress: string) {
+async function getBalanceImpl(agentId: string, tokenAddress: string) {
   try {
     const [result] = await db
       .select()
@@ -99,7 +100,7 @@ export async function getBalance(agentId: string, tokenAddress: string) {
  * Get all balances for an agent
  * @param agentId Agent ID
  */
-export async function getAgentBalances(agentId: string) {
+async function getAgentBalancesImpl(agentId: string) {
   try {
     return await db
       .select()
@@ -116,7 +117,7 @@ export async function getAgentBalances(agentId: string) {
  * @param agentId Agent ID
  * @param initialBalances Map of token addresses to amounts and symbols
  */
-export async function initializeAgentBalances(
+async function initializeAgentBalancesImpl(
   agentId: string,
   initialBalances: Map<string, { amount: number; symbol: string }>,
 ) {
@@ -192,7 +193,7 @@ function getTokenSpecificChain(tokenAddress: string): string | null {
  * @param agentId Agent ID
  * @param initialBalances Map of token addresses to amounts and symbols
  */
-export async function resetAgentBalances(
+async function resetAgentBalancesImpl(
   agentId: string,
   initialBalances: Map<string, { amount: number; symbol: string }>,
 ) {
@@ -226,3 +227,48 @@ export async function resetAgentBalances(
     throw error;
   }
 }
+
+// =============================================================================
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// =============================================================================
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const count = createTimedRepositoryFunction(
+  countImpl,
+  "BalanceRepository",
+  "count",
+);
+
+export const saveBalance = createTimedRepositoryFunction(
+  saveBalanceImpl,
+  "BalanceRepository",
+  "saveBalance",
+);
+
+export const getBalance = createTimedRepositoryFunction(
+  getBalanceImpl,
+  "BalanceRepository",
+  "getBalance",
+);
+
+export const getAgentBalances = createTimedRepositoryFunction(
+  getAgentBalancesImpl,
+  "BalanceRepository",
+  "getAgentBalances",
+);
+
+export const initializeAgentBalances = createTimedRepositoryFunction(
+  initializeAgentBalancesImpl,
+  "BalanceRepository",
+  "initializeAgentBalances",
+);
+
+export const resetAgentBalances = createTimedRepositoryFunction(
+  resetAgentBalancesImpl,
+  "BalanceRepository",
+  "resetAgentBalances",
+);
