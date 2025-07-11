@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
+import { config } from "@/config/index.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -284,11 +285,12 @@ export function makeUserController(services: ServiceRegistry) {
         // Auto-verify email in development and test modes
         if (!user.isEmailVerified) {
           if (
-            process.env.NODE_ENV === "development" ||
-            process.env.NODE_ENV === "test"
+            (config.server.nodeEnv === "development" ||
+              config.server.nodeEnv === "test") &&
+            !(config.email.apiKey && config.email.transactionalId)
           ) {
             console.log(
-              `[DEV/TEST] Auto-verifying email for user ${userId} in ${process.env.NODE_ENV} mode`,
+              `[DEV/TEST] Auto-verifying email for user ${userId} in ${config.server.nodeEnv} mode`,
             );
             await services.userManager.markEmailAsVerified(userId);
             // Continue with API key access since we just verified the email
