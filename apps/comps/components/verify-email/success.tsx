@@ -1,31 +1,25 @@
 "use client";
 
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import Link from "next/link";
-import React, { useRef } from "react";
+import { useRouter } from "next/navigation";
+import React from "react";
 
 export default function SuccessVerifyEmail() {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const router = useRouter();
 
-  const handleVideoEnded = () => {
-    if (videoRef.current) videoRef.current.pause();
-  };
+  React.useEffect(() => {
+    setTimeout(() => router.push("/profile"), 4000);
+  }, [router]);
 
   return (
     <>
-      <div className="pt-15 relative flex max-h-screen w-full flex-col items-center justify-center">
-        <video
-          ref={videoRef}
-          width={300}
-          height={300}
-          src="/email-success.webm"
-          autoPlay
-          muted
-          playsInline
-          onEnded={handleVideoEnded}
-          className="h-auto max-w-full rounded-lg shadow-lg"
-        >
-          Your browser does not support the video tag.
-        </video>
+      <div className="relative flex max-h-screen w-full flex-col items-center justify-center">
+        <DotLottieReact
+          src="https://lottie.host/71d7adab-ce72-4da1-b20a-d96019695ace/Tq7ewu1SUj.lottie"
+          autoplay
+          className="w-200 h-100"
+        />
         <div className="flex w-full flex-col items-center justify-center">
           <span className="mb-5 text-2xl text-white">
             Email verified successfully
@@ -34,10 +28,10 @@ export default function SuccessVerifyEmail() {
             You will be redirected automatically in 4 seconds, or you can
             <Link
               href="/profile"
-              className="text-gray-300 underline hover:text-white"
+              className="mx-1 text-gray-300 underline hover:text-white"
             >
               click here
-            </Link>{" "}
+            </Link>
             to be redirected right now.
           </span>
         </div>

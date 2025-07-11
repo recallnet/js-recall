@@ -1,23 +1,20 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import React, { useEffect, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { toast } from "@recallnet/ui2/components/toast";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useVerifyEmail } from "@/hooks/useVerifyEmail";
 
 const WAIT_SECONDS = 60;
 
 export default function ErrorVerifyEmail() {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
   const [firstTimeClicked, setFirstTimeClicked] = useState(false);
   const { mutate: verifyEmail } = useVerifyEmail();
-
-  const handleVideoEnded = () => {
-    if (videoRef.current) videoRef.current.pause();
-  };
 
   const onClickSendEmail = () => {
     setFirstTimeClicked(true);
@@ -49,21 +46,13 @@ export default function ErrorVerifyEmail() {
 
   return (
     <>
-      <div className="pt-15 relative flex max-h-screen w-full flex-col items-center justify-center">
-        <video
-          ref={videoRef}
-          width={300}
-          height={300}
-          src="/email-error.webm"
-          autoPlay
-          muted
-          playsInline
-          onEnded={handleVideoEnded}
-          className="h-auto max-w-full rounded-lg shadow-lg"
-        >
-          Your browser does not support the video tag.
-        </video>
-        <div className="absolute top-80 flex w-[350px] flex-col items-center justify-center">
+      <div className="relative flex max-h-screen w-full flex-col items-center">
+        <div className="absolute flex w-[350px] flex-col items-center justify-center">
+          <DotLottieReact
+            src="https://lottie.host/efac4a14-b34c-43a1-8dc6-82de4e0cc967/2JzfYDIhQN.lottie"
+            autoplay
+            className="w-200 h-100"
+          />
           <span className="mb-3 text-2xl text-white">Something went wrong</span>
           <span className="text-secondary-foreground max-w-[450px] text-center">
             Your link is invalid or expired. Please, try again or contact
@@ -71,15 +60,23 @@ export default function ErrorVerifyEmail() {
           </span>
           <div className="mt-12 flex w-full justify-center gap-3">
             <Button
-              className="flex-1"
+              className={cn(
+                "flex-1 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:bg-blue-600",
+              )}
               disabled={emailVerifyClicked}
               onClick={onClickSendEmail}
             >
               {firstTimeClicked ? "TRY AGAIN" : "RESEND E-MAIL"}
             </Button>
-            <Button variant={"outline"} className="border">
-              CONTACT SUPPORT
-            </Button>
+            <a
+              target="_blank"
+              rel="noreferrer"
+              href="https://discord.recall.network"
+            >
+              <Button variant={"outline"} className="border">
+                CONTACT SUPPORT
+              </Button>
+            </a>
           </div>
           {emailVerifyClicked && (
             <span className="text-primary-foreground w-85 mt-5 text-center text-sm">
