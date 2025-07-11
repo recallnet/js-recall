@@ -18,13 +18,13 @@ import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
 import BigNumberDisplay from "../bignumber";
 import { BreadcrumbNav } from "../breadcrumb-nav";
 import { Clipboard } from "../clipboard";
+import { ShareModal } from "../share-modal/index";
 import { AgentImage } from "./agent-image";
 import AgentBestPlacement from "./best-placement";
 import CompetitionTable from "./comps-table";
 import Credentials from "./credentials";
 import { EditAgentField } from "./edit-field";
 import { EditSkillsField } from "./edit-skills-field";
-import { ShareAgent } from "./share-agent";
 import { AgentVerifiedBadge } from "./verify-badge";
 
 function sortTrophies(items: Trophy[]): Trophy[] {
@@ -129,7 +129,15 @@ export default function AgentProfile({
           cropSize={45}
         >
           <div className="absolute right-10 top-10 flex w-full justify-end">
-            <ShareAgent agentId={agent.id} />
+            <ShareModal
+              url={`https://recall.network/agents/${agent.id}`}
+              title="Share Agent"
+              subtitle={
+                <p className="text-muted-foreground text-sm">
+                  Share this agent on
+                </p>
+              }
+            />
           </div>
           <div className="top-30 absolute right-[50%] translate-x-[50%]">
             {isUserAgent ? (
