@@ -289,6 +289,8 @@ jobs:
           # Optional: API prefix
           API_PREFIX=testing
 
+          METRICS_PORT=3003
+
       - name: Run E2E tests
         working-directory: apps/api
         run: |

@@ -31,6 +31,11 @@ vi.setConfig({ testTimeout: 60_000 });
 // Set test mode environment variable
 process.env.TEST_MODE = "true";
 
+// Ensure METRICS_PORT is set for test environment
+if (!process.env.METRICS_PORT) {
+  process.env.METRICS_PORT = "3003";
+}
+
 // Before all tests in every file
 beforeAll(async () => {
   log("[Global Setup] Initializing test environment...");

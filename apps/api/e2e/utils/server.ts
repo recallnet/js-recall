@@ -37,6 +37,8 @@ export async function startServer(): Promise<Server> {
           NODE_ENV: "test",
           PORT: testPort,
           HOST: testHost,
+          METRICS_PORT: process.env.METRICS_PORT || "3003",
+          METRICS_HOST: "127.0.0.1", // Secure binding for tests
           TEST_MODE: "true",
         },
         stdio: "inherit",
@@ -128,30 +130,36 @@ export async function stopServer(server: Server): Promise<void> {
 }
 
 /**
- * Kill any existing server processes running on the test port
- * This is a safety measure to ensure no orphaned processes remain
+ * Kill any existing server processes running on the test ports
+ * This includes both the main API server and the metrics server
  */
 export async function killExistingServers(): Promise<void> {
   return new Promise<void>((resolve) => {
     try {
       const testPort = process.env.TEST_PORT || "3001";
-      console.log(`Checking for existing servers on port ${testPort}...`);
+      const metricsPort = process.env.METRICS_PORT || "3003";
+      console.log(
+        `Checking for existing servers on ports ${testPort} and ${metricsPort}...`,
+      );
 
-      // Platform-specific command to find and kill processes using the test port
+      // Platform-specific command to find and kill processes using both ports
       let command: string;
       let args: string[];
 
       if (process.platform === "win32") {
-        // Windows
+        // Windows - kill processes on both ports
         command = "cmd.exe";
         args = [
           "/c",
-          `for /f "tokens=5" %a in ('netstat -ano ^| findstr :${testPort}') do taskkill /F /PID %a`,
+          `(for /f "tokens=5" %a in ('netstat -ano ^| findstr :${testPort}') do taskkill /F /PID %a) & (for /f "tokens=5" %a in ('netstat -ano ^| findstr :${metricsPort}') do taskkill /F /PID %a)`,
         ];
       } else {
-        // Unix-like (macOS, Linux)
+        // Unix-like (macOS, Linux) - kill processes on both ports
         command = "bash";
-        args = ["-c", `lsof -i:${testPort} -t | xargs -r kill -9`];
+        args = [
+          "-c",
+          `(lsof -i:${testPort} -t | xargs -r kill -9) && (lsof -i:${metricsPort} -t | xargs -r kill -9)`,
+        ];
       }
 
       const killProcess = spawn(command, args, { stdio: "pipe" });
@@ -190,7 +198,7 @@ async function waitForServerReady(
       if (response.status === 200) {
         console.log("✅ Server is ready");
 
-        // Additional verification of API endpoints
+        // Additional verification of API endpoints and metrics server
         try {
           // Wait a bit more to ensure all routes are registered
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -200,9 +208,17 @@ async function waitForServerReady(
           console.log(
             `Admin API health check: ${adminSetupResponse.status === 200 ? "OK" : "Failed"}`,
           );
+
+          // Verify metrics server is available (always on localhost for security)
+          const metricsPort = process.env.METRICS_PORT || "3003";
+          const metricsUrl = `http://127.0.0.1:${metricsPort}`;
+          const metricsHealthResponse = await axios.get(`${metricsUrl}/health`);
+          console.log(
+            `Metrics server health check: ${metricsHealthResponse.status === 200 ? "OK" : "Failed"}`,
+          );
         } catch (err) {
           console.warn(
-            "Additional API verification failed, but continuing:",
+            "Additional API/metrics verification failed, but continuing:",
             err,
           );
         }

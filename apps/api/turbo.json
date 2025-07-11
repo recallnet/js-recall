@@ -56,7 +56,9 @@
         "LOOPS_TRANSACTIONAL_ID",
         "CORS_ORIGINS",
         "REPOSITORY_LOG_SAMPLE_RATE",
-        "HTTP_LOG_SAMPLE_RATE"
+        "HTTP_LOG_SAMPLE_RATE",
+        "METRICS_PORT",
+        "METRICS_HOST"
       ]
     }
   }

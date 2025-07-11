@@ -114,8 +114,7 @@ export class ApiClient {
         this.adminApiKey &&
         (config.url?.startsWith("/api/admin") ||
           config.url?.includes("admin") ||
-          config.url?.includes("competition") ||
-          config.url?.includes("metrics")) &&
+          config.url?.includes("competition")) &&
         this.adminApiKey !== this.apiKey
       ) {
         config.headers["Authorization"] = `Bearer ${this.adminApiKey}`;
@@ -1211,12 +1210,24 @@ export class ApiClient {
   }
 
   /**
-   * Get Prometheus metrics
+   * Get Prometheus metrics from the dedicated metrics server
    * @returns A promise that resolves to the metrics response (plain text)
    */
   async getMetrics(): Promise<string | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/metrics");
+      // Metrics are now served on a separate port (3003) without authentication
+      // Extract the base URL and replace the port with the metrics port
+      const url = new URL(this.baseUrl);
+      const metricsPort = process.env.METRICS_PORT || "3003";
+      url.port = metricsPort;
+      url.pathname = "/metrics"; // Set the correct path
+
+      const response = await axios.get(url.toString(), {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // No authentication required for metrics endpoint
+      });
       return response.data as string;
     } catch (error) {
       return this.handleApiError(error, "get metrics");
