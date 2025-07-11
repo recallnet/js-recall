@@ -113,10 +113,81 @@ const pool = new Pool({
 const dbLogger = {
   logQuery: (query: string, params: unknown[]) => {
     void params; // Acknowledge parameter exists but we don't use it
-    const traceId = getTraceId() || "no-trace";
+    const rawTraceId = getTraceId();
 
-    // Extract operation type from SQL query
-    const operation = query.trim().split(" ")[0]?.toUpperCase() || "UNKNOWN";
+    // Handle trace ID fallbacks more gracefully
+    const traceId = (() => {
+      if (rawTraceId === "unknown") {
+        return "background-task"; // Database operations outside HTTP context
+      }
+      if (rawTraceId === "init") {
+        return "app-init"; // Database operations during app initialization
+      }
+      return rawTraceId || "no-trace"; // Should not happen but just in case
+    })();
+
+    // Extract operation type from SQL query with improved parsing
+    const operation = (() => {
+      if (!query || typeof query !== "string") {
+        return "EMPTY_QUERY";
+      }
+
+      const trimmed = query.trim();
+      if (!trimmed) {
+        return "EMPTY_QUERY";
+      }
+
+      // Extract first word and normalize
+      const firstWord = trimmed.split(/\s+/)[0]?.toUpperCase();
+
+      if (!firstWord) {
+        return "MALFORMED_QUERY";
+      }
+
+      // Handle common SQL operations
+      const knownOperations = [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "CREATE",
+        "DROP",
+        "ALTER",
+        "TRUNCATE",
+        "REPLACE",
+        "MERGE",
+        "WITH",
+        "SHOW",
+        "EXPLAIN",
+        "BEGIN",
+        "COMMIT",
+        "ROLLBACK",
+        "START", // Transaction commands
+      ];
+
+      if (knownOperations.includes(firstWord)) {
+        return firstWord;
+      }
+
+      // Handle compound statements that might start with parentheses or WITH
+      if (trimmed.startsWith("(")) {
+        // Look for the actual SQL operation inside parentheses
+        const innerMatch = trimmed.match(
+          /^\(\s*(SELECT|INSERT|UPDATE|DELETE|WITH)/i,
+        );
+        if (innerMatch && innerMatch[1]) {
+          return innerMatch[1].toUpperCase();
+        }
+        return "SELECT"; // Default for parentheses-wrapped queries
+      }
+
+      if (trimmed.startsWith("WITH") || trimmed.includes("WITH RECURSIVE")) {
+        return "WITH"; // CTE
+      }
+
+      // If it's not a recognized operation, return the first word for debugging
+      return `UNRECOGNIZED_${firstWord}`;
+    })();
 
     // Note: Drizzle's logger interface is called AFTER query execution,
     // so we cannot accurately measure query timing here. The timing would
@@ -130,8 +201,12 @@ const dbLogger = {
     // Environment-aware logging (without timing)
     const isDev = config.server.nodeEnv === "development";
     if (isDev) {
-      console.log(`[${traceId}] [DB] ${operation}`);
+      // In development, show a more detailed console log
+      console.log(
+        `[${traceId}] [DB] ${operation} - ${query.substring(0, 100)}${query.length > 100 ? "..." : ""}`,
+      );
     } else {
+      // In production, always include query preview for debugging classification issues
       console.log(
         JSON.stringify({
           traceId,
@@ -139,6 +214,8 @@ const dbLogger = {
           operation,
           status: "success",
           timestamp: new Date().toISOString(),
+          queryPreview: query.substring(0, 100),
+          ...(query.length > 100 ? { queryTruncated: true } : {}),
         }),
       );
     }
