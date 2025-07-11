@@ -90,7 +90,8 @@ function getOperationFromMethod(methodName: string): string {
   if (
     name.includes("create") ||
     name.includes("insert") ||
-    name.includes("add")
+    name.includes("add") ||
+    (name.includes("batch") && name.includes("create")) // batchCreatePortfolioTokenValues
   ) {
     return "INSERT";
   }
@@ -99,31 +100,35 @@ function getOperationFromMethod(methodName: string): string {
     name.includes("set") ||
     name.includes("save") ||
     name.includes("mark") || // markAsUsed, markTokenAsUsed, markAgentAsWithdrawn
-    name.includes("reset") // resetAgentBalances
+    name.includes("reset") || // resetAgentBalances
+    (name.includes("batch") && name.includes("update")) // batchUpdateAgentRanks
   ) {
     return "UPDATE";
   }
-  if (name.includes("delete") || name.includes("remove")) {
+  if (
+    name.includes("delete") ||
+    name.includes("remove") ||
+    name.startsWith("deleteexpired") || // deleteExpired
+    name.startsWith("deletebyagent") // deleteByAgentId
+  ) {
     return "DELETE";
   }
   if (
     name.includes("find") ||
     name.includes("get") ||
     name.includes("search") ||
-    name.includes("count") ||
-    name.includes("list") ||
-    name.includes("all") ||
     name.includes("is") || // isAgentActiveInCompetition
     name.includes("has") || // hasUserVotedInCompetition
-    name.includes("check") || // any check methods
-    name.includes("exists") || // any exists methods
-    name.includes("validate") || // any validate methods
-    name.includes("verify") // any verify methods
+    name.includes("check") ||
+    name.includes("exists") ||
+    name.includes("validate") ||
+    name.includes("verify") ||
+    name.includes("count") // countObjectIndex, countAgentTrades, countTotalVotes
   ) {
     return "SELECT";
   }
 
-  // Default fallback
+  // Fallback to QUERY for any unrecognized patterns
   return "QUERY";
 }
 

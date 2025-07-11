@@ -651,18 +651,66 @@ describe("Logging and Metrics API", () => {
       { pattern: 'method="isAgentActiveInCompetition"', expectedOp: "SELECT" },
       { pattern: 'method="hasUserVotedInCompetition"', expectedOp: "SELECT" },
 
+      // These should be classified as SELECT (query methods)
+      { pattern: 'method="findById"', expectedOp: "SELECT" },
+      { pattern: 'method="findByNonce"', expectedOp: "SELECT" },
+      { pattern: 'method="findByEmail"', expectedOp: "SELECT" },
+      { pattern: 'method="findByApiKey"', expectedOp: "SELECT" },
+      { pattern: 'method="getBalance"', expectedOp: "SELECT" },
+      { pattern: 'method="getAgentTrades"', expectedOp: "SELECT" },
+      { pattern: 'method="getAgentBalances"', expectedOp: "SELECT" },
+      { pattern: 'method="getAllAgentRanks"', expectedOp: "SELECT" },
+      { pattern: 'method="getBulkAgentMetrics"', expectedOp: "SELECT" },
+      {
+        pattern: 'method="getOptimizedGlobalAgentMetrics"',
+        expectedOp: "SELECT",
+      },
+      { pattern: 'method="getRewardsByEpoch"', expectedOp: "SELECT" },
+      { pattern: 'method="getLatestPortfolioSnapshots"', expectedOp: "SELECT" },
+      { pattern: 'method="countObjectIndex"', expectedOp: "SELECT" },
+      { pattern: 'method="countAgentTrades"', expectedOp: "SELECT" },
+      { pattern: 'method="countTotalVotes"', expectedOp: "SELECT" },
+      { pattern: 'method="count"', expectedOp: "SELECT" },
+
       // These should be classified as UPDATE (state change methods)
       { pattern: 'method="markAgentAsWithdrawn"', expectedOp: "UPDATE" },
       { pattern: 'method="markAsUsed"', expectedOp: "UPDATE" },
-
-      // These should be classified as SELECT (query methods)
-      { pattern: 'method="findById"', expectedOp: "SELECT" },
-      { pattern: 'method="getBalance"', expectedOp: "SELECT" },
+      { pattern: 'method="markTokenAsUsed"', expectedOp: "UPDATE" },
+      { pattern: 'method="resetAgentBalances"', expectedOp: "UPDATE" },
+      { pattern: 'method="batchUpdateAgentRanks"', expectedOp: "UPDATE" },
+      { pattern: 'method="updateLastLogin"', expectedOp: "UPDATE" },
+      { pattern: 'method="updatePassword"', expectedOp: "UPDATE" },
+      { pattern: 'method="saveBalance"', expectedOp: "UPDATE" },
+      { pattern: 'method="update"', expectedOp: "UPDATE" },
+      { pattern: 'method="updateOne"', expectedOp: "UPDATE" },
 
       // These should be classified as INSERT (creation methods)
       { pattern: 'method="create"', expectedOp: "INSERT" },
+      { pattern: 'method="createVote"', expectedOp: "INSERT" },
+      { pattern: 'method="createPortfolioSnapshot"', expectedOp: "INSERT" },
+      {
+        pattern: 'method="createEmailVerificationToken"',
+        expectedOp: "INSERT",
+      },
+      { pattern: 'method="insertRewards"', expectedOp: "INSERT" },
+      { pattern: 'method="insertRewardsTree"', expectedOp: "INSERT" },
+      { pattern: 'method="insertObjectIndexEntries"', expectedOp: "INSERT" },
+      {
+        pattern: 'method="batchCreatePortfolioTokenValues"',
+        expectedOp: "INSERT",
+      },
+      { pattern: 'method="addAgentToCompetition"', expectedOp: "INSERT" },
+      { pattern: 'method="addAgents"', expectedOp: "INSERT" },
+
+      // These should be classified as DELETE (deletion methods)
+      { pattern: 'method="deleteExpired"', expectedOp: "DELETE" },
+      { pattern: 'method="deleteByAgentId"', expectedOp: "DELETE" },
+      { pattern: 'method="deleteUser"', expectedOp: "DELETE" },
+      { pattern: 'method="deleteAdmin"', expectedOp: "DELETE" },
+      { pattern: 'method="removeAgentFromCompetition"', expectedOp: "DELETE" },
     ];
 
+    let misclassifiedMethods = 0;
     for (const { pattern, expectedOp } of methodClassifications) {
       if (metricsText.includes(pattern)) {
         // Find the line with this method and verify it has the correct operation type
@@ -672,13 +720,43 @@ describe("Logging and Metrics API", () => {
         if (methodLine && !methodLine.includes(`operation="${expectedOp}"`)) {
           console.error(`❌ Method ${pattern} not classified as ${expectedOp}`);
           console.error(`Found line: ${methodLine}`);
-          expect(false).toBe(true); // Fail the test
+          misclassifiedMethods++;
         } else if (methodLine) {
           console.log(
             `✓ Method ${pattern} correctly classified as ${expectedOp}`,
           );
         }
       }
+    }
+
+    // Check for any repository methods that are falling back to "QUERY" classification
+    // This indicates methods that our pattern matching doesn't handle
+    const queryRepositoryMethods = metricsText
+      .split("\n")
+      .filter(
+        (line) =>
+          line.includes("repository_queries_total") &&
+          line.includes('operation="QUERY"') &&
+          line.includes("repository="),
+      );
+
+    if (queryRepositoryMethods.length > 0) {
+      console.error(
+        "❌ Found repository methods classified as QUERY (fallback):",
+      );
+      queryRepositoryMethods.slice(0, 5).forEach((line) => {
+        console.error(`  ${line}`);
+      });
+      misclassifiedMethods += queryRepositoryMethods.length;
+    }
+
+    // Only fail the test if we have truly problematic misclassifications
+    // Allow some tolerance for methods that might not be in our specific test patterns
+    if (misclassifiedMethods > 0) {
+      console.error(
+        `❌ Found ${misclassifiedMethods} misclassified repository methods`,
+      );
+      expect(false).toBe(true); // Fail the test
     }
   });
 });

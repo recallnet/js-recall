@@ -201,8 +201,12 @@ const dbLogger = {
     // Environment-aware logging (without timing)
     const isDev = config.server.nodeEnv === "development";
     if (isDev) {
-      console.log(`[${traceId}] [DB] ${operation}`);
+      // In development, show a more detailed console log
+      console.log(
+        `[${traceId}] [DB] ${operation} - ${query.substring(0, 100)}${query.length > 100 ? "..." : ""}`,
+      );
     } else {
+      // In production, always include query preview for debugging classification issues
       console.log(
         JSON.stringify({
           traceId,
@@ -210,13 +214,8 @@ const dbLogger = {
           operation,
           status: "success",
           timestamp: new Date().toISOString(),
-          // Add query info for debugging unrecognized operations
-          ...(operation.startsWith("UNRECOGNIZED_") ||
-          operation.includes("QUERY")
-            ? {
-                queryPreview: query.substring(0, 100),
-              }
-            : {}),
+          queryPreview: query.substring(0, 100),
+          ...(query.length > 100 ? { queryTruncated: true } : {}),
         }),
       );
     }
