@@ -478,4 +478,207 @@ describe("Logging and Metrics API", () => {
 
     console.log("Error responses are properly tracked in metrics");
   });
+
+  test("database operations are properly classified and never show unknown patterns", async () => {
+    const client = createTestClient();
+    await client.loginAsAdmin(adminApiKey);
+
+    // Register user and agent to trigger diverse database operations
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName: "DB Classification Test User",
+        userEmail: "db-classification@example.com",
+        agentName: "DB Classification Test Agent",
+        agentDescription: "Agent for testing database operation classification",
+      });
+
+    // Create a competition to trigger even more database operations
+    const competitionName = `DB Classification Test Competition ${Date.now()}`;
+    const createCompResult = await client.createCompetition(
+      competitionName,
+      "Competition to test database operation classification",
+    );
+    expect(createCompResult.success).toBe(true);
+    const createCompResponse = createCompResult as CreateCompetitionResponse;
+    const competitionId = createCompResponse.competition.id;
+
+    // Start the competition with the agent
+    const startCompResult = await client.startExistingCompetition(
+      competitionId,
+      [agent.id],
+    );
+    expect(startCompResult.success).toBe(true);
+
+    // Execute operations that trigger different types of database operations
+    console.log("Executing operations to test database classification...");
+
+    // SELECT operations (should be classified as "SELECT")
+    await agentClient.getAgentProfile(); // findById
+    await agentClient.getBalance(); // getBalance, getAgentBalances
+    await agentClient.getPortfolio(); // getLatestPortfolioSnapshots
+    await agentClient.getTradeHistory(); // getAgentTrades
+    await client.listAgents(); // findAll
+    await client.getCompetition(competitionId); // findById
+    await client.getCompetitionLeaderboard(); // findLeaderboardByTradingComp
+
+    // INSERT operations (should be classified as "INSERT")
+    await agentClient.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: config.specificChainTokens.eth.eth,
+      amount: "50",
+      reason: "DB Classification test trade",
+    }); // create (trade)
+
+    // UPDATE operations (should be classified as "UPDATE")
+    await agentClient.resetApiKey(); // markAsUsed (if using nonce), update operations
+
+    // Methods that were previously misclassified (should now be properly classified)
+    // These operations happen internally during various API calls:
+    // - isAgentActiveInCompetition (should be "SELECT")
+    // - markAgentAsWithdrawn (should be "UPDATE")
+    // - hasUserVotedInCompetition (should be "SELECT")
+
+    // End the competition to trigger more operations
+    const endCompResult = await client.endCompetition(competitionId);
+    expect(endCompResult.success).toBe(true);
+
+    // Get metrics and verify all operations are properly classified
+    const metricsResponse = await client.getMetrics();
+    expect(typeof metricsResponse).toBe("string");
+
+    const metricsText = metricsResponse as string;
+
+    // Verify that we have repository metrics
+    expect(metricsText).toContain("repository_queries_total");
+    expect(metricsText).toContain("repository_query_duration_ms");
+
+    // Verify that all operations are classified as proper database operations
+    const expectedOperationTypes = [
+      "SELECT",
+      "INSERT",
+      "UPDATE",
+      "DELETE",
+      "BEGIN",
+      "COMMIT",
+      "ROLLBACK",
+      "START",
+    ];
+    let foundOperationTypes = 0;
+
+    for (const operationType of expectedOperationTypes) {
+      if (metricsText.includes(`operation="${operationType}"`)) {
+        foundOperationTypes++;
+        console.log(`✓ Found ${operationType} operations in metrics`);
+      }
+    }
+
+    // We should have at least SELECT and INSERT operations from our test
+    expect(foundOperationTypes).toBeGreaterThanOrEqual(2);
+
+    // CRITICAL: Ensure NO repository operations are classified as "QUERY" (the fallback)
+    // This would indicate that some repository methods are not properly classified
+    if (metricsText.includes('operation="QUERY"')) {
+      console.error(
+        "❌ Found QUERY operations - some repository methods are not properly classified!",
+      );
+
+      // Extract and log the specific metrics that are using QUERY classification
+      const queryMetrics = metricsText
+        .split("\n")
+        .filter((line) => line.includes('operation="QUERY"'))
+        .slice(0, 5); // Show first 5 examples
+
+      console.error("Examples of QUERY operations:", queryMetrics);
+
+      expect(false).toBe(true); // Fail the test
+    }
+
+    // CRITICAL: Ensure NO database operations show up as "UNKNOWN" from database logger
+    // This would indicate that SQL query parsing is failing
+    if (metricsText.includes('operation="UNKNOWN"')) {
+      console.error(
+        "❌ Found UNKNOWN operations - SQL query parsing is failing!",
+      );
+
+      // Extract and log the specific metrics that are using UNKNOWN classification
+      const unknownMetrics = metricsText
+        .split("\n")
+        .filter((line) => line.includes('operation="UNKNOWN"'))
+        .slice(0, 5); // Show first 5 examples
+
+      console.error("Examples of UNKNOWN operations:", unknownMetrics);
+
+      expect(false).toBe(true); // Fail the test
+    }
+
+    // Check for truly problematic database operation patterns in metrics
+    // Note: We allow transaction commands (BEGIN, COMMIT, ROLLBACK) as they are legitimate
+    const problematicDbPatterns = [
+      'operation="EMPTY_QUERY"',
+      'operation="MALFORMED_QUERY"',
+      'operation="UNRECOGNIZED_', // Only fail on truly unrecognized operations
+    ];
+
+    for (const pattern of problematicDbPatterns) {
+      const matchingLines = metricsText
+        .split("\n")
+        .filter((line) => line.includes(pattern));
+
+      // Filter out known transaction commands that might still show as UNRECOGNIZED
+      const trulyProblematic = matchingLines.filter((line) => {
+        // Allow transaction commands even if they show as UNRECOGNIZED (temporary)
+        const isTransactionCommand =
+          line.includes("UNRECOGNIZED_BEGIN") ||
+          line.includes("UNRECOGNIZED_COMMIT") ||
+          line.includes("UNRECOGNIZED_ROLLBACK") ||
+          line.includes("UNRECOGNIZED_START");
+        return !isTransactionCommand;
+      });
+
+      if (trulyProblematic.length > 0) {
+        console.error(
+          `❌ Found problematic database operation pattern: ${pattern}`,
+        );
+        console.error("Examples:", trulyProblematic.slice(0, 3));
+        expect(false).toBe(true); // Fail the test
+      }
+    }
+
+    // Verify specific method classifications that were previously problematic
+    const methodClassifications = [
+      // These should be classified as SELECT (boolean/check methods)
+      { pattern: 'method="isAgentActiveInCompetition"', expectedOp: "SELECT" },
+      { pattern: 'method="hasUserVotedInCompetition"', expectedOp: "SELECT" },
+
+      // These should be classified as UPDATE (state change methods)
+      { pattern: 'method="markAgentAsWithdrawn"', expectedOp: "UPDATE" },
+      { pattern: 'method="markAsUsed"', expectedOp: "UPDATE" },
+
+      // These should be classified as SELECT (query methods)
+      { pattern: 'method="findById"', expectedOp: "SELECT" },
+      { pattern: 'method="getBalance"', expectedOp: "SELECT" },
+
+      // These should be classified as INSERT (creation methods)
+      { pattern: 'method="create"', expectedOp: "INSERT" },
+    ];
+
+    for (const { pattern, expectedOp } of methodClassifications) {
+      if (metricsText.includes(pattern)) {
+        // Find the line with this method and verify it has the correct operation type
+        const lines = metricsText.split("\n");
+        const methodLine = lines.find((line) => line.includes(pattern));
+
+        if (methodLine && !methodLine.includes(`operation="${expectedOp}"`)) {
+          console.error(`❌ Method ${pattern} not classified as ${expectedOp}`);
+          console.error(`Found line: ${methodLine}`);
+          expect(false).toBe(true); // Fail the test
+        } else if (methodLine) {
+          console.log(
+            `✓ Method ${pattern} correctly classified as ${expectedOp}`,
+          );
+        }
+      }
+    }
+  });
 });

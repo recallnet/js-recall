@@ -97,7 +97,9 @@ function getOperationFromMethod(methodName: string): string {
   if (
     name.includes("update") ||
     name.includes("set") ||
-    name.includes("save")
+    name.includes("save") ||
+    name.includes("mark") || // markAsUsed, markTokenAsUsed, markAgentAsWithdrawn
+    name.includes("reset") // resetAgentBalances
   ) {
     return "UPDATE";
   }
@@ -110,7 +112,13 @@ function getOperationFromMethod(methodName: string): string {
     name.includes("search") ||
     name.includes("count") ||
     name.includes("list") ||
-    name.includes("all")
+    name.includes("all") ||
+    name.includes("is") || // isAgentActiveInCompetition
+    name.includes("has") || // hasUserVotedInCompetition
+    name.includes("check") || // any check methods
+    name.includes("exists") || // any exists methods
+    name.includes("validate") || // any validate methods
+    name.includes("verify") // any verify methods
   ) {
     return "SELECT";
   }
@@ -129,7 +137,19 @@ function wrapRepositoryFunction<
     ...args: Parameters<TFunc>
   ): Promise<Awaited<ReturnType<TFunc>>> => {
     const startTime = performance.now();
-    const traceId = getTraceId() || "no-trace";
+    const rawTraceId = getTraceId();
+
+    // Handle trace ID fallbacks more gracefully
+    const traceId = (() => {
+      if (rawTraceId === "unknown") {
+        return "background-task"; // Repository operations outside HTTP context
+      }
+      if (rawTraceId === "init") {
+        return "app-init"; // Repository operations during app initialization
+      }
+      return rawTraceId || "no-trace"; // Should not happen but just in case
+    })();
+
     const operation = getOperationFromMethod(methodName);
 
     try {
@@ -181,6 +201,18 @@ function wrapRepositoryFunction<
     } catch (error) {
       const endTime = performance.now();
       const durationMs = endTime - startTime;
+
+      // Handle trace ID fallbacks more gracefully (same as success path)
+      const rawTraceId = getTraceId();
+      const traceId = (() => {
+        if (rawTraceId === "unknown") {
+          return "background-task"; // Repository operations outside HTTP context
+        }
+        if (rawTraceId === "init") {
+          return "app-init"; // Repository operations during app initialization
+        }
+        return rawTraceId || "no-trace"; // Should not happen but just in case
+      })();
 
       // Get metrics (lazy loading)
       const { dbQueryTotal } = getDbMetrics();
