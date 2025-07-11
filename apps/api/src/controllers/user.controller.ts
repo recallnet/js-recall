@@ -144,10 +144,10 @@ export function makeUserController(services: ServiceRegistry) {
           throw new ApiError(500, "Failed to create agent");
         }
 
-        // Return the created agent with API key (user needs this for distribution)
+        // Return the created agent (API key must be retrieved via separate endpoint)
         res.status(201).json({
           success: true,
-          agent,
+          agent: services.agentManager.sanitizeAgent(agent),
         });
       } catch (error) {
         next(error);
@@ -273,6 +273,31 @@ export function makeUserController(services: ServiceRegistry) {
         // Verify ownership
         if (agent.ownerId !== userId) {
           throw new ApiError(403, "Access denied: You don't own this agent");
+        }
+
+        // Check if user's email is verified (security layer)
+        const user = await services.userManager.getUser(userId);
+        if (!user) {
+          throw new ApiError(404, "User not found");
+        }
+
+        // Auto-verify email in development and test modes
+        if (!user.isEmailVerified) {
+          if (
+            process.env.NODE_ENV === "development" ||
+            process.env.NODE_ENV === "test"
+          ) {
+            console.log(
+              `[DEV/TEST] Auto-verifying email for user ${userId} in ${process.env.NODE_ENV} mode`,
+            );
+            await services.userManager.markEmailAsVerified(userId);
+            // Continue with API key access since we just verified the email
+          } else {
+            throw new ApiError(
+              403,
+              "Email verification required to access agent API keys",
+            );
+          }
         }
 
         // Get the decrypted API key using existing admin infrastructure

@@ -51,6 +51,10 @@ export function configureUserRoutes(
    *                     email:
    *                       type: string
    *                       example: "john@example.com"
+   *                     isEmailVerified:
+   *                       type: boolean
+   *                       description: Whether the user's email address has been verified
+   *                       example: true
    *                     imageUrl:
    *                       type: string
    *                       example: "https://example.com/avatar.jpg"
@@ -134,6 +138,9 @@ export function configureUserRoutes(
    *                     email:
    *                       type: string
    *                       nullable: true
+   *                     isEmailVerified:
+   *                       type: boolean
+   *                       description: Whether the user's email address has been verified
    *                     imageUrl:
    *                       type: string
    *                       nullable: true
@@ -228,10 +235,6 @@ export function configureUserRoutes(
    *                     imageUrl:
    *                       type: string
    *                       nullable: true
-   *                     apiKey:
-   *                       type: string
-   *                       description: The API key for this agent (store this securely)
-   *                       example: "1234567890abcdef_fedcba0987654321"
    *                     metadata:
    *                       type: object
    *                       nullable: true
@@ -545,7 +548,7 @@ export function configureUserRoutes(
    * /api/user/agents/{agentId}/api-key:
    *   get:
    *     summary: Get agent API key
-   *     description: Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly.
+   *     description: Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly. Requires email verification for security.
    *     tags:
    *       - User
    *     security:
@@ -608,7 +611,7 @@ export function configureUserRoutes(
    *                   type: string
    *                   example: "Authentication required"
    *       403:
-   *         description: Access denied (user doesn't own this agent)
+   *         description: Access denied (user doesn't own this agent or email verification required)
    *         content:
    *           application/json:
    *             schema:
@@ -619,7 +622,7 @@ export function configureUserRoutes(
    *                   example: false
    *                 message:
    *                   type: string
-   *                   example: "Access denied: You don't own this agent"
+   *                   example: "Email verification required to access agent API keys"
    *       404:
    *         description: Agent not found
    *         content:
@@ -920,8 +923,6 @@ export function configureUserRoutes(
    *                             description:
    *                               type: string
    *                             imageUrl:
-   *                               type: string
-   *                             apiKey:
    *                               type: string
    *                             metadata:
    *                               type: object
