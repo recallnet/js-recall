@@ -547,6 +547,7 @@ export function makeAdminController(services: ServiceRegistry) {
           externalUrl,
           imageUrl,
           type,
+          endDate,
           votingStartDate,
           votingEndDate,
         } = result.data;
@@ -560,6 +561,7 @@ export function makeAdminController(services: ServiceRegistry) {
           externalUrl,
           imageUrl,
           type,
+          endDate ? new Date(endDate) : undefined,
           votingStartDate ? new Date(votingStartDate) : undefined,
           votingEndDate ? new Date(votingEndDate) : undefined,
         );
@@ -596,6 +598,7 @@ export function makeAdminController(services: ServiceRegistry) {
           sandboxMode,
           externalUrl,
           imageUrl,
+          endDate,
           votingStartDate,
           votingEndDate,
         } = result.data;
@@ -663,6 +666,7 @@ export function makeAdminController(services: ServiceRegistry) {
             externalUrl,
             imageUrl,
             undefined, // type parameter (will use default)
+            endDate ? new Date(endDate) : undefined,
             votingStartDate ? new Date(votingStartDate) : undefined,
             votingEndDate ? new Date(votingEndDate) : undefined,
           );

@@ -65,6 +65,22 @@ export function makeTradeController(services: ServiceRegistry) {
           `[TradeController] Executing trade with competition ID: ${competitionId}`,
         );
 
+        // Fetch the competition and check if end date has passed
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, `Competition not found: ${competitionId}`);
+        }
+
+        // Check if competition has passed its end date
+        const now = new Date();
+        if (competition.endDate !== null && now > competition.endDate) {
+          throw new ApiError(
+            400,
+            `Competition has ended. Trading is no longer allowed for competition: ${competition.name}`,
+          );
+        }
+
         // Create chain options object if any chain parameters were provided
         const chainOptions =
           fromChain || fromSpecificChain || toChain || toSpecificChain

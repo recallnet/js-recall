@@ -7,6 +7,8 @@ import {
   eq,
   getTableColumns,
   inArray,
+  isNotNull,
+  lte,
   max,
   sql,
 } from "drizzle-orm";
@@ -1379,6 +1381,41 @@ async function getBulkAgentCompetitionRankingsImpl(
   }
 }
 
+/**
+ * Find active competitions that have reached their end date
+ * @returns Array of active competitions that should be ended
+ */
+async function findActiveCompetitionsPastEndDateImpl() {
+  try {
+    const now = new Date();
+
+    const result = await db
+      .select({
+        crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
+      })
+      .from(tradingCompetitions)
+      .innerJoin(
+        competitions,
+        eq(tradingCompetitions.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          eq(competitions.status, COMPETITION_STATUS.ACTIVE),
+          isNotNull(competitions.endDate),
+          lte(competitions.endDate, now),
+        ),
+      );
+    return result;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in findActiveCompetitionsPastEndDateImpl:",
+      error,
+    );
+    throw error;
+  }
+}
+
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -1602,4 +1639,10 @@ export const getBulkAgentCompetitionRankings = createTimedRepositoryFunction(
   getBulkAgentCompetitionRankingsImpl,
   "CompetitionRepository",
   "getBulkAgentCompetitionRankings",
+);
+
+export const findActiveCompetitionsPastEndDate = createTimedRepositoryFunction(
+  findActiveCompetitionsPastEndDateImpl,
+  "CompetitionRepository",
+  "findActiveCompetitionsPastEndDate",
 );
