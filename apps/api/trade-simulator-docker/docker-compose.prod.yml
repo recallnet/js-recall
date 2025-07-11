@@ -4,6 +4,9 @@ services:
     restart: always
     env_file:
       - ../.env
+    # Ports exposed internally (add port mappings if needed):
+    # - "${PORT:-3000}:${PORT:-3000}"         # Main API
+    # - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}"  # Metrics server
     healthcheck:
       test:
         [

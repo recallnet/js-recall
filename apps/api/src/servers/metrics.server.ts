@@ -102,6 +102,7 @@ export function createMetricsServer(): express.Application {
         service: "metrics-server",
         timestamp: new Date().toISOString(),
       });
+      next(); // Indicate error has been handled
     },
   );
 

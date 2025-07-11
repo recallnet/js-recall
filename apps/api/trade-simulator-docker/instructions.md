@@ -48,16 +48,45 @@ docker run -p 3000:3000 --env-file apps/api/trade-simulator-docker/.env my-api-t
 
 The application provides health check endpoints that respect the `API_PREFIX` environment variable:
 
+### Main API Server (Port 3000)
+
 - **No API_PREFIX**: Health checks available at `/health` and `/api/health`
 - **With API_PREFIX** (e.g., `API_PREFIX=testing-grounds`): Health checks at `/testing-grounds/health` and `/testing-grounds/api/health`
 
+### Metrics Server (Port 3003)
+
+- **Health check**: `GET :3003/health` (no authentication required)
+- **Prometheus metrics**: `GET :3003/metrics` (no authentication required)
+- **Service info**: `GET :3003/` (service information)
+
 The Docker Compose health check automatically adjusts to use the correct endpoint based on your `API_PREFIX` setting.
+
+## Configuration
+
+### Environment Variables
+
+The following environment variables control the server configuration:
+
+| Variable       | Default     | Description                                |
+| -------------- | ----------- | ------------------------------------------ |
+| `PORT`         | `3000`      | Main API server port                       |
+| `METRICS_PORT` | `3003`      | Metrics server port                        |
+| `METRICS_HOST` | `127.0.0.1` | Metrics server bind address                |
+| `API_PREFIX`   | (none)      | API route prefix (e.g., `testing-grounds`) |
+
+### Port Access
+
+- **Main API**: Access your API at `http://localhost:3000` (or your configured `PORT`)
+- **Metrics**: Access Prometheus metrics at `http://localhost:3003/metrics` (or your configured `METRICS_PORT`)
+
+For production deployments, the metrics server binds to localhost by default for security. Set `METRICS_HOST=0.0.0.0` only in secure network environments.
 
 ## Notes
 
 - This setup assumes PostgreSQL is running separately (not in Docker)
 - Make sure your `DATABASE_URL` points to your external PostgreSQL instance
 - The application will automatically handle database migrations on startup
+- Both main API and metrics servers start automatically
 - Set `API_PREFIX` in your `.env` file if you need custom API routing (e.g., `API_PREFIX=testing-grounds`)
 
 ## Database Initialization Options

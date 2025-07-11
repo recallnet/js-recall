@@ -25,9 +25,10 @@ COPY --from=builder /workdir /workdir
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV METRICS_PORT=3003
 
-# Expose the application port (will be overridden by docker-compose)
-EXPOSE $PORT
+# Expose both application and metrics ports
+EXPOSE $PORT $METRICS_PORT
 
 # Create startup script
 COPY apps/api/trade-simulator-docker/startup.sh /workdir/apps/api/startup.sh
