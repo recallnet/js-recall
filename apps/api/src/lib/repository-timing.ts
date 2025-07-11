@@ -207,18 +207,6 @@ function wrapRepositoryFunction<
       const endTime = performance.now();
       const durationMs = endTime - startTime;
 
-      // Handle trace ID fallbacks more gracefully (same as success path)
-      const rawTraceId = getTraceId();
-      const traceId = (() => {
-        if (rawTraceId === "unknown") {
-          return "background-task"; // Repository operations outside HTTP context
-        }
-        if (rawTraceId === "init") {
-          return "app-init"; // Repository operations during app initialization
-        }
-        return rawTraceId || "no-trace"; // Should not happen but just in case
-      })();
-
       // Get metrics (lazy loading)
       const { dbQueryTotal } = getDbMetrics();
 
