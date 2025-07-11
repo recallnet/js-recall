@@ -87,43 +87,109 @@ const getDbMetrics = () => {
 function getOperationFromMethod(methodName: string): string {
   const name = methodName.toLowerCase();
 
+  // Special case: balance operations should be treated as UPDATE (upsert operations)
+  if (name.includes("save") && name.includes("balance")) {
+    return "UPDATE";
+  }
+
+  // INSERT operations (create, insert, add, batch create)
   if (
     name.includes("create") ||
     name.includes("insert") ||
     name.includes("add") ||
-    (name.includes("batch") && name.includes("create")) // batchCreatePortfolioTokenValues
+    name.includes("register") ||
+    name.includes("store") ||
+    name.includes("save") ||
+    name.includes("build") ||
+    name.includes("generate") ||
+    name.includes("populate") ||
+    name.includes("sync") ||
+    (name.includes("batch") &&
+      (name.includes("create") || name.includes("insert"))) // batchCreatePortfolioTokenValues, batchInsertLeaderboard
   ) {
     return "INSERT";
   }
+
+  // UPDATE operations (update, set, mark, reset, batch update)
   if (
     name.includes("update") ||
     name.includes("set") ||
     name.includes("save") ||
+    name.includes("modify") ||
+    name.includes("change") ||
+    name.includes("edit") ||
+    name.includes("patch") ||
     name.includes("mark") || // markAsUsed, markTokenAsUsed, markAgentAsWithdrawn
     name.includes("reset") || // resetAgentBalances
+    name.includes("activate") || // activateAgent, deactivateAgent
+    name.includes("deactivate") ||
+    name.includes("reactivate") ||
+    name.includes("toggle") ||
+    name.includes("increment") ||
+    name.includes("decrement") ||
     (name.includes("batch") && name.includes("update")) // batchUpdateAgentRanks
   ) {
     return "UPDATE";
   }
+
+  // DELETE operations (delete, remove, clear, purge)
   if (
     name.includes("delete") ||
     name.includes("remove") ||
+    name.includes("clear") ||
+    name.includes("purge") ||
+    name.includes("destroy") ||
+    name.includes("clean") ||
+    name.includes("expire") ||
     name.startsWith("deleteexpired") || // deleteExpired
     name.startsWith("deletebyagent") // deleteByAgentId
   ) {
     return "DELETE";
   }
+
+  // SELECT operations (find, get, search, query, count, check, validate, etc.)
   if (
     name.includes("find") ||
     name.includes("get") ||
     name.includes("search") ||
+    name.includes("query") ||
+    name.includes("fetch") ||
+    name.includes("retrieve") ||
+    name.includes("read") ||
+    name.includes("load") ||
+    name.includes("list") ||
+    name.includes("show") ||
+    name.includes("view") ||
+    name.includes("display") ||
+    name.includes("select") ||
+    name.includes("filter") ||
+    name.includes("sort") ||
+    name.includes("paginate") ||
+    name.includes("aggregate") ||
+    name.includes("calculate") ||
+    name.includes("compute") ||
+    name.includes("analyze") ||
     name.includes("is") || // isAgentActiveInCompetition
     name.includes("has") || // hasUserVotedInCompetition
     name.includes("check") ||
     name.includes("exists") ||
     name.includes("validate") ||
     name.includes("verify") ||
-    name.includes("count") // countObjectIndex, countAgentTrades, countTotalVotes
+    name.includes("confirm") ||
+    name.includes("ensure") ||
+    name.includes("test") ||
+    name.includes("count") || // countObjectIndex, countAgentTrades, countTotalVotes
+    name.includes("sum") ||
+    name.includes("avg") ||
+    name.includes("average") ||
+    name.includes("min") ||
+    name.includes("max") ||
+    name.includes("total") ||
+    name.includes("bulk") || // getBulkAgentMetrics
+    (name.includes("batch") &&
+      !name.includes("create") &&
+      !name.includes("insert") &&
+      !name.includes("update")) // batch read operations
   ) {
     return "SELECT";
   }
