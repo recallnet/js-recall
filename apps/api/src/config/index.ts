@@ -145,11 +145,40 @@ const parseEvmChains = (): SpecificChain[] => {
   return configuredChains;
 };
 
+/**
+ * Validates that a port number is in valid range and not conflicting
+ */
+function validatePort(
+  port: number,
+  name: string,
+  otherPorts: number[] = [],
+): void {
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(
+      `${name} must be a valid port number (1-65535), got: ${port}`,
+    );
+  }
+
+  if (otherPorts.includes(port)) {
+    throw new Error(`${name} (${port}) conflicts with another configured port`);
+  }
+}
+
+// Parse and validate ports
+const mainPort = parseInt(process.env.PORT || "3000", 10);
+const metricsPort = parseInt(process.env.METRICS_PORT || "3003", 10);
+
+// Validate port configuration
+validatePort(mainPort, "PORT");
+validatePort(metricsPort, "METRICS_PORT", [mainPort]);
+
 export const config = {
   server: {
-    port: parseInt(process.env.PORT || "3000", 10),
+    port: mainPort,
     // TODO: these ports are going to be put into the openapi json spec, so they can't really be set at runtime, wtd?
     testPort: 3001,
+    metricsPort,
+    metricsHost: process.env.METRICS_HOST || "127.0.0.1", // Secure by default
     nodeEnv: process.env.NODE_ENV || "development",
     apiPrefix: process.env.API_PREFIX || "",
     sandboxUrl: "https://api.sandbox.competitions.recall.network",

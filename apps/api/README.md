@@ -427,6 +427,127 @@ pnpm dev
 
 The server will be available at http://localhost:3000 by default.
 
+## Metrics Server
+
+The Recall API includes a dedicated metrics server that runs on a separate port for internal monitoring and observability.
+
+### Architecture
+
+- **Main API Server**: Handles public API requests (default port 3000)
+- **Metrics Server**: Serves Prometheus metrics and health checks (default port 3003)
+- **Separation**: No authentication required for metrics, isolated from public API
+
+### Environment Variables
+
+| Variable       | Default     | Description                    | Security Notes                     |
+| -------------- | ----------- | ------------------------------ | ---------------------------------- |
+| `METRICS_PORT` | `3003`      | Port for metrics server        | Should be different from main port |
+| `METRICS_HOST` | `127.0.0.1` | Host/IP to bind metrics server | Use `127.0.0.1` for security       |
+| `PORT`         | `3000`      | Main API server port           | Public-facing port                 |
+
+### Security Configuration
+
+#### Recommended (Secure)
+
+```bash
+METRICS_HOST=127.0.0.1  # Localhost only - recommended
+METRICS_PORT=3003
+```
+
+#### Production Network Access (Use with caution)
+
+```bash
+METRICS_HOST=0.0.0.0    # WARNING: Exposes metrics to network
+METRICS_PORT=3003
+```
+
+### Endpoints
+
+#### Metrics Server (Port 3003)
+
+- `GET /metrics` - Prometheus metrics (no authentication)
+- `GET /health` - Health check with detailed status
+- `GET /` - Service information
+
+#### Example Health Check Response
+
+```json
+{
+  "status": "healthy",
+  "service": "metrics-server",
+  "timestamp": "2025-01-11T16:30:00.000Z",
+  "uptime": 1234.56,
+  "version": "1.0.0",
+  "checks": {
+    "server": "ok",
+    "metrics": "ok"
+  }
+}
+```
+
+### Deployment
+
+#### Docker
+
+```dockerfile
+EXPOSE 3000 3003
+ENV METRICS_HOST=127.0.0.1
+ENV METRICS_PORT=3003
+```
+
+#### Kubernetes
+
+```yaml
+ports:
+  - name: api
+    containerPort: 3000
+  - name: metrics
+    containerPort: 3003
+env:
+  - name: METRICS_HOST
+    value: "127.0.0.1"
+```
+
+#### Prometheus Configuration
+
+```yaml
+scrape_configs:
+  - job_name: "recall-api-metrics"
+    static_configs:
+      - targets: ["localhost:3003"]
+    metrics_path: "/metrics"
+    scrape_interval: 30s
+```
+
+### Monitoring
+
+The metrics server exposes standard Prometheus metrics including:
+
+- HTTP request duration and counts
+- Database operation metrics
+- Repository timing metrics
+- Application-specific business metrics
+
+### Troubleshooting
+
+#### Metrics Server Won't Start
+
+- Check for port conflicts: `lsof -i :3003`
+- Verify METRICS_PORT is valid (1-65535)
+- Ensure METRICS_PORT ≠ PORT
+
+#### Health Check Fails
+
+- Check `/health` endpoint returns 200
+- Verify Prometheus metrics generation works
+- Review server logs for errors
+
+#### Network Access Issues
+
+- Security: Metrics server binds to localhost by default
+- Production: Use METRICS_HOST=0.0.0.0 only in secure networks
+- Firewall: Ensure port 3003 is accessible by monitoring systems
+
 ## Security
 
 All protected API endpoints require an API Key in the Authorization header:
@@ -712,14 +833,16 @@ The application will automatically detect and use the base64-encoded certificate
 
 ### Server Configuration
 
-| Variable                  | Required | Default       | Description                                               |
-| ------------------------- | -------- | ------------- | --------------------------------------------------------- |
-| `PORT`                    | Optional | `3000`        | Server port number                                        |
-| `NODE_ENV`                | Optional | `development` | Environment mode (`development`, `production`, or `test`) |
-| `ENABLE_CORS`             | Optional | `true`        | Enable Cross-Origin Resource Sharing                      |
-| `MAX_PAYLOAD_SIZE`        | Optional | `1mb`         | Maximum request body size                                 |
-| `RATE_LIMIT_WINDOW_MS`    | Optional | `60000`       | Rate limiting window in milliseconds                      |
-| `RATE_LIMIT_MAX_REQUESTS` | Optional | `100`         | Maximum requests per rate limit window                    |
+| Variable                  | Required | Default       | Description                                                 |
+| ------------------------- | -------- | ------------- | ----------------------------------------------------------- |
+| `PORT`                    | Optional | `3000`        | Server port number                                          |
+| `METRICS_PORT`            | Optional | `3003`        | Metrics server port number                                  |
+| `METRICS_HOST`            | Optional | `127.0.0.1`   | Host/IP to bind metrics server (use 127.0.0.1 for security) |
+| `NODE_ENV`                | Optional | `development` | Environment mode (`development`, `production`, or `test`)   |
+| `ENABLE_CORS`             | Optional | `true`        | Enable Cross-Origin Resource Sharing                        |
+| `MAX_PAYLOAD_SIZE`        | Optional | `1mb`         | Maximum request body size                                   |
+| `RATE_LIMIT_WINDOW_MS`    | Optional | `60000`       | Rate limiting window in milliseconds                        |
+| `RATE_LIMIT_MAX_REQUESTS` | Optional | `100`         | Maximum requests per rate limit window                      |
 
 ### Chain Configuration
 
