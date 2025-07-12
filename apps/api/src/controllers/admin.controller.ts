@@ -3,7 +3,8 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { features, reloadSecurityConfig } from "@/config/index.js";
+import { reloadSecurityConfig } from "@/config/index.js";
+import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -17,6 +18,7 @@ import {
 } from "@/types/index.js";
 
 import {
+  AdminAddAgentToCompetitionParamsSchema,
   AdminCreateCompetitionSchema,
   AdminDeactivateAgentBodySchema,
   AdminDeactivateAgentParamsSchema,
@@ -468,13 +470,6 @@ export function makeAdminController(services: ServiceRegistry) {
             metadata: metadata ?? undefined,
             walletAddress: agentWalletAddress,
           });
-
-          // Auto-join logic: If sandbox mode is enabled and there's an active competition, auto-join the agent
-          if (features.SANDBOX_MODE) {
-            await services.competitionManager.autoJoinAgentToActiveCompetition(
-              agent.id,
-            );
-          }
 
           const response: AdminAgentRegistrationResponse = {
             success: true,
@@ -1674,6 +1669,159 @@ export function makeAdminController(services: ServiceRegistry) {
           competition: {
             id: competition.id,
             name: competition.name,
+          },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Add an agent to a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async addAgentToCompetition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Validate params using flatParse
+        const paramsResult = flatParse(
+          AdminAddAgentToCompetitionParamsSchema,
+          req.params,
+        );
+        if (!paramsResult.success) {
+          return res.status(400).json({
+            success: false,
+            error: `Invalid parameters: ${paramsResult.error}`,
+          });
+        }
+
+        const { competitionId, agentId } = paramsResult.data;
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          return res.status(404).json({
+            success: false,
+            error: "Competition not found",
+          });
+        }
+
+        // Check if agent exists
+        const agent = await services.agentManager.getAgent(agentId);
+        if (!agent) {
+          return res.status(404).json({
+            success: false,
+            error: "Agent not found",
+          });
+        }
+
+        // Check if agent owner's email is verified (security layer)
+        const owner = await services.userManager.getUser(agent.ownerId);
+        if (!owner) {
+          return res.status(404).json({
+            success: false,
+            error: "Agent owner not found",
+          });
+        }
+
+        // Auto-verify email in development and test modes
+        if (!owner.isEmailVerified) {
+          if (
+            process.env.NODE_ENV === "development" ||
+            process.env.NODE_ENV === "test"
+          ) {
+            console.log(
+              `[DEV/TEST] Auto-verifying email for user ${agent.ownerId} in ${process.env.NODE_ENV} mode`,
+            );
+            await services.userManager.markEmailAsVerified(agent.ownerId);
+            // Continue with adding agent to competition since we just verified the email
+          } else {
+            return res.status(403).json({
+              success: false,
+              error:
+                "Agent owner's email must be verified before adding to competition",
+            });
+          }
+        }
+
+        // Check if agent is already in the competition
+        const isInCompetition =
+          await services.competitionManager.isAgentInCompetition(
+            competitionId,
+            agentId,
+          );
+        if (isInCompetition) {
+          return res.status(400).json({
+            success: false,
+            error: "Agent is already participating in this competition",
+          });
+        }
+
+        // Check if competition is ended
+        if (competition.status === COMPETITION_STATUS.ENDED) {
+          return res.status(400).json({
+            success: false,
+            error: "Cannot add agent to ended competition",
+          });
+        }
+
+        // HARD RULE: Cannot add agents to active non-sandbox competitions
+        if (
+          competition.status === COMPETITION_STATUS.ACTIVE &&
+          !competition.sandboxMode
+        ) {
+          return res.status(400).json({
+            success: false,
+            error:
+              "Cannot add agents to active non-sandbox competitions - this would be unfair to existing participants",
+          });
+        }
+
+        // Apply sandbox mode logic if the competition is in sandbox mode
+        if (competition.sandboxMode) {
+          console.log(
+            `[AdminController] Applying sandbox mode logic for agent ${agentId} in competition ${competitionId}`,
+          );
+
+          // Reset the agent's balances to starting values (consistent with startCompetition order)
+          await services.balanceManager.resetAgentBalances(agentId);
+        }
+
+        // Add agent to competition using repository method
+        await addAgentToCompetition(competitionId, agentId);
+
+        // Complete sandbox mode logic if enabled
+        if (competition.sandboxMode) {
+          // Take a portfolio snapshot for the newly joined agent
+          await services.portfolioSnapshotter.takePortfolioSnapshotForAgent(
+            competitionId,
+            agentId,
+          );
+
+          console.log(
+            `[AdminController] Sandbox mode logic completed for agent ${agentId}`,
+          );
+        }
+
+        // Return success response
+        res.status(200).json({
+          success: true,
+          message: `Agent ${agent.name} successfully added to competition ${competition.name}`,
+          agent: {
+            id: agent.id,
+            name: agent.name,
+            ownerId: agent.ownerId,
+          },
+          competition: {
+            id: competition.id,
+            name: competition.name,
+            status: competition.status,
           },
         });
       } catch (error) {

@@ -1107,7 +1107,7 @@
                         "properties": {
                           "rank": {
                             "type": "integer",
-                            "description": "Agent postion on the leaderboard, e.g. 1st, 2nd, etc.."
+                            "description": "Agent rank on the leaderboard, e.g. 1st, 2nd, etc.."
                           },
                           "agentId": {
                             "type": "string",
@@ -2541,6 +2541,111 @@
           },
           "401": {
             "description": "Unauthorized - Admin authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/competitions/{competitionId}/agents/{agentId}": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Add agent to competition",
+        "description": "Add an agent to a specific competition (admin operation). Requires agent owner's email to be verified for security. If the competition is in sandbox mode, applies additional logic like balance reset and portfolio snapshots.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "description": "ID of the competition"
+          },
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "description": "ID of the agent to add"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent added to competition successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Success message"
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Agent ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Agent name"
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "description": "Agent owner ID"
+                        }
+                      }
+                    },
+                    "competition": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Competition ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Competition name"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Competition status"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing parameters, agent already in competition, or competition ended"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "403": {
+            "description": "Forbidden - Agent owner's email must be verified"
+          },
+          "404": {
+            "description": "Competition, agent, or agent owner not found"
           },
           "500": {
             "description": "Server error"
@@ -5007,7 +5112,7 @@
       "get": {
         "tags": ["Competition"],
         "summary": "Get agents participating in a competition",
-        "description": "Get a list of all agents participating in a specific competition with their scores and positions",
+        "description": "Get a list of all agents participating in a specific competition with their scores and ranks",
         "security": [
           {
             "BearerAuth": []
@@ -5037,10 +5142,10 @@
             "name": "sort",
             "schema": {
               "type": "string",
-              "description": "Optional field(s) to sort by. Supports single or multiple fields separated by commas.\nPrefix with '-' for descending order (e.g., '-name' or '-position').\nDefault is 'position' ascending.\n",
+              "description": "Optional field(s) to sort by. Supports single or multiple fields separated by commas.\nPrefix with '-' for descending order (e.g., '-name' or '-rank').\nDefault is 'rank' ascending.\n",
               "enum": [
-                "position",
-                "-position",
+                "rank",
+                "-rank",
                 "score",
                 "-score",
                 "pnl",
@@ -5056,7 +5161,7 @@
                 "name",
                 "-name"
               ],
-              "default": "position"
+              "default": "rank"
             },
             "required": false,
             "description": "Sort order for results"
@@ -5129,9 +5234,9 @@
                             "type": "number",
                             "description": "Agent's current score/portfolio value"
                           },
-                          "position": {
+                          "rank": {
                             "type": "integer",
-                            "description": "Agent's current position in the competition"
+                            "description": "Agent's current rank in the competition, e.g. 1st, 2nd, etc..."
                           },
                           "portfolioValue": {
                             "type": "number",
@@ -5369,14 +5474,14 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirects to frontend user profile page",
+            "description": "Redirects to frontend user verify email page",
             "headers": {
               "Location": {
                 "schema": {
                   "type": "string"
                 },
-                "description": "URL to the frontend user profile page with query parameters",
-                "example": "http://localhost:3001/profile?success=true&message=Email%20verified%20successfully%20for%20user"
+                "description": "URL to the frontend verify email page with query parameters",
+                "example": "http://localhost:3001/verify-email?success=true&message=Email%20verified%20successfully%20for%20user"
               }
             },
             "content": {
@@ -5694,6 +5799,37 @@
           },
           "500": {
             "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get Prometheus metrics",
+        "description": "Expose Prometheus metrics for monitoring (admin-only endpoint)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prometheus metrics in text format",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "# HELP http_requests_total Total number of HTTP requests\n# TYPE http_requests_total counter\nhttp_requests_total{method=\"GET\",route=\"/api/agent/profile\",status_code=\"200\"} 42\n\n# HELP http_request_duration_ms Duration of HTTP requests in milliseconds\n# TYPE http_request_duration_ms histogram\nhttp_request_duration_ms_bucket{method=\"GET\",route=\"/api/agent/profile\",status_code=\"200\",le=\"10\"} 15\n\n# HELP repository_queries_total Total number of repository queries\n# TYPE repository_queries_total counter\nrepository_queries_total{repository=\"AgentRepository\",method=\"getAgent\",operation=\"SELECT\"} 28\n"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "500": {
+            "description": "Error generating metrics"
           }
         }
       }
@@ -6333,6 +6469,11 @@
                           "type": "string",
                           "example": "john@example.com"
                         },
+                        "isEmailVerified": {
+                          "type": "boolean",
+                          "description": "Whether the user's email address has been verified",
+                          "example": true
+                        },
                         "imageUrl": {
                           "type": "string",
                           "example": "https://example.com/avatar.jpg"
@@ -6446,6 +6587,10 @@
                         "email": {
                           "type": "string",
                           "nullable": true
+                        },
+                        "isEmailVerified": {
+                          "type": "boolean",
+                          "description": "Whether the user's email address has been verified"
                         },
                         "imageUrl": {
                           "type": "string",
@@ -6575,11 +6720,6 @@
                         "imageUrl": {
                           "type": "string",
                           "nullable": true
-                        },
-                        "apiKey": {
-                          "type": "string",
-                          "description": "The API key for this agent (store this securely)",
-                          "example": "1234567890abcdef_fedcba0987654321"
                         },
                         "metadata": {
                           "type": "object",
@@ -7022,7 +7162,7 @@
     "/api/user/agents/{agentId}/api-key": {
       "get": {
         "summary": "Get agent API key",
-        "description": "Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly.",
+        "description": "Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly. Requires email verification for security.",
         "tags": ["User"],
         "security": [
           {
@@ -7114,7 +7254,7 @@
             }
           },
           "403": {
-            "description": "Access denied (user doesn't own this agent)",
+            "description": "Access denied (user doesn't own this agent or email verification required)",
             "content": {
               "application/json": {
                 "schema": {
@@ -7126,7 +7266,7 @@
                     },
                     "message": {
                       "type": "string",
-                      "example": "Access denied: You don't own this agent"
+                      "example": "Email verification required to access agent API keys"
                     }
                   }
                 }
@@ -7330,6 +7470,69 @@
         }
       }
     },
+    "/api/user/verify-email": {
+      "post": {
+        "summary": "Initiate email verification for the authenticated user",
+        "description": "Creates a new email verification token and sends a verification email to the user's email address",
+        "tags": ["User"],
+        "security": [
+          {
+            "SIWESession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email verification initiated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Email verification initiated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "User does not have an email address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "User does not have an email address"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/api/user/competitions": {
       "get": {
         "summary": "Get competitions for user's agents",
@@ -7473,9 +7676,6 @@
                                   "type": "string"
                                 },
                                 "imageUrl": {
-                                  "type": "string"
-                                },
-                                "apiKey": {
                                   "type": "string"
                                 },
                                 "metadata": {

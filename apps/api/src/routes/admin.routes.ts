@@ -1703,6 +1703,85 @@ export function configureAdminRoutes(
 
   /**
    * @openapi
+   * /api/admin/competitions/{competitionId}/agents/{agentId}:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Add agent to competition
+   *     description: Add an agent to a specific competition (admin operation). Requires agent owner's email to be verified for security. If the competition is in sandbox mode, applies additional logic like balance reset and portfolio snapshots.
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         required: true
+   *         description: ID of the competition
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         required: true
+   *         description: ID of the agent to add
+   *     responses:
+   *       200:
+   *         description: Agent added to competition successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *                 agent:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Agent ID
+   *                     name:
+   *                       type: string
+   *                       description: Agent name
+   *                     ownerId:
+   *                       type: string
+   *                       description: Agent owner ID
+   *                 competition:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Competition ID
+   *                     name:
+   *                       type: string
+   *                       description: Competition name
+   *                     status:
+   *                       type: string
+   *                       description: Competition status
+   *       400:
+   *         description: Bad request - missing parameters, agent already in competition, or competition ended
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       403:
+   *         description: Forbidden - Agent owner's email must be verified
+   *       404:
+   *         description: Competition, agent, or agent owner not found
+   *       500:
+   *         description: Server error
+   */
+  router.post(
+    "/competitions/:competitionId/agents/:agentId",
+    controller.addAgentToCompetition,
+  );
+
+  /**
+   * @openapi
    * /api/admin/competitions/{competitionId}/agents/{agentId}/remove:
    *   post:
    *     tags:

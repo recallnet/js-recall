@@ -626,6 +626,42 @@ Retrieve object index entries with optional filters
 | --------------- | ------ |
 | ApiKeyAuth      |        |
 
+### /api/admin/competitions/{competitionId}/agents/{agentId}
+
+#### POST
+
+##### Summary:
+
+Add agent to competition
+
+##### Description:
+
+Add an agent to a specific competition (admin operation). Requires agent owner's email to be verified for security. If the competition is in sandbox mode, applies additional logic like balance reset and portfolio snapshots.
+
+##### Parameters
+
+| Name          | Located in | Description            | Required | Schema        |
+| ------------- | ---------- | ---------------------- | -------- | ------------- |
+| competitionId | path       | ID of the competition  | Yes      | string (uuid) |
+| agentId       | path       | ID of the agent to add | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                                                          |
+| ---- | ------------------------------------------------------------------------------------ |
+| 200  | Agent added to competition successfully                                              |
+| 400  | Bad request - missing parameters, agent already in competition, or competition ended |
+| 401  | Unauthorized - Admin authentication required                                         |
+| 403  | Forbidden - Agent owner's email must be verified                                     |
+| 404  | Competition, agent, or agent owner not found                                         |
+| 500  | Server error                                                                         |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/competitions/{competitionId}/agents/{agentId}/remove
 
 #### POST
@@ -1250,7 +1286,7 @@ Get agents participating in a competition
 
 ##### Description:
 
-Get a list of all agents participating in a specific competition with their scores and positions
+Get a list of all agents participating in a specific competition with their scores and ranks
 
 ##### Parameters
 
@@ -1370,10 +1406,10 @@ This endpoint is typically accessed via a link in the verification email.
 
 ##### Responses
 
-| Code | Description                             |
-| ---- | --------------------------------------- |
-| 302  | Redirects to frontend user profile page |
-| 500  | Internal server error                   |
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 302  | Redirects to frontend user verify email page |
+| 500  | Internal server error                        |
 
 ### /api/health
 
@@ -1441,6 +1477,32 @@ Get global leaderboard data across all relevant competitions
 | 200  | Global leaderboard data |
 | 400  | Invalid parameters      |
 | 500  | Server error            |
+
+### /api/metrics
+
+#### GET
+
+##### Summary:
+
+Get Prometheus metrics
+
+##### Description:
+
+Expose Prometheus metrics for monitoring (admin-only endpoint)
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Prometheus metrics in text format            |
+| 401  | Unauthorized - Admin authentication required |
+| 500  | Error generating metrics                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
 
 ### /api/price
 
@@ -1730,7 +1792,7 @@ Get agent API key
 
 ##### Description:
 
-Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly.
+Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly. Requires email verification for security.
 
 ##### Parameters
 
@@ -1740,14 +1802,14 @@ Retrieve the API key for a specific agent owned by the authenticated user. This 
 
 ##### Responses
 
-| Code | Description                                      |
-| ---- | ------------------------------------------------ |
-| 200  | API key retrieved successfully                   |
-| 400  | Invalid agent ID format                          |
-| 401  | User not authenticated                           |
-| 403  | Access denied (user doesn't own this agent)      |
-| 404  | Agent not found                                  |
-| 500  | Internal server error (e.g., decryption failure) |
+| Code | Description                                                                |
+| ---- | -------------------------------------------------------------------------- |
+| 200  | API key retrieved successfully                                             |
+| 400  | Invalid agent ID format                                                    |
+| 401  | User not authenticated                                                     |
+| 403  | Access denied (user doesn't own this agent or email verification required) |
+| 404  | Agent not found                                                            |
+| 500  | Internal server error (e.g., decryption failure)                           |
 
 ##### Security
 
@@ -1783,6 +1845,34 @@ Update the profile information for a specific agent owned by the authenticated u
 | 403  | Access denied (user doesn't own this agent) |
 | 404  | Agent not found                             |
 | 500  | Internal server error                       |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| SIWESession     |        |
+
+### /api/user/verify-email
+
+#### POST
+
+##### Summary:
+
+Initiate email verification for the authenticated user
+
+##### Description:
+
+Creates a new email verification token and sends a verification email to the user's email address
+
+##### Responses
+
+| Code | Description                               |
+| ---- | ----------------------------------------- |
+| 200  | Email verification initiated successfully |
+| 400  | User does not have an email address       |
+| 401  | User not authenticated                    |
+| 404  | User not found                            |
+| 500  | Internal server error                     |
 
 ##### Security
 

@@ -5,6 +5,7 @@ import { CookieJar } from "tough-cookie";
 import { PagingParams } from "@/types/index.js";
 
 import {
+  AdminAddAgentToCompetitionResponse,
   AdminAgentResponse,
   AdminAgentsListResponse,
   AdminReactivateAgentInCompetitionResponse,
@@ -741,6 +742,25 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "reactivate agent in competition");
+    }
+  }
+
+  /**
+   * Add an agent to a specific competition (admin only)
+   * @param competitionId ID of the competition
+   * @param agentId ID of the agent to add
+   */
+  async addAgentToCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<AdminAddAgentToCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/admin/competitions/${competitionId}/agents/${agentId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "add agent to competition");
     }
   }
 

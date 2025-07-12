@@ -74,12 +74,12 @@ export type ActorStatus = (typeof ACTOR_STATUS)[keyof typeof ACTOR_STATUS];
 export interface User {
   id: string;
   walletAddress: string;
-  name?: string;
-  email?: string;
-  imageUrl?: string;
-  isAdmin: boolean;
-  metadata?: Record<string, unknown>;
-  status: ActorStatus;
+  name: string | null;
+  email: string | null;
+  imageUrl: string | null;
+  metadata: Record<string, unknown> | null;
+  status: string;
+  isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -911,6 +911,22 @@ export interface AdminReactivateAgentInCompetitionResponse extends ApiResponse {
   competition: {
     id: string;
     name: string;
+  };
+}
+
+// Admin add agent to competition response
+export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
+  success: true;
+  message: string;
+  agent: {
+    id: string;
+    name: string;
+    ownerId: string;
+  };
+  competition: {
+    id: string;
+    name: string;
+    status: string;
   };
 }
 

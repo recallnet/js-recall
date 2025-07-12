@@ -2758,7 +2758,11 @@ describe("User API", () => {
     // Get agent clients for trading
     const agentClients = [];
     for (const agent of createdAgents) {
-      const agentClient = new ApiClient(agent.apiKey);
+      const apiKeyResponse = await siweClient.getUserAgentApiKey(agent.id);
+      expect(apiKeyResponse.success).toBe(true);
+      const agentClient = new ApiClient(
+        (apiKeyResponse as UserAgentApiKeyResponse).apiKey,
+      );
       agentClients.push(agentClient);
     }
 
@@ -2922,8 +2926,17 @@ describe("User API", () => {
     const agent2 = (agent2Response as { success: true; agent: Agent }).agent;
 
     // Create agent clients for trading
-    const agent1Client = new ApiClient(agent1.apiKey);
-    const agent2Client = new ApiClient(agent2.apiKey);
+    const agent1ApiKeyResponse = await siweClient.getUserAgentApiKey(agent1.id);
+    expect(agent1ApiKeyResponse.success).toBe(true);
+    const agent1Client = new ApiClient(
+      (agent1ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
+    );
+
+    const agent2ApiKeyResponse = await siweClient.getUserAgentApiKey(agent2.id);
+    expect(agent2ApiKeyResponse.success).toBe(true);
+    const agent2Client = new ApiClient(
+      (agent2ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
+    );
 
     // FIRST COMPETITION
     const competition1Name = `Multi Competition Test 1 ${Date.now()}`;
