@@ -14,6 +14,7 @@ import {
 import { Input } from "@recallnet/ui2/components/input";
 
 import { FormData } from ".";
+import { ImageURLInput } from "../image-input/index";
 import { ImagePreview } from "./image-preview";
 
 interface SocialsStepProps {
@@ -23,6 +24,8 @@ interface SocialsStepProps {
 }
 
 export function SocialsStep({ onBack, isSubmitting, form }: SocialsStepProps) {
+  const [imageValid, setImageValid] = React.useState(false);
+
   return (
     <div className="xs:px-16 space-y-10">
       <FormField
@@ -32,14 +35,16 @@ export function SocialsStep({ onBack, isSubmitting, form }: SocialsStepProps) {
           <FormItem>
             <FormLabel>Avatar (Optional)</FormLabel>
             <div className="mt-4 flex items-center gap-6">
-              <ImagePreview imageUrl={field.value} />
+              <ImagePreview imageValid={imageValid} imageUrl={field.value} />
               <div className="flex w-full items-center">
                 <FormControl>
-                  <Input
+                  <ImageURLInput
                     placeholder="Enter your avatar URL..."
                     {...field}
                     value={field.value ?? ""}
                     className="rounded-r-none"
+                    onValidationChange={setImageValid}
+                    showLabels={false}
                   />
                 </FormControl>
               </div>
@@ -94,7 +99,11 @@ export function SocialsStep({ onBack, isSubmitting, form }: SocialsStepProps) {
         <Button variant="outline" onClick={onBack} className="px-10">
           BACK
         </Button>
-        <Button type="submit" disabled={isSubmitting} className="px-10">
+        <Button
+          type="submit"
+          disabled={isSubmitting || !imageValid}
+          className="px-10"
+        >
           {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
         </Button>
       </div>

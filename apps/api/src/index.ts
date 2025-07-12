@@ -79,9 +79,8 @@ const services = new ServiceRegistry();
 await services.configurationService.loadCompetitionSettings();
 console.log("Competition-specific configuration settings loaded");
 
-// Start snapshot scheduler
-services.scheduler.startSnapshotScheduler();
-console.log("Portfolio snapshot scheduler started");
+// Start both schedulers after all services are ready
+services.startSchedulers();
 
 // Configure middleware
 // Trust proxy to get real IP addresses (important for rate limiting)

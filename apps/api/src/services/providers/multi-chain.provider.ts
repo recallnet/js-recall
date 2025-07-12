@@ -143,7 +143,7 @@ export class MultiChainProvider implements PriceSource {
             );
 
             console.log(
-              `[MultiChainProvider] Successfully found price for Solana token ${normalizedAddress}: $${price}`,
+              `[MultiChainProvider] Successfully found price for Solana token ${normalizedAddress}: $${price.price}`,
             );
             return {
               token: tokenAddress,
@@ -201,7 +201,7 @@ export class MultiChainProvider implements PriceSource {
             );
 
             console.log(
-              `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${specificChain} chain: $${price}`,
+              `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${specificChain} chain: $${price.price}`,
             );
             return {
               token: tokenAddress,
@@ -268,7 +268,7 @@ export class MultiChainProvider implements PriceSource {
             );
 
             console.log(
-              `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${chain} chain: $${price}`,
+              `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${chain} chain: $${price.price}`,
             );
             return {
               token: tokenAddress,
@@ -393,7 +393,7 @@ export class MultiChainProvider implements PriceSource {
             );
 
             console.log(
-              `[MultiChainProvider] Successfully found Solana token info for ${normalizedAddress}: $${price}`,
+              `[MultiChainProvider] Successfully found Solana token info for ${normalizedAddress}: $${price.price}`,
             );
             return {
               price: price.price,
@@ -442,7 +442,7 @@ export class MultiChainProvider implements PriceSource {
             );
 
             console.log(
-              `[MultiChainProvider] Successfully found token info for ${normalizedAddress} on ${specificChain} chain: $${price}`,
+              `[MultiChainProvider] Successfully found token info for ${normalizedAddress} on ${specificChain} chain: $${price.price}`,
             );
 
             return {

@@ -278,6 +278,11 @@ export const config = {
       process.env.PORTFOLIO_PRICE_FRESHNESS_MS || "600000",
       10,
     ),
+    // Competition end date check interval (default: 1 minute)
+    competitionEndCheckIntervalMs: parseInt(
+      process.env.COMPETITION_END_CHECK_INTERVAL_MS || "60000",
+      10,
+    ),
   },
   // Whether to allow generation of mock price history data when real data is not available
   // Defaults to true in development/test, false in production
