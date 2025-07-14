@@ -1,6 +1,6 @@
 import { getDefaultConfig } from "connectkit";
 import { Config, createConfig } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+import { mainnet } from "wagmi/chains";
 
 export const clientConfig: () => Config = () => {
   const configParams = getDefaultConfig({
@@ -12,7 +12,7 @@ export const clientConfig: () => Config = () => {
     walletConnectProjectId:
       process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
       "your_walletconnect_project_id",
-    chains: [baseSepolia],
+    chains: [mainnet],
     ssr: true,
   });
 

@@ -148,14 +148,20 @@ export const SIWEButton: React.FunctionComponent = () => {
 
               {/* Mobile help text when signing */}
               {isAuthenticating && isMobile && (
-                <div className="rounded border border-blue-200 bg-blue-50 p-3">
-                  <div className="flex items-start space-x-2">
-                    <Smartphone className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
-                    <p className="text-sm text-blue-800">
-                      <span className="font-medium">Mobile tip:</span> You may
-                      need to manually return to your wallet app to sign the
-                      message, then come back to this page.
-                    </p>
+                <div className="mx-auto max-w-sm rounded-lg border border-slate-700 bg-slate-800 p-4 shadow-lg">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20">
+                      <Smartphone className="h-4 w-4 text-blue-400" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium text-blue-300">
+                        Mobile Wallet Tip
+                      </p>
+                      <p className="text-sm leading-relaxed text-slate-300">
+                        You may need to return to your wallet app to sign the
+                        message, then come back here to continue.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
