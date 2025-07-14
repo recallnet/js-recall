@@ -1,0 +1,21 @@
+services:
+  trading-simulator-app:
+    build:
+      context: ../../.. # Path to monorepo root
+      dockerfile: apps/api/trade-simulator-docker/Dockerfile
+    restart: always
+    env_file:
+      - ../.env
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}" # Main API
+      - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}" # Metrics server
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT:-3000}${API_PREFIX:+/${API_PREFIX}}/api/health || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

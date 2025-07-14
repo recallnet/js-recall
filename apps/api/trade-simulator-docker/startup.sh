@@ -9,7 +9,7 @@ check_db_initialized() {
 
 # Wait for database to be ready
 echo "Waiting for database to be ready..."
-until pg_isready -d "$DATABASE_URL" 2>/dev/null; do
+until pg_isready -d "$DATABASE_URL"; do
     echo "Database not ready, waiting..."
     sleep 2
 done

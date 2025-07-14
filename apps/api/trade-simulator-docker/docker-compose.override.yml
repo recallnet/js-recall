@@ -1,0 +1,11 @@
+services:
+  trading-simulator-app:
+    # Override the image with a build directive
+    image: js-recall:local
+    build:
+      context: ../../..
+      dockerfile: apps/api/trade-simulator-docker/Dockerfile
+    # Expose ports for local development
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+      - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}"
