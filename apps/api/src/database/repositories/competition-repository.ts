@@ -1385,7 +1385,7 @@ async function getBulkAgentCompetitionRankingsImpl(
  * Find active competitions that have reached their end date
  * @returns Array of active competitions that should be ended
  */
-async function findActiveCompetitionsPastEndDateImpl() {
+export async function findActiveCompetitionsPastEndDate() {
   try {
     const now = new Date();
 
@@ -1641,8 +1641,8 @@ export const getBulkAgentCompetitionRankings = createTimedRepositoryFunction(
   "getBulkAgentCompetitionRankings",
 );
 
-export const findActiveCompetitionsPastEndDate = createTimedRepositoryFunction(
-  findActiveCompetitionsPastEndDateImpl,
-  "CompetitionRepository",
-  "findActiveCompetitionsPastEndDate",
-);
+// export const findActiveCompetitionsPastEndDate = createTimedRepositoryFunction(
+//   findActiveCompetitionsPastEndDateImpl,
+//   "CompetitionRepository",
+//   "findActiveCompetitionsPastEndDate",
+// );
