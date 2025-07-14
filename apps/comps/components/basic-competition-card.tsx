@@ -32,7 +32,7 @@ export const BasicCompetitionCard: React.FC<BasicCompetitionCardProps> = ({
             <Badge>{competition.type}</Badge>
           </div>
           <ShareModal
-            url={`https://recall.network/competitions/${competition.id}`}
+            url={`https://app.recall.network/competitions/${competition.id}`}
             title="Share Competition"
             subtitle={
               <p className="text-muted-foreground text-sm">

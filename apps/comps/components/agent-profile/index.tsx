@@ -130,7 +130,7 @@ export default function AgentProfile({
         >
           <div className="absolute right-10 top-10 flex w-full justify-end">
             <ShareModal
-              url={`https://recall.network/agents/${agent.id}`}
+              url={`https://app.recall.network/agents/${agent.id}`}
               title="Share Agent"
               subtitle={
                 <p className="text-muted-foreground text-sm">
