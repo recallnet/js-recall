@@ -111,7 +111,7 @@ export default function CompetitionPage({
               target="_blank"
               rel="noreferrer"
               className={cn(
-                "flex w-1/2 items-center justify-center justify-between",
+                "flex w-1/2 items-center justify-between",
                 "text-secondary-foreground border border-gray-400 text-sm",
                 "transition duration-500 ease-in-out hover:bg-blue-700 hover:text-white",
               )}
