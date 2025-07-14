@@ -2,6 +2,7 @@ export interface User {
   id: string;
   walletAddress: string;
   status: "active" | "inactive" | "suspended" | "deleted";
+  isEmailVerified: boolean;
   name?: string;
   email?: string;
   imageUrl?: string;

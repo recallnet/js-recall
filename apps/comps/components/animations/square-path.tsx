@@ -39,7 +39,7 @@ const SquarePathAnimation: React.FC = () => {
     }, transitionDuration); // 2x duration for forward/backward + a little pause
 
     return () => clearInterval(interval);
-  }, [pathIndex]);
+  });
 
   return (
     <div className="full relative h-[166px] w-[166px]">

@@ -9,7 +9,8 @@ export default function SuccessVerifyEmail() {
   const router = useRouter();
 
   React.useEffect(() => {
-    setTimeout(() => router.push("/profile"), 4000);
+    const interval = setTimeout(() => router.push("/profile"), 4000);
+    return () => clearInterval(interval);
   }, [router]);
 
   return (

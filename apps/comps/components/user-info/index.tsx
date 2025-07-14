@@ -44,7 +44,7 @@ export default function UserInfoSection({
   const [editField, setEditField] = useState<"email" | "website" | null>(null);
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
   const { mutate: verifyEmail } = useVerifyEmail();
-  const verified = false;
+  const verified = user.isEmailVerified;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),

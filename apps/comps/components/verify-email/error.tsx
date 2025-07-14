@@ -49,9 +49,9 @@ export default function ErrorVerifyEmail() {
       <div className="relative flex max-h-screen w-full flex-col items-center">
         <div className="absolute flex w-[350px] flex-col items-center justify-center">
           <DotLottieReact
-            src="https://lottie.host/efac4a14-b34c-43a1-8dc6-82de4e0cc967/2JzfYDIhQN.lottie"
+            src="https://lottie.host/3681c8b0-21f0-4d79-a852-17ef6de3678b/KHuAzVo2XO.lottie"
             autoplay
-            className="w-200 h-100"
+            className="w-150 my-20 h-60"
           />
           <span className="mb-3 text-2xl text-white">Something went wrong</span>
           <span className="text-secondary-foreground max-w-[450px] text-center">
