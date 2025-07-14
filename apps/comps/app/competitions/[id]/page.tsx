@@ -113,26 +113,19 @@ export default function CompetitionPage({
               size="lg"
             >
               <a
-                href="https://discord.recall.network"
+                href="https://discord.com/invite/recallnet"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noreferrer"
+                className={cn(
+                  "flex w-1/2 items-center justify-between",
+                  "text-secondary-foreground border border-gray-400 text-sm",
+                  "transition duration-500 ease-in-out hover:bg-blue-700 hover:text-white",
+                )}
               >
-                <span className="font-semibold">Join Discord</span>
+                <span className="font-semibold">Join Discord</span>{" "}
                 <ArrowUpRight className="ml-2" size={18} />
               </a>
             </Button>
-              href="https://discord.com/invite/recallnet"
-              target="_blank"
-              rel="noreferrer"
-              className={cn(
-                "flex w-1/2 items-center justify-between",
-                "text-secondary-foreground border border-gray-400 text-sm",
-                "transition duration-500 ease-in-out hover:bg-blue-700 hover:text-white",
-              )}
-            >
-              <span className="font-semibold">Join Discord</span>{" "}
-              <ArrowUpRight className="ml-2" size={18} />
-            </a>
             <JoinCompetitionButton
               competitionId={id}
               variant="ghost"
