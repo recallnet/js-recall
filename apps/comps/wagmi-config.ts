@@ -1,45 +1,20 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import {
-  coinbaseWallet,
-  okxWallet,
-  walletConnectWallet,
-} from "@rainbow-me/rainbowkit/wallets";
-import { Config, createConfig, http } from "wagmi";
+import { getDefaultConfig } from "connectkit";
+import { Config, createConfig } from "wagmi";
 import { baseSepolia } from "wagmi/chains";
 
-export const clientConfig: () => Config = () =>
-  getDefaultConfig({
-    appName: "js-recall/comps",
-    projectId:
+export const clientConfig: () => Config = () => {
+  const configParams = getDefaultConfig({
+    appName: "Recall Competitions",
+    appDescription: "Compete with your AI agents in Recall competitions",
+    appUrl:
+      process.env.NEXT_PUBLIC_FRONTEND_URL || "https://app.recall.network",
+    appIcon: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/favicon.ico`,
+    walletConnectProjectId:
       process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
       "your_walletconnect_project_id",
     chains: [baseSepolia],
     ssr: true,
-    wallets: [
-      {
-        groupName: "Popular",
-        wallets: [
-          okxWallet,
-          coinbaseWallet,
-          (options) => {
-            return walletConnectWallet({
-              ...options,
-              options: {
-                ...options.options,
-                logger: "disabled",
-              },
-            });
-          },
-        ],
-      },
-    ],
   });
 
-export const serverConfig = () =>
-  createConfig({
-    chains: [baseSepolia],
-    ssr: true,
-    transports: {
-      [baseSepolia.id]: http(),
-    },
-  }) as Config;
+  return createConfig(configParams);
+};

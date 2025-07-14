@@ -1,4 +1,4 @@
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ConnectKitButton } from "connectkit";
 import { WalletIcon } from "lucide-react";
 import React from "react";
 
@@ -23,8 +23,8 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
   onClose,
 }) => {
   return (
-    <ConnectButton.Custom>
-      {({ openConnectModal }) => (
+    <ConnectKitButton.Custom>
+      {({ show }) => (
         <Dialog open={isOpen} onOpenChange={onClose}>
           <DialogContent className="w-[600px]">
             <DialogHeader className="text-start">
@@ -56,7 +56,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
                 <Button
                   onClick={() => {
                     onClose(false);
-                    openConnectModal();
+                    show?.();
                   }}
                   className="rounded-lg bg-white text-black hover:bg-gray-300"
                 >
@@ -67,7 +67,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
           </DialogContent>
         </Dialog>
       )}
-    </ConnectButton.Custom>
+    </ConnectKitButton.Custom>
   );
 };
 
