@@ -17,7 +17,8 @@ import { makeVoteController } from "@/controllers/vote.controller.js";
 import { migrateDb } from "@/database/db.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
-import errorHandler from "@/middleware/errorHandler.js";
+import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
+import { loggingMiddleware } from "@/middleware/logging.middleware.js";
 import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
@@ -33,6 +34,7 @@ import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
 import { configureUserRoutes } from "@/routes/user.routes.js";
+import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
@@ -77,9 +79,8 @@ const services = new ServiceRegistry();
 await services.configurationService.loadCompetitionSettings();
 console.log("Competition-specific configuration settings loaded");
 
-// Start snapshot scheduler
-services.scheduler.startSnapshotScheduler();
-console.log("Portfolio snapshot scheduler started");
+// Start both schedulers after all services are ready
+services.startSchedulers();
 
 // Configure middleware
 // Trust proxy to get real IP addresses (important for rate limiting)
@@ -87,12 +88,39 @@ app.set("trust proxy", true);
 
 app.use(
   cors({
-    origin: config.app.url,
+    origin: function (origin, fn) {
+      // Allow any localhost port in development mode
+      if (config.server.nodeEnv === "development") {
+        const localhostRegex = /^http?:\/\/localhost(:\d+)?$/i;
+        if (!origin || localhostRegex.test(origin)) {
+          fn(null, true);
+        } else {
+          fn(new ApiError(403, "Forbidden"));
+        }
+        return;
+      }
+
+      // See Express CORS docs for details: https://expressjs.com/en/resources/middleware/cors.html#configuration-options
+      const baseDomain = config?.app?.domain?.startsWith(".")
+        ? config?.app?.domain?.substring(1)
+        : config?.app?.domain;
+      const escapedDomain = baseDomain?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const domainRegex = new RegExp(`${escapedDomain}$`, "i");
+      if (!origin || domainRegex.test(origin)) {
+        fn(null, true);
+      } else {
+        fn(new ApiError(403, "Forbidden"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
+// Add logging middleware after basic setup but before authentication
+app.use(loggingMiddleware);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -231,7 +259,7 @@ app.get(`${apiBasePath}`, (_req, res) => {
 app.use(errorHandler);
 
 // Start HTTP server
-app.listen(PORT, "0.0.0.0", () => {
+const mainServer = app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n========================================`);
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${config.server.nodeEnv}`);
@@ -243,3 +271,33 @@ app.listen(PORT, "0.0.0.0", () => {
   );
   console.log(`========================================\n`);
 });
+
+// Start dedicated metrics server on separate port
+const metricsServer = startMetricsServer();
+
+// Graceful shutdown handler
+const gracefulShutdown = (signal: string) => {
+  console.log(
+    `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
+  );
+
+  // Close both servers
+  mainServer.close(() => {
+    console.log("Main server closed");
+  });
+
+  metricsServer.close(() => {
+    console.log("Metrics server closed");
+  });
+
+  // Force exit after timeout if graceful shutdown fails
+  setTimeout(() => {
+    console.error("Forcing exit after timeout");
+    process.exit(1);
+  }, 10000);
+};
+
+// Handle process termination signals
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGUSR2", () => gracefulShutdown("SIGUSR2")); // nodemon restart
