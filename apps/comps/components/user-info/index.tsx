@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { SquarePen } from "lucide-react";
+import { BadgeCheckIcon, CircleAlertIcon, SquarePen } from "lucide-react";
 import React, { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,7 +14,10 @@ import {
   FormItem,
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
+import { toast } from "@recallnet/ui2/components/toast";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
+import { useVerifyEmail } from "@/hooks/useVerifyEmail";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
@@ -39,6 +42,9 @@ export default function UserInfoSection({
   onSave,
 }: UserInfoSectionProps) {
   const [editField, setEditField] = useState<"email" | "website" | null>(null);
+  const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
+  const { mutate: verifyEmail } = useVerifyEmail();
+  const verified = user.isEmailVerified;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -68,6 +74,33 @@ export default function UserInfoSection({
     } catch (error) {
       console.error(`Failed to save:`, error);
     }
+  };
+
+  const sendEmailVerify = () => {
+    setEmailVerifyClicked(true);
+
+    verifyEmail(undefined, {
+      onSuccess: (res) => {
+        if (res.success) {
+          toast.success(
+            <div className="flex flex-col">
+              <span>Verification Email Sent</span>
+              <span className="text-primary-foreground font-normal">
+                An email has been sent to your inbox.
+              </span>
+            </div>,
+          );
+          setTimeout(setEmailVerifyClicked, 60 * 1000, false); //wait 60 seconds
+        } else {
+          toast.error(res.message);
+        }
+      },
+      onError: (res) => {
+        toast.error("Failed to send verification email", {
+          description: res.message,
+        });
+      },
+    });
   };
 
   return (
@@ -119,6 +152,43 @@ export default function UserInfoSection({
                     onClick={() => setEditField("email")}
                   />
                   <span>{user?.email}</span>
+                  {
+                    //TODO still need "verified" field to put this conditionally
+                  }
+                  {verified ? (
+                    <div className="flex items-center gap-2">
+                      <Tooltip
+                        content={
+                          <span className="text-green-500">Verified email</span>
+                        }
+                      >
+                        <BadgeCheckIcon
+                          className="text-green-500 hover:text-green-700"
+                          strokeWidth={1}
+                        />
+                      </Tooltip>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Tooltip
+                        content={
+                          <span className="text-yellow-400">
+                            This email is not verified
+                          </span>
+                        }
+                      >
+                        <CircleAlertIcon className="text-yellow-400 hover:text-yellow-700" />
+                      </Tooltip>
+                      <Button
+                        variant="link"
+                        className="p-0 underline"
+                        onClick={sendEmailVerify}
+                        disabled={emailVerifyClicked}
+                      >
+                        Verify
+                      </Button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
