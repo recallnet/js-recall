@@ -106,7 +106,21 @@ export default function CompetitionPage({
         <div className="md:w-1/2">
           <CompetitionInfo competition={competition} />
           <div className="mt-5 flex w-full flex-row justify-center gap-4">
-            <a
+            <Button
+              asChild
+              variant="outline"
+              className="w-1/2 justify-between uppercase"
+              size="lg"
+            >
+              <a
+                href="https://discord.recall.network"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="font-semibold">Join Discord</span>
+                <ArrowUpRight className="ml-2" size={18} />
+              </a>
+            </Button>
               href="https://discord.com/invite/recallnet"
               target="_blank"
               rel="noreferrer"
