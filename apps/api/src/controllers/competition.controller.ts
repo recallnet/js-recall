@@ -2,6 +2,8 @@ import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import { EventDataBuilder } from "@/services/event-tracker.service.js";
+import { EVENTS } from "@/services/event-tracker.service.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
@@ -87,6 +89,16 @@ export function makeCompetitionController(services: ServiceRegistry) {
             );
           }
         }
+
+        const event = new EventDataBuilder()
+          .type(EVENTS.COMPETITION_LEADERBOARD_PAGE_VIEWED)
+          .source("api")
+          .addField("is_admin", isAdmin)
+          .addField("agent_id", agentId)
+          .addField("competition_id", competitionId)
+          .build();
+
+        await services.eventTracker.track(event);
 
         // Get leaderboard data (active and inactive agents)
         const leaderboardData =
@@ -519,6 +531,18 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Calculate hasMore based on total and current page
         const hasMore = pagingParams.offset + pagingParams.limit < total;
 
+        const event = new EventDataBuilder()
+          .type(EVENTS.COMPETITIONS_LISTED)
+          .source("api")
+          .addField("user_id", userId || null)
+          .addField("agent_id", agentId || null)
+          .addField("is_admin", isAdmin)
+          .addField("limit", pagingParams.limit)
+          .addField("offset", pagingParams.offset)
+          .build();
+
+        await services.eventTracker.track(event);
+
         // Return the competitions with metadata
         res.status(200).json({
           success: true,
@@ -627,6 +651,17 @@ export function makeCompetitionController(services: ServiceRegistry) {
             );
           }
         }
+
+        const event = new EventDataBuilder()
+          .type(EVENTS.COMPETITION_DETAILS_VIEWED)
+          .source("api")
+          .addField("user_id", userId || null)
+          .addField("agent_id", agentId || null)
+          .addField("is_admin", isAdmin)
+          .addField("competition_id", competitionId)
+          .build();
+
+        await services.eventTracker.track(event);
 
         // Return the competition details
         res.status(200).json({
@@ -777,6 +812,16 @@ export function makeCompetitionController(services: ServiceRegistry) {
           agentId,
           validatedUserId,
         );
+
+        const event = new EventDataBuilder()
+          .type(EVENTS.AGENT_JOINED_COMPETITION)
+          .source("api")
+          .addField("user_id", validatedUserId)
+          .addField("agent_id", agentId)
+          .addField("competition_id", competitionId)
+          .build();
+
+        await services.eventTracker.track(event);
 
         res.status(200).json({
           success: true,

@@ -398,3 +398,18 @@ export const emailVerificationTokens = pgTable(
     unique("email_verification_tokens_token_key").on(table.token),
   ],
 );
+
+/**
+ * Events queue table for tracking user and system activities
+ * Stores CloudEvents-compliant JSON events for background processing
+ */
+export const eventsQueue = pgTable("events_queue", {
+  id: uuid().primaryKey().notNull(),
+  event: jsonb("event").notNull(), // Complete CloudEvents-compliant event as JSON
+  processed: boolean("processed").default(false).notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  processingError: text("processing_error"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});

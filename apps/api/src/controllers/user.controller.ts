@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
 import { ApiError } from "@/middleware/errorHandler.js";
+import { EventDataBuilder } from "@/services/event-tracker.service.js";
+import { EVENTS } from "@/services/event-tracker.service.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AgentCompetitionsParamsSchema,
@@ -40,6 +42,14 @@ export function makeUserController(services: ServiceRegistry) {
         if (!user) {
           throw new ApiError(404, "User not found");
         }
+
+        const event = new EventDataBuilder()
+          .type(EVENTS.USER_PROFILE_VIEWED)
+          .source("api")
+          .addField("user_id", userId)
+          .build();
+
+        await services.eventTracker.track(event);
 
         // Return the user profile (excluding sensitive fields)
         res.status(200).json({
@@ -188,6 +198,14 @@ export function makeUserController(services: ServiceRegistry) {
             deactivationDate: agents[index]?.deactivationDate,
           }),
         );
+
+        const event = new EventDataBuilder()
+          .type(EVENTS.USER_LISTED_AGENTS)
+          .source("api")
+          .addField("user_id", userId)
+          .build();
+
+        await services.eventTracker.track(event);
 
         res.status(200).json({
           success: true,

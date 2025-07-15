@@ -7,6 +7,8 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import { EventDataBuilder } from "@/services/event-tracker.service.js";
+import { EVENTS } from "@/services/event-tracker.service.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AgentFilterSchema,
@@ -53,6 +55,14 @@ export function makeAgentController(services: ServiceRegistry) {
         if (!owner) {
           throw new ApiError(404, "Agent owner not found");
         }
+
+        const event = new EventDataBuilder()
+          .type(EVENTS.AGENT_PROFILE_VIEWED)
+          .source("api")
+          .addField("agent_id", agentId)
+          .build();
+
+        await services.eventTracker.track(event);
 
         // Return the agent profile with owner information
         // TODO: we can clean this up with better types that help omit the api key
@@ -211,6 +221,14 @@ export function makeAgentController(services: ServiceRegistry) {
         const sanitizedAgent = services.agentManager.sanitizeAgent(agent);
         const computedAgent =
           await services.agentManager.attachAgentMetrics(sanitizedAgent);
+
+        const event = new EventDataBuilder()
+          .type(EVENTS.AGENT_PUBLIC_PROFILE_VIEWED)
+          .source("api")
+          .addField("agent_id", agentId)
+          .build();
+
+        await services.eventTracker.track(event);
 
         // Return the agent with owner information
         res.status(200).json({

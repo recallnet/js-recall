@@ -1,5 +1,6 @@
 import { config } from "@/config/index.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
+import { EventTracker } from "@/services/event-tracker.service.js";
 
 import { PortfolioSnapshotter } from "./portfolio-snapshotter.service.js";
 
@@ -13,19 +14,24 @@ const allSchedulerTimers = new Set<NodeJS.Timeout>();
 export class SchedulerService {
   private competitionManager: CompetitionManager;
   private portfolioSnapshotter: PortfolioSnapshotter;
+  private eventTracker: EventTracker;
   private snapshotInterval: number;
   private competitionEndCheckInterval: number;
+  private eventProcessingInterval: number;
   private snapshotTimer: NodeJS.Timeout | null = null;
   private competitionEndTimer: NodeJS.Timeout | null = null;
+  private eventProcessingTimer: NodeJS.Timeout | null = null;
   private isShuttingDown = false;
   private isTestMode: boolean;
 
   constructor(
     competitionManager: CompetitionManager,
     portfolioSnapshotter: PortfolioSnapshotter,
+    eventTracker: EventTracker,
   ) {
     this.competitionManager = competitionManager;
     this.portfolioSnapshotter = portfolioSnapshotter;
+    this.eventTracker = eventTracker;
     // Check if we're in test mode
     this.isTestMode = process.env.TEST_MODE === "true";
 
@@ -33,9 +39,10 @@ export class SchedulerService {
     this.snapshotInterval = config.portfolio.snapshotIntervalMs;
     this.competitionEndCheckInterval =
       config.portfolio.competitionEndCheckIntervalMs;
+    this.eventProcessingInterval = config.events?.processingIntervalMs || 30000; // 30 seconds default
 
     console.log(
-      `[SchedulerService] Initialized with snapshot interval: ${this.snapshotInterval}ms, competition end check interval: ${this.competitionEndCheckInterval}ms${this.isTestMode ? " (TEST MODE)" : ""}`,
+      `[SchedulerService] Initialized with snapshot interval: ${this.snapshotInterval}ms, competition end check interval: ${this.competitionEndCheckInterval}ms, event processing interval: ${this.eventProcessingInterval}ms${this.isTestMode ? " (TEST MODE)" : ""}`,
     );
   }
 
@@ -98,6 +105,7 @@ export class SchedulerService {
   start(): void {
     this.startSnapshotScheduler();
     this.startCompetitionEndScheduler();
+    this.startEventProcessing();
   }
 
   /**
@@ -106,6 +114,7 @@ export class SchedulerService {
   stop(): void {
     this.stopSnapshotScheduler();
     this.stopCompetitionEndScheduler();
+    this.stopEventProcessing();
   }
 
   /**
@@ -176,6 +185,140 @@ export class SchedulerService {
       this.competitionEndTimer = null;
       console.log("[SchedulerService] Competition end check scheduler stopped");
     }
+  }
+
+  /**
+   * Start the event processing scheduler
+   */
+  startEventProcessing(): void {
+    if (this.isShuttingDown) {
+      console.log(
+        "[SchedulerService] Scheduler is shutting down, cannot start event processing",
+      );
+      return;
+    }
+
+    if (this.eventProcessingTimer) {
+      console.log(
+        "[SchedulerService] Event processing already running, restarting...",
+      );
+      this.stopEventProcessing();
+    }
+
+    const interval = this.isTestMode
+      ? Math.min(5000, this.eventProcessingInterval)
+      : this.eventProcessingInterval;
+
+    console.log(
+      `[SchedulerService] Starting event processing at ${interval}ms intervals`,
+    );
+
+    this.eventProcessingTimer = setInterval(async () => {
+      if (this.isShuttingDown) {
+        this.stopEventProcessing();
+        return;
+      }
+      try {
+        await this.processEvents();
+      } catch (error) {
+        console.error("[SchedulerService] Error in event processing:", error);
+        if (this.isTestMode) {
+          this.stopEventProcessing();
+        }
+      }
+    }, interval);
+
+    if (this.eventProcessingTimer) {
+      allSchedulerTimers.add(this.eventProcessingTimer);
+    }
+  }
+
+  /**
+   * Stop event processing
+   */
+  stopEventProcessing(): void {
+    if (this.eventProcessingTimer) {
+      clearInterval(this.eventProcessingTimer);
+      if (allSchedulerTimers.has(this.eventProcessingTimer)) {
+        allSchedulerTimers.delete(this.eventProcessingTimer);
+      }
+      this.eventProcessingTimer = null;
+      console.log("[SchedulerService] Event processing stopped");
+    }
+  }
+
+  /**
+   * Process unprocessed events and ship to data warehouse
+   */
+  async processEvents(): Promise<void> {
+    if (this.isShuttingDown) {
+      console.log(
+        "[SchedulerService] Skipping event processing due to shutdown",
+      );
+      return;
+    }
+
+    try {
+      const unprocessedEvents =
+        await this.eventTracker.getUnprocessedEvents(100);
+
+      if (unprocessedEvents.length === 0) {
+        return; // No events to process
+      }
+
+      console.log(
+        `[SchedulerService] Processing ${unprocessedEvents.length} events`,
+      );
+
+      // TODO: Implement actual data warehouse shipping logic
+      // For now, we'll just log and mark as processed
+      for (const event of unprocessedEvents) {
+        try {
+          // Simulate shipping to data warehouse
+          await this.shipEventToDataWarehouse(event);
+
+          // Mark as processed
+          await this.eventTracker.markAsProcessed([event.id]);
+        } catch (error) {
+          console.error(
+            `[SchedulerService] Failed to process event ${event.id}:`,
+            error,
+          );
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          await this.eventTracker.markAsProcessingFailed(
+            event.id,
+            errorMessage,
+          );
+        }
+      }
+    } catch (error) {
+      console.error("[SchedulerService] Error processing events:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ship event to data warehouse
+   * TODO: Implement actual data warehouse integration
+   */
+  private async shipEventToDataWarehouse(event: any): Promise<void> {
+    // Placeholder for data warehouse integration
+    // This could be:
+    // - HTTP POST to data warehouse API
+    // - Message queue publishing
+    // - File export to S3/GCS
+    // - Direct database connection to warehouse
+
+    console.log(`[SchedulerService] Shipping event to data warehouse:`, {
+      id: event.id,
+      type: event.event?.type,
+      source: event.event?.source,
+      time: event.event?.time,
+    });
+
+    // Simulate async operation
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 
   /**

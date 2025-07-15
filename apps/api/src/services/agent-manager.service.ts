@@ -51,6 +51,11 @@ import { transformToTrophy } from "@/lib/trophy-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { EmailService } from "@/services/email.service.js";
 import {
+  EventDataBuilder,
+  EventTracker,
+} from "@/services/event-tracker.service.js";
+import { EVENTS } from "@/services/event-tracker.service.js";
+import {
   ACTOR_STATUS,
   AgentCompetitionsParams,
   AgentMetadata,
@@ -77,11 +82,14 @@ export class AgentManager {
   private inactiveAgentsCache: Map<string, { reason: string; date: Date }>;
   // Email service for sending verification emails
   private emailService: EmailService;
+  // Event tracker for analytics
+  private eventTracker: EventTracker;
 
-  constructor(emailService: EmailService) {
+  constructor(emailService: EmailService, eventTracker: EventTracker) {
     this.apiKeyCache = new Map();
     this.inactiveAgentsCache = new Map();
     this.emailService = emailService;
+    this.eventTracker = eventTracker;
   }
 
   /**
@@ -156,6 +164,17 @@ export class AgentManager {
       if (email) {
         await this.sendEmailVerification(savedAgent);
       }
+
+      const event = new EventDataBuilder()
+        .type(EVENTS.AGENT_REGISTERED)
+        .source("api")
+        .addField("agent_id", id)
+        .addField("user_id", ownerId)
+        .addField("name", name)
+        .addField("description", description)
+        .build();
+
+      await this.eventTracker.track(event);
 
       console.log(
         `[AgentManager] Created agent: ${name} (${id}) for owner ${ownerId}`,

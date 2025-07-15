@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
+import { EventDataBuilder } from "@/services/event-tracker.service.js";
+import { EVENTS } from "@/services/event-tracker.service.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 export function makeAuthController(services: ServiceRegistry) {
@@ -61,6 +63,15 @@ export function makeAuthController(services: ServiceRegistry) {
             .status(401)
             .json({ error: "Unauthorized: invalid signature" });
         }
+
+        const event = new EventDataBuilder()
+          .type(EVENTS.USER_LOGGED_IN)
+          .source("api")
+          .addField("user_id", userId)
+          .build();
+
+        await services.eventTracker.track(event);
+
         console.log(
           `[AuthController] Login successful for ${wallet} (userId: ${userId ? userId : "N/A"})`,
         );

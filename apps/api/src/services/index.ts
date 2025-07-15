@@ -7,6 +7,7 @@ import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { EmailVerificationService } from "@/services/email-verification.service.js";
 import { EmailService } from "@/services/email.service.js";
+import { EventTracker } from "@/services/event-tracker.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { ObjectIndexService } from "@/services/object-index.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
@@ -41,6 +42,7 @@ class ServiceRegistry {
   private _objectIndexService: ObjectIndexService;
   private _emailService: EmailService;
   private _emailVerificationService: EmailVerificationService;
+  private _eventTracker: EventTracker;
 
   constructor() {
     // Initialize services in dependency order
@@ -56,17 +58,17 @@ class ServiceRegistry {
       this._portfolioSnapshotter,
     );
 
-    // Initialize auth service (no dependencies needed)
-    this._authService = new AuthService();
-
     // Configuration service for dynamic settings
     this._configurationService = new ConfigurationService();
 
+    // Initialize event tracker (no dependencies)
+    this._eventTracker = new EventTracker();
+
+    // Initialize auth service (requires event tracker)
+    this._authService = new AuthService(this._eventTracker);
+
     // Initialize agent rank service (no dependencies)
     this._agentRankService = new AgentRankService();
-
-    // Initialize vote manager (no dependencies)
-    this._voteManager = new VoteManager();
 
     // Initialize object index service (no dependencies)
     this._objectIndexService = new ObjectIndexService();
@@ -74,9 +76,15 @@ class ServiceRegistry {
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
 
-    // Initialize user and agent managers (require email service)
-    this._userManager = new UserManager(this._emailService);
-    this._agentManager = new AgentManager(this._emailService);
+    // Initialize vote manager (no dependencies)
+    this._voteManager = new VoteManager();
+
+    // Initialize user and agent managers (require email service and event tracker)
+    this._userManager = new UserManager(this._emailService, this._eventTracker);
+    this._agentManager = new AgentManager(
+      this._emailService,
+      this._eventTracker,
+    );
     this._adminManager = new AdminManager();
 
     // Initialize email verification service (requires user and agent managers)
@@ -102,6 +110,7 @@ class ServiceRegistry {
     this._scheduler = new SchedulerService(
       this._competitionManager,
       this._portfolioSnapshotter,
+      this._eventTracker,
     );
 
     console.log("[ServiceRegistry] All services initialized");
@@ -183,6 +192,10 @@ class ServiceRegistry {
     return this._emailVerificationService;
   }
 
+  get eventTracker(): EventTracker {
+    return this._eventTracker;
+  }
+
   // Add method to start schedulers
   startSchedulers(): void {
     this._scheduler.start();
@@ -207,6 +220,7 @@ export {
   ConfigurationService,
   EmailService,
   EmailVerificationService,
+  EventTracker,
   LeaderboardService,
   ObjectIndexService,
   PortfolioSnapshotter,

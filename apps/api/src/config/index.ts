@@ -284,6 +284,20 @@ export const config = {
       10,
     ),
   },
+  events: {
+    // Event processing interval (default: 30 seconds)
+    processingIntervalMs: parseInt(
+      process.env.EVENT_PROCESSING_INTERVAL_MS || "30000",
+      10,
+    ),
+    // Batch size for processing events (default: 100)
+    batchSize: parseInt(process.env.EVENT_BATCH_SIZE || "100", 10),
+    // Data warehouse configuration
+    dataWarehouse: {
+      endpoint: process.env.DATA_WAREHOUSE_ENDPOINT,
+      apiKey: process.env.DATA_WAREHOUSE_API_KEY,
+    },
+  },
   // Whether to allow generation of mock price history data when real data is not available
   // Defaults to true in development/test, false in production
   allowMockPriceHistory: process.env.ALLOW_MOCK_PRICE_HISTORY

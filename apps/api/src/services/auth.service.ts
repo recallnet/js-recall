@@ -5,6 +5,11 @@ import {
   createUserFromWallet,
   findByWalletAddress as findUserByWalletAddress,
 } from "@/database/repositories/user-repository.js";
+import {
+  EventDataBuilder,
+  EventTracker,
+} from "@/services/event-tracker.service.js";
+import { EVENTS } from "@/services/event-tracker.service.js";
 import { LoginResponse, SessionData } from "@/types/index.js";
 
 /**
@@ -12,6 +17,11 @@ import { LoginResponse, SessionData } from "@/types/index.js";
  * Handles SIWE authentication for users with wallet-based login
  */
 export class AuthService {
+  private eventTracker: EventTracker;
+
+  constructor(eventTracker: EventTracker) {
+    this.eventTracker = eventTracker;
+  }
   /**
    * Generate a new nonce for SIWE authentication
    * @returns A new nonce string
@@ -74,6 +84,15 @@ export class AuthService {
       session.wallet = wallet;
       await session.save();
 
+      const event = new EventDataBuilder()
+        .type(EVENTS.USER_LOGGED_IN)
+        .source("api")
+        .addField("wallet_address", wallet)
+        .addField("user_id", userId)
+        .build();
+
+      await this.eventTracker.track(event);
+
       console.log(
         `[AuthService] User login successful for wallet: ${wallet}, userId: ${userId}`,
       );
@@ -106,14 +125,5 @@ export class AuthService {
    */
   async logout(session: IronSession<SessionData>): Promise<void> {
     session.nonce = undefined;
-    session.siwe = undefined;
-    session.userId = undefined;
-    session.agentId = undefined;
-    session.adminId = undefined;
-    session.wallet = undefined;
-    await session.save();
-    session.destroy();
-
-    console.log("[AuthService] User logged out successfully");
   }
 }

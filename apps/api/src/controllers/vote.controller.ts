@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
 import { ApiError } from "@/middleware/errorHandler.js";
+import { EventDataBuilder } from "@/services/event-tracker.service.js";
+import { EVENTS } from "@/services/event-tracker.service.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   CreateVoteBodySchema,
@@ -45,6 +47,16 @@ export function makeVoteController(services: ServiceRegistry) {
             agentId,
             competitionId,
           );
+
+          const event = new EventDataBuilder()
+            .type(EVENTS.USER_SUBMITTED_VOTE)
+            .source("api")
+            .addField("agent_id", agentId)
+            .addField("user_id", userId)
+            .addField("competition_id", competitionId)
+            .build();
+
+          await services.eventTracker.track(event);
 
           // Return the created vote
           res.status(201).json({
@@ -116,6 +128,17 @@ export function makeVoteController(services: ServiceRegistry) {
 
         // Apply pagination
         const paginatedVotes = votes.slice(offset, offset + limit);
+
+        const event = new EventDataBuilder()
+          .type(EVENTS.USER_VIEWED_VOTE_HISTORY_PAGE)
+          .source("api")
+          .addField("user_id", userId)
+          .addField("competition_id", competitionId)
+          .addField("limit", limit)
+          .addField("offset", offset)
+          .build();
+
+        await services.eventTracker.track(event);
 
         res.status(200).json({
           success: true,

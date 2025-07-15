@@ -14,6 +14,11 @@ import {
 } from "@/database/repositories/user-repository.js";
 import { InsertUser, SelectUser } from "@/database/schema/core/types.js";
 import { EmailService } from "@/services/email.service.js";
+import {
+  EventDataBuilder,
+  EventTracker,
+} from "@/services/event-tracker.service.js";
+import { EVENTS } from "@/services/event-tracker.service.js";
 import { UserMetadata, UserSearchParams } from "@/types/index.js";
 
 /**
@@ -27,11 +32,14 @@ export class UserManager {
   private userProfileCache: Map<string, SelectUser>; // userId -> user profile
   // Email service for sending verification emails
   private emailService: EmailService;
+  // Event tracker for analytics
+  private eventTracker: EventTracker;
 
-  constructor(emailService: EmailService) {
+  constructor(emailService: EmailService, eventTracker: EventTracker) {
     this.userWalletCache = new Map();
     this.userProfileCache = new Map();
     this.emailService = emailService;
+    this.eventTracker = eventTracker;
   }
 
   /**
@@ -121,6 +129,17 @@ export class UserManager {
       console.log(
         `[UserManager] Registered user: ${name || "Unknown"} (${id}) with wallet ${normalizedWalletAddress}`,
       );
+
+      const event = new EventDataBuilder()
+        .type(EVENTS.USER_SIGNED_UP)
+        .source("api")
+        .addField("user_id", id)
+        .addField("wallet_address", normalizedWalletAddress)
+        .addField("name", name || null)
+        .addField("email", email || null)
+        .build();
+
+      await this.eventTracker.track(event);
 
       return savedUser;
     } catch (error) {
@@ -220,6 +239,17 @@ export class UserManager {
       if (updatedUser.walletAddress) {
         this.userWalletCache.set(updatedUser.walletAddress, user.id);
       }
+
+      const updateEvent = new EventDataBuilder()
+        .type(EVENTS.USER_PROFILE_UPDATED)
+        .source("api")
+        .addField("user_id", user.id)
+        .addField("email", user.email || null)
+        .addField("image_url", user.imageUrl || null)
+        .addField("metadata", user.metadata || null)
+        .build();
+
+      await this.eventTracker.track(updateEvent);
 
       // Send verification email if email has changed
       if (emailChanged && updatedUser.email) {
