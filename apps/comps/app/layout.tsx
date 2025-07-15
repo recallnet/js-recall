@@ -1,4 +1,3 @@
-import "@rainbow-me/rainbowkit/styles.css";
 import "@recallnet/ui2/globals.css";
 
 import { Metadata } from "next";

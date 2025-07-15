@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsClient } from "@uidotdev/usehooks";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useEffect, useMemo } from "react";
+import { createSiweMessage, parseSiweMessage } from "viem/siwe";
+import { useAccount, useSignMessage } from "wagmi";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
 import { useProfile } from "@/hooks/useProfile";
@@ -165,3 +168,78 @@ export const useUserSession = (): UserSessionState => {
 
   return sessionState;
 };
+
+/**
+ * Custom SIWE authentication hook that integrates ConnectKit with our backend API
+ * Manual authentication only - no auto-triggering
+ */
+export function useSiweAuth() {
+  const { address, isConnected, chainId } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+  const { refetch: refetchNonce } = useNonce();
+  const { mutateAsync: login } = useLogin();
+
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const authenticate = async () => {
+    if (!address || !chainId || !isConnected) {
+      throw new Error("Wallet not connected");
+    }
+
+    setIsAuthenticating(true);
+    setAuthError(null);
+
+    try {
+      // Get fresh nonce
+      const nonceResult = await refetchNonce();
+      const nonce = nonceResult.data?.nonce;
+
+      if (!nonce) {
+        throw new Error("Failed to get nonce");
+      }
+
+      // Create SIWE message
+      const message = createSiweMessage({
+        domain: document.location.host,
+        address,
+        statement: "Sign in with Ethereum to the app.",
+        uri: document.location.origin,
+        version: "1",
+        chainId,
+        nonce,
+      });
+
+      // Sign the message
+      const signature = await signMessageAsync({ message });
+
+      // Verify signature with backend
+      const siweMessage = parseSiweMessage(message);
+      if (!siweMessage.address) {
+        throw new Error("No address found in SIWE message");
+      }
+
+      await login({
+        message,
+        signature,
+        wallet: siweMessage.address,
+      });
+
+      setIsAuthenticating(false);
+      return true;
+    } catch (error) {
+      console.log(`❌ [SIWE] Authentication failed:`, error);
+      setAuthError(
+        error instanceof Error ? error.message : "Authentication failed",
+      );
+      setIsAuthenticating(false);
+    }
+  };
+
+  return {
+    authenticate,
+    isAuthenticating,
+    authError,
+    clearError: () => setAuthError(""),
+  };
+}

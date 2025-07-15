@@ -10,7 +10,7 @@ import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { SIWEButton } from "@/components/siwe";
+import { SignInButton } from "@/components/siwe";
 
 const ACTIVE_BORDER_STYLE = "border-b-2 border-b-yellow-500";
 
@@ -99,7 +99,7 @@ export const Navbar: React.FunctionComponent = () => {
             [ACTIVE_BORDER_STYLE]: pathname === "/profile",
           })}
         >
-          <SIWEButton />
+          <SignInButton />
         </div>
       </div>
     </nav>

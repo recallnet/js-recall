@@ -1,78 +1,36 @@
 "use client";
 
-import {
-  AuthenticationStatus,
-  RainbowKitAuthenticationProvider,
-  RainbowKitProvider,
-  createAuthenticationAdapter,
-  darkTheme,
-} from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConnectKitProvider } from "connectkit";
 import { NavigationGuardProvider } from "next-navigation-guard";
 import React from "react";
 import { type ReactNode, useState } from "react";
-import { createSiweMessage, parseSiweMessage } from "viem/siwe";
 import { WagmiProvider } from "wagmi";
 
 import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 
-import { useLogin, useLogout, useNonce } from "@/hooks/useAuth";
 import { clientConfig } from "@/wagmi-config";
 
-const AUTHENTICATION_STATUS: AuthenticationStatus = "unauthenticated";
 const CONFIG = clientConfig();
 
 function WalletProvider(props: { children: ReactNode }) {
-  const { data: nonceData } = useNonce();
-  const { mutateAsync: login } = useLogin();
-  const { mutateAsync: logout } = useLogout();
-
-  const authAdapter = React.useMemo(() => {
-    return createAuthenticationAdapter({
-      getNonce: async () => {
-        return nonceData?.nonce ?? "";
-      },
-      createMessage: ({ nonce, address, chainId }) => {
-        return createSiweMessage({
-          domain: document.location.host,
-          address,
-          statement: "Sign in with Ethereum to the app.",
-          uri: document.location.origin,
-          version: "1",
-          chainId,
-          nonce,
-        });
-      },
-      verify: async ({ message, signature }) => {
-        const siweMessage = parseSiweMessage(message);
-        if (!siweMessage.address) {
-          throw new Error("No address found in SIWE message");
-        }
-
-        await login({
-          message,
-          signature,
-          wallet: siweMessage.address,
-        });
-
-        return true;
-      },
-      signOut: async () => {
-        await logout();
-      },
-    });
-  }, [nonceData, login, logout]);
-
   return (
     <WagmiProvider config={CONFIG}>
-      <RainbowKitAuthenticationProvider
-        adapter={authAdapter}
-        status={AUTHENTICATION_STATUS}
+      <ConnectKitProvider
+        mode="dark"
+        customTheme={{
+          "--ck-connectbutton-font-size": "14px",
+          "--ck-connectbutton-border-radius": "0px",
+          "--ck-connectbutton-background": "#0057AD",
+          "--ck-connectbutton-background-hover": "#0066cc",
+          "--ck-font-family": "'Trim Mono', monospace",
+        }}
+        options={{
+          initialChainId: 0, // Let it auto-detect
+        }}
       >
-        <RainbowKitProvider theme={darkTheme()}>
-          {props.children}
-        </RainbowKitProvider>
-      </RainbowKitAuthenticationProvider>
+        {props.children}
+      </ConnectKitProvider>
     </WagmiProvider>
   );
 }

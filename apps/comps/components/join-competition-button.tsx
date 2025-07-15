@@ -9,7 +9,6 @@ import { useUserSession } from "@/hooks/useAuth";
 import { useJoinCompetition } from "@/hooks/useJoinCompetition";
 
 import { ChooseAgentModal } from "./modals/choose-agent";
-import { ConnectWalletModal } from "./modals/connect-wallet";
 import { CreateAccountModal } from "./modals/create-account";
 import { SetupAgentModal } from "./modals/setup-agent";
 
@@ -91,10 +90,6 @@ export function JoinCompetitionButton({
       >
         {children}
       </Button>
-      <ConnectWalletModal
-        isOpen={activeModal === "connectWallet"}
-        onClose={() => setActiveModal(null)}
-      />
       <ChooseAgentModal
         isOpen={activeModal === "chooseAgent"}
         onClose={() => setActiveModal(null)}
