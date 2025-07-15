@@ -11,32 +11,25 @@ import { ServiceRegistry } from "@/services/index.js";
 import {
   ActorStatus,
   AdminCreateAgentSchema,
+  AgentIdParamsSchema,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
+  CompetitionIdParamsSchema,
   SYNC_DATA_TYPE,
 } from "@/types/index.js";
 
 import {
   AdminCreateCompetitionSchema,
   AdminDeactivateAgentBodySchema,
-  AdminDeactivateAgentParamsSchema,
-  AdminDeleteAgentParamsSchema,
-  AdminEndCompetitionSchema,
-  AdminGetAgentApiKeyParamsSchema,
-  AdminGetAgentParamsSchema,
-  AdminGetCompetitionSnapshotsParamsSchema,
   AdminGetCompetitionSnapshotsQuerySchema,
   AdminGetObjectIndexQuerySchema,
-  AdminGetPerformanceReportsQuerySchema,
   AdminReactivateAgentInCompetitionParamsSchema,
-  AdminReactivateAgentParamsSchema,
   AdminRegisterUserSchema,
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
   AdminSyncObjectIndexSchema,
-  AdminUpdateCompetitionParamsSchema,
 } from "./admin.schema.js";
 import {
   ensureCompetitionUpdate,
@@ -124,13 +117,11 @@ export function makeAdminController(services: ServiceRegistry) {
           );
         }
 
-        // Validate request body using flatParse
-        const result = flatParse(AdminSetupSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
-        const { username, password, email } = result.data;
+        const { username, password, email } = flatParse(
+          AdminSetupSchema,
+          req.body,
+          "body",
+        );
 
         // Ensure that ROOT_ENCRYPTION_KEY exists in .env file
         try {
@@ -252,15 +243,6 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerUser(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
-        const result = flatParse(AdminRegisterUserSchema, req.body);
-        if (!result.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid request format: ${result.error}`,
-          });
-        }
-
         const {
           walletAddress,
           name,
@@ -272,7 +254,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agentImageUrl,
           agentMetadata,
           agentWalletAddress,
-        } = result.data;
+        } = flatParse(AdminRegisterUserSchema, req.body, "body");
 
         // Check if a user with this wallet address already exists
         const existingUser =
@@ -426,11 +408,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        const result = flatParse(AdminCreateAgentSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-        const { user, agent } = result.data;
+        const { user, agent } = flatParse(
+          AdminCreateAgentSchema,
+          req.body,
+          "body",
+        );
         const { id: userId, walletAddress: userWalletAddress } = user;
         const {
           name,
@@ -534,11 +516,6 @@ export function makeAdminController(services: ServiceRegistry) {
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
         // Validate request body using flatParse
-        const result = flatParse(AdminCreateCompetitionSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
         const {
           name,
           description,
@@ -550,7 +527,7 @@ export function makeAdminController(services: ServiceRegistry) {
           endDate,
           votingStartDate,
           votingEndDate,
-        } = result.data;
+        } = flatParse(AdminCreateCompetitionSchema, req.body, "body");
 
         // Create a new competition
         const competition = await services.competitionManager.createCompetition(
@@ -583,12 +560,6 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async startCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
-        const result = flatParse(AdminStartCompetitionSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
         const {
           competitionId,
           name,
@@ -601,7 +572,7 @@ export function makeAdminController(services: ServiceRegistry) {
           endDate,
           votingStartDate,
           votingEndDate,
-        } = result.data;
+        } = flatParse(AdminStartCompetitionSchema, req.body, "body");
 
         let finalAgentIds = [...agentIds]; // Start with provided agent IDs
 
@@ -699,13 +670,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async endCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
-        const result = flatParse(AdminEndCompetitionSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
-        const { competitionId } = result.data;
+        const { competitionId } = flatParse(
+          CompetitionIdParamsSchema,
+          req.body,
+          "body",
+        );
 
         // End the competition
         const endedCompetition =
@@ -754,16 +723,14 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async syncObjectIndex(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
-        const result = flatParse(AdminSyncObjectIndexSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
-        const { competitionId, dataTypes } = result.data;
+        const { competitionId: syncCompetitionId, dataTypes } = flatParse(
+          AdminSyncObjectIndexSchema,
+          req.body,
+          "body",
+        );
 
         // No need for ensureUuid here, Zod already validated
-        const validatedCompetitionId = competitionId;
+        const validatedCompetitionId = syncCompetitionId;
 
         const defaultDataTypes = [
           SYNC_DATA_TYPE.TRADE,
@@ -834,19 +801,19 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async getObjectIndex(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate query parameters using flatParse
-        const result = flatParse(AdminGetObjectIndexQuerySchema, req.query);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid query parameters: ${result.error}`);
-        }
-
-        const { competitionId, agentId, dataType, limit, offset } = result.data;
+        const {
+          competitionId: objectIndexCompetitionId,
+          agentId,
+          dataType,
+          limit,
+          offset,
+        } = flatParse(AdminGetObjectIndexQuerySchema, req.query, "query");
 
         // Get entries and count
         const [entries, totalCount] = await Promise.all([
           objectIndexRepository.getAll(
             {
-              competitionId,
+              competitionId: objectIndexCompetitionId,
               agentId,
               dataType,
             },
@@ -854,7 +821,7 @@ export function makeAdminController(services: ServiceRegistry) {
             offset,
           ),
           objectIndexRepository.count({
-            competitionId,
+            competitionId: objectIndexCompetitionId,
             agentId,
             dataType,
           }),
@@ -883,16 +850,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async updateCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminUpdateCompetitionParamsSchema,
+        const { competitionId } = flatParse(
+          CompetitionIdParamsSchema,
           req.params,
+          "params",
         );
-        if (!paramsResult.success) {
-          throw new ApiError(400, `Invalid parameters: ${paramsResult.error}`);
-        }
-
-        const { competitionId } = paramsResult.data;
         const updates = ensureCompetitionUpdate(req);
 
         // Check if there are any updates to apply
@@ -928,18 +890,11 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Validate query using flatParse
-        const queryResult = flatParse(
-          AdminGetPerformanceReportsQuerySchema,
+        const { competitionId } = flatParse(
+          CompetitionIdParamsSchema,
           req.query,
+          "query",
         );
-        if (!queryResult.success) {
-          throw new ApiError(
-            400,
-            `Invalid query parameters: ${queryResult.error}`,
-          );
-        }
-        const { competitionId } = queryResult.data;
 
         // Get the competition
         const competition =
@@ -1037,28 +992,16 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminGetCompetitionSnapshotsParamsSchema,
+        const { competitionId } = flatParse(
+          CompetitionIdParamsSchema,
           req.params,
+          "params",
         );
-        if (!paramsResult.success) {
-          throw new ApiError(400, `Invalid parameters: ${paramsResult.error}`);
-        }
-        const { competitionId } = paramsResult.data;
-
-        // Validate query using flatParse
-        const queryResult = flatParse(
+        const { agentId: snapshotAgentId } = flatParse(
           AdminGetCompetitionSnapshotsQuerySchema,
           req.query,
+          "query",
         );
-        if (!queryResult.success) {
-          throw new ApiError(
-            400,
-            `Invalid query parameters: ${queryResult.error}`,
-          );
-        }
-        const { agentId } = queryResult.data;
 
         // Check if the competition exists
         const competition =
@@ -1069,9 +1012,9 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Get snapshots based on whether an agent ID was provided
         let snapshots;
-        if (agentId) {
+        if (snapshotAgentId) {
           // Check if the agent exists
-          const agent = await services.agentManager.getAgent(agentId);
+          const agent = await services.agentManager.getAgent(snapshotAgentId);
           if (!agent) {
             throw new ApiError(404, "Agent not found");
           }
@@ -1080,7 +1023,7 @@ export function makeAdminController(services: ServiceRegistry) {
           const agentInCompetition =
             await services.competitionManager.isAgentInCompetition(
               competitionId,
-              agentId,
+              snapshotAgentId,
             );
 
           if (!agentInCompetition) {
@@ -1094,7 +1037,7 @@ export function makeAdminController(services: ServiceRegistry) {
           snapshots =
             await services.portfolioSnapshotter.getAgentPortfolioSnapshots(
               competitionId,
-              agentId,
+              snapshotAgentId,
             );
         } else {
           // Get snapshots for all agents in the competition (including inactive ones)
@@ -1247,19 +1190,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async deleteAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminDeleteAgentParamsSchema,
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
           req.params,
+          "params",
         );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
 
         // Get the agent first to check if it exists
         const agent = await services.agentManager.getAgent(agentId);
@@ -1299,29 +1234,16 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async deactivateAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminDeactivateAgentParamsSchema,
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
           req.params,
+          "params",
         );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        // Validate body using flatParse
-        const bodyResult = flatParse(AdminDeactivateAgentBodySchema, req.body);
-        if (!bodyResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid request body: ${bodyResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
-        const { reason } = bodyResult.data;
+        const { reason: deactivateReason } = flatParse(
+          AdminDeactivateAgentBodySchema,
+          req.body,
+          "body",
+        );
 
         // Get the agent first to check if it exists
         const agent = await services.agentManager.getAgent(agentId);
@@ -1349,7 +1271,7 @@ export function makeAdminController(services: ServiceRegistry) {
         // Deactivate the agent
         const deactivatedAgent = await services.agentManager.deactivateAgent(
           agentId,
-          reason,
+          deactivateReason,
         );
 
         if (!deactivatedAgent) {
@@ -1383,19 +1305,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async reactivateAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminReactivateAgentParamsSchema,
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
           req.params,
+          "params",
         );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
 
         // Get the agent first to check if it exists and is actually inactive
         const agent = await services.agentManager.getAgent(agentId);
@@ -1453,16 +1367,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async getAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(AdminGetAgentParamsSchema, req.params);
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
+          req.params,
+          "params",
+        );
 
         // Get the agent
         const agent = await services.agentManager.getAgent(agentId);
@@ -1510,36 +1419,21 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminRemoveAgentFromCompetitionParamsSchema,
-          req.params,
-        );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        // Validate body using flatParse
-        const bodyResult = flatParse(
+        const { competitionId: removeCompetitionId, agentId: removeAgentId } =
+          flatParse(
+            AdminRemoveAgentFromCompetitionParamsSchema,
+            req.params,
+            "params",
+          );
+        const { reason: removeReason } = flatParse(
           AdminRemoveAgentFromCompetitionBodySchema,
           req.body,
+          "body",
         );
-        if (!bodyResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid request body: ${bodyResult.error}`,
-          });
-        }
-
-        const { competitionId, agentId } = paramsResult.data;
-        const { reason } = bodyResult.data;
 
         // Check if competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionManager.getCompetition(removeCompetitionId);
         if (!competition) {
           return res.status(404).json({
             success: false,
@@ -1548,7 +1442,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if agent exists
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentManager.getAgent(removeAgentId);
         if (!agent) {
           return res.status(404).json({
             success: false,
@@ -1559,8 +1453,8 @@ export function makeAdminController(services: ServiceRegistry) {
         // Check if agent is in the competition
         const isInCompetition =
           await services.competitionManager.isAgentInCompetition(
-            competitionId,
-            agentId,
+            removeCompetitionId,
+            removeAgentId,
           );
         if (!isInCompetition) {
           return res.status(400).json({
@@ -1571,9 +1465,9 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Remove agent from competition using service method
         await services.competitionManager.removeAgentFromCompetition(
-          competitionId,
-          agentId,
-          `Admin removal: ${reason}`,
+          removeCompetitionId,
+          removeAgentId,
+          `Admin removal: ${removeReason}`,
         );
 
         // Return success response
@@ -1588,7 +1482,7 @@ export function makeAdminController(services: ServiceRegistry) {
             id: competition.id,
             name: competition.name,
           },
-          reason,
+          reason: removeReason,
         });
       } catch (error) {
         next(error);
@@ -1607,23 +1501,19 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
+        const {
+          competitionId: reactivateCompetitionId,
+          agentId: reactivateAgentId,
+        } = flatParse(
           AdminReactivateAgentInCompetitionParamsSchema,
           req.params,
+          "params",
         );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        const { competitionId, agentId } = paramsResult.data;
 
         // Check if competition exists
-        const competition =
-          await services.competitionManager.getCompetition(competitionId);
+        const competition = await services.competitionManager.getCompetition(
+          reactivateCompetitionId,
+        );
         if (!competition) {
           return res.status(404).json({
             success: false,
@@ -1632,7 +1522,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if agent exists
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentManager.getAgent(reactivateAgentId);
         if (!agent) {
           return res.status(404).json({
             success: false,
@@ -1651,8 +1541,8 @@ export function makeAdminController(services: ServiceRegistry) {
         // Check if agent is in the competition
         const isInCompetition =
           await services.competitionManager.isAgentInCompetition(
-            competitionId,
-            agentId,
+            reactivateCompetitionId,
+            reactivateAgentId,
           );
         if (!isInCompetition) {
           return res.status(400).json({
@@ -1663,8 +1553,8 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Reactivate agent in competition using service method
         await services.competitionManager.reactivateAgentInCompetition(
-          competitionId,
-          agentId,
+          reactivateCompetitionId,
+          reactivateAgentId,
         );
 
         // Return success response
@@ -1693,16 +1583,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async getAgentApiKey(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminGetAgentApiKeyParamsSchema,
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
           req.params,
+          "params",
         );
-        if (!paramsResult.success) {
-          throw new ApiError(400, `Invalid parameters: ${paramsResult.error}`);
-        }
-
-        const { agentId } = paramsResult.data;
 
         // Get the decrypted API key using the agent manager
         const result =

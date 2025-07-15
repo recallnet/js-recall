@@ -703,20 +703,6 @@ export const PagingParamsSchema = z.object({
 export type PagingParams = z.infer<typeof PagingParamsSchema>;
 
 /**
- * Query string parameters for competition agents endpoint
- */
-export const CompetitionAgentsParamsSchema = z.object({
-  filter: z.string().optional(),
-  sort: z.string().default("rank"),
-  limit: z.coerce.number().min(1).max(100).default(50),
-  offset: z.coerce.number().min(0).default(0),
-});
-
-export type CompetitionAgentsParams = z.infer<
-  typeof CompetitionAgentsParamsSchema
->;
-
-/**
  * Get agents filter values, it can be any string, but the query will be name or wallet address
  */
 export const AgentFilterSchema = z.string().max(100);
@@ -730,10 +716,6 @@ export const CompetitionAgentParamsSchema = z.object({
   competitionId: z.uuid("Invalid competition ID format"),
   agentId: z.uuid("Invalid agent ID format"),
 });
-
-export type CompetitionAgentParams = z.infer<
-  typeof CompetitionAgentParamsSchema
->;
 
 export const AgentCompetitionsParamsSchema = PagingParamsSchema.extend({
   status: z.optional(CompetitionStatusSchema),
@@ -833,35 +815,6 @@ export const UpdateUserAgentProfileSchema = z
   .strict();
 
 /**
- * Update agent profile (from an non-user request) parameters schema
- */
-export const UpdateAgentProfileBodySchema = z
-  .object({
-    name: z
-      .string("Invalid name format")
-      .trim()
-      .min(1, { message: "Name must be at least 1 character" })
-      .optional(),
-    description: z
-      .string("Invalid description format")
-      .trim()
-      .min(1, { message: "Description must be at least 1 character" })
-      .optional(),
-    imageUrl: z.url("Invalid image URL format").optional(),
-  })
-  .strict();
-
-/**
- * Update agent profile (from an non-user request) parameters schema
- */
-export const UpdateAgentProfileSchema = z
-  .object({
-    agentId: z.uuid("Invalid agent ID format"),
-    body: UpdateAgentProfileBodySchema,
-  })
-  .strict();
-
-/**
  * Get agent parameters schema
  */
 export const GetUserAgentSchema = z
@@ -891,18 +844,6 @@ export const LEADERBOARD_SORT_FIELDS = [
 ] as const;
 
 /**
- * Query string parameters for global leaderboard rankings
- */
-export const LeaderboardParamsSchema = z.object({
-  type: z.enum(COMPETITION_TYPE_VALUES).default(COMPETITION_TYPE.TRADING),
-  limit: z.coerce.number().min(1).max(100).default(50),
-  offset: z.coerce.number().min(0).default(0),
-  sort: z.string().optional().default("rank"), // Default to rank ascending
-});
-
-export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;
-
-/**
  * Structure for an agent entry in the global leaderboard
  */
 export interface LeaderboardAgent
@@ -928,28 +869,6 @@ export interface Vote {
   createdAt: Date;
   updatedAt: Date;
 }
-
-/**
- * Vote request body schema for creating votes
- */
-export const CreateVoteBodySchema = z
-  .object({
-    agentId: z.uuid("Invalid agent ID format"),
-    competitionId: z.uuid("Invalid competition ID format"),
-  })
-  .strict();
-
-/**
- * Create vote parameters schema (includes userId from auth)
- */
-export const CreateVoteSchema = z
-  .object({
-    userId: z.uuid("Invalid user ID format"),
-    body: CreateVoteBodySchema,
-  })
-  .strict();
-
-export type CreateVoteRequest = z.infer<typeof CreateVoteSchema>;
 
 /**
  * Vote response interface
@@ -1030,26 +949,6 @@ export interface VoteError extends Error {
 }
 
 /**
- * Voting state params schema for getting competition voting state
- */
-export const VotingStateParamsSchema = z.object({
-  competitionId: z.uuid("Invalid competition ID format"),
-});
-
-export type VotingStateParams = z.infer<typeof VotingStateParamsSchema>;
-
-/**
- * User votes query params schema
- */
-export const UserVotesParamsSchema = z.object({
-  competitionId: z.uuid("Invalid competition ID format").optional(),
-  limit: z.coerce.number().min(1).max(100).default(50),
-  offset: z.coerce.number().min(0).default(0),
-});
-
-export type UserVotesParams = z.infer<typeof UserVotesParamsSchema>;
-
-/**
  * Admin create agent schema
  */
 export const AdminCreateAgentSchema = z.object({
@@ -1119,3 +1018,19 @@ export const AdminSearchUsersAndAgentsQuerySchema = z.strictObject({
 export type AdminSearchUsersAndAgentsQuery = z.infer<
   typeof AdminSearchUsersAndAgentsQuerySchema
 >;
+
+/**
+ * Params schema for endpoints requiring an agentId path parameter.
+ * @example { agentId: "uuid-string" }
+ */
+export const AgentIdParamsSchema = z.object({
+  agentId: UuidSchema,
+});
+
+/**
+ * Params schema for endpoints requiring an competitionId path parameter.
+ * @example { agentId: "uuid-string" }
+ */
+export const CompetitionIdParamsSchema = z.object({
+  competitionId: UuidSchema,
+});

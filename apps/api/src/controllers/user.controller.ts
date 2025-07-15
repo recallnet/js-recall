@@ -1,17 +1,20 @@
 import { NextFunction, Request, Response } from "express";
 
+import { flatParse } from "@/lib/flat-parse.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AgentCompetitionsParamsSchema,
-  CreateAgentSchema,
-  GetUserAgentSchema,
-  UpdateUserAgentProfileSchema,
-  UpdateUserProfileSchema,
-  UuidSchema,
+  AgentIdParamsSchema,
+  PagingParamsSchema,
 } from "@/types/index.js";
 
-import { ensurePaging, ensureUserId } from "./request-helpers.js";
+import {
+  CreateAgentBodySchema,
+  UpdateAgentProfileBodySchema,
+  UpdateUserProfileBodySchema,
+  UserIdParamsSchema,
+} from "./user.schema.js";
 
 /**
  * User Controller
@@ -28,11 +31,7 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async getProfile(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success, data, error } = UuidSchema.safeParse(req.userId);
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
-        const userId = data;
+        const { userId } = flatParse(UserIdParamsSchema, req);
 
         // Get the user using the service
         const user = await services.userManager.getUser(userId);
@@ -60,17 +59,12 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async updateProfile(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success, data, error } = UpdateUserProfileSchema.safeParse({
-          userId: req.userId,
-          body: req.body,
-        });
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
-        const {
-          userId,
-          body: { name, imageUrl, email, metadata },
-        } = data;
+        const { userId } = flatParse(UserIdParamsSchema, req);
+        const { name, imageUrl, email, metadata } = flatParse(
+          UpdateUserProfileBodySchema,
+          req.body,
+          "body",
+        );
 
         // Get the current user
         const user = await services.userManager.getUser(userId);
@@ -112,17 +106,12 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async createAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success, data, error } = CreateAgentSchema.safeParse({
-          userId: req.userId,
-          body: req.body,
-        });
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
-        const {
-          userId,
-          body: { name, description, imageUrl, email, metadata },
-        } = data;
+        const { userId } = flatParse(UserIdParamsSchema, req);
+        const { name, description, imageUrl, email, metadata } = flatParse(
+          CreateAgentBodySchema,
+          req.body,
+          "body",
+        );
 
         // Verify the user exists
         const user = await services.userManager.getUser(userId);
@@ -162,8 +151,8 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async getAgents(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = ensureUserId(req);
-        const paging = ensurePaging(req);
+        const { userId } = flatParse(UserIdParamsSchema, req);
+        const paging = flatParse(PagingParamsSchema, req.query, "query");
 
         // Get agents owned by this user
         const agents = await services.agentManager.getAgentsByOwner(
@@ -207,14 +196,12 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async getAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success, data, error } = GetUserAgentSchema.safeParse({
-          userId: req.userId,
-          agentId: req.params.agentId,
-        });
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
-        const { userId, agentId } = data;
+        const { userId } = flatParse(UserIdParamsSchema, req);
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
+          req.params,
+          "params",
+        );
 
         // Get the agent
         const agent = await services.agentManager.getAgent(agentId);
@@ -254,14 +241,12 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async getAgentApiKey(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success, data, error } = GetUserAgentSchema.safeParse({
-          userId: req.userId,
-          agentId: req.params.agentId,
-        });
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
-        const { userId, agentId } = data;
+        const { userId } = flatParse(UserIdParamsSchema, req, "params");
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
+          req.params,
+          "params",
+        );
 
         // Get the agent to verify ownership
         const agent = await services.agentManager.getAgent(agentId);
@@ -312,21 +297,17 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async updateAgentProfile(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success, data, error } = UpdateUserAgentProfileSchema.safeParse(
-          {
-            userId: req.userId,
-            agentId: req.params.agentId,
-            body: req.body,
-          },
+        const { userId } = flatParse(UserIdParamsSchema, req);
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
+          req.params,
+          "params",
         );
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
-        const {
-          userId,
-          agentId,
-          body: { name, description, imageUrl, email, metadata },
-        } = data;
+        const { name, description, imageUrl, email, metadata } = flatParse(
+          UpdateAgentProfileBodySchema,
+          req.body,
+          "body",
+        );
 
         // Get the agent to verify ownership
         const agent = await services.agentManager.getAgent(agentId);
@@ -385,17 +366,12 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async getCompetitions(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.userId as string;
-
-        // Parse and validate query parameters
-        const {
-          success,
-          data: params,
-          error,
-        } = AgentCompetitionsParamsSchema.safeParse(req.query);
-        if (!success) {
-          throw new ApiError(400, `Invalid query parameters: ${error.message}`);
-        }
+        const { userId } = flatParse(UserIdParamsSchema, req);
+        const params = flatParse(
+          AgentCompetitionsParamsSchema,
+          req.query,
+          "query",
+        );
 
         // Get competitions for all user's agents
         const results =
@@ -428,7 +404,7 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async verifyEmail(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.userId as string;
+        const { userId } = flatParse(UserIdParamsSchema, req);
 
         await services.userManager.verifyEmail(userId);
 

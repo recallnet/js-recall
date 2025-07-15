@@ -1,22 +1,25 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
+import {
+  buildPaginationResponse,
+  checkIsAdmin,
+} from "@/controllers/request-helpers.js";
+import { flatParse } from "@/lib/flat-parse.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
   COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
-  CompetitionStatusSchema,
-  PagingParamsSchema,
+  CompetitionIdParamsSchema,
 } from "@/types/index.js";
-import { AgentQuerySchema } from "@/types/sort/agent.js";
 
 import {
-  buildPaginationResponse,
-  checkIsAdmin,
-  ensureUuid,
-} from "./request-helpers.js";
+  CompetitionAgentsQuerySchema,
+  CompetitionIdQuerySchema,
+  CompetitionListQuerySchema,
+} from "./competition.schema.js";
 
 export function makeCompetitionController(services: ServiceRegistry) {
   /**
@@ -37,12 +40,16 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Get active competition or use competitionId from query
-        const competitionId =
-          (req.query.competitionId as string) ||
+        const { competitionId } = flatParse(
+          CompetitionIdQuerySchema,
+          req.query,
+          "query",
+        );
+        const resolvedCompetitionId =
+          competitionId ||
           (await services.competitionManager.getActiveCompetition())?.id;
 
-        if (!competitionId) {
+        if (!resolvedCompetitionId) {
           throw new ApiError(
             400,
             "No active competition and no competitionId provided",
@@ -50,8 +57,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Check if competition exists
-        const competition =
-          await services.competitionManager.getCompetition(competitionId);
+        const competition = await services.competitionManager.getCompetition(
+          resolvedCompetitionId,
+        );
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
@@ -64,7 +72,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         if (isAdmin) {
           // Admin access: Log and proceed
           console.log(
-            `[CompetitionController] Admin accessing leaderboard for competition ${competitionId}.`,
+            `[CompetitionController] Admin accessing leaderboard for competition ${resolvedCompetitionId}.`,
           );
         } else {
           // Not an admin, an agentId is required
@@ -77,7 +85,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           // AgentId is present, verify active participation
           const isAgentActiveInCompetitionResult =
             await services.competitionManager.isAgentActiveInCompetition(
-              competitionId,
+              resolvedCompetitionId,
               agentId,
             );
           if (!isAgentActiveInCompetitionResult) {
@@ -91,7 +99,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Get leaderboard data (active and inactive agents)
         const leaderboardData =
           await services.competitionManager.getLeaderboardWithInactiveAgents(
-            competitionId,
+            resolvedCompetitionId,
           );
 
         // Get all agents for mapping IDs to names
@@ -149,9 +157,19 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Get active competition
-        const activeCompetition =
-          await services.competitionManager.getActiveCompetition();
+        const { competitionId } = flatParse(
+          CompetitionIdQuerySchema,
+          req.query,
+          "query",
+        );
+        let activeCompetition;
+        if (competitionId) {
+          activeCompetition =
+            await services.competitionManager.getCompetition(competitionId);
+        } else {
+          activeCompetition =
+            await services.competitionManager.getActiveCompetition();
+        }
 
         // If no active competition, return null status
         if (!activeCompetition) {
@@ -460,10 +478,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get all competitions, or those with a given status from the query params
         // TODO: we allow for null status & set our default as "all" competitions—is this what we want?
-        const status = req.query.status
-          ? CompetitionStatusSchema.parse(req.query.status)
-          : undefined;
-        const pagingParams = PagingParamsSchema.parse(req.query);
+        const { status, ...pagingParams } = flatParse(
+          CompetitionListQuerySchema,
+          req.query,
+          "query",
+        );
         const { competitions, total } =
           await services.competitionManager.getCompetitions(
             status,
@@ -679,15 +698,19 @@ export function makeCompetitionController(services: ServiceRegistry) {
           );
         }
 
-        // Get competition ID from path parameter
-        const competitionId = ensureUuid(req.params.competitionId);
+        // Get competition ID from path parameter (validate)
+        const { competitionId } = flatParse(
+          CompetitionIdParamsSchema,
+          req.params,
+          "params",
+        );
 
         // Parse query parameters
-        const parseQueryParams = AgentQuerySchema.safeParse(req.query);
-        if (!parseQueryParams.success) {
-          throw new ApiError(400, "Invalid request format");
-        }
-        const queryParams = parseQueryParams.data;
+        const queryParams = flatParse(
+          CompetitionAgentsQuerySchema,
+          req.query,
+          "query",
+        );
 
         // Check if competition exists
         const competition =

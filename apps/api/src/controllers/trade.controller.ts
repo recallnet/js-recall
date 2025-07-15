@@ -1,8 +1,19 @@
 import { NextFunction, Request, Response } from "express";
 
+import { flatParse } from "@/lib/flat-parse.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { BlockchainType, SpecificChain } from "@/types/index.js";
+import {
+  AgentIdParamsSchema,
+  BlockchainType,
+  CompetitionIdParamsSchema,
+  SpecificChain,
+} from "@/types/index.js";
+
+import {
+  ExecuteTradeBodySchema,
+  TradeQuoteQuerySchema,
+} from "./trade.schema.js";
 
 export function makeTradeController(services: ServiceRegistry) {
   /**
@@ -18,6 +29,8 @@ export function makeTradeController(services: ServiceRegistry) {
      */
     async executeTrade(req: Request, res: Response, next: NextFunction) {
       try {
+        const { agentId } = flatParse(AgentIdParamsSchema, req);
+        const { competitionId } = flatParse(CompetitionIdParamsSchema, req);
         const {
           fromToken,
           toToken,
@@ -29,37 +42,7 @@ export function makeTradeController(services: ServiceRegistry) {
           fromSpecificChain,
           toChain,
           toSpecificChain,
-        } = req.body;
-
-        const agentId = req.agentId as string;
-        const competitionId = req.competitionId as string;
-
-        // Validate required parameters
-        if (!fromToken || !toToken || !amount) {
-          throw new ApiError(
-            400,
-            "Missing required parameters: fromToken, toToken, amount",
-          );
-        }
-
-        // Validate reason is provided
-        if (!reason) {
-          throw new ApiError(400, "Missing required parameter: reason");
-        }
-
-        // Validate amount is a number
-        const parsedAmount = parseFloat(amount);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) {
-          throw new ApiError(400, "Amount must be a positive number");
-        }
-
-        // Validate that we have a competition ID
-        if (!competitionId) {
-          throw new ApiError(
-            400,
-            "Missing competitionId: No active competition or competition ID not set",
-          );
-        }
+        } = flatParse(ExecuteTradeBodySchema, req.body, "body");
 
         console.log(
           `[TradeController] Executing trade with competition ID: ${competitionId}`,
@@ -85,10 +68,10 @@ export function makeTradeController(services: ServiceRegistry) {
         const chainOptions =
           fromChain || fromSpecificChain || toChain || toSpecificChain
             ? {
-                fromChain,
-                fromSpecificChain,
-                toChain,
-                toSpecificChain,
+                fromChain: fromChain as BlockchainType,
+                fromSpecificChain: fromSpecificChain as SpecificChain,
+                toChain: toChain as BlockchainType,
+                toSpecificChain: toSpecificChain as SpecificChain,
               }
             : undefined;
 
@@ -106,7 +89,7 @@ export function makeTradeController(services: ServiceRegistry) {
           competitionId,
           fromToken,
           toToken,
-          parsedAmount,
+          parseFloat(amount as string),
           reason,
           slippageTolerance,
           chainOptions,
@@ -138,26 +121,11 @@ export function makeTradeController(services: ServiceRegistry) {
           fromToken,
           toToken,
           amount,
-          // Chain parameters
           fromChain,
           fromSpecificChain,
           toChain,
           toSpecificChain,
-        } = req.query;
-
-        // Validate required parameters
-        if (!fromToken || !toToken || !amount) {
-          throw new ApiError(
-            400,
-            "Missing required parameters: fromToken, toToken, amount",
-          );
-        }
-
-        // Validate amount is a number
-        const parsedAmount = parseFloat(amount as string);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) {
-          throw new ApiError(400, "Amount must be a positive number");
-        }
+        } = flatParse(TradeQuoteQuerySchema, req.query, "query");
 
         // Determine chains for from/to tokens
         let fromTokenChain: BlockchainType | undefined;
@@ -215,6 +183,7 @@ export function makeTradeController(services: ServiceRegistry) {
         }
 
         // Calculate the trade
+        const parsedAmount = parseFloat(amount as string);
         const fromValueUSD = parsedAmount * fromPrice.price;
 
         // Apply slippage based on trade size
