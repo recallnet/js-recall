@@ -282,13 +282,9 @@ export function makeUserController(services: ServiceRegistry) {
           throw new ApiError(404, "User not found");
         }
 
-        // Auto-verify email in development and test modes
+        // Auto-verify email (e.g. for development, test, or sandbox modes)
         if (!user.isEmailVerified) {
-          if (
-            (config.server.nodeEnv === "development" ||
-              config.server.nodeEnv === "test") &&
-            !(config.email.apiKey && config.email.transactionalId)
-          ) {
+          if (config.email.autoVerifyUserEmail) {
             console.log(
               `[DEV/TEST] Auto-verifying email for user ${userId} in ${config.server.nodeEnv} mode`,
             );

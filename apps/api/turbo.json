@@ -56,7 +56,8 @@
         "LOOPS_TRANSACTIONAL_ID",
         "CORS_ORIGINS",
         "REPOSITORY_LOG_SAMPLE_RATE",
-        "HTTP_LOG_SAMPLE_RATE"
+        "HTTP_LOG_SAMPLE_RATE",
+        "ENABLE_AUTO_VERIFY_USER_EMAIL"
       ]
     }
   }
