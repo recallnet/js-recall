@@ -241,7 +241,7 @@ export function makeUserController(services: ServiceRegistry) {
      */
     async getAgentApiKey(req: Request, res: Response, next: NextFunction) {
       try {
-        const { userId } = flatParse(UserIdParamsSchema, req, "params");
+        const { userId } = flatParse(UserIdParamsSchema, req);
         const { agentId } = flatParse(
           AgentIdParamsSchema,
           req.params,
