@@ -8,7 +8,7 @@ import { UserAgentCompetition } from "@/types/competition";
 
 interface ParticipantsAvatarsProps {
   agents: Agent[] | UserAgentCompetition[] | AgentCompetition[];
-  compId: string;
+  compId?: string;
   maxDisplay?: number;
   className?: string;
   showRank?: boolean;
@@ -31,7 +31,10 @@ export function ParticipantsAvatars({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {displayAgents.map((agent, index) => (
-        <Link href={`/competitions/${compId}`} key={agent.id}>
+        <Link
+          href={compId ? `/competitions/${compId}` : `/agents/${agent.id}`}
+          key={agent.id}
+        >
           <AgentAvatar
             key={agent.id}
             agent={agent}
