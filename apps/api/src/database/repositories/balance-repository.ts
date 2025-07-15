@@ -1,4 +1,4 @@
-import { and, count as drizzleCount, eq } from "drizzle-orm";
+import { and, count as drizzleCount, eq, inArray } from "drizzle-orm";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
@@ -108,6 +108,26 @@ async function getAgentBalancesImpl(agentId: string) {
       .where(eq(balances.agentId, agentId));
   } catch (error) {
     console.error("[BalanceRepository] Error in getAgentBalances:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get all balances for multiple agents in bulk
+ * @param agentIds Array of agent IDs
+ */
+export async function getAgentsBulkBalances(agentIds: string[]) {
+  try {
+    if (agentIds.length === 0) {
+      return [];
+    }
+
+    return await db
+      .select()
+      .from(balances)
+      .where(inArray(balances.agentId, agentIds));
+  } catch (error) {
+    console.error("[BalanceRepository] Error in getAgentsBulkBalances:", error);
     throw error;
   }
 }

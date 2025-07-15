@@ -314,7 +314,7 @@ export class TradeSimulator {
                 - Amount: ${fromAmount}
                 - Price: $${fromPrice.price}
                 - USD Value: $${fromValueUSD.toFixed(6)}
-                
+
                 Burn Details:
                 - To Token (${toToken}): BURN ADDRESS
                 - Price: $${toPrice.price}
@@ -329,7 +329,7 @@ export class TradeSimulator {
                 - Amount: ${fromAmount}
                 - Price: $${fromPrice.price}
                 - USD Value: $${fromValueUSD.toFixed(6)}
-                
+
                 To Token (${toToken}):
                 - Price: $${toPrice.price}
                 - Calculated Amount: ${toAmount.toFixed(6)}
@@ -508,6 +508,84 @@ export class TradeSimulator {
     }
 
     return totalValue;
+  }
+
+  /**
+   * Calculate portfolio values for multiple agents in bulk
+   * @param agentIds Array of agent IDs
+   * @returns Map of agent ID to portfolio value in USD
+   */
+  async calculateBulkPortfolioValues(
+    agentIds: string[],
+  ): Promise<Map<string, number>> {
+    console.log(
+      `[TradeSimulator] Calculating bulk portfolio values for ${agentIds.length} agents`,
+    );
+
+    const portfolioValues = new Map<string, number>();
+
+    if (agentIds.length === 0) {
+      return portfolioValues;
+    }
+
+    try {
+      // Step 1: Get all balances for all agents in one query
+      const allBalances = await this.balanceManager.getBulkBalances(agentIds);
+
+      // Step 2: Get unique token addresses
+      const uniqueTokens = [
+        ...new Set(allBalances.map((balance) => balance.tokenAddress)),
+      ];
+
+      // Step 3: Get all token prices USD in bulk
+      const tokenInfoMap =
+        await this.priceTracker.getBulkTokenInfo(uniqueTokens);
+
+      // Step 4: Initialize portfolio values for all agents
+      agentIds.forEach((agentId) => {
+        portfolioValues.set(agentId, 0);
+      });
+
+      // Step 5: Calculate portfolio values efficiently
+      allBalances.forEach((balance) => {
+        const tokenInfo = tokenInfoMap.get(balance.tokenAddress);
+        if (tokenInfo && tokenInfo.price) {
+          const currentValue = portfolioValues.get(balance.agentId) || 0;
+          const tokenValue = balance.amount * tokenInfo.price;
+          portfolioValues.set(balance.agentId, currentValue + tokenValue);
+        }
+      });
+
+      console.log(
+        `[TradeSimulator] Successfully calculated ${portfolioValues.size} portfolio values using ${uniqueTokens.length} unique tokens`,
+      );
+
+      return portfolioValues;
+    } catch (error) {
+      console.error(
+        `[TradeSimulator] Error calculating bulk portfolio values:`,
+        error,
+      );
+
+      // Fallback to individual calculations
+      console.log(
+        `[TradeSimulator] Falling back to individual portfolio calculations`,
+      );
+      for (const agentId of agentIds) {
+        try {
+          const value = await this.calculatePortfolioValue(agentId);
+          portfolioValues.set(agentId, value);
+        } catch (agentError) {
+          console.error(
+            `[TradeSimulator] Error calculating portfolio for agent ${agentId}:`,
+            agentError,
+          );
+          portfolioValues.set(agentId, 0);
+        }
+      }
+
+      return portfolioValues;
+    }
   }
 
   /**
