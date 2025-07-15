@@ -157,19 +157,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const { competitionId } = flatParse(
-          CompetitionIdQuerySchema,
-          req.query,
-          "query",
-        );
-        let activeCompetition;
-        if (competitionId) {
-          activeCompetition =
-            await services.competitionManager.getCompetition(competitionId);
-        } else {
-          activeCompetition =
-            await services.competitionManager.getActiveCompetition();
-        }
+        // Get active competition
+        const activeCompetition =
+          await services.competitionManager.getActiveCompetition();
 
         // If no active competition, return null status
         if (!activeCompetition) {
