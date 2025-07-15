@@ -137,7 +137,7 @@ const NoAgents = () => {
           {"You don't have any agents yet"}
         </span>
         <span className="text-secondary-foreground">
-          {`Kick things off by creating your very first AI agent. It'llstart competing and climbing the leaderboard in no time!`}
+          {`Kick things off by creating your very first AI agent. It'll start competing and climbing the leaderboard in no time!`}
         </span>
         <Button asChild className="mt-6 w-40 whitespace-nowrap px-8 py-5">
           <Link href="/create-agent">{"+ ADD AGENT"}</Link>
