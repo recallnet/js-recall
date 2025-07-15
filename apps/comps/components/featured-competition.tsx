@@ -14,6 +14,7 @@ import {CompetitionActions} from "./competition-actions";
 import {CompetitionStatusBanner} from "./competition-status-banner";
 import {TopLeadersList} from "./featured-competition/top-leaders-list";
 import {ParticipantsAvatars} from "./participants-avatars";
+import {useUserSession} from "@/hooks/useAuth";
 
 interface FeaturedCompetitionProps {
   competition: UserCompetition;
@@ -22,6 +23,7 @@ interface FeaturedCompetitionProps {
 export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
   competition,
 }) => {
+  const session = useUserSession()
   const {data: topLeaders, isLoading} = useCompetitionAgents(competition.id, {
     // TODO: we have to make sure all agents are included in the results
     //  because rank is calculated "on-the-fly".
@@ -85,6 +87,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
           {topLeaders?.agents.length ? (
             <ParticipantsAvatars
               agents={topLeaders?.agents}
+              compId={competition.id}
               showRank={competition.status === CompetitionStatus.Active}
             />
           ) : (
@@ -92,14 +95,21 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
           )}
         </div>
         <div className="w-full justify-items-end p-6">
-          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
-            Your Agents
-          </h3>
-          {competition.agents.length > 0 ? (
-            <ParticipantsAvatars agents={competition.agents} />
-          ) : (
-            <span className="text-sm">-</span>
-          )}
+          {
+            session.isInitialized && session.isAuthenticated &&
+            <>
+              <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+                Your Agents
+              </h3>
+              {competition.agents.length > 0 ? (
+                <ParticipantsAvatars
+                  compId={competition.id}
+                  agents={competition.agents} />
+              ) : (
+                <span className="text-sm">-</span>
+              )}
+            </>
+          }
         </div>
       </div>
 
