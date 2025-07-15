@@ -58,13 +58,6 @@ export class EmailService {
     to: string,
     token: string,
   ): Promise<unknown | null> {
-    if (!this.isEmailEnabled()) {
-      console.log(
-        "[EmailService] Email sending skipped - API key or transactional ID not provided",
-      );
-      return null;
-    }
-
     const verificationLink = this.formatVerificationLink(token);
 
     const payload: Payload = {
@@ -74,6 +67,20 @@ export class EmailService {
         verificationLink: verificationLink,
       },
     };
+
+    if (!this.isEmailEnabled()) {
+      console.log(
+        "[EmailService] Email sending skipped - API key or transactional ID not provided",
+      );
+      if (config.server.nodeEnv === "development") {
+        console.log(
+          "[EmailService] Dev email payload:",
+          JSON.stringify(payload, null, 2),
+        );
+      }
+      return null;
+    }
+
     return this.sendEmail(payload);
   }
 
