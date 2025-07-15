@@ -7,15 +7,15 @@ import {
   //FaReddit,
   FaYoutube,
 } from "react-icons/fa";
-import {FaXTwitter} from "react-icons/fa6";
+import { FaXTwitter } from "react-icons/fa6";
 
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 interface FooterSectionProps {
   className?: string;
 }
 
-export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
+export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
   const linkBlock1 = [
     {
       text: "COMPETITIONS",
@@ -61,8 +61,8 @@ export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
     },
   ];
   const socialLinks = [
-    {icon: FaXTwitter, url: "https://x.com/recallnet"},
-    {icon: FaDiscord, url: "https://discord.com/invite/recallnet"},
+    { icon: FaXTwitter, url: "https://x.com/recallnet" },
+    { icon: FaDiscord, url: "https://discord.com/invite/recallnet" },
     {
       icon: FaYoutube,
       url: "https://www.youtube.com/channel/UCpFqp6DtxvXaP7LUjxT3KpA",
@@ -81,7 +81,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
           className="h-[72px] w-[63px]"
         />
         <div className="flex flex-col justify-center">
-          {linkBlock1.map(({text, link}, i) => (
+          {linkBlock1.map(({ text, link }, i) => (
             <a
               key={i}
               href={link}
@@ -95,7 +95,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
           ))}
         </div>
         <div className="flex flex-col justify-center">
-          {linkBlock2.map(({text, link}, i) => (
+          {linkBlock2.map(({ text, link }, i) => (
             <a
               key={i}
               href={link}
@@ -118,7 +118,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({className}) => {
             >
               <link.icon
                 size={25}
-                className="text-secondary-foreground text-xl  hover:text-white transition duration-300 ease-in-out"
+                className="text-secondary-foreground text-xl transition duration-300 ease-in-out hover:text-white"
               />
             </a>
           ))}

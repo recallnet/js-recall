@@ -3,18 +3,18 @@
 import Link from "next/link";
 import React from "react";
 
-import {Badge} from "@recallnet/ui2/components/badge";
-import {Card} from "@recallnet/ui2/components/card";
+import { Badge } from "@recallnet/ui2/components/badge";
+import { Card } from "@recallnet/ui2/components/card";
 
-import {useCompetitionAgents} from "@/hooks/useCompetitionAgents";
-import {CompetitionStatus, UserCompetition} from "@/types";
+import { useUserSession } from "@/hooks/useAuth";
+import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { CompetitionStatus, UserCompetition } from "@/types";
 
-import {formatCompetitionDates} from "../utils/competition-utils";
-import {CompetitionActions} from "./competition-actions";
-import {CompetitionStatusBanner} from "./competition-status-banner";
-import {TopLeadersList} from "./featured-competition/top-leaders-list";
-import {ParticipantsAvatars} from "./participants-avatars";
-import {useUserSession} from "@/hooks/useAuth";
+import { formatCompetitionDates } from "../utils/competition-utils";
+import { CompetitionActions } from "./competition-actions";
+import { CompetitionStatusBanner } from "./competition-status-banner";
+import { TopLeadersList } from "./featured-competition/top-leaders-list";
+import { ParticipantsAvatars } from "./participants-avatars";
 
 interface FeaturedCompetitionProps {
   competition: UserCompetition;
@@ -23,8 +23,8 @@ interface FeaturedCompetitionProps {
 export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
   competition,
 }) => {
-  const session = useUserSession()
-  const {data: topLeaders, isLoading} = useCompetitionAgents(competition.id, {
+  const session = useUserSession();
+  const { data: topLeaders, isLoading } = useCompetitionAgents(competition.id, {
     // TODO: we have to make sure all agents are included in the results
     //  because rank is calculated "on-the-fly".
     limit: 50,
@@ -43,7 +43,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
     >
       <CompetitionStatusBanner status={competition.status} />
 
-      <div className="flex flex-col gap-2 border-b py-3 px-6">
+      <div className="flex flex-col gap-2 border-b px-6 py-3">
         <Link
           href={`/competitions/${competition.id}`}
           className="group inline-block"
@@ -95,8 +95,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
           )}
         </div>
         <div className="w-full justify-items-end p-6">
-          {
-            session.isInitialized && session.isAuthenticated &&
+          {session.isInitialized && session.isAuthenticated && (
             <>
               <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
                 Your Agents
@@ -104,12 +103,13 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
               {competition.agents.length > 0 ? (
                 <ParticipantsAvatars
                   compId={competition.id}
-                  agents={competition.agents} />
+                  agents={competition.agents}
+                />
               ) : (
                 <span className="text-sm">-</span>
               )}
             </>
-          }
+          )}
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
 
       <CompetitionActions
         competition={competition}
-        className="flex justify-center items-end gap-4 p-6"
+        className="flex items-end justify-center gap-4 p-6"
       />
     </Card>
   );
