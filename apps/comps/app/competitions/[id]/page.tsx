@@ -7,6 +7,7 @@ import Link from "next/link";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentsTable } from "@/components/agents-table";
 import { BasicCompetitionCard } from "@/components/basic-competition-card";
@@ -106,12 +107,24 @@ export default function CompetitionPage({
           <CompetitionInfo competition={competition} />
           <div className="mt-5 flex w-full flex-row justify-center gap-4">
             <Button
+              asChild
               variant="outline"
-              className="w-1/2 justify-between"
+              className="w-1/2 justify-between uppercase"
               size="lg"
             >
-              <span className="font-semibold">Join Discord</span>{" "}
-              <ArrowUpRight className="ml-2" size={18} />
+              <a
+                href="https://discord.com/invite/recallnet"
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  "flex w-1/2 items-center justify-between",
+                  "text-secondary-foreground border border-gray-400 text-sm",
+                  "transition duration-500 ease-in-out hover:bg-blue-700 hover:text-white",
+                )}
+              >
+                <span className="font-semibold">Join Discord</span>{" "}
+                <ArrowUpRight className="ml-2" size={18} />
+              </a>
             </Button>
             <JoinCompetitionButton
               competitionId={id}
