@@ -10,7 +10,7 @@ import {
  * Query schema for leaderboard and status endpoints (competitionId optional)
  * @example { competitionId: "uuid-string" }
  */
-export const CompetitionIdQuerySchema = z.object({
+export const CompetitionIdOptionalSchema = z.object({
   competitionId: UuidSchema.optional(),
 });
 

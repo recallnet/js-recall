@@ -12,12 +12,12 @@ import {
   AuthenticatedRequest,
   COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
-  CompetitionIdParamsSchema,
+  CompetitionIdRequiredSchema,
 } from "@/types/index.js";
 
 import {
   CompetitionAgentsQuerySchema,
-  CompetitionIdQuerySchema,
+  CompetitionIdOptionalSchema,
   CompetitionListQuerySchema,
 } from "./competition.schema.js";
 
@@ -41,7 +41,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
     ) {
       try {
         const { competitionId } = flatParse(
-          CompetitionIdQuerySchema,
+          CompetitionIdOptionalSchema,
           req.query,
           "query",
         );
@@ -690,7 +690,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get competition ID from path parameter (validate)
         const { competitionId } = flatParse(
-          CompetitionIdParamsSchema,
+          CompetitionIdRequiredSchema,
           req.params,
           "params",
         );

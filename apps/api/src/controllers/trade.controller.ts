@@ -6,7 +6,7 @@ import { ServiceRegistry } from "@/services/index.js";
 import {
   AgentIdParamsSchema,
   BlockchainType,
-  CompetitionIdParamsSchema,
+  CompetitionIdRequiredSchema,
   SpecificChain,
 } from "@/types/index.js";
 
@@ -30,7 +30,7 @@ export function makeTradeController(services: ServiceRegistry) {
     async executeTrade(req: Request, res: Response, next: NextFunction) {
       try {
         const { agentId } = flatParse(AgentIdParamsSchema, req);
-        const { competitionId } = flatParse(CompetitionIdParamsSchema, req);
+        const { competitionId } = flatParse(CompetitionIdRequiredSchema, req);
         const {
           fromToken,
           toToken,

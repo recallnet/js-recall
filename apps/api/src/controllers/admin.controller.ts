@@ -14,7 +14,7 @@ import {
   AgentIdParamsSchema,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
-  CompetitionIdParamsSchema,
+  CompetitionIdRequiredSchema,
   SYNC_DATA_TYPE,
 } from "@/types/index.js";
 
@@ -671,7 +671,7 @@ export function makeAdminController(services: ServiceRegistry) {
     async endCompetition(req: Request, res: Response, next: NextFunction) {
       try {
         const { competitionId } = flatParse(
-          CompetitionIdParamsSchema,
+          CompetitionIdRequiredSchema,
           req.body,
           "body",
         );
@@ -851,7 +851,7 @@ export function makeAdminController(services: ServiceRegistry) {
     async updateCompetition(req: Request, res: Response, next: NextFunction) {
       try {
         const { competitionId } = flatParse(
-          CompetitionIdParamsSchema,
+          CompetitionIdRequiredSchema,
           req.params,
           "params",
         );
@@ -891,7 +891,7 @@ export function makeAdminController(services: ServiceRegistry) {
     ) {
       try {
         const { competitionId } = flatParse(
-          CompetitionIdParamsSchema,
+          CompetitionIdRequiredSchema,
           req.query,
           "query",
         );
@@ -993,7 +993,7 @@ export function makeAdminController(services: ServiceRegistry) {
     ) {
       try {
         const { competitionId } = flatParse(
-          CompetitionIdParamsSchema,
+          CompetitionIdRequiredSchema,
           req.params,
           "params",
         );

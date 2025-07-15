@@ -1031,6 +1031,6 @@ export const AgentIdParamsSchema = z.object({
  * Params schema for endpoints requiring an competitionId path parameter.
  * @example { agentId: "uuid-string" }
  */
-export const CompetitionIdParamsSchema = z.object({
+export const CompetitionIdRequiredSchema = z.object({
   competitionId: UuidSchema,
 });
