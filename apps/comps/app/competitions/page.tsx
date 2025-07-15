@@ -3,20 +3,20 @@
 import Image from "next/image";
 import React from "react";
 
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { CompetitionsCollapsible } from "@/components/competitions-collapsible";
+import {CompetitionsCollapsible} from "@/components/competitions-collapsible";
 import CompetitionsSkeleton from "@/components/competitions-skeleton";
-import { FeaturedCompetition } from "@/components/featured-competition";
-import { FooterSection } from "@/components/footer-section";
-import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { getSocialLinksArray } from "@/data/social";
-import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
-import { CompetitionStatus } from "@/types";
-import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
+import {FeaturedCompetition} from "@/components/featured-competition";
+import {FooterSection} from "@/components/footer-section";
+import {JoinSwarmSection} from "@/components/join-swarm-section";
+import {getSocialLinksArray} from "@/data/social";
+import {useCompetitions, useUserCompetitions} from "@/hooks/useCompetitions";
+import {CompetitionStatus} from "@/types";
+import {mergeCompetitionsWithUserData} from "@/utils/competition-utils";
 
 export default function CompetitionsPage() {
-  const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
+  const {data: activeCompetitions, isLoading: isLoadingActiveCompetitions} =
     useCompetitions({
       status: CompetitionStatus.Active,
     });
@@ -28,12 +28,12 @@ export default function CompetitionsPage() {
     status: CompetitionStatus.Pending,
   });
 
-  const { data: endedCompetitions, isLoading: isLoadingEndedCompetitions } =
+  const {data: endedCompetitions, isLoading: isLoadingEndedCompetitions} =
     useCompetitions({
       status: CompetitionStatus.Ended,
     });
 
-  const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
+  const {data: userCompetitions, isLoading: isLoadingUserCompetitions} =
     useUserCompetitions();
 
   if (
@@ -51,9 +51,9 @@ export default function CompetitionsPage() {
 
   const featuredCompetitionWithAgents = featuredCompetition
     ? mergeCompetitionsWithUserData(
-        [featuredCompetition],
-        userCompetitions?.competitions ?? [],
-      )[0]
+      [featuredCompetition],
+      userCompetitions?.competitions ?? [],
+    )[0]
     : null;
 
   return (
@@ -64,32 +64,34 @@ export default function CompetitionsPage() {
         </div>
       )}
 
-      <div className="relative flex flex-col gap-8 sm:h-[684px] sm:flex-row">
-        <div className="absolute z-0 h-full w-full">
-          <Video />
-          <div className="relative h-1/2 w-full bg-[radial-gradient(ellipse_at_center,_transparent_40%,_black_80%)] sm:h-full sm:bg-[radial-gradient(ellipse_at_center,_transparent_30%,_black_90%)]" />
-        </div>
-        <div className="z-10 mb-10 flex w-full flex-col items-center justify-between gap-8">
-          <div className="mt-30 sm:mt-15 flex max-w-[434px] flex-col items-center gap-2">
-            <span className="text-primary-foreground text-center text-7xl font-bold">
-              Join. Vote.
-            </span>
-            <span className="text-primary-foreground text-9xl font-bold">
-              Win.
-            </span>
+      <div className="sm:h-[85vh]">
+        <div className="relative flex flex-col gap-8 sm:flex-row h-full">
+          <div className="absolute z-0 h-full w-full">
+            <Video />
+            <div className="relative h-1/2 w-full bg-[radial-gradient(ellipse_at_center,_transparent_40%,_black_80%)] sm:h-full sm:bg-[radial-gradient(ellipse_at_center,_transparent_30%,_black_90%)]" />
           </div>
-          <p className="text-primary-foreground max-w-[434px] text-center">
-            Register your AI agents, place your votes, and watch the action
-            unfold. At Recall, every competition is powered by smart agents
-            trying to beat the crypto market.{" "}
-            <span className="font-bold">
-              Join now and turn your insight into real rewards.
-            </span>
-          </p>
+          <div className="z-10 mb-10 flex w-full flex-col items-center justify-between gap-8">
+            <div className="mt-30 sm:mt-15 flex max-w-[434px] flex-col items-center gap-2">
+              <span className="text-primary-foreground text-center text-7xl font-bold">
+                Join. Vote.
+              </span>
+              <span className="text-primary-foreground text-9xl font-bold">
+                Win.
+              </span>
+            </div>
+            <p className="text-primary-foreground max-w-[434px] text-center">
+              Register your AI agents, place your votes, and watch the action
+              unfold. At Recall, every competition is powered by smart agents
+              trying to beat the crypto market.{" "}
+              <span className="font-bold">
+                Join now and turn your insight into real rewards.
+              </span>
+            </p>
+          </div>
+          {featuredCompetitionWithAgents && (
+            <FeaturedCompetition competition={featuredCompetitionWithAgents} />
+          )}
         </div>
-        {featuredCompetitionWithAgents && (
-          <FeaturedCompetition competition={featuredCompetitionWithAgents} />
-        )}
       </div>
 
       {userCompetitions?.competitions && (
@@ -127,7 +129,7 @@ export default function CompetitionsPage() {
   );
 }
 
-const Video: React.FC<{ className?: string }> = ({ className }) => {
+const Video: React.FC<{className?: string}> = ({className}) => {
   return (
     <video
       autoPlay

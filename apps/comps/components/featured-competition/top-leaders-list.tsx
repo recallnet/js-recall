@@ -1,12 +1,12 @@
 import Link from "next/link";
-import React, { useMemo } from "react";
+import React, {useMemo} from "react";
 
-import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import {Skeleton} from "@recallnet/ui2/components/skeleton";
 
-import { AgentCompetition } from "@/types";
+import {AgentCompetition} from "@/types";
 
-import { AgentAvatar } from "../agent-avatar";
-import { RankBadge } from "../agents-table/rank-badge";
+import {AgentAvatar} from "../agent-avatar";
+import {RankBadge} from "../agents-table/rank-badge";
 
 interface TopLeadersListProps {
   agents: AgentCompetition[];
@@ -17,12 +17,13 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
   agents,
   isLoading,
 }) => {
+  //const topThreeAgents = useMemo(() => [...agents, ...agents, ...agents].slice(0, 3), [agents]);
   const topThreeAgents = useMemo(() => agents.slice(0, 3), [agents]);
 
   if (isLoading) {
     return (
       <div className="grid grid-cols-4 gap-4 rounded-lg border-y bg-[#050507] p-3">
-        {Array.from({ length: 3 }).map((_, i) => (
+        {Array.from({length: 3}).map((_, i) => (
           <div key={i} className="col-span-4 flex items-center gap-4">
             <Skeleton className="h-8 w-[62px] rounded-md" />
             <div className="flex items-center gap-3">
@@ -66,9 +67,8 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-400">P&L</span>
               <span
-                className={`font-semibold ${
-                  agent.pnlPercent >= 0 ? "text-green-400" : "text-red-400"
-                }`}
+                className={`font-semibold ${agent.pnlPercent >= 0 ? "text-green-400" : "text-red-400"
+                  }`}
               >
                 ({agent.pnlPercent >= 0 ? "+" : ""}
                 {agent.pnlPercent.toFixed(2)}%)
