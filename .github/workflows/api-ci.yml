@@ -289,6 +289,9 @@ jobs:
           # Optional: API prefix
           API_PREFIX=testing
 
+          # Enable auto-verify user email
+          ENABLE_AUTO_VERIFY_USER_EMAIL=true
+
       - name: Run E2E tests
         working-directory: apps/api
         run: |

@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { reloadSecurityConfig } from "@/config/index.js";
+import { config, reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
@@ -1730,12 +1730,9 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Auto-verify email in development and test modes
+        // Auto-verify email (e.g. for development, test, or sandbox modes)
         if (!owner.isEmailVerified) {
-          if (
-            process.env.NODE_ENV === "development" ||
-            process.env.NODE_ENV === "test"
-          ) {
+          if (config.email.autoVerifyUserEmail) {
             console.log(
               `[DEV/TEST] Auto-verifying email for user ${agent.ownerId} in ${process.env.NODE_ENV} mode`,
             );
