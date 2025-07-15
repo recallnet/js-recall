@@ -31,6 +31,11 @@ vi.setConfig({ testTimeout: 60_000 });
 // Set test mode environment variable
 process.env.TEST_MODE = "true";
 
+// Ensure METRICS_PORT is set for test environment
+if (!process.env.METRICS_PORT) {
+  process.env.METRICS_PORT = "3003";
+}
+
 // Before all tests in every file
 beforeAll(async () => {
   log("[Global Setup] Initializing test environment...");
@@ -42,6 +47,8 @@ beforeAll(async () => {
   if (services.scheduler) {
     log("[Global Setup] Resetting scheduler service...");
     services.scheduler.reset();
+    // Start the scheduler after resetting it
+    services.startSchedulers();
   }
 });
 
@@ -51,6 +58,8 @@ beforeEach(async () => {
   if (services.scheduler) {
     log("[Global Setup] Resetting scheduler service for new test...");
     services.scheduler.reset();
+    // Start the scheduler after resetting it
+    services.startSchedulers();
   }
 
   // Reset caches to ensure a clean state for each test

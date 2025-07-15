@@ -284,10 +284,10 @@ jobs:
 
           # Optional: Disable ability for participants to view leaderboard activity
           DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false
-          EOF
 
-          # Optional: API prefix
-          API_PREFIX=testing
+          # Metrics server configuration
+          METRICS_PORT=3003
+          EOF
 
           # Enable auto-verify user email
           ENABLE_AUTO_VERIFY_USER_EMAIL=true

@@ -140,6 +140,11 @@ export async function setup() {
   // Ensure TEST_MODE is set
   process.env.TEST_MODE = "true";
 
+  // Ensure METRICS_PORT is set for test environment
+  if (!process.env.METRICS_PORT) {
+    process.env.METRICS_PORT = "3003";
+  }
+
   // Check if this is an individual test run (not part of the full suite)
   // If so, clear the log file first
   if (!fs.existsSync(fullSuiteFlag)) {

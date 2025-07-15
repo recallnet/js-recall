@@ -39,6 +39,7 @@
         "API_PREFIX",
         "PORTFOLIO_PRICE_FRESHNESS_MS",
         "PORTFOLIO_SNAPSHOT_INTERVAL_MS",
+        "COMPETITION_END_CHECK_INTERVAL_MS",
         "PORT",
         "DATABASE_URL",
         "PRICE_CACHE_MS",
@@ -57,6 +58,8 @@
         "CORS_ORIGINS",
         "REPOSITORY_LOG_SAMPLE_RATE",
         "HTTP_LOG_SAMPLE_RATE",
+        "METRICS_PORT",
+        "METRICS_HOST",
         "ENABLE_AUTO_VERIFY_USER_EMAIL"
       ]
     }

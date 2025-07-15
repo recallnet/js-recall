@@ -3,6 +3,7 @@ import {
   batchCreatePortfolioTokenValues,
   createPortfolioSnapshot,
   findAll,
+  findById,
   getAgentPortfolioSnapshots,
   getCompetitionAgents,
   getPortfolioTokenValues,
@@ -44,6 +45,25 @@ export class PortfolioSnapshotter {
     console.log(
       `[PortfolioSnapshotter] Taking portfolio snapshot for agent ${agentId} in competition ${competitionId}`,
     );
+
+    // Check if competition exists and if end date has passed
+    const competition = await findById(competitionId);
+    if (!competition) {
+      throw new Error(`Competition with ID ${competitionId} not found`);
+    }
+
+    const now = new Date();
+    if (competition.endDate && now > competition.endDate) {
+      console.log(
+        `[PortfolioSnapshotter] Competition ${competitionId} has ended (end date: ${competition.endDate.toISOString()}, current time: ${timestamp.toISOString()}). Skipping portfolio snapshot for agent ${agentId}`,
+      );
+      return {
+        priceLookupCount: 0,
+        dbPriceHitCount: 0,
+        reusedPriceCount: 0,
+        totalValue: 0,
+      };
+    }
 
     const balances = await this.balanceManager.getAllBalances(agentId);
     const valuesByToken: Record<

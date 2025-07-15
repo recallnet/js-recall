@@ -9,6 +9,7 @@ import {
   batchInsertLeaderboard,
   create as createCompetition,
   findActive,
+  findActiveCompetitionsPastEndDate,
   findAll,
   findById,
   findByStatus,
@@ -114,6 +115,10 @@ export class CompetitionManager {
    * @param sandboxMode Whether to enable sandbox mode for auto-joining agents (defaults to false)
    * @param externalUrl Optional URL for external competition details
    * @param imageUrl Optional URL to the competition image
+   * @param type Competition type (defaults to trading)
+   * @param endDate Optional end date for the competition
+   * @param votingStartDate Optional voting start date
+   * @param votingEndDate Optional voting end date
    * @returns The created competition
    */
   async createCompetition(
@@ -124,6 +129,7 @@ export class CompetitionManager {
     externalUrl?: string,
     imageUrl?: string,
     type: CompetitionType = COMPETITION_TYPE.TRADING,
+    endDate?: Date,
     votingStartDate?: Date,
     votingEndDate?: Date,
   ) {
@@ -135,7 +141,7 @@ export class CompetitionManager {
       externalUrl,
       imageUrl,
       startDate: null,
-      endDate: null,
+      endDate: endDate || null,
       votingStartDate: votingStartDate || null,
       votingEndDate: votingEndDate || null,
       status: COMPETITION_STATUS.PENDING,
@@ -1296,6 +1302,51 @@ export class CompetitionManager {
         `[CompetitionManager] Error auto-joining agent ${agentId} to active competition:`,
         error,
       );
+    }
+  }
+
+  /**
+   * Check and automatically end competitions that have reached their end date
+   * This method is called periodically by the SchedulerService
+   */
+  async processCompetitionEndDateChecks(): Promise<void> {
+    try {
+      const competitionsToEnd = await findActiveCompetitionsPastEndDate();
+
+      if (competitionsToEnd.length === 0) {
+        console.log("[CompetitionManager] No competitions ready to end");
+        return;
+      }
+
+      console.log(
+        `[CompetitionManager] Found ${competitionsToEnd.length} competitions ready to end`,
+      );
+
+      for (const competition of competitionsToEnd) {
+        try {
+          console.log(
+            `[CompetitionManager] Auto-ending competition: ${competition.name} (${competition.id}) - scheduled end: ${competition.endDate!.toISOString()}`,
+          );
+
+          await this.endCompetition(competition.id);
+
+          console.log(
+            `[CompetitionManager] Successfully auto-ended competition: ${competition.name} (${competition.id})`,
+          );
+        } catch (error) {
+          console.error(
+            `[CompetitionManager] Error auto-ending competition ${competition.id}:`,
+            error,
+          );
+          // Continue processing other competitions even if one fails
+        }
+      }
+    } catch (error) {
+      console.error(
+        "[CompetitionManager] Error in processCompetitionEndDateChecks:",
+        error,
+      );
+      throw error; // Re-throw so SchedulerService can handle or log
     }
   }
 }

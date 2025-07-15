@@ -861,6 +861,7 @@ describe("Voting API", () => {
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
+        undefined, // endDate
         futureDate.toISOString(), // votingStartDate
         undefined, // votingEndDate
       );
@@ -911,6 +912,7 @@ describe("Voting API", () => {
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
+        undefined, // endDate
         undefined, // votingStartDate
         pastDate.toISOString(), // votingEndDate
       );
@@ -962,6 +964,7 @@ describe("Voting API", () => {
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
+        undefined, // endDate
         startDate.toISOString(), // votingStartDate
         endDate.toISOString(), // votingEndDate
       );
@@ -1012,6 +1015,7 @@ describe("Voting API", () => {
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
+        undefined, // endDate
         undefined, // votingStartDate - not defined
         undefined, // votingEndDate - not defined
       );
@@ -1065,6 +1069,7 @@ describe("Voting API", () => {
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
+        undefined, // endDate
         startDate.toISOString(), // votingStartDate - defined
         undefined, // votingEndDate - not defined
       );
@@ -1118,6 +1123,7 @@ describe("Voting API", () => {
         undefined, // externalUrl
         undefined, // imageUrl
         "trading", // type
+        undefined, // endDate
         undefined, // votingStartDate - not defined
         endDate, // votingEndDate - defined
       );

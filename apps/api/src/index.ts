@@ -31,10 +31,10 @@ import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
 import { configureEmailVerificationRoutes } from "@/routes/email-verification.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
-import { configureMetricsRoutes } from "@/routes/metrics.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
 import { configureUserRoutes } from "@/routes/user.routes.js";
+import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
@@ -79,9 +79,8 @@ const services = new ServiceRegistry();
 await services.configurationService.loadCompetitionSettings();
 console.log("Competition-specific configuration settings loaded");
 
-// Start snapshot scheduler
-services.scheduler.startSnapshotScheduler();
-console.log("Portfolio snapshot scheduler started");
+// Start both schedulers after all services are ready
+services.startSchedulers();
 
 // Configure middleware
 // Trust proxy to get real IP addresses (important for rate limiting)
@@ -214,7 +213,6 @@ const userRoutes = configureUserRoutes(userController, voteController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
-const metricsRoutes = configureMetricsRoutes(adminMiddleware);
 
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
@@ -230,7 +228,6 @@ apiRouter.use("/user", userRoutes);
 apiRouter.use("/agent", agentRoutes);
 apiRouter.use("/agents", agentsRoutes);
 apiRouter.use("/leaderboard", leaderboardRoutes);
-apiRouter.use("/metrics", metricsRoutes);
 
 // Mount the API router with the prefix + /api path
 app.use(`${apiBasePath}/api`, apiRouter);
@@ -262,7 +259,7 @@ app.get(`${apiBasePath}`, (_req, res) => {
 app.use(errorHandler);
 
 // Start HTTP server
-app.listen(PORT, "0.0.0.0", () => {
+const mainServer = app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n========================================`);
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${config.server.nodeEnv}`);
@@ -274,3 +271,33 @@ app.listen(PORT, "0.0.0.0", () => {
   );
   console.log(`========================================\n`);
 });
+
+// Start dedicated metrics server on separate port
+const metricsServer = startMetricsServer();
+
+// Graceful shutdown handler
+const gracefulShutdown = (signal: string) => {
+  console.log(
+    `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
+  );
+
+  // Close both servers
+  mainServer.close(() => {
+    console.log("Main server closed");
+  });
+
+  metricsServer.close(() => {
+    console.log("Metrics server closed");
+  });
+
+  // Force exit after timeout if graceful shutdown fails
+  setTimeout(() => {
+    console.error("Forcing exit after timeout");
+    process.exit(1);
+  }, 10000);
+};
+
+// Handle process termination signals
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGUSR2", () => gracefulShutdown("SIGUSR2")); // nodemon restart

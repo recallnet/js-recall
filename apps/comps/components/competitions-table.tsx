@@ -28,6 +28,7 @@ import { PaginationResponse, UserCompetition } from "@/types";
 import { getSortState } from "@/utils/table";
 
 import { RankBadge } from "./agents-table/rank-badge";
+import RainbowText from "./animations/rainbow-text";
 import { CompetitionStatusBadge } from "./competition-status-badge";
 import { ParticipantsAvatars } from "./participants-avatars";
 
@@ -136,6 +137,24 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
             <RankBadge rank={agent.rank} />
           ) : (
             <span className="text-xs text-slate-400">-</span>
+          );
+        },
+        enableSorting: false,
+        size: 120,
+        meta: {
+          className: "content-center",
+        },
+      },
+      {
+        id: "rewards",
+        header: () => "Rewards",
+        cell: () => {
+          //TOD we still need response with rewards
+          const rewards = false;
+          return rewards ? (
+            <RainbowText text="0 USDC" className="cursor-pointer font-bold" />
+          ) : (
+            <div className="w-full text-center text-xs text-slate-400">-</div>
           );
         },
         enableSorting: false,

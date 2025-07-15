@@ -52,14 +52,20 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
       <div className="grid grid-cols-2 border-b">
         <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
           <CellTitle>Reward</CellTitle>
-          <span className={rainbowTextClass}>
-            $
-            {rewardAmount.toLocaleString(undefined, {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 2,
-            })}{" "}
-            {rewardCurrency}
-          </span>
+          {rewardAmount > 0 ? (
+            <>
+              <span className={rainbowTextClass}>
+                $
+                {rewardAmount.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                {rewardCurrency}
+              </span>
+            </>
+          ) : (
+            <span>TBA</span>
+          )}
         </div>
         <div className="flex flex-col items-start justify-center gap-2 p-[25px]">
           <div className="flex w-full items-center justify-between">

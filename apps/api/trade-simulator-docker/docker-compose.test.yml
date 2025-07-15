@@ -5,6 +5,7 @@ services:
     restart: always
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
+      - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}"
     # Load all environment variables from .env file
     env_file:
       - .env
