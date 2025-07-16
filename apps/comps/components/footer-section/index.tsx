@@ -87,7 +87,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-secondary-foreground mb-0 flex items-center gap-2 font-mono text-xs"
+              className="text-secondary-foreground mb-0 flex items-center gap-2 font-mono text-xs transition-all duration-200 hover:translate-x-1 hover:text-[var(--primary)] focus:translate-x-1 focus:text-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 focus:ring-offset-[#050507]"
             >
               <span className="text-md">¬</span>
               <span>{text}</span>
@@ -101,7 +101,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-secondary-foreground mb-0 flex items-center gap-2 font-mono text-xs"
+              className="text-secondary-foreground mb-0 flex items-center gap-2 font-mono text-xs transition-all duration-200 hover:translate-x-1 hover:text-[var(--primary)] focus:translate-x-1 focus:text-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 focus:ring-offset-[#050507]"
             >
               <span className="text-md">¬</span>
               <span>{text}</span>
