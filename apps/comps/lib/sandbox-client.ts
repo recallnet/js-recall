@@ -91,7 +91,7 @@ export class SandboxClient {
    */
   async getCompetitions(): Promise<CompetitionsResponse> {
     const response = await fetch(`${SANDBOX_API_BASE}/competitions`, {
-      method: "POST",
+      method: "GET",
       headers: {
         "Content-Type": "application/json",
       },

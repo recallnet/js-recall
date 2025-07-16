@@ -69,7 +69,7 @@ const ApiKeyLocked = () => {
       "API Keys unlocked successfully"
     );
     registerAgentSandbox.mutate()
-    setIsLocked(false)
+    //setIsLocked(false)
   }
 
   const onSendEmail = async () => {
