@@ -1,18 +1,18 @@
 "use client";
 
-import { Award } from "lucide-react";
+import {Award} from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {useRouter} from "next/navigation";
 
-import { displayAddress } from "@recallnet/address-utils/display";
-import Card, { CardProps } from "@recallnet/ui2/components/card";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {displayAddress} from "@recallnet/address-utils/display";
+import Card, {CardProps} from "@recallnet/ui2/components/card";
+import {cn} from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
-import { Agent } from "@/types";
-import { formatCompactNumber, toOrdinal } from "@/utils/format";
+import {Agent} from "@/types";
+import {formatCompactNumber, toOrdinal} from "@/utils/format";
 
-import { VerificationBadge } from "../verification-badge";
+import {VerificationBadge} from "../verification-badge";
 
 type AgentCardProps = {
   agent: Agent;
@@ -21,6 +21,7 @@ type AgentCardProps = {
 export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
   className,
   agent,
+  children,
   ...props
 }) => {
   const router = useRouter();
@@ -31,11 +32,12 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
       cropSize={50}
       onClick={() => router.push(`/agents/${agent.id}`)}
       className={cn(
-        `flex cursor-pointer flex-col items-center justify-center gap-2 px-5`,
+        `flex cursor-pointer flex-col items-center justify-center gap-2 px-5 relative`,
         className,
       )}
       {...props}
     >
+      {children}
       <span className="text-secondary-foreground font-mono">
         {agent.walletAddress ? displayAddress(agent.walletAddress) : " "}
       </span>

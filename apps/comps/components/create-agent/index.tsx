@@ -1,48 +1,48 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigationGuard } from "next-navigation-guard";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {useNavigationGuard} from "next-navigation-guard";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import {useRouter} from "next/navigation";
+import React, {useEffect, useState} from "react";
+import {useForm} from "react-hook-form";
+import {z} from "zod";
 
-import { Form } from "@recallnet/ui2/components/form";
-import { toast } from "@recallnet/ui2/components/toast";
+import {Form} from "@recallnet/ui2/components/form";
+import {toast} from "@recallnet/ui2/components/toast";
 
-import { AgentCard } from "@/components/user-agents/agent-card";
-import { useRedirectTo } from "@/hooks/useRedirectTo";
-import { Agent } from "@/types/agent";
-import { asOptionalStringWithoutEmpty } from "@/utils";
+import {AgentCard} from "@/components/user-agents/agent-card";
+import {useRedirectTo} from "@/hooks/useRedirectTo";
+import {Agent} from "@/types/agent";
+import {asOptionalStringWithoutEmpty} from "@/utils";
 
-import { UnsavedChangesModal } from "../modals/unsaved-changes-modal";
-import { AgentCreated } from "./agent-created";
-import { BasicsStep } from "./basics-step";
-import { HttpErrorMapping, mapHttpError } from "./http-error-mapping";
-import { SocialsStep } from "./socials-step";
-import { Steps } from "./steps";
+import {UnsavedChangesModal} from "../modals/unsaved-changes-modal";
+import {AgentCreated} from "./agent-created";
+import {BasicsStep} from "./basics-step";
+import {HttpErrorMapping, mapHttpError} from "./http-error-mapping";
+import {SocialsStep} from "./socials-step";
+import {Steps} from "./steps";
 
 const formSchema = z
   .object({
     name: z.string().min(1, "Agent name is required"),
     imageUrl: asOptionalStringWithoutEmpty(
-      z.string().url({ message: "Must be a valid URL" }),
+      z.string().url({message: "Must be a valid URL"}),
     ),
     repositoryUrl: asOptionalStringWithoutEmpty(
-      z.string().url({ message: "Must be a valid URL" }),
+      z.string().url({message: "Must be a valid URL"}),
     ),
     skills: z.array(z.string()).min(1, "Select at least one skill"),
     otherSkill: z.string().optional(),
     description: asOptionalStringWithoutEmpty(z.string()),
     email: asOptionalStringWithoutEmpty(
-      z.string().email({ message: "Invalid email address" }),
+      z.string().email({message: "Invalid email address"}),
     ),
     x: asOptionalStringWithoutEmpty(
-      z.string().url({ message: "Must be a valid URL" }),
+      z.string().url({message: "Must be a valid URL"}),
     ),
     telegram: asOptionalStringWithoutEmpty(
-      z.string().url({ message: "Must be a valid URL" }),
+      z.string().url({message: "Must be a valid URL"}),
     ),
   })
   .refine(
@@ -65,7 +65,6 @@ interface CreateAgentProps {
   onSubmit: (data: FormData) => Promise<void>;
   isSubmitting?: boolean;
   agent?: Agent | null;
-  apiKey?: string | null;
   sandboxApiKey?: string | null;
 }
 
@@ -73,10 +72,9 @@ export function CreateAgent({
   onSubmit,
   isSubmitting,
   agent,
-  apiKey,
   sandboxApiKey,
 }: CreateAgentProps) {
-  const { redirectToUrl } = useRedirectTo("/profile");
+  const {redirectToUrl} = useRedirectTo("/profile");
   const [currentStep, setCurrentStep] = useState(1);
   const [httpErrorMapping, setHttpErrorMapping] =
     useState<HttpErrorMapping | null>(null);
@@ -99,17 +97,17 @@ export function CreateAgent({
   });
 
   const {
-    formState: { isDirty },
+    formState: {isDirty},
     setError,
     setFocus,
   } = form;
-  const navGuard = useNavigationGuard({ enabled: isDirty });
+  const navGuard = useNavigationGuard({enabled: isDirty});
 
   useEffect(() => {
-    if (agent && apiKey) {
+    if (agent) {
       setCurrentStep(3);
     }
-  }, [agent, apiKey]);
+  }, [agent]);
 
   // Handle http errors (like ConflictError)
   useEffect(() => {
@@ -138,9 +136,9 @@ export function CreateAgent({
       const finalSkills =
         data.skills.includes("Other") && data.otherSkill
           ? [
-              ...data.skills.filter((skill) => skill !== "Other"),
-              data.otherSkill,
-            ]
+            ...data.skills.filter((skill) => skill !== "Other"),
+            data.otherSkill,
+          ]
           : data.skills;
 
       const finalData = {
@@ -183,10 +181,9 @@ export function CreateAgent({
         <div className="w-full lg:w-2/3">
           <Steps currentStep={currentStep} className="mb-8" />
 
-          {currentStep === 3 && agent && apiKey ? (
+          {currentStep === 3 && agent ? (
             <AgentCreated
               agent={agent}
-              apiKey={apiKey}
               sandboxApiKey={sandboxApiKey}
               redirectToUrl={redirectToUrl}
             />
@@ -232,7 +229,9 @@ export function CreateAgent({
           )}
           {currentStep === 3 && agent && (
             <div className="flex flex-col items-center justify-center gap-4">
-              <AgentCard agent={agent} className="w-70 h-95" />
+              <AgentCard agent={agent} className="w-70 h-95" >
+                <div className="absolute inset-0 bg-gradient-to-t from-white/30 to-card pointer-events-none"></div>
+              </AgentCard>
               <p className="text-secondary-foreground text-center italic">
                 Welcome to Recall,{" "}
                 <span className="text-primary-foreground">{agent.name}</span>!
