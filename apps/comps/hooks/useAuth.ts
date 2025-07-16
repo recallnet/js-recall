@@ -3,6 +3,7 @@ import { useIsClient } from "@uidotdev/usehooks";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
+import { useDisconnect } from "wagmi";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
 import { useProfile } from "@/hooks/useProfile";
@@ -22,6 +23,9 @@ export const useNonce = () => {
     queryFn: async () => {
       return apiClient.getNonce();
     },
+    // Don't cache nonces for too long - they should be fresh for each auth attempt
+    staleTime: 0, // Always consider stale
+    gcTime: 1000 * 60, // Keep in cache for 1 minute but mark as stale immediately
   });
 };
 
@@ -35,16 +39,24 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
-      return apiClient.login(data);
+      const result = await apiClient.login(data);
+      return result;
     },
     onSuccess: () => {
       setUserAtom({ user: null, status: "authenticated" });
 
-      // Trigger profile refetch
       queryClient.invalidateQueries({ queryKey: ["profile"] });
 
       // Trigger competitions refetch
       queryClient.invalidateQueries({ queryKey: ["competitions"] });
+
+      // Invalidate nonce cache after successful login
+      queryClient.invalidateQueries({ queryKey: ["nonce"] });
+    },
+    onError: (error) => {
+      console.error(`❌ [LOGIN] Login mutation failed:`, error);
+      // Invalidate nonce cache after failed login to ensure fresh nonce on retry
+      queryClient.invalidateQueries({ queryKey: ["nonce"] });
     },
   });
 };
@@ -71,6 +83,7 @@ export const useClientCleanup = () => {
 export const useLogout = () => {
   const router = useRouter();
   const cleanup = useClientCleanup();
+  const { disconnect } = useDisconnect();
 
   return useMutation({
     mutationFn: async () => {
@@ -82,6 +95,8 @@ export const useLogout = () => {
         console.error("Logout API call failed:", error);
       } finally {
         cleanup();
+        // Disconnect wallet to prevent auto re-authentication
+        disconnect();
       }
     },
     onSuccess: () => {
@@ -92,6 +107,8 @@ export const useLogout = () => {
         "Logout mutation error (after API or during cleanup):",
         error,
       );
+      // Still disconnect wallet even if logout fails
+      disconnect();
       router.push(DEFAULT_REDIRECT_URL);
     },
   });

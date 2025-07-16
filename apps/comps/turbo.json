@@ -10,6 +10,7 @@
         "NEXT_PUBLIC_HOTJAR_ID",
         "NEXT_PUBLIC_HOTJAR_SV",
         "NEXT_PUBLIC_SANDBOX_API_URL",
+        "NEXT_PUBLIC_FRONTEND_URL",
         "SANDBOX_ADMIN_API_KEY"
       ]
     }
