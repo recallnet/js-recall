@@ -59,19 +59,17 @@ const ApiKeyRow = ({
 const ApiKeyLocked = ({
   agent,
   isEmailVerified,
+  unlockKeysMutation,
 }: {
   agent: Agent;
   isEmailVerified: boolean;
+  unlockKeysMutation: ReturnType<typeof useUnlockKeys>["mutation"];
 }) => {
   const { mutate: verifyEmail, isPending } = useVerifyEmail();
-  const { mutation: registerAgentSandbox } = useUnlockKeys(
-    agent.name,
-    agent.id,
-  );
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
 
   const unlockKeys = async () => {
-    registerAgentSandbox.mutate();
+    unlockKeysMutation.mutate();
   };
 
   const onSendEmail = async () => {
@@ -163,10 +161,8 @@ export const Credentials = ({
   className?: string;
 }) => {
   const { data: user } = useProfile();
-  const { productionKey, sandboxKey, isLoadingKeys } = useUnlockKeys(
-    agent.name,
-    agent.id,
-  );
+  const { productionKey, sandboxKey, isLoadingKeys, isUnlocked, mutation } =
+    useUnlockKeys(agent.name, agent.id);
   const isEmailVerified = user && user.isEmailVerified;
 
   return (
@@ -176,7 +172,7 @@ export const Credentials = ({
         className,
       )}
     >
-      {isEmailVerified ? (
+      {isEmailVerified && isUnlocked ? (
         <>
           <ApiKeyRow
             label="Production API Key"
@@ -194,7 +190,11 @@ export const Credentials = ({
           )}
         </>
       ) : (
-        <ApiKeyLocked agent={agent} isEmailVerified={!!isEmailVerified} />
+        <ApiKeyLocked
+          agent={agent}
+          isEmailVerified={!!isEmailVerified}
+          unlockKeysMutation={mutation}
+        />
       )}
     </div>
   );

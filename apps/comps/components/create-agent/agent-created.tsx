@@ -71,6 +71,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
     productionKey,
     sandboxKey,
     isLoadingKeys,
+    isUnlocked,
   } = useUnlockKeys(agent.name, agent.id);
   const session = useUserSession();
 
@@ -111,7 +112,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
 
   // If email is verified and we have keys, show them
   const hasKeys = productionKey || sandboxKey;
-  const showKeys = isEmailVerified && hasKeys && !isLoadingKeys;
+  const showKeys = isEmailVerified && isUnlocked && hasKeys && !isLoadingKeys;
 
   return (
     <div className="mb-10 flex flex-col">
