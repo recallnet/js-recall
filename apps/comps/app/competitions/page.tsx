@@ -157,7 +157,7 @@ const Video: React.FC<{ className?: string }> = ({ className }) => {
       />
       {/* H.264 (fallback for universal support) */}
       <source
-        src="/competitions-hub-vid/competitions-hub.mp4"
+        src="/competitions-hub-vid/competitions-hub.hevc.mp4"
         type="video/mp4"
       />
       <Image
