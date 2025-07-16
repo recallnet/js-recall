@@ -600,6 +600,7 @@ export function makeAdminController(services: ServiceRegistry) {
           endDate,
           votingStartDate,
           votingEndDate,
+          tradingConstraints,
         } = result.data;
 
         let finalAgentIds = [...agentIds]; // Start with provided agent IDs
@@ -676,6 +677,7 @@ export function makeAdminController(services: ServiceRegistry) {
           await services.competitionManager.startCompetition(
             competition.id,
             finalAgentIds,
+            tradingConstraints,
           );
 
         // Return the started competition

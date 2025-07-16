@@ -18,6 +18,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
+  looseConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
@@ -284,7 +285,15 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+      undefined,
+      undefined,
+      undefined,
+      looseConstraints,
+    );
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
@@ -564,7 +573,22 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+      undefined,
+      undefined,
+      undefined,
+      // This test fails sometimes because of constraint validation. skipping
+      // so that the actual test path always runs.
+      {
+        minimum24hVolumeUsd: 0,
+        minimumFdvUsd: 0,
+        minimumLiquidityUsd: 0,
+        minimumPairAgeHours: 0,
+      },
+    );
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
