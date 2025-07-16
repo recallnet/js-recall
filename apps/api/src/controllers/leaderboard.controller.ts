@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 
-import { ApiError } from "@/middleware/errorHandler.js";
+import { flatParse } from "@/lib/flat-parse.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { LeaderboardParamsSchema } from "@/types/index.js";
+
+import { LeaderboardParamsSchema } from "./leaderboard.schema.js";
 
 export function makeLeaderboardController(services: ServiceRegistry) {
   /**
@@ -24,17 +25,12 @@ export function makeLeaderboardController(services: ServiceRegistry) {
     ) {
       try {
         // Validate query parameters
-        const { success, data, error } = LeaderboardParamsSchema.safeParse(
-          req.query,
-        );
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
+        const params = flatParse(LeaderboardParamsSchema, req.query, "query");
 
         // Get leaderboard data with sorting from service layer
         const result =
           await services.leaderboardService.getGlobalLeaderboardWithSorting(
-            data,
+            params,
           );
 
         res.status(200).json({

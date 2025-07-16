@@ -1,3 +1,4 @@
+import { LeaderboardParams } from "@/controllers/leaderboard.schema.js";
 import {
   getGlobalStats,
   getOptimizedGlobalAgentMetrics,
@@ -6,7 +7,6 @@ import {
   AgentMetadata,
   CompetitionType,
   LeaderboardAgent,
-  LeaderboardParams,
 } from "@/types/index.js";
 
 import { AgentManager } from "./agent-manager.service.js";

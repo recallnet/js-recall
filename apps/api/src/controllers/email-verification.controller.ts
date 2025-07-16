@@ -1,7 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 
 import { config } from "@/config/index.js";
+import { flatParse } from "@/lib/flat-parse.js";
 import { ServiceRegistry } from "@/services/index.js";
+
+import { EmailVerificationQuerySchema } from "./email-verification.schema.js";
 
 export function makeEmailVerificationController(services: ServiceRegistry) {
   /**
@@ -16,15 +19,20 @@ export function makeEmailVerificationController(services: ServiceRegistry) {
      * @param next Next function
      */
     async verifyEmail(req: Request, res: Response, next: NextFunction) {
+      let token: string;
       try {
-        const { token } = req.query;
+        token = flatParse(
+          EmailVerificationQuerySchema,
+          req.query,
+          "query",
+        ).token;
+      } catch {
+        return res.redirect(
+          `${config.app.url}/verify-email?success=false&message=${encodeURIComponent("Token is required")}`,
+        );
+      }
 
-        if (!token || typeof token !== "string") {
-          return res.redirect(
-            `${config.app.url}/verify-email?success=false&message=${encodeURIComponent("Token is required")}`,
-          );
-        }
-
+      try {
         const result =
           await services.emailVerificationService.verifyToken(token);
 

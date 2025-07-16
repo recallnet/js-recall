@@ -6,22 +6,21 @@ import {
   getPortfolioTokenValues,
 } from "@/database/repositories/competition-repository.js";
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
+import { flatParse } from "@/lib/flat-parse.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
-  AgentFilterSchema,
+  AgentCompetitionsParamsSchema,
+  AgentIdParamsSchema,
   AuthenticatedRequest,
   PagingParamsSchema,
   SpecificChain,
-  UpdateAgentProfileSchema,
-  UuidSchema,
 } from "@/types/index.js";
 
 import {
-  ensureAgentCompetitionFilters,
-  ensurePaging,
-  ensureUuid,
-} from "./request-helpers.js";
+  AgentGetAgentsQuerySchema,
+  UpdateAgentProfileBodySchema,
+} from "./agent.schema.js";
 
 /**
  * Agent Controller
@@ -38,7 +37,7 @@ export function makeAgentController(services: ServiceRegistry) {
      */
     async getProfile(req: Request, res: Response, next: NextFunction) {
       try {
-        const agentId = req.agentId as string;
+        const { agentId } = flatParse(AgentIdParamsSchema, req);
 
         // Get the agent using the service
         const agent = await services.agentManager.getAgent(agentId);
@@ -85,17 +84,12 @@ export function makeAgentController(services: ServiceRegistry) {
      */
     async updateProfile(req: Request, res: Response, next: NextFunction) {
       try {
-        const { success, data, error } = UpdateAgentProfileSchema.safeParse({
-          agentId: req.agentId,
-          body: req.body,
-        });
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
-        const {
-          agentId,
-          body: { name, description, imageUrl },
-        } = data;
+        const { agentId } = flatParse(AgentIdParamsSchema, req);
+        const { name, description, imageUrl } = flatParse(
+          UpdateAgentProfileBodySchema,
+          req.body,
+          "body",
+        );
 
         // Get the current agent
         const agent = await services.agentManager.getAgent(agentId);
@@ -141,18 +135,18 @@ export function makeAgentController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const pagingParams = PagingParamsSchema.parse(req.query);
-        const filter = req.query.filter
-          ? AgentFilterSchema.parse(req.query.filter)
-          : undefined;
+        const { filter, limit, offset, sort } = flatParse(
+          AgentGetAgentsQuerySchema,
+          req.query,
+          "query",
+        );
+        const pagingParams = { limit, offset, sort };
         const agents = await services.agentManager.getAgents({
           filter,
           pagingParams,
         });
         const totalCount = await services.agentManager.countAgents(filter);
-        const { limit, offset } = pagingParams;
 
-        // Return the agents
         res.status(200).json({
           success: true,
           pagination: {
@@ -182,12 +176,11 @@ export function makeAgentController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const { success, data: agentId } = UuidSchema.safeParse(
-          req.params.agentId,
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
+          req.params,
+          "params",
         );
-        if (!success) {
-          throw new ApiError(400, "Invalid Agent ID");
-        }
 
         // Get the agent using the service
         const agent = await services.agentManager.getAgent(agentId);
@@ -231,7 +224,7 @@ export function makeAgentController(services: ServiceRegistry) {
      */
     async getBalances(req: Request, res: Response, next: NextFunction) {
       try {
-        const agentId = req.agentId as string;
+        const { agentId } = flatParse(AgentIdParamsSchema, req);
 
         // Get the balances
         const balances = await services.balanceManager.getAllBalances(agentId);
@@ -319,7 +312,7 @@ export function makeAgentController(services: ServiceRegistry) {
      */
     async getPortfolio(req: Request, res: Response, next: NextFunction) {
       try {
-        const agentId = req.agentId as string;
+        const { agentId } = flatParse(AgentIdParamsSchema, req);
 
         // First, check if there's an active competition
         const activeCompetition = await findActive();
@@ -449,7 +442,7 @@ export function makeAgentController(services: ServiceRegistry) {
      */
     async getTrades(req: Request, res: Response, next: NextFunction) {
       try {
-        const agentId = req.agentId as string;
+        const { agentId } = flatParse(AgentIdParamsSchema, req);
 
         // Get the trades
         const trades = await services.tradeSimulator.getAgentTrades(agentId);
@@ -479,7 +472,7 @@ export function makeAgentController(services: ServiceRegistry) {
      */
     async resetApiKey(req: Request, res: Response, next: NextFunction) {
       try {
-        const agentId = req.agentId as string;
+        const { agentId } = flatParse(AgentIdParamsSchema, req);
 
         // Use the AgentManager service to reset the API key
         const result = await services.agentManager.resetApiKey(agentId);
@@ -496,15 +489,23 @@ export function makeAgentController(services: ServiceRegistry) {
 
     /**
      * Get competitions associated with the url param agent
-     * @param req Express request with agentId from API key
+     * @param req Express request with agentId param and query filters
      * @param res Express response
      * @param next Express next function
      */
     async getCompetitions(req: Request, res: Response, next: NextFunction) {
       try {
-        const agentId = ensureUuid(req.params.agentId);
-        const filters = ensureAgentCompetitionFilters(req);
-        const paging = ensurePaging(req);
+        const { agentId } = flatParse(
+          AgentIdParamsSchema,
+          req.params,
+          "params",
+        );
+        const filters = flatParse(
+          AgentCompetitionsParamsSchema,
+          req.query,
+          "query",
+        );
+        const paging = flatParse(PagingParamsSchema, req.query, "query");
 
         // Fetch all competitions associated with the agent
         const results = await services.agentManager.getCompetitionsForAgent(

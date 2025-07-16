@@ -76,13 +76,6 @@ export const AdminStartCompetitionSchema = z
   });
 
 /**
- * Admin end competition schema
- */
-export const AdminEndCompetitionSchema = z.object({
-  competitionId: UuidSchema,
-});
-
-/**
  * Admin sync object index schema
  */
 export const AdminSyncObjectIndexSchema = z.object({
@@ -101,47 +94,12 @@ export const AdminGetObjectIndexQuerySchema = z.object({
   offset: z.coerce.number().min(0).default(0),
 });
 
-/**
- * Admin get performance reports query schema
- */
-export const AdminGetPerformanceReportsQuerySchema = z.object({
-  competitionId: UuidSchema,
-});
-
-/**
- * Admin get competition snapshots params and query schema
- */
-export const AdminGetCompetitionSnapshotsParamsSchema = z.object({
-  competitionId: UuidSchema,
-});
-
 export const AdminGetCompetitionSnapshotsQuerySchema = z.object({
   agentId: UuidSchema.optional(),
 });
 
-/**
- * Admin deactivate agent params and body schema
- */
-export const AdminDeactivateAgentParamsSchema = z.object({
-  agentId: UuidSchema,
-});
-
 export const AdminDeactivateAgentBodySchema = z.object({
   reason: z.string().min(1, "Reason is required"),
-});
-
-/**
- * Admin reactivate agent params schema
- */
-export const AdminReactivateAgentParamsSchema = z.object({
-  agentId: UuidSchema,
-});
-
-/**
- * Admin get agent params schema
- */
-export const AdminGetAgentParamsSchema = z.object({
-  agentId: UuidSchema,
 });
 
 /**
@@ -161,26 +119,5 @@ export const AdminRemoveAgentFromCompetitionBodySchema = z.object({
  */
 export const AdminReactivateAgentInCompetitionParamsSchema = z.object({
   competitionId: UuidSchema,
-  agentId: UuidSchema,
-});
-
-/**
- * Admin get agent API key params schema
- */
-export const AdminGetAgentApiKeyParamsSchema = z.object({
-  agentId: UuidSchema,
-});
-
-/**
- * Admin update competition params schema
- */
-export const AdminUpdateCompetitionParamsSchema = z.object({
-  competitionId: UuidSchema,
-});
-
-/**
- * Admin delete agent params schema
- */
-export const AdminDeleteAgentParamsSchema = z.object({
   agentId: UuidSchema,
 });

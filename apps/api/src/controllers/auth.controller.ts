@@ -1,6 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 
+import { flatParse } from "@/lib/flat-parse.js";
+import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
+
+import { LoginBodySchema, VerifyAgentWalletBodySchema } from "./auth.schema.js";
 
 export function makeAuthController(services: ServiceRegistry) {
   /**
@@ -8,6 +12,12 @@ export function makeAuthController(services: ServiceRegistry) {
    * Handles auth endpoints
    */
   return {
+    /**
+     * Generate nonce for user SIWE authentication
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
     async getNonce(req: Request, res: Response, next: NextFunction) {
       try {
         req.session.nonce = await services.authService.getNonce();
@@ -20,15 +30,16 @@ export function makeAuthController(services: ServiceRegistry) {
 
     /**
      * Generate nonce for agent wallet verification
+     * @param req Express request with agentId from API key
+     * @param res Express response
+     * @param next Express next function
      */
     async getAgentNonce(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId; // Set by agentAuthMiddleware
 
         if (!agentId) {
-          return res
-            .status(401)
-            .json({ error: "Agent authentication required" });
+          throw new ApiError(401, "Agent authentication required");
         }
 
         // Agent nonce generation - store in database
@@ -36,9 +47,10 @@ export function makeAuthController(services: ServiceRegistry) {
           await services.agentManager.generateNonceForAgent(agentId);
 
         if (!result.success) {
-          return res.status(500).json({
-            error: result.error || "Failed to generate nonce for agent",
-          });
+          throw new ApiError(
+            500,
+            result.error || "Failed to generate nonce for agent",
+          );
         }
 
         res.status(200).json({ nonce: result.nonce });
@@ -47,9 +59,19 @@ export function makeAuthController(services: ServiceRegistry) {
       }
     },
 
+    /**
+     * Login with SIWE signature
+     * @param req Express request with SIWE message and signature
+     * @param res Express response
+     * @param next Express next function
+     */
     async login(req: Request, res: Response, next: NextFunction) {
       try {
-        const { message, signature } = req.body;
+        const { message, signature } = flatParse(
+          LoginBodySchema,
+          req.body,
+          "body",
+        );
         const { session } = req;
         const { success, userId, wallet } = await services.authService.login({
           message,
@@ -57,9 +79,7 @@ export function makeAuthController(services: ServiceRegistry) {
           session,
         });
         if (!success) {
-          return res
-            .status(401)
-            .json({ error: "Unauthorized: invalid signature" });
+          throw new ApiError(401, "Unauthorized: invalid signature");
         }
         console.log(
           `[AuthController] Login successful for ${wallet} (userId: ${userId ? userId : "N/A"})`,
@@ -70,6 +90,12 @@ export function makeAuthController(services: ServiceRegistry) {
       }
     },
 
+    /**
+     * Logout user session
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
     async logout(req: Request, res: Response, next: NextFunction) {
       try {
         await services.authService.logout(req.session);
@@ -81,22 +107,21 @@ export function makeAuthController(services: ServiceRegistry) {
 
     /**
      * Verify agent wallet ownership via custom message signature
+     * @param req Express request with agentId from API key and message/signature in body
+     * @param res Express response
+     * @param next Express next function
      */
     async verifyAgentWallet(req: Request, res: Response, next: NextFunction) {
       try {
-        const { message, signature } = req.body;
+        const { message, signature } = flatParse(
+          VerifyAgentWalletBodySchema,
+          req.body,
+          "body",
+        );
         const agentId = req.agentId; // Set by authMiddleware
 
         if (!agentId) {
-          return res
-            .status(401)
-            .json({ error: "Agent authentication required" });
-        }
-
-        if (!message || !signature) {
-          return res
-            .status(400)
-            .json({ error: "Message and signature are required" });
+          throw new ApiError(401, "Agent authentication required");
         }
 
         const result = await services.agentManager.verifyWalletOwnership(
@@ -107,9 +132,7 @@ export function makeAuthController(services: ServiceRegistry) {
 
         if (!result.success) {
           const statusCode = result.error?.includes("already") ? 409 : 400;
-          return res
-            .status(statusCode)
-            .json({ error: result.error || "Verification failed" });
+          throw new ApiError(statusCode, result.error || "Verification failed");
         }
 
         res.status(200).json({

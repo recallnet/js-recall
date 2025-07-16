@@ -8,11 +8,11 @@ export function makeHealthController() {
   return {
     /**
      * Basic health check
-     * @param req Express request
+     * @param _req Express request
      * @param res Express response
      * @param next Express next function
      */
-    async check(req: Request, res: Response, next: NextFunction) {
+    async check(_req: Request, res: Response, next: NextFunction) {
       try {
         res.status(200).json({
           status: "ok",
@@ -27,11 +27,11 @@ export function makeHealthController() {
 
     /**
      * Detailed health check with service status
-     * @param req Express request
+     * @param _req Express request
      * @param res Express response
      * @param next Express next function
      */
-    async detailed(req: Request, res: Response, next: NextFunction) {
+    async detailed(_req: Request, res: Response, next: NextFunction) {
       try {
         // Since we don't have isHealthy methods on our services yet,
         // we'll just return 'ok' for all services for now

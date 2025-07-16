@@ -1,14 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 
+import { UserIdParamsSchema } from "@/controllers/user.schema.js";
+import { flatParse } from "@/lib/flat-parse.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
+import { VOTE_ERROR_TYPES, VoteError } from "@/types/index.js";
+
 import {
   CreateVoteBodySchema,
   UserVotesParamsSchema,
-  VOTE_ERROR_TYPES,
-  VoteError,
   VotingStateParamsSchema,
-} from "@/types/index.js";
+} from "./vote.schema.js";
 
 /**
  * Vote Controller
@@ -26,17 +28,12 @@ export function makeVoteController(services: ServiceRegistry) {
      */
     async castVote(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.userId as string;
-
-        // Validate request body
-        const { success, data, error } = CreateVoteBodySchema.safeParse(
+        const { userId } = flatParse(UserIdParamsSchema, req);
+        const { agentId, competitionId } = flatParse(
+          CreateVoteBodySchema,
           req.body,
+          "body",
         );
-        if (!success) {
-          throw new ApiError(400, `Invalid request format: ${error.message}`);
-        }
-
-        const { agentId, competitionId } = data;
 
         try {
           // Cast the vote using VoteManager
@@ -96,17 +93,12 @@ export function makeVoteController(services: ServiceRegistry) {
      */
     async getUserVotes(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.userId as string;
-
-        // Validate query parameters
-        const { success, data, error } = UserVotesParamsSchema.safeParse(
+        const { userId } = flatParse(UserIdParamsSchema, req);
+        const { competitionId, limit, offset } = flatParse(
+          UserVotesParamsSchema,
           req.query,
+          "query",
         );
-        if (!success) {
-          throw new ApiError(400, `Invalid query parameters: ${error.message}`);
-        }
-
-        const { competitionId, limit, offset } = data;
 
         // Get user's votes
         const votes = await services.voteManager.getUserVotes(
@@ -146,17 +138,12 @@ export function makeVoteController(services: ServiceRegistry) {
      */
     async getVotingState(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.userId as string;
-
-        // Validate path parameters
-        const { success, data, error } = VotingStateParamsSchema.safeParse(
+        const { userId } = flatParse(UserIdParamsSchema, req);
+        const { competitionId } = flatParse(
+          VotingStateParamsSchema,
           req.params,
+          "params",
         );
-        if (!success) {
-          throw new ApiError(400, `Invalid competition ID: ${error.message}`);
-        }
-
-        const { competitionId } = data;
 
         // Get voting state
         const votingState =

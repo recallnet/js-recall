@@ -1,8 +1,14 @@
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 
-import { ApiError } from "@/middleware/errorHandler.js";
-import { ServiceRegistry } from "@/services/index.js";
-import { BlockchainType, SpecificChain } from "@/types/index.js";
+import { flatParse } from "@/lib/flat-parse.js";
+import type { ServiceRegistry } from "@/services/index.js";
+import {
+  AgentIdParamsSchema,
+  BlockchainType,
+  SpecificChain,
+} from "@/types/index.js";
+
+import { PriceQuerySchema } from "./price.schema.js";
 
 export function makePriceController(services: ServiceRegistry) {
   /**
@@ -18,16 +24,12 @@ export function makePriceController(services: ServiceRegistry) {
      */
     async getPrice(req: Request, res: Response, next: NextFunction) {
       try {
-        const agentId = req.agentId as string;
+        const { agentId } = flatParse(AgentIdParamsSchema, req);
         const {
           token,
           chain: requestedChain,
           specificChain: requestedSpecificChain,
-        } = req.query;
-
-        if (!token || typeof token !== "string") {
-          throw new ApiError(400, "Token address is required");
-        }
+        } = flatParse(PriceQuerySchema, req.query, "query");
 
         console.log(
           `[PriceController] Getting price for token ${token} requested by agent ${agentId}`,
@@ -108,16 +110,12 @@ export function makePriceController(services: ServiceRegistry) {
      */
     async getTokenInfo(req: Request, res: Response, next: NextFunction) {
       try {
-        const agentId = req.agentId as string;
+        const { agentId } = flatParse(AgentIdParamsSchema, req);
         const {
           token,
           chain: requestedChain,
           specificChain: requestedSpecificChain,
-        } = req.query;
-
-        if (!token || typeof token !== "string") {
-          throw new ApiError(400, "Token address is required");
-        }
+        } = flatParse(PriceQuerySchema, req.query, "query");
 
         console.log(
           `[PriceController] Getting token info for ${token} requested by agent ${agentId}`,
