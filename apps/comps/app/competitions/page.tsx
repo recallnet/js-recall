@@ -140,8 +140,24 @@ const Video: React.FC<{ className?: string }> = ({ className }) => {
       )}
       poster="/video-placeholder.png"
     >
+      {/* AV1 (best efficiency) */}
       <source
-        src="https://5pskttgrmgbdllus.public.blob.vercel-storage.com/competitions_hub-Ki6pZVJaHivsu3ZeAqzUtlGWjjdwcS.mp4"
+        src="/competitions-hub-vid/competitions-hub.av1.webm"
+        type="video/webm; codecs=av01.0.05M.08.0"
+      />
+      {/* HEVC / H.265 (efficient, best on Apple devices) */}
+      <source
+        src="/competitions-hub-vid/competitions-hub.hevc.mp4"
+        type="video/mp4; codecs=hev1"
+      />
+      {/* VP9 (widely supported alternative to AV1) */}
+      <source
+        src="/competitions-hub-vid/competitions-hub.vp9.webm"
+        type="video/webm; codecs=vp9"
+      />
+      {/* H.264 (fallback for universal support) */}
+      <source
+        src="/competitions-hub-vid/competitions-hub.mp4"
         type="video/mp4"
       />
       <Image
