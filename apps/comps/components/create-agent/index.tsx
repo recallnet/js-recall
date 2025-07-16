@@ -65,14 +65,12 @@ interface CreateAgentProps {
   onSubmit: (data: FormData) => Promise<void>;
   isSubmitting?: boolean;
   agent?: Agent | null;
-  sandboxApiKey?: string | null;
 }
 
 export function CreateAgent({
   onSubmit,
   isSubmitting,
   agent,
-  sandboxApiKey,
 }: CreateAgentProps) {
   const { redirectToUrl } = useRedirectTo("/profile");
   const [currentStep, setCurrentStep] = useState(1);
@@ -182,11 +180,7 @@ export function CreateAgent({
           <Steps currentStep={currentStep} className="mb-8" />
 
           {currentStep === 3 && agent ? (
-            <AgentCreated
-              agent={agent}
-              sandboxApiKey={sandboxApiKey}
-              redirectToUrl={redirectToUrl}
-            />
+            <AgentCreated agent={agent} />
           ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)}>

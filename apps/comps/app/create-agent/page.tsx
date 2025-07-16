@@ -18,7 +18,6 @@ function CreateAgentView() {
   const createSandboxUser = useCreateSandboxUser();
   const createSandboxAgent = useCreateSandboxAgent();
   const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
-  const [sandboxApiKey, setSandboxApiKey] = useState<string | null>(null);
 
   const { data: agent } = useUserAgent(createdAgentId || undefined);
 
@@ -52,7 +51,7 @@ function CreateAgentView() {
 
       // Create agent in sandbox
       try {
-        const sandboxResult = await createSandboxAgent.mutateAsync({
+        await createSandboxAgent.mutateAsync({
           name: data.name,
           description: data.description,
           imageUrl: data.imageUrl,
@@ -65,9 +64,7 @@ function CreateAgentView() {
           },
         });
 
-        if (sandboxResult.success && sandboxResult.agent.apiKey) {
-          setSandboxApiKey(sandboxResult.agent.apiKey);
-        }
+        // Sandbox agent created successfully
       } catch (error) {
         console.warn("Failed to create agent in sandbox:", error);
         // Continue even if sandbox creation fails
@@ -88,7 +85,6 @@ function CreateAgentView() {
         onSubmit={handleSubmit}
         isSubmitting={createAgent.status === "pending"}
         agent={agent}
-        sandboxApiKey={sandboxApiKey}
       />
     </AuthGuard>
   );

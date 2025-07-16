@@ -4,7 +4,7 @@
     "baseUrl": ".",
     "skipLibCheck": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./*"],
       "@/types": ["types/index.ts"],
