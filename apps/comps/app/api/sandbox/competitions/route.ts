@@ -1,21 +1,15 @@
-import {NextRequest} from "next/server";
-
-import {
-  sandboxAdminRequest,
-} from "@/app/api/sandbox/_lib/sandbox-config";
+import { sandboxAdminRequest } from "@/app/api/sandbox/_lib/sandbox-config";
 import {
   createSuccessResponse,
   withErrorHandling,
 } from "@/app/api/sandbox/_lib/sandbox-response";
-import {
-  CompetitionsResponse,
-} from "@/types";
+import { CompetitionsResponse } from "@/types";
 
 /**
  */
-async function handleGetCompetitions(request: NextRequest) {
+async function handleGetCompetitions() {
   const competitions = await sandboxAdminRequest<CompetitionsResponse>(
-    `/competitions?status=active`
+    `/competitions?status=active`,
   );
 
   return createSuccessResponse(competitions);

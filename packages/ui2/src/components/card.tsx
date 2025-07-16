@@ -1,5 +1,6 @@
 import React from "react";
-import {cn} from "@recallnet/ui2/lib/utils";
+
+import { cn } from "@recallnet/ui2/lib/utils";
 
 type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 

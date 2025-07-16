@@ -1,26 +1,23 @@
 "use client";
 
-import {KeyRound, Mail} from "lucide-react";
+import { KeyRound, Mail } from "lucide-react";
 import Link from "next/link";
-import React, {useState} from "react";
+import React, { useState } from "react";
 
-import {Button} from "@recallnet/ui2/components/button";
-import {Card} from "@recallnet/ui2/components/card";
-import {toast} from "@recallnet/ui2/components/toast";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { Button } from "@recallnet/ui2/components/button";
+import { Card } from "@recallnet/ui2/components/card";
+import { toast } from "@recallnet/ui2/components/toast";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {CopyButton} from "@/components/copy-button";
-import {socialLinks} from "@/data/social";
-import {useUserSession} from "@/hooks";
-import {Agent} from "@/types";
-import {useVerifyEmail} from "@/hooks/useVerifyEmail";
-import {useUnlockKeys} from "@/hooks/useUnlockKeys";
+import { CopyButton } from "@/components/copy-button";
+import { socialLinks } from "@/data/social";
+import { useUserSession } from "@/hooks";
+import { useUnlockKeys } from "@/hooks/useUnlockKeys";
+import { useVerifyEmail } from "@/hooks/useVerifyEmail";
+import { Agent } from "@/types";
 
 interface AgentCreatedProps {
   agent: Agent;
-  apiKey: string;
-  sandboxApiKey?: string | null;
-  redirectToUrl: string;
 }
 
 interface ApiKeySectionProps {
@@ -37,7 +34,7 @@ interface ApiKeySectionProps {
  * @param description The description text below the API key
  * @returns React component
  */
-function ApiKeySection({title, apiKey, description}: ApiKeySectionProps) {
+function ApiKeySection({ title, apiKey, description }: ApiKeySectionProps) {
   return (
     <div className="mt-15 w-full">
       <h3 className="text-secondary-foreground mb-2 flex items-center justify-center gap-2 text-lg">
@@ -57,44 +54,34 @@ function ApiKeySection({title, apiKey, description}: ApiKeySectionProps) {
 }
 
 /**
- * Displays a registration success message, API key, and agent card after agent creation.
+ * Displays a registration success message and API keys or next steps after agent creation.
  *
- * @param agent The created agent's data
- * @param apiKey The agent's API key
- * @param sandboxApiKey The agent's sandbox API key (optional)
+ * @param agent The created agent&apos;s data
  * @returns React component
  *
  * @example
- * <AgentCreated agent={agent} apiKey={apiKey} sandboxApiKey={sandboxApiKey} />
+ * <AgentCreated agent={agent} />
  */
-export function AgentCreated({
-  apiKey,
-  sandboxApiKey,
-  redirectToUrl,
-  agent,
-}: AgentCreatedProps) {
+export function AgentCreated({ agent }: AgentCreatedProps) {
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
 
-  const {mutate: verifyEmail, isPending} = useVerifyEmail();
-  const {mutation: unlockKeys, query: {data}} = useUnlockKeys(agent.id)
+  const { mutate: verifyEmail, isPending } = useVerifyEmail();
+  const {
+    mutation: unlockKeys,
+    productionKey,
+    sandboxKey,
+    isLoadingKeys,
+  } = useUnlockKeys(agent.name, agent.id);
   const session = useUserSession();
-
-  React.useEffect(() => {
-    console.log('DATA UNLOCk', data)
-  }, [data])
 
   if (!session.isInitialized) return null;
 
-  const {user} = session;
-  const isEmailVerified = user && user.isEmailVerified
+  const { user } = session;
+  const isEmailVerified = user && user.isEmailVerified;
 
   const onUnlockKeys = async () => {
-    toast.success(
-      "API Keys unlocked successfully"
-    );
-    unlockKeys.mutate()
-    //setIsLocked(false)
-  }
+    unlockKeys.mutate();
+  };
 
   const onSendEmail = async () => {
     verifyEmail(undefined, {
@@ -108,7 +95,7 @@ export function AgentCreated({
               </span>
             </div>,
           );
-          setEmailVerifyClicked(true)
+          setEmailVerifyClicked(true);
           setTimeout(setEmailVerifyClicked, 60 * 1000, false); //wait 60 seconds
         } else {
           toast.error(res.message);
@@ -120,10 +107,14 @@ export function AgentCreated({
         });
       },
     });
-  }
+  };
+
+  // If email is verified and we have keys, show them
+  const hasKeys = productionKey || sandboxKey;
+  const showKeys = isEmailVerified && hasKeys && !isLoadingKeys;
 
   return (
-    <div className="flex flex-col mb-10">
+    <div className="mb-10 flex flex-col">
       <p className="text-secondary-foreground">
         Thanks, <span className="text-primary-foreground">{user?.name}!</span>
       </p>
@@ -134,64 +125,108 @@ export function AgentCreated({
       <h2 className="text-primary-foreground mt-4 text-2xl font-bold">
         You&apos;re almost done!
       </h2>
-      <p className="text-secondary-foreground mt-2 mb-7">
-        To activate your agent on the Recall Network and start competing, you’ll need to connect it to our sandbox and production environments using your unique API keys.
+      <p className="text-secondary-foreground mb-7 mt-2">
+        To activate your agent on the Recall Network and start competing,
+        you&apos;ll need to connect it to our sandbox and production
+        environments using your unique API keys.
       </p>
 
-      <Card
-        corner={['top-left', 'top-right']}
-        cropSize={[30, 30]}
-        className='flex flex-col gap-4 text-secondary-foreground px-8 py-6 mb-2'
-      >
-        <span className="text-lg text-primary-foreground font-bold">Step 1: Verify your Email</span>
-        {
-          isEmailVerified ?
-            <>
-              <span>Your email is already <span className="text-green-400">verified.</span></span>
-              <span>Please proceed to the next step.</span>
-            </>
-            :
-            <>
-              <span>Your email is <span className="text-red-400">not verified.</span></span>
-              <span> We require a verified email before you can unlock API Keys for an Agent.</span>
-            </>
-        }
-        {
-          !isEmailVerified &&
-          <div className="w-full flex justify-center">
-            <Button
-              onClick={onSendEmail}
-              disabled={isPending || emailVerifyClicked}
-              className='bg-blue-600 py-7 px-12 text-xs flex gap-3 max-w-[250px]'
-            >
-              <Mail className="w-6 h-6" strokeWidth={1.3} />
-              <span>Verify EMAIL</span>
-            </Button>
-          </div>
-        }
-      </Card>
-
-      <Card
-        corner={['bottom-left', 'bottom-right']}
-        cropSize={[30, 30]}
-        className='flex flex-col gap-4 text-secondary-foreground px-8 py-6'
-      >
-        <span className="text-lg text-primary-foreground font-bold">Step 2: Get your API Keys</span>
-        <span>  Once verified, your API Keys will be available in your Agent’s Profile. Use these keys to connect to our Sandbox and Production environments.</span>
-        <div className="w-full flex justify-center">
-          <Button
-            onClick={onUnlockKeys}
-            disabled={!isEmailVerified}
-            className={cn(
-              'py-7 px-12 text-xs flex gap-3 max-w-[250px] border',
-              isEmailVerified ? 'bg-blue-700' : 'bg-transparent'
-            )}
-          >
-            <KeyRound className="w-6 h-6" strokeWidth={1.3} />
-            <span className="uppercase">Unlock keys</span>
-          </Button>
+      {showKeys ? (
+        // Show the actual API keys
+        <div className="flex flex-col gap-6">
+          {productionKey && (
+            <ApiKeySection
+              title="Production API Key"
+              apiKey={productionKey}
+              description="Use this key to connect your agent to the production environment."
+            />
+          )}
+          {sandboxKey && (
+            <ApiKeySection
+              title="Sandbox API Key"
+              apiKey={sandboxKey}
+              description="Use this key to connect your agent to the sandbox environment for testing."
+            />
+          )}
         </div>
-      </Card>
+      ) : (
+        // Show the two-step flow
+        <>
+          <Card
+            corner={["top-left", "top-right"]}
+            cropSize={[30, 30]}
+            className="text-secondary-foreground mb-2 flex flex-col gap-4 px-8 py-6"
+          >
+            <span className="text-primary-foreground text-lg font-bold">
+              Step 1: Verify your Email
+            </span>
+            {isEmailVerified ? (
+              <>
+                <span>
+                  Your email is already{" "}
+                  <span className="text-green-400">verified.</span>
+                </span>
+                <span>Please proceed to the next step.</span>
+              </>
+            ) : (
+              <>
+                <span>
+                  Your email is{" "}
+                  <span className="text-red-400">not verified.</span>
+                </span>
+                <span>
+                  {" "}
+                  We require a verified email before you can unlock API Keys for
+                  an Agent.
+                </span>
+              </>
+            )}
+            {!isEmailVerified && (
+              <div className="flex w-full justify-center">
+                <Button
+                  onClick={onSendEmail}
+                  disabled={isPending || emailVerifyClicked}
+                  className="flex max-w-[250px] gap-3 bg-blue-600 px-12 py-7 text-xs"
+                >
+                  <Mail className="h-6 w-6" strokeWidth={1.3} />
+                  <span>Verify EMAIL</span>
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          <Card
+            corner={["bottom-left", "bottom-right"]}
+            cropSize={[30, 30]}
+            className="text-secondary-foreground flex flex-col gap-4 px-8 py-6"
+          >
+            <span className="text-primary-foreground text-lg font-bold">
+              Step 2: Get your API Keys
+            </span>
+            <span>
+              {" "}
+              Once verified, your API Keys will be available in your
+              Agent&apos;s Profile. Use these keys to connect to our Sandbox and
+              Production environments.
+            </span>
+            <div className="flex w-full justify-center">
+              <Button
+                onClick={onUnlockKeys}
+                disabled={!isEmailVerified || isLoadingKeys}
+                className={cn(
+                  "flex max-w-[250px] gap-3 border px-12 py-7 text-xs",
+                  isEmailVerified ? "bg-blue-700" : "bg-transparent",
+                )}
+              >
+                <KeyRound className="h-6 w-6" strokeWidth={1.3} />
+                <span className="uppercase">
+                  {isLoadingKeys ? "Loading..." : "Unlock keys"}
+                </span>
+              </Button>
+            </div>
+          </Card>
+        </>
+      )}
 
       <p className="text-secondary-foreground mt-4">
         Need help? Reach out on our{" "}

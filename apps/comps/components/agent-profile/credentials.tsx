@@ -1,20 +1,18 @@
-import {KeyRound, Mail} from "lucide-react";
-import {useState} from "react";
+import { KeyRound, Mail } from "lucide-react";
+import { useState } from "react";
 
-import {Tooltip} from "@recallnet/ui2/components/tooltip";
-import {toast} from "@recallnet/ui2/components/toast";
-import {Button} from "@recallnet/ui2/components/button";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { Button } from "@recallnet/ui2/components/button";
+import { toast } from "@recallnet/ui2/components/toast";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {useApiKey} from "@/hooks/useApiKey";
-import {useSandboxAgentApiKey} from "@/hooks/useSandbox";
-import {Agent} from "@/types";
+import { useProfile } from "@/hooks/useProfile";
+import { useUnlockKeys } from "@/hooks/useUnlockKeys";
+import { useVerifyEmail } from "@/hooks/useVerifyEmail";
+import { Agent } from "@/types";
 
-import {CopyButton} from "../copy-button";
-import {VisibilityToggle} from "../visibility-toggle";
-import {useProfile} from "@/hooks/useProfile";
-import {useVerifyEmail} from "@/hooks/useVerifyEmail";
-import {useUnlockKeys} from "@/hooks/useUnlockKeys";
+import { CopyButton } from "../copy-button";
+import { VisibilityToggle } from "../visibility-toggle";
 
 /**
  * Component for displaying an API key row with visibility toggle and copy functionality
@@ -58,19 +56,23 @@ const ApiKeyRow = ({
   );
 };
 
-const ApiKeyLocked = ({agent}: {agent: Agent}) => {
-  const {mutate: verifyEmail, isPending} = useVerifyEmail();
-  const {mutation: registerAgentSandbox} = useUnlockKeys(agent.id)
+const ApiKeyLocked = ({
+  agent,
+  isEmailVerified,
+}: {
+  agent: Agent;
+  isEmailVerified: boolean;
+}) => {
+  const { mutate: verifyEmail, isPending } = useVerifyEmail();
+  const { mutation: registerAgentSandbox } = useUnlockKeys(
+    agent.name,
+    agent.id,
+  );
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
-  const [isLocked, setIsLocked] = useState(true)
 
   const unlockKeys = async () => {
-    toast.success(
-      "API Keys unlocked successfully"
-    );
-    registerAgentSandbox.mutate()
-    //setIsLocked(false)
-  }
+    registerAgentSandbox.mutate();
+  };
 
   const onSendEmail = async () => {
     verifyEmail(undefined, {
@@ -84,7 +86,7 @@ const ApiKeyLocked = ({agent}: {agent: Agent}) => {
               </span>
             </div>,
           );
-          setEmailVerifyClicked(true)
+          setEmailVerifyClicked(true);
           setTimeout(setEmailVerifyClicked, 60 * 1000, false); //wait 60 seconds
         } else {
           toast.error(res.message);
@@ -96,57 +98,53 @@ const ApiKeyLocked = ({agent}: {agent: Agent}) => {
         });
       },
     });
-  }
+  };
 
   const button = (
     <Button
-      onClick={isLocked ? unlockKeys : onSendEmail}
+      onClick={isEmailVerified ? unlockKeys : onSendEmail}
       disabled={isPending || emailVerifyClicked}
-      className='bg-blue-600 py-7 px-12 text-xs flex gap-3'
+      className="flex gap-3 bg-blue-600 px-12 py-7 text-xs"
     >
-      {
-        isLocked ?
-          <>
-            <KeyRound className="w-6 h-6 uppercase" strokeWidth={1.3} />
-            <span>Unlock keys</span>
-          </>
-          :
-          <>
-            <Mail className="w-6 h-6" strokeWidth={1.3} />
-            <span>Verify EMAIL</span>
-          </>
-      }
+      {isEmailVerified ? (
+        <>
+          <KeyRound className="h-6 w-6 uppercase" strokeWidth={1.3} />
+          <span>Unlock keys</span>
+        </>
+      ) : (
+        <>
+          <Mail className="h-6 w-6" strokeWidth={1.3} />
+          <span>Verify EMAIL</span>
+        </>
+      )}
     </Button>
-  )
-
+  );
 
   return (
-    <div className="w-full grid grid-cols-1 sm:grid-cols-[30px_200px_1fr_300px] gap-4 items-center">
-      <div className="flex items-center justify-center w-8 mx-auto md:mx-0">
-        <KeyRound className="w-7 h-7 text-gray-500" strokeWidth={1.3} />
+    <div className="grid w-full grid-cols-1 items-center gap-4 sm:grid-cols-[30px_200px_1fr_300px]">
+      <div className="mx-auto flex w-8 items-center justify-center md:mx-0">
+        <KeyRound className="h-7 w-7 text-gray-500" strokeWidth={1.3} />
       </div>
 
       <div className="text-center sm:text-left">
-        <span className="text-sm font-bold block text-secondary-foreground">
+        <span className="text-secondary-foreground block text-sm font-bold">
           Your API keys are
-          <span className="text-red-300 ml-1">locked</span>
-          .
+          <span className="ml-1 text-red-300">locked</span>.
         </span>
       </div>
 
       <div className="text-center sm:text-left">
-        {
-          !isLocked &&
-          <span className="text-sm text-secondary-foreground">
-            To access Production and Sandbox API keys, verify your email.
-            Once verified, you can unlock them.
+        {!isEmailVerified && (
+          <span className="text-secondary-foreground text-sm">
+            To access Production and Sandbox API keys, verify your email. Once
+            verified, you can unlock them.
           </span>
-        }
+        )}
       </div>
 
       <div className="flex justify-center sm:justify-end">
         {emailVerifyClicked ? (
-          <Tooltip content='You can only send a verification each 60 seconds'>
+          <Tooltip content="You can only send a verification each 60 seconds">
             {button}
           </Tooltip>
         ) : (
@@ -157,7 +155,6 @@ const ApiKeyLocked = ({agent}: {agent: Agent}) => {
   );
 };
 
-
 export const Credentials = ({
   agent,
   className,
@@ -165,11 +162,12 @@ export const Credentials = ({
   agent: Agent;
   className?: string;
 }) => {
-  const {data: user} = useProfile()
-  const {data: apiKey, isLoading} = useApiKey(agent.id);
-  const {data: sandboxApiKey, isLoading: sandboxLoading} =
-    useSandboxAgentApiKey(agent.name);
-  const isEmailVerified = user && user.isEmailVerified
+  const { data: user } = useProfile();
+  const { productionKey, sandboxKey, isLoadingKeys } = useUnlockKeys(
+    agent.name,
+    agent.id,
+  );
+  const isEmailVerified = user && user.isEmailVerified;
 
   return (
     <div
@@ -178,26 +176,26 @@ export const Credentials = ({
         className,
       )}
     >
-      {isEmailVerified && false ?
+      {isEmailVerified ? (
         <>
           <ApiKeyRow
             label="Production API Key"
             tooltip="Agent API Key"
-            apiKey={apiKey?.apiKey}
-            isLoading={isLoading}
+            apiKey={productionKey}
+            isLoading={isLoadingKeys}
           />
-          {sandboxApiKey && (
+          {sandboxKey && (
             <ApiKeyRow
               label="Sandbox API Key"
               tooltip="Sandbox Agent API Key"
-              apiKey={sandboxApiKey?.agent.apiKey}
-              isLoading={sandboxLoading}
+              apiKey={sandboxKey}
+              isLoading={isLoadingKeys}
             />
           )}
         </>
-        :
-        <ApiKeyLocked agent={agent} />
-      }
+      ) : (
+        <ApiKeyLocked agent={agent} isEmailVerified={!!isEmailVerified} />
+      )}
     </div>
   );
 };

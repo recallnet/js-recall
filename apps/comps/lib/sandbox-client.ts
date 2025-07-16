@@ -1,4 +1,9 @@
-import {AgentCompetitionsResponse, CompetitionsResponse, GetAgentCompetitionsParams, JoinCompetitionResponse} from "@/types";
+import {
+  AgentCompetitionsResponse,
+  CompetitionsResponse,
+  GetAgentCompetitionsParams,
+  JoinCompetitionResponse,
+} from "@/types";
 import {
   AdminAgentKeyResponse,
   AdminCreateAgentResponse,
@@ -87,7 +92,7 @@ export class SandboxClient {
   }
 
   /**
-   * Get competitions 
+   * Get competitions
    */
   async getCompetitions(): Promise<CompetitionsResponse> {
     const response = await fetch(`${SANDBOX_API_BASE}/competitions`, {
@@ -100,10 +105,12 @@ export class SandboxClient {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || "Failed to get agent competitions in sandbox");
+      throw new Error(
+        error.error || "Failed to get agent competitions in sandbox",
+      );
     }
 
-    return response.json()
+    return response.json();
   }
 
   /**
@@ -115,20 +122,23 @@ export class SandboxClient {
     competitionId: string,
     agentId: string,
   ): Promise<JoinCompetitionResponse> {
-    const response = await fetch(`${SANDBOX_API_BASE}/competitions/${competitionId}/agents/${agentId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${SANDBOX_API_BASE}/competitions/${competitionId}/agents/${agentId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
       },
-      credentials: "include", // Include cookies for authentication
-    });
+    );
 
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || "Failed to join competition in sandbox");
     }
 
-    return response.json()
+    return response.json();
   }
 
   /**
@@ -141,23 +151,27 @@ export class SandboxClient {
     agentId: string,
     params: GetAgentCompetitionsParams = {},
   ): Promise<AgentCompetitionsResponse> {
-    const queryParams = this.formatQueryParams(params)
-    const response = await fetch(`${SANDBOX_API_BASE}/agents/${agentId}/competitions${queryParams}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const queryParams = this.formatQueryParams(params);
+    const response = await fetch(
+      `${SANDBOX_API_BASE}/agents/${agentId}/competitions${queryParams}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
       },
-      credentials: "include", // Include cookies for authentication
-    });
+    );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || "Failed to get agent competitions in sandbox");
+      throw new Error(
+        error.error || "Failed to get agent competitions in sandbox",
+      );
     }
 
-    return response.json()
+    return response.json();
   }
-
 
   /**
    * Format query parameters for URL

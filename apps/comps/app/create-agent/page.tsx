@@ -1,13 +1,13 @@
 "use client";
 
-import React, {Suspense, useState} from "react";
+import React, { Suspense, useState } from "react";
 
-import {AuthGuard} from "@/components/auth-guard";
-import {BreadcrumbNav} from "@/components/breadcrumb-nav";
-import {CreateAgent, FormData} from "@/components/create-agent";
-import {ENABLE_SANDBOX} from "@/config";
-import {useUserAgent} from "@/hooks/useAgent";
-import {useCreateAgent} from "@/hooks/useCreateAgent";
+import { AuthGuard } from "@/components/auth-guard";
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import { CreateAgent, FormData } from "@/components/create-agent";
+import { ENABLE_SANDBOX } from "@/config";
+import { useUserAgent } from "@/hooks/useAgent";
+import { useCreateAgent } from "@/hooks/useCreateAgent";
 import {
   useCreateSandboxAgent,
   useCreateSandboxUser,
@@ -20,7 +20,7 @@ function CreateAgentView() {
   const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
   const [sandboxApiKey, setSandboxApiKey] = useState<string | null>(null);
 
-  const {data: agent} = useUserAgent(createdAgentId || undefined);
+  const { data: agent } = useUserAgent(createdAgentId || undefined);
 
   const handleSubmit = async (data: FormData) => {
     // Create agent in the main API
@@ -79,9 +79,9 @@ function CreateAgentView() {
     <AuthGuard>
       <BreadcrumbNav
         items={[
-          {label: "HOME", href: "/competitions"},
-          {label: "USER PROFILE", href: "/profile"},
-          {label: "ADD AGENT"},
+          { label: "HOME", href: "/competitions" },
+          { label: "USER PROFILE", href: "/profile" },
+          { label: "ADD AGENT" },
         ]}
       />
       <CreateAgent
