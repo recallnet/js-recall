@@ -63,10 +63,24 @@ export function useSiweAuth() {
       setIsAuthenticating(false);
       return true;
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Authentication failed";
+
+      // Don't log or show errors for user cancellations
+      if (
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("User denied") ||
+        errorMessage.includes("User cancelled") ||
+        errorMessage.includes("cancelled") ||
+        errorMessage.includes("rejected")
+      ) {
+        setIsAuthenticating(false);
+        setAuthError(null); // Clear any error state
+        return false; // Return false instead of throwing
+      }
+
       console.error(`❌ [SIWE] Authentication failed:`, error);
-      setAuthError(
-        error instanceof Error ? error.message : "Authentication failed",
-      );
+      setAuthError(errorMessage);
       setIsAuthenticating(false);
       throw error;
     }

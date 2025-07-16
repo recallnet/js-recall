@@ -133,10 +133,11 @@ export const SIWEButton: React.FunctionComponent = () => {
   return (
     <ConnectKitButton.Custom>
       {({ isConnected: ckIsConnected, show, address }) => {
-        // Show sign message button if connected but not authenticated
-        if ((isConnected || ckIsConnected) && address) {
-          return (
-            <div className="space-y-2">
+        // Consistent container for all button states
+        return (
+          <div className="flex flex-col items-center space-y-2">
+            {/* Button - consistent positioning regardless of state */}
+            {(isConnected || ckIsConnected) && address ? (
               <Button
                 onClick={handleSignMessage}
                 disabled={isAuthenticating}
@@ -145,9 +146,17 @@ export const SIWEButton: React.FunctionComponent = () => {
               >
                 {isAuthenticating ? "Signing..." : "Sign Message"}
               </Button>
+            ) : (
+              <Button onClick={show} variant="ghost" className="h-full px-6">
+                JOIN / SIGN IN
+              </Button>
+            )}
 
-              {/* Mobile help text when signing */}
-              {isAuthenticating && isMobile && (
+            {/* Mobile help text when signing - only show when connected and authenticating */}
+            {(isConnected || ckIsConnected) &&
+              address &&
+              isAuthenticating &&
+              isMobile && (
                 <div className="mx-auto max-w-sm rounded-lg border border-slate-700 bg-slate-800 p-4 shadow-lg">
                   <div className="flex items-start space-x-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20">
@@ -166,18 +175,11 @@ export const SIWEButton: React.FunctionComponent = () => {
                 </div>
               )}
 
-              {authError && (
-                <p className="text-center text-sm text-red-400">{authError}</p>
-              )}
-            </div>
-          );
-        }
-
-        // Show connect button if not connected
-        return (
-          <Button onClick={show} variant="ghost" className="h-full px-6">
-            JOIN / SIGN IN
-          </Button>
+            {/* Error message - only show when connected and there's an error */}
+            {(isConnected || ckIsConnected) && address && authError && (
+              <p className="text-center text-sm text-red-400">{authError}</p>
+            )}
+          </div>
         );
       }}
     </ConnectKitButton.Custom>
