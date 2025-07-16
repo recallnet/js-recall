@@ -142,13 +142,17 @@ export const SIWEButton: React.FunctionComponent = () => {
                 onClick={handleSignMessage}
                 disabled={isAuthenticating}
                 variant="ghost"
-                className="h-full px-6"
+                className="h-14 rounded-none px-6 uppercase"
               >
                 {isAuthenticating ? "Signing..." : "Sign Message"}
               </Button>
             ) : (
-              <Button onClick={show} variant="ghost" className="h-full px-6">
-                JOIN / SIGN IN
+              <Button
+                onClick={show}
+                variant="ghost"
+                className="h-14 rounded-none px-6 uppercase"
+              >
+                Join / Sign In
               </Button>
             )}
 
