@@ -41,7 +41,7 @@ export const Card: React.FC<CardProps> = ({
     const bl = cornerCropMap["bottom-left"];
     const br = cornerCropMap["bottom-right"];
 
-    let points = [];
+    const points = [];
 
     // Top-left corner
     if (tl > 0) {
