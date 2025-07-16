@@ -1,14 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useIsClient } from "@uidotdev/usehooks";
-import { useAtom } from "jotai";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useIsClient} from "@uidotdev/usehooks";
+import {useAtom} from "jotai";
+import {useRouter} from "next/navigation";
+import {useEffect, useMemo} from "react";
 
-import { DEFAULT_REDIRECT_URL } from "@/constants";
-import { useProfile } from "@/hooks/useProfile";
-import { ApiClient } from "@/lib/api-client";
-import { userAtom } from "@/state/atoms";
-import { LoginRequest, ProfileResponse } from "@/types";
+import {DEFAULT_REDIRECT_URL} from "@/constants";
+import {useProfile} from "@/hooks/useProfile";
+import {ApiClient} from "@/lib/api-client";
+import {userAtom} from "@/state/atoms";
+import {LoginRequest, ProfileResponse} from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -38,13 +38,13 @@ export const useLogin = () => {
       return apiClient.login(data);
     },
     onSuccess: () => {
-      setUserAtom({ user: null, status: "authenticated" });
+      setUserAtom({user: null, status: "authenticated"});
 
       // Trigger profile refetch
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({queryKey: ["profile"]});
 
       // Trigger competitions refetch
-      queryClient.invalidateQueries({ queryKey: ["competitions"] });
+      queryClient.invalidateQueries({queryKey: ["competitions"]});
     },
   });
 };
@@ -60,7 +60,7 @@ export const useClientCleanup = () => {
   return () => {
     // Clear all queries from cache
     queryClient.clear();
-    setUserAtom({ user: null, status: "unauthenticated" });
+    setUserAtom({user: null, status: "unauthenticated"});
   };
 };
 
@@ -108,21 +108,21 @@ export const useLogout = () => {
  */
 export type UserSessionState =
   | {
-      /** Indicates if the session state has been initialized on the client. */
-      isInitialized: false;
-    }
+    /** Indicates if the session state has been initialized on the client. */
+    isInitialized: false;
+  }
   | {
-      /** Indicates if the session state has been initialized on the client. */
-      isInitialized: true;
-      /** The user profile, or null if not authenticated. */
-      user: ProfileResponse["user"] | null;
-      /** True if the user is authenticated. */
-      isAuthenticated: boolean;
-      /** True if the user's profile is updated (e.g., has a name). */
-      isProfileUpdated: boolean;
-      /** Indicates if the profile is loading. */
-      isLoading: boolean;
-    };
+    /** Indicates if the session state has been initialized on the client. */
+    isInitialized: true;
+    /** The user profile, or null if not authenticated. */
+    user: ProfileResponse["user"] | null;
+    /** True if the user is authenticated. */
+    isAuthenticated: boolean;
+    /** True if the user's profile is updated (e.g., has a name). */
+    isProfileUpdated: boolean;
+    /** Indicates if the profile is loading. */
+    isLoading: boolean;
+  };
 
 export const useUserSession = (): UserSessionState => {
   const [authState, setAuthState] = useAtom(userAtom);
@@ -139,13 +139,13 @@ export const useUserSession = (): UserSessionState => {
 
   useEffect(() => {
     if (profileIsSuccess && profileData) {
-      setAuthState({ user: profileData, status: "authenticated" });
+      setAuthState({user: profileData, status: "authenticated"});
     }
   }, [profileIsSuccess, profileData, setAuthState]);
 
   const sessionState = useMemo<UserSessionState>(() => {
     if (!isClient) {
-      return { isInitialized: false };
+      return {isInitialized: false};
     }
 
     return {

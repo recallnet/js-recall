@@ -14,6 +14,7 @@ import {CopyButton} from "../copy-button";
 import {VisibilityToggle} from "../visibility-toggle";
 import {useProfile} from "@/hooks/useProfile";
 import {useVerifyEmail} from "@/hooks/useVerifyEmail";
+import {useUnlockKeys} from "@/hooks/useUnlockKeys";
 
 /**
  * Component for displaying an API key row with visibility toggle and copy functionality
@@ -59,13 +60,15 @@ const ApiKeyRow = ({
 
 const ApiKeyLocked = () => {
   const {mutate: verifyEmail, isPending} = useVerifyEmail();
+  const {mutation: registerAgentSandbox} = useUnlockKeys('')
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
   const [isLocked, setIsLocked] = useState(true)
 
-  const unlockKeys = () => {
+  const unlockKeys = async () => {
     toast.success(
       "API Keys unlocked successfully"
     );
+    registerAgentSandbox.mutate()
     setIsLocked(false)
   }
 
@@ -175,7 +178,7 @@ export const Credentials = ({
         className,
       )}
     >
-      {isEmailVerified ?
+      {isEmailVerified && false ?
         <>
           <ApiKeyRow
             label="Production API Key"
