@@ -60,6 +60,14 @@ const ApiKeyRow = ({
 const ApiKeyLocked = () => {
   const {mutate: verifyEmail, isPending} = useVerifyEmail();
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
+  const [isLocked, setIsLocked] = useState(true)
+
+  const unlockKeys = () => {
+    toast.success(
+      "API Keys unlocked successfully"
+    );
+    setIsLocked(false)
+  }
 
   const onSendEmail = async () => {
     verifyEmail(undefined, {
@@ -73,6 +81,7 @@ const ApiKeyLocked = () => {
               </span>
             </div>,
           );
+          setEmailVerifyClicked(true)
           setTimeout(setEmailVerifyClicked, 60 * 1000, false); //wait 60 seconds
         } else {
           toast.error(res.message);
@@ -86,13 +95,35 @@ const ApiKeyLocked = () => {
     });
   }
 
+  const button = (
+    <Button
+      onClick={isLocked ? unlockKeys : onSendEmail}
+      disabled={isPending || emailVerifyClicked}
+      className='bg-blue-600 py-7 px-12 text-xs flex gap-3'
+    >
+      {
+        isLocked ?
+          <>
+            <KeyRound className="w-6 h-6 uppercase" strokeWidth={1.3} />
+            <span>Unlock keys</span>
+          </>
+          :
+          <>
+            <Mail className="w-6 h-6" strokeWidth={1.3} />
+            <span>Verify EMAIL</span>
+          </>
+      }
+    </Button>
+  )
+
+
   return (
     <div className="w-full grid grid-cols-1 sm:grid-cols-[30px_200px_1fr_300px] gap-4 items-center">
       <div className="flex items-center justify-center w-8 mx-auto md:mx-0">
         <KeyRound className="w-7 h-7 text-gray-500" strokeWidth={1.3} />
       </div>
 
-      <div className="text-center md:text-left">
+      <div className="text-center sm:text-left">
         <span className="text-sm font-bold block text-secondary-foreground">
           Your API keys are
           <span className="text-red-300 ml-1">locked</span>
@@ -100,33 +131,23 @@ const ApiKeyLocked = () => {
         </span>
       </div>
 
-      <div className="text-center md:text-left">
-        <span className="text-sm text-secondary-foreground">
-          To access Production and Sandbox API keys, verify your email.
-          Once verified, you can unlock them.
-        </span>
+      <div className="text-center sm:text-left">
+        {
+          !isLocked &&
+          <span className="text-sm text-secondary-foreground">
+            To access Production and Sandbox API keys, verify your email.
+            Once verified, you can unlock them.
+          </span>
+        }
       </div>
 
-      <div className="flex justify-center md:justify-end">
+      <div className="flex justify-center sm:justify-end">
         {emailVerifyClicked ? (
           <Tooltip content='You can only send a verification each 60 seconds'>
-            <Button
-              onClick={onSendEmail}
-              disabled={isPending || emailVerifyClicked}
-            >
-              <Mail className="w-6 h-6" strokeWidth={1.3} />
-              <span>Verify EMAIL</span>
-            </Button>
+            {button}
           </Tooltip>
         ) : (
-          <Button
-            onClick={onSendEmail}
-            disabled={isPending || emailVerifyClicked}
-            className='bg-blue-600 py-7 px-12 text-xs flex gap-3'
-          >
-            <Mail className="w-6 h-6" strokeWidth={1.3} />
-            <span>Verify EMAIL</span>
-          </Button>
+          button
         )}
       </div>
     </div>
@@ -141,10 +162,11 @@ export const Credentials = ({
   agent: Agent;
   className?: string;
 }) => {
-  const {isEmailVerified} = useProfile()
+  const {data: user} = useProfile()
   const {data: apiKey, isLoading} = useApiKey(agent.id);
   const {data: sandboxApiKey, isLoading: sandboxLoading} =
     useSandboxAgentApiKey(agent.name);
+  const isEmailVerified = user && user.isEmailVerified
 
   return (
     <div
