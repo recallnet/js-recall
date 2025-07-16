@@ -57,11 +57,9 @@ const ApiKeyRow = ({
 };
 
 const ApiKeyLocked = ({
-  agent,
   isEmailVerified,
   unlockKeysMutation,
 }: {
-  agent: Agent;
   isEmailVerified: boolean;
   unlockKeysMutation: ReturnType<typeof useUnlockKeys>["mutation"];
 }) => {
@@ -191,7 +189,6 @@ export const Credentials = ({
         </>
       ) : (
         <ApiKeyLocked
-          agent={agent}
           isEmailVerified={!!isEmailVerified}
           unlockKeysMutation={mutation}
         />
