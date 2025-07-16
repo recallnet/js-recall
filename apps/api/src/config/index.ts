@@ -293,6 +293,30 @@ export const config = {
   // Maximum trade size as percentage of portfolio value
   // Defaults to 25% if not specified
   maxTradePercentage: parseInt(process.env.MAX_TRADE_PERCENTAGE || "25", 10),
+  // Trading constraints configuration
+  tradingConstraints: {
+    // Default minimum pair age in hours (7 days)
+    defaultMinimumPairAgeHours: parseInt(
+      process.env.DEFAULT_MINIMUM_PAIR_AGE_HOURS || "168",
+      10,
+    ),
+    // Default minimum 24h volume in USD ($100,000)
+    defaultMinimum24hVolumeUsd: parseInt(
+      process.env.DEFAULT_MINIMUM_24H_VOLUME_USD || "100000",
+      10,
+    ),
+    // Default minimum liquidity in USD ($100,000)
+    defaultMinimumLiquidityUsd: parseInt(
+      process.env.DEFAULT_MINIMUM_LIQUIDITY_USD || "100000",
+      10,
+    ),
+    // Default minimum FDV in USD ($1,000,000)
+    defaultMinimumFdvUsd: parseInt(
+      process.env.DEFAULT_MINIMUM_FDV_USD || "1000000",
+      10,
+    ),
+  },
+
   // Logging configuration
   logging: {
     // Sample rate for repository timing logs (0.0 to 1.0)

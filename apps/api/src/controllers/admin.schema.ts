@@ -85,6 +85,14 @@ export const AdminStartCompetitionSchema = z
     endDate: z.iso.datetime().optional(),
     votingStartDate: z.iso.datetime().optional(),
     votingEndDate: z.iso.datetime().optional(),
+    tradingConstraints: z
+      .object({
+        minimumPairAgeHours: z.number().min(0),
+        minimum24hVolumeUsd: z.number().min(0),
+        minimumLiquidityUsd: z.number().min(0),
+        minimumFdvUsd: z.number().min(0),
+      })
+      .optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",

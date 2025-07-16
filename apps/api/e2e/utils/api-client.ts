@@ -361,6 +361,12 @@ export class ApiClient {
           imageUrl?: string;
           votingStartDate?: string;
           votingEndDate?: string;
+          tradingConstraints?: {
+            minimumPairAgeHours?: number;
+            minimum24hVolumeUsd?: number;
+            minimumLiquidityUsd?: number;
+            minimumFdvUsd?: number;
+          };
         }
       | string,
     description?: string,
@@ -371,6 +377,12 @@ export class ApiClient {
     imageUrl?: string,
     votingStartDate?: string,
     votingEndDate?: string,
+    tradingConstraints?: {
+      minimumPairAgeHours?: number;
+      minimum24hVolumeUsd?: number;
+      minimumLiquidityUsd?: number;
+      minimumFdvUsd?: number;
+    },
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       let requestData;
@@ -393,6 +405,7 @@ export class ApiClient {
           imageUrl,
           votingStartDate: votingStartDate || now,
           votingEndDate,
+          tradingConstraints,
         };
       }
 

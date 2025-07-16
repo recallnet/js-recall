@@ -33,6 +33,12 @@ export const ADMIN_USERNAME = "admin";
 export const ADMIN_PASSWORD = "admin123";
 export const ADMIN_EMAIL = "admin@test.com";
 
+export const looseConstraints = {
+  minimum24hVolumeUsd: 5000,
+  minimumFdvUsd: 50000,
+  minimumLiquidityUsd: 5000,
+  minimumPairAgeHours: 0,
+};
 // Flag to track if database is initialized
 let isDatabaseInitialized = false;
 
@@ -143,6 +149,12 @@ export async function startTestCompetition(
   sandboxMode?: boolean,
   externalUrl?: string,
   imageUrl?: string,
+  tradingConstraints?: {
+    minimumPairAgeHours?: number;
+    minimum24hVolumeUsd?: number;
+    minimumLiquidityUsd?: number;
+    minimumFdvUsd?: number;
+  },
 ): Promise<StartCompetitionResponse> {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -155,6 +167,9 @@ export async function startTestCompetition(
     sandboxMode,
     externalUrl,
     imageUrl,
+    undefined, // votingStartDate
+    undefined, // votingEndDate
+    tradingConstraints,
   );
 
   if (!result.success) {

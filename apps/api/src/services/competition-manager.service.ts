@@ -35,6 +35,7 @@ import {
   ConfigurationService,
   PortfolioSnapshotter,
   TradeSimulator,
+  TradingConstraintsService,
   VoteManager,
 } from "@/services/index.js";
 import {
@@ -58,6 +59,13 @@ import {
   AgentQueryParams,
 } from "@/types/sort/agent.js";
 
+interface TradingConstraintsInput {
+  minimumPairAgeHours?: number;
+  minimum24hVolumeUsd?: number;
+  minimumLiquidityUsd?: number;
+  minimumFdvUsd?: number;
+}
+
 /**
  * Competition Manager Service
  * Manages trading competitions with agent-based participation
@@ -71,6 +79,7 @@ export class CompetitionManager {
   private configurationService: ConfigurationService;
   private agentRankService: AgentRankService;
   private voteManager: VoteManager;
+  private tradingConstraintsService: TradingConstraintsService;
 
   constructor(
     balanceManager: BalanceManager,
@@ -80,6 +89,7 @@ export class CompetitionManager {
     configurationService: ConfigurationService,
     agentRankService: AgentRankService,
     voteManager: VoteManager,
+    tradingConstraintsService: TradingConstraintsService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -88,6 +98,7 @@ export class CompetitionManager {
     this.configurationService = configurationService;
     this.agentRankService = agentRankService;
     this.voteManager = voteManager;
+    this.tradingConstraintsService = tradingConstraintsService;
     // Load active competition on initialization
     this.loadActiveCompetition();
   }
@@ -190,9 +201,14 @@ export class CompetitionManager {
    * Start a competition
    * @param competitionId The competition ID
    * @param agentIds Array of agent IDs participating in the competition
+   * @param tradingConstraints Optional trading constraints for the competition
    * @returns The updated competition
    */
-  async startCompetition(competitionId: string, agentIds: string[]) {
+  async startCompetition(
+    competitionId: string,
+    agentIds: string[],
+    tradingConstraints?: TradingConstraintsInput,
+  ) {
     const competition = await findById(competitionId);
     if (!competition) {
       throw new Error(`Competition not found: ${competitionId}`);
@@ -249,6 +265,17 @@ export class CompetitionManager {
     console.log(
       `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
     );
+
+    // Create trading constraints if provided
+    if (tradingConstraints) {
+      await this.tradingConstraintsService.createConstraints({
+        competitionId,
+        ...tradingConstraints,
+      });
+      console.log(
+        `[CompetitionManager] Created trading constraints for competition ${competitionId}`,
+      );
+    }
 
     // Take initial portfolio snapshots
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
