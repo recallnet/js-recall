@@ -102,7 +102,6 @@ export class SandboxClient {
       const error = await response.json();
       throw new Error(error.error || "Failed to get agent competitions in sandbox");
     }
-    console.log('RESPONSE', response)
 
     return response.json()
   }

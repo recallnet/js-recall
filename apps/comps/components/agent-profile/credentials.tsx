@@ -58,9 +58,9 @@ const ApiKeyRow = ({
   );
 };
 
-const ApiKeyLocked = () => {
+const ApiKeyLocked = ({agent}: {agent: Agent}) => {
   const {mutate: verifyEmail, isPending} = useVerifyEmail();
-  const {mutation: registerAgentSandbox} = useUnlockKeys('')
+  const {mutation: registerAgentSandbox} = useUnlockKeys(agent.id)
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
   const [isLocked, setIsLocked] = useState(true)
 
@@ -196,7 +196,7 @@ export const Credentials = ({
           )}
         </>
         :
-        <ApiKeyLocked />
+        <ApiKeyLocked agent={agent} />
       }
     </div>
   );

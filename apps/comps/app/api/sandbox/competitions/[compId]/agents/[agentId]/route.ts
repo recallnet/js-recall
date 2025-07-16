@@ -19,10 +19,9 @@ async function handleJoinCompetition(
   const {agentId, compId} = params
 
   const result = await sandboxAdminRequest<JoinCompetitionResponse>(
-    `/competitions/${compId}/agents/${agentId}`,
+    `/admin/competitions/${compId}/agents/${agentId}`,
     {method: 'POST'}
   );
-
   return createSuccessResponse(result);
 }
 

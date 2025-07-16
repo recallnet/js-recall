@@ -14,6 +14,7 @@ import {socialLinks} from "@/data/social";
 import {useUserSession} from "@/hooks";
 import {Agent} from "@/types";
 import {useVerifyEmail} from "@/hooks/useVerifyEmail";
+import {useUnlockKeys} from "@/hooks/useUnlockKeys";
 
 interface AgentCreatedProps {
   agent: Agent;
@@ -70,16 +71,30 @@ export function AgentCreated({
   apiKey,
   sandboxApiKey,
   redirectToUrl,
+  agent,
 }: AgentCreatedProps) {
   const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
 
   const {mutate: verifyEmail, isPending} = useVerifyEmail();
+  const {mutation: unlockKeys, query: {data}} = useUnlockKeys(agent.id)
   const session = useUserSession();
+
+  React.useEffect(() => {
+    console.log('DATA UNLOCk', data)
+  }, [data])
 
   if (!session.isInitialized) return null;
 
   const {user} = session;
   const isEmailVerified = user && user.isEmailVerified
+
+  const onUnlockKeys = async () => {
+    toast.success(
+      "API Keys unlocked successfully"
+    );
+    unlockKeys.mutate()
+    //setIsLocked(false)
+  }
 
   const onSendEmail = async () => {
     verifyEmail(undefined, {
@@ -165,7 +180,7 @@ export function AgentCreated({
         <span>  Once verified, your API Keys will be available in your Agent’s Profile. Use these keys to connect to our Sandbox and Production environments.</span>
         <div className="w-full flex justify-center">
           <Button
-            onClick={onSendEmail}
+            onClick={onUnlockKeys}
             disabled={!isEmailVerified}
             className={cn(
               'py-7 px-12 text-xs flex gap-3 max-w-[250px] border',
