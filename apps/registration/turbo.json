@@ -3,7 +3,13 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "env": ["ADMIN_API_KEY", "VERCEL_URL", "LOOPS_API_KEY", "NODE_ENV"]
+      "env": [
+        "ADMIN_API_KEY",
+        "VERCEL_URL",
+        "LOOPS_API_KEY",
+        "NODE_ENV",
+        "NEXT_PUBLIC_MAINTENANCE_MODE"
+      ]
     }
   }
 }

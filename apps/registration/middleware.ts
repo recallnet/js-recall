@@ -1,71 +1,45 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-
-// Routes that require authentication
-const PROTECTED_ROUTES = ["/api/protected/"];
-
-// Routes that are public but have redirects when authenticated
-const AUTH_PUBLIC_ROUTES = ["/login"];
+import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Middleware to check authentication for protected routes
- * Uses NextAuth for authentication
+ * Middleware to check maintenance mode and handle basic routing
+ * Simplified version without NextAuth dependency since app uses SIWE
  */
-export default withAuth(
-  function middleware(req) {
-    const { pathname } = req.nextUrl;
-    const token = req.nextauth?.token;
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-    // For protected routes, check if the user is authenticated
-    const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
-      pathname.startsWith(route),
-    );
+  // Check for maintenance mode first - this takes precedence over everything
+  const isMaintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
-    // For public auth routes, redirect if already authenticated
-    const isAuthPublicRoute = AUTH_PUBLIC_ROUTES.some((route) =>
-      pathname.startsWith(route),
-    );
+  // Allow access to the maintenance page itself and static assets during maintenance
+  const isMaintenancePage = pathname === "/maintenance";
+  const isStaticAsset =
+    pathname.startsWith("/_next/") ||
+    pathname === "/favicon.ico" ||
+    pathname.startsWith("/android-chrome-") ||
+    pathname.startsWith("/apple-touch-icon") ||
+    // Only allow specific static file extensions
+    /\.(png|jpg|jpeg|gif|svg|ico|css|js|woff|woff2|ttf|eot)$/i.test(pathname);
 
-    // If authenticated and trying to access auth routes (login), redirect to dashboard
-    if (token && isAuthPublicRoute) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
+  // If in maintenance mode, redirect all non-maintenance, non-static routes to maintenance page
+  if (isMaintenanceMode && !isMaintenancePage && !isStaticAsset) {
+    return NextResponse.redirect(new URL("/maintenance", req.url));
+  }
 
-    // Continue for all other paths
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      // Only run this middleware on the specified paths
-      authorized: ({ token, req }) => {
-        const { pathname } = req.nextUrl;
+  // If not in maintenance mode but trying to access maintenance page, redirect to home
+  if (!isMaintenanceMode && isMaintenancePage) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
 
-        // Check if the route needs protection
-        const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
-          pathname.startsWith(route),
-        );
-
-        // For protected routes, require authentication
-        if (isProtectedRoute) {
-          return !!token;
-        }
-
-        // For all other routes, allow access regardless of auth status
-        return true;
-      },
-    },
-  },
-);
+  // Continue for all other paths
+  return NextResponse.next();
+}
 
 /**
- * Configure middleware to run on specific paths
+ * Configure middleware to run on all routes for maintenance mode check
  */
 export const config = {
   matcher: [
-    // Apply middleware to protected API routes
-    "/api/protected/:path*",
-    // Apply to auth public routes (login, register, etc.)
-    "/login",
+    // Apply middleware to all routes except static assets
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
