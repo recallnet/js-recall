@@ -14,10 +14,12 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentCard } from "@/components/user-agents/agent-card";
 import AgentsSummary from "@/components/user-agents/agents-summary";
+import { useAnalytics } from "@/hooks/usePostHog";
 import { Agent } from "@/types";
 
 export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
-  let agentList = <NoAgents />;
+  const { trackEvent } = useAnalytics();
+  let agentList: React.ReactNode;
   const nAgents = agents.length;
 
   const bestPlacement = useMemo(
@@ -111,6 +113,10 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
       </div>
     );
 
+  if (nAgents === 0) {
+    agentList = <NoAgents trackEvent={trackEvent} />;
+  }
+
   return (
     <Collapsible defaultOpen className="my-7">
       <CollapsibleTrigger>
@@ -120,7 +126,12 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
             <span className="text-secondary-foreground">({nAgents})</span>
           </div>
           <Button asChild>
-            <Link href="/create-agent">{"+ ADD AGENT"}</Link>
+            <Link
+              href="/create-agent"
+              onClick={() => trackEvent("UserClickedAddAgentButton")}
+            >
+              {"+ ADD AGENT"}
+            </Link>
           </Button>
         </div>
       </CollapsibleTrigger>
@@ -129,7 +140,11 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
   );
 }
 
-const NoAgents = () => {
+const NoAgents = ({
+  trackEvent,
+}: {
+  trackEvent: (eventName: string, properties?: Record<string, unknown>) => void;
+}) => {
   return (
     <div className="relative h-[350px] w-full">
       <div className="md:px-50 2xl:px-100 flex w-full flex-col items-center px-10 pt-10 text-center sm:px-20">
@@ -140,7 +155,12 @@ const NoAgents = () => {
           {`Kick things off by creating your very first AI agent. It'll start competing and climbing the leaderboard in no time!`}
         </span>
         <Button asChild className="mt-6 w-40 whitespace-nowrap px-8 py-5">
-          <Link href="/create-agent">{"+ ADD AGENT"}</Link>
+          <Link
+            href="/create-agent"
+            onClick={() => trackEvent("UserClickedAddAgentButton")}
+          >
+            {"+ ADD AGENT"}
+          </Link>
         </Button>
       </div>
       <Image

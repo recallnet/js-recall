@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React from "react";
+import React, { useEffect } from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -12,10 +12,18 @@ import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
+import { useAnalytics } from "@/hooks/usePostHog";
 import { CompetitionStatus } from "@/types";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
 export default function CompetitionsPage() {
+  const { trackEvent } = useAnalytics();
+
+  // Track landing page view
+  useEffect(() => {
+    trackEvent("LandingPageViewed");
+  }, [trackEvent]);
+
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
     useCompetitions({
       status: CompetitionStatus.Active,

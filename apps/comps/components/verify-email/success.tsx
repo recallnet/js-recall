@@ -3,10 +3,17 @@
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useEffect } from "react";
+
+import { useAnalytics } from "@/hooks/usePostHog";
 
 export default function SuccessVerifyEmail() {
   const router = useRouter();
+  const { trackEvent } = useAnalytics();
+
+  useEffect(() => {
+    trackEvent("UserVerifiedEmail");
+  }, [trackEvent]);
 
   React.useEffect(() => {
     const interval = setTimeout(() => router.push("/profile"), 4000);
