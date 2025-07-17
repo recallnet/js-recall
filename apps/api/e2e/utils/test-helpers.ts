@@ -174,6 +174,8 @@ export async function createTestCompetition(
   type?: string,
   votingStartDate?: string,
   votingEndDate?: string,
+  joinStartDate?: string,
+  joinEndDate?: string,
 ): Promise<CreateCompetitionResponse> {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -189,6 +191,8 @@ export async function createTestCompetition(
     undefined, // endDate
     votingStartDate,
     votingEndDate,
+    joinStartDate,
+    joinEndDate,
   );
 
   if (!result.success) {

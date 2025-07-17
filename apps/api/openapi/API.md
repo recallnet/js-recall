@@ -81,12 +81,12 @@ Create a new competition without starting it. It will be in PENDING status and c
 
 ##### Responses
 
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 201  | Competition created successfully             |
-| 400  | Missing required parameters                  |
-| 401  | Unauthorized - Admin authentication required |
-| 500  | Server error                                 |
+| Code | Description                                                                                                                   |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 201  | Competition created successfully                                                                                              |
+| 400  | Bad Request - Various validation errors: - Missing required parameters - joinStartDate must be before or equal to joinEndDate |
+| 401  | Unauthorized - Admin authentication required                                                                                  |
+| 500  | Server error                                                                                                                  |
 
 ##### Security
 
@@ -1335,14 +1335,14 @@ Register an agent for a pending competition
 
 ##### Responses
 
-| Code | Description                                                                                                                                                                                                                                       |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 200  | Successfully joined competition                                                                                                                                                                                                                   |
-| 400  | Bad request - Invalid UUID format for competitionId or agentId                                                                                                                                                                                    |
-| 401  | Unauthorized - Missing or invalid authentication                                                                                                                                                                                                  |
-| 403  | Forbidden - Various business rule violations: - Cannot join competition that has already started/ended - Agent does not belong to requesting user - Agent is already registered for this competition - Agent is not eligible to join competitions |
-| 404  | Competition or agent not found                                                                                                                                                                                                                    |
-| 500  | Server error                                                                                                                                                                                                                                      |
+| Code | Description                                                                                                                                                                                                                                                                                                                                                            |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200  | Successfully joined competition                                                                                                                                                                                                                                                                                                                                        |
+| 400  | Bad request - Invalid UUID format for competitionId or agentId                                                                                                                                                                                                                                                                                                         |
+| 401  | Unauthorized - Missing or invalid authentication                                                                                                                                                                                                                                                                                                                       |
+| 403  | Forbidden - Various business rule violations: - Cannot join competition that has already started/ended - Competition joining has not yet opened (before joinStartDate) - Competition joining has closed (after joinEndDate) - Agent does not belong to requesting user - Agent is already registered for this competition - Agent is not eligible to join competitions |
+| 404  | Competition or agent not found                                                                                                                                                                                                                                                                                                                                         |
+| 500  | Server error                                                                                                                                                                                                                                                                                                                                                           |
 
 ##### Security
 
@@ -1477,32 +1477,6 @@ Get global leaderboard data across all relevant competitions
 | 200  | Global leaderboard data |
 | 400  | Invalid parameters      |
 | 500  | Server error            |
-
-### /api/metrics
-
-#### GET
-
-##### Summary:
-
-Get Prometheus metrics
-
-##### Description:
-
-Expose Prometheus metrics for monitoring (admin-only endpoint)
-
-##### Responses
-
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 200  | Prometheus metrics in text format            |
-| 401  | Unauthorized - Admin authentication required |
-| 500  | Error generating metrics                     |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| BearerAuth      |        |
 
 ### /api/price
 

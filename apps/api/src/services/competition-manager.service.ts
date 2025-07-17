@@ -40,10 +40,12 @@ import {
 import {
   ACTOR_STATUS,
   COMPETITION_AGENT_STATUS,
+  COMPETITION_JOIN_ERROR_TYPES,
   COMPETITION_STATUS,
   COMPETITION_TYPE,
   CROSS_CHAIN_TRADING_TYPE,
   CompetitionAgentStatus,
+  CompetitionJoinError,
   CompetitionStatus,
   CompetitionStatusSchema,
   CompetitionType,
@@ -120,6 +122,8 @@ export class CompetitionManager {
    * @param endDate Optional end date for the competition
    * @param votingStartDate Optional voting start date
    * @param votingEndDate Optional voting end date
+   * @param joinStartDate Optional start date for joining the competition
+   * @param joinEndDate Optional end date for joining the competition
    * @returns The created competition
    */
   async createCompetition(
@@ -133,6 +137,8 @@ export class CompetitionManager {
     endDate?: Date,
     votingStartDate?: Date,
     votingEndDate?: Date,
+    joinStartDate?: Date,
+    joinEndDate?: Date,
   ) {
     const id = uuidv4();
     const competition = {
@@ -145,6 +151,8 @@ export class CompetitionManager {
       endDate: endDate || null,
       votingStartDate: votingStartDate || null,
       votingEndDate: votingEndDate || null,
+      joinStartDate: joinStartDate || null,
+      joinEndDate: joinEndDate || null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
       sandboxMode,
@@ -969,7 +977,28 @@ export class CompetitionManager {
       throw new Error("Agent does not belong to requesting user");
     }
 
-    // 4. Check agent status is eligible
+    // 4. Check join date constraints FIRST (must take precedence over other errors)
+    const now = new Date();
+
+    if (competition.joinStartDate && now < competition.joinStartDate) {
+      const error = new Error(
+        `Competition joining opens at ${competition.joinStartDate.toISOString()}`,
+      ) as CompetitionJoinError;
+      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN;
+      error.code = 403;
+      throw error;
+    }
+
+    if (competition.joinEndDate && now > competition.joinEndDate) {
+      const error = new Error(
+        `Competition joining closed at ${competition.joinEndDate.toISOString()}`,
+      ) as CompetitionJoinError;
+      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED;
+      error.code = 403;
+      throw error;
+    }
+
+    // 5. Check agent status is eligible
     if (
       agent.status === ACTOR_STATUS.DELETED ||
       agent.status === ACTOR_STATUS.SUSPENDED
@@ -977,12 +1006,12 @@ export class CompetitionManager {
       throw new Error("Agent is not eligible to join competitions");
     }
 
-    // 5. Check if competition status is pending
+    // 6. Check if competition status is pending
     if (competition.status !== COMPETITION_STATUS.PENDING) {
       throw new Error("Cannot join competition that has already started/ended");
     }
 
-    // 6. Check if agent is already actively registered
+    // 7. Check if agent is already actively registered
     const isAlreadyActive = await isAgentActiveInCompetition(
       competitionId,
       agentId,

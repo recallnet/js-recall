@@ -359,6 +359,9 @@ export interface Competition {
   votingEndDate: string | null;
   votingEnabled?: boolean;
   userVotingInfo?: CompetitionVotingState;
+  // Join date constraint fields
+  joinStartDate: string | null;
+  joinEndDate: string | null;
 }
 
 // Leaderboard entry (per-competition leaderboard)

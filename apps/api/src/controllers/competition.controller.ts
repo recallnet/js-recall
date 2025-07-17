@@ -5,8 +5,10 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
+  COMPETITION_JOIN_ERROR_TYPES,
   COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
+  CompetitionJoinError,
   CompetitionStatusSchema,
   PagingParamsSchema,
 } from "@/types/index.js";
@@ -783,7 +785,28 @@ export function makeCompetitionController(services: ServiceRegistry) {
           message: "Successfully joined competition",
         });
       } catch (error) {
-        // Convert service layer errors to appropriate HTTP errors
+        // Handle typed competition join errors
+        if (error && typeof error === "object" && "type" in error) {
+          const joinError = error as CompetitionJoinError;
+          switch (joinError.type) {
+            case COMPETITION_JOIN_ERROR_TYPES.COMPETITION_NOT_FOUND:
+            case COMPETITION_JOIN_ERROR_TYPES.AGENT_NOT_FOUND:
+              next(new ApiError(404, joinError.message));
+              break;
+            case COMPETITION_JOIN_ERROR_TYPES.COMPETITION_ALREADY_STARTED:
+            case COMPETITION_JOIN_ERROR_TYPES.AGENT_ALREADY_REGISTERED:
+            case COMPETITION_JOIN_ERROR_TYPES.AGENT_NOT_ELIGIBLE:
+            case COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN:
+            case COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED:
+              next(new ApiError(403, joinError.message));
+              break;
+            default:
+              next(new ApiError(500, "Failed to join competition"));
+          }
+          return;
+        }
+
+        // Handle legacy string-based errors (fallback for existing code)
         if (error instanceof Error) {
           if (error.message.includes("not found")) {
             next(new ApiError(404, error.message));
