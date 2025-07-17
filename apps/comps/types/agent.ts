@@ -33,6 +33,7 @@ export interface Agent {
     bestPnl: number;
     totalVotes: number;
     totalTrades: number;
+    totalRoi?: number | null;
     completedCompetitions: number;
     rank?: number;
   };
