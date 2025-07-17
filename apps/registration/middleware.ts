@@ -14,9 +14,11 @@ export function middleware(req: NextRequest) {
   const isMaintenancePage = pathname === "/maintenance";
   const isStaticAsset =
     pathname.startsWith("/_next/") ||
-    pathname.startsWith("/api/") ||
-    pathname.includes(".") || // images, favicon, etc.
-    pathname === "/favicon.ico";
+    pathname === "/favicon.ico" ||
+    pathname.startsWith("/android-chrome-") ||
+    pathname.startsWith("/apple-touch-icon") ||
+    // Only allow specific static file extensions
+    /\.(png|jpg|jpeg|gif|svg|ico|css|js|woff|woff2|ttf|eot)$/i.test(pathname);
 
   // If in maintenance mode, redirect all non-maintenance, non-static routes to maintenance page
   if (isMaintenanceMode && !isMaintenancePage && !isStaticAsset) {
