@@ -977,15 +977,7 @@ export class CompetitionManager {
       throw new Error("Agent does not belong to requesting user");
     }
 
-    // 4. Check agent status is eligible
-    if (
-      agent.status === ACTOR_STATUS.DELETED ||
-      agent.status === ACTOR_STATUS.SUSPENDED
-    ) {
-      throw new Error("Agent is not eligible to join competitions");
-    }
-
-    // 5. Check join date constraints (only if dates are provided)
+    // 4. Check join date constraints FIRST (must take precedence over other errors)
     const now = new Date();
 
     if (competition.joinStartDate && now < competition.joinStartDate) {
@@ -1004,6 +996,14 @@ export class CompetitionManager {
       error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED;
       error.code = 403;
       throw error;
+    }
+
+    // 5. Check agent status is eligible
+    if (
+      agent.status === ACTOR_STATUS.DELETED ||
+      agent.status === ACTOR_STATUS.SUSPENDED
+    ) {
+      throw new Error("Agent is not eligible to join competitions");
     }
 
     // 6. Check if competition status is pending

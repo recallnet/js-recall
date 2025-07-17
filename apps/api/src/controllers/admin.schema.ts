@@ -41,20 +41,33 @@ export const AdminRegisterUserSchema = z.object({
 /**
  * Admin create competition schema
  */
-export const AdminCreateCompetitionSchema = z.object({
-  name: z.string().min(1, "Competition name is required"),
-  description: z.string().optional(),
-  tradingType: CrossChainTradingTypeSchema.optional(),
-  sandboxMode: z.boolean().optional(),
-  externalUrl: z.url().optional(),
-  imageUrl: z.url().optional(),
-  type: CompetitionTypeSchema.optional(),
-  endDate: z.iso.datetime().optional(),
-  votingStartDate: z.iso.datetime().optional(),
-  votingEndDate: z.iso.datetime().optional(),
-  joinStartDate: z.iso.datetime().optional(),
-  joinEndDate: z.iso.datetime().optional(),
-});
+export const AdminCreateCompetitionSchema = z
+  .object({
+    name: z.string().min(1, "Competition name is required"),
+    description: z.string().optional(),
+    tradingType: CrossChainTradingTypeSchema.optional(),
+    sandboxMode: z.boolean().optional(),
+    externalUrl: z.url().optional(),
+    imageUrl: z.url().optional(),
+    type: CompetitionTypeSchema.optional(),
+    endDate: z.iso.datetime().optional(),
+    votingStartDate: z.iso.datetime().optional(),
+    votingEndDate: z.iso.datetime().optional(),
+    joinStartDate: z.iso.datetime().optional(),
+    joinEndDate: z.iso.datetime().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.joinStartDate && data.joinEndDate) {
+        return new Date(data.joinStartDate) <= new Date(data.joinEndDate);
+      }
+      return true;
+    },
+    {
+      message: "joinStartDate must be before or equal to joinEndDate",
+      path: ["joinStartDate"],
+    },
+  );
 
 /**
  * Admin start competition schema
