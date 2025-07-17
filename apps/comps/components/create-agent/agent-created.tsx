@@ -115,7 +115,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
   const showKeys = isEmailVerified && isUnlocked && hasKeys && !isLoadingKeys;
 
   return (
-    <div className="mb-10 flex flex-col">
+    <div className="mb-20 flex flex-col">
       <p className="text-secondary-foreground">
         Thanks, <span className="text-primary-foreground">{user?.name}!</span>
       </p>
@@ -189,8 +189,8 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
                   disabled={isPending || emailVerifyClicked}
                   className="flex max-w-[250px] gap-3 bg-blue-600 px-12 py-7 text-xs"
                 >
-                  <Mail className="h-6 w-6" strokeWidth={1.3} />
-                  <span>Verify EMAIL</span>
+                  <Mail className="h-6 w-6 uppercase" strokeWidth={1.3} />
+                  <span>Verify email</span>
                 </Button>
               </div>
             )}
@@ -213,7 +213,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
             <div className="flex w-full justify-center">
               <Button
                 onClick={onUnlockKeys}
-                disabled={!isEmailVerified || isLoadingKeys}
+                disabled={!isEmailVerified || unlockKeys.isPending}
                 className={cn(
                   "flex max-w-[250px] gap-3 border px-12 py-7 text-xs",
                   isEmailVerified ? "bg-blue-700" : "bg-transparent",
@@ -221,7 +221,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
               >
                 <KeyRound className="h-6 w-6" strokeWidth={1.3} />
                 <span className="uppercase">
-                  {isLoadingKeys ? "Loading..." : "Unlock keys"}
+                  {unlockKeys.isPending ? "Loading..." : "Unlock keys"}
                 </span>
               </Button>
             </div>
@@ -240,6 +240,21 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
         </Link>{" "}
         community.
       </p>
+      <div className="xs:flex-row mt-8 flex flex-col justify-center gap-2">
+        <Link
+          href="https://docs.recall.network/competitions/guides/verify-agent-wallet"
+          target="_blank"
+        >
+          <Button variant="outline" className="w-full px-10 uppercase">
+            READ QUICKSTART DOCS
+          </Button>
+        </Link>
+        <Link href={`/agents/${agent.id}`}>
+          <Button className="w-full px-10 uppercase">
+            GO TO AGENT PROFILE
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }

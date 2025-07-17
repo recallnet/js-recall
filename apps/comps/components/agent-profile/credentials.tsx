@@ -2,6 +2,7 @@ import { KeyRound, Mail } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { toast } from "@recallnet/ui2/components/toast";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
@@ -109,8 +110,8 @@ const ApiKeyLocked = ({
         </>
       ) : (
         <>
-          <Mail className="h-6 w-6" strokeWidth={1.3} />
-          <span>Verify EMAIL</span>
+          <Mail className="h-6 w-6 uppercase" strokeWidth={1.3} />
+          <span>Verify email</span>
         </>
       )}
     </Button>
@@ -170,7 +171,13 @@ export const Credentials = ({
         className,
       )}
     >
-      {isEmailVerified && isUnlocked ? (
+      {/* Show loading state if keys are still loading */}
+      {isLoadingKeys ? (
+        <div className="flex flex-col gap-6">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ) : isEmailVerified && isUnlocked ? (
         <>
           <ApiKeyRow
             label="Production API Key"

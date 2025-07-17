@@ -155,7 +155,7 @@ export class SandboxClient {
     const response = await fetch(
       `${SANDBOX_API_BASE}/agents/${agentId}/competitions${queryParams}`,
       {
-        method: "POST",
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
