@@ -11,6 +11,8 @@ import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 
 import { clientConfig } from "@/wagmi-config";
 
+import { PostHogProviderWrapper } from "./posthog-provider";
+
 const CONFIG = clientConfig();
 
 function WalletProvider(props: { children: ReactNode }) {
@@ -47,9 +49,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableColorScheme
     >
       <QueryClientProvider client={queryClient}>
-        <WalletProvider>
-          <NavigationGuardProvider>{children}</NavigationGuardProvider>
-        </WalletProvider>
+        <PostHogProviderWrapper>
+          <WalletProvider>
+            <NavigationGuardProvider>{children}</NavigationGuardProvider>
+          </WalletProvider>
+        </PostHogProviderWrapper>
       </QueryClientProvider>
     </ThemeProvider>
   );
