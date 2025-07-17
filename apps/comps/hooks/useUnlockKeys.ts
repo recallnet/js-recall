@@ -24,10 +24,6 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
     queryKey: ["agent-api-key", agentId],
     queryFn: async () => {
       if (!agentId) throw new Error("Agent ID required");
-      console.log(
-        "[useUnlockKeys] Fetching production key for agent:",
-        agentId,
-      );
       return await apiClient.getAgentApiKey(agentId);
     },
     enabled: !!agentId && !!isEmailVerified && hasTriggeredUnlock,
@@ -37,7 +33,6 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
   const sandboxKeyQuery = useQuery({
     queryKey: ["sandbox-agent-api-key", agentName],
     queryFn: async () => {
-      console.log("[useUnlockKeys] Fetching sandbox key for agent:", agentName);
       try {
         return await sandboxClient.getAgentApiKey(agentName);
       } catch (error) {
@@ -67,18 +62,6 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
   const hasSandboxKey = !!sandboxKeyQuery.data?.agent?.apiKey;
   const isUnlocked = hasProductionKey || hasSandboxKey;
 
-  console.log("[useUnlockKeys] State:", {
-    isEmailVerified,
-    hasTriggeredUnlock,
-    isUnlocked,
-    hasProductionKey,
-    hasSandboxKey,
-    productionKeyData: productionKeyQuery.data,
-    sandboxKeyData: sandboxKeyQuery.data,
-    agentName,
-    agentId,
-  });
-
   const mutation = useMutation({
     mutationFn: async () => {
       // First, check if user's email is verified in production
@@ -94,20 +77,6 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
         );
       }
 
-      // Try to get the agent's API key from sandbox first
-      // If this succeeds, the agent is already set up and we don't need to join
-      try {
-        const agentApiKeyRes = await sandboxClient.getAgentApiKey(agentName);
-        console.log(
-          "[useUnlockKeys] Agent already has sandbox access:",
-          agentApiKeyRes,
-        );
-        return { alreadyJoined: true };
-      } catch (error) {
-        // If agent doesn't have access yet, we need to join a competition
-        console.log("[useUnlockKeys] Agent needs to join competition:", error);
-      }
-
       // Get sandbox competitions
       const competitionsRes = await sandboxClient.getCompetitions();
 
@@ -115,9 +84,8 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
         throw new Error("No sandbox competitions");
       }
 
-      // Create/get the agent in sandbox and join the competition
+      // Get the agent from sandbox and join the competition
       try {
-        // This might fail if agent doesn't exist in sandbox yet, but that's handled by the API
         const agentApiKeyRes = await sandboxClient.getAgentApiKey(agentName);
         const sandboxAgentId = agentApiKeyRes.agent.id;
 
@@ -129,22 +97,16 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
 
         return { alreadyJoined: false };
       } catch (joinError) {
-        // If joining fails, it might be because the agent is already in the competition
-        console.log(
-          "[useUnlockKeys] Join competition failed (might be already joined):",
-          joinError,
-        );
-
-        // Try to get the keys anyway - if this works, the agent has access
-        try {
-          await sandboxClient.getAgentApiKey(agentName);
+        // Check if the error is because agent is already in competition
+        if (
+          joinError instanceof Error &&
+          joinError.message.includes("already actively registered")
+        ) {
           return { alreadyJoined: true };
-        } catch {
-          // If we can't get keys either, then there's a real problem
-          throw new Error(
-            "Failed to join competition and unable to access agent keys",
-          );
         }
+
+        // For other errors, re-throw
+        throw joinError;
       }
     },
     onSuccess: (result) => {
@@ -173,7 +135,6 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
       }, 100);
     },
     onError: (error) => {
-      console.error("[useUnlockKeys] Unlock failed:", error);
       // Show error message
       toast.error("Failed to unlock keys", {
         description: error.message,
