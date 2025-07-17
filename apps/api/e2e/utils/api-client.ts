@@ -421,6 +421,8 @@ export class ApiClient {
     endDate?: string,
     votingStartDate?: string,
     votingEndDate?: string,
+    joinStartDate?: string,
+    joinEndDate?: string,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -436,6 +438,8 @@ export class ApiClient {
           endDate,
           votingStartDate,
           votingEndDate,
+          joinStartDate,
+          joinEndDate,
         },
       );
 

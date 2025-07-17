@@ -334,6 +334,12 @@
                     "description": "URL to competition image",
                     "example": "https://example.com/competition-image.jpg"
                   },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date for the competition (ISO 8601 format)",
+                    "example": "2024-02-15T23:59:59Z"
+                  },
                   "votingStartDate": {
                     "type": "string",
                     "format": "date-time",
@@ -345,6 +351,18 @@
                     "format": "date-time",
                     "description": "End date for voting (ISO 8601 format)",
                     "example": "2024-01-30T23:59:59Z"
+                  },
+                  "joinStartDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start date for joining the competition (ISO 8601 format)",
+                    "example": "2024-01-01T00:00:00Z"
+                  },
+                  "joinEndDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date for joining the competition (ISO 8601 format)",
+                    "example": "2024-01-14T23:59:59Z"
                   }
                 }
               }
@@ -473,6 +491,12 @@
                     "type": "string",
                     "description": "URL to competition image (used when creating a new competition)",
                     "example": "https://example.com/competition-image.jpg"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date for the competition (ISO 8601 format)",
+                    "example": "2024-02-15T23:59:59Z"
                   },
                   "votingStartDate": {
                     "type": "string",
@@ -5376,7 +5400,7 @@
             "description": "Unauthorized - Missing or invalid authentication"
           },
           "403": {
-            "description": "Forbidden - Various business rule violations:\n- Cannot join competition that has already started/ended\n- Agent does not belong to requesting user\n- Agent is already registered for this competition\n- Agent is not eligible to join competitions\n"
+            "description": "Forbidden - Various business rule violations:\n- Cannot join competition that has already started/ended\n- Competition joining has not yet opened (before joinStartDate)\n- Competition joining has closed (after joinEndDate)\n- Agent does not belong to requesting user\n- Agent is already registered for this competition\n- Agent is not eligible to join competitions\n"
           },
           "404": {
             "description": "Competition or agent not found"
@@ -5799,37 +5823,6 @@
           },
           "500": {
             "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/metrics": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "Get Prometheus metrics",
-        "description": "Expose Prometheus metrics for monitoring (admin-only endpoint)",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Prometheus metrics in text format",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "# HELP http_requests_total Total number of HTTP requests\n# TYPE http_requests_total counter\nhttp_requests_total{method=\"GET\",route=\"/api/agent/profile\",status_code=\"200\"} 42\n\n# HELP http_request_duration_ms Duration of HTTP requests in milliseconds\n# TYPE http_request_duration_ms histogram\nhttp_request_duration_ms_bucket{method=\"GET\",route=\"/api/agent/profile\",status_code=\"200\",le=\"10\"} 15\n\n# HELP repository_queries_total Total number of repository queries\n# TYPE repository_queries_total counter\nrepository_queries_total{repository=\"AgentRepository\",method=\"getAgent\",operation=\"SELECT\"} 28\n"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "500": {
-            "description": "Error generating metrics"
           }
         }
       }

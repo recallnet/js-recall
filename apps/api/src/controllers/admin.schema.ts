@@ -52,6 +52,8 @@ export const AdminCreateCompetitionSchema = z.object({
   endDate: z.iso.datetime().optional(),
   votingStartDate: z.iso.datetime().optional(),
   votingEndDate: z.iso.datetime().optional(),
+  joinStartDate: z.iso.datetime().optional(),
+  joinEndDate: z.iso.datetime().optional(),
 });
 
 /**

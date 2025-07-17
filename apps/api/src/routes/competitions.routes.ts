@@ -890,6 +890,8 @@ export function configureCompetitionsRoutes(
    *         description: |
    *           Forbidden - Various business rule violations:
    *           - Cannot join competition that has already started/ended
+   *           - Competition joining has not yet opened (before joinStartDate)
+   *           - Competition joining has closed (after joinEndDate)
    *           - Agent does not belong to requesting user
    *           - Agent is already registered for this competition
    *           - Agent is not eligible to join competitions

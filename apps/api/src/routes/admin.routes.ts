@@ -79,6 +79,16 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for voting (ISO 8601 format)
    *                 example: "2024-01-30T23:59:59Z"
+   *               joinStartDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: Start date for joining the competition (ISO 8601 format)
+   *                 example: "2024-01-01T00:00:00Z"
+   *               joinEndDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: End date for joining the competition (ISO 8601 format)
+   *                 example: "2024-01-14T23:59:59Z"
    *     responses:
    *       201:
    *         description: Competition created successfully

@@ -399,6 +399,8 @@ export interface Competition {
   endDate: Date | null;
   votingStartDate: Date | null;
   votingEndDate: Date | null;
+  joinStartDate: Date | null;
+  joinEndDate: Date | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
   sandboxMode: boolean; // Controls automatic agent joining behavior
@@ -1119,3 +1121,27 @@ export const AdminSearchUsersAndAgentsQuerySchema = z.strictObject({
 export type AdminSearchUsersAndAgentsQuery = z.infer<
   typeof AdminSearchUsersAndAgentsQuerySchema
 >;
+
+/**
+ * Competition join error types for specific error handling
+ */
+export const COMPETITION_JOIN_ERROR_TYPES = {
+  COMPETITION_NOT_FOUND: "COMPETITION_NOT_FOUND",
+  AGENT_NOT_FOUND: "AGENT_NOT_FOUND",
+  AGENT_NOT_ELIGIBLE: "AGENT_NOT_ELIGIBLE",
+  COMPETITION_ALREADY_STARTED: "COMPETITION_ALREADY_STARTED",
+  AGENT_ALREADY_REGISTERED: "AGENT_ALREADY_REGISTERED",
+  JOIN_NOT_YET_OPEN: "JOIN_NOT_YET_OPEN",
+  JOIN_CLOSED: "JOIN_CLOSED",
+} as const;
+
+export type CompetitionJoinErrorType =
+  (typeof COMPETITION_JOIN_ERROR_TYPES)[keyof typeof COMPETITION_JOIN_ERROR_TYPES];
+
+/**
+ * Competition join error interface
+ */
+export interface CompetitionJoinError extends Error {
+  type: CompetitionJoinErrorType;
+  code: number;
+}
