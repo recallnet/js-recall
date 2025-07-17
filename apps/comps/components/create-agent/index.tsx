@@ -65,16 +65,12 @@ interface CreateAgentProps {
   onSubmit: (data: FormData) => Promise<void>;
   isSubmitting?: boolean;
   agent?: Agent | null;
-  apiKey?: string | null;
-  sandboxApiKey?: string | null;
 }
 
 export function CreateAgent({
   onSubmit,
   isSubmitting,
   agent,
-  apiKey,
-  sandboxApiKey,
 }: CreateAgentProps) {
   const { redirectToUrl } = useRedirectTo("/profile");
   const [currentStep, setCurrentStep] = useState(1);
@@ -106,10 +102,10 @@ export function CreateAgent({
   const navGuard = useNavigationGuard({ enabled: isDirty });
 
   useEffect(() => {
-    if (agent && apiKey) {
+    if (agent) {
       setCurrentStep(3);
     }
-  }, [agent, apiKey]);
+  }, [agent]);
 
   // Handle http errors (like ConflictError)
   useEffect(() => {
@@ -183,13 +179,8 @@ export function CreateAgent({
         <div className="w-full lg:w-2/3">
           <Steps currentStep={currentStep} className="mb-8" />
 
-          {currentStep === 3 && agent && apiKey ? (
-            <AgentCreated
-              agent={agent}
-              apiKey={apiKey}
-              sandboxApiKey={sandboxApiKey}
-              redirectToUrl={redirectToUrl}
-            />
+          {currentStep === 3 && agent ? (
+            <AgentCreated agent={agent} />
           ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)}>
@@ -232,7 +223,9 @@ export function CreateAgent({
           )}
           {currentStep === 3 && agent && (
             <div className="flex flex-col items-center justify-center gap-4">
-              <AgentCard agent={agent} className="w-70 h-95" />
+              <AgentCard agent={agent} className="w-70 h-95">
+                <div className="to-card pointer-events-none absolute inset-0 bg-gradient-to-t from-white/30"></div>
+              </AgentCard>
               <p className="text-secondary-foreground text-center italic">
                 Welcome to Recall,{" "}
                 <span className="text-primary-foreground">{agent.name}</span>!

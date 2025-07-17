@@ -6,6 +6,7 @@ import {
   AdminAgentResponse,
   CompetitionAgentsResponse,
   CompetitionStatusResponse,
+  ErrorResponse,
   SnapshotResponse,
   StartCompetitionResponse,
   UserRegistrationResponse,
@@ -47,8 +48,8 @@ describe("Sandbox Mode", () => {
     expect(loginSuccess).toBe(true);
   });
 
-  describe("when sandboxMode=true, trigger automatic adding agents to active sandbox competition", () => {
-    test("should automatically join newly registered agent to active sandbox competition", async () => {
+  describe("when sandboxMode=true, test manual adding agents to active sandbox competition", () => {
+    test("should allow manually adding agent to active sandbox competition", async () => {
       // First create a dummy user+agent to start the competition with (to avoid "no agents provided" error)
       const dummyUserResponse = await adminClient.registerUser({
         walletAddress: generateRandomEthAddress(),
@@ -91,45 +92,63 @@ describe("Sandbox Mode", () => {
       expect(newUserResponse.success).toBe(true);
       const newUser = (newUserResponse as UserRegistrationResponse).user;
 
-      // Now register an agent for this user using the registerAgent route (which has auto-join logic)
+      // Now register an agent for this user
       const newAgentResponse = await adminClient.registerAgent({
         user: {
           walletAddress: newUser.walletAddress,
         },
         agent: {
           name: "New Sandbox Agent",
-          description: "Agent that should auto-join sandbox competition",
+          description:
+            "Agent that should be manually added to sandbox competition",
           walletAddress: generateRandomEthAddress(),
         },
       });
       expect(newAgentResponse.success).toBe(true);
       const newAgent = (newAgentResponse as AdminAgentResponse).agent;
 
-      // Wait a moment for auto-join processing
-      await wait(100);
-
-      // Check that the new agent was automatically added to the competition
-      const competitionAgentsResponse = await adminClient.getCompetitionAgents(
+      // NO AUTO-JOIN should happen - verify agent is NOT in competition yet
+      let competitionAgentsResponse = await adminClient.getCompetitionAgents(
         competition.id,
       );
       expect(competitionAgentsResponse.success).toBe(true);
-      const competitionAgents =
+      let competitionAgents =
+        competitionAgentsResponse as CompetitionAgentsResponse;
+      expect(competitionAgents.agents.length).toBe(1); // Only dummy agent
+      expect(competitionAgents.agents[0]?.id).toBe(dummyAgent!.id);
+
+      // MANUALLY add the agent to the competition using the new admin endpoint
+      const addAgentResponse = await adminClient.addAgentToCompetition(
+        competition.id,
+        newAgent.id,
+      );
+      expect(addAgentResponse.success).toBe(true);
+
+      // Wait a moment for processing
+      await wait(100);
+
+      // Now check that the agent was manually added to the competition
+      competitionAgentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(competitionAgentsResponse.success).toBe(true);
+      competitionAgents =
         competitionAgentsResponse as CompetitionAgentsResponse;
 
-      // Should have both the dummy agent and the newly registered agent
+      // Should have both the dummy agent and the manually added agent
       expect(competitionAgents.agents.length).toBe(2);
       const agentIds = competitionAgents.agents.map((agent) => agent.id);
       expect(agentIds).toContain(dummyAgent!.id);
-      expect(agentIds).toContain(newAgent!.id);
+      expect(agentIds).toContain(newAgent.id);
 
-      // Verify the new agent has active status in the competition
+      // Verify the manually added agent has active status in the competition
       const newAgentInCompetition = competitionAgents.agents.find(
-        (agent) => agent.id === newAgent!.id,
+        (agent) => agent.id === newAgent.id,
       );
       expect(newAgentInCompetition?.active).toBe(true);
     });
 
-    test("should not auto-join agents when sandboxMode=false", async () => {
+    test("should reject adding agents to active non-sandbox competitions", async () => {
       // Create a dummy user+agent to start the competition with
       const dummyUserResponse = await adminClient.registerUser({
         walletAddress: generateRandomEthAddress(),
@@ -172,7 +191,7 @@ describe("Sandbox Mode", () => {
       expect(newUserResponse.success).toBe(true);
       const newUser = (newUserResponse as UserRegistrationResponse).user;
 
-      // Now register an agent for this user using the registerAgent route
+      // Now register an agent for this user
       const newAgentResponse = await adminClient.registerAgent({
         user: {
           walletAddress: newUser.walletAddress,
@@ -180,29 +199,47 @@ describe("Sandbox Mode", () => {
         agent: {
           name: "New Non-Sandbox Agent",
           description:
-            "Agent that should NOT auto-join non-sandbox competition",
+            "Agent that should be rejected from non-sandbox competition",
           walletAddress: generateRandomEthAddress(),
         },
       });
       expect(newAgentResponse.success).toBe(true);
+      const newAgent = (newAgentResponse as AdminAgentResponse).agent;
 
-      // Wait a moment to ensure no auto-join processing occurs
-      await wait(100);
-
-      // Check that the new agent was NOT automatically added to the competition
-      const competitionAgentsResponse = await adminClient.getCompetitionAgents(
+      // Verify no auto-join occurs (same as before)
+      let competitionAgentsResponse = await adminClient.getCompetitionAgents(
         competition.id,
       );
       expect(competitionAgentsResponse.success).toBe(true);
-      const competitionAgents =
+      let competitionAgents =
+        competitionAgentsResponse as CompetitionAgentsResponse;
+      expect(competitionAgents.agents.length).toBe(1);
+      expect(competitionAgents.agents[0]?.id).toBe(dummyAgent!.id);
+
+      // Try to MANUALLY add the agent to the non-sandbox competition - should be REJECTED
+      const addAgentResponse = await adminClient.addAgentToCompetition(
+        competition.id,
+        newAgent.id,
+      );
+      expect(addAgentResponse.success).toBe(false);
+      expect((addAgentResponse as ErrorResponse).error).toContain(
+        "Cannot add agents to active non-sandbox competitions",
+      );
+
+      // Verify the agent was NOT added to the competition
+      competitionAgentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(competitionAgentsResponse.success).toBe(true);
+      competitionAgents =
         competitionAgentsResponse as CompetitionAgentsResponse;
 
-      // Should only have the original dummy agent
+      // Should still only have the original dummy agent
       expect(competitionAgents.agents.length).toBe(1);
       expect(competitionAgents.agents[0]?.id).toBe(dummyAgent!.id);
     });
 
-    test("should not auto-join agents when no active competition exists", async () => {
+    test("should allow agent registration when no active competition exists", async () => {
       // First register a user without an agent
       const newUserResponse = await adminClient.registerUser({
         walletAddress: generateRandomEthAddress(),
@@ -236,7 +273,7 @@ describe("Sandbox Mode", () => {
       expect(agent.status).toBe("active");
     });
 
-    test("should auto-join multiple agents registered during sandbox competition", async () => {
+    test("should allow manually adding multiple agents to sandbox competition", async () => {
       // Create a dummy user+agent to start the competition with
       const dummyUserResponse = await adminClient.registerUser({
         walletAddress: generateRandomEthAddress(),
@@ -261,7 +298,7 @@ describe("Sandbox Mode", () => {
       expect(competitionResponse.success).toBe(true);
       const competition = competitionResponse.competition;
 
-      // Register multiple new agents using the registerAgent route
+      // Register multiple new agents and manually add them
       const newAgents = [];
       for (let i = 1; i <= 3; i++) {
         // First register the user
@@ -273,7 +310,7 @@ describe("Sandbox Mode", () => {
         expect(userResponse.success).toBe(true);
         const user = (userResponse as UserRegistrationResponse).user;
 
-        // Then register the agent using the registerAgent route
+        // Then register the agent
         const agentResponse = await adminClient.registerAgent({
           user: {
             walletAddress: user.walletAddress,
@@ -287,12 +324,19 @@ describe("Sandbox Mode", () => {
         expect(agentResponse.success).toBe(true);
         const agent = (agentResponse as AdminAgentResponse).agent;
         newAgents.push(agent);
+
+        // Manually add each agent to the competition
+        const addAgentResponse = await adminClient.addAgentToCompetition(
+          competition.id,
+          agent.id,
+        );
+        expect(addAgentResponse.success).toBe(true);
       }
 
-      // Wait for all auto-join operations to complete
+      // Wait for all add operations to complete
       await wait(200);
 
-      // Check that all new agents were automatically added to the competition
+      // Check that all new agents were manually added to the competition
       const competitionAgentsResponse = await adminClient.getCompetitionAgents(
         competition.id,
       );
@@ -316,7 +360,7 @@ describe("Sandbox Mode", () => {
       }
     });
 
-    test("should handle registerAgent endpoint with sandbox mode auto-join", async () => {
+    test("should handle manual agent addition to sandbox competition", async () => {
       // First register a user without an agent
       const userResponse = await adminClient.registerUser({
         walletAddress: generateRandomEthAddress(),
@@ -363,10 +407,17 @@ describe("Sandbox Mode", () => {
       expect(agentResponse.success).toBe(true);
       const agent = (agentResponse as AdminAgentResponse).agent;
 
-      // Wait for auto-join processing
+      // Manually add the agent to the competition
+      const addAgentResponse = await adminClient.addAgentToCompetition(
+        competition.id,
+        agent.id,
+      );
+      expect(addAgentResponse.success).toBe(true);
+
+      // Wait for processing
       await wait(100);
 
-      // Check that the separately registered agent was auto-joined
+      // Check that the separately registered agent was manually added
       const competitionAgentsResponse = await adminClient.getCompetitionAgents(
         competition.id,
       );
@@ -543,7 +594,7 @@ describe("Sandbox Mode", () => {
     expect(status.competition?.sandboxMode).toBe(true);
   });
 
-  test("should verify that only the auto-joined agent gets a portfolio snapshot", async () => {
+  test("should verify that manually added agent gets a portfolio snapshot in sandbox mode", async () => {
     // First create a dummy user+agent to start the competition with (to avoid "no agents provided" error)
     const dummyUserResponse = await adminClient.registerUser({
       walletAddress: generateRandomEthAddress(),
@@ -586,24 +637,32 @@ describe("Sandbox Mode", () => {
     expect(newUserResponse.success).toBe(true);
     const newUser = (newUserResponse as UserRegistrationResponse).user;
 
-    // Now register an agent for this user using the registerAgent route (which has auto-join logic)
+    // Now register an agent for this user
     const newAgentResponse = await adminClient.registerAgent({
       user: {
         walletAddress: newUser.walletAddress,
       },
       agent: {
         name: "New Sandbox Agent",
-        description: "Agent that should auto-join sandbox competition",
+        description:
+          "Agent that should be manually added to sandbox competition",
         walletAddress: generateRandomEthAddress(),
       },
     });
     expect(newAgentResponse.success).toBe(true);
     const newAgent = (newAgentResponse as AdminAgentResponse).agent;
 
-    // Wait a moment for auto-join processing
+    // Manually add the agent to the competition
+    const addAgentResponse = await adminClient.addAgentToCompetition(
+      competition.id,
+      newAgent.id,
+    );
+    expect(addAgentResponse.success).toBe(true);
+
+    // Wait a moment for processing
     await wait(100);
 
-    // Check that the new agent was automatically added to the competition
+    // Check that the agent was manually added to the competition
     const competitionAgentsResponse = await adminClient.getCompetitionAgents(
       competition.id,
     );
@@ -647,7 +706,7 @@ describe("Sandbox Mode", () => {
     );
 
     console.log(
-      `[Test] Auto-joined agent ${newAgent!.id} successfully got portfolio snapshot with total value: $${latestSnapshot?.totalValue}`,
+      `[Test] Manually added agent ${newAgent.id} successfully got portfolio snapshot with total value: $${latestSnapshot?.totalValue}`,
     );
   });
 });

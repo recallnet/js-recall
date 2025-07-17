@@ -184,6 +184,7 @@ export const config = {
     sandboxUrl: "https://api.sandbox.competitions.recall.network",
   },
   email: {
+    autoVerifyUserEmail: process.env.ENABLE_AUTO_VERIFY_USER_EMAIL === "true",
     apiKey: process.env.LOOPS_API_KEY || "",
     transactionalId: process.env.LOOPS_TRANSACTIONAL_ID || "",
   },

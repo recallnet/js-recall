@@ -184,3 +184,11 @@ export const AdminUpdateCompetitionParamsSchema = z.object({
 export const AdminDeleteAgentParamsSchema = z.object({
   agentId: UuidSchema,
 });
+
+/**
+ * Admin add agent to competition params schema
+ */
+export const AdminAddAgentToCompetitionParamsSchema = z.object({
+  competitionId: UuidSchema,
+  agentId: UuidSchema,
+});

@@ -21,6 +21,7 @@ type AgentCardProps = {
 export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
   className,
   agent,
+  children,
   ...props
 }) => {
   const router = useRouter();
@@ -31,11 +32,12 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
       cropSize={50}
       onClick={() => router.push(`/agents/${agent.id}`)}
       className={cn(
-        `flex cursor-pointer flex-col items-center justify-center gap-2 px-5`,
+        `relative flex cursor-pointer flex-col items-center justify-center gap-2 px-5`,
         className,
       )}
       {...props}
     >
+      {children}
       <span className="text-secondary-foreground font-mono">
         {agent.walletAddress ? displayAddress(agent.walletAddress) : " "}
       </span>

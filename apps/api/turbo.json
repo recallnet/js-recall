@@ -59,7 +59,8 @@
         "REPOSITORY_LOG_SAMPLE_RATE",
         "HTTP_LOG_SAMPLE_RATE",
         "METRICS_PORT",
-        "METRICS_HOST"
+        "METRICS_HOST",
+        "ENABLE_AUTO_VERIFY_USER_EMAIL"
       ]
     }
   }

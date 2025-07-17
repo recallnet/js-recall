@@ -48,6 +48,14 @@ export function withErrorHandling<T extends unknown[], R>(
         if (error.message.includes("Agent name is required")) {
           return createErrorResponse(error.message, 400) as R;
         }
+        if (
+          error.message.includes("already participating") ||
+          error.message.includes("already actively registered")
+        ) {
+          return createErrorResponse(error.message, 409) as R;
+        }
+        // Pass through any other specific error messages
+        return createErrorResponse(error.message, 500) as R;
       }
 
       return createErrorResponse(errorMessage, 500) as R;

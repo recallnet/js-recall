@@ -20,6 +20,7 @@ import {
   StartCompetitionResponse,
   TradeResponse,
   UpcomingCompetitionsResponse,
+  UserAgentApiKeyResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
@@ -3343,7 +3344,13 @@ describe("Competition API", () => {
 
       // Execute predictable trading strategies
       // User 1 Agent: Best performer - buy valuable ETH
-      const agent1Client = adminClient.createAgentClient(agent1.apiKey!);
+      const agent1ApiKeyResponse = await user1Client.getUserAgentApiKey(
+        agent1.id,
+      );
+      expect(agent1ApiKeyResponse.success).toBe(true);
+      const agent1Client = adminClient.createAgentClient(
+        (agent1ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
+      );
       await agent1Client.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth, // ETH - valuable asset
@@ -3352,7 +3359,13 @@ describe("Competition API", () => {
       });
 
       // User 2 Agent: Poor performer - burn tokens
-      const agent2Client = adminClient.createAgentClient(agent2.apiKey!);
+      const agent2ApiKeyResponse = await user2Client.getUserAgentApiKey(
+        agent2.id,
+      );
+      expect(agent2ApiKeyResponse.success).toBe(true);
+      const agent2Client = adminClient.createAgentClient(
+        (agent2ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
+      );
       await agent2Client.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
