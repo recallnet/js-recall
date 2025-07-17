@@ -50,7 +50,7 @@ export default function MaintenancePage() {
             </p>
             <p className="mx-auto max-w-2xl font-['Replica_LL',sans-serif] text-lg tracking-wide text-[#596E89] md:text-xl">
               We&apos;re currently performing scheduled maintenance to improve
-              your experience. Please check back in a few minutes.
+              your experience. Please check back later.
             </p>
           </div>
 
