@@ -82,12 +82,12 @@ export function configureAdminRoutes(
    *               joinStartDate:
    *                 type: string
    *                 format: date-time
-   *                 description: Start date for joining the competition (ISO 8601 format)
+   *                 description: Start date for joining the competition (ISO 8601 format). Must be before or equal to joinEndDate if both are provided.
    *                 example: "2024-01-01T00:00:00Z"
    *               joinEndDate:
    *                 type: string
    *                 format: date-time
-   *                 description: End date for joining the competition (ISO 8601 format)
+   *                 description: End date for joining the competition (ISO 8601 format). Must be after or equal to joinStartDate if both are provided.
    *                 example: "2024-01-14T23:59:59Z"
    *     responses:
    *       201:
@@ -141,7 +141,10 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       description: Competition creation date
    *       400:
-   *         description: Missing required parameters
+   *         description: |-
+   *           Bad Request - Various validation errors:
+   *           - Missing required parameters
+   *           - joinStartDate must be before or equal to joinEndDate
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       500:

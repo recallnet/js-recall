@@ -81,12 +81,12 @@ Create a new competition without starting it. It will be in PENDING status and c
 
 ##### Responses
 
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 201  | Competition created successfully             |
-| 400  | Missing required parameters                  |
-| 401  | Unauthorized - Admin authentication required |
-| 500  | Server error                                 |
+| Code | Description                                                                                                                   |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 201  | Competition created successfully                                                                                              |
+| 400  | Bad Request - Various validation errors: - Missing required parameters - joinStartDate must be before or equal to joinEndDate |
+| 401  | Unauthorized - Admin authentication required                                                                                  |
+| 500  | Server error                                                                                                                  |
 
 ##### Security
 
