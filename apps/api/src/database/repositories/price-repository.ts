@@ -41,6 +41,41 @@ async function createImpl(priceData: InsertPrice) {
 }
 
 /**
+ * Create multiple price records in a single batch operation
+ * @param pricesData Array of price data to store
+ * @returns Array of created price records
+ */
+export async function createBatch(pricesData: InsertPrice[]) {
+  if (pricesData.length === 0) {
+    return [];
+  }
+
+  console.log(
+    `[PriceRepository] Storing ${pricesData.length} price records in batch`,
+  );
+
+  try {
+    const results = await db
+      .insert(prices)
+      .values(
+        pricesData.map((priceData) => ({
+          ...priceData,
+          timestamp: priceData.timestamp || new Date(),
+        })),
+      )
+      .returning();
+
+    return results;
+  } catch (error) {
+    console.error(
+      "[PriceRepository] Error creating price records in batch:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Get the latest price for a token
  * @param token The token address
  * @param specificChain Specific chain to filter by

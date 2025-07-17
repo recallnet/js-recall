@@ -214,6 +214,11 @@ export const portfolioSnapshots = tradingComps.table(
       table.competitionId,
     ),
     index("idx_portfolio_snapshots_timestamp").on(table.timestamp),
+    index("idx_portfolio_snapshots_competition_agent_timestamp").on(
+      table.competitionId,
+      table.agentId,
+      table.timestamp,
+    ),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],

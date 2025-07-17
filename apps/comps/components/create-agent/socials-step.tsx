@@ -24,7 +24,8 @@ interface SocialsStepProps {
 }
 
 export function SocialsStep({ onBack, isSubmitting, form }: SocialsStepProps) {
-  const [imageValid, setImageValid] = React.useState(false);
+  const [imageValid, setImageValid] = React.useState(true);
+  const imageUrl = form.watch("imageUrl");
 
   return (
     <div className="xs:px-16 space-y-10">
@@ -101,7 +102,7 @@ export function SocialsStep({ onBack, isSubmitting, form }: SocialsStepProps) {
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting || !imageValid}
+          disabled={isSubmitting || (imageUrl && !imageValid)}
           className="px-10"
         >
           {isSubmitting ? "SUBMITTING..." : "SUBMIT"}

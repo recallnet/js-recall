@@ -122,6 +122,48 @@ export interface PriceSource {
   ): Promise<boolean>;
 }
 
+// DexScreener API interfaces
+export interface DexScreenerToken {
+  address: string;
+  symbol: string;
+  name?: string;
+}
+
+export interface DexScreenerPair {
+  baseToken: DexScreenerToken;
+  quoteToken: DexScreenerToken;
+  priceUsd: string;
+  priceNative: string;
+  volume?: {
+    h24?: number;
+    h6?: number;
+    h1?: number;
+    m5?: number;
+  };
+  priceChange?: {
+    h24?: number;
+    h6?: number;
+    h1?: number;
+    m5?: number;
+  };
+  liquidity?: {
+    usd?: number;
+    base?: number;
+    quote?: number;
+  };
+  fdv?: number;
+  marketCap?: number;
+  pairAddress?: string;
+  pairCreatedAt?: number;
+  info?: {
+    imageUrl?: string;
+    websites?: Array<{ url: string }>;
+    socials?: Array<{ type: string; url: string }>;
+  };
+}
+
+export type DexScreenerResponse = DexScreenerPair[];
+
 export interface PriceReport {
   token: string;
   price: number;

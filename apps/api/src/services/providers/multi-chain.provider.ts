@@ -597,4 +597,298 @@ export class MultiChainProvider implements PriceSource {
   private getCachedChain(tokenAddress: string): SpecificChain | null {
     return this.chainToTokenCache.get(tokenAddress.toLowerCase()) || null;
   }
+
+  /**
+   * Get prices for multiple tokens in a single batch request
+   * @param tokenAddresses Array of token addresses to fetch prices for
+   * @param blockchainType Blockchain type
+   * @param specificChain Optional specific chain identifier
+   * @returns Map of token addresses to their price information
+   */
+  async getBatchPrices(
+    tokenAddresses: string[],
+    blockchainType?: BlockchainType,
+    specificChain?: SpecificChain,
+  ): Promise<Map<string, PriceReport | null>> {
+    const results = new Map<string, PriceReport | null>();
+
+    // Normalize addresses
+    const normalizedAddresses = tokenAddresses.map((addr) =>
+      addr.toLowerCase(),
+    );
+
+    // Check cache first
+    const uncachedAddresses: string[] = [];
+    for (const normalizedAddr of normalizedAddresses) {
+      const originalAddr = tokenAddresses.find(
+        (addr) => addr.toLowerCase() === normalizedAddr,
+      );
+      if (!originalAddr) continue;
+
+      const cachedPrice = this.getCachedPrice(normalizedAddr, specificChain);
+      if (cachedPrice !== null) {
+        results.set(originalAddr, {
+          token: originalAddr,
+          price: cachedPrice.price,
+          symbol: cachedPrice.symbol,
+          timestamp: new Date(),
+          chain: cachedPrice.chain,
+          specificChain: cachedPrice.specificChain,
+        });
+      } else {
+        uncachedAddresses.push(originalAddr);
+      }
+    }
+
+    // If all tokens were cached, return early
+    if (
+      uncachedAddresses.length === 0 ||
+      typeof uncachedAddresses[0] === "undefined"
+    ) {
+      return results;
+    }
+
+    const firstAddress = uncachedAddresses[0];
+
+    const detectedChainType =
+      blockchainType || this.determineChain(firstAddress);
+
+    // For Solana tokens, delegate to DexScreenerProvider
+    if (detectedChainType === BlockchainType.SVM) {
+      console.log(
+        `[MultiChainProvider] Getting batch prices for ${uncachedAddresses.length} Solana tokens`,
+      );
+      try {
+        const batchResults = await this.dexScreenerProvider.getBatchPrices(
+          uncachedAddresses,
+          BlockchainType.SVM,
+          "svm",
+        );
+
+        batchResults.forEach((result, tokenAddress) => {
+          if (result) {
+            // Cache the price
+            this.setCachedPrice(
+              tokenAddress.toLowerCase(),
+              BlockchainType.SVM,
+              "svm",
+              result.price,
+              result.symbol,
+            );
+
+            results.set(tokenAddress, {
+              token: tokenAddress,
+              price: result.price,
+              symbol: result.symbol,
+              timestamp: new Date(),
+              chain: BlockchainType.SVM,
+              specificChain: "svm",
+            });
+          } else {
+            results.set(tokenAddress, null);
+          }
+        });
+      } catch (error) {
+        console.log(
+          `[MultiChainProvider] Error fetching batch prices for Solana tokens:`,
+          error instanceof Error ? error.message : "Unknown error",
+        );
+        // Set all uncached tokens to null
+        uncachedAddresses.forEach((addr) => {
+          results.set(addr, null);
+        });
+      }
+      return results;
+    }
+
+    // For EVM tokens, handle batch processing
+    console.log(
+      `[MultiChainProvider] Getting batch prices for ${uncachedAddresses.length} EVM tokens`,
+    );
+
+    // If a specific chain was provided, use it directly
+    if (specificChain) {
+      console.log(
+        `[MultiChainProvider] Using provided specific chain: ${specificChain}`,
+      );
+
+      try {
+        const batchResults = await this.dexScreenerProvider.getBatchPrices(
+          uncachedAddresses,
+          BlockchainType.EVM,
+          specificChain,
+        );
+
+        batchResults.forEach((result, tokenAddress) => {
+          if (result) {
+            // Cache the price
+            this.setCachedPrice(
+              tokenAddress.toLowerCase(),
+              BlockchainType.EVM,
+              specificChain,
+              result.price,
+              result.symbol,
+            );
+
+            results.set(tokenAddress, {
+              token: tokenAddress,
+              price: result.price,
+              symbol: result.symbol,
+              timestamp: new Date(),
+              chain: BlockchainType.EVM,
+              specificChain,
+            });
+          } else {
+            results.set(tokenAddress, null);
+          }
+        });
+      } catch (error) {
+        console.log(
+          `[MultiChainProvider] Error fetching batch prices for EVM tokens on ${specificChain}:`,
+          error instanceof Error ? error.message : "Unknown error",
+        );
+        // Set all uncached tokens to null
+        uncachedAddresses.forEach((addr) => {
+          results.set(addr, null);
+        });
+      }
+      return results;
+    }
+
+    // No specific chain provided, try each chain in order
+    let chainsToTry = [...this.defaultChains];
+    const firstUncachedAddress = uncachedAddresses[0];
+    const cachedChain = firstUncachedAddress
+      ? this.getCachedChain(firstUncachedAddress)
+      : null;
+
+    // If we have a cached chain, try that first
+    if (cachedChain) {
+      console.log(
+        `[MultiChainProvider] Found cached chain ${cachedChain} for batch, trying it first`,
+      );
+      chainsToTry = [
+        cachedChain,
+        ...chainsToTry.filter((c) => c !== cachedChain),
+      ];
+    }
+
+    // Try each chain until we get prices for all tokens
+    const remainingTokens = new Set(uncachedAddresses);
+
+    for (const chain of chainsToTry) {
+      if (remainingTokens.size === 0) break;
+
+      try {
+        console.log(
+          `[MultiChainProvider] Attempting to fetch batch prices for ${remainingTokens.size} tokens on ${chain} chain`,
+        );
+
+        const batchResults = await this.dexScreenerProvider.getBatchPrices(
+          Array.from(remainingTokens),
+          BlockchainType.EVM,
+          chain,
+        );
+
+        batchResults.forEach((result, tokenAddress) => {
+          if (result) {
+            // Cache the price
+            this.setCachedPrice(
+              tokenAddress.toLowerCase(),
+              BlockchainType.EVM,
+              chain,
+              result.price,
+              result.symbol,
+            );
+
+            results.set(tokenAddress, {
+              token: tokenAddress,
+              price: result.price,
+              symbol: result.symbol,
+              timestamp: new Date(),
+              chain: BlockchainType.EVM,
+              specificChain: chain,
+            });
+
+            // Remove from remaining tokens
+            remainingTokens.delete(tokenAddress);
+          }
+        });
+      } catch (error) {
+        console.log(
+          `[MultiChainProvider] Error fetching batch prices on ${chain} chain:`,
+          error instanceof Error ? error.message : "Unknown error",
+        );
+        // Continue to next chain
+        continue;
+      }
+    }
+
+    // Set any remaining tokens to null
+    remainingTokens.forEach((addr) => {
+      results.set(addr, null);
+    });
+
+    console.log(
+      `[MultiChainProvider] Batch processing complete. Found prices for ${results.size - remainingTokens.size} out of ${uncachedAddresses.length} tokens`,
+    );
+
+    return results;
+  }
+
+  /**
+   * Get token info for multiple tokens in a single batch request
+   * @param tokenAddresses Array of token addresses to fetch info for
+   * @param blockchainType Blockchain type
+   * @param specificChain Optional specific chain identifier
+   * @returns Map of token addresses to their token info
+   */
+  async getBatchTokenInfo(
+    tokenAddresses: string[],
+    blockchainType: BlockchainType,
+    specificChain?: SpecificChain,
+  ): Promise<
+    Map<
+      string,
+      {
+        price: number;
+        chain: BlockchainType;
+        specificChain: SpecificChain;
+        symbol: string;
+      } | null
+    >
+  > {
+    const results = new Map<
+      string,
+      {
+        price: number;
+        chain: BlockchainType;
+        specificChain: SpecificChain;
+        symbol: string;
+      } | null
+    >();
+
+    // Get batch prices
+    const batchPrices = await this.getBatchPrices(
+      tokenAddresses,
+      blockchainType,
+      specificChain,
+    );
+
+    // Convert PriceReport to TokenInfo format
+    batchPrices.forEach((priceReport, tokenAddress) => {
+      if (priceReport) {
+        results.set(tokenAddress, {
+          price: priceReport.price,
+          chain: priceReport.chain,
+          specificChain: priceReport.specificChain,
+          symbol: priceReport.symbol,
+        });
+      } else {
+        results.set(tokenAddress, null);
+      }
+    });
+
+    return results;
+  }
 }

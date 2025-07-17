@@ -11,3 +11,4 @@ export * from "./useCreateAgent";
 export * from "./useAuth";
 export * from "./useProfile";
 export * from "./useSandbox";
+export * from "./useSiweAuth";

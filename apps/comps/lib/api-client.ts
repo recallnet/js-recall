@@ -33,7 +33,11 @@ import {
   VotingStateResponse,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+// Use proxy endpoint when we have a separate API base URL to leverage Next.js rewrites
+// This eliminates cross-origin cookie issues on mobile by making all API calls same-origin
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+  ? "/backend-api"
+  : "/api";
 
 /**
  * Base HTTP error class with status code support

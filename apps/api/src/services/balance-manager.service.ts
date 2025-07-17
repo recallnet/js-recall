@@ -2,6 +2,7 @@ import { config } from "@/config/index.js";
 import {
   count,
   getAgentBalances,
+  getAgentsBulkBalances,
   getBalance,
   initializeAgentBalances,
   resetAgentBalances,
@@ -163,6 +164,59 @@ export class BalanceManager {
     } catch (error) {
       console.error(
         `[BalanceManager] Error getting all balances for agent ${agentId}:`,
+        error,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Get all balances for multiple agents in bulk
+   * @param agentIds Array of agent IDs
+   * @returns Array of Balance objects for all agents
+   */
+  async getBulkBalances(agentIds: string[]) {
+    try {
+      if (agentIds.length === 0) {
+        return [];
+      }
+
+      console.log(
+        `[BalanceManager] Getting bulk balances for ${agentIds.length} agents`,
+      );
+
+      // Get all balances from database in one query
+      const balances = await getAgentsBulkBalances(agentIds);
+
+      // Update cache for all agents
+      const agentBalanceMap = new Map<string, Map<string, number>>();
+
+      // Initialize maps for each agent
+      agentIds.forEach((agentId) => {
+        agentBalanceMap.set(agentId, new Map<string, number>());
+      });
+
+      // Populate the cache
+      balances.forEach((balance) => {
+        const agentBalances = agentBalanceMap.get(balance.agentId);
+        if (agentBalances) {
+          agentBalances.set(balance.tokenAddress, balance.amount);
+        }
+      });
+
+      // Update the main cache
+      agentBalanceMap.forEach((balanceMap, agentId) => {
+        this.balanceCache.set(agentId, balanceMap);
+      });
+
+      console.log(
+        `[BalanceManager] Successfully retrieved ${balances.length} balances for ${agentIds.length} agents`,
+      );
+
+      return balances;
+    } catch (error) {
+      console.error(
+        `[BalanceManager] Error getting bulk balances for ${agentIds.length} agents:`,
         error,
       );
       return [];
