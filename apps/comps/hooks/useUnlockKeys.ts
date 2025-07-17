@@ -64,14 +64,7 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // First, check if user's email is verified in production
-      const profileRes = await apiClient.getProfile();
-
-      if (!profileRes.success) {
-        throw new Error("Failed to get user profile");
-      }
-
-      if (!profileRes.user.isEmailVerified) {
+      if (!isEmailVerified) {
         throw new Error(
           "Email verification required to access agent API keys and join sandbox competitions",
         );
@@ -100,7 +93,8 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
         // Check if the error is because agent is already in competition
         if (
           joinError instanceof Error &&
-          joinError.message.includes("already actively registered")
+          (joinError.message.includes("already actively registered") ||
+            joinError.message.includes("already participating"))
         ) {
           return { alreadyJoined: true };
         }

@@ -77,14 +77,18 @@ export async function validateApiResponse<T>(
   errorMessage: string,
 ): Promise<T> {
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorData = await response.json().catch(() => null);
+    const errorText =
+      errorData?.error || errorData?.message || (await response.text());
     console.error(`${errorMessage}:`, errorText);
-    throw new Error(errorMessage);
+    throw new Error(errorText || errorMessage);
   }
 
   const data = await response.json();
   if (!data.success) {
-    throw new Error(`Invalid response: ${errorMessage}`);
+    throw new Error(
+      data.error || data.message || `Invalid response: ${errorMessage}`,
+    );
   }
 
   return data;
