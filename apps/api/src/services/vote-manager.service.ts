@@ -337,7 +337,7 @@ export class VoteManager {
     const now = new Date();
 
     // If at least one voting date is not set, voting for the comp is disabled
-    if (!competition.votingStartDate && !competition.votingEndDate) {
+    if (!competition.votingStartDate || !competition.votingEndDate) {
       return {
         canVote: false,
         reason: "voting is not enabled for this competition",
