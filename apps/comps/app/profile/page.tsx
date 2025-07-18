@@ -33,11 +33,7 @@ export default function ProfilePage() {
   }
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
-    try {
-      await updateProfile.mutateAsync(data);
-    } catch (error) {
-      console.error("Failed to update profile:", error);
-    }
+    await updateProfile.mutateAsync(data);
   };
 
   return (
