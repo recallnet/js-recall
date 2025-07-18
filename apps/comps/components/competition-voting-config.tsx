@@ -25,6 +25,12 @@ export function getCompetitionVotingConfig(
   const votingEnd = competition.votingEndDate
     ? new Date(competition.votingEndDate)
     : null;
+  const joinStart = competition.joinStartDate
+    ? new Date(competition.joinStartDate)
+    : null;
+  const joinEnd = competition.joinEndDate
+    ? new Date(competition.joinEndDate)
+    : null;
   const now = new Date();
 
   if (hasVoted) {
@@ -69,14 +75,22 @@ export function getCompetitionVotingConfig(
 
   // all states below here are for competitions that the user has not voted on yet
 
-  // TODO: what defines registration start time?  I'm assuming that if there
-  //  isn't a comp start time, then registration is not open.
-  if (!compStartDate) {
+  if (joinStart && now < joinStart) {
     return {
       subTitle: "Get ready!",
-      description: `Registration ${votingStart ? "opens in..." : "soon"}`,
+      description: "Registration opens in...",
       variant: "green",
-      untilTime: votingStart,
+      untilTime: joinStart,
+      phase: "registration",
+    };
+  }
+
+  if (joinEnd && now < joinEnd) {
+    return {
+      subTitle: "Join now!",
+      description: "Registration closes in...",
+      variant: "green",
+      untilTime: joinEnd,
       phase: "registration",
     };
   }
