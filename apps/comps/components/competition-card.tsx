@@ -55,6 +55,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
             </Link>
 
             <ParticipantsAvatars
+              compId={competition.id}
               agents={competition.agents}
               className="pr-6 pt-6"
               showRank={competition.status !== CompetitionStatus.Pending}
@@ -70,6 +71,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
           </p>
 
           <ParticipantsAvatars
+            compId={competition.id}
             agents={topLeaders?.agents || []}
             className="px-6 py-2"
             showRank={competition.status !== CompetitionStatus.Pending}

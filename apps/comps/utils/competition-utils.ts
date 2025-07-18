@@ -1,7 +1,8 @@
-import { format } from "date-fns";
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
 import { Competition, CompetitionStatus, UserCompetition } from "@/types";
+
+import { formatDate } from "./format";
 
 export const STATUS_ICONS = {
   [CompetitionStatus.Active]: Play,
@@ -22,8 +23,8 @@ export function formatCompetitionDates(
   startDate?: Date | number | string | null,
   endDate?: Date | number | string | null,
 ): string {
-  const start = startDate ? format(new Date(startDate), "MM/dd") : "TBA";
-  const end = endDate ? format(new Date(endDate), "MM/dd") : "TBA";
+  const start = startDate ? formatDate(new Date(startDate)) : "TBA";
+  const end = endDate ? formatDate(new Date(endDate)) : "TBA";
 
   return `${start} - ${end}`;
 }
