@@ -164,6 +164,18 @@ export interface DexScreenerPair {
 
 export type DexScreenerResponse = DexScreenerPair[];
 
+/**
+ * Token information returned by DexScreener API
+ */
+export interface DexScreenerTokenInfo {
+  price: number;
+  symbol: string;
+  pairCreatedAt?: number;
+  volume?: { h24?: number };
+  liquidity?: { usd?: number };
+  fdv?: number;
+}
+
 export interface PriceReport {
   token: string;
   price: number;
@@ -171,6 +183,15 @@ export interface PriceReport {
   chain: BlockchainType;
   specificChain: SpecificChain;
   symbol: string;
+  // Additional DexScreener data for trading constraints
+  pairCreatedAt?: number;
+  volume?: {
+    h24?: number;
+  };
+  liquidity?: {
+    usd?: number;
+  };
+  fdv?: number;
 }
 
 /**

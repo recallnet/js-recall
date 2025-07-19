@@ -162,6 +162,13 @@
       "when": 1752786251228,
       "tag": "0022_giant_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1752885973476,
+      "tag": "0023_unknown_vargas",
+      "breakpoints": true
     }
   ]
 }
