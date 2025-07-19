@@ -34,7 +34,7 @@ export function calculateSlippage(fromValueUSD: number): SlippageResult {
  * Major tokens exempt from trading constraint requirements (native tokens, established assets)
  */
 export const EXEMPT_TOKENS = new Set([
-  // TODO: this should either be config or part of competition data
+  // TODO: maybe this should either be config or part of competition data?
   // Solana native token
   "So11111111111111111111111111111111111111112", // SOL
   // Ethereum and major EVM tokens
