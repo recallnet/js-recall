@@ -48,8 +48,26 @@ describe("Email Verification API", () => {
       userEmail,
     });
 
-    // Ensure user's email is not verified initially
+    // Check initial verification status (depends on auto-verification setting)
     const initialUser = await findUserById(user.id);
+
+    if (config.email.autoVerifyUserEmail) {
+      // When auto-verification is enabled, user should start verified
+      expect(initialUser?.isEmailVerified).toBe(true);
+
+      // No verification tokens should be created for auto-verified users
+      const tokens = await db
+        .select()
+        .from(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.userId, user.id))
+        .limit(1);
+
+      // Test passes - auto-verification is working correctly
+      expect(tokens.length).toBe(0);
+      return;
+    }
+
+    // When auto-verification is disabled, test normal email verification flow
     expect(initialUser?.isEmailVerified).toBe(false);
 
     // Get token by user id
@@ -165,6 +183,15 @@ describe("Email Verification API", () => {
       userEmail,
     });
 
+    if (config.email.autoVerifyUserEmail) {
+      // When auto-verification is enabled, users start verified
+      // This test is not applicable since no tokens are created
+      const initialUser = await findUserById(user.id);
+      expect(initialUser?.isEmailVerified).toBe(true);
+      return;
+    }
+
+    // When auto-verification is disabled, test expired token handling
     // Create an expired verification token
     const token = uuidv4();
     const expiresAt = new Date();
@@ -208,6 +235,15 @@ describe("Email Verification API", () => {
       userEmail,
     });
 
+    if (config.email.autoVerifyUserEmail) {
+      // When auto-verification is enabled, users start verified
+      // This test is not applicable since no tokens are created
+      const initialUser = await findUserById(user.id);
+      expect(initialUser?.isEmailVerified).toBe(true);
+      return;
+    }
+
+    // When auto-verification is disabled, test used token handling
     // Get token by user id
     const tokens = await db
       .select()
@@ -297,23 +333,44 @@ describe("Email Verification API", () => {
       userEmail: initialEmail,
     });
 
-    // Verify the initial email
-    const initialTokens = await db
-      .select()
-      .from(emailVerificationTokens)
-      .where(eq(emailVerificationTokens.userId, user.id))
-      .limit(1);
+    const initialUser = await findUserById(user.id);
+    let initialToken: string | undefined;
 
-    const initialToken = initialTokens[0]?.token;
-    expect(initialToken).toBeDefined();
+    if (config.email.autoVerifyUserEmail) {
+      // When auto-verification is enabled, user should start verified with no tokens
+      expect(initialUser?.isEmailVerified).toBe(true);
 
-    // Verify the initial token
-    await axios.get(`${getBaseUrl()}/api/verify-email?token=${initialToken}`, {
-      maxRedirects: 0,
-      validateStatus: null,
-    });
+      const initialTokens = await db
+        .select()
+        .from(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.userId, user.id))
+        .limit(1);
 
-    // Check that user's email is now verified
+      expect(initialTokens.length).toBe(0); // No tokens for auto-verified users
+    } else {
+      // When auto-verification is disabled, verify the initial email manually
+      expect(initialUser?.isEmailVerified).toBe(false);
+
+      const initialTokens = await db
+        .select()
+        .from(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.userId, user.id))
+        .limit(1);
+
+      initialToken = initialTokens[0]?.token;
+      expect(initialToken).toBeDefined();
+
+      // Verify the initial token
+      await axios.get(
+        `${getBaseUrl()}/api/verify-email?token=${initialToken}`,
+        {
+          maxRedirects: 0,
+          validateStatus: null,
+        },
+      );
+    }
+
+    // Check that user's email is now verified (either auto-verified or manually verified)
     let updatedUser = await findUserById(user.id);
     expect(updatedUser?.isEmailVerified).toBe(true);
 
@@ -326,9 +383,17 @@ describe("Email Verification API", () => {
       email: newEmail,
     });
 
-    // Check that user's email verification status is reset
+    // Check that user's email verification status is reset (or auto-verified)
     updatedUser = await findUserById(user.id);
     expect(updatedUser?.email).toBe(newEmail);
+
+    if (config.email.autoVerifyUserEmail) {
+      // When auto-verification is enabled, user should be auto-verified on email update
+      expect(updatedUser?.isEmailVerified).toBe(true);
+      return; // Test complete - auto-verification working correctly
+    }
+
+    // When auto-verification is disabled, user should be unverified after email change
     expect(updatedUser?.isEmailVerified).toBe(false);
 
     // Check that a new verification token was created
