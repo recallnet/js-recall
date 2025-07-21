@@ -122,7 +122,7 @@ export class UserManager {
         await this.sendEmailVerification(savedUser);
       } else if (email && config.email.autoVerifyUserEmail) {
         console.log(
-          `[UserManager] Auto-verified email for user ${id} in ${process.env.NODE_ENV} mode`,
+          `[UserManager] Auto-verified email for user ${id} in ${config.server.nodeEnv} mode`,
         );
       }
 
