@@ -2,10 +2,12 @@ import { NextRequest } from "next/server";
 
 import {
   extractSessionCookie,
+  isSandboxConfigured,
   mainApiRequest,
   sandboxAdminRequest,
 } from "@/app/api/sandbox/_lib/sandbox-config";
 import {
+  createErrorResponse,
   createSuccessResponse,
   withErrorHandling,
 } from "@/app/api/sandbox/_lib/sandbox-response";
@@ -22,6 +24,11 @@ import {
  * 2. Creating agent in sandbox using the admin API
  */
 async function handleCreateAgent(request: NextRequest) {
+  // Check if sandbox is configured
+  if (!isSandboxConfigured()) {
+    return createErrorResponse("Sandbox not configured", 503);
+  }
+
   // Extract session cookie
   const sessionCookie = extractSessionCookie(request);
 

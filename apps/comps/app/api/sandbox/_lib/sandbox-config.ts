@@ -12,6 +12,18 @@ export interface SandboxConfig {
 }
 
 /**
+ * Checks if sandbox is fully configured
+ * @returns boolean indicating if all required sandbox env vars are present
+ */
+export function isSandboxConfigured(): boolean {
+  const sandboxApiUrl = process.env.NEXT_PUBLIC_SANDBOX_API_URL;
+  const sandboxAdminApiKey = process.env.SANDBOX_ADMIN_API_KEY;
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  return !!(sandboxApiUrl && sandboxAdminApiKey && apiBaseUrl);
+}
+
+/**
  * Validates and returns sandbox configuration from environment variables
  * @throws Error if required configuration is missing
  */

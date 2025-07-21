@@ -2,10 +2,12 @@ import { NextRequest } from "next/server";
 
 import {
   extractSessionCookie,
+  isSandboxConfigured,
   mainApiRequest,
   sandboxAdminRequest,
 } from "@/app/api/sandbox/_lib/sandbox-config";
 import {
+  createErrorResponse,
   createSuccessResponse,
   withErrorHandling,
 } from "@/app/api/sandbox/_lib/sandbox-response";
@@ -20,6 +22,11 @@ import { ProfileResponse } from "@/types/profile";
  * 3. Creating user in sandbox if not found
  */
 async function handleCreateUser(request: NextRequest) {
+  // Check if sandbox is configured
+  if (!isSandboxConfigured()) {
+    return createErrorResponse("Sandbox not configured", 503);
+  }
+
   // Extract session cookie
   const sessionCookie = extractSessionCookie(request);
 

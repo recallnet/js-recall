@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 
+import { config } from "@/config/index.js";
 import { createEmailVerificationToken } from "@/database/repositories/email-verification-repository.js";
 import {
   count,
@@ -102,6 +103,9 @@ export class UserManager {
         imageUrl,
         metadata,
         status: "active",
+        // Auto-verify email if flag is enabled and email is provided
+        isEmailVerified:
+          email && config.email.autoVerifyUserEmail ? true : false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -113,9 +117,13 @@ export class UserManager {
       this.userWalletCache.set(normalizedWalletAddress, id);
       this.userProfileCache.set(id, savedUser);
 
-      // Send email verification if email is provided
-      if (email) {
+      // Send email verification if email is provided and auto-verify is disabled
+      if (email && !config.email.autoVerifyUserEmail) {
         await this.sendEmailVerification(savedUser);
+      } else if (email && config.email.autoVerifyUserEmail) {
+        console.log(
+          `[UserManager] Auto-verified email for user ${id} in ${process.env.NODE_ENV} mode`,
+        );
       }
 
       console.log(
@@ -203,10 +211,21 @@ export class UserManager {
       // Check if email was updated to a new value
       const emailChanged = user.email && currentUser.email !== user.email;
       if (emailChanged) {
-        user = {
-          ...user,
-          isEmailVerified: false,
-        };
+        // Check if auto-verify is enabled
+        if (config.email.autoVerifyUserEmail) {
+          console.log(
+            `[UserManager] Auto-verifying email for user ${user.id} in ${config.server.nodeEnv} mode`,
+          );
+          user = {
+            ...user,
+            isEmailVerified: true,
+          };
+        } else {
+          user = {
+            ...user,
+            isEmailVerified: false,
+          };
+        }
       }
 
       const now = new Date();
@@ -221,8 +240,12 @@ export class UserManager {
         this.userWalletCache.set(updatedUser.walletAddress, user.id);
       }
 
-      // Send verification email if email has changed
-      if (emailChanged && updatedUser.email) {
+      // Send verification email if email has changed and auto-verify is disabled
+      if (
+        emailChanged &&
+        updatedUser.email &&
+        !config.email.autoVerifyUserEmail
+      ) {
         await this.sendEmailVerification(updatedUser);
       }
 
