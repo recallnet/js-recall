@@ -1393,6 +1393,10 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     email:
+   *                       type: string
+   *                       description: Agent email
+   *                       nullable: true
    *                     description:
    *                       type: string
    *                       description: Agent description

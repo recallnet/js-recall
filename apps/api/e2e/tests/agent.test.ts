@@ -1,8 +1,10 @@
 import axios from "axios";
+import { eq } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { config } from "@/config/index.js";
+import { agents } from "@/database/schema/core/defs.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentsListResponse,
@@ -19,6 +21,7 @@ import {
   ResetApiKeyResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
+import { dbManager } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -953,7 +956,52 @@ describe("Agent API", () => {
     if (agentData.owner.name !== null) {
       expect(typeof agentData.owner.name).toBe("string");
     }
+  });
+
+  test("should not expose api key or email in public agent info", async () => {
+    // Setup admin client and login
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    // Register a user and agent
+    const userName = `Get Agent Test User ${Date.now()}`;
+    const userEmail = `get-agent-${Date.now()}@example.com`;
+    const agentName = `Get Agent Test ${Date.now()}`;
+    const agentEmail = `get-agent-${Date.now()}@example.com`;
+    const agentDescription = "Agent for GET endpoint test";
+
+    const res = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName,
+      userEmail,
+      agentName,
+      agentDescription,
+    });
+    const agentId = res.agent.id;
+
+    // Manually update database entry to include email
+    const db = await dbManager.connect();
+    await db
+      .update(agents)
+      .set({ email: agentEmail })
+      .where(eq(agents.id, agentId));
+    const agent = (
+      await db.select().from(agents).where(eq(agents.id, agentId))
+    )[0];
+
+    expect(agent).toBeDefined();
+    expect(agent?.id).toBeDefined();
+
+    // Make a public GET request to fetch the agent details using the agent ID
+    const response = await axios.get(`${getBaseUrl()}/api/agents/${agent?.id}`);
+
+    // Validate response
+    expect(response.status).toBe(200);
+    const agentData = response.data as AgentProfileResponse;
+    expect(agentData.success).toBe(true);
     // make sure public info is not exposed
+    expect(agentData.agent.email).not.toBeDefined();
     expect(agentData.agent.apiKey).not.toBeDefined();
   });
 
