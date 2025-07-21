@@ -1417,7 +1417,7 @@ export class AgentManager {
           bestPnl: metrics?.bestPnl ?? undefined,
           rank: metrics?.globalRank ?? undefined,
           score: metrics?.globalScore ?? undefined,
-          totalRoi: metrics?.totalRoi ?? undefined,
+          totalRoi: metrics?.totalRoi ?? null,
         } as AgentStats;
 
         return {
