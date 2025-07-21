@@ -17,7 +17,6 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
   agents,
   isLoading,
 }) => {
-  //const topThreeAgents = useMemo(() => [...agents, ...agents, ...agents].slice(0, 3), [agents]);
   const topThreeAgents = useMemo(() => agents.slice(0, 3), [agents]);
 
   if (isLoading) {

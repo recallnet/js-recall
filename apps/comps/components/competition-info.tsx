@@ -1,11 +1,11 @@
 "use client";
 
-import { format } from "date-fns";
 import React, { useState } from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Competition } from "@/types/competition";
+import { formatDate } from "@/utils/format";
 
 import { CompetitionStatusBadge } from "./competition-status-badge";
 
@@ -30,10 +30,10 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
   const [expanded, setExpanded] = useState(false);
 
   const startDate = competition.startDate
-    ? format(new Date(competition.startDate), "MM/dd")
+    ? formatDate(new Date(competition.startDate))
     : "TBA";
   const endDate = competition.endDate
-    ? format(new Date(competition.endDate), "MM/dd")
+    ? formatDate(new Date(competition.endDate))
     : "TBA";
 
   const SHORT_DESC_LENGTH = 120;

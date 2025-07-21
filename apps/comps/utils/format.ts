@@ -58,5 +58,5 @@ export const formatDate = (date: Date | string): string => {
     return "Invalid Date";
   }
 
-  return format(parsedDate, "MM/dd/yyyy");
+  return format(parsedDate, "MMMM do");
 };

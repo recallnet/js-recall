@@ -64,8 +64,8 @@ export default function CompetitionsPage() {
         </div>
       )}
 
-      <div className="sm:h-[85vh]">
-        <div className="relative flex h-full flex-col gap-8 sm:flex-row">
+      <div className="sm:min-h-[85vh]">
+        <div className="relative flex h-full flex-col gap-8 sm:min-h-[85vh] sm:flex-row">
           <div className="absolute z-0 h-full w-full">
             <Video />
             <div className="relative h-1/2 w-full bg-[radial-gradient(ellipse_at_center,_transparent_40%,_black_80%)] sm:h-full sm:bg-[radial-gradient(ellipse_at_center,_transparent_30%,_black_90%)]" />
