@@ -4,19 +4,11 @@ import { Loader2, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
 import { useCreateAgent } from "@/hooks/useCreateAgent";
-
-// Agent skills constants like in comps app
-const AGENT_SKILLS = [
-  "Crypto Trading",
-  "Traditional Investing",
-  "Sports Betting",
-  "Prediction Markets",
-  "Social and Chat",
-  "Art & Video Creation",
-  "Programming / Coding",
-  "Deep Research",
-  "Other",
-];
+import {
+  SKILL_OPTIONS,
+  skillsToKeys,
+  type SkillDisplay,
+} from "@recallnet/ui/lib/skills";
 
 /**
  * AgentAddForm component
@@ -35,7 +27,7 @@ export default function AgentAddForm({
 }) {
   const [formData, setFormData] = useState<{
     name: string;
-    selectedSkills: string[];
+    selectedSkills: SkillDisplay[];
     customSkill: string;
     repoUrl: string;
     description: string;
@@ -70,7 +62,7 @@ export default function AgentAddForm({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSkillChange = (skill: string) => {
+  const handleSkillChange = (skill: SkillDisplay) => {
     setFormData((prev) => {
       // Check if skill is already selected
       const isSelected = prev.selectedSkills.includes(skill);
@@ -112,13 +104,15 @@ export default function AgentAddForm({
       setIsSubmitting(true);
 
       // Prepare skills array (replace "Other" with custom skill if provided)
-      const finalSkills =
-        formData.selectedSkills.includes("Other") && formData.customSkill
-          ? [
-              ...formData.selectedSkills.filter((skill) => skill !== "Other"),
-              formData.customSkill,
-            ]
-          : formData.selectedSkills;
+      let finalSkills: string[];
+      if (formData.selectedSkills.includes("Other") && formData.customSkill) {
+        const skillsWithoutOther = formData.selectedSkills.filter(skill => skill !== "Other");
+        const skillKeys = skillsToKeys(skillsWithoutOther);
+        finalSkills = [...skillKeys, formData.customSkill];
+      } else {
+        // Convert display names to keys for API
+        finalSkills = skillsToKeys(formData.selectedSkills);
+      }
 
       // Create the agent - match comps app structure exactly
       const agentData = {
@@ -213,7 +207,7 @@ export default function AgentAddForm({
           </label>
           <p className="text-sm text-[#6D85A4]">Choose all that apply.</p>
           <div className="grid grid-cols-2 gap-2">
-            {AGENT_SKILLS.map((skill) => (
+            {SKILL_OPTIONS.map((skill) => (
               <label key={skill} className="flex items-center gap-2">
                 <input
                   type="checkbox"
