@@ -49,6 +49,8 @@ export function JoinCompetitionButton({
       ? new Date(competition.joinEndDate)
       : null;
 
+    if (joinStart === null && joinEnd === null) return false;
+
     // Check if registration is open
     if (joinStart && now < joinStart) return false;
     if (joinEnd && now > joinEnd) return false;

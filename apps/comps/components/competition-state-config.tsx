@@ -8,7 +8,7 @@ type VotingStatusConfig = {
   phase: string | null;
 };
 
-export function getCompetitionVotingConfig(
+export function getCompetitionStateConfig(
   competition: Competition,
   hasVoted: boolean,
 ): VotingStatusConfig {
@@ -75,6 +75,25 @@ export function getCompetitionVotingConfig(
 
   // all states below here are for competitions that the user has not voted on yet
 
+  // Flow #1
+  if (
+    compStartDate === null &&
+    compEndDate === null &&
+    joinStart === null &&
+    joinEnd === null &&
+    votingStart === null &&
+    votingEnd === null
+  ) {
+    return {
+      subTitle: "Registration starting soon!",
+      description: "",
+      variant: "green",
+      untilTime: null,
+      phase: null,
+    };
+  }
+
+  // Flow #2
   if (joinStart && now < joinStart) {
     return {
       subTitle: "Get ready!",
@@ -85,6 +104,18 @@ export function getCompetitionVotingConfig(
     };
   }
 
+  // Flow #3
+  if (joinStart && joinEnd === null && now >= joinStart) {
+    return {
+      subTitle: "Registration is open!",
+      description: "",
+      variant: "green",
+      untilTime: null,
+      phase: "registration",
+    };
+  }
+
+  // Flow #4
   if (joinEnd && now < joinEnd) {
     return {
       subTitle: "Join now!",
@@ -95,6 +126,18 @@ export function getCompetitionVotingConfig(
     };
   }
 
+  // Flow #5
+  if (joinEnd && now >= joinEnd && votingStart === null) {
+    return {
+      subTitle: "Registration is closed",
+      description: "",
+      variant: "gray",
+      untilTime: null,
+      phase: null,
+    };
+  }
+
+  // Flow #6
   if (votingStart && now < votingStart) {
     return {
       subTitle: "Get ready!",
@@ -104,21 +147,56 @@ export function getCompetitionVotingConfig(
       phase: "voting",
     };
   }
-  if (votingEnd && now > votingEnd) {
+
+  // Flow #7
+  if (votingStart && votingEnd === null && now >= votingStart) {
     return {
-      subTitle: "Counting votes!",
-      description: compEndDate ? "Competition ends in..." : "",
+      subTitle: "Voting is closed!",
+      description: "",
       variant: "gray",
-      untilTime: compEndDate,
+      untilTime: null,
       phase: null,
     };
   }
 
+  // Flow #8
+  if (votingEnd && now < votingEnd) {
+    return {
+      subTitle: "Get ready!",
+      description: "Voting closes in...",
+      variant: "blue",
+      untilTime: votingEnd,
+      phase: "voting",
+    };
+  }
+
+  // Flow #9
+  if (votingEnd && now >= votingEnd) {
+    if (status === CompetitionStatus.Pending) {
+      return {
+        subTitle: "Voting is closed!",
+        description: compStartDate ? "Competition starts in..." : "",
+        variant: "gray",
+        untilTime: compStartDate,
+        phase: null,
+      };
+    }
+    if (status === CompetitionStatus.Active) {
+      return {
+        subTitle: "Voting is closed!",
+        description: compEndDate ? "Competition ends in..." : "",
+        variant: "gray",
+        untilTime: compEndDate,
+        phase: null,
+      };
+    }
+  }
+
   return {
-    subTitle: "Vote now!",
-    description: `Voting ${votingEnd ? "closing in..." : "is open"}`,
-    variant: "blue",
-    untilTime: votingEnd,
-    phase: "voting",
+    subTitle: "Registration is closed!",
+    description: ``,
+    variant: "gray",
+    untilTime: null,
+    phase: null,
   };
 }
