@@ -1,0 +1,377 @@
+name: AI Issue Resolution
+description: Automatically resolve issues tagged with 'good-for-ai'
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  ai-resolution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    # Only run when 'good-for-ai' label is added by organization members
+    if: |
+      contains(github.event.issue.labels.*.name, 'good-for-ai') &&
+      github.event.sender.type == 'User'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check repository access
+        id: check-access
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              // Check if the user is a collaborator on the repository
+              const collaborator = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.payload.sender.login
+              });
+
+              // Check if user has appropriate permissions (admin, write, maintain, triage)
+              const permission = collaborator.data.permission;
+              if (permission === 'admin' || permission === 'write' || permission === 'maintain' || permission === 'triage') {
+                console.log(`✅ User ${context.payload.sender.login} has ${permission} access to the repository`);
+                core.setOutput('has-access', 'true');
+              } else {
+                console.log(`❌ User ${context.payload.sender.login} does not have sufficient access (${permission})`);
+                core.setOutput('has-access', 'false');
+              }
+            } catch (error) {
+              console.log(`❌ User ${context.payload.sender.login} is not a collaborator on the repository`);
+              core.setOutput('has-access', 'false');
+            }
+
+      - name: Setup GitHub MCP Server
+        if: steps.check-access.outputs.has-access == 'true'
+        run: |
+          mkdir -p /tmp/mcp-config
+          cat > /tmp/mcp-config/mcp-servers.json << 'EOF'
+          {
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": [
+                  "run",
+                  "-i",
+                  "--rm",
+                  "-e",
+                  "GITHUB_PERSONAL_ACCESS_TOKEN",
+                  "ghcr.io/github/github-mcp-server:sha-7aced2b"
+                ],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GITHUB_TOKEN }}"
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Extract and download file attachments from issue
+        if: steps.check-access.outputs.has-access == 'true'
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          # Extract file attachments from issue description
+          # Use environment variable to avoid expansion issues
+          printf '%s\n' "$ISSUE_BODY" > /tmp/issue-body.txt
+
+          # Debug: Check if issue body was captured
+          echo "Issue body length: $(wc -c < /tmp/issue-body.txt)"
+          echo "First 100 chars of issue body:"
+          head -c 100 /tmp/issue-body.txt || echo "Could not read issue body"
+
+          # Create directories for attachments
+          mkdir -p /tmp/attachments
+          mkdir -p /tmp/attachment-contents
+          mkdir -p /tmp/attachment-readable
+          mkdir -p ./attachments
+
+          # Debug: Show current working directory and repository structure
+          echo "Current working directory: $(pwd)"
+          echo "Repository contents:"
+          ls -la
+
+          # Look for image attachments and other file links
+          # Handle potential empty or malformed issue body
+          if [ -s /tmp/issue-body.txt ]; then
+            echo "DEBUG: Looking for URLs in issue body..."
+            echo "DEBUG: Issue body content:" >> /tmp/attachment-info.txt
+            cat /tmp/issue-body.txt >> /tmp/attachment-info.txt
+            echo "DEBUG: End of issue body" >> /tmp/attachment-info.txt
+
+            # Look for GitHub user-attachments URLs (the only ones we should download)
+            echo "DEBUG: Searching for GitHub user-attachments URLs..."
+            grep -o 'https://github\.com/user-attachments/files/[^)]*' /tmp/issue-body.txt > /tmp/attachments.txt || true
+            echo "DEBUG: Found direct URLs:"
+            cat /tmp/attachments.txt
+            grep -o 'https://user-images\.githubusercontent\.com/[^)]*' /tmp/issue-body.txt >> /tmp/attachments.txt || true
+
+            # Extract URLs from markdown links: [text](url) - but only GitHub attachments
+            echo "DEBUG: Searching for markdown links..."
+            grep -o '\[[^]]*\]\(https://github\.com/user-attachments/files/[^)]*\)' /tmp/issue-body.txt | sed 's/.*(\(https:\/\/[^)]*\)).*/\1/' >> /tmp/attachments.txt || true
+            echo "DEBUG: Found markdown links:"
+            grep -o '\[[^]]*\]\(https://github\.com/user-attachments/files/[^)]*\)' /tmp/issue-body.txt || echo "No markdown links found"
+            grep -o '\[[^]]*\]\(https://user-images\.githubusercontent\.com/[^)]*\)' /tmp/issue-body.txt | sed 's/.*(\(https:\/\/[^)]*\)).*/\1/' >> /tmp/attachments.txt || true
+            # Extract URLs from markdown image links: ![alt](url) - but only GitHub attachments
+            grep -o '!\[[^]]*\]\(https://github\.com/user-attachments/files/[^)]*\)' /tmp/issue-body.txt | sed 's/.*(\(https:\/\/[^)]*\)).*/\1/' >> /tmp/attachments.txt || true
+            grep -o '!\[[^]]*\]\(https://user-images\.githubusercontent\.com/[^)]*\)' /tmp/issue-body.txt | sed 's/.*(\(https:\/\/[^)]*\)).*/\1/' >> /tmp/attachments.txt || true
+
+            # Remove duplicates and empty lines
+            sort -u /tmp/attachments.txt | grep -v '^$' > /tmp/attachments-deduped.txt
+            mv /tmp/attachments-deduped.txt /tmp/attachments.txt
+
+            echo "DEBUG: Found URLs (deduplicated):"
+            cat /tmp/attachments.txt
+            echo "DEBUG: Found URLs (deduplicated):" >> /tmp/attachment-info.txt
+            cat /tmp/attachments.txt >> /tmp/attachment-info.txt
+          else
+            echo "No issue body content found" > /tmp/attachments.txt
+          fi
+
+          # Download and process each attachment
+          echo "DEBUG: Checking if attachments.txt has content..."
+          if [ -s /tmp/attachments.txt ]; then
+            echo "DEBUG: Found attachments to process:"
+            cat /tmp/attachments.txt
+            echo "Found file attachments:" >> /tmp/attachment-info.txt
+            cat /tmp/attachments.txt >> /tmp/attachment-info.txt
+            echo "" >> /tmp/attachment-info.txt
+
+            # Process each attachment
+            echo "DEBUG: Starting download loop..."
+            echo "DEBUG: Number of URLs to process: $(wc -l < /tmp/attachments.txt)"
+            while IFS= read -r url; do
+              echo "DEBUG: Inside while loop, processing: $url"
+              if [ -n "$url" ]; then
+                echo "DEBUG: Processing URL: $url"
+                echo "DEBUG: Processing URL: $url" >> /tmp/attachment-info.txt
+
+                # Extract filename from URL
+                filename=$(basename "$url" | cut -d'?' -f1)
+                echo "DEBUG: Extracted filename: $filename"
+                echo "DEBUG: Extracted filename: $filename" >> /tmp/attachment-info.txt
+
+                # Download the file with verbose output
+                echo "DEBUG: Attempting to download $url to /tmp/attachments/$filename"
+                echo "DEBUG: Attempting to download $url to /tmp/attachments/$filename" >> /tmp/attachment-info.txt
+                curl_result=$(curl -s -L -w "%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$url" -o "/tmp/attachments/$filename")
+                http_code="${curl_result: -3}"
+                echo "DEBUG: curl HTTP code: $http_code"
+                echo "DEBUG: curl HTTP code: $http_code" >> /tmp/attachment-info.txt
+
+                # Debug: Show curl response for debugging
+                echo "DEBUG: Full curl response: $curl_result"
+                echo "DEBUG: File size after download: $(wc -c < "/tmp/attachments/$filename" 2>/dev/null || echo '0') bytes"
+                echo "DEBUG: File contents (first 100 chars):"
+                head -c 100 "/tmp/attachments/$filename" 2>/dev/null || echo "Could not read file"
+                echo ""
+
+                # Check if we actually got file content (even if HTTP code wasn't 200)
+                file_size=$(wc -c < "/tmp/attachments/$filename" 2>/dev/null || echo "0")
+                if [ "$file_size" -gt 0 ]; then
+                  echo "Downloaded: $filename (size: $file_size bytes)" >> /tmp/attachment-info.txt
+                  echo "DEBUG: File size: $file_size bytes" >> /tmp/attachment-info.txt
+                  echo "DEBUG: File type: $(file -b "/tmp/attachments/$filename")" >> /tmp/attachment-info.txt
+
+                  # Check if it's a text file we can read
+                  file_type=$(file -b "/tmp/attachments/$filename" | cut -d',' -f1)
+                  if [[ "$file_type" == *"text"* ]] || [[ "$filename" =~ \.(txt|md|json|js|ts|jsx|tsx|py|java|c|cpp|h|hpp|css|html|xml|yaml|yml|toml|ini|conf|log|sh|bash|zsh|fish)$ ]]; then
+                    # Copy text file to readable directory for Claude
+                    cp "/tmp/attachments/$filename" "/tmp/attachment-readable/$filename"
+                    # Copy to repository workspace for Claude access
+                    cp "/tmp/attachments/$filename" "./attachments/$filename"
+                    echo "Copied $filename to ./attachments/" >> /tmp/attachment-info.txt
+                    echo "=== CONTENTS OF $filename ===" > "/tmp/attachment-contents/$filename.txt"
+                    cat "/tmp/attachments/$filename" >> "/tmp/attachment-contents/$filename.txt"
+                    echo "=== END OF $filename ===" >> "/tmp/attachment-contents/$filename.txt"
+                    echo "Text file contents available for: $filename" >> /tmp/attachment-info.txt
+                    # Also include file contents directly in attachment info
+                    echo "=== DIRECT FILE CONTENTS: $filename ===" >> /tmp/attachment-info.txt
+                    echo "DEBUG: About to read file contents from /tmp/attachments/$filename" >> /tmp/attachment-info.txt
+                    if [ -f "/tmp/attachments/$filename" ]; then
+                      echo "DEBUG: File exists, reading contents..." >> /tmp/attachment-info.txt
+                      cat "/tmp/attachments/$filename" >> /tmp/attachment-info.txt
+                      echo "DEBUG: Finished reading file contents" >> /tmp/attachment-info.txt
+                    else
+                      echo "DEBUG: ERROR - File does not exist: /tmp/attachments/$filename" >> /tmp/attachment-info.txt
+                    fi
+                    echo "=== END DIRECT FILE CONTENTS: $filename ===" >> /tmp/attachment-info.txt
+                  else
+                    echo "Binary file (image/document): $filename" >> /tmp/attachment-info.txt
+                  fi
+                else
+                  echo "Failed to download: $filename" >> /tmp/attachment-info.txt
+                  echo "DEBUG: curl failed with HTTP code: $http_code" >> /tmp/attachment-info.txt
+                  echo "DEBUG: curl output: $curl_result" >> /tmp/attachment-info.txt
+                fi
+              fi
+            done < /tmp/attachments.txt
+
+            echo "" >> /tmp/attachment-info.txt
+            echo "Text file contents are available in /tmp/attachment-contents/" >> /tmp/attachment-info.txt
+            echo "Text files are available in /tmp/attachment-readable/" >> /tmp/attachment-info.txt
+            echo "Text files are available in ./attachments/ (Claude accessible)" >> /tmp/attachment-info.txt
+            echo "Current working directory: $(pwd)" >> /tmp/attachment-info.txt
+            echo "Files in ./attachments/:" >> /tmp/attachment-info.txt
+            ls -la ./attachments/ >> /tmp/attachment-info.txt 2>&1 || echo "No files in ./attachments/" >> /tmp/attachment-info.txt
+            echo "File contents in ./attachments/:" >> /tmp/attachment-info.txt
+            for file in ./attachments/*; do
+              if [ -f "$file" ]; then
+                echo "=== $file ===" >> /tmp/attachment-info.txt
+                head -20 "$file" >> /tmp/attachment-info.txt
+                echo "=== END $file ===" >> /tmp/attachment-info.txt
+              fi
+            done
+            echo "Binary files are available in /tmp/attachments/" >> /tmp/attachment-info.txt
+          else
+            echo "DEBUG: No attachments.txt file found or it's empty"
+            echo "DEBUG: Contents of /tmp/attachments.txt:"
+            cat /tmp/attachments.txt || echo "File does not exist"
+            echo "No file attachments found in issue." > /tmp/attachment-info.txt
+          fi
+
+      - name: Create AI resolution prompt
+        if: steps.check-access.outputs.has-access == 'true'
+        run: |
+          mkdir -p /tmp/claude-prompts
+
+          # Debug: Show what's in the attachment info file
+          echo "DEBUG: Contents of /tmp/attachment-info.txt:"
+          cat /tmp/attachment-info.txt || echo "File does not exist"
+          echo "DEBUG: End of attachment info"
+
+          cat > /tmp/claude-prompts/ai-resolution-prompt.txt << EOF
+          You are an AI assistant tasked with resolving GitHub issues. Your goal is to analyze the issue, implement a fix, and create a pull request.
+
+          PROJECT CONTEXT:
+          - Repository: ${GITHUB_REPOSITORY}
+          - Issue Number: ${{ github.event.issue.number }}
+          - Issue Title: "${{ github.event.issue.title }}"
+          - Issue Description: See issue details below
+
+          CRITICAL: Always read CLAUDE.md first for project context and development guidelines.
+
+          FILE ATTACHMENTS INFO:
+          $(cat /tmp/attachment-info.txt)
+
+          TASK:
+          1. FIRST: Read CLAUDE.md to understand project structure, development commands, and coding standards
+          2. Get the issue details using mcp__github__get_issue
+          3. Check if a PR already exists for this issue using mcp__github__list_pull_requests
+          4. If a PR already exists, do not create another one - stop here
+          5. Analyze the issue description and any attached files
+          6. Understand the codebase structure using available tools
+          7. Implement the fix by:
+             - Creating a new branch (use format: ai-fix/issue-{number})
+             - Making the necessary code changes
+             - Committing the changes
+             - Creating a pull request with a descriptive title and body
+          8. The PR should:
+             - Reference the original issue
+             - Include a clear description of the fix
+             - Be ready for review
+
+          FILE ATTACHMENTS:
+          - TEXT FILE CONTENTS ARE INCLUDED DIRECTLY IN THE ATTACHMENT INFO BELOW
+          - Look for "=== DIRECT FILE CONTENTS: filename ===" sections in the prompt
+          - DO NOT use Read/View tools for files that have content in the prompt
+          - Binary files (images, documents) are noted but not read
+          - For images, note the filename and consider it as visual context
+          - All attached files are part of the issue requirements
+          - CRITICAL: You must read the file contents to understand the full scope of the issue
+
+          AVAILABLE TOOLS:
+          - mcp__github__get_issue: Get issue details
+          - mcp__github__get_issue_comments: Get issue comments
+          - mcp__github__list_pull_requests: Check for existing PRs
+          - mcp__github__create_branch: Create a new branch
+          - mcp__github__create_pull_request: Create a PR
+          - mcp__github__create_or_update_file: Create/update files
+          - mcp__github__push_files: Push multiple files
+          - Bash: For git operations and file manipulation
+          - View, GlobTool, GrepTool: For exploring codebase
+          - Write: For creating new files
+
+          WORKFLOW:
+          1. ALWAYS start by reading CLAUDE.md for project context
+          2. Get issue details and understand the problem
+          3. CRITICAL: File contents are already included in this prompt below
+             - Look for "=== DIRECT FILE CONTENTS: filename ===" sections in the attachment info
+             - The file contents are right here in the prompt - DO NOT use Read/View tools for these
+             - If you see file contents in the prompt, use them directly
+             - Only use View tools if you need additional files not mentioned in the prompt
+          4. Check for existing PRs to avoid duplicates
+          5. If PR exists, stop here
+          6. Explore the codebase to understand the structure
+          7. Create a new branch: ai-fix/issue-{issue_number}
+          8. Implement the fix by creating/modifying files
+          9. Commit changes using git commands
+          10. Create a pull request that references the original issue
+          11. Ensure the PR description explains what was fixed and how
+
+          IMPORTANT:
+          - ALWAYS read CLAUDE.md first for project guidelines
+          - Check for file attachments in issue description
+          - Only work on this specific issue
+          - Check for existing PRs first to avoid duplicates
+          - Create a descriptive branch name
+          - Write clear commit messages
+          - Reference the issue number in the PR title/body
+          - Make sure the fix actually addresses the reported problem
+          - Follow the project's coding standards from CLAUDE.md
+          - Include appropriate tests if the issue involves functionality
+          - Run quality gates (lint, format, types, test) before completing
+          EOF
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Run Claude Code for AI Resolution
+        if: steps.check-access.outputs.has-access == 'true'
+        id: ai-resolution
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt_file: /tmp/claude-prompts/ai-resolution-prompt.txt
+          allowed_tools: "Bash(git:*),View,GlobTool,GrepTool,Write,mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__list_pull_requests,mcp__github__create_branch,mcp__github__create_pull_request,mcp__github__create_or_update_file,mcp__github__push_files"
+          mcp_config: /tmp/mcp-config/mcp-servers.json
+          timeout_minutes: "25"
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Mark issue as processed
+        if: steps.check-access.outputs.has-access == 'true' && steps.ai-resolution.outputs.conclusion == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: ${{ github.event.issue.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['ai-processed']
+            })
+
+      - name: Cleanup attachment files
+        if: always()
+        run: |
+          # Clean up attachment files from repository
+          rm -rf ./attachments || true
+          rm -rf /tmp/attachments || true
+          rm -rf /tmp/attachment-contents || true
+          rm -rf /tmp/attachment-readable || true
+
+      - name: Handle insufficient access
+        if: steps.check-access.outputs.has-access == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log(`
