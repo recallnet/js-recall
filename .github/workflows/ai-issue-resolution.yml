@@ -227,13 +227,17 @@ jobs:
             echo "Files in ./attachments/:" >> /tmp/attachment-info.txt
             ls -la ./attachments/ >> /tmp/attachment-info.txt 2>&1 || echo "No files in ./attachments/" >> /tmp/attachment-info.txt
             echo "File contents in ./attachments/:" >> /tmp/attachment-info.txt
-            for file in ./attachments/*; do
-              if [ -f "$file" ]; then
-                echo "=== $file ===" >> /tmp/attachment-info.txt
-                head -20 "$file" >> /tmp/attachment-info.txt
-                echo "=== END $file ===" >> /tmp/attachment-info.txt
-              fi
-            done
+            if [ -d "./attachments" ] && [ "$(ls -A ./attachments 2>/dev/null)" ]; then
+              for file in ./attachments/*; do
+                if [ -f "$file" ]; then
+                  echo "=== $file ===" >> /tmp/attachment-info.txt
+                  head -20 "$file" >> /tmp/attachment-info.txt
+                  echo "=== END $file ===" >> /tmp/attachment-info.txt
+                fi
+              done
+            else
+              echo "No files in ./attachments/" >> /tmp/attachment-info.txt
+            fi
             echo "Binary files are available in /tmp/attachments/" >> /tmp/attachment-info.txt
           else
             echo "DEBUG: No attachments.txt file found or it's empty"
@@ -374,4 +378,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            console.log(`
+            console.log(`❌ User ${context.payload.sender.login} does not have sufficient access to trigger AI resolution. Only repository collaborators with admin, write, maintain, or triage permissions can trigger this workflow.`);
+            console.log(`User permission level: ${context.payload.sender.login} is not a collaborator or has insufficient permissions.`);
+            console.log(`This workflow requires repository access to create branches and pull requests.`);
