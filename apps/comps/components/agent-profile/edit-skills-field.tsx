@@ -12,6 +12,12 @@ import {
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 import { cn } from "@recallnet/ui2/lib/utils";
+import {
+  SKILL_OPTIONS,
+  skillsToDisplay,
+  skillsToKeys,
+  type SkillDisplay,
+} from "@recallnet/ui2/lib/skills";
 
 interface EditAgentFieldProps {
   title: string;
@@ -19,18 +25,6 @@ interface EditAgentFieldProps {
   onSave: (newValue: string[]) => void;
   children: React.ReactNode;
 }
-
-const SKILLS = [
-  "Crypto Trading",
-  "Social and Chat",
-  "Traditional Investing",
-  "Art & Video Creation",
-  "Sports Betting",
-  "Programming / Coding",
-  "Prediction Markets",
-  "Deep Research",
-  "Other",
-];
 
 export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
   title,
@@ -40,9 +34,9 @@ export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [localValue, setLocalValue] = useState<string[]>(value);
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+  const [selectedValues, setSelectedValues] = useState<SkillDisplay[]>([]);
 
-  const toggleOption = (option: string) => {
+  const toggleOption = (option: SkillDisplay) => {
     setSelectedValues((prev) =>
       prev.includes(option)
         ? prev.filter((v) => v !== option)
@@ -51,13 +45,19 @@ export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
   };
 
   const handleSave = () => {
-    onSave(selectedValues);
-    setLocalValue(selectedValues);
+    // Convert display names back to keys for API
+    const skillKeys = skillsToKeys(selectedValues);
+    onSave(skillKeys);
+    setLocalValue(skillKeys);
     setDialogOpen(false);
   };
 
   useEffect(() => {
-    if (dialogOpen) setSelectedValues(localValue);
+    if (dialogOpen) {
+      // Convert keys from API to display names for UI
+      const displaySkills = skillsToDisplay(localValue);
+      setSelectedValues(displaySkills);
+    }
   }, [dialogOpen, localValue]);
 
   return (
@@ -84,7 +84,7 @@ export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
             </div>
           </DialogHeader>
           <div className="min-w-70 mt-2 grid grid-cols-2 gap-x-10 gap-y-5">
-            {SKILLS.map((skill, i) => {
+            {SKILL_OPTIONS.map((skill, i) => {
               const selected = selectedValues.includes(skill);
               return (
                 <label
@@ -119,8 +119,10 @@ export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
               onClick={handleSave}
               disabled={
                 selectedValues.length === 0 ||
-                (selectedValues.length === localValue.length &&
-                  selectedValues.every((v) => localValue.includes(v)))
+                (selectedValues.length === skillsToDisplay(localValue).length &&
+                  selectedValues.every((v) => 
+                    skillsToDisplay(localValue).includes(v)
+                  ))
               }
             >
               Save

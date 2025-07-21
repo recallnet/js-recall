@@ -14,20 +14,13 @@ import {
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
 import { Textarea } from "@recallnet/ui2/components/textarea";
+import {
+  SKILL_OPTIONS,
+  skillsToKeys,
+  type SkillDisplay,
+} from "@recallnet/ui2/lib/skills";
 
 import { FormData } from "./index";
-
-const AGENT_SKILLS = [
-  "Crypto Trading",
-  "Traditional Investing",
-  "Sports Betting",
-  "Prediction Markets",
-  "Social and Chat",
-  "Art & Video Creation",
-  "Programming / Coding",
-  "Deep Research",
-  "Other",
-];
 
 interface BasicsStepProps {
   form: UseFormReturn<FormData>;
@@ -109,30 +102,38 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
             <FormLabel>Agent Skills</FormLabel>
             <FormDescription>Choose all that apply.</FormDescription>
             <div className="grid grid-cols-2 gap-2 pt-2">
-              {AGENT_SKILLS.map((skill) => (
-                <label key={skill} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    value={skill}
-                    className="h-4 w-4"
-                    checked={field.value.includes(skill)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        field.onChange([...field.value, skill]);
-                      } else {
-                        field.onChange(
-                          field.value.filter((s: string) => s !== skill),
-                        );
-                      }
-                    }}
-                  />
-                  <span className="text-secondary-foreground text-sm">
-                    {skill}
-                  </span>
-                </label>
-              ))}
+              {SKILL_OPTIONS.map((skill) => {
+                // Convert display names to keys for form value comparison and storage
+                const skillKey = skillsToKeys([skill])[0];
+                const isChecked = field.value.includes(skillKey) || field.value.includes(skill);
+                
+                return (
+                  <label key={skill} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      value={skillKey}
+                      className="h-4 w-4"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          // Store the skill key (e.g., "trading") not display name
+                          field.onChange([...field.value.filter((s: string) => s !== skill && s !== skillKey), skillKey]);
+                        } else {
+                          // Remove both key and display name variants
+                          field.onChange(
+                            field.value.filter((s: string) => s !== skill && s !== skillKey),
+                          );
+                        }
+                      }}
+                    />
+                    <span className="text-secondary-foreground text-sm">
+                      {skill}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
-            {field.value.includes("Other") && (
+            {(field.value.includes("Other") || field.value.includes("other")) && (
               <FormField
                 control={form.control}
                 name="otherSkill"
