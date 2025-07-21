@@ -154,7 +154,12 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
         )}
       />
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" className="px-10" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          className="px-10"
+          onClick={onBack}
+        >
           BACK
         </Button>
         <Button type="button" onClick={handleNext} className="px-10">
