@@ -25,9 +25,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   competition,
   className,
 }) => {
-  const { data: topLeaders } = useCompetitionAgents(competition.id, {
-    limit: 5,
-  });
+  const { data: topLeaders } = useCompetitionAgents(competition.id);
 
   const duration = formatCompetitionDates(
     competition.startDate,
