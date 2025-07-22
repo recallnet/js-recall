@@ -234,6 +234,42 @@ describe("User API", () => {
     expect(foundUser?.imageUrl).toBe(newImageUrl);
   });
 
+  test("fails to update email if already in use", async () => {
+    // Create a SIWE-authenticated client
+    const userEmail = `email@example.com`;
+    await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "SIWE Test User",
+      userEmail,
+    });
+
+    // Try to create a user with the same email
+    await expect(
+      createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "SIWE Test User",
+        userEmail,
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+    });
+
+    // Create another user with a different email
+    const { client: otherUserClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "Other User",
+      userEmail: "other-user@example.com",
+    });
+    // Try to update the email to the other user's email
+    const updateResponse = await otherUserClient.updateUserProfile({
+      email: userEmail,
+    });
+    expect(updateResponse.success).toBe(false);
+    expect((updateResponse as ErrorResponse).error).toContain(
+      "Email already in use",
+    );
+  });
+
   test("SIWE user can access their profile and manage agents", async () => {
     // Create a SIWE-authenticated client
     const { client: siweClient, user } = await createSiweAuthenticatedClient({

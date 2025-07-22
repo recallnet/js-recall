@@ -79,6 +79,14 @@ export function makeUserController(services: ServiceRegistry) {
           throw new ApiError(404, "User not found");
         }
 
+        // Check if the email is already in use
+        if (email && email !== user.email) {
+          const existingUser = await services.userManager.getUserByEmail(email);
+          if (existingUser && existingUser.id !== userId) {
+            throw new ApiError(409, "Email already in use");
+          }
+        }
+
         // Prepare update data with only allowed fields
         const updateData = {
           id: userId,

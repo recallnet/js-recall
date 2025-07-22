@@ -319,16 +319,18 @@ export class CompetitionManager {
       const entry = leaderboard[i];
       if (entry === undefined) continue;
       const agentId = entry.agentId;
-      const pnl = await this.agentManager.getAgentPnlForComp(
-        agentId,
-        competitionId,
-      );
+      const { pnl, startingValue } =
+        await this.agentManager.getAgentPerformanceForComp(
+          agentId,
+          competitionId,
+        );
 
       const val = {
         agentId,
         competitionId,
         rank: i + 1, // 1-based ranking
-        pnl: pnl.pnl,
+        pnl,
+        startingValue,
         totalAgents: competitionAgents.length,
         score: entry.value, // Use the the total portfolio value in usd is saved as `score`
       };

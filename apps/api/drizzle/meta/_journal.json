@@ -162,6 +162,13 @@
       "when": 1752786251228,
       "tag": "0022_giant_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1753130875910,
+      "tag": "0023_classy_bishop",
+      "breakpoints": true
     }
   ]
 }

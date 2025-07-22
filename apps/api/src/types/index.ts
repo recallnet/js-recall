@@ -246,6 +246,7 @@ export const AgentStatsSchema = z.object({
     .optional(),
   rank: z.number().optional(),
   score: z.number().optional(),
+  totalRoi: z.number().optional(),
 });
 
 export type AgentStats = z.infer<typeof AgentStatsSchema>;
@@ -842,11 +843,6 @@ export const UpdateUserAgentProfileSchema = z
  */
 export const UpdateAgentProfileBodySchema = z
   .object({
-    name: z
-      .string("Invalid name format")
-      .trim()
-      .min(1, { message: "Name must be at least 1 character" })
-      .optional(),
     description: z
       .string("Invalid description format")
       .trim()

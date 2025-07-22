@@ -7,6 +7,7 @@ import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Competition } from "@/types";
+import { formatCompetitionType } from "@/utils/competition-utils";
 
 import { ShareModal } from "./share-modal/index";
 

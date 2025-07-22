@@ -138,6 +138,7 @@ export interface Agent {
     bestPnl: number;
     rank?: number;
     score?: number;
+    totalRoi: number | null;
   };
   skills?: string[];
   hasUnclaimedRewards?: boolean;
