@@ -142,7 +142,7 @@ describe("Agent API", () => {
     );
   });
 
-  test("agents can update their profile with name and imageUrl", async () => {
+  test("agents can update their profile with description and imageUrl", async () => {
     // Setup admin client
     const client = createTestClient();
     console.log(
@@ -157,20 +157,17 @@ describe("Agent API", () => {
     });
 
     // Define update data for the agent (excluding metadata since it's not allowed in agent self-service)
-    const newName = "Updated Agent Name";
     const newDescription = "Updated agent description";
     const newImageUrl = "https://example.com/new-agent-image.jpg";
 
     // Update agent profile with all allowed fields
     const updateResponse = await agentClient.updateAgentProfile({
-      name: newName,
       description: newDescription,
       imageUrl: newImageUrl,
     });
 
     expect(updateResponse.success).toBe(true);
     expect((updateResponse as AgentProfileResponse).agent).toBeDefined();
-    expect((updateResponse as AgentProfileResponse).agent.name).toBe(newName);
     expect((updateResponse as AgentProfileResponse).agent.description).toBe(
       newDescription,
     );
@@ -181,7 +178,6 @@ describe("Agent API", () => {
     // Verify changes persisted
     const profileResponse = await agentClient.getAgentProfile();
     expect(profileResponse.success).toBe(true);
-    expect((profileResponse as AgentProfileResponse).agent.name).toBe(newName);
     expect((profileResponse as AgentProfileResponse).agent.description).toBe(
       newDescription,
     );
@@ -549,11 +545,13 @@ describe("Agent API", () => {
 
     // Step 4: Update the agent's profile multiple times in rapid succession
     // This tests that cache consistency is maintained during updates
-    const newName = "Cache Test Agent Updated";
+    const originalDescription = "Cache Test Agent Updated";
+    const originalImageUrl = "https://example.com/agent-image-updated.jpg";
 
-    // Update 1: Set name
+    // Update 1: Set description
     const updateResponse1 = await agentClient.updateAgentProfile({
-      name: newName,
+      imageUrl: originalImageUrl,
+      description: originalDescription,
     });
     expect(updateResponse1.success).toBe(true);
 
@@ -576,22 +574,24 @@ describe("Agent API", () => {
     ); // USDC token
     expect(priceResponse2.success).toBe(true);
 
-    // Update 3: Change both name and description
+    // Update 3: Change both imageUrl and description
+    const newImageUrl = "https://example.com/agent-image-updated.jpg";
+    const newDescription2 = `Cache Test Description ${Date.now()}`;
     const updateResponse3 = await agentClient.updateAgentProfile({
-      name: `${newName} Final`,
-      description: `${newDescription} Updated`,
+      imageUrl: newImageUrl,
+      description: newDescription2,
     });
     expect(updateResponse3.success).toBe(true);
 
     // Step 5: Verify final profile state
     const finalProfileResponse = await agentClient.getAgentProfile();
     expect(finalProfileResponse.success).toBe(true);
-    expect((finalProfileResponse as AgentProfileResponse).agent.name).toBe(
-      `${newName} Final`,
-    );
     expect(
       (finalProfileResponse as AgentProfileResponse).agent.description,
-    ).toBe(`${newDescription} Updated`);
+    ).toBe(newDescription2);
+    expect((finalProfileResponse as AgentProfileResponse).agent.imageUrl).toBe(
+      newImageUrl,
+    );
 
     // Step 6: Make multiple API calls to verify authentication still works
     // This confirms the apiKeyCache remains consistent
@@ -755,17 +755,19 @@ describe("Agent API", () => {
     expect(agent.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
 
     // Define new values for both fields
-    const newName = "Combined Bot";
     const newImageUrl = "https://example.com/combined-update-image.jpg";
+    const newDescription = "Combined Bot Description";
 
     // Update both fields in a single request
     const updateResponse = await agentClient.updateAgentProfile({
-      name: newName,
+      description: newDescription,
       imageUrl: newImageUrl,
     });
 
     expect(updateResponse.success).toBe(true);
-    expect((updateResponse as AgentProfileResponse).agent.name).toBe(newName);
+    expect((updateResponse as AgentProfileResponse).agent.description).toBe(
+      newDescription,
+    );
     expect((updateResponse as AgentProfileResponse).agent.imageUrl).toBe(
       newImageUrl,
     );
@@ -775,7 +777,7 @@ describe("Agent API", () => {
     expect(profileResponse.success).toBe(true);
 
     const updatedProfile = (profileResponse as AgentProfileResponse).agent;
-    expect(updatedProfile.name).toBe(newName);
+    expect(updatedProfile.description).toBe(newDescription);
     expect(updatedProfile.imageUrl).toBe(newImageUrl);
 
     // Verify admin can see both updated fields
@@ -784,7 +786,7 @@ describe("Agent API", () => {
         email: userEmail,
       },
       agent: {
-        name: newName,
+        name: agentName,
       },
     });
 
