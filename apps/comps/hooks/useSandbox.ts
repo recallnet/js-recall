@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { ENABLE_SANDBOX } from "@/config";
+import { SANDBOX_FULLY_CONFIGURED } from "@/config";
 import { sandboxClient } from "@/lib/sandbox-client";
 import {
   AdminAgentKeyResponse,
@@ -14,7 +14,12 @@ import {
  */
 export const useCreateSandboxUser = () => {
   return useMutation<AdminUserResponse, Error>({
-    mutationFn: () => sandboxClient.createUser(),
+    mutationFn: () => {
+      if (!SANDBOX_FULLY_CONFIGURED) {
+        throw new Error("Sandbox not configured");
+      }
+      return sandboxClient.createUser();
+    },
   });
 };
 
@@ -34,7 +39,12 @@ export const useCreateSandboxAgent = () => {
       metadata?: Record<string, unknown>;
     }
   >({
-    mutationFn: (agentData) => sandboxClient.createAgent(agentData),
+    mutationFn: (agentData) => {
+      if (!SANDBOX_FULLY_CONFIGURED) {
+        throw new Error("Sandbox not configured");
+      }
+      return sandboxClient.createAgent(agentData);
+    },
   });
 };
 
@@ -47,6 +57,6 @@ export const useSandboxAgentApiKey = (agentName: string | null) => {
   return useQuery<AdminAgentKeyResponse, Error>({
     queryKey: ["sandbox-agent-api-key", agentName],
     queryFn: () => sandboxClient.getAgentApiKey(agentName!),
-    enabled: !!agentName && ENABLE_SANDBOX,
+    enabled: !!agentName && SANDBOX_FULLY_CONFIGURED,
   });
 };

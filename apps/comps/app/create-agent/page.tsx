@@ -5,7 +5,7 @@ import React, { Suspense, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
-import { ENABLE_SANDBOX } from "@/config";
+import { SANDBOX_FULLY_CONFIGURED } from "@/config";
 import { useUserAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
 import {
@@ -40,7 +40,7 @@ function CreateAgentView() {
 
     setCreatedAgentId(result.agent.id);
 
-    if (ENABLE_SANDBOX) {
+    if (SANDBOX_FULLY_CONFIGURED) {
       try {
         // Create user in sandbox (if not already exists)
         await createSandboxUser.mutateAsync();

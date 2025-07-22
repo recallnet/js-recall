@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 import { toast } from "@recallnet/ui2/components/toast";
 
+import { SANDBOX_FULLY_CONFIGURED } from "@/config";
 import { ApiClient } from "@/lib/api-client";
 import { sandboxClient } from "@/lib/sandbox-client";
 
@@ -9,10 +11,16 @@ import { useProfile } from "./useProfile";
 
 const apiClient = new ApiClient();
 
+// Generate fake sandbox key for local development (same format as real key)
+const FAKE_SANDBOX_KEY = "fakesandboxkey01_fakesandboxkey02";
+
 export const useUnlockKeys = (agentName: string, agentId?: string) => {
   const queryClient = useQueryClient();
   const { data: user } = useProfile();
   const isEmailVerified = user?.isEmailVerified;
+
+  // Track when unlock was successful with sandbox skipped (for local dev)
+  const [sandboxSkippedUnlocked, setSandboxSkippedUnlocked] = useState(false);
 
   // Query for production API key - fetch when email verified and agent exists
   const productionKeyQuery = useQuery({
@@ -30,7 +38,7 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
     queryFn: async () => {
       return await sandboxClient.getAgentApiKey(agentName);
     },
-    enabled: !!agentName && !!isEmailVerified,
+    enabled: !!agentName && !!isEmailVerified && SANDBOX_FULLY_CONFIGURED,
   });
 
   // Get sandbox agent id
@@ -45,7 +53,7 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
         status: "active",
       });
     },
-    enabled: !!sandboxAgentId && !!isEmailVerified,
+    enabled: !!sandboxAgentId && !!isEmailVerified && SANDBOX_FULLY_CONFIGURED,
     staleTime: 0, // Always consider data stale
     refetchOnMount: "always", // Always refetch when component mounts
   });
@@ -67,7 +75,7 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
         throw error;
       }
     },
-    enabled: !!agentName && !!isEmailVerified,
+    enabled: !!agentName && !!isEmailVerified && SANDBOX_FULLY_CONFIGURED,
     retry: (failureCount, error) => {
       // Don't retry if it's just "agent not found" - the agent might not be created yet
       if (error instanceof Error && error.message.includes("Agent not found")) {
@@ -83,9 +91,13 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
   const hasSandboxKey = !!sandboxKeyQuery.data?.agent?.apiKey;
   const isInActiveSandboxCompetition =
     !!sandboxCompetitionsQuery.data?.competitions?.length;
-  // We unlock when all keys exists *and* the agent is in an active sandbox competition
-  const isUnlocked =
-    hasProductionKey && hasSandboxKey && isInActiveSandboxCompetition;
+
+  // Original unlock logic, but account for sandbox being skipped in local dev
+  const sandboxRequirementsMet = SANDBOX_FULLY_CONFIGURED
+    ? hasSandboxKey && isInActiveSandboxCompetition
+    : sandboxSkippedUnlocked;
+
+  const isUnlocked = hasProductionKey && sandboxRequirementsMet;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -94,6 +106,15 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
           "Email verification required to access agent API keys and join sandbox competitions",
         );
       }
+
+      // When sandbox is not configured, skip sandbox operations but still require unlock
+      if (!SANDBOX_FULLY_CONFIGURED) {
+        console.log(
+          "[useUnlockKeys] Sandbox not configured - skipping sandbox operations for local development",
+        );
+        return { alreadyJoined: true, sandboxSkipped: true };
+      }
+
       if (!sandboxAgentId) {
         throw new Error("Unable to find sandbox agent");
       }
@@ -132,6 +153,11 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
       }
     },
     onSuccess: (result) => {
+      // Track successful unlock when sandbox was skipped
+      if (result?.sandboxSkipped) {
+        setSandboxSkippedUnlocked(true);
+      }
+
       // Show success message
       if (result?.alreadyJoined) {
         toast.success("API Keys are now accessible");
@@ -172,7 +198,11 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
   return {
     mutation,
     productionKey: productionKeyQuery.data?.apiKey,
-    sandboxKey: sandboxKeyQuery.data?.agent?.apiKey,
+    sandboxKey: SANDBOX_FULLY_CONFIGURED
+      ? sandboxKeyQuery.data?.agent?.apiKey
+      : isUnlocked
+        ? FAKE_SANDBOX_KEY
+        : undefined,
     sandboxCompetitions: sandboxCompetitionsQuery.data?.competitions,
     isLoadingKeys:
       productionKeyQuery.isLoading ||

@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
 
-import { sandboxAdminRequest } from "@/app/api/sandbox/_lib/sandbox-config";
 import {
+  isSandboxConfigured,
+  sandboxAdminRequest,
+} from "@/app/api/sandbox/_lib/sandbox-config";
+import {
+  createErrorResponse,
   createSuccessResponse,
   withErrorHandling,
 } from "@/app/api/sandbox/_lib/sandbox-response";
@@ -15,6 +19,11 @@ async function handleGetAgentCompetitions(
   request: NextRequest,
   { params }: { params: Promise<{ agentId: string }> },
 ) {
+  // Check if sandbox is configured
+  if (!isSandboxConfigured()) {
+    return createErrorResponse("Sandbox not configured", 503);
+  }
+
   const { agentId } = await params;
 
   // Extract query parameters
