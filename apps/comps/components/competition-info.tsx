@@ -80,13 +80,11 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
       <div className="flex items-center gap-2 border-b p-[25px]">
         <CellTitle>Skills</CellTitle>
-        {/* <div className="flex flex-wrap gap-2">
-          {competition.skills.map((skill, i) => (
-            <span key={skill + i} className="rounded border p-2 text-xs">
-              {skill}
-            </span>
-          ))} 
-        </div>*/}
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded border p-2 text-xs capitalize">
+            {competition.type}
+          </span>
+        </div>
       </div>
 
       <div className="border-b">
