@@ -92,6 +92,39 @@ export class SandboxClient {
   }
 
   /**
+   * Update an agent in the sandbox environment
+   * @param agentId - ID of the agent to update
+   * @param agentData - Agent update data
+   * @returns Agent API key response
+   */
+  async updateAgent(
+    agentId: string,
+    agentData: {
+      name?: string;
+      description?: string;
+      imageUrl?: string;
+      email?: string;
+      metadata?: Record<string, unknown>;
+    },
+  ): Promise<AdminAgentKeyResponse> {
+    const response = await fetch(`${SANDBOX_API_BASE}/agents/${agentId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // Include cookies for authentication
+      body: JSON.stringify(agentData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to update agent in sandbox");
+    }
+
+    return response.json();
+  }
+
+  /**
    * Get competitions
    */
   async getCompetitions(): Promise<CompetitionsResponse> {

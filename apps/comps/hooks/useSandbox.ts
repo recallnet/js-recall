@@ -50,3 +50,25 @@ export const useSandboxAgentApiKey = (agentName: string | null) => {
     enabled: !!agentName && ENABLE_SANDBOX,
   });
 };
+
+/**
+ * Hook to update an agent in the sandbox environment
+ * @returns Mutation for updating an agent
+ */
+export const useUpdateSandboxAgent = () => {
+  return useMutation<
+    AdminAgentKeyResponse,
+    Error,
+    {
+      agentId: string;
+      name?: string;
+      description?: string;
+      imageUrl?: string;
+      email?: string;
+      metadata?: Record<string, unknown>;
+    }
+  >({
+    mutationFn: ({ agentId, ...agentData }) =>
+      sandboxClient.updateAgent(agentId, agentData),
+  });
+};
