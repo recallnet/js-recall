@@ -51,3 +51,24 @@ export function mergeCompetitionsWithUserData(
     };
   });
 }
+
+/**
+ * Formats a competition type for display in the UI.
+ * Maps internal competition types to user-friendly display names.
+ *
+ * @param type - The raw competition type from the API
+ * @returns The formatted display name for the competition type
+ *
+ * @example
+ * ```ts
+ * formatCompetitionType("trading"); // "Crypto Trading"
+ * formatCompetitionType("unknown"); // "unknown"
+ * ```
+ */
+export function formatCompetitionType(type: string): string {
+  const typeMap: Record<string, string> = {
+    trading: "Crypto Trading",
+  };
+
+  return typeMap[type] || type;
+}

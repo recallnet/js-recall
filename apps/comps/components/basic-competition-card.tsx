@@ -8,6 +8,7 @@ import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Competition } from "@/types";
+import { formatCompetitionType } from "@/utils/competition-utils";
 
 import { ShareModal } from "./share-modal/index";
 
@@ -29,7 +30,7 @@ export const BasicCompetitionCard: React.FC<BasicCompetitionCardProps> = ({
       <div className="flex h-1/2 flex-col pl-2 pr-5 pt-5">
         <div className="mb-2 flex items-start justify-between">
           <div className="flex gap-2">
-            <Badge>{competition.type}</Badge>
+            <Badge>{formatCompetitionType(competition.type)}</Badge>
           </div>
           <ShareModal
             url={`https://app.recall.network/competitions/${competition.id}`}

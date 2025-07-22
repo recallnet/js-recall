@@ -9,7 +9,10 @@ import { Card } from "@recallnet/ui2/components/card";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { CompetitionStatus, UserCompetition } from "@/types";
 
-import { formatCompetitionDates } from "../utils/competition-utils";
+import {
+  formatCompetitionDates,
+  formatCompetitionType,
+} from "../utils/competition-utils";
 import { CompetitionActions } from "./competition-actions";
 import { CompetitionStatusBanner } from "./competition-status-banner";
 import { TopLeadersList } from "./featured-competition/top-leaders-list";
@@ -52,7 +55,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
         </Link>
 
         <Badge variant="gray" className="mb-4 px-3 py-1 text-sm">
-          {competition.type}
+          {formatCompetitionType(competition.type)}
         </Badge>
 
         <p className="text-secondary-foreground mb-8 max-w-3xl">
