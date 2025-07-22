@@ -14,6 +14,7 @@ import {
 } from "@recallnet/ui2/components/table";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { AgentAvatar } from "@/components/agent-avatar";
 import { Pagination } from "@/components/pagination/index";
 import { LeaderboardAgent } from "@/types/agent";
 
@@ -148,12 +149,10 @@ export function LeaderboardTable({
 
                     <TableCell className="flex items-center justify-center pl-10">
                       <div className="flex items-center gap-2">
-                        <Image
-                          src={agent.imageUrl || "/agent-placeholder.png"}
-                          alt="avatar"
-                          className="rounded-full border"
-                          width={35}
-                          height={35}
+                        <AgentAvatar
+                          agent={agent}
+                          size={35}
+                          className="border"
                         />
                         <div className="md:w-70 w-40 text-left text-sm">
                           <div className="text-secondary-foreground mb-2 truncate font-medium leading-none">
