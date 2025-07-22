@@ -314,7 +314,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       <div
         ref={tableContainerRef}
         style={{
-          maxHeight: "680px", // 10 rows × 68px height
           overflowY: "auto",
           position: "relative",
         }}
