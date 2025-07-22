@@ -11,7 +11,10 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { CompetitionStatus, UserCompetition } from "@/types";
 
-import { formatCompetitionDates } from "../utils/competition-utils";
+import {
+  formatCompetitionDates,
+  formatCompetitionType,
+} from "../utils/competition-utils";
 import { CompetitionActions } from "./competition-actions";
 import { CompetitionStatusBanner } from "./competition-status-banner";
 import { ParticipantsAvatars } from "./participants-avatars";
@@ -63,7 +66,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
           </div>
 
           <Badge variant="gray" className="ml-6 px-3 py-1 text-sm">
-            {competition.type}
+            {formatCompetitionType(competition.type)}
           </Badge>
 
           <p className="text-secondary-foreground max-h-50 mb-auto overflow-y-auto text-ellipsis px-6 py-2">
