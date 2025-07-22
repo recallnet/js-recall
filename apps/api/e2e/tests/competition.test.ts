@@ -8,6 +8,7 @@ import { agents, competitionAgents } from "@/database/schema/core/defs.js";
 import {
   AgentProfileResponse,
   AgentTrophy,
+  BlockchainType,
   CROSS_CHAIN_TRADING_TYPE,
   CompetitionAgentsResponse,
   CompetitionDetailResponse,
@@ -27,10 +28,12 @@ import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
+  VISION_TOKEN,
   cleanupTestState,
   createSiweAuthenticatedClient,
   createTestClient,
   createTestCompetition,
+  looseConstraints,
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   startTestCompetition,
@@ -210,6 +213,61 @@ describe("Competition API", () => {
       expect(error.success).toBe(false);
       expect(error.error).toContain("active");
     }
+  });
+
+  test("should create a competition with trading constraints", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Alpha",
+      });
+
+    // Start a competition
+    const competitionName = `Test Competition ${Date.now()}`;
+    // Create the competitions
+    const createResponse = (await adminClient.createCompetition(
+      competitionName,
+      "Test competition - check trading constraints",
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      {
+        ...looseConstraints,
+        // This 24 hour volume should block that trade below
+        minimum24hVolumeUsd: 100000,
+      },
+    )) as CreateCompetitionResponse;
+
+    const competitionResponse = await startExistingTestCompetition(
+      adminClient,
+      createResponse.competition.id,
+      [agent.id],
+    );
+    expect(competitionResponse.success).toBe(true);
+
+    // Execute a buy trade (buying SOL with USDC)
+    const buyTradeResponse = await agentClient.executeTrade({
+      reason: "testing create comp with trading constraints",
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: VISION_TOKEN, // low 24h volume
+      amount: "100",
+      fromChain: BlockchainType.EVM,
+      toChain: BlockchainType.EVM,
+    });
+
+    expect(buyTradeResponse.success).toBe(false);
   });
 
   test("agents can view competition status and leaderboard", async () => {

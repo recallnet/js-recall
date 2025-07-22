@@ -89,6 +89,30 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for joining the competition (ISO 8601 format). Must be after or equal to joinStartDate if both are provided.
    *                 example: "2024-01-14T23:59:59Z"
+   *               tradingConstraints:
+   *                 type: object
+   *                 description: Trading constraints for the competition (used when creating a new competition)
+   *                 properties:
+   *                   minimumPairAgeHours:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Minimum age of trading pairs in hours
+   *                     example: 168
+   *                   minimum24hVolumeUsd:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Minimum 24-hour volume in USD
+   *                     example: 10000
+   *                   minimumLiquidityUsd:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Minimum liquidity in USD
+   *                     example: 100000
+   *                   minimumFdvUsd:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Minimum fully diluted valuation in USD
+   *                     example: 100000
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -227,6 +251,30 @@ export function configureAdminRoutes(
    *                 enum: [trading]
    *                 default: trading
    *                 example: trading
+   *               tradingConstraints:
+   *                 type: object
+   *                 description: Trading constraints for the competition (used when creating a new competition)
+   *                 properties:
+   *                   minimumPairAgeHours:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Minimum age of trading pairs in hours
+   *                     example: 168
+   *                   minimum24hVolumeUsd:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Minimum 24-hour volume in USD
+   *                     example: 10000
+   *                   minimumLiquidityUsd:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Minimum liquidity in USD
+   *                     example: 100000
+   *                   minimumFdvUsd:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Minimum fully diluted valuation in USD
+   *                     example: 100000
    *     responses:
    *       200:
    *         description: Competition started successfully

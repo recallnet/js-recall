@@ -52,6 +52,7 @@ import {
   TradeExecutionParams,
   TradeHistoryResponse,
   TradeResponse,
+  TradingConstraints,
   UpcomingCompetitionsResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
@@ -361,6 +362,7 @@ export class ApiClient {
           imageUrl?: string;
           votingStartDate?: string;
           votingEndDate?: string;
+          tradingConstraints?: TradingConstraints;
         }
       | string,
     description?: string,
@@ -371,6 +373,7 @@ export class ApiClient {
     imageUrl?: string,
     votingStartDate?: string,
     votingEndDate?: string,
+    tradingConstraints?: TradingConstraints,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       let requestData;
@@ -393,6 +396,7 @@ export class ApiClient {
           imageUrl,
           votingStartDate: votingStartDate || now,
           votingEndDate,
+          tradingConstraints,
         };
       }
 
@@ -423,6 +427,7 @@ export class ApiClient {
     votingEndDate?: string,
     joinStartDate?: string,
     joinEndDate?: string,
+    tradingConstraints?: TradingConstraints,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -440,6 +445,7 @@ export class ApiClient {
           votingEndDate,
           joinStartDate,
           joinEndDate,
+          tradingConstraints,
         },
       );
 

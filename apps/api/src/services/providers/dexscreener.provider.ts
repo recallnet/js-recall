@@ -3,7 +3,7 @@ import axios from "axios";
 import config from "@/config/index.js";
 import { PriceReport, PriceSource } from "@/types/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
-import { DexScreenerResponse } from "@/types/index.js";
+import { DexScreenerResponse, DexScreenerTokenInfo } from "@/types/index.js";
 
 /**
  * DexScreener price provider implementation
@@ -19,9 +19,7 @@ export class DexScreenerProvider implements PriceSource {
   // Add cache for token prices with composite key (tokenAddress:specificChain)
   private readonly tokenPriceCache: Map<
     string,
-    {
-      price: number;
-      symbol: string;
+    DexScreenerTokenInfo & {
       timestamp: number;
       chain: BlockchainType;
       specificChain: SpecificChain;
@@ -84,7 +82,7 @@ export class DexScreenerProvider implements PriceSource {
   /**
    * Determine if a token is a stablecoin (USDC, USDT, etc.)
    */
-  private isStablecoin(
+  public isStablecoin(
     tokenAddress: string,
     specificChain: SpecificChain,
   ): boolean {
@@ -151,7 +149,7 @@ export class DexScreenerProvider implements PriceSource {
     tokenAddress: string,
     dexScreenerChain: string,
     specificChain: SpecificChain,
-  ): Promise<{ price: number; symbol: string } | null> {
+  ): Promise<DexScreenerTokenInfo | null> {
     // Try to get a better pairing for the token
     const pairTokens = this.getBestPairForPrice(tokenAddress, specificChain);
 
@@ -203,6 +201,14 @@ export class DexScreenerProvider implements PriceSource {
               return {
                 price: parseFloat(tokenAsPair.priceUsd),
                 symbol: tokenAsPair.baseToken?.symbol || "",
+                pairCreatedAt: tokenAsPair.pairCreatedAt,
+                volume: tokenAsPair.volume
+                  ? { h24: tokenAsPair.volume.h24 }
+                  : undefined,
+                liquidity: tokenAsPair.liquidity
+                  ? { usd: tokenAsPair.liquidity.usd }
+                  : undefined,
+                fdv: tokenAsPair.fdv,
               };
             }
           } else {
@@ -264,6 +270,14 @@ export class DexScreenerProvider implements PriceSource {
                 return {
                   price: parseFloat(stablecoinPair.priceUsd),
                   symbol: stablecoinPair.baseToken?.symbol || "",
+                  pairCreatedAt: stablecoinPair.pairCreatedAt,
+                  volume: stablecoinPair.volume
+                    ? { h24: stablecoinPair.volume.h24 }
+                    : undefined,
+                  liquidity: stablecoinPair.liquidity
+                    ? { usd: stablecoinPair.liquidity.usd }
+                    : undefined,
+                  fdv: stablecoinPair.fdv,
                 };
               } else {
                 // For stablecoins that are quote tokens, we need to calculate the inverse price
@@ -283,6 +297,14 @@ export class DexScreenerProvider implements PriceSource {
                   return {
                     price: inversePrice,
                     symbol: stablecoinPair.quoteToken?.symbol || "",
+                    pairCreatedAt: stablecoinPair.pairCreatedAt,
+                    volume: stablecoinPair.volume
+                      ? { h24: stablecoinPair.volume.h24 }
+                      : undefined,
+                    liquidity: stablecoinPair.liquidity
+                      ? { usd: stablecoinPair.liquidity.usd }
+                      : undefined,
+                    fdv: stablecoinPair.fdv,
                   };
                 }
 
@@ -290,6 +312,14 @@ export class DexScreenerProvider implements PriceSource {
                 return {
                   price: 1.0,
                   symbol: stablecoinPair.quoteToken?.symbol || "",
+                  pairCreatedAt: stablecoinPair.pairCreatedAt,
+                  volume: stablecoinPair.volume
+                    ? { h24: stablecoinPair.volume.h24 }
+                    : undefined,
+                  liquidity: stablecoinPair.liquidity
+                    ? { usd: stablecoinPair.liquidity.usd }
+                    : undefined,
+                  fdv: stablecoinPair.fdv,
                 };
               }
             }
@@ -343,12 +373,12 @@ export class DexScreenerProvider implements PriceSource {
   private getCachedPrice(
     tokenAddress: string,
     specificChain: SpecificChain,
-  ): {
-    price: number;
-    symbol: string;
-    chain: BlockchainType;
-    specificChain: SpecificChain;
-  } | null {
+  ):
+    | (DexScreenerTokenInfo & {
+        chain: BlockchainType;
+        specificChain: SpecificChain;
+      })
+    | null {
     const cacheKey = this.getCacheKey(tokenAddress, specificChain);
     const cached = this.tokenPriceCache.get(cacheKey);
 
@@ -361,6 +391,10 @@ export class DexScreenerProvider implements PriceSource {
         symbol: cached.symbol,
         chain: cached.chain,
         specificChain: cached.specificChain,
+        pairCreatedAt: cached.pairCreatedAt,
+        volume: cached.volume,
+        liquidity: cached.liquidity,
+        fdv: cached.fdv,
       };
     }
     return null;
@@ -375,15 +409,22 @@ export class DexScreenerProvider implements PriceSource {
     specificChain: SpecificChain,
     price: number,
     symbol: string,
+    pairCreatedAt?: number,
+    volume?: { h24?: number },
+    liquidity?: { usd?: number },
+    fdv?: number,
   ): void {
     const cacheKey = this.getCacheKey(tokenAddress, specificChain);
-
     this.tokenPriceCache.set(cacheKey, {
       price,
       symbol,
+      timestamp: Date.now(),
       chain,
       specificChain,
-      timestamp: Date.now(),
+      pairCreatedAt,
+      volume,
+      liquidity,
+      fdv,
     });
 
     console.log(
@@ -436,6 +477,10 @@ export class DexScreenerProvider implements PriceSource {
         timestamp: new Date(),
         chain,
         specificChain,
+        pairCreatedAt: undefined,
+        volume: undefined,
+        liquidity: undefined,
+        fdv: undefined,
       };
     }
 
@@ -449,6 +494,10 @@ export class DexScreenerProvider implements PriceSource {
         timestamp: new Date(),
         chain: cachedPrice.chain,
         specificChain: cachedPrice.specificChain,
+        pairCreatedAt: cachedPrice.pairCreatedAt,
+        volume: cachedPrice.volume,
+        liquidity: cachedPrice.liquidity,
+        fdv: cachedPrice.fdv,
       };
     }
 
@@ -479,6 +528,10 @@ export class DexScreenerProvider implements PriceSource {
         specificChain,
         price.price,
         price.symbol,
+        price.pairCreatedAt,
+        price.volume,
+        price.liquidity,
+        price.fdv,
       );
 
       return {
@@ -488,6 +541,10 @@ export class DexScreenerProvider implements PriceSource {
         timestamp: new Date(),
         chain,
         specificChain,
+        pairCreatedAt: price.pairCreatedAt,
+        volume: price.volume,
+        liquidity: price.liquidity,
+        fdv: price.fdv,
       };
     }
     return null;
@@ -528,10 +585,10 @@ export class DexScreenerProvider implements PriceSource {
     tokenAddresses: string[],
     chain: BlockchainType,
     specificChain: SpecificChain,
-  ): Promise<Map<string, { price: number; symbol: string } | null>> {
+  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
     // Ensure we don't exceed the 30 token limit
     const MAX_BATCH_SIZE = 30;
-    const results = new Map<string, { price: number; symbol: string } | null>();
+    const results = new Map<string, DexScreenerTokenInfo | null>();
 
     // Process tokens in batches of up to 30
     for (let i = 0; i < tokenAddresses.length; i += MAX_BATCH_SIZE) {
@@ -576,6 +633,10 @@ export class DexScreenerProvider implements PriceSource {
             results.set(tokenAddress, {
               price: individualResult.price,
               symbol: individualResult.symbol,
+              pairCreatedAt: individualResult.pairCreatedAt,
+              volume: individualResult.volume,
+              liquidity: individualResult.liquidity,
+              fdv: individualResult.fdv,
             });
             console.log(
               `[DexScreenerProvider] Individual retry successful for ${tokenAddress}: $${individualResult.price} (${individualResult.symbol})`,
@@ -608,8 +669,8 @@ export class DexScreenerProvider implements PriceSource {
     tokenAddresses: string[],
     chain: BlockchainType,
     specificChain: SpecificChain,
-  ): Promise<Map<string, { price: number; symbol: string } | null>> {
-    const results = new Map<string, { price: number; symbol: string } | null>();
+  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
+    const results = new Map<string, DexScreenerTokenInfo | null>();
 
     // Normalize addresses and check cache first
     const normalizedAddresses = tokenAddresses.map((addr) =>
@@ -625,7 +686,14 @@ export class DexScreenerProvider implements PriceSource {
 
       // Check for burn addresses
       if (this.isBurnAddress(normalizedAddr)) {
-        results.set(originalAddr, { price: 0, symbol: "BURN" });
+        results.set(originalAddr, {
+          price: 0,
+          symbol: "BURN",
+          pairCreatedAt: undefined,
+          volume: undefined,
+          liquidity: undefined,
+          fdv: undefined,
+        });
         continue;
       }
 
@@ -635,6 +703,10 @@ export class DexScreenerProvider implements PriceSource {
         results.set(originalAddr, {
           price: cachedPrice.price,
           symbol: cachedPrice.symbol,
+          pairCreatedAt: cachedPrice.pairCreatedAt,
+          volume: cachedPrice.volume,
+          liquidity: cachedPrice.liquidity,
+          fdv: cachedPrice.fdv,
         });
       } else {
         uncachedAddresses.push(originalAddr);
@@ -700,6 +772,10 @@ export class DexScreenerProvider implements PriceSource {
                 specificChain,
                 tokenPrice.price,
                 tokenPrice.symbol,
+                tokenPrice.pairCreatedAt,
+                tokenPrice.volume,
+                tokenPrice.liquidity,
+                tokenPrice.fdv,
               );
 
               results.set(originalAddr, tokenPrice);
@@ -753,7 +829,7 @@ export class DexScreenerProvider implements PriceSource {
     addr: string,
     data: DexScreenerResponse,
     specificChain: SpecificChain,
-  ): { price: number; symbol: string } | null {
+  ): DexScreenerTokenInfo | null {
     // Find the pair where our token is the base token
     const result = data.find(
       (pair) => pair.baseToken?.address?.toLowerCase() === addr.toLowerCase(),
@@ -776,6 +852,10 @@ export class DexScreenerProvider implements PriceSource {
     return {
       price: parseFloat(result.priceUsd),
       symbol: result.baseToken.symbol || "",
+      pairCreatedAt: result.pairCreatedAt,
+      volume: result.volume ? { h24: result.volume.h24 } : undefined,
+      liquidity: result.liquidity ? { usd: result.liquidity.usd } : undefined,
+      fdv: result.fdv,
     };
   }
 }

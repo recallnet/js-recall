@@ -28,11 +28,20 @@ export const TEST_TOKEN_ADDRESS =
   process.env.TEST_SOL_TOKEN_ADDRESS ||
   "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 
+// Vision token - should be volitile https://coinmarketcap.com/currencies/openvision/
+export const VISION_TOKEN = "0xe6f98920852A360497dBcc8ec895F1bB1F7c8Df4";
+
 // Fixed admin credentials - must match setup-admin.ts
 export const ADMIN_USERNAME = "admin";
 export const ADMIN_PASSWORD = "admin123";
 export const ADMIN_EMAIL = "admin@test.com";
 
+export const looseConstraints = {
+  minimum24hVolumeUsd: 5000,
+  minimumFdvUsd: 50000,
+  minimumLiquidityUsd: 5000,
+  minimumPairAgeHours: 0,
+};
 // Flag to track if database is initialized
 let isDatabaseInitialized = false;
 
@@ -143,6 +152,12 @@ export async function startTestCompetition(
   sandboxMode?: boolean,
   externalUrl?: string,
   imageUrl?: string,
+  tradingConstraints?: {
+    minimumPairAgeHours?: number;
+    minimum24hVolumeUsd?: number;
+    minimumLiquidityUsd?: number;
+    minimumFdvUsd?: number;
+  },
 ): Promise<StartCompetitionResponse> {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -155,6 +170,9 @@ export async function startTestCompetition(
     sandboxMode,
     externalUrl,
     imageUrl,
+    undefined, // votingStartDate
+    undefined, // votingEndDate
+    tradingConstraints,
   );
 
   if (!result.success) {
