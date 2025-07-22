@@ -29,7 +29,6 @@ import {
   createTestClient,
   createTestCompetition,
   generateTestCompetitions,
-  looseConstraints,
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   wait,
@@ -2789,7 +2788,12 @@ describe("User API", () => {
       undefined,
       undefined,
       undefined,
-      looseConstraints,
+      {
+        minimum24hVolumeUsd: 0,
+        minimumFdvUsd: 0,
+        minimumLiquidityUsd: 0,
+        minimumPairAgeHours: 0,
+      },
     );
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
