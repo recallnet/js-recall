@@ -23,11 +23,13 @@ import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
+  VISION_TOKEN,
   cleanupTestState,
   createSiweAuthenticatedClient,
   createTestClient,
   createTestCompetition,
   generateTestCompetitions,
+  looseConstraints,
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   wait,
@@ -2777,6 +2779,17 @@ describe("User API", () => {
     const createCompResult = await adminClient.createCompetition(
       competitionName,
       "Test competition for bestPlacement verification",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      looseConstraints,
     );
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
@@ -2827,7 +2840,7 @@ describe("User API", () => {
     // Charlie Agent: (1 large volitile trade)
     await agentClients[2]?.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.vision,
+      toToken: VISION_TOKEN,
       amount: "2000",
       reason: "Charlie Agent trade",
     });

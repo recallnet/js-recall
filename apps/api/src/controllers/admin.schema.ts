@@ -39,6 +39,18 @@ export const AdminRegisterUserSchema = z.object({
 });
 
 /**
+ * Trading Constraint Schema
+ */
+const TradingConstraintsSchema = z
+  .object({
+    minimumPairAgeHours: z.number().min(0),
+    minimum24hVolumeUsd: z.number().min(0),
+    minimumLiquidityUsd: z.number().min(0),
+    minimumFdvUsd: z.number().min(0),
+  })
+  .optional();
+
+/**
  * Admin create competition schema
  */
 export const AdminCreateCompetitionSchema = z
@@ -55,6 +67,7 @@ export const AdminCreateCompetitionSchema = z
     votingEndDate: z.iso.datetime().optional(),
     joinStartDate: z.iso.datetime().optional(),
     joinEndDate: z.iso.datetime().optional(),
+    tradingConstraints: TradingConstraintsSchema,
   })
   .refine(
     (data) => {
@@ -85,14 +98,7 @@ export const AdminStartCompetitionSchema = z
     endDate: z.iso.datetime().optional(),
     votingStartDate: z.iso.datetime().optional(),
     votingEndDate: z.iso.datetime().optional(),
-    tradingConstraints: z
-      .object({
-        minimumPairAgeHours: z.number().min(0),
-        minimum24hVolumeUsd: z.number().min(0),
-        minimumLiquidityUsd: z.number().min(0),
-        minimumFdvUsd: z.number().min(0),
-      })
-      .optional(),
+    tradingConstraints: TradingConstraintsSchema,
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",

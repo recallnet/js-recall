@@ -491,6 +491,14 @@ export interface CompetitionAgent {
   voteCount: number; // Number of votes this agent has received
 }
 
+// Competition constraints
+export interface TradingConstraints {
+  minimumPairAgeHours?: number;
+  minimum24hVolumeUsd?: number;
+  minimumLiquidityUsd?: number;
+  minimumFdvUsd?: number;
+}
+
 // Competition agents response
 export interface CompetitionAgentsResponse extends ApiResponse {
   competitionId: string;

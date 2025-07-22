@@ -547,6 +547,7 @@ export function makeAdminController(services: ServiceRegistry) {
           votingEndDate,
           joinStartDate,
           joinEndDate,
+          tradingConstraints,
         } = result.data;
 
         // Create a new competition
@@ -563,6 +564,7 @@ export function makeAdminController(services: ServiceRegistry) {
           votingEndDate ? new Date(votingEndDate) : undefined,
           joinStartDate ? new Date(joinStartDate) : undefined,
           joinEndDate ? new Date(joinEndDate) : undefined,
+          tradingConstraints,
         );
 
         // Return the created competition

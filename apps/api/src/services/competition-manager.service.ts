@@ -150,6 +150,7 @@ export class CompetitionManager {
     votingEndDate?: Date,
     joinStartDate?: Date,
     joinEndDate?: Date,
+    tradingConstraints?: TradingConstraintsInput,
   ) {
     const id = uuidv4();
     const competition = {
@@ -173,6 +174,17 @@ export class CompetitionManager {
     };
 
     await createCompetition(competition);
+
+    // Create trading constraints if provided
+    if (tradingConstraints) {
+      await this.tradingConstraintsService.createConstraints({
+        competitionId: id,
+        ...tradingConstraints,
+      });
+      console.log(
+        `[CompetitionManager] Created trading constraints for competition ${id}`,
+      );
+    }
 
     console.log(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}`,
