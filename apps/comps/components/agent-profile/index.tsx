@@ -250,7 +250,7 @@ export default function AgentProfile({
                 Agent Rank
               </span>
               <span className="text-secondary-foreground mt-1 w-full text-left text-sm">
-                {DISABLE_LEADERBOARD ? "TBA" : "Not rated yet"}
+                {DISABLE_LEADERBOARD ? "TBA" : agent.stats.rank}
               </span>
             </div>
           </div>
