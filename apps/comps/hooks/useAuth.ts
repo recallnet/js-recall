@@ -50,6 +50,9 @@ export const useLogin = () => {
       // Trigger competitions refetch
       queryClient.invalidateQueries({ queryKey: ["competitions"] });
 
+      // Trigger individual competition refetch (needed for userVotingInfo)
+      queryClient.invalidateQueries({ queryKey: ["competition"] });
+
       // Invalidate nonce cache after successful login
       queryClient.invalidateQueries({ queryKey: ["nonce"] });
     },
