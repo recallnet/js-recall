@@ -8,8 +8,8 @@ import React from "react";
 import Card from "@recallnet/ui2/components/card";
 import { SortState } from "@recallnet/ui2/components/table";
 import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
-import Tooltip from "@recallnet/ui2/components/tooltip";
 import { toast } from "@recallnet/ui2/components/toast";
+import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
@@ -102,8 +102,8 @@ export default function AgentProfile({
               "Failed to update agent name in sandbox:",
               sandboxError,
             );
-            
-            .error("Failed to update agent name in sandbox environment", {
+
+            toast.error("Failed to update agent name in sandbox environment", {
               description: "The name was not updated. Please try again.",
             });
             return;
