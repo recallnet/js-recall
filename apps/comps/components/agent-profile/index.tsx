@@ -11,6 +11,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
+import { DISABLE_LEADERBOARD } from "@/config";
 import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
 import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
@@ -249,7 +250,7 @@ export default function AgentProfile({
                 Agent Rank
               </span>
               <span className="text-secondary-foreground mt-1 w-full text-left text-sm">
-                Not rated yet
+                {DISABLE_LEADERBOARD ? "TBA" : agent.stats.rank}
               </span>
             </div>
           </div>
