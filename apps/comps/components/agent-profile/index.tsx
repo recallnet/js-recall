@@ -7,13 +7,18 @@ import React from "react";
 import Card from "@recallnet/ui2/components/card";
 import { SortState } from "@recallnet/ui2/components/table";
 import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
+import { toast } from "@recallnet/ui2/components/toast";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
-import { DISABLE_LEADERBOARD } from "@/config";
+import { DISABLE_LEADERBOARD, ENABLE_SANDBOX } from "@/config";
 import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
+import {
+  useSandboxAgentApiKey,
+  useUpdateSandboxAgent,
+} from "@/hooks/useSandbox";
 import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
 
 import BigNumberDisplay from "../bignumber";
@@ -64,6 +69,12 @@ export default function AgentProfile({
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
+  // Sandbox hooks for syncing agent updates
+  const { data: sandboxAgentData } = useSandboxAgentApiKey(
+    isUserAgent && ENABLE_SANDBOX ? agent?.name || null : null,
+  );
+  const updateSandboxAgent = useUpdateSandboxAgent();
+
   const sortString = React.useMemo(() => {
     return Object.entries(sortState).reduce((acc, [key, sort]) => {
       if (sort !== "none") return acc + `${sort == "asc" ? "" : "-"}${key}`;
@@ -77,6 +88,27 @@ export default function AgentProfile({
       if (!agent) return;
 
       try {
+        // Special handling for name changes since we *must* need the names to match across environments
+        if (field === "name" && ENABLE_SANDBOX && sandboxAgentData?.agent?.id) {
+          // Update in sandbox first
+          try {
+            await updateSandboxAgent.mutateAsync({
+              agentId: sandboxAgentData.agent.id,
+              name: value as string,
+            });
+          } catch (sandboxError) {
+            console.error(
+              "Failed to update agent name in sandbox:",
+              sandboxError,
+            );
+            toast.error("Failed to update agent name in sandbox environment", {
+              description: "The name was not updated. Please try again.",
+            });
+            return;
+          }
+        }
+
+        // Update in main environment
         await updateAgent.mutateAsync({
           agentId: agent.id,
           params:
@@ -86,6 +118,8 @@ export default function AgentProfile({
                   [field]: value,
                 },
         });
+
+        toast.success("Agent updated successfully");
       } catch (error) {
         console.error("Failed to update agent:", error);
       }
@@ -158,7 +192,7 @@ export default function AgentProfile({
             <div className="px-15 xs:px-10 pb-15 absolute bottom-0 right-[50%] w-full translate-x-[50%] md:px-20">
               <Clipboard
                 text={agent.walletAddress || ""}
-                className="text-secondary-foreground w-full rounded-[10px] border-gray-600 border-gray-700 px-3 py-2 text-lg hover:text-gray-300"
+                className="text-secondary-foreground w-full rounded-[10px] border-gray-700 px-3 py-2 text-lg hover:text-gray-300"
               />
             </div>
           )}

@@ -207,3 +207,21 @@ export const AdminAddAgentToCompetitionParamsSchema = z.object({
   competitionId: UuidSchema,
   agentId: UuidSchema,
 });
+
+/**
+ * Admin update agent params schema
+ */
+export const AdminUpdateAgentParamsSchema = z.object({
+  agentId: UuidSchema,
+});
+
+/**
+ * Admin update agent body schema
+ */
+export const AdminUpdateAgentBodySchema = z.object({
+  name: z.string().min(1, "Name must be at least 1 character").optional(),
+  description: z.string().optional(),
+  imageUrl: z.url("Invalid image URL format").optional(),
+  email: z.email("Invalid email format").optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});

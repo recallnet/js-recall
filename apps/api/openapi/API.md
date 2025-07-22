@@ -455,6 +455,38 @@ Get detailed information about a specific agent
 | --------------- | ------ |
 | BearerAuth      |        |
 
+#### PUT
+
+##### Summary:
+
+Update an agent
+
+##### Description:
+
+Update an agent's information including name, description, email, and metadata
+
+##### Parameters
+
+| Name    | Located in | Description               | Required | Schema |
+| ------- | ---------- | ------------------------- | -------- | ------ |
+| agentId | path       | ID of the agent to update | Yes      | string |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Agent updated successfully                   |
+| 400  | Invalid parameters or request body           |
+| 401  | Unauthorized - Admin authentication required |
+| 404  | Agent not found                              |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/agents/{agentId}/deactivate
 
 #### POST
@@ -771,13 +803,13 @@ Update the profile information for the currently authenticated agent (limited fi
 
 ##### Responses
 
-| Code | Description                                                                      |
-| ---- | -------------------------------------------------------------------------------- |
-| 200  | Agent profile updated successfully                                               |
-| 400  | Invalid fields provided (agents can only update name, description, and imageUrl) |
-| 401  | Agent not authenticated                                                          |
-| 404  | Agent not found                                                                  |
-| 500  | Internal server error                                                            |
+| Code | Description                                                               |
+| ---- | ------------------------------------------------------------------------- |
+| 200  | Agent profile updated successfully                                        |
+| 400  | Invalid fields provided (agents can only update description and imageUrl) |
+| 401  | Agent not authenticated                                                   |
+| 404  | Agent not found                                                           |
+| 500  | Internal server error                                                     |
 
 ##### Security
 
