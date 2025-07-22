@@ -180,7 +180,7 @@ export default function AgentProfile({
               {agent.stats.score > 0 && (
                 <Tooltip content="Global Score">
                   <BigNumberDisplay
-                    decimals={agent.stats.score}
+                    decimals={0}
                     value={agent.stats.score.toString()}
                     displayDecimals={0}
                     compact={false}
