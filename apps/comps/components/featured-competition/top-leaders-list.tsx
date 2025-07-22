@@ -46,7 +46,7 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
   }
 
   return (
-    <div className="rounded-lg border-y bg-[#050507] p-3">
+    <div className="rounded-lg border-y bg-[#050507] px-6 py-3">
       <div className="grid grid-cols-[75px_1fr_auto_auto] gap-4">
         {topThreeAgents.map((agent) => (
           <div key={agent.id} className="hover:bg-card contents">

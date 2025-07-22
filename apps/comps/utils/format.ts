@@ -1,3 +1,5 @@
+import { format, isValid, parseISO } from "date-fns";
+
 /**
  * Formats a number as a percentage string
  * @param value - The value to convert to percentage
@@ -39,4 +41,22 @@ export const formatCompactNumber = (value: number): string => {
     compactDisplay: "short",
   });
   return formatter.format(value);
+};
+
+export const formatDate = (date: Date | string): string => {
+  let parsedDate: Date;
+
+  if (date instanceof Date) {
+    parsedDate = date;
+  } else if (typeof date === "string") {
+    parsedDate = parseISO(date);
+  } else {
+    return "Invalid Date";
+  }
+
+  if (!isValid(parsedDate)) {
+    return "Invalid Date";
+  }
+
+  return format(parsedDate, "MMMM do");
 };
