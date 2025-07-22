@@ -382,6 +382,43 @@ describe("Admin API", () => {
     expect(usersResult.users![0]?.email).toBe(userEmail);
   });
 
+  test("should update an agent as admin", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a new user with agent first
+    const userName = `User To Update ${Date.now()}`;
+    const userEmail = `update-${Date.now()}@test.com`;
+    const agentName = `Agent To Update ${Date.now()}`;
+
+    const registerResult = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: userName,
+      email: userEmail,
+      agentName,
+    })) as UserRegistrationResponse;
+    expect(registerResult.success).toBe(true);
+    expect(registerResult.agent).toBeDefined();
+
+    // Now update the agent
+    const updateResult = (await adminClient.updateAgentAsAdmin(
+      registerResult.agent!.id,
+      {
+        name: "Updated Name",
+        description: "Updated Description",
+        imageUrl: "https://example.com/updated-image.jpg",
+      },
+    )) as AgentProfileResponse;
+    expect(updateResult.success).toBe(true);
+    expect(updateResult.agent).toBeDefined();
+    expect(updateResult.agent.name).toBe("Updated Name");
+    expect(updateResult.agent.description).toBe("Updated Description");
+    expect(updateResult.agent.imageUrl).toBe(
+      "https://example.com/updated-image.jpg",
+    );
+  });
+
   test("should delete an agent as admin", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();

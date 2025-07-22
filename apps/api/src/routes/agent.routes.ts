@@ -113,10 +113,6 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *           schema:
    *             type: object
    *             properties:
-   *               name:
-   *                 type: string
-   *                 description: Agent's display name
-   *                 example: "Trading Bot Beta"
    *               description:
    *                 type: string
    *                 description: Agent description
@@ -173,7 +169,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       type: string
    *                       format: date-time
    *       400:
-   *         description: Invalid fields provided (agents can only update name, description, and imageUrl)
+   *         description: Invalid fields provided (agents can only update description and imageUrl)
    *       401:
    *         description: Agent not authenticated
    *       404:
