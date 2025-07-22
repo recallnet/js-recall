@@ -73,7 +73,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
             <CompetitionStatusBadge status={competition.status} />
           </div>
           <span>
-            {startDate} -- {endDate}
+            {startDate} - {endDate}
           </span>
         </div>
       </div>
