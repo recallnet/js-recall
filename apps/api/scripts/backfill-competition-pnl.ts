@@ -7,7 +7,7 @@ import {
   getBulkAgentCompetitionRankings,
 } from "@/database/repositories/competition-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { COMPETITION_STATUS } from "@/types/index.js";
+import { COMPETITION_AGENT_STATUS, COMPETITION_STATUS } from "@/types/index.js";
 
 const services = new ServiceRegistry();
 
@@ -58,11 +58,25 @@ async function calculateBulkAgentPnl(
       { pnl: number; rank: number; totalAgents: number }
     >();
     for (const agentId of agentIds) {
+      console.log(
+        `Processing agent ${agentId} in competition ${competitionId}`,
+      );
       const ranking = rankings.get(agentId);
       if (!ranking) {
-        throw new Error(
-          `No ranking found for agent ${agentId} in competition ${competitionId}`,
-        );
+        // Check if it was deactivated
+        const agent =
+          await services.competitionManager.getAgentCompetitionRecord(
+            competitionId,
+            agentId,
+          );
+        if (agent?.status !== COMPETITION_AGENT_STATUS.ACTIVE) {
+          console.log(`Agent ${agentId} was deactivated, skipping`);
+          continue;
+        } else {
+          throw new Error(
+            `No ranking found for agent ${agentId} in competition ${competitionId}`,
+          );
+        }
       }
       const { rank, totalAgents } = ranking;
       const { pnl } = await services.agentManager.getAgentPnlForComp(
@@ -122,34 +136,54 @@ async function backfillCompetitionPnl() {
     const endedCompetitions = competitions.filter(
       (c) => c.status === COMPETITION_STATUS.ENDED,
     );
+    console.log(
+      `${colors.magenta}----------------------------------------${colors.reset}`,
+    );
+    console.log(`Found ${endedCompetitions.length} ended competitions`);
+    console.log(
+      `${colors.magenta}----------------------------------------${colors.reset}`,
+    );
     for (const competition of endedCompetitions) {
       const agentIds =
         await services.competitionManager.getAllCompetitionAgents(
           competition.id,
         );
+      console.log(
+        `${colors.magenta}----------------------------------------${colors.reset}`,
+      );
+      console.log(
+        `Processing competition ${competition.id} with ${agentIds.length} agents`,
+      );
+      console.log(
+        `${colors.magenta}----------------------------------------${colors.reset}`,
+      );
       const pnlMap = await calculateBulkAgentPnl(agentIds, competition.id);
       const sortedPnlMap = new Map(
         [...pnlMap.entries()].sort((a, b) => a[1].rank - b[1].rank),
       );
+
+      // Collect all leaderboard entries for this competition
+      const leaderboardEntries = [];
       for (const [
         agentId,
         { pnl, rank, totalAgents },
       ] of sortedPnlMap.entries()) {
-        await batchInsertLeaderboard([
-          {
-            agentId,
-            competitionId: competition.id,
-            rank,
-            totalAgents,
-            score: pnl,
-            pnl,
-          },
-        ]);
+        leaderboardEntries.push({
+          agentId,
+          competitionId: competition.id,
+          rank,
+          totalAgents,
+          score: pnl,
+          pnl,
+        });
+      }
+      if (leaderboardEntries.length > 0) {
+        await batchInsertLeaderboard(leaderboardEntries);
       }
     }
 
     console.log(
-      `${colors.magenta}----------------------------------------${colors.reset}`,
+      `${colors.green}----------------------------------------${colors.reset}`,
     );
     console.log(
       `${colors.green}Backfilling competition PnL completed${colors.reset}`,
