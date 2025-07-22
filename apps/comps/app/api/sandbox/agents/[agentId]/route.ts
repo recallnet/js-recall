@@ -16,7 +16,7 @@ import { AdminAgentKeyResponse } from "@/types";
  */
 async function handleUpdateAgent(
   request: NextRequest,
-  { params }: { params: { agentId: string } },
+  { params }: { params: Promise<{ agentId: string }> },
 ) {
   // Extract session cookie
   const sessionCookie = extractSessionCookie(request);
@@ -25,7 +25,7 @@ async function handleUpdateAgent(
   }
 
   // Get the agent ID from the route params
-  const { agentId } = params;
+  const { agentId } = await params;
 
   // Get the update payload from the request body
   const updatePayload = await request.json();
