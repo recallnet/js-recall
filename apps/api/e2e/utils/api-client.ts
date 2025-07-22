@@ -516,6 +516,7 @@ export class ApiClient {
    */
   async updateUserProfile(profileData: {
     name?: string;
+    email?: string;
     imageUrl?: string;
     metadata?: Record<string, unknown>;
   }): Promise<UserProfileResponse | ErrorResponse> {

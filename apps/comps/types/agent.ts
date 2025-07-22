@@ -35,6 +35,7 @@ export interface Agent {
     totalTrades: number;
     completedCompetitions: number;
     score: number;
+    totalRoi?: number;
     rank?: number;
   };
 

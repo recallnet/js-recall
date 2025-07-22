@@ -66,7 +66,10 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
       </span>
       <div className="flex justify-center gap-3">
         <div className="text-secondary-foreground text-nowrap rounded border p-2">
-          ROI N/A
+          ROI{" "}
+          {agent.stats?.totalRoi
+            ? `${Math.round(agent.stats?.totalRoi * 100)}%`
+            : "N/A"}
         </div>
         <div className="text-secondary-foreground text-nowrap rounded border p-2">
           Trades {formatCompactNumber(agent.stats?.totalTrades ?? 0)}

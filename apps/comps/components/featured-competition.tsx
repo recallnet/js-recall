@@ -6,6 +6,7 @@ import React from "react";
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
 
+import { useUserSession } from "@/hooks/useAuth";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { CompetitionStatus, UserCompetition } from "@/types";
 
@@ -22,6 +23,7 @@ interface FeaturedCompetitionProps {
 export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
   competition,
 }) => {
+  const session = useUserSession();
   const { data: topLeaders, isLoading } = useCompetitionAgents(competition.id, {
     // TODO: we have to make sure all agents are included in the results
     //  because rank is calculated "on-the-fly".
@@ -41,7 +43,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
     >
       <CompetitionStatusBanner status={competition.status} />
 
-      <div className="flex flex-col gap-2 border-b p-6">
+      <div className="flex flex-col gap-2 border-b px-6 py-3">
         <Link
           href={`/competitions/${competition.id}`}
           className="group inline-block"
@@ -61,13 +63,13 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
       </div>
 
       <div className="flex border-b">
-        <div className="w-full border-r p-6">
+        <div className="w-full border-r px-6 py-4">
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             Duration
           </h3>
           <p className="text-xl font-semibold">{duration}</p>
         </div>
-        <div className="w-full p-6">
+        <div className="w-full px-6 py-4">
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             Reward
           </h3>
@@ -76,7 +78,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
       </div>
 
       <div className="flex gap-8 border-b">
-        <div className="w-full p-6">
+        <div className="w-full px-6 py-4">
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             {competition.status === CompetitionStatus.Active
               ? "Participants"
@@ -85,6 +87,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
           {topLeaders?.agents.length ? (
             <ParticipantsAvatars
               agents={topLeaders?.agents}
+              compId={competition.id}
               showRank={competition.status === CompetitionStatus.Active}
             />
           ) : (
@@ -92,13 +95,20 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
           )}
         </div>
         <div className="w-full justify-items-end p-6">
-          <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
-            Your Agents
-          </h3>
-          {competition.agents.length > 0 ? (
-            <ParticipantsAvatars agents={competition.agents} />
-          ) : (
-            <span className="text-sm">-</span>
+          {session.isInitialized && session.isAuthenticated && (
+            <>
+              <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+                Your Agents
+              </h3>
+              {competition.agents.length > 0 ? (
+                <ParticipantsAvatars
+                  compId={competition.id}
+                  agents={competition.agents}
+                />
+              ) : (
+                <span className="text-sm">-</span>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -114,7 +124,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
 
       <CompetitionActions
         competition={competition}
-        className="flex justify-center gap-4 p-6"
+        className="flex items-end justify-center gap-4 p-6"
       />
     </Card>
   );
