@@ -5,6 +5,7 @@ import { useUser } from "@/state/atoms";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 
 import { useClientCleanup } from "./useAuth";
+import { useAnalytics } from "./usePostHog";
 
 const apiClient = new ApiClient();
 
@@ -41,12 +42,21 @@ export const useProfile = () => {
  */
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
+  const { trackEvent } = useAnalytics();
 
   return useMutation({
     mutationFn: async (data: UpdateProfileRequest) => {
       return apiClient.updateProfile(data);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const updatedFields = Object.keys(variables).filter(
+        (key) => variables[key as keyof UpdateProfileRequest] !== undefined,
+      );
+
+      trackEvent("UserUpdatedProfile", {
+        updatedFields: updatedFields,
+      });
+
       // Invalidate profile query to get updated data
       queryClient.invalidateQueries({ queryKey: ["profile"] });
     },

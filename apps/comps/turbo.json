@@ -1,6 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "extends": ["//"],
+  "extends": [
+    "//"
+  ],
   "tasks": {
     "build": {
       "env": [
@@ -12,7 +14,8 @@
         "NEXT_PUBLIC_SANDBOX_API_URL",
         "NEXT_PUBLIC_FRONTEND_URL",
         "SANDBOX_ADMIN_API_KEY",
-        "NEXT_PUBLIC_DISABLE_LEADERBOARD_TEMP"
+        "NEXT_PUBLIC_DISABLE_LEADERBOARD_TEMP",
+        "NEXT_PUBLIC_POSTHOG_KEY"
       ]
     }
   }
