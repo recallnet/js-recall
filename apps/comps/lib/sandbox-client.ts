@@ -6,6 +6,7 @@ import {
 } from "@/types";
 import {
   AdminAgentKeyResponse,
+  AdminAgentUpdateResponse,
   AdminCreateAgentResponse,
   AdminUserResponse,
 } from "@/types/admin";
@@ -106,7 +107,7 @@ export class SandboxClient {
       email?: string;
       metadata?: Record<string, unknown>;
     },
-  ): Promise<AdminAgentKeyResponse> {
+  ): Promise<AdminAgentUpdateResponse> {
     const response = await fetch(`${SANDBOX_API_BASE}/agents/${agentId}`, {
       method: "PUT",
       headers: {

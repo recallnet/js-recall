@@ -4,6 +4,7 @@ import { ENABLE_SANDBOX } from "@/config";
 import { sandboxClient } from "@/lib/sandbox-client";
 import {
   AdminAgentKeyResponse,
+  AdminAgentUpdateResponse,
   AdminCreateAgentResponse,
   AdminUserResponse,
 } from "@/types/admin";
@@ -57,7 +58,7 @@ export const useSandboxAgentApiKey = (agentName: string | null) => {
  */
 export const useUpdateSandboxAgent = () => {
   return useMutation<
-    AdminAgentKeyResponse,
+    AdminAgentUpdateResponse,
     Error,
     {
       agentId: string;

@@ -645,7 +645,7 @@ export class ApiClient {
       );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "delete agent");
+      return this.handleApiError(error, "update agent");
     }
   }
 
