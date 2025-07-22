@@ -46,7 +46,7 @@ export const useLogin = () => {
       const result = await apiClient.login(data);
       return result;
     },
-    onSuccess: (response, _) => {
+    onSuccess: (response) => {
       setUserAtom({ user: null, status: "authenticated" });
 
       // Identify user in PostHog

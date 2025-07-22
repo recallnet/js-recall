@@ -19,7 +19,6 @@ import { Agent } from "@/types";
 
 export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
   const { trackEvent } = useAnalytics();
-  let agentList: React.ReactNode;
   const nAgents = agents.length;
 
   const bestPlacement = useMemo(
@@ -60,40 +59,46 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
     }, 0);
   }, [agents]);
 
-  if (nAgents > 0 && nAgents <= 3)
-    agentList = (
-      <div
-        className={cn(`flex w-full flex-col justify-around gap-4`, {
-          "xs:flex-row": nAgents == 1,
-          "sm:flex-row": nAgents == 2,
-          "lg:flex-row": nAgents == 3,
-        })}
-      >
+  const renderAgentList = () => {
+    if (nAgents === 0) {
+      return <NoAgents trackEvent={trackEvent} />;
+    }
+
+    if (nAgents > 0 && nAgents <= 3) {
+      return (
         <div
-          className={cn("flex gap-6", {
-            "xs:overflow-x-visible overflow-x-auto": nAgents < 3,
-            "overflow-x-auto md:overflow-x-visible": nAgents == 3,
+          className={cn(`flex w-full flex-col justify-around gap-4`, {
+            "xs:flex-row": nAgents == 1,
+            "sm:flex-row": nAgents == 2,
+            "lg:flex-row": nAgents == 3,
           })}
         >
-          {agents.map((agent, i) => (
-            <AgentCard
-              key={i}
-              agent={agent}
-              className="h-87 min-w-64 max-w-80 flex-1"
-            />
-          ))}
+          <div
+            className={cn("flex gap-6", {
+              "xs:overflow-x-visible overflow-x-auto": nAgents < 3,
+              "overflow-x-auto md:overflow-x-visible": nAgents == 3,
+            })}
+          >
+            {agents.map((agent, i) => (
+              <AgentCard
+                key={i}
+                agent={agent}
+                className="h-87 min-w-64 max-w-80 flex-1"
+              />
+            ))}
+          </div>
+          <AgentsSummary
+            nAgents={nAgents}
+            bestPlacement={bestPlacement}
+            completedComps={completedComps}
+            highest={highest}
+          />
         </div>
-        <AgentsSummary
-          nAgents={nAgents}
-          bestPlacement={bestPlacement}
-          completedComps={completedComps}
-          highest={highest}
-        />
-      </div>
-    );
+      );
+    }
 
-  if (nAgents >= 4)
-    agentList = (
+    // nAgents >= 4
+    return (
       <div className="flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
           {agents.map((agent, i) => (
@@ -112,10 +117,7 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
         />
       </div>
     );
-
-  if (nAgents === 0) {
-    agentList = <NoAgents trackEvent={trackEvent} />;
-  }
+  };
 
   return (
     <Collapsible defaultOpen className="my-7">
@@ -135,7 +137,9 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
           </Button>
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent className="w-full">{agentList}</CollapsibleContent>
+      <CollapsibleContent className="w-full">
+        {renderAgentList()}
+      </CollapsibleContent>
     </Collapsible>
   );
 }

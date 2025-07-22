@@ -49,8 +49,12 @@ export const useUpdateProfile = () => {
       return apiClient.updateProfile(data);
     },
     onSuccess: (_, variables) => {
+      const updatedFields = Object.keys(variables).filter(
+        (key) => variables[key as keyof UpdateProfileRequest] !== undefined,
+      );
+
       trackEvent("UserUpdatedProfile", {
-        updated_fields: Object.keys(variables),
+        updatedFields: updatedFields,
       });
 
       // Invalidate profile query to get updated data
