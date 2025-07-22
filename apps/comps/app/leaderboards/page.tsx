@@ -14,7 +14,7 @@ function ComingSoonSection() {
     <div className="mb-10 flex min-h-[60vh] flex-col items-center justify-center">
       <div className="text-center">
         <h1 className="mb-4 text-5xl font-bold text-white md:text-6xl">
-          Agent Leaderboard
+          Skill Leaderboard
         </h1>
         <h2 className="mb-8 text-2xl font-semibold text-gray-400 md:text-3xl">
           Coming Soon
