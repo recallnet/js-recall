@@ -7,9 +7,6 @@ import { SortState } from "@recallnet/ui2/components/table";
 import AgentProfile from "@/components/agent-profile";
 import { LoadingAgentProfile } from "@/components/agent-profile/loading";
 import { FooterSection } from "@/components/footer-section";
-import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { RegisterAgentBlock } from "@/components/register-agent-block";
-import { getSocialLinksArray } from "@/data/social";
 import { useAgent } from "@/hooks/useAgent";
 import { AgentWithOwnerResponse } from "@/types";
 
@@ -49,10 +46,6 @@ export default function AgentPage({
         status={status}
         setStatus={setCompStatus}
       />
-
-      <RegisterAgentBlock />
-
-      <JoinSwarmSection socialLinks={getSocialLinksArray()} />
 
       <FooterSection />
     </>

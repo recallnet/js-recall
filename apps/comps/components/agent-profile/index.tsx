@@ -1,15 +1,16 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
 import { SortState } from "@recallnet/ui2/components/table";
 import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
+import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import MirrorImage from "@/components/mirror-image";
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
 import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
@@ -139,22 +140,33 @@ export default function AgentProfile({
               }
             />
           </div>
-          <div className="top-30 absolute right-[50%] translate-x-[50%]">
+          <div
+            className={cn(
+              agent?.imageUrl
+                ? "relative h-full w-full"
+                : "relative flex h-full w-full items-center justify-center",
+            )}
+          >
             {isUserAgent ? (
               <AgentImage
-                agentImage={agent?.imageUrl || "/agent-placeholder.png"}
+                agentImage={agent?.imageUrl}
                 onSave={handleSaveChange("imageUrl")}
               />
             ) : (
-              <MirrorImage
-                image={agent.imageUrl || "/agent-placeholder.png"}
-                width={170}
-                height={170}
+              <Image
+                src={agent.imageUrl || "/agent-placeholder.png"}
+                alt={agent.name}
+                fill={!!agent.imageUrl}
+                width={agent.imageUrl ? undefined : 50}
+                height={agent.imageUrl ? undefined : 50}
+                className={cn(
+                  agent.imageUrl ? "absolute z-0 object-cover" : "w-50 h-50",
+                )}
               />
             )}
           </div>
           {agent.walletAddress && (
-            <div className="px-15 xs:px-10 pb-15 absolute bottom-0 right-[50%] w-full translate-x-[50%] md:px-20">
+            <div className="px-15 xs:px-10 absolute bottom-0 right-[50%] z-20 w-full translate-x-[50%] border bg-black py-3 md:px-20">
               <Clipboard
                 text={agent.walletAddress || ""}
                 className="text-secondary-foreground w-full rounded-[10px] border-gray-600 border-gray-700 px-3 py-2 text-lg hover:text-gray-300"
@@ -164,6 +176,25 @@ export default function AgentProfile({
         </Card>
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
           <div className="relative flex w-full grow flex-col border-b p-6">
+            <div className="flex gap-3 font-bold">
+              {agent.stats.score > 0 && (
+                <Tooltip content="Global Score">
+                  <BigNumberDisplay
+                    decimals={agent.stats.score}
+                    value={agent.stats.score.toString()}
+                    displayDecimals={0}
+                    compact={false}
+                  />
+                </Tooltip>
+              )}
+              {agent.stats.rank && (
+                <Tooltip content="Global Rank">
+                  <span className="text-secondary-foreground">
+                    #{agent.stats.rank}
+                  </span>
+                </Tooltip>
+              )}
+            </div>
             {isUserAgent ? (
               <EditAgentField
                 title="Agent Name"
@@ -184,7 +215,7 @@ export default function AgentProfile({
               </h1>
             )}
             {!isUserAgent && (
-              <div className="mt-5 flex w-full gap-1">
+              <div className="mt-5 flex w-full gap-1 text-nowrap">
                 <span className="text-secondary-foreground text-xl font-semibold">
                   Developed by
                 </span>
@@ -222,16 +253,6 @@ export default function AgentProfile({
               <AgentBestPlacement
                 rank={agent.stats.bestPlacement?.rank}
                 places={agent.stats.bestPlacement?.totalAgents}
-              />
-            </div>
-            <div className="flex flex-1 flex-col px-6 py-6">
-              <span className="text-secondary-foreground w-full text-nowrap text-left text-xs font-semibold uppercase">
-                TOTAL VOTES
-              </span>
-              <BigNumberDisplay
-                className="mt-1 font-semibold"
-                value={agent.stats.totalVotes.toString()}
-                decimals={0}
               />
             </div>
           </div>
