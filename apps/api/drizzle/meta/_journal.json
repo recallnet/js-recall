@@ -155,6 +155,27 @@
       "when": 1752182200160,
       "tag": "0021_little_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1752786251228,
+      "tag": "0022_giant_gabe_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1753130875910,
+      "tag": "0023_classy_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1753206362111,
+      "tag": "0024_same_juggernaut",
+      "breakpoints": true
     }
   ]
 }

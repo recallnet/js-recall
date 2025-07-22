@@ -138,6 +138,7 @@ export interface Agent {
     bestPnl: number;
     rank?: number;
     score?: number;
+    totalRoi: number | null;
   };
   skills?: string[];
   hasUnclaimedRewards?: boolean;
@@ -359,6 +360,9 @@ export interface Competition {
   votingEndDate: string | null;
   votingEnabled?: boolean;
   userVotingInfo?: CompetitionVotingState;
+  // Join date constraint fields
+  joinStartDate: string | null;
+  joinEndDate: string | null;
 }
 
 // Leaderboard entry (per-competition leaderboard)
@@ -485,6 +489,14 @@ export interface CompetitionAgent {
   change24h: number; // Portfolio value change in last 24 hours (USD)
   change24hPercent: number; // 24h change as percentage
   voteCount: number; // Number of votes this agent has received
+}
+
+// Competition constraints
+export interface TradingConstraints {
+  minimumPairAgeHours?: number;
+  minimum24hVolumeUsd?: number;
+  minimumLiquidityUsd?: number;
+  minimumFdvUsd?: number;
 }
 
 // Competition agents response

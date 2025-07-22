@@ -39,20 +39,48 @@ export const AdminRegisterUserSchema = z.object({
 });
 
 /**
+ * Trading Constraint Schema
+ */
+const TradingConstraintsSchema = z
+  .object({
+    minimumPairAgeHours: z.number().min(0),
+    minimum24hVolumeUsd: z.number().min(0),
+    minimumLiquidityUsd: z.number().min(0),
+    minimumFdvUsd: z.number().min(0),
+  })
+  .optional();
+
+/**
  * Admin create competition schema
  */
-export const AdminCreateCompetitionSchema = z.object({
-  name: z.string().min(1, "Competition name is required"),
-  description: z.string().optional(),
-  tradingType: CrossChainTradingTypeSchema.optional(),
-  sandboxMode: z.boolean().optional(),
-  externalUrl: z.url().optional(),
-  imageUrl: z.url().optional(),
-  type: CompetitionTypeSchema.optional(),
-  endDate: z.iso.datetime().optional(),
-  votingStartDate: z.iso.datetime().optional(),
-  votingEndDate: z.iso.datetime().optional(),
-});
+export const AdminCreateCompetitionSchema = z
+  .object({
+    name: z.string().min(1, "Competition name is required"),
+    description: z.string().optional(),
+    tradingType: CrossChainTradingTypeSchema.optional(),
+    sandboxMode: z.boolean().optional(),
+    externalUrl: z.url().optional(),
+    imageUrl: z.url().optional(),
+    type: CompetitionTypeSchema.optional(),
+    endDate: z.iso.datetime().optional(),
+    votingStartDate: z.iso.datetime().optional(),
+    votingEndDate: z.iso.datetime().optional(),
+    joinStartDate: z.iso.datetime().optional(),
+    joinEndDate: z.iso.datetime().optional(),
+    tradingConstraints: TradingConstraintsSchema,
+  })
+  .refine(
+    (data) => {
+      if (data.joinStartDate && data.joinEndDate) {
+        return new Date(data.joinStartDate) <= new Date(data.joinEndDate);
+      }
+      return true;
+    },
+    {
+      message: "joinStartDate must be before or equal to joinEndDate",
+      path: ["joinStartDate"],
+    },
+  );
 
 /**
  * Admin start competition schema
@@ -70,6 +98,7 @@ export const AdminStartCompetitionSchema = z
     endDate: z.iso.datetime().optional(),
     votingStartDate: z.iso.datetime().optional(),
     votingEndDate: z.iso.datetime().optional(),
+    tradingConstraints: TradingConstraintsSchema,
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
@@ -191,4 +220,22 @@ export const AdminDeleteAgentParamsSchema = z.object({
 export const AdminAddAgentToCompetitionParamsSchema = z.object({
   competitionId: UuidSchema,
   agentId: UuidSchema,
+});
+
+/**
+ * Admin update agent params schema
+ */
+export const AdminUpdateAgentParamsSchema = z.object({
+  agentId: UuidSchema,
+});
+
+/**
+ * Admin update agent body schema
+ */
+export const AdminUpdateAgentBodySchema = z.object({
+  name: z.string().min(1, "Name must be at least 1 character").optional(),
+  description: z.string().optional(),
+  imageUrl: z.url("Invalid image URL format").optional(),
+  email: z.email("Invalid email format").optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });

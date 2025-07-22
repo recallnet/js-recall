@@ -2,10 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsClient } from "@uidotdev/usehooks";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 import { useEffect, useMemo } from "react";
 import { useDisconnect } from "wagmi";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
+import { useAnalytics } from "@/hooks/usePostHog";
 import { useProfile } from "@/hooks/useProfile";
 import { ApiClient } from "@/lib/api-client";
 import { userAtom } from "@/state/atoms";
@@ -36,19 +38,30 @@ export const useNonce = () => {
 export const useLogin = () => {
   const queryClient = useQueryClient();
   const [, setUserAtom] = useAtom(userAtom);
+  const { trackEvent } = useAnalytics();
+  const posthog = usePostHog();
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
       const result = await apiClient.login(data);
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       setUserAtom({ user: null, status: "authenticated" });
 
+      // Identify user in PostHog
+      posthog.identify(response.userId, { wallet: response.wallet });
+
+      trackEvent("UserLoggedIn");
+
+      // Trigger profile refetch
       queryClient.invalidateQueries({ queryKey: ["profile"] });
 
       // Trigger competitions refetch
       queryClient.invalidateQueries({ queryKey: ["competitions"] });
+
+      // Trigger individual competition refetch (needed for userVotingInfo)
+      queryClient.invalidateQueries({ queryKey: ["competition"] });
 
       // Invalidate nonce cache after successful login
       queryClient.invalidateQueries({ queryKey: ["nonce"] });
@@ -83,7 +96,9 @@ export const useClientCleanup = () => {
 export const useLogout = () => {
   const router = useRouter();
   const cleanup = useClientCleanup();
+
   const { disconnect } = useDisconnect();
+  const posthog = usePostHog();
 
   return useMutation({
     mutationFn: async () => {
@@ -100,6 +115,8 @@ export const useLogout = () => {
       }
     },
     onSuccess: () => {
+      // Reset PostHog user identity
+      posthog.reset();
       router.push(DEFAULT_REDIRECT_URL);
     },
     onError: (error) => {

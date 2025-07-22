@@ -2,7 +2,7 @@
 
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -128,13 +128,13 @@ export default function CompetitionPage({
             </Button>
             <JoinCompetitionButton
               competitionId={id}
-              variant="ghost"
+              variant="outline"
               className="w-1/2 justify-between uppercase"
               disabled={competition.status !== "pending"}
               size="lg"
             >
-              <span className="font-semibold">Join Competition</span>{" "}
-              <ChevronRight className="ml-2" size={18} />
+              <span className="font-semibold">COMPETE</span>{" "}
+              <Plus className="ml-2" size={18} />
             </JoinCompetitionButton>
             {competition.userVotingInfo?.canVote ? (
               <Button
@@ -151,7 +151,7 @@ export default function CompetitionPage({
                   }
                 }}
               >
-                <span className="font-semibold">Vote on an Agent</span>{" "}
+                <span className="font-semibold">VOTE</span>{" "}
                 <ChevronRight className="ml-2" size={18} />
               </Button>
             ) : null}

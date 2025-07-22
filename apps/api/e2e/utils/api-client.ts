@@ -52,6 +52,7 @@ import {
   TradeExecutionParams,
   TradeHistoryResponse,
   TradeResponse,
+  TradingConstraints,
   UpcomingCompetitionsResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
@@ -361,6 +362,7 @@ export class ApiClient {
           imageUrl?: string;
           votingStartDate?: string;
           votingEndDate?: string;
+          tradingConstraints?: TradingConstraints;
         }
       | string,
     description?: string,
@@ -371,6 +373,7 @@ export class ApiClient {
     imageUrl?: string,
     votingStartDate?: string,
     votingEndDate?: string,
+    tradingConstraints?: TradingConstraints,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       let requestData;
@@ -393,6 +396,7 @@ export class ApiClient {
           imageUrl,
           votingStartDate: votingStartDate || now,
           votingEndDate,
+          tradingConstraints,
         };
       }
 
@@ -421,6 +425,9 @@ export class ApiClient {
     endDate?: string,
     votingStartDate?: string,
     votingEndDate?: string,
+    joinStartDate?: string,
+    joinEndDate?: string,
+    tradingConstraints?: TradingConstraints,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -436,6 +443,9 @@ export class ApiClient {
           endDate,
           votingStartDate,
           votingEndDate,
+          joinStartDate,
+          joinEndDate,
+          tradingConstraints,
         },
       );
 
@@ -512,6 +522,7 @@ export class ApiClient {
    */
   async updateUserProfile(profileData: {
     name?: string;
+    email?: string;
     imageUrl?: string;
     metadata?: Record<string, unknown>;
   }): Promise<UserProfileResponse | ErrorResponse> {
@@ -528,10 +539,9 @@ export class ApiClient {
 
   /**
    * Update an agent profile
-   * @param profileData Profile data to update including name, description, and imageUrl only (agents have limited self-service editing)
+   * @param profileData Profile data to update including description and imageUrl only (agents have limited self-service editing)
    */
   async updateAgentProfile(profileData: {
-    name?: string;
     description?: string;
     imageUrl?: string;
   }): Promise<AgentProfileResponse | ErrorResponse> {
@@ -616,6 +626,32 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "list users");
+    }
+  }
+
+  /**
+   * Update an agent (admin only)
+   * @param agentId ID of the agent to update
+   * @param body Body of the update request
+   */
+  async updateAgentAsAdmin(
+    agentId: string,
+    body: {
+      name?: string;
+      description?: string;
+      imageUrl?: string;
+      email?: string;
+      metadata?: Record<string, unknown>;
+    },
+  ): Promise<ApiResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/agents/${agentId}`,
+        body,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update agent");
     }
   }
 
