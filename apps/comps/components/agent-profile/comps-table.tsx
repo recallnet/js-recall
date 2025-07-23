@@ -91,7 +91,7 @@ export function CompetitionTable({
                 const compStatus =
                   comp.status === CompetitionStatus.Active
                     ? {
-                        text: "On-going",
+                        text: "Ongoing",
                         style: "border-green-500 text-green-500",
                       }
                     : comp.status === CompetitionStatus.Pending
