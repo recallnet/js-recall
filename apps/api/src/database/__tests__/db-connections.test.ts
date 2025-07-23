@@ -2,15 +2,17 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { db, dbRead } from "@/database/db.js";
+import { wait } from "@/e2e/utils/test-helpers.js";
 
 describe("Database Connections", () => {
-  beforeAll(async () => {
-    // Ensure database connections are ready
-    await Promise.all([
-      db.execute(sql`SELECT 1`),
-      dbRead.execute(sql`SELECT 1`),
-    ]);
-  });
+  // beforeAll(async () => {
+  //   await wait(2000);
+  //   // Ensure database connections are ready
+  //   await Promise.all([
+  //     db.execute(sql`SELECT 1`),
+  //     dbRead.execute(sql`SELECT 1`),
+  //   ]);
+  // });
 
   afterAll(async () => {
     // Clean up connections
