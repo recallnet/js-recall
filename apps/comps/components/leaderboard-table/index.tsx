@@ -148,13 +148,14 @@ export function LeaderboardTable({
 
                     <TableCell className="flex items-center justify-center pl-10">
                       <div className="flex items-center gap-2">
-                        <Image
-                          src={agent.imageUrl || "/agent-placeholder.png"}
-                          alt="avatar"
-                          className="rounded-full border"
-                          width={35}
-                          height={35}
-                        />
+                        <div className="relative h-[35px] w-[35px] overflow-hidden rounded-full border">
+                          <Image
+                            src={agent.imageUrl || "/agent-placeholder.png"}
+                            alt="avatar"
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
                         <div className="md:w-70 w-40 text-left text-sm">
                           <div className="text-secondary-foreground mb-2 truncate font-medium leading-none">
                             {agent.name}
