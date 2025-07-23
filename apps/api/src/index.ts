@@ -294,10 +294,11 @@ const gracefulShutdown = async (signal: string) => {
 
       services.stopSchedulers();
 
+      clearTimeout(timeout);
       process.exit(0);
     });
   });
-  setTimeout(function () {
+  const timeout = setTimeout(function () {
     console.error("Forcing exit after timeout");
     process.exit(1);
   }, 10000);
