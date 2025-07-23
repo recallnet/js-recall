@@ -796,7 +796,7 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
   }
 
   console.log(
-      `[CompetitionRepository] get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
+    `[CompetitionRepository] get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
   );
 
   // Note the cache is keyed only by competitionId, not the agentIds list.  If this function gets
@@ -808,7 +808,7 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
     const [timestamp, result] = cachedResult;
     if (now - timestamp < MAX_CACHE_AGE) {
       console.log(
-          `[CompetitionRepository] get24hSnapshotsImpl returning cached results`,
+        `[CompetitionRepository] get24hSnapshotsImpl returning cached results`,
       );
       return result;
     }
