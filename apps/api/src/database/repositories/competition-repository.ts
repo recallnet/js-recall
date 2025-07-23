@@ -69,6 +69,9 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
   createdAt: competitions.createdAt,
 };
 
+const snapshotCache = new Map<string, [number, any]>();
+const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
+
 /**
  * Find all competitions
  */
@@ -792,6 +795,15 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
     return { earliestSnapshots: [], snapshots24hAgo: [] };
   }
 
+  const cachedResult = snapshotCache.get(competitionId);
+  if (cachedResult) {
+    const now = Date.now();
+    const [timestamp, result] = cachedResult;
+    if (now - timestamp < MAX_CACHE_AGE) {
+      return result;
+    }
+  }
+
   try {
     console.log(
       `[CompetitionRepository] getBulkAgentMetricsSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
@@ -857,7 +869,7 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
       `[CompetitionRepository] Retrieved ${earliestSnapshots.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
     );
 
-    return {
+    const result = {
       earliestSnapshots: earliestSnapshots.map(
         (row) => row.portfolio_snapshots,
       ),
@@ -869,6 +881,11 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
         totalValue: row.totalValue,
       })),
     };
+
+    // Cache the result
+    const now = Date.now();
+    snapshotCache.set(competitionId, [now, result]);
+    return result;
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in getBulkAgentMetricsSnapshots:",
