@@ -795,20 +795,23 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
     return { earliestSnapshots: [], snapshots24hAgo: [] };
   }
 
+  console.log(
+      `[CompetitionRepository] get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
+  );
+
   const cachedResult = snapshotCache.get(competitionId);
   if (cachedResult) {
     const now = Date.now();
     const [timestamp, result] = cachedResult;
     if (now - timestamp < MAX_CACHE_AGE) {
+      console.log(
+          `[CompetitionRepository] get24hSnapshotsImpl returning cached results`,
+      );
       return result;
     }
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] getBulkAgentMetricsSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
-    );
-
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     // Get earliest snapshots for each agent (for PnL calculation)
