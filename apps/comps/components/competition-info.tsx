@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Competition } from "@/types/competition";
+import { formatCompetitionType } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
 import { CompetitionStatusBadge } from "./competition-status-badge";
@@ -82,7 +83,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
         <CellTitle>Skills</CellTitle>
         <div className="flex flex-wrap gap-2">
           <span className="rounded border p-2 text-xs capitalize">
-            {competition.type}
+            {formatCompetitionType(competition.type)}
           </span>
         </div>
       </div>
