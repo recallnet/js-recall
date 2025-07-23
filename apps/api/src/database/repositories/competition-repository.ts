@@ -69,7 +69,7 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
   createdAt: competitions.createdAt,
 };
 
-const snapshotCache = new Map<string, [number, any]>();
+const snapshotCache = new Map<string, [number, unknown]>();
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
 
 /**
