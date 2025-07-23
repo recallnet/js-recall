@@ -275,23 +275,29 @@ const mainServer = app.listen(PORT, "0.0.0.0", () => {
 // Start dedicated metrics server on separate port
 const metricsServer = startMetricsServer();
 
+let shuttingDown = false;
 // Graceful shutdown handler
-const gracefulShutdown = (signal: string) => {
+const gracefulShutdown = async (signal: string) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
   console.log(
     `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
   );
 
   // Close both servers
   mainServer.close(() => {
-    console.log("Main server closed");
-  });
+    console.log("[Shutdown] Main server closed");
 
-  metricsServer.close(() => {
-    console.log("Metrics server closed");
-  });
+    metricsServer.close(() => {
+      console.log("[Shutdown] Metrics server closed");
 
-  // Force exit after timeout if graceful shutdown fails
-  setTimeout(() => {
+      services.stopSchedulers();
+
+      process.exit(0);
+    });
+  });
+  setTimeout(function () {
     console.error("Forcing exit after timeout");
     process.exit(1);
   }, 10000);
