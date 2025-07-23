@@ -16,7 +16,7 @@ import {
 import { unionAll } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
 
-import { db } from "@/database/db.js";
+import { db, dbRead } from "@/database/db.js";
 import {
   competitionAgents,
   competitions,
@@ -73,7 +73,7 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
  * Find all competitions
  */
 async function findAllImpl() {
-  return await db
+  return await dbRead
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
       ...getTableColumns(competitions),
@@ -90,7 +90,7 @@ async function findAllImpl() {
  * @param id The ID to search for
  */
 async function findByIdImpl(id: string) {
-  const [result] = await db
+  const [result] = await dbRead
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
       ...getTableColumns(competitions),
@@ -313,7 +313,7 @@ async function getAgentsImpl(
   status: CompetitionAgentStatus = COMPETITION_AGENT_STATUS.ACTIVE,
 ) {
   try {
-    const result = await db
+    const result = await dbRead
       .select({ agentId: competitionAgents.agentId })
       .from(competitionAgents)
       .where(
@@ -353,7 +353,7 @@ async function isAgentActiveInCompetitionImpl(
   agentId: string,
 ): Promise<boolean> {
   try {
-    const result = await db
+    const result = await dbRead
       .select({ agentId: competitionAgents.agentId })
       .from(competitionAgents)
       .where(
@@ -386,7 +386,7 @@ async function getAgentCompetitionStatusImpl(
   agentId: string,
 ): Promise<CompetitionAgentStatus | null> {
   try {
-    const result = await db
+    const result = await dbRead
       .select({ status: competitionAgents.status })
       .from(competitionAgents)
       .where(
@@ -424,7 +424,7 @@ async function getAgentCompetitionRecordImpl(
   updatedAt: Date;
 } | null> {
   try {
-    const result = await db
+    const result = await dbRead
       .select({
         status: competitionAgents.status,
         deactivationReason: competitionAgents.deactivationReason,
@@ -480,7 +480,7 @@ export async function getBulkAgentCompetitionRecords(
       `[CompetitionRepository] getBulkAgentCompetitionRecords called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
-    const result = await db
+    const result = await dbRead
       .select({
         agentId: competitionAgents.agentId,
         status: competitionAgents.status,
@@ -599,7 +599,7 @@ async function markAgentAsWithdrawnImpl(
  */
 async function findActiveImpl() {
   try {
-    const [result] = await db
+    const [result] = await dbRead
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
         ...getTableColumns(competitions),
@@ -692,7 +692,7 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
   try {
     // TODO: this query seems to be averaging almost 2 full seconds.
     //  We added indexes on Jul 10, need to find out if indexing fixes the issue.
-    const subquery = db
+    const subquery = dbRead
       .select({
         agentId: portfolioSnapshots.agentId,
         maxTimestamp: max(portfolioSnapshots.timestamp).as("max_timestamp"),
@@ -714,7 +714,7 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
       .groupBy(portfolioSnapshots.agentId)
       .as("latest_snapshots");
 
-    const result = await db
+    const result = await dbRead
       .select()
       .from(portfolioSnapshots)
       .innerJoin(
@@ -756,7 +756,7 @@ async function getBulkAgentPortfolioSnapshotsImpl(
       `[CompetitionRepository] getBulkAgentPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
-    const result = await db
+    const result = await dbRead
       .select()
       .from(portfolioSnapshots)
       .where(
@@ -800,7 +800,7 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     // Get earliest snapshots for each agent (for PnL calculation)
-    const earliestSubquery = db
+    const earliestSubquery = dbRead
       .select({
         agentId: portfolioSnapshots.agentId,
         minTimestamp: min(portfolioSnapshots.timestamp).as("min_timestamp"),
@@ -815,7 +815,7 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
       .groupBy(portfolioSnapshots.agentId)
       .as("earliest_snapshots");
 
-    const earliestSnapshots = await db
+    const earliestSnapshots = await dbRead
       .select()
       .from(portfolioSnapshots)
       .innerJoin(
@@ -828,10 +828,10 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
       .where(eq(portfolioSnapshots.competitionId, competitionId));
 
     // Get snapshots closest to 24h ago using window functions
-    const snapshots24hAgo = await db
+    const snapshots24hAgo = await dbRead
       .select()
       .from(
-        db
+        dbRead
           .select({
             ...getTableColumns(portfolioSnapshots),
             timeDiff:
@@ -888,7 +888,7 @@ async function getAgentPortfolioSnapshotsImpl(
   agentId: string,
 ) {
   try {
-    return await db
+    return await dbRead
       .select()
       .from(portfolioSnapshots)
       .where(
@@ -917,7 +917,7 @@ async function getAgentPortfolioSnapshotsImpl(
 async function getBoundedSnapshotsImpl(competitionId: string, agentId: string) {
   try {
     // Create subqueries for newest and oldest snapshots
-    const newestQuery = db
+    const newestQuery = dbRead
       .select()
       .from(portfolioSnapshots)
       .where(
@@ -929,7 +929,7 @@ async function getBoundedSnapshotsImpl(competitionId: string, agentId: string) {
       .orderBy(desc(portfolioSnapshots.timestamp))
       .limit(1);
 
-    const oldestQuery = db
+    const oldestQuery = dbRead
       .select()
       .from(portfolioSnapshots)
       .where(
@@ -1020,7 +1020,7 @@ async function getAgentCompetitionRankingImpl(
  */
 async function getPortfolioTokenValuesImpl(snapshotId: number) {
   try {
-    return await db
+    return await dbRead
       .select()
       .from(portfolioTokenValues)
       .where(eq(portfolioTokenValues.portfolioSnapshotId, snapshotId));
@@ -1039,7 +1039,7 @@ async function getPortfolioTokenValuesImpl(snapshotId: number) {
  */
 async function getAllPortfolioSnapshotsImpl(competitionId?: string) {
   try {
-    const query = db
+    const query = dbRead
       .select()
       .from(portfolioSnapshots)
       .orderBy(desc(portfolioSnapshots.timestamp));
@@ -1068,7 +1068,7 @@ async function getPortfolioTokenValuesByIdsImpl(snapshotIds: number[]) {
       return [];
     }
 
-    return await db
+    return await dbRead
       .select()
       .from(portfolioTokenValues)
       .where(inArray(portfolioTokenValues.portfolioSnapshotId, snapshotIds));
@@ -1086,7 +1086,7 @@ async function getPortfolioTokenValuesByIdsImpl(snapshotIds: number[]) {
  */
 async function countImpl() {
   try {
-    const [result] = await db
+    const [result] = await dbRead
       .select({ count: sql<number>`count(*)` })
       .from(competitions);
 
@@ -1104,7 +1104,7 @@ async function countImpl() {
  */
 async function countAgentCompetitionsImpl(agentId: string): Promise<number> {
   try {
-    const [result] = await db
+    const [result] = await dbRead
       .select({ count: drizzleCount() })
       .from(competitionAgents)
       .innerJoin(
@@ -1145,7 +1145,7 @@ async function findByStatusImpl({
     // Count query
     const countResult = await (() => {
       if (status) {
-        return db
+        return dbRead
           .select({ count: drizzleCount() })
           .from(tradingCompetitions)
           .innerJoin(
@@ -1154,7 +1154,7 @@ async function findByStatusImpl({
           )
           .where(eq(competitions.status, status));
       } else {
-        return db
+        return dbRead
           .select({ count: drizzleCount() })
           .from(tradingCompetitions)
           .innerJoin(
@@ -1167,7 +1167,7 @@ async function findByStatusImpl({
     const total = countResult[0]?.count ?? 0;
 
     // Data query with dynamic building
-    let dataQuery = db
+    let dataQuery = dbRead
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
         ...getTableColumns(competitions),
@@ -1205,7 +1205,7 @@ async function findByStatusImpl({
  */
 async function findBestPlacementForAgentImpl(agentId: string) {
   try {
-    const [rankResult] = await db
+    const [rankResult] = await dbRead
       .select()
       .from(competitionsLeaderboard)
       .where(eq(competitionsLeaderboard.agentId, agentId))
@@ -1214,7 +1214,7 @@ async function findBestPlacementForAgentImpl(agentId: string) {
     if (!rankResult) {
       return rankResult;
     }
-    const [pnlResult] = await db
+    const [pnlResult] = await dbRead
       .select({
         ...getTableColumns(competitionsLeaderboard),
         ...getTableColumns(tradingCompetitionsLeaderboard),
@@ -1230,7 +1230,7 @@ async function findBestPlacementForAgentImpl(agentId: string) {
       .where(eq(competitionsLeaderboard.agentId, agentId))
       .orderBy(desc(tradingCompetitionsLeaderboard.pnl))
       .limit(1);
-    const agents = await db
+    const agents = await dbRead
       .select({
         count: drizzleCount(),
       })
@@ -1325,7 +1325,7 @@ export async function batchInsertLeaderboardImpl(
  */
 async function findLeaderboardByCompetitionImpl(competitionId: string) {
   try {
-    return await db
+    return await dbRead
       .select()
       .from(competitionsLeaderboard)
       .where(eq(competitionsLeaderboard.competitionId, competitionId))
@@ -1346,7 +1346,7 @@ async function findLeaderboardByCompetitionImpl(competitionId: string) {
  */
 async function findLeaderboardByTradingCompImpl(competitionId: string) {
   try {
-    return await db
+    return await dbRead
       .select({
         ...getTableColumns(competitionsLeaderboard),
         ...getTableColumns(tradingCompetitionsLeaderboard),
@@ -1376,7 +1376,7 @@ async function findLeaderboardByTradingCompImpl(competitionId: string) {
  */
 async function getAllCompetitionsLeaderboardImpl(competitionId?: string) {
   try {
-    const query = db
+    const query = dbRead
       .select()
       .from(competitionsLeaderboard)
       .orderBy(desc(competitionsLeaderboard.createdAt));
@@ -1405,7 +1405,7 @@ async function getAllCompetitionAgentsImpl(
   competitionId: string,
 ): Promise<string[]> {
   try {
-    const result = await db
+    const result = await dbRead
       .select({ agentId: competitionAgents.agentId })
       .from(competitionAgents)
       .where(eq(competitionAgents.competitionId, competitionId));
@@ -1496,7 +1496,7 @@ async function findActiveCompetitionsPastEndDateImpl() {
   try {
     const now = new Date();
 
-    const result = await db
+    const result = await dbRead
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
         ...getTableColumns(competitions),

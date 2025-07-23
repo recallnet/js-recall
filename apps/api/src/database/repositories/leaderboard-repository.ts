@@ -9,7 +9,7 @@ import {
   sum,
 } from "drizzle-orm";
 
-import { db } from "@/database/db.js";
+import { dbRead } from "@/database/db.js";
 import {
   agents,
   competitionAgents,
@@ -43,7 +43,7 @@ export async function getAgentTotalRoi(
   agentId: string,
 ): Promise<number | null> {
   try {
-    const result = await db
+    const result = await dbRead
       .select({
         totalPnl: sum(tradingCompetitionsLeaderboard.pnl).as("totalPnl"),
         totalStartingValue: sum(
@@ -113,7 +113,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   console.log("[CompetitionRepository] getGlobalStats called for type:", type);
 
   // Filter competitions by `type` and `status` IN ['active', 'ended'].
-  const relevantCompetitions = await db
+  const relevantCompetitions = await dbRead
     .select({ id: competitions.id })
     .from(competitions)
     .where(
@@ -137,7 +137,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   const relevantCompetitionIds = relevantCompetitions.map((c) => c.id);
 
   // Sum up total trades and total volume from these competitions.
-  const tradeStatsResult = await db
+  const tradeStatsResult = await dbRead
     .select({
       totalTrades: drizzleCount(trades.id),
       totalVolume: sum(trades.tradeAmountUsd).mapWith(Number),
@@ -145,7 +145,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
     .from(trades)
     .where(inArray(trades.competitionId, relevantCompetitionIds));
 
-  const voteStatsResult = await db
+  const voteStatsResult = await dbRead
     .select({
       totalVotes: drizzleCount(votes.id),
     })
@@ -154,7 +154,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
 
   // agents remain 'active' in completed competitions
   // count distinct active agents in these competitions.
-  const totalActiveAgents = await db
+  const totalActiveAgents = await dbRead
     .select({
       totalActiveAgents: countDistinct(competitionAgents.agentId),
     })
@@ -216,7 +216,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
 
   try {
     // Query 1: Agent basic info + global scores
-    const agentRanksQuery = db
+    const agentRanksQuery = dbRead
       .select({
         agentId: agents.id,
         name: agents.name,
@@ -230,7 +230,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .where(inArray(agents.id, agentIds));
 
     // Query 2: Competition counts (only completed competitions)
-    const competitionCountsQuery = db
+    const competitionCountsQuery = dbRead
       .select({
         agentId: competitionAgents.agentId,
         completedCompetitions: countDistinct(competitions.id),
@@ -249,7 +249,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .groupBy(competitionAgents.agentId);
 
     // Query 3: Vote counts
-    const voteCountsQuery = db
+    const voteCountsQuery = dbRead
       .select({
         agentId: votes.agentId,
         totalVotes: drizzleCount(),
@@ -259,7 +259,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .groupBy(votes.agentId);
 
     // Query 4: Trade counts
-    const tradeCountsQuery = db
+    const tradeCountsQuery = dbRead
       .select({
         agentId: trades.agentId,
         totalTrades: drizzleCount(),
@@ -269,7 +269,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .groupBy(trades.agentId);
 
     // Query 5: Best placements - get the best rank for each agent
-    const bestPlacementsSubquery = db
+    const bestPlacementsSubquery = dbRead
       .select({
         agentId: competitionsLeaderboard.agentId,
         minRank: min(competitionsLeaderboard.rank).as("minRank"),
@@ -279,7 +279,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .groupBy(competitionsLeaderboard.agentId)
       .as("bestRanks");
 
-    const bestPlacementsQuery = db
+    const bestPlacementsQuery = dbRead
       .select({
         competitionId: competitionsLeaderboard.competitionId,
         agentId: competitionsLeaderboard.agentId,
@@ -298,7 +298,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .where(inArray(competitionsLeaderboard.agentId, agentIds));
 
     // Query 6: Best Profit/Loss
-    const bestPnlQuery = db
+    const bestPnlQuery = dbRead
       .selectDistinctOn([competitionsLeaderboard.agentId], {
         competitionId: competitionsLeaderboard.competitionId,
         agentId: competitionsLeaderboard.agentId,
@@ -319,7 +319,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       );
 
     // Query 7: Total ROI - calculate ROI percentage across all finished competitions
-    const totalRoiQuery = db
+    const totalRoiQuery = dbRead
       .select({
         agentId: competitionsLeaderboard.agentId,
         totalPnl: sum(tradingCompetitionsLeaderboard.pnl).as("totalPnl"),
@@ -367,7 +367,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
     ]);
 
     // Query 6: Get actual ranks - need to get all ranks first then calculate
-    const allRanksQuery = db
+    const allRanksQuery = dbRead
       .select({
         agentId: agentScore.agentId,
         ordinal: agentScore.ordinal,
@@ -511,7 +511,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
 
   try {
     // Get all agents with their basic info and scores
-    const agentsWithScores = await db
+    const agentsWithScores = await dbRead
       .select({
         id: agents.id,
         name: agents.name,
@@ -530,7 +530,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
     const agentIds = agentsWithScores.map((agent) => agent.id);
 
     // Get competition counts for all agents in one query
-    const competitionCounts = await db
+    const competitionCounts = await dbRead
       .select({
         agentId: competitionAgents.agentId,
         numCompetitions: countDistinct(competitionAgents.competitionId),
@@ -540,7 +540,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
       .groupBy(competitionAgents.agentId);
 
     // Get vote counts for all agents in one query
-    const voteCounts = await db
+    const voteCounts = await dbRead
       .select({
         agentId: votes.agentId,
         voteCount: drizzleCount(votes.id),
