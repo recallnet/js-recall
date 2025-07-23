@@ -799,6 +799,9 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
       `[CompetitionRepository] get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
   );
 
+  // Note the cache is keyed only by competitionId, not the agentIds list.  If this function gets
+  // called with the same competitionId but a different list of agentIds, then it might return
+  // the wrong set of agents in the cached result
   const cachedResult = snapshotCache.get(competitionId);
   if (cachedResult) {
     const now = Date.now();
