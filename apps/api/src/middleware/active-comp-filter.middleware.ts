@@ -22,13 +22,7 @@ export const activeCompFilterMiddleware = () => {
         `[ActiveCompFilterMiddleware] Received request to ${req.method} ${req.originalUrl}`,
       );
 
-      // Check for active competition with efficient exists query
-      const [activeCompetition] = await db
-        .select({ id: competitions.id })
-        .from(competitions)
-        .where(eq(competitions.status, COMPETITION_STATUS.ACTIVE))
-        .limit(1);
-
+      const activeCompetition = await getActiveComp();
       if (!activeCompetition) {
         console.log("[ActiveCompFilterMiddleware] No active competition found");
         throw new ApiError(403, "No active competition");
@@ -55,3 +49,31 @@ export const activeCompFilterMiddleware = () => {
     }
   };
 };
+
+// Cache for active competition check
+let cachedActiveCompetition: { id: string } | null = null;
+let lastQueryTime = 0;
+const CACHE_TTL_MS = 3000; // 3 seconds
+
+async function getActiveComp() {
+  // Check cache first
+  const now = Date.now();
+
+  if (now - lastQueryTime < CACHE_TTL_MS) {
+    console.log("[ActiveCompFilterMiddleware] Using cached result");
+    return cachedActiveCompetition;
+  }
+  // Check for active competition with efficient exists query
+  console.log("[ActiveCompFilterMiddleware] Querying database");
+  const [activeComp] = await db
+    .select({ id: competitions.id })
+    .from(competitions)
+    .where(eq(competitions.status, COMPETITION_STATUS.ACTIVE))
+    .limit(1);
+
+  // Update cache
+  cachedActiveCompetition = activeComp || null;
+  lastQueryTime = now;
+
+  return cachedActiveCompetition;
+}
