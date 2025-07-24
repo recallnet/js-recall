@@ -69,7 +69,12 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
   createdAt: competitions.createdAt,
 };
 
-const snapshotCache = new Map<string, [number, unknown]>();
+interface Snapshot24hResult {
+  earliestSnapshots: Array<any>,
+  snapshots24hAgo: Array<any>,
+}
+
+const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
 
 /**
@@ -790,7 +795,7 @@ async function getBulkAgentPortfolioSnapshotsImpl(
  * @param agentIds Array of agent IDs to get snapshots for
  * @returns Object containing earliest and 24h-ago snapshots by agent
  */
-async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
+async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]): Promise<Snapshot24hResult> {
   if (agentIds.length === 0) {
     return { earliestSnapshots: [], snapshots24hAgo: [] };
   }
