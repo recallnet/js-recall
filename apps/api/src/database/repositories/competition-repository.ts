@@ -70,7 +70,9 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
 };
 
 interface Snapshot24hResult {
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   earliestSnapshots: Array<any>,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   snapshots24hAgo: Array<any>,
 }
 
