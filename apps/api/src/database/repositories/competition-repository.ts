@@ -69,6 +69,16 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
   createdAt: competitions.createdAt,
 };
 
+interface Snapshot24hResult {
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  earliestSnapshots: Array<any>;
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  snapshots24hAgo: Array<any>;
+}
+
+const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
+const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
+
 /**
  * Find all competitions
  */
@@ -787,16 +797,32 @@ async function getBulkAgentPortfolioSnapshotsImpl(
  * @param agentIds Array of agent IDs to get snapshots for
  * @returns Object containing earliest and 24h-ago snapshots by agent
  */
-async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
+async function get24hSnapshotsImpl(
+  competitionId: string,
+  agentIds: string[],
+): Promise<Snapshot24hResult> {
   if (agentIds.length === 0) {
     return { earliestSnapshots: [], snapshots24hAgo: [] };
   }
 
-  try {
-    console.log(
-      `[CompetitionRepository] getBulkAgentMetricsSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
-    );
+  console.log(
+    `[CompetitionRepository] get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
+  );
 
+  const cacheKey = competitionId + "-" + agentIds.join("-");
+  const cachedResult = snapshotCache.get(cacheKey);
+  if (cachedResult) {
+    const now = Date.now();
+    const [timestamp, result] = cachedResult;
+    if (now - timestamp < MAX_CACHE_AGE) {
+      console.log(
+        `[CompetitionRepository] get24hSnapshotsImpl returning cached results`,
+      );
+      return result;
+    }
+  }
+
+  try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     // Get earliest snapshots for each agent (for PnL calculation)
@@ -857,7 +883,7 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
       `[CompetitionRepository] Retrieved ${earliestSnapshots.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
     );
 
-    return {
+    const result = {
       earliestSnapshots: earliestSnapshots.map(
         (row) => row.portfolio_snapshots,
       ),
@@ -869,6 +895,11 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
         totalValue: row.totalValue,
       })),
     };
+
+    // Cache the result
+    const now = Date.now();
+    snapshotCache.set(cacheKey, [now, result]);
+    return result;
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in getBulkAgentMetricsSnapshots:",
