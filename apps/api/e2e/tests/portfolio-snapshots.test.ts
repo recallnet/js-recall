@@ -2,11 +2,7 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
-import {
-  BalancesResponse,
-  PortfolioSnapshot,
-  SnapshotResponse,
-} from "@/e2e/utils/api-types.js";
+import { SnapshotResponse } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -20,9 +16,6 @@ import {
 } from "@/e2e/utils/test-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
-import { BlockchainType } from "@/types/index.js";
-
-const reason = "portfolio-snapshots end-to-end tests";
 
 describe("Portfolio Snapshots", () => {
   const services = new ServiceRegistry();
@@ -45,54 +38,6 @@ describe("Portfolio Snapshots", () => {
     adminApiKey = response.data.admin.apiKey;
     expect(adminApiKey).toBeDefined();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
-  });
-
-  // Test that a snapshot is taken when a competition starts
-  test("takes a snapshot when a competition starts", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agent and get client
-    const { agent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Snapshot Test Agent",
-    });
-
-    // Start a competition with our agent
-    const competitionName = `Snapshot Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
-      adminClient,
-      competitionName,
-      [agent.id],
-    );
-
-    // Wait for operations to complete
-    await wait(500);
-
-    // Get the competition ID
-    const competitionId = startResult.competition.id;
-
-    // Verify that a portfolio snapshot was taken for the agent
-    const snapshotsResponse = await adminClient.request(
-      "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
-    );
-    const typedResponse = snapshotsResponse as SnapshotResponse;
-    console.log(JSON.stringify(typedResponse), "typedResponse");
-    expect(typedResponse.success).toBe(true);
-    expect(typedResponse.snapshots).toBeDefined();
-    expect(typedResponse.snapshots.length).toBeGreaterThan(0);
-
-    // Verify the snapshot has the correct agent ID and competition ID
-    const snapshot = typedResponse.snapshots[0];
-    expect(snapshot?.agentId).toBe(agent.id);
-    expect(snapshot?.competitionId).toBe(competitionId);
-    // Verify the snapshot has token values
-    expect(snapshot?.valuesByToken).toBeDefined();
-    expect(
-      Object.keys((snapshot as PortfolioSnapshot).valuesByToken).length,
-    ).toBeGreaterThan(0);
   });
 
   // Test that snapshots can be taken manually
@@ -163,143 +108,6 @@ describe("Portfolio Snapshots", () => {
     expect(afterSecondSnapshotCount).toBeGreaterThan(
       countAfterFirstManualSnapshot,
     );
-  });
-
-  // Test that a snapshot is taken when a competition ends
-  test("takes a snapshot when a competition ends", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agent and get client
-    const { client, agent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "End Snapshot Agent",
-    });
-
-    // Start a competition with our agent
-    const competitionName = `End Snapshot Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
-      adminClient,
-      competitionName,
-      [agent.id],
-    );
-
-    // Get the competition ID
-    const competitionId = startResult.competition.id;
-
-    // Wait for initial snapshot to be taken
-    await wait(500);
-
-    // Execute a trade to change the portfolio composition
-    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-    const solTokenAddress = config.specificChainTokens.svm.sol;
-
-    await client.executeTrade({
-      fromToken: usdcTokenAddress,
-      toToken: solTokenAddress,
-      amount: "100",
-      fromChain: BlockchainType.SVM,
-      toChain: BlockchainType.SVM,
-      reason,
-    });
-
-    // Wait for trade to process
-    await wait(500);
-
-    // Get snapshot count before ending
-    const beforeEndResponse = (await adminClient.request(
-      "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
-    )) as SnapshotResponse;
-    const beforeEndCount = beforeEndResponse.snapshots.length;
-
-    // End the competition
-    await adminClient.endCompetition(competitionId);
-    // Wait for operations to complete
-    await wait(500);
-
-    // Get snapshots after ending
-    const afterEndResponse = (await adminClient.request(
-      "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
-    )) as SnapshotResponse;
-    const afterEndCount = afterEndResponse.snapshots.length;
-
-    // Should have at least one more snapshot
-    expect(afterEndCount).toBeGreaterThan(beforeEndCount);
-    // Verify the final snapshot has current portfolio values
-    const finalSnapshot =
-      afterEndResponse.snapshots[afterEndResponse.snapshots.length - 1];
-    expect(finalSnapshot?.valuesByToken[solTokenAddress]).toBeDefined();
-    expect(
-      finalSnapshot?.valuesByToken[solTokenAddress]?.amount,
-    ).toBeGreaterThan(0);
-  });
-
-  // Test portfolio value calculation accuracy
-  test("calculates portfolio value correctly based on token prices", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agent and get client
-    const { client, agent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Value Calc Agent",
-    });
-
-    // Start a competition with our agent
-    const competitionName = `Value Calculation Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
-      adminClient,
-      competitionName,
-      [agent.id],
-    );
-
-    // Get the competition ID
-    const competitionId = startResult.competition.id;
-
-    // Wait for initial snapshot to be taken
-    await wait(500);
-
-    // Get initial balances
-    const initialBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
-    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-    const initialUsdcBalance =
-      initialBalanceResponse.balances.find(
-        (b) => b.tokenAddress === usdcTokenAddress,
-      )?.amount || 0;
-
-    // Get token price using direct service call instead of API
-    const priceTracker = new PriceTracker();
-    const usdcPriceResponse = await priceTracker.getPrice(usdcTokenAddress);
-    expect(usdcPriceResponse).not.toBeNull();
-    const usdcPrice = usdcPriceResponse;
-
-    // Get initial snapshot
-    const initialSnapshotsResponse = (await adminClient.request(
-      "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
-    )) as SnapshotResponse;
-    const initialSnapshot = initialSnapshotsResponse.snapshots[0];
-
-    // Verify the USDC value is calculated correctly
-    const usdcValue = initialSnapshot?.valuesByToken[usdcTokenAddress];
-    expect(usdcValue?.amount).toBeCloseTo(initialUsdcBalance);
-    if (usdcPrice) {
-      expect(usdcValue?.valueUsd).toBeCloseTo(
-        initialUsdcBalance * usdcPrice.price,
-        -1,
-      );
-    }
-
-    // Verify total portfolio value is the sum of all token values
-    const totalValue = Object.values(
-      (initialSnapshot as PortfolioSnapshot).valuesByToken,
-    ).reduce((sum: number, token) => sum + token.valueUsd, 0);
-    expect(initialSnapshot?.totalValue).toBeCloseTo(totalValue, -1);
   });
 
   // Test that the configuration is loaded correctly

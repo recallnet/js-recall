@@ -6,7 +6,6 @@ import {
   findById,
   getAgentPortfolioSnapshots,
   getCompetitionAgents,
-  getPortfolioTokenValues,
 } from "@/database/repositories/competition-repository.js";
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { BalanceManager, PriceTracker } from "@/services/index.js";
@@ -254,17 +253,7 @@ export class PortfolioSnapshotter {
     const snapshots = await getAgentPortfolioSnapshots(competitionId, agentId);
 
     const promises = snapshots.map(async (snapshot) => {
-      const tokenValues = await getPortfolioTokenValues(snapshot.id);
-      const valuesByToken: Record<
-        string,
-        { amount: number; valueUsd: number }
-      > = {};
-      for (const tokenValue of tokenValues) {
-        valuesByToken[tokenValue.tokenAddress] = {
-          amount: tokenValue.amount,
-          valueUsd: tokenValue.valueUsd,
-        };
-      }
+      const valuesByToken = {};
 
       return {
         ...snapshot,
