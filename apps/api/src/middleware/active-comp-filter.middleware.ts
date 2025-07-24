@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 
+import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { competitions } from "@/database/schema/core/defs.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -12,15 +13,14 @@ import { COMPETITION_STATUS } from "@/types/index.js";
  * This middleware checks if there is an active competition. If no active competition
  * is found, it responds with a 403 Forbidden error.
  */
-export const activeCompFilterMiddleware = () => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export const activeCompMiddleware = function () {
+  return async function (req: Request, res: Response, next: NextFunction) {
     try {
-      console.log(
-        `\n[ActiveCompFilterMiddleware] ========== CHECKING ACTIVE COMPETITION ==========`,
-      );
+      console.log("\n\n\n\n\n");
       console.log(
         `[ActiveCompFilterMiddleware] Received request to ${req.method} ${req.originalUrl}`,
       );
+      console.log("\n\n\n\n\n");
 
       const activeCompetition = await getActiveComp();
       if (!activeCompetition) {
@@ -53,13 +53,13 @@ export const activeCompFilterMiddleware = () => {
 // Cache for active competition check
 let cachedActiveCompetition: { id: string } | null = null;
 let lastQueryTime = 0;
-const CACHE_TTL_MS = 3000; // 3 seconds
+const CACHE_ACTIVE_COMP_TTL_MS = config.cache.activeCompetitionTtlMs;
 
 async function getActiveComp() {
   // Check cache first
   const now = Date.now();
 
-  if (now - lastQueryTime < CACHE_TTL_MS) {
+  if (now - lastQueryTime < CACHE_ACTIVE_COMP_TTL_MS) {
     console.log("[ActiveCompFilterMiddleware] Using cached result");
     return cachedActiveCompetition;
   }
@@ -72,8 +72,14 @@ async function getActiveComp() {
     .limit(1);
 
   // Update cache
-  cachedActiveCompetition = activeComp || null;
-  lastQueryTime = now;
+  if (activeComp) {
+    cachedActiveCompetition = activeComp || null;
+    lastQueryTime = now;
+  }
 
   return cachedActiveCompetition;
+}
+
+export function activeCompResetCache() {
+  lastQueryTime = 0;
 }
