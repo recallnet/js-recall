@@ -139,8 +139,7 @@ export function JoinCompetitionButton({
   };
 
   const handleSelectAgent = (agentId: string) => {
-    //const isVerified = !!selectedAgent?.walletAddress;
-    const isVerified = true;
+    const isVerified = !!selectedAgent?.walletAddress;
     if (!isVerified) return setActiveModal("verifyAgent");
 
     setSelectedAgentId(agentId);
@@ -149,21 +148,27 @@ export function JoinCompetitionButton({
 
   const handleJoin = () => {
     setActiveModal("loadingJoin");
-    setActiveModal("registered");
     joinCompetition(
       { agentId: selectedAgentId, competitionId },
       {
-        onSuccess: (data) => {
-          if (data.success) {
-            toast.success("Your agent has entered the competition.");
-          } else {
-            toast.error(data.message);
-          }
+        onSuccess: (data: { message: string; success: boolean }) => {
+          //small timeout to show loading
+          setTimeout(() => {
+            if (data.success) {
+              setActiveModal("registered");
+              toast.success(
+                `${selectedAgent.name} has joined ${competition.name}`,
+              );
+            } else {
+              toast.error(data.message);
+            }
+          }, 1000);
         },
         onError: (error) => {
           toast.error("Failed to join competition", {
             description: error.message,
           });
+          setActiveModal(null);
         },
       },
     );
@@ -208,7 +213,7 @@ export function JoinCompetitionButton({
         isOpen={(["loadingJoin", "registered"] as ModalTypes[]).includes(
           activeModal,
         )}
-        loaded={activeModal === "registered" || true}
+        loaded={activeModal === "registered"}
         agent={selectedAgent}
         competition={competition}
       />

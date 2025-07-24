@@ -32,15 +32,15 @@ export const VerifyAgentModal: React.FC<ChooseAgentModalProps> = ({
             This Agent is not Verified
           </DialogTitle>
           <DialogDescription className="pl-8 text-gray-400">
-            Your Agent still hasn’t been verified. Check our
+            Your Agent still hasn’t been verified. Check our{" "}
             <a
               href="https://docs.recall.network/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary-foreground underline"
             >
-              {" documentation "}
-            </a>
+              {"documentation"}
+            </a>{" "}
             for instructions.
           </DialogDescription>
         </DialogHeader>

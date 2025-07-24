@@ -1,4 +1,4 @@
-import { Bot, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bot } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
@@ -33,14 +33,19 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
   onContinue,
   competition,
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const pathname = usePathname();
+
+  const agentsGrouped = Array.from(
+    { length: Math.ceil(agents.length / 3) },
+    (_, i) => agents.slice(i * 3, i * 3 + 3),
+  );
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[700px]">
-          <DialogHeader className="text-start">
+        <DialogContent className="w-[850px]">
+          <DialogHeader className="mb text-start">
             <DialogTitle className="flex items-center justify-start gap-2 text-xl font-bold text-white">
               <Bot className="size-6 text-gray-700" />
               Choose Your Agent
@@ -54,52 +59,62 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
             </DialogDescription>
           </DialogHeader>
 
-          <div className={cn(`mt-5 flex w-full flex-col justify-around gap-4`)}>
-            <div className="flex items-center gap-4">
+          <div className={cn(`flex w-full flex-col justify-around`)}>
+            <div className="flex items-center">
               <Button
-                onClick={() => setCurrentIndex(Math.max(0, currentIndex - 3))}
-                disabled={currentIndex === 0}
+                onClick={() => setSelectedIndex(Math.max(0, selectedIndex - 1))}
+                disabled={selectedIndex === 0}
                 variant="outline"
-                className="border-0"
+                className="z-10 h-10 w-10 translate-x-[20px] rounded-full p-0 hover:bg-white hover:text-black"
               >
-                <ChevronLeft className="h-6 w-6" />
+                <ArrowLeft className="h-6 w-6" />
               </Button>
 
-              <div className="flex gap-6 overflow-hidden">
-                <div
-                  className="flex min-w-[500px] justify-center gap-6 transition-transform duration-300 ease-in-out"
-                  style={{
-                    transform: `translateX(-${currentIndex * (240 + 24)}px)`,
-                  }}
-                >
-                  {agents.map((agent, i) => (
-                    <AgentCard
+              <div className="relative flex h-80 flex-1 overflow-hidden">
+                {agentsGrouped.map((agentGroup, i) => {
+                  const currentIndex = i - selectedIndex;
+
+                  return (
+                    <div
                       key={i}
-                      agent={agent}
-                      className="h-75 w-55 flex-shrink-0 transition-all duration-200 hover:scale-105 hover:shadow-lg"
-                      onClick={() => onContinue(agent.id)}
-                    />
-                  ))}
-                </div>
+                      className="duration-600 absolute left-0 top-0 flex w-full -space-x-8 transition-transform ease-in-out"
+                      style={{
+                        transform: `translateX(${currentIndex * 100}%)`,
+                      }}
+                    >
+                      {agentGroup.map((agent, j) => (
+                        <AgentCard
+                          key={j}
+                          agent={agent}
+                          className="h-85 w-65 hover:scale-80 flex-shrink-0 scale-75 transition-all duration-200 hover:shadow-lg"
+                          onClick={() => onContinue(agent.id)}
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
 
               <Button
                 onClick={() =>
-                  setCurrentIndex(Math.min(agents.length - 3, currentIndex + 3))
+                  setSelectedIndex(
+                    Math.min(agentsGrouped.length, selectedIndex + 1),
+                  )
                 }
-                disabled={currentIndex >= agents.length - 3}
+                disabled={selectedIndex == agentsGrouped.length - 1}
                 variant="outline"
-                className="border-0"
+                className="z-10 h-10 w-10 translate-x-[-20px] rounded-full p-0 hover:bg-white hover:text-black"
               >
-                <ChevronRight className="h-6 w-6" />
+                <ArrowRight className="h-6 w-6" />
               </Button>
             </div>
           </div>
+
           <div className="flex w-full justify-center">
             <Link href={`/create-agent?redirectTo=${pathname}`}>
               <Button
                 variant="outline"
-                className="text-primary-foreground border-0"
+                className="text-primary-foreground text-md border-0"
               >
                 {"+ Register New Agent"}
               </Button>

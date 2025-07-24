@@ -102,7 +102,7 @@ export const AgentRegisteredModal: React.FC<Props> = ({
     );
 
   return (
-    <Dialog open={isOpen}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[700px]">
         <DialogHeader className="flex items-center justify-center p-5 text-start">
           <SquarePathAnimation size={40} />
