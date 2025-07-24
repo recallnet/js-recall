@@ -3070,7 +3070,7 @@ describe("User API", () => {
     expect(endComp2Result.success).toBe(true);
 
     // Wait for rankings to be calculated
-    await wait(500);
+    await wait(1500);
 
     // Get all user agents and verify stats
     const agentsResponse = await siweClient.getUserAgents();
