@@ -830,7 +830,7 @@ async function get24hSnapshotsImpl(
       FROM (SELECT UNNEST(${agentIds}::uuid[]) as agent_id) agents
       CROSS JOIN LATERAL (
         SELECT id, agent_id, competition_id, timestamp, total_value
-        FROM ${sql.identifier("trading_comps", "portfolio_snapshots")} ps
+        FROM ${sql.identifier("trading_comps")}, ${sql.identifier("portfolio_snapshots")} ps
         WHERE ps.agent_id = agents.agent_id
           AND ps.competition_id = ${competitionId}
         ORDER BY ps.timestamp ASC
