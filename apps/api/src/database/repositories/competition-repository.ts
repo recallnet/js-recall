@@ -799,33 +799,19 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // Get earliest snapshots for each agent (for PnL calculation)
-    const earliestSubquery = db
-      .select({
-        agentId: portfolioSnapshots.agentId,
-        minTimestamp: min(portfolioSnapshots.timestamp).as("min_timestamp"),
-      })
-      .from(portfolioSnapshots)
-      .where(
-        and(
-          eq(portfolioSnapshots.competitionId, competitionId),
-          inArray(portfolioSnapshots.agentId, agentIds),
-        ),
-      )
-      .groupBy(portfolioSnapshots.agentId)
-      .as("earliest_snapshots");
-
-    const earliestSnapshots = await db
-      .select()
-      .from(portfolioSnapshots)
-      .innerJoin(
-        earliestSubquery,
-        and(
-          eq(portfolioSnapshots.agentId, earliestSubquery.agentId),
-          eq(portfolioSnapshots.timestamp, earliestSubquery.minTimestamp),
-        ),
-      )
-      .where(eq(portfolioSnapshots.competitionId, competitionId));
+      // Get earliest snapshots for each agent (optimized)
+      const earliestSnapshots = await Promise.all(
+        agentIds.map(agentId =>
+          db.select()
+            .from(portfolioSnapshots)
+            .where(and(
+              eq(portfolioSnapshots.competitionId, competitionId),
+              eq(portfolioSnapshots.agentId, agentId)
+            ))
+            .orderBy(asc(portfolioSnapshots.timestamp))
+            .limit(1)
+        )
+      ).then(results => results.flat().map(row => row));
 
     // Get snapshots closest to 24h ago using window functions
     const snapshots24hAgo = await db
