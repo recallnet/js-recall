@@ -857,7 +857,7 @@ async function get24hSnapshotsImpl(
     const snapshots24hAgo = await dbRead
       .select()
       .from(
-        db
+        dbRead
           .select({
             ...getTableColumns(portfolioSnapshots),
             timeDiff:
