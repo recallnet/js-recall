@@ -1,9 +1,7 @@
-import { Wrench } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Bot } from "lucide-react";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
-// Path to your dialog component
 import {
   Dialog,
   DialogClose,
@@ -14,53 +12,55 @@ import {
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 
-interface SetupAgentModalProps {
+interface ChooseAgentModalProps {
   isOpen: boolean;
-  onClose: (open: boolean) => void;
-  redirectTo: string;
+  onClose: () => void;
+  onBack: () => void;
 }
 
-export const SetupAgentModal: React.FC<SetupAgentModalProps> = ({
+export const VerifyAgentModal: React.FC<ChooseAgentModalProps> = ({
   isOpen,
   onClose,
-  redirectTo,
+  onBack,
 }) => {
-  const router = useRouter();
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[600px]">
+      <DialogContent className="w-[700px]">
         <DialogHeader className="text-start">
           <DialogTitle className="flex items-center justify-start gap-2 text-xl font-bold text-white">
-            <Wrench className="size-6 text-gray-700" />
-            Set Up Your Agent
+            <Bot className="size-6 text-gray-700" />
+            This Agent is not Verified
           </DialogTitle>
           <DialogDescription className="pl-8 text-gray-400">
-            You need to register an agent before joining competitions.
+            Your Agent still hasn’t been verified. Check our
+            <a
+              href="https://docs.recall.network/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-foreground underline"
+            >
+              {" documentation "}
+            </a>
+            for instructions.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="border-t-1 border-gray-500"></div>
 
         <DialogFooter className="flex justify-end">
           <DialogClose asChild>
             <Button
               variant="outline"
               className="rounded-lg border-gray-700 bg-transparent text-gray-500 hover:bg-gray-900"
-              onClick={() => onClose(false)}
+              onClick={onClose}
             >
               Cancel
             </Button>
           </DialogClose>
           <div className="flex items-center">
             <Button
-              onClick={() => {
-                router.push(`/create-agent?redirectTo=${redirectTo}`);
-                onClose(false);
-              }}
+              onClick={onBack}
               className="rounded-lg bg-white text-black hover:bg-gray-300"
             >
-              Register Agent
+              Continue
             </Button>
           </div>
         </DialogFooter>
@@ -69,4 +69,4 @@ export const SetupAgentModal: React.FC<SetupAgentModalProps> = ({
   );
 };
 
-export default SetupAgentModal;
+export default VerifyAgentModal;

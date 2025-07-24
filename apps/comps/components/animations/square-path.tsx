@@ -19,7 +19,9 @@ const sections: Section[] = [
 
 const transitionDuration = 500;
 
-const SquarePathAnimation: React.FC = () => {
+const SquarePathAnimation: React.FunctionComponent<{ size?: number }> = ({
+  size = 83,
+}) => {
   const [pathIndex, setPathIndex] = useState(0);
   const [backgroundState, setBackgroundState] = useState({
     "top-left": true,
@@ -42,21 +44,28 @@ const SquarePathAnimation: React.FC = () => {
   });
 
   return (
-    <div className="full relative h-[166px] w-[166px]">
+    <div
+      className="full relative"
+      style={{ width: size * 2, height: size * 2 }}
+    >
       <div
-        className="absolute z-10 h-[83px] w-[83px] bg-white transition-transform ease-in-out"
+        className="absolute z-10 bg-white transition-transform ease-in-out"
         style={{
           transform: path[pathIndex],
           transitionDuration: `${transitionDuration}ms`,
+          width: size,
+          height: size,
         }}
       ></div>
       {sections.map((cur, i) => (
         <div
           key={i}
-          className="absolute left-0 top-0 z-0 h-[83px] w-[83px] bg-gray-500 transition-transform ease-in-out"
+          className="absolute left-0 top-0 z-0 bg-gray-500 transition-transform ease-in-out"
           style={{
             transform: backgroundState[cur] ? path[i] : path[pathIndex],
             transitionDuration: `${transitionDuration}ms`,
+            width: size,
+            height: size,
           }}
         ></div>
       ))}

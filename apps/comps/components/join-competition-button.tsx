@@ -9,10 +9,13 @@ import { useUserSession } from "@/hooks/useAuth";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useJoinCompetition } from "@/hooks/useJoinCompetition";
 
+import AgentRegisteredModal from "./modals/agent-registered";
 import { ChooseAgentModal } from "./modals/choose-agent";
+import ConfirmAgentEntryModal from "./modals/confirm-agent-entry";
 import { ConnectWalletModal } from "./modals/connect-wallet";
 import { CreateAccountModal } from "./modals/create-account";
 import { SetupAgentModal } from "./modals/setup-agent";
+import VerifyAgentModal from "./modals/verify-agent";
 
 interface JoinCompetitionButtonProps
   extends Omit<ComponentProps<typeof Button>, "variant"> {
@@ -20,6 +23,17 @@ interface JoinCompetitionButtonProps
   variant?: ComponentProps<typeof Button>["variant"];
   children?: ReactNode;
 }
+
+type ModalTypes =
+  | "connectWallet"
+  | "chooseAgent"
+  | "setupAgent"
+  | "createAccount"
+  | "verifyAgent"
+  | "confirmAgentEntry"
+  | "loadingJoin"
+  | "registered"
+  | null;
 
 export function JoinCompetitionButton({
   competitionId,
@@ -30,9 +44,13 @@ export function JoinCompetitionButton({
   const session = useUserSession();
   const { data: userAgents } = useUserAgents();
   const { data: competition } = useCompetition(competitionId);
-  const [activeModal, setActiveModal] = useState<
-    "connectWallet" | "chooseAgent" | "setupAgent" | "createAccount" | null
-  >(null);
+  const [activeModal, setActiveModal] = useState<ModalTypes>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>("");
+
+  const selectedAgent = userAgents?.agents.find(
+    (agent) => agent.id === selectedAgentId,
+  );
+
   const pathname = usePathname();
   const { mutate: joinCompetition, isPending: isJoining } =
     useJoinCompetition();
@@ -120,10 +138,20 @@ export function JoinCompetitionButton({
     }
   };
 
-  const handleContinue = (agentId: string) => {
-    setActiveModal(null);
+  const handleSelectAgent = (agentId: string) => {
+    //const isVerified = !!selectedAgent?.walletAddress;
+    const isVerified = true;
+    if (!isVerified) return setActiveModal("verifyAgent");
+
+    setSelectedAgentId(agentId);
+    setActiveModal("confirmAgentEntry");
+  };
+
+  const handleJoin = () => {
+    setActiveModal("loadingJoin");
+    setActiveModal("registered");
     joinCompetition(
-      { agentId, competitionId },
+      { agentId: selectedAgentId, competitionId },
       {
         onSuccess: (data) => {
           if (data.success) {
@@ -158,8 +186,31 @@ export function JoinCompetitionButton({
       <ChooseAgentModal
         isOpen={activeModal === "chooseAgent"}
         onClose={() => setActiveModal(null)}
+        onContinue={handleSelectAgent}
+        competition={competition}
         agents={userAgents?.agents || []}
-        onContinue={handleContinue}
+      />
+      <VerifyAgentModal
+        isOpen={activeModal === "verifyAgent"}
+        onClose={() => setActiveModal(null)}
+        onBack={() => setActiveModal("chooseAgent")}
+      />
+      <ConfirmAgentEntryModal
+        isOpen={activeModal === "confirmAgentEntry" && !!selectedAgent}
+        onClose={() => setActiveModal(null)}
+        onBack={() => setActiveModal("chooseAgent")}
+        onContinue={handleJoin}
+        competition={competition}
+        agent={selectedAgent}
+      />
+      <AgentRegisteredModal
+        onClose={() => setActiveModal(null)}
+        isOpen={(["loadingJoin", "registered"] as ModalTypes[]).includes(
+          activeModal,
+        )}
+        loaded={activeModal === "registered" || true}
+        agent={selectedAgent}
+        competition={competition}
       />
       <SetupAgentModal
         isOpen={activeModal === "setupAgent"}
