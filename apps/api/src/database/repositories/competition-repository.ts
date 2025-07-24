@@ -1,3 +1,4 @@
+import { Mutex } from "async-mutex";
 import {
   AnyColumn,
   and,
@@ -76,6 +77,7 @@ interface Snapshot24hResult {
   snapshots24hAgo: Array<any>;
 }
 
+const snapshotQueryMutex = new Mutex();
 const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
 
@@ -798,6 +800,18 @@ async function getBulkAgentPortfolioSnapshotsImpl(
  * @returns Object containing earliest and 24h-ago snapshots by agent
  */
 async function get24hSnapshotsImpl(
+  competitionId: string,
+  agentIds: string[],
+): Promise<Snapshot24hResult> {
+  // This query is expensive, so we want to ensure that only one instance of it is running at a time.
+  // The calls that back up behind the first call should complete very quickly once the first call
+  // completes since they'll get their result from the cache.
+  return snapshotQueryMutex.runExclusive(async () => {
+    return await get24hSnapshotsImpl_inner(competitionId, agentIds);
+  });
+}
+
+async function get24hSnapshotsImpl_inner(
   competitionId: string,
   agentIds: string[],
 ): Promise<Snapshot24hResult> {
