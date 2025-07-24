@@ -798,23 +798,19 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // Get earliest snapshots for each agent (optimized)
-    const earliestSnapshots = await Promise.all(
-      agentIds.map((agentId) =>
-        db
-          .select()
-          .from(portfolioSnapshots)
-          .where(
-            and(
-              eq(portfolioSnapshots.competitionId, competitionId),
-              eq(portfolioSnapshots.agentId, agentId),
-            ),
-          )
-          .orderBy(asc(portfolioSnapshots.timestamp))
-          .limit(1),
-      ),
-    ).then((results) => results.flat().map((row) => row));
-
+    // Replace the entire earliestSnapshots logic with this SINGLE query:
+    const earliestSnapshots = await db.execute(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM (SELECT UNNEST(${agentIds}::uuid[]) as agent_id) agents
+      CROSS JOIN LATERAL (
+        SELECT id, agent_id, competition_id, timestamp, total_value
+        FROM ${sql.identifier("trading_comps", "portfolio_snapshots")} ps
+        WHERE ps.agent_id = agents.agent_id
+          AND ps.competition_id = ${competitionId}
+        ORDER BY ps.timestamp ASC
+        LIMIT 1
+      ) ps
+    `);
     // Get snapshots closest to 24h ago using window functions
     const snapshots24hAgo = await db
       .select()
@@ -846,7 +842,7 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
     );
 
     return {
-      earliestSnapshots: earliestSnapshots, // ✅ Direct mapping - already flat!
+      earliestSnapshots: earliestSnapshots.rows, // ✅ Direct mapping - already flat!
       snapshots24hAgo: snapshots24hAgo.map((row) => ({
         id: row.id,
         agentId: row.agentId,
