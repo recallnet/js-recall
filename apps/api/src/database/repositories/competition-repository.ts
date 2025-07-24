@@ -71,9 +71,9 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
 
 interface Snapshot24hResult {
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  earliestSnapshots: Array<any>,
+  earliestSnapshots: Array<any>;
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  snapshots24hAgo: Array<any>,
+  snapshots24hAgo: Array<any>;
 }
 
 const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
@@ -797,7 +797,10 @@ async function getBulkAgentPortfolioSnapshotsImpl(
  * @param agentIds Array of agent IDs to get snapshots for
  * @returns Object containing earliest and 24h-ago snapshots by agent
  */
-async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]): Promise<Snapshot24hResult> {
+async function get24hSnapshotsImpl(
+  competitionId: string,
+  agentIds: string[],
+): Promise<Snapshot24hResult> {
   if (agentIds.length === 0) {
     return { earliestSnapshots: [], snapshots24hAgo: [] };
   }
