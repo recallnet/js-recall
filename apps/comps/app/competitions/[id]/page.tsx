@@ -24,7 +24,7 @@ import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 
-const limit = 10;
+const limit = 1;
 
 export default function CompetitionPage({
   params,
@@ -61,6 +61,10 @@ export default function CompetitionPage({
 
   const isLoading = isLoadingCompetition || isLoadingAgents;
   const error = competitionError;
+
+  React.useEffect(() => {
+    handlePageChange(1);
+  }, [debouncedFilterTerm, agentsSort]);
 
   if (isLoading) {
     return <CompetitionSkeleton />;
