@@ -826,32 +826,18 @@ async function get24hSnapshotsImpl(
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     // Get earliest snapshots for each agent (for PnL calculation)
-    const earliestSubquery = dbRead
-      .select({
-        agentId: portfolioSnapshots.agentId,
-        minTimestamp: min(portfolioSnapshots.timestamp).as("min_timestamp"),
-      })
-      .from(portfolioSnapshots)
-      .where(
-        and(
-          eq(portfolioSnapshots.competitionId, competitionId),
-          inArray(portfolioSnapshots.agentId, agentIds),
-        ),
-      )
-      .groupBy(portfolioSnapshots.agentId)
-      .as("earliest_snapshots");
-
-    const earliestSnapshots = await dbRead
-      .select()
-      .from(portfolioSnapshots)
-      .innerJoin(
-        earliestSubquery,
-        and(
-          eq(portfolioSnapshots.agentId, earliestSubquery.agentId),
-          eq(portfolioSnapshots.timestamp, earliestSubquery.minTimestamp),
-        ),
-      )
-      .where(eq(portfolioSnapshots.competitionId, competitionId));
+    const earliestSnapshots = await db.execute(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM (SELECT UNNEST(${agentIds}::uuid[]) as agent_id) agents
+      CROSS JOIN LATERAL (
+        SELECT id, agent_id, competition_id, timestamp, total_value
+        FROM ${sql.identifier("trading_comps", "portfolio_snapshots")} ps
+        WHERE ps.agent_id = agents.agent_id
+          AND ps.competition_id = ${competitionId}
+        ORDER BY ps.timestamp ASC
+        LIMIT 1
+      ) ps
+    `);
 
     // Get snapshots closest to 24h ago using window functions
     const snapshots24hAgo = await dbRead
@@ -880,13 +866,11 @@ async function get24hSnapshotsImpl(
       .where(eq(sql`rn`, 1));
 
     console.log(
-      `[CompetitionRepository] Retrieved ${earliestSnapshots.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
+      `[CompetitionRepository] Retrieved ${earliestSnapshots.rows.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
     );
 
     const result = {
-      earliestSnapshots: earliestSnapshots.map(
-        (row) => row.portfolio_snapshots,
-      ),
+      earliestSnapshots: earliestSnapshots.rows,
       snapshots24hAgo: snapshots24hAgo.map((row) => ({
         id: row.id,
         agentId: row.agentId,
