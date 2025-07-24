@@ -844,9 +844,7 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
     );
 
     return {
-      earliestSnapshots: earliestSnapshots.map(
-        (row) => row.portfolio_snapshots,
-      ),
+      earliestSnapshots: earliestSnapshots,  // ✅ Direct mapping - already flat!
       snapshots24hAgo: snapshots24hAgo.map((row) => ({
         id: row.id,
         agentId: row.agentId,
