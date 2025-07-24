@@ -84,6 +84,12 @@ const pool = new Pool({
   ...sslConfig,
 });
 
+// Read replica connection pool
+const readReplicaPool = new Pool({
+  connectionString: config.database.readReplicaUrl || config.database.url,
+  ...sslConfig,
+});
+
 /*
  * DATABASE QUERY TIMING ALTERNATIVES:
  *
@@ -229,14 +235,33 @@ export const db = drizzle({
   logger: dbLogger,
 });
 
+// Create and export the read replica database instance
+export const dbRead = drizzle({
+  client: readReplicaPool,
+  schema,
+  logger: dbLogger,
+});
+
 // NOTE: logDbOperation export removed - all queries now automatically logged
 
 console.log(
   "[DatabaseConnection] Connected to PostgreSQL using connection URL",
 );
 
+console.log(
+  "[DatabaseConnection] Read replica connection configured:",
+  config.database.readReplicaUrl !== config.database.url
+    ? "separate replica"
+    : "same as primary",
+);
+
 db.$client.on("error", (err: Error) => {
   console.error("Unexpected error on idle client", err);
+  process.exit(-1);
+});
+
+dbRead.$client.on("error", (err: Error) => {
+  console.error("Unexpected error on read replica client", err);
   process.exit(-1);
 });
 
