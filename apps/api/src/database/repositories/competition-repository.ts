@@ -798,19 +798,22 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-      // Get earliest snapshots for each agent (optimized)
-      const earliestSnapshots = await Promise.all(
-        agentIds.map(agentId =>
-          db.select()
-            .from(portfolioSnapshots)
-            .where(and(
+    // Get earliest snapshots for each agent (optimized)
+    const earliestSnapshots = await Promise.all(
+      agentIds.map((agentId) =>
+        db
+          .select()
+          .from(portfolioSnapshots)
+          .where(
+            and(
               eq(portfolioSnapshots.competitionId, competitionId),
-              eq(portfolioSnapshots.agentId, agentId)
-            ))
-            .orderBy(asc(portfolioSnapshots.timestamp))
-            .limit(1)
-        )
-      ).then(results => results.flat().map(row => row));
+              eq(portfolioSnapshots.agentId, agentId),
+            ),
+          )
+          .orderBy(asc(portfolioSnapshots.timestamp))
+          .limit(1),
+      ),
+    ).then((results) => results.flat().map((row) => row));
 
     // Get snapshots closest to 24h ago using window functions
     const snapshots24hAgo = await db
@@ -843,7 +846,7 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
     );
 
     return {
-      earliestSnapshots: earliestSnapshots,  // ✅ Direct mapping - already flat!
+      earliestSnapshots: earliestSnapshots, // ✅ Direct mapping - already flat!
       snapshots24hAgo: snapshots24hAgo.map((row) => ({
         id: row.id,
         agentId: row.agentId,
