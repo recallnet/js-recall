@@ -181,18 +181,12 @@ export class AgentManager {
           errorMessage.includes("violates unique constraint") ||
           ("code" in error && error.code === "23505");
 
-        const isAgentNameConstraint =
-          errorMessage.includes("agents_owner_id_name_key") ||
-          (errorMessage.includes("owner_id") && errorMessage.includes("name"));
-
-        if (isUniqueConstraintViolation && isAgentNameConstraint) {
+        if (isUniqueConstraintViolation) {
           throw new ApiError(
             409,
-            `An agent with the name "${name}" already exists for this user`,
+            `An agent with the name "${name}" already exists`,
           );
         }
-
-        throw error;
       }
 
       console.error("[AgentManager] Unknown error creating agent:", error);
