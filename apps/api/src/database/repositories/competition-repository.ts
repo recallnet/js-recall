@@ -273,11 +273,11 @@ async function removeAgentFromCompetitionImpl(
     const wasUpdated = result.length > 0;
 
     if (wasUpdated) {
-      repositoryLogger.info(
+      repositoryLogger.debug(
         `Removed agent ${agentId} from competition ${competitionId}`,
       );
     } else {
-      repositoryLogger.info(
+      repositoryLogger.debug(
         `No active agent ${agentId} found in competition ${competitionId} to remove`,
       );
     }
@@ -478,7 +478,7 @@ export async function getBulkAgentCompetitionRecords(
   }
 
   try {
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `getBulkAgentCompetitionRecords called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
@@ -499,7 +499,7 @@ export async function getBulkAgentCompetitionRecords(
         ),
       );
 
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Retrieved ${result.length} competition records for ${agentIds.length} agents`,
     );
 
@@ -558,7 +558,7 @@ async function updateAgentCompetitionStatusImpl(
     const wasUpdated = result.length > 0;
 
     if (wasUpdated) {
-      repositoryLogger.info(
+      repositoryLogger.debug(
         `Updated agent ${agentId} status to ${status} in competition ${competitionId}`,
       );
     }
@@ -654,7 +654,7 @@ async function batchCreatePortfolioTokenValuesImpl(
   }
 
   try {
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Batch inserting ${tokenValues.length} portfolio token values`,
     );
 
@@ -663,7 +663,7 @@ async function batchCreatePortfolioTokenValuesImpl(
       .values(tokenValues)
       .returning();
 
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `[CompetitionRepository] Successfully inserted ${results.length} portfolio token values`,
     );
 
@@ -742,7 +742,7 @@ async function getBulkAgentPortfolioSnapshotsImpl(
   }
 
   try {
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `getBulkAgentPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
@@ -757,7 +757,7 @@ async function getBulkAgentPortfolioSnapshotsImpl(
       )
       .orderBy(desc(portfolioSnapshots.timestamp));
 
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Retrieved ${result.length} portfolio snapshots for ${agentIds.length} agents`,
     );
 
@@ -782,7 +782,7 @@ async function get24hSnapshotsImpl(
     return { earliestSnapshots: [], snapshots24hAgo: [] };
   }
 
-  repositoryLogger.info(
+  repositoryLogger.debug(
     `get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
   );
 
@@ -792,7 +792,7 @@ async function get24hSnapshotsImpl(
     const now = Date.now();
     const [timestamp, result] = cachedResult;
     if (now - timestamp < MAX_CACHE_AGE) {
-      repositoryLogger.info(`get24hSnapshotsImpl returning cached results`);
+      repositoryLogger.debug(`get24hSnapshotsImpl returning cached results`);
       return result;
     }
   }
@@ -854,7 +854,7 @@ async function get24hSnapshotsImpl(
       )
       .where(eq(sql`rn`, 1));
 
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Retrieved ${earliestSnapshots.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
     );
 
@@ -1253,7 +1253,7 @@ export async function batchInsertLeaderboardImpl(
   }
 
   try {
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Batch inserting ${entries.length} leaderboard entries`,
     );
 
@@ -1421,7 +1421,7 @@ async function getBulkAgentCompetitionRankingsImpl(
   }
 
   try {
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `getBulkAgentCompetitionRankings called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
@@ -1458,7 +1458,7 @@ async function getBulkAgentCompetitionRankingsImpl(
       // If agent not found in snapshots, don't add to map (undefined ranking)
     }
 
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Calculated rankings for ${rankingsMap.size}/${agentIds.length} agents`,
     );
 

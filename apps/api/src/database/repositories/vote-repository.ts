@@ -37,7 +37,7 @@ async function createVoteImpl(vote: InsertVote): Promise<SelectVote> {
       throw new Error("Failed to create vote - no result returned");
     }
 
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Created vote ${result.id} for user ${result.userId} on agent ${result.agentId} in competition ${result.competitionId}`,
     );
     return result;

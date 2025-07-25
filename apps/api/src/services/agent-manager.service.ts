@@ -50,6 +50,7 @@ import {
   SelectAgent,
   SelectCompetition,
 } from "@/database/schema/core/types.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { transformToTrophy } from "@/lib/trophy-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { EmailService } from "@/services/email.service.js";
@@ -160,7 +161,7 @@ export class AgentManager {
         await this.sendEmailVerification(savedAgent);
       }
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Created agent: ${name} (${id}) for owner ${ownerId}`,
       );
 
@@ -171,7 +172,7 @@ export class AgentManager {
       };
     } catch (error) {
       if (error instanceof Error) {
-        console.error("[AgentManager] Error creating agent:", error);
+        serviceLogger.error("[AgentManager] Error creating agent:", error);
 
         // Check if this is a unique constraint violation for agent name
         // PostgreSQL throws various error formats depending on the driver and ORM
@@ -195,7 +196,10 @@ export class AgentManager {
         throw error;
       }
 
-      console.error("[AgentManager] Unknown error creating agent:", error);
+      serviceLogger.error(
+        "[AgentManager] Unknown error creating agent:",
+        error,
+      );
       throw new Error(`Failed to create agent: ${error}`);
     }
   }
@@ -218,7 +222,10 @@ export class AgentManager {
     try {
       return await findById(agentId);
     } catch (error) {
-      console.error(`[AgentManager] Error retrieving agent ${agentId}:`, error);
+      serviceLogger.error(
+        `[AgentManager] Error retrieving agent ${agentId}:`,
+        error,
+      );
       return null;
     }
   }
@@ -232,7 +239,7 @@ export class AgentManager {
     try {
       return await findByOwnerId(ownerId, pagingParams);
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error retrieving agents for owner ${ownerId}:`,
         error,
       );
@@ -253,7 +260,7 @@ export class AgentManager {
       }
       return bestPlacement;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error retrieving agent rank for ${agentId}:`,
         error,
       );
@@ -269,7 +276,7 @@ export class AgentManager {
     try {
       return await findAll();
     } catch (error) {
-      console.error("[AgentManager] Error retrieving all agents:", error);
+      serviceLogger.error("[AgentManager] Error retrieving all agents:", error);
       return [];
     }
   }
@@ -331,7 +338,7 @@ export class AgentManager {
           }
         } catch (decryptError) {
           // Log but continue checking other agents
-          console.error(
+          serviceLogger.error(
             `[AgentManager] Error decrypting key for agent ${agent.id}:`,
             decryptError,
           );
@@ -341,7 +348,7 @@ export class AgentManager {
       // No matching agent found
       return null;
     } catch (error) {
-      console.error("[AgentManager] Error validating API key:", error);
+      serviceLogger.error("[AgentManager] Error validating API key:", error);
       throw error; // Re-throw to allow middleware to handle it
     }
   }
@@ -357,7 +364,9 @@ export class AgentManager {
 
     // Combine with a prefix and separator underscore for readability
     const key = `${segment1}_${segment2}`;
-    console.log(`[AgentManager] Generated API key with length: ${key.length}`);
+    serviceLogger.debug(
+      `[AgentManager] Generated API key with length: ${key.length}`,
+    );
     return key;
   }
 
@@ -368,7 +377,7 @@ export class AgentManager {
    */
   public encryptApiKey(key: string): string {
     try {
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Encrypting API key with length: ${key.length}`,
       );
       const algorithm = "aes-256-cbc";
@@ -386,10 +395,12 @@ export class AgentManager {
 
       // Return the IV and encrypted data together, clearly separated
       const result = `${iv.toString("hex")}:${encrypted}`;
-      console.log(`[AgentManager] Encrypted key length: ${result.length}`);
+      serviceLogger.debug(
+        `[AgentManager] Encrypted key length: ${result.length}`,
+      );
       return result;
     } catch (error) {
-      console.error("[AgentManager] Error encrypting API key:", error);
+      serviceLogger.error("[AgentManager] Error encrypting API key:", error);
       throw new Error("Failed to encrypt API key");
     }
   }
@@ -423,7 +434,7 @@ export class AgentManager {
 
       return decrypted;
     } catch (error) {
-      console.error("[AgentManager] Error decrypting API key:", error);
+      serviceLogger.error("[AgentManager] Error decrypting API key:", error);
       throw error;
     }
   }
@@ -470,7 +481,7 @@ export class AgentManager {
           },
         };
       } catch (decryptError) {
-        console.error(
+        serviceLogger.error(
           `[AgentManager] Error decrypting API key for agent ${agentId}:`,
           decryptError,
         );
@@ -481,7 +492,7 @@ export class AgentManager {
         };
       }
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error retrieving decrypted API key for agent ${agentId}:`,
         error,
       );
@@ -501,7 +512,7 @@ export class AgentManager {
       const res = await count();
       return res >= 0;
     } catch (error) {
-      console.error("[AgentManager] Health check failed:", error);
+      serviceLogger.error("[AgentManager] Health check failed:", error);
       return false;
     }
   }
@@ -517,7 +528,9 @@ export class AgentManager {
       const agent = await findById(agentId);
 
       if (!agent) {
-        console.log(`[AgentManager] Agent not found for deletion: ${agentId}`);
+        serviceLogger.debug(
+          `[AgentManager] Agent not found for deletion: ${agentId}`,
+        );
         return false;
       }
 
@@ -536,18 +549,21 @@ export class AgentManager {
       const deleted = await deleteAgent(agentId);
 
       if (deleted) {
-        console.log(
+        serviceLogger.debug(
           `[AgentManager] Successfully deleted agent: ${agent.name} (${agentId})`,
         );
       } else {
-        console.log(
+        serviceLogger.debug(
           `[AgentManager] Failed to delete agent: ${agent.name} (${agentId})`,
         );
       }
 
       return deleted;
     } catch (error) {
-      console.error(`[AgentManager] Error deleting agent ${agentId}:`, error);
+      serviceLogger.error(
+        `[AgentManager] Error deleting agent ${agentId}:`,
+        error,
+      );
       throw new Error(
         `Failed to delete agent: ${error instanceof Error ? error.message : error}`,
       );
@@ -562,7 +578,7 @@ export class AgentManager {
    */
   async deactivateAgent(agentId: string, reason: string) {
     try {
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Deactivating agent: ${agentId}, Reason: ${reason}`,
       );
 
@@ -570,7 +586,7 @@ export class AgentManager {
       const deactivatedAgent = await deactivateAgent(agentId, reason);
 
       if (!deactivatedAgent) {
-        console.log(
+        serviceLogger.debug(
           `[AgentManager] Agent not found for deactivation: ${agentId}`,
         );
         return null;
@@ -582,13 +598,13 @@ export class AgentManager {
         date: deactivatedAgent.deactivationDate || new Date(),
       });
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Successfully deactivated agent: ${deactivatedAgent.name} (${agentId})`,
       );
 
       return deactivatedAgent;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error deactivating agent ${agentId}:`,
         error,
       );
@@ -605,13 +621,13 @@ export class AgentManager {
    */
   async reactivateAgent(agentId: string) {
     try {
-      console.log(`[AgentManager] Reactivating agent: ${agentId}`);
+      serviceLogger.debug(`[AgentManager] Reactivating agent: ${agentId}`);
 
       // Call repository to reactivate the agent
       const reactivatedAgent = await reactivateAgent(agentId);
 
       if (!reactivatedAgent) {
-        console.log(
+        serviceLogger.debug(
           `[AgentManager] Agent not found for reactivation: ${agentId}`,
         );
         return null;
@@ -620,13 +636,13 @@ export class AgentManager {
       // Remove from inactive cache
       this.inactiveAgentsCache.delete(agentId);
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Successfully reactivated agent: ${reactivatedAgent.name} (${agentId})`,
       );
 
       return reactivatedAgent;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error reactivating agent ${agentId}:`,
         error,
       );
@@ -643,12 +659,16 @@ export class AgentManager {
    */
   async updateAgent(agent: InsertAgent) {
     try {
-      console.log(`[AgentManager] Updating agent: ${agent.id} (${agent.name})`);
+      serviceLogger.debug(
+        `[AgentManager] Updating agent: ${agent.id} (${agent.name})`,
+      );
 
       // Check if agent exists
       const existingAgent = await findById(agent.id);
       if (!existingAgent) {
-        console.log(`[AgentManager] Agent not found for update: ${agent.id}`);
+        serviceLogger.debug(
+          `[AgentManager] Agent not found for update: ${agent.id}`,
+        );
         return undefined;
       }
 
@@ -664,7 +684,9 @@ export class AgentManager {
       // Save to database
       const updatedAgent = await update(agent);
       if (!updatedAgent) {
-        console.log(`[AgentManager] Failed to update agent: ${agent.id}`);
+        serviceLogger.debug(
+          `[AgentManager] Failed to update agent: ${agent.id}`,
+        );
         return undefined;
       }
 
@@ -673,12 +695,15 @@ export class AgentManager {
         await this.sendEmailVerification(updatedAgent);
       }
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Successfully updated agent: ${updatedAgent.name} (${agent.id})`,
       );
       return updatedAgent;
     } catch (error) {
-      console.error(`[AgentManager] Error updating agent ${agent.id}:`, error);
+      serviceLogger.error(
+        `[AgentManager] Error updating agent ${agent.id}:`,
+        error,
+      );
       throw new Error(
         `Failed to update agent: ${error instanceof Error ? error.message : error}`,
       );
@@ -693,7 +718,10 @@ export class AgentManager {
     try {
       return await findInactiveAgents();
     } catch (error) {
-      console.error("[AgentManager] Error retrieving inactive agents:", error);
+      serviceLogger.error(
+        "[AgentManager] Error retrieving inactive agents:",
+        error,
+      );
       return [];
     }
   }
@@ -742,7 +770,7 @@ export class AgentManager {
 
       return { isInactive: false, reason: null, date: null };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error checking inactive status for agent ${agentId}:`,
         error,
       );
@@ -757,7 +785,9 @@ export class AgentManager {
    */
   async resetApiKey(agentId: string) {
     try {
-      console.log(`[AgentManager] Resetting API key for agent: ${agentId}`);
+      serviceLogger.debug(
+        `[AgentManager] Resetting API key for agent: ${agentId}`,
+      );
 
       // Get the agent
       const agent = await findById(agentId);
@@ -795,7 +825,7 @@ export class AgentManager {
         key: newApiKey,
       });
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Successfully reset API key for agent: ${agentId}`,
       );
 
@@ -808,7 +838,7 @@ export class AgentManager {
         },
       };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error resetting API key for agent ${agentId}:`,
         error,
       );
@@ -823,7 +853,7 @@ export class AgentManager {
    */
   async searchAgents(searchParams: AgentSearchParams) {
     try {
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Searching for agents with params:`,
         searchParams,
       );
@@ -831,12 +861,12 @@ export class AgentManager {
       // Get matching agents from repository
       const agents = await searchAgents(searchParams);
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Found ${agents.length} agents matching search criteria`,
       );
       return agents;
     } catch (error) {
-      console.error("[AgentManager] Error searching agents:", error);
+      serviceLogger.error("[AgentManager] Error searching agents:", error);
       return [];
     }
   }
@@ -852,7 +882,7 @@ export class AgentManager {
     params: AgentQueryParams,
   ) {
     try {
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Retrieving agents for competition ${competitionId} with params:`,
         params,
       );
@@ -860,12 +890,12 @@ export class AgentManager {
       // Get agents from repository
       const { agents, total } = await findByCompetition(competitionId, params);
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Found ${agents.length} agents for competition ${competitionId}`,
       );
       return { agents, total };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error retrieving agents for competition ${competitionId}:`,
         error,
       );
@@ -889,7 +919,7 @@ export class AgentManager {
         ...filters,
         ...paging,
       };
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Retrieving competitions for agent ${agentId} with params:`,
         params,
       );
@@ -924,7 +954,7 @@ export class AgentManager {
         finalCompetitions = finalCompetitions.slice(startIndex, endIndex);
       }
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Found ${results.total} competitions for agent ${agentId}`,
       );
       return {
@@ -932,7 +962,7 @@ export class AgentManager {
         total: results.total,
       };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error retrieving competitions for agent ${agentId}:`,
         error,
       );
@@ -951,7 +981,7 @@ export class AgentManager {
     params: AgentCompetitionsParams,
   ) {
     try {
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Retrieving competitions for user ${userId} agents with params:`,
         params,
       );
@@ -997,7 +1027,7 @@ export class AgentManager {
       const agentIds = userAgents.map((agent) => agent.id);
 
       if (agentIds.length === 0) {
-        console.log(`[AgentManager] User ${userId} has no agents`);
+        serviceLogger.debug(`[AgentManager] User ${userId} has no agents`);
         return { competitions: [], total: 0 };
       }
 
@@ -1218,7 +1248,7 @@ export class AgentManager {
         );
       }
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Found ${results.total} competitions containing agents owned by user ${userId}`,
       );
 
@@ -1232,7 +1262,7 @@ export class AgentManager {
         competitions: sortedCompetitions,
       };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error retrieving competitions for user ${userId} agents:`,
         error,
       );
@@ -1335,7 +1365,7 @@ export class AgentManager {
       }),
     );
 
-    console.log(
+    serviceLogger.debug(
       `[AgentManager] Generated ${trophies.length} trophies for agent ${sanitizedAgent.id}:`,
       trophies,
     );
@@ -1373,7 +1403,7 @@ export class AgentManager {
       return [];
     }
 
-    console.log(
+    serviceLogger.debug(
       `[AgentManager] Attaching bulk metrics for ${sanitizedAgents.length} agents`,
     );
 
@@ -1395,8 +1425,13 @@ export class AgentManager {
           bulkTrophies.map((trophy) => [trophy.agentId, trophy.trophies]),
         );
       } catch (error) {
-        console.error("[AgentManager] Error fetching bulk trophies:", error);
-        console.warn("[AgentManager] Proceeding with empty trophies map");
+        serviceLogger.error(
+          "[AgentManager] Error fetching bulk trophies:",
+          error,
+        );
+        serviceLogger.error(
+          "[AgentManager] Proceeding with empty trophies map",
+        );
       }
 
       // Process agents synchronously with O(1) trophy lookups
@@ -1405,7 +1440,7 @@ export class AgentManager {
         const metrics = metricsMap.get(sanitizedAgent.id);
         const trophies = trophiesMap.get(sanitizedAgent.id) || [];
 
-        console.log(
+        serviceLogger.debug(
           `[AgentManager] Using bulk trophies: ${trophies.length} trophies for agent ${sanitizedAgent.id}`,
         );
 
@@ -1429,10 +1464,15 @@ export class AgentManager {
         };
       });
     } catch (error) {
-      console.error("[AgentManager] Error in attachBulkAgentMetrics:", error);
+      serviceLogger.error(
+        "[AgentManager] Error in attachBulkAgentMetrics:",
+        error,
+      );
 
       // Fallback to individual queries if bulk fails
-      console.warn("[AgentManager] Falling back to individual metric queries");
+      serviceLogger.error(
+        "[AgentManager] Falling back to individual metric queries",
+      );
       return Promise.all(
         sanitizedAgents.map((agent) => this.attachAgentMetrics(agent)),
       );
@@ -1501,7 +1541,7 @@ export class AgentManager {
         bestPlacement,
       };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error attaching competition metrics for agent ${agentId} in competition ${competition.id}:`,
         error,
       );
@@ -1747,7 +1787,10 @@ export class AgentManager {
           })
         ).toLowerCase();
       } catch (error) {
-        console.error("[AgentManager] Error recovering wallet address:", error);
+        serviceLogger.error(
+          "[AgentManager] Error recovering wallet address:",
+          error,
+        );
         return { success: false, error: "Invalid signature" };
       }
 
@@ -1792,7 +1835,10 @@ export class AgentManager {
 
       return { success: true, walletAddress };
     } catch (error) {
-      console.error("[AgentManager] Error in verifyWalletOwnership:", error);
+      serviceLogger.error(
+        "[AgentManager] Error in verifyWalletOwnership:",
+        error,
+      );
       return { success: false, error: "Verification failed" };
     }
   }
@@ -1843,7 +1889,7 @@ export class AgentManager {
         nonce,
       };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         "[AgentManager] Error parsing verification message:",
         error,
       );
@@ -1881,7 +1927,7 @@ export class AgentManager {
 
       return { success: true, nonce };
     } catch (error) {
-      console.error("[AgentManager] Error generating nonce:", error);
+      serviceLogger.error("[AgentManager] Error generating nonce:", error);
       return { success: false, error: "Failed to generate nonce" };
     }
   }
@@ -1927,7 +1973,7 @@ export class AgentManager {
 
       return { success: true };
     } catch (error) {
-      console.error("[AgentManager] Error validating nonce:", error);
+      serviceLogger.error("[AgentManager] Error validating nonce:", error);
       return { success: false, error: "Failed to validate nonce" };
     }
   }
@@ -1940,7 +1986,10 @@ export class AgentManager {
     try {
       return await agentNonceRepo.deleteExpired();
     } catch (error) {
-      console.error("[AgentManager] Error cleaning up expired nonces:", error);
+      serviceLogger.error(
+        "[AgentManager] Error cleaning up expired nonces:",
+        error,
+      );
       return 0;
     }
   }
@@ -1967,12 +2016,12 @@ export class AgentManager {
         expiresAt,
       });
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Created email verification token for agent ${agentId}`,
       );
       return token;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error creating email verification token for agent ${agentId}:`,
         error,
       );
@@ -1990,7 +2039,7 @@ export class AgentManager {
   private async sendEmailVerification(agent: SelectAgent): Promise<void> {
     try {
       if (!agent.email) {
-        console.warn(
+        serviceLogger.warn(
           `[AgentManager] Cannot send verification email: Agent ${agent.id} has no email address`,
         );
         return;
@@ -2000,11 +2049,11 @@ export class AgentManager {
 
       await this.emailService.sendTransactionalEmail(agent.email, tokenString);
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Sent verification email to ${agent.email} for agent ${agent.id}`,
       );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error sending verification email to agent ${agent.id}:`,
         error,
       );
@@ -2019,7 +2068,7 @@ export class AgentManager {
    */
   async markEmailAsVerified(agentId: string): Promise<SelectAgent | undefined> {
     try {
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Marking email as verified for agent ${agentId}`,
       );
 
@@ -2030,18 +2079,18 @@ export class AgentManager {
       });
 
       if (!updatedAgent) {
-        console.log(
+        serviceLogger.debug(
           `[AgentManager] Failed to update email verification status for agent: ${agentId}`,
         );
         return undefined;
       }
 
-      console.log(
+      serviceLogger.debug(
         `[AgentManager] Successfully marked email as verified for agent: ${agentId}`,
       );
       return updatedAgent;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentManager] Error marking email as verified for agent ${agentId}:`,
         error,
       );

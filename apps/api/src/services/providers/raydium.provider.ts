@@ -1,5 +1,6 @@
 import axios from "axios";
 
+import { serviceLogger } from "@/lib/logger.js";
 import { PriceSource } from "@/types/index.js";
 import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
 
@@ -77,7 +78,7 @@ export class RaydiumProvider implements PriceSource {
       // Check cache first
       const cachedPrice = this.getCachedPrice(tokenAddress);
       if (cachedPrice !== null) {
-        console.log(
+        serviceLogger.debug(
           `[RaydiumProvider] Using cached price for ${tokenAddress}: $${cachedPrice}`,
         );
         return {
@@ -90,7 +91,7 @@ export class RaydiumProvider implements PriceSource {
         };
       }
 
-      console.log(
+      serviceLogger.debug(
         `[RaydiumProvider] Fetching price for token: ${tokenAddress}`,
       );
 
@@ -110,7 +111,9 @@ export class RaydiumProvider implements PriceSource {
           }
 
           // Fallback for USDC
-          console.log("[RaydiumProvider] Using fallback price for USDC");
+          serviceLogger.debug(
+            "[RaydiumProvider] Using fallback price for USDC",
+          );
           const fallbackPrice = 0.99 + Math.random() * 0.02; // ~$0.99-1.01 range
           this.setCachedPrice(tokenAddress, fallbackPrice);
           return {
@@ -122,7 +125,7 @@ export class RaydiumProvider implements PriceSource {
             specificChain,
           };
         } catch (error) {
-          console.error(
+          serviceLogger.error(
             "[RaydiumProvider] Error fetching USDC price, using fallback:",
             error,
           );
@@ -153,7 +156,7 @@ export class RaydiumProvider implements PriceSource {
         specificChain,
       };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[RaydiumProvider] Error fetching price for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -167,7 +170,7 @@ export class RaydiumProvider implements PriceSource {
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
         const url = `${this.API_BASE}/pools/info/mint?mint1=${tokenAddress}&poolType=all&sortField=tvl&sortType=desc&pageSize=10&page=1`;
-        console.log(`[RaydiumProvider] Making API request to: ${url}`);
+        serviceLogger.debug(`[RaydiumProvider] Making API request to: ${url}`);
 
         const response = await axios.get(url, {
           timeout: 5000,
@@ -182,7 +185,7 @@ export class RaydiumProvider implements PriceSource {
             // Try alternative endpoint if we couldn't find pools
             return await this.fetchFromPriceAPI(tokenAddress);
           }
-          console.log(
+          serviceLogger.debug(
             `[RaydiumProvider] No pool data found for token, retrying...`,
           );
           await this.delay(this.RETRY_DELAY * attempt);
@@ -200,7 +203,7 @@ export class RaydiumProvider implements PriceSource {
             // Try alternative endpoint if we couldn't find a price
             return await this.fetchFromPriceAPI(tokenAddress);
           }
-          console.log(
+          serviceLogger.debug(
             `[RaydiumProvider] No price data found in pool, retrying...`,
           );
           await this.delay(this.RETRY_DELAY * attempt);
@@ -215,17 +218,17 @@ export class RaydiumProvider implements PriceSource {
         }
 
         if (isNaN(price) || price <= 0) {
-          console.log(`[RaydiumProvider] Invalid price format`);
+          serviceLogger.debug(`[RaydiumProvider] Invalid price format`);
           return null;
         }
 
-        console.log(
+        serviceLogger.debug(
           `[RaydiumProvider] Found price for ${tokenAddress}: $${price}`,
         );
         this.setCachedPrice(tokenAddress, price);
         return price;
       } catch (error) {
-        console.log(
+        serviceLogger.debug(
           `[RaydiumProvider] Attempt ${attempt} failed with error: ${error}, retrying...`,
         );
         if (attempt === this.MAX_RETRIES) {
@@ -248,7 +251,9 @@ export class RaydiumProvider implements PriceSource {
     }
 
     const symbol = this.KNOWN_TOKENS[tokenAddress].symbol;
-    console.log(`[RaydiumProvider] Trying alternative price API for ${symbol}`);
+    serviceLogger.debug(
+      `[RaydiumProvider] Trying alternative price API for ${symbol}`,
+    );
 
     try {
       const url = `${this.API_BASE}/price`;
@@ -261,7 +266,7 @@ export class RaydiumProvider implements PriceSource {
       });
 
       if (!response.data || !response.data.data) {
-        console.log(`[RaydiumProvider] No data from price API`);
+        serviceLogger.debug(`[RaydiumProvider] No data from price API`);
         return null;
       }
 
@@ -270,23 +275,27 @@ export class RaydiumProvider implements PriceSource {
         (t: RaydiumTokenPrice) => t.symbol === symbol,
       );
       if (!tokenData) {
-        console.log(`[RaydiumProvider] Token ${symbol} not found in price API`);
+        serviceLogger.debug(
+          `[RaydiumProvider] Token ${symbol} not found in price API`,
+        );
         return null;
       }
 
       const price = parseFloat(tokenData.price);
       if (isNaN(price) || price <= 0) {
-        console.log(`[RaydiumProvider] Invalid price format from price API`);
+        serviceLogger.debug(
+          `[RaydiumProvider] Invalid price format from price API`,
+        );
         return null;
       }
 
-      console.log(
+      serviceLogger.debug(
         `[RaydiumProvider] Found price for ${symbol} from price API: $${price}`,
       );
       this.setCachedPrice(tokenAddress, price);
       return price;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[RaydiumProvider] Error fetching from price API:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -299,7 +308,7 @@ export class RaydiumProvider implements PriceSource {
     specificChain: SpecificChain = "svm",
   ): Promise<boolean> {
     try {
-      console.log(
+      serviceLogger.debug(
         `[RaydiumProvider] Checking support for token: ${tokenAddress}`,
       );
       // We only support SVM tokens
@@ -323,7 +332,7 @@ export class RaydiumProvider implements PriceSource {
       );
       return price !== null;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[RaydiumProvider] Error checking token support:`,
         error instanceof Error ? error.message : "Unknown error",
       );

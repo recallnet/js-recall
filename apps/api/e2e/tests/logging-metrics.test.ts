@@ -386,11 +386,6 @@ describe("Logging and Metrics API", () => {
     await agentClient.getBalance();
     await agentClient.getPortfolio();
 
-    // Check that these operations completed successfully (trace IDs should be in logs)
-    console.log(
-      "API operations completed - trace IDs should be present in logs",
-    );
-
     // Get metrics to verify the operations were tracked
     const metricsResponse = await client.getMetrics();
     expect(typeof metricsResponse).toBe("string");
@@ -399,8 +394,6 @@ describe("Logging and Metrics API", () => {
     expect(metricsText).toContain("/api/agent/profile");
     expect(metricsText).toContain("/api/agent/balances");
     expect(metricsText).toContain("/api/agent/portfolio");
-
-    console.log("Trace ID correlation test completed successfully");
   });
 
   test("metrics persist through agent API key reset workflow", async () => {

@@ -10,6 +10,7 @@ import {
 } from "vitest";
 
 import { config } from "@/config/index.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
 import { BlockchainType, PriceReport } from "@/types/index.js";
@@ -615,15 +616,15 @@ describe("TradeSimulator - Trading Constraints", () => {
 
     beforeAll(() => {
       // Keep console logging for SOL test
-      originalConsoleLog = console.log;
-      // Don't mock console.log so we can see the constraint data
+      originalConsoleLog = serviceLogger.debug;
+      // Don't mock serviceLogger.debug so we can see the constraint data
 
       priceTracker = new PriceTracker();
     });
 
     afterAll(() => {
-      // Restore console.log
-      console.log = originalConsoleLog;
+      // Restore serviceLogger.debug
+      serviceLogger.debug = originalConsoleLog;
     });
 
     describe("Real Token Constraint Validation", () => {
@@ -647,9 +648,9 @@ describe("TradeSimulator - Trading Constraints", () => {
           expect(priceData.symbol).toBeTruthy();
 
           // Log token information for debugging
-          console.log(`\n--- ${token.name} Constraint Analysis ---`);
-          console.log(`Price: $${priceData.price}`);
-          console.log(`Symbol: ${priceData.symbol}`);
+          serviceLogger.debug(`\n--- ${token.name} Constraint Analysis ---`);
+          serviceLogger.debug(`Price: $${priceData.price}`);
+          serviceLogger.debug(`Symbol: ${priceData.symbol}`);
 
           // Check individual constraints
           let constraintsPassed = 0;
@@ -660,14 +661,14 @@ describe("TradeSimulator - Trading Constraints", () => {
             const pairAgeHours =
               (Date.now() - priceData.pairCreatedAt) / (1000 * 60 * 60);
             const passesAgeCheck = pairAgeHours > MINIMUM_PAIR_AGE_HOURS;
-            console.log(
+            serviceLogger.debug(
               `Pair Age: ${pairAgeHours.toFixed(2)} hours ${passesAgeCheck ? "✅" : "❌"}`,
             );
 
             if (passesAgeCheck) constraintsPassed++;
             else constraintsFailed++;
           } else {
-            console.log(`Pair Age: N/A ❌`);
+            serviceLogger.debug(`Pair Age: N/A ❌`);
             constraintsFailed++;
           }
 
@@ -675,14 +676,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           if (priceData.volume?.h24) {
             const passesVolumeCheck =
               priceData.volume.h24 > MINIMUM_24H_VOLUME_USD;
-            console.log(
+            serviceLogger.debug(
               `24h Volume: $${priceData.volume.h24.toLocaleString()} ${passesVolumeCheck ? "✅" : "❌"} (min: $${MINIMUM_24H_VOLUME_USD.toLocaleString()})`,
             );
 
             if (passesVolumeCheck) constraintsPassed++;
             else constraintsFailed++;
           } else {
-            console.log(`24h Volume: N/A ❌`);
+            serviceLogger.debug(`24h Volume: N/A ❌`);
             constraintsFailed++;
           }
 
@@ -690,37 +691,37 @@ describe("TradeSimulator - Trading Constraints", () => {
           if (priceData.liquidity?.usd) {
             const passesLiquidityCheck =
               priceData.liquidity.usd > MINIMUM_LIQUIDITY_USD;
-            console.log(
+            serviceLogger.debug(
               `Liquidity: $${priceData.liquidity.usd.toLocaleString()} ${passesLiquidityCheck ? "✅" : "❌"}`,
             );
 
             if (passesLiquidityCheck) constraintsPassed++;
             else constraintsFailed++;
           } else {
-            console.log(`Liquidity: N/A ❌`);
+            serviceLogger.debug(`Liquidity: N/A ❌`);
             constraintsFailed++;
           }
 
           // 4. FDV constraint
           if (priceData.fdv) {
             const passesFdvCheck = priceData.fdv > MINIMUM_FDV_USD;
-            console.log(
+            serviceLogger.debug(
               `FDV: $${priceData.fdv.toLocaleString()} ${passesFdvCheck ? "✅" : "❌"}`,
             );
 
             if (passesFdvCheck) constraintsPassed++;
             else constraintsFailed++;
           } else {
-            console.log(`FDV: N/A ❌`);
+            serviceLogger.debug(`FDV: N/A ❌`);
             constraintsFailed++;
           }
 
           // Overall assessment
           const allConstraintsMet = constraintsFailed === 0;
-          console.log(
+          serviceLogger.debug(
             `Overall: ${allConstraintsMet ? "TRADEABLE ✅" : "NOT TRADEABLE ❌"}`,
           );
-          console.log(
+          serviceLogger.debug(
             `Constraints passed: ${constraintsPassed}/4, failed: ${constraintsFailed}/4`,
           );
 
@@ -890,7 +891,7 @@ describe("TradeSimulator - Trading Constraints", () => {
           expect(priceData).toHaveProperty("liquidity");
           expect(priceData).toHaveProperty("fdv");
 
-          console.log(
+          serviceLogger.debug(
             `${token.name} - Chain: ${priceData.chain}, Specific: ${priceData.specificChain}`,
           );
         }

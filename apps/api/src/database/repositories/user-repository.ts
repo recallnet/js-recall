@@ -69,7 +69,7 @@ async function createUserFromWalletImpl(
         `[UserRepository] Failed to create user from wallet ${normalizedWalletAddress} - no result returned`,
       );
     }
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Created new user ${result.id} for wallet ${normalizedWalletAddress}`,
     );
     return result;

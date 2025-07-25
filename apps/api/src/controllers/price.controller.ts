@@ -30,7 +30,7 @@ export function makePriceController(services: ServiceRegistry) {
           throw new ApiError(400, "Token address is required");
         }
 
-        priceLogger.info(
+        priceLogger.debug(
           `Getting price for token ${token} requested by agent ${agentId}`,
         );
 
@@ -120,7 +120,7 @@ export function makePriceController(services: ServiceRegistry) {
           throw new ApiError(400, "Token address is required");
         }
 
-        priceLogger.info(
+        priceLogger.debug(
           `Getting token info for ${token} requested by agent ${agentId}`,
         );
 

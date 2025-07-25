@@ -111,7 +111,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   totalVotes: number;
   competitionIds: string[];
 }> {
-  repositoryLogger.info("getGlobalStats called for type:", type);
+  repositoryLogger.debug("getGlobalStats called for type:", type);
 
   // Filter competitions by `type` and `status` IN ['active', 'ended'].
   const relevantCompetitions = await dbRead
@@ -211,7 +211,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
     return [];
   }
 
-  repositoryLogger.info(
+  repositoryLogger.debug(
     `getBulkAgentMetrics called for ${agentIds.length} agents`,
   );
 
@@ -477,7 +477,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       };
     });
 
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Successfully retrieved bulk metrics for ${result.length} agents`,
     );
     return result;
@@ -505,7 +505,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
     voteCount: number;
   }>
 > {
-  repositoryLogger.info("getOptimizedGlobalAgentMetrics called");
+  repositoryLogger.debug("getOptimizedGlobalAgentMetrics called");
 
   try {
     // Get all agents with their basic info and scores
@@ -562,7 +562,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
       voteCount: voteCountMap.get(agent.id) ?? 0,
     }));
 
-    repositoryLogger.info(
+    repositoryLogger.debug(
       `Retrieved ${result.length} agent metrics with optimized query`,
     );
 

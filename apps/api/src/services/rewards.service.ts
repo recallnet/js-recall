@@ -10,6 +10,7 @@ import {
 } from "@/database/repositories/rewards-repository.js";
 import { rewardsRoots, rewardsTree } from "@/database/schema/voting/defs.js";
 import { InsertReward } from "@/database/schema/voting/types.js";
+import { serviceLogger } from "@/lib/logger.js";
 
 /**
  * Service for handling reward-related operations
@@ -23,7 +24,7 @@ export class RewardsService {
       const rewards = await this.calculate();
       await insertRewards(rewards);
     } catch (error) {
-      console.error("[RewardsService] Error in calculateRewards:", error);
+      serviceLogger.error("[RewardsService] Error in calculateRewards:", error);
       throw error;
     }
   }
@@ -103,16 +104,16 @@ export class RewardsService {
         });
       });
 
-      console.log(
+      serviceLogger.debug(
         `[RewardsService] Built Merkle tree for epoch ${epochId} with ${treeNodes.length} nodes and root hash: ${rootHash.toString("hex")}`,
       );
     } catch (error) {
       if (error instanceof Error) {
-        console.error("[RewardsService] Error in allocate:", error);
+        serviceLogger.error("[RewardsService] Error in allocate:", error);
         throw error;
       }
 
-      console.error(
+      serviceLogger.error(
         "[RewardsService] Unknown error calculating rewards:",
         error,
       );
@@ -185,7 +186,7 @@ export class RewardsService {
 
       return proof;
     } catch (error) {
-      console.error("[RewardsService] Error in retrieveProof:", error);
+      serviceLogger.error("[RewardsService] Error in retrieveProof:", error);
       throw error;
     }
   }

@@ -205,24 +205,14 @@ const dbLogger = {
     // Update Prometheus metrics (count only, no timing)
     dbQueryTotal.inc({ operation, status: "success" });
 
-    // Environment-aware logging (without timing)
-    const isDev = config.server.nodeEnv === "development";
-    if (isDev) {
-      // In development, show a more detailed log
-      pinoDbLogger.info(
-        `[${traceId}] ${operation} - ${query.substring(0, 100)}${query.length > 100 ? "..." : ""}`,
-      );
-    } else {
-      // In production, structured logging
-      pinoDbLogger.info({
-        traceId,
-        type: "db",
-        operation,
-        status: "success",
-        queryPreview: query.substring(0, 100),
-        ...(query.length > 100 ? { queryTruncated: true } : {}),
-      });
-    }
+    pinoDbLogger.debug({
+      traceId,
+      type: "db",
+      operation,
+      status: "success",
+      queryPreview: query.substring(0, 100),
+      ...(query.length > 100 ? { queryTruncated: true } : {}),
+    });
   },
 };
 

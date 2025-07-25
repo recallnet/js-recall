@@ -63,7 +63,7 @@ export function makeTradeController(services: ServiceRegistry) {
           );
         }
 
-        tradeLogger.info(
+        tradeLogger.debug(
           `Executing trade with competition ID: ${competitionId}`,
         );
 
@@ -96,7 +96,7 @@ export function makeTradeController(services: ServiceRegistry) {
 
         // Log chain options if provided
         if (chainOptions) {
-          tradeLogger.info(
+          tradeLogger.debug(
             `Using chain options: ${JSON.stringify(chainOptions)}`,
           );
         }
@@ -187,7 +187,7 @@ export function makeTradeController(services: ServiceRegistry) {
           toTokenChain ||
           toTokenSpecificChain
         ) {
-          tradeLogger.info(`Quote with chain info:
+          tradeLogger.debug(`Quote with chain info:
           From Token Chain: ${fromTokenChain || "auto"}, Specific Chain: ${fromTokenSpecificChain || "auto"}
           To Token Chain: ${toTokenChain || "auto"}, Specific Chain: ${toTokenSpecificChain || "auto"}
         `);

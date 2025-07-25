@@ -718,6 +718,10 @@ export function makeAdminController(services: ServiceRegistry) {
           // Don't fail the request if object_index population fails
         }
 
+        adminLogger.info(
+          `Successfully ended competition, id: ${competitionId}`,
+        );
+
         // Return the ended competition with leaderboard
         res.status(200).json({
           success: true,

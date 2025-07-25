@@ -1,4 +1,5 @@
 import { config } from "@/config/index.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 
 import { PortfolioSnapshotter } from "./portfolio-snapshotter.service.js";
@@ -34,7 +35,7 @@ export class SchedulerService {
     this.competitionEndCheckInterval =
       config.portfolio.competitionEndCheckIntervalMs;
 
-    console.log(
+    serviceLogger.debug(
       `[SchedulerService] Initialized with snapshot interval: ${this.snapshotInterval}ms, competition end check interval: ${this.competitionEndCheckInterval}ms${this.isTestMode ? " (TEST MODE)" : ""}`,
     );
   }
@@ -44,14 +45,14 @@ export class SchedulerService {
    */
   startSnapshotScheduler(): void {
     if (this.isShuttingDown) {
-      console.log(
+      serviceLogger.debug(
         "[SchedulerService] Scheduler is shutting down, cannot start",
       );
       return;
     }
 
     if (this.snapshotTimer) {
-      console.log(
+      serviceLogger.debug(
         "[SchedulerService] Snapshot scheduler already running, restarting...",
       );
       this.stopSnapshotScheduler();
@@ -62,7 +63,7 @@ export class SchedulerService {
       ? Math.min(2000, this.snapshotInterval)
       : this.snapshotInterval;
 
-    console.log(
+    serviceLogger.debug(
       `[SchedulerService] Starting portfolio snapshot scheduler at ${interval}ms intervals${this.isTestMode ? " (TEST MODE)" : ""}`,
     );
 
@@ -75,7 +76,7 @@ export class SchedulerService {
       try {
         await this.takePortfolioSnapshots();
       } catch (error) {
-        console.error(
+        serviceLogger.error(
           "[SchedulerService] Error in snapshot timer callback:",
           error,
         );
@@ -113,14 +114,14 @@ export class SchedulerService {
    */
   startCompetitionEndScheduler(): void {
     if (this.isShuttingDown) {
-      console.log(
+      serviceLogger.debug(
         "[SchedulerService] Scheduler is shutting down, cannot start competition end scheduler",
       );
       return;
     }
 
     if (this.competitionEndTimer) {
-      console.log(
+      serviceLogger.debug(
         "[SchedulerService] Competition end scheduler already running, restarting...",
       );
       this.stopCompetitionEndScheduler();
@@ -131,7 +132,7 @@ export class SchedulerService {
       ? Math.min(5000, this.competitionEndCheckInterval)
       : this.competitionEndCheckInterval;
 
-    console.log(
+    serviceLogger.debug(
       `[SchedulerService] Starting competition end check scheduler at ${interval}ms intervals${this.isTestMode ? " (TEST MODE)" : ""}`,
     );
 
@@ -144,7 +145,7 @@ export class SchedulerService {
       try {
         await this.checkCompetitionEndDates();
       } catch (error) {
-        console.error(
+        serviceLogger.error(
           "[SchedulerService] Error in competition end timer callback:",
           error,
         );
@@ -174,7 +175,9 @@ export class SchedulerService {
       }
 
       this.competitionEndTimer = null;
-      console.log("[SchedulerService] Competition end check scheduler stopped");
+      serviceLogger.debug(
+        "[SchedulerService] Competition end check scheduler stopped",
+      );
     }
   }
 
@@ -183,17 +186,19 @@ export class SchedulerService {
    */
   async checkCompetitionEndDates(): Promise<void> {
     if (this.isShuttingDown) {
-      console.log(
+      serviceLogger.debug(
         "[SchedulerService] Skipping competition end check due to shutdown in progress",
       );
       return;
     }
 
     try {
-      console.log("[SchedulerService] Checking for competitions ready to end");
+      serviceLogger.debug(
+        "[SchedulerService] Checking for competitions ready to end",
+      );
       await this.competitionManager.processCompetitionEndDateChecks();
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         "[SchedulerService] Error checking competition end dates:",
         error,
       );
@@ -206,7 +211,7 @@ export class SchedulerService {
    */
   stopSnapshotScheduler(): void {
     this.isShuttingDown = true;
-    console.log("[SchedulerService] Marking scheduler for shutdown");
+    serviceLogger.debug("[SchedulerService] Marking scheduler for shutdown");
 
     // Clear snapshot timer
     if (this.snapshotTimer) {
@@ -218,12 +223,14 @@ export class SchedulerService {
       }
 
       this.snapshotTimer = null;
-      console.log("[SchedulerService] Portfolio snapshot scheduler stopped");
+      serviceLogger.debug(
+        "[SchedulerService] Portfolio snapshot scheduler stopped",
+      );
     }
 
     // In test mode, also clear all known timers for safety
     if (this.isTestMode) {
-      console.log(
+      serviceLogger.debug(
         `[SchedulerService] TEST MODE - clearing ${allSchedulerTimers.size} additional timers`,
       );
       allSchedulerTimers.forEach((timer) => {
@@ -239,7 +246,7 @@ export class SchedulerService {
    */
   async takePortfolioSnapshots(): Promise<void> {
     if (this.isShuttingDown) {
-      console.log(
+      serviceLogger.debug(
         "[SchedulerService] Skipping snapshot due to shutdown in progress",
       );
       return;
@@ -251,20 +258,20 @@ export class SchedulerService {
         await this.competitionManager.getActiveCompetition();
 
       if (!activeCompetition) {
-        console.log(
+        serviceLogger.debug(
           "[SchedulerService] No active competition, skipping portfolio snapshots",
         );
         return;
       }
 
-      console.log(
+      serviceLogger.debug(
         `[SchedulerService] Taking scheduled portfolio snapshots for competition ${activeCompetition.id}`,
       );
       await this.portfolioSnapshotter.takePortfolioSnapshots(
         activeCompetition.id,
       );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         "[SchedulerService] Error taking portfolio snapshots:",
         error,
       );
@@ -294,14 +301,14 @@ export class SchedulerService {
     // Reset state
     this.isShuttingDown = false;
 
-    console.log("[SchedulerService] Service reset complete");
+    serviceLogger.debug("[SchedulerService] Service reset complete");
   }
 
   /**
    * Static method to clear all timers globally (for test cleanup)
    */
   static clearAllTimers(): void {
-    console.log(
+    serviceLogger.debug(
       `[SchedulerService] Clearing all ${allSchedulerTimers.size} global timers`,
     );
 

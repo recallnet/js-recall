@@ -66,7 +66,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Authentication and Authorization
         if (isAdmin) {
           // Admin access: Log and proceed
-          competitionLogger.info(
+          competitionLogger.debug(
             `Admin accessing leaderboard for competition ${competitionId}.`,
           );
         } else {
@@ -158,7 +158,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If no active competition, return null status
         if (!activeCompetition) {
-          competitionLogger.info("No active competition found");
+          competitionLogger.debug("No active competition found");
           return res.status(200).json({
             success: true,
             active: false,
@@ -166,7 +166,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             message: "No active competition found",
           });
         }
-        competitionLogger.info(
+        competitionLogger.debug(
           `Found active competition: ${activeCompetition.id}`,
         );
 
@@ -176,7 +176,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If admin, return full status
         if (isAdmin) {
-          competitionLogger.info(
+          competitionLogger.debug(
             `Admin ${agentId} accessing competition status`,
           );
           return res.status(200).json({
@@ -214,7 +214,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If agent is not actively participating and not an admin, return limited info
         if (!isAgentActiveInCompetitionResult) {
-          competitionLogger.info(
+          competitionLogger.debug(
             `Agent ${agentId} is not in competition ${activeCompetition.id}`,
           );
 
@@ -231,7 +231,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Agent is participating
-        competitionLogger.info(
+        competitionLogger.debug(
           `Agent ${agentId} is participating in competition ${activeCompetition.id}`,
         );
 
@@ -277,7 +277,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Authentication and Authorization
         if (isAdmin) {
           // Admin access: Log and proceed
-          competitionLogger.info(
+          competitionLogger.debug(
             `Admin accessing rules for competition ${activeCompetition.id}.`,
           );
         } else {
@@ -407,13 +407,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If no agent ID, they can't be authenticated
         if (isAdmin) {
-          competitionLogger.info(
+          competitionLogger.debug(
             `Admin ${agentId} requesting upcoming competitions`,
           );
         } else if (!agentId) {
           throw new ApiError(401, "Authentication required");
         } else {
-          competitionLogger.info(
+          competitionLogger.debug(
             `Agent ${agentId} requesting upcoming competitions`,
           );
         }
@@ -446,13 +446,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const userId = req.userId;
         const isAdmin = req.isAdmin === true;
         if (isAdmin) {
-          competitionLogger.info(`Admin requesting competitions`);
+          competitionLogger.debug(`Admin requesting competitions`);
         } else if (agentId) {
-          competitionLogger.info(`Agent ${agentId} requesting competitions`);
+          competitionLogger.debug(`Agent ${agentId} requesting competitions`);
         } else if (userId) {
-          competitionLogger.info(`User ${userId} requesting competitions`);
+          competitionLogger.debug(`User ${userId} requesting competitions`);
         } else {
-          competitionLogger.info(
+          competitionLogger.debug(
             `Unauthenticated request for competitions (public access)`,
           );
         }
@@ -552,17 +552,17 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Authentication check
         if (isAdmin) {
-          competitionLogger.info(`Admin requesting competition details`);
+          competitionLogger.debug(`Admin requesting competition details`);
         } else if (agentId) {
-          competitionLogger.info(
+          competitionLogger.debug(
             `Agent ${agentId} requesting competition details`,
           );
         } else if (userId) {
-          competitionLogger.info(
+          competitionLogger.debug(
             `User ${userId} requesting competition details`,
           );
         } else {
-          competitionLogger.info(
+          competitionLogger.debug(
             `Unauthenticated request for competition details (public access)`,
           );
         }
@@ -659,17 +659,17 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Authentication check
         if (isAdmin) {
-          competitionLogger.info(`Admin requesting competition agents`);
+          competitionLogger.debug(`Admin requesting competition agents`);
         } else if (agentId) {
-          competitionLogger.info(
+          competitionLogger.debug(
             `Agent ${agentId} requesting competition agents`,
           );
         } else if (userId) {
-          competitionLogger.info(
+          competitionLogger.debug(
             `User ${userId} requesting competition agents`,
           );
         } else {
-          competitionLogger.info(
+          competitionLogger.debug(
             `Unauthenticated request for competition agents (public access)`,
           );
         }

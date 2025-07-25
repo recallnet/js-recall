@@ -376,7 +376,7 @@ export function makeAgentController(services: ServiceRegistry) {
           }
 
           // No snapshot, but we should initiate one for future requests
-          agentLogger.info(
+          agentLogger.debug(
             `No portfolio snapshots found for agent ${agentId} in competition ${activeCompetition.id}`,
           );
           // Request a snapshot for this agent asynchronously (don't await)
@@ -391,7 +391,7 @@ export function makeAgentController(services: ServiceRegistry) {
         }
 
         // Fall back to calculating portfolio on-demand
-        agentLogger.info(
+        agentLogger.debug(
           `Using live calculation for portfolio of agent ${agentId}`,
         );
 

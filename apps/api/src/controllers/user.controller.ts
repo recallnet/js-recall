@@ -320,7 +320,7 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Audit log for security tracking
-        userLogger.info(
+        userLogger.debug(
           `[AUDIT] User ${userId} accessed API key for agent ${agentId}`,
         );
 

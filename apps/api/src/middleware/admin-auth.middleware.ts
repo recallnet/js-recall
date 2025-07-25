@@ -12,15 +12,15 @@ import { AdminManager } from "@/services/admin-manager.service.js";
 export const adminAuthMiddleware = (adminManager: AdminManager) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      middlewareLogger.info(`========== ADMIN AUTH REQUEST ==========`);
-      middlewareLogger.info(
+      middlewareLogger.debug(`========== ADMIN AUTH REQUEST ==========`);
+      middlewareLogger.debug(
         `Received request to ${req.method} ${req.originalUrl}`,
       );
 
       // Extract API key from Authorization header
       const apiKey = extractApiKey(req);
 
-      middlewareLogger.info(
+      middlewareLogger.debug(
         `API Key extraction result: ${apiKey ? "Found key" : "No key found"}`,
       );
 
@@ -33,12 +33,12 @@ export const adminAuthMiddleware = (adminManager: AdminManager) => {
       }
 
       // Validate admin API key
-      middlewareLogger.info(
+      middlewareLogger.debug(
         `Validating admin API key: ${apiKey.substring(0, 8)}...`,
       );
       const adminId = await adminManager.validateApiKey(apiKey);
 
-      middlewareLogger.info(
+      middlewareLogger.debug(
         `Validation result: ${adminId ? `Valid, admin: ${adminId}` : "Invalid key"}`,
       );
 
@@ -51,10 +51,10 @@ export const adminAuthMiddleware = (adminManager: AdminManager) => {
       }
 
       // Get the admin details
-      middlewareLogger.info(`Getting admin details for ID: ${adminId}`);
+      middlewareLogger.debug(`Getting admin details for ID: ${adminId}`);
       const admin = await adminManager.getAdmin(adminId);
 
-      middlewareLogger.info(
+      middlewareLogger.debug(
         `Admin details: ${admin ? `Username: ${admin.username}, Status: ${admin.status}` : "Admin not found"}`,
       );
 
@@ -73,10 +73,10 @@ export const adminAuthMiddleware = (adminManager: AdminManager) => {
         name: admin.name || admin.username,
       };
 
-      middlewareLogger.info(
+      middlewareLogger.debug(
         `Admin authentication successful for: ${admin.username}`,
       );
-      middlewareLogger.info(`========== END ADMIN AUTH ==========`);
+      middlewareLogger.debug(`========== END ADMIN AUTH ==========`);
 
       next();
     } catch (error) {

@@ -247,23 +247,15 @@ function wrapRepositoryFunction<
 
       // Environment-aware logging with sampling
       if (shouldSample(config.logging.repositorySampleRate)) {
-        const isDev = config.server.nodeEnv === "development";
-        if (isDev) {
-          // Development: Human-readable logs
-          repositoryLogger.info(
-            `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms`,
-          );
-        } else {
-          // Production: Structured logs
-          repositoryLogger.info({
-            traceId,
-            repository: repositoryName,
-            method: methodName,
-            operation,
-            duration: durationMs,
-            status: "success",
-          });
-        }
+        // Structured logs
+        repositoryLogger.debug({
+          traceId,
+          repository: repositoryName,
+          method: methodName,
+          operation,
+          duration: durationMs,
+          status: "success",
+        });
       }
 
       return result as Awaited<ReturnType<TFunc>>;
@@ -284,23 +276,15 @@ function wrapRepositoryFunction<
 
       // Environment-aware error logging with timing and sampling
       if (shouldSample(config.logging.repositorySampleRate)) {
-        const isDev = config.server.nodeEnv === "development";
-        if (isDev) {
-          // Development: Human-readable error logs
-          repositoryLogger.error(
-            `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms - ERROR`,
-          );
-        } else {
-          // Production: Structured error logs
-          repositoryLogger.error({
-            traceId,
-            repository: repositoryName,
-            method: methodName,
-            operation,
-            duration: durationMs,
-            status: "error",
-          });
-        }
+        // Production: Structured error logs
+        repositoryLogger.error({
+          traceId,
+          repository: repositoryName,
+          method: methodName,
+          operation,
+          duration: durationMs,
+          status: "error",
+        });
       }
 
       throw error;

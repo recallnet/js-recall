@@ -17,7 +17,7 @@ import { SpecificChain } from "@/types/index.js";
  * @returns The created price record
  */
 async function createImpl(priceData: InsertPrice) {
-  repositoryLogger.info(
+  repositoryLogger.debug(
     `Storing price for ${priceData.token}: $${priceData.price}${priceData.chain ? ` on chain ${priceData.chain}` : ""}${priceData.specificChain ? ` (${priceData.specificChain})` : ""}`,
   );
 
@@ -51,7 +51,7 @@ export async function createBatch(pricesData: InsertPrice[]) {
     return [];
   }
 
-  repositoryLogger.info(`Storing ${pricesData.length} price records in batch`);
+  repositoryLogger.debug(`Storing ${pricesData.length} price records in batch`);
 
   try {
     const results = await db
@@ -78,7 +78,7 @@ export async function createBatch(pricesData: InsertPrice[]) {
  * @returns The latest price record or null if not found
  */
 async function getLatestPriceImpl(token: string, specificChain: SpecificChain) {
-  repositoryLogger.info(
+  repositoryLogger.debug(
     `Getting latest price for ${token}${specificChain ? ` on ${specificChain}` : ""}`,
   );
 
@@ -116,7 +116,7 @@ async function getPriceHistoryImpl(
   hours: number,
   specificChain?: SpecificChain,
 ) {
-  repositoryLogger.info(
+  repositoryLogger.debug(
     `Getting price history for ${token}${specificChain ? ` on ${specificChain}` : ""} (last ${hours} hours)`,
   );
 

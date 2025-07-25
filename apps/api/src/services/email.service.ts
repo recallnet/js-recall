@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import { config } from "@/config/index.js";
+import { serviceLogger } from "@/lib/logger.js";
 
 const EMAIL_VERIFICATION_PATH = "api/verify-email";
 
@@ -69,11 +70,11 @@ export class EmailService {
     };
 
     if (!this.isEmailEnabled()) {
-      console.log(
+      serviceLogger.info(
         "[EmailService] Email sending skipped - API key or transactional ID not provided",
       );
       if (config.server.nodeEnv === "development") {
-        console.log(
+        serviceLogger.info(
           "[EmailService] Dev email payload:",
           JSON.stringify(payload, null, 2),
         );
@@ -99,13 +100,16 @@ export class EmailService {
         },
       });
 
-      console.log(`[EmailService] Email sent successfully`);
+      serviceLogger.info(`[EmailService] Email sent successfully`);
       return response.data;
     } catch (error) {
-      console.error("[EmailService] Error sending email:", error);
+      serviceLogger.error("[EmailService] Error sending email:", error);
 
       if (axios.isAxiosError(error)) {
-        console.error("[EmailService] API response:", error.response?.data);
+        serviceLogger.error(
+          "[EmailService] API response:",
+          error.response?.data,
+        );
         throw new Error(
           `Failed to send email: ${error.response?.data?.message || error.message}`,
         );

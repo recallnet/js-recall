@@ -40,7 +40,7 @@ export interface AgentRankInfo {
  * @returns An array of objects with agent ID, name, and rank score
  */
 async function getAllAgentRanksImpl(): Promise<AgentRankInfo[]> {
-  repositoryLogger.info("getAllAgentRanks called");
+  repositoryLogger.debug("getAllAgentRanks called");
 
   try {
     const rows = await db
@@ -92,7 +92,7 @@ async function getAgentRankByIdImpl(agentId: string): Promise<{
   rank: number;
   score: number;
 } | null> {
-  repositoryLogger.info(`getAgentRankById called for agent ${agentId}`);
+  repositoryLogger.debug(`getAgentRankById called for agent ${agentId}`);
 
   try {
     const result = await db.execute(sql`
@@ -109,13 +109,13 @@ async function getAgentRankByIdImpl(agentId: string): Promise<{
     `);
 
     if (!result.rows || result.rows.length === 0) {
-      repositoryLogger.info(`No rank found for agent ${agentId}`);
+      repositoryLogger.debug(`No rank found for agent ${agentId}`);
       return null;
     }
 
     const agentRow = result.rows[0];
     if (!agentRow) {
-      repositoryLogger.info(`No rank data found for agent ${agentId}`);
+      repositoryLogger.debug(`No rank data found for agent ${agentId}`);
       return null;
     }
 
@@ -138,12 +138,12 @@ async function batchUpdateAgentRanksImpl(
   competitionId: string,
 ): Promise<InsertAgentScore[]> {
   if (dataArray.length === 0) {
-    repositoryLogger.info("No agent ranks to update in batch");
+    repositoryLogger.debug("No agent ranks to update in batch");
     return [];
   }
 
   try {
-    repositoryLogger.info(`Batch updating ${dataArray.length} agent ranks`);
+    repositoryLogger.debug(`Batch updating ${dataArray.length} agent ranks`);
 
     return await db.transaction(async (tx) => {
       // Prepare rank data with IDs

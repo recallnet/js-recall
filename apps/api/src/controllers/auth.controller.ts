@@ -62,7 +62,7 @@ export function makeAuthController(services: ServiceRegistry) {
             .status(401)
             .json({ error: "Unauthorized: invalid signature" });
         }
-        authLogger.info(
+        authLogger.debug(
           `Login successful for ${wallet} (userId: ${userId ? userId : "N/A"})`,
         );
         res.status(200).json({ userId, wallet });
