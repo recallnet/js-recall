@@ -807,46 +807,44 @@ async function get24hSnapshotsImpl(
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // Get earliest snapshots for each agent using efficient UNNEST + LEFT JOIN LATERAL
-    // Using LEFT JOIN LATERAL ensures agents without snapshots still appear with NULL values
+    // Get earliest snapshots for each agent using efficient UNNEST + CROSS JOIN LATERAL
     const earliestResult = await dbRead.execute<{
-      id: number | null;
+      id: number;
       agent_id: string;
-      competition_id: string | null;
-      timestamp: Date | null;
-      total_value: string | null;
+      competition_id: string;
+      timestamp: Date;
+      total_value: string;
     }>(sql`
-      SELECT ps.id, agents.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
       FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
-      LEFT JOIN LATERAL (
+      CROSS JOIN LATERAL (
         SELECT id, agent_id, competition_id, timestamp, total_value
         FROM trading_comps.portfolio_snapshots ps
         WHERE ps.agent_id = agents.agent_id
           AND ps.competition_id = ${competitionId}
         ORDER BY ps.timestamp ASC
         LIMIT 1
-      ) ps ON true
+      ) ps
     `);
 
-    // Get snapshots closest to 24h ago using efficient UNNEST + LEFT JOIN LATERAL
-    // Using LEFT JOIN LATERAL ensures agents without snapshots still appear with NULL values
+    // Get snapshots closest to 24h ago using efficient UNNEST + CROSS JOIN LATERAL
     const snapshots24hResult = await dbRead.execute<{
-      id: number | null;
+      id: number;
       agent_id: string;
-      competition_id: string | null;
-      timestamp: Date | null;
-      total_value: string | null;
+      competition_id: string;
+      timestamp: Date;
+      total_value: string;
     }>(sql`
-      SELECT ps.id, agents.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
       FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
-      LEFT JOIN LATERAL (
+      CROSS JOIN LATERAL (
         SELECT id, agent_id, competition_id, timestamp, total_value
         FROM trading_comps.portfolio_snapshots ps
         WHERE ps.agent_id = agents.agent_id
           AND ps.competition_id = ${competitionId}
         ORDER BY ABS(EXTRACT(EPOCH FROM ps.timestamp - ${twentyFourHoursAgo}))
         LIMIT 1
-      ) ps ON true
+      ) ps
     `);
 
     repositoryLogger.debug(
@@ -857,15 +855,7 @@ async function get24hSnapshotsImpl(
       // Filter out agents without snapshots (NULL values) and map the valid ones
       earliestSnapshots: earliestResult.rows
         .filter(
-          (
-            row,
-          ): row is {
-            id: number;
-            agent_id: string;
-            competition_id: string;
-            timestamp: Date;
-            total_value: string;
-          } =>
+          (row) =>
             row.id !== null &&
             row.timestamp !== null &&
             row.total_value !== null &&
@@ -881,15 +871,7 @@ async function get24hSnapshotsImpl(
       // Filter out agents without snapshots (NULL values) and map the valid ones
       snapshots24hAgo: snapshots24hResult.rows
         .filter(
-          (
-            row,
-          ): row is {
-            id: number;
-            agent_id: string;
-            competition_id: string;
-            timestamp: Date;
-            total_value: string;
-          } =>
+          (row) =>
             row.id !== null &&
             row.timestamp !== null &&
             row.total_value !== null &&
