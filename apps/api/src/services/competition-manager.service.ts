@@ -4,6 +4,7 @@ import {
   findById as findAgentById,
   findByCompetition,
 } from "@/database/repositories/agent-repository.js";
+import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
 import {
   addAgentToCompetition,
   batchInsertLeaderboard,
@@ -28,6 +29,7 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import { UpdateCompetition } from "@/database/schema/core/types.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
+import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AgentManager,
   AgentRankService,
@@ -535,64 +537,75 @@ export class CompetitionManager {
       const competition = await findById(competitionId);
       const competitionStatus = competition?.status;
 
-      // Case: `COMPETITION_STATUS.ENDED` will have leaderboard entries in the `competitions_leaderboard` table
-      if (competitionStatus === COMPETITION_STATUS.ENDED) {
-        const leaderboardEntries =
-          await findLeaderboardByTradingComp(competitionId);
-        if (leaderboardEntries.length > 0) {
-          return leaderboardEntries.map((entry) => ({
-            agentId: entry.agentId,
-            value: entry.score,
-            pnl: entry.pnl,
+      // Default case: `COMPETITION_STATUS.PENDING` will have no leaderboard—so we just return the agents
+      if (competitionStatus === COMPETITION_STATUS.PENDING) {
+        const agents = await getCompetitionAgents(competitionId);
+        const globalLeaderboard = await getAllAgentRanks(agents);
+
+        // Create map of agent IDs to their global rank scores and sort by global rank score (if applicable)
+        const globalLeaderboardMap = new Map(
+          globalLeaderboard.map((agent) => [agent.id, agent.score]),
+        );
+        return agents
+          .map((agentId) => ({
+            agentId,
+            value: 0,
+            pnl: 0,
+            globalScore: globalLeaderboardMap.get(agentId) ?? -1, // Use -1 for unranked agents so they appear after ranked ones
+          }))
+          .sort((a, b) => b.globalScore - a.globalScore)
+          .map(({ agentId, value, pnl }) => ({
+            agentId,
+            value,
+            pnl,
           }));
-        }
+      }
+
+      // Case: an `COMPETITION_STATUS.ENDED` should have leaderboard entries in the `competitions_leaderboard` table, unless it was recently ended
+      const leaderboardEntries =
+        await findLeaderboardByTradingComp(competitionId);
+      if (leaderboardEntries.length > 0) {
+        return leaderboardEntries.map((entry) => ({
+          agentId: entry.agentId,
+          value: entry.score,
+          pnl: entry.pnl,
+        }));
       }
 
       console.log(
         `[CompetitionManager] No leaderboard found in database for competition ${competitionId}, calculating from snapshots or current values`,
       );
 
-      // Case: `COMPETITION_STATUS.ACTIVE` will need to calculate from snapshots
-      if (competitionStatus === COMPETITION_STATUS.ACTIVE) {
-        const snapshots = await getLatestPortfolioSnapshots(competitionId);
-
-        if (snapshots.length > 0) {
-          // Sort by value descending
-          return snapshots
-            .map((snapshot) => ({
-              agentId: snapshot.agentId,
-              value: snapshot.totalValue,
-              pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
-            }))
-            .sort(
-              (a: { value: number }, b: { value: number }) => b.value - a.value,
-            );
-        }
-
-        // Fallback to calculating current values
-        const agents = await getCompetitionAgents(competitionId);
-
-        // Use bulk portfolio value calculation to avoid N+1 queries
-        const portfolioValues =
-          await this.tradeSimulator.calculateBulkPortfolioValues(agents);
-
-        const leaderboard = agents.map((agentId) => ({
-          agentId,
-          value: portfolioValues.get(agentId) || 0,
-          pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
-        }));
-
+      // Case: `COMPETITION_STATUS.ACTIVE` or a recently ended competition will need to calculate from snapshots
+      const snapshots = await getLatestPortfolioSnapshots(competitionId);
+      if (snapshots.length > 0) {
         // Sort by value descending
-        return leaderboard.sort((a, b) => b.value - a.value);
+        return snapshots
+          .map((snapshot) => ({
+            agentId: snapshot.agentId,
+            value: snapshot.totalValue,
+            pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
+          }))
+          .sort(
+            (a: { value: number }, b: { value: number }) => b.value - a.value,
+          );
       }
 
-      // Case: `COMPETITION_STATUS.PENDING` will have no leaderboard—so we just return the agents
+      // Fallback to calculating current values
       const agents = await getCompetitionAgents(competitionId);
-      return agents.map((agentId) => ({
+
+      // Use bulk portfolio value calculation to avoid N+1 queries
+      const portfolioValues =
+        await this.tradeSimulator.calculateBulkPortfolioValues(agents);
+
+      const leaderboard = agents.map((agentId) => ({
         agentId,
-        value: 0,
-        pnl: 0,
+        value: portfolioValues.get(agentId) || 0,
+        pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
       }));
+
+      // Sort by value descending
+      return leaderboard.sort((a, b) => b.value - a.value);
     } catch (error) {
       console.error(
         `[CompetitionManager] Error getting leaderboard for competition ${competitionId}:`,
@@ -825,16 +838,10 @@ export class CompetitionManager {
         error,
       );
 
-      const metricsMap = new Map();
-      for (const agentId of agentIds) {
-        metricsMap.set(agentId, {
-          pnl: 0,
-          pnlPercent: 0,
-          change24h: 0,
-          change24hPercent: 0,
-        });
-      }
-      return metricsMap;
+      throw new ApiError(
+        500,
+        `Failed to calculate bulk metrics: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
