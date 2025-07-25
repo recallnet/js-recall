@@ -9,7 +9,6 @@ import {
   inArray,
   isNotNull,
   lte,
-  max,
   min,
   sql,
 } from "drizzle-orm";
@@ -717,43 +716,27 @@ async function batchCreatePortfolioTokenValuesImpl(
  */
 async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
   try {
-    // TODO: this query seems to be averaging almost 2 full seconds.
-    //  We added indexes on Jul 10, need to find out if indexing fixes the issue.
-    const subquery = dbRead
-      .select({
-        agentId: portfolioSnapshots.agentId,
-        maxTimestamp: max(portfolioSnapshots.timestamp).as("max_timestamp"),
-      })
-      .from(portfolioSnapshots)
-      .innerJoin(
-        competitionAgents,
-        and(
-          eq(portfolioSnapshots.agentId, competitionAgents.agentId),
-          eq(portfolioSnapshots.competitionId, competitionAgents.competitionId),
-        ),
+    const result = await db.execute(sql`
+      WITH latest_snapshots AS (
+        SELECT DISTINCT ON (ps.agent_id)
+          ps.id,
+          ps.agent_id,
+          ps.competition_id,
+          ps.timestamp,
+          ps.total_value
+        FROM trading_comps.portfolio_snapshots ps
+        INNER JOIN competition_agents ca 
+          ON ps.agent_id = ca.agent_id 
+        AND ps.competition_id = ca.competition_id
+        WHERE 
+          ps.competition_id = ${competitionId}
+          AND ca.status = ${COMPETITION_STATUS.ACTIVE}
+        ORDER BY ps.agent_id, ps.timestamp DESC
       )
-      .where(
-        and(
-          eq(portfolioSnapshots.competitionId, competitionId),
-          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
-        ),
-      )
-      .groupBy(portfolioSnapshots.agentId)
-      .as("latest_snapshots");
-
-    const result = await dbRead
-      .select()
-      .from(portfolioSnapshots)
-      .innerJoin(
-        subquery,
-        and(
-          eq(portfolioSnapshots.agentId, subquery.agentId),
-          eq(portfolioSnapshots.timestamp, subquery.maxTimestamp),
-        ),
-      )
-      .where(eq(portfolioSnapshots.competitionId, competitionId));
-
-    return result.map((row) => row.portfolio_snapshots);
+      SELECT *
+      FROM latest_snapshots;
+    `);
+    return result.rows;
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in getLatestPortfolioSnapshotsImpl:",
