@@ -325,10 +325,11 @@ export function makeAgentController(services: ServiceRegistry) {
 
         // Check if we have snapshot data (preferred method)
         if (activeCompetition) {
-          // Try to get the latest snapshot for this agent
+          // Try to get the latest snapshot for this agent (limit to 1 for performance)
           const agentSnapshots = await getAgentPortfolioSnapshots(
             activeCompetition.id,
             agentId,
+            1, // Only fetch the most recent snapshot
           );
 
           // If we have a snapshot, use it

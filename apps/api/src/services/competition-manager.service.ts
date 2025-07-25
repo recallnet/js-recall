@@ -532,52 +532,67 @@ export class CompetitionManager {
    */
   async getLeaderboard(competitionId: string) {
     try {
-      // First try to get from the competitions_leaderboard table
-      const leaderboardEntries =
-        await findLeaderboardByTradingComp(competitionId);
-      if (leaderboardEntries.length > 0) {
-        return leaderboardEntries.map((entry) => ({
-          agentId: entry.agentId,
-          value: entry.score,
-          pnl: entry.pnl,
-        }));
+      const competition = await findById(competitionId);
+      const competitionStatus = competition?.status;
+
+      // Case: `COMPETITION_STATUS.ENDED` will have leaderboard entries in the `competitions_leaderboard` table
+      if (competitionStatus === COMPETITION_STATUS.ENDED) {
+        const leaderboardEntries =
+          await findLeaderboardByTradingComp(competitionId);
+        if (leaderboardEntries.length > 0) {
+          return leaderboardEntries.map((entry) => ({
+            agentId: entry.agentId,
+            value: entry.score,
+            pnl: entry.pnl,
+          }));
+        }
       }
 
       console.log(
         `[CompetitionManager] No leaderboard found in database for competition ${competitionId}, calculating from snapshots or current values`,
       );
 
-      // If no leaderboard entries, try to get from recent portfolio snapshots
-      const snapshots = await getLatestPortfolioSnapshots(competitionId);
+      // Case: `COMPETITION_STATUS.ACTIVE` will need to calculate from snapshots
+      if (competitionStatus === COMPETITION_STATUS.ACTIVE) {
+        const snapshots = await getLatestPortfolioSnapshots(competitionId);
 
-      if (snapshots.length > 0) {
+        if (snapshots.length > 0) {
+          // Sort by value descending
+          return snapshots
+            .map((snapshot) => ({
+              agentId: snapshot.agentId,
+              value: snapshot.totalValue,
+              pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
+            }))
+            .sort(
+              (a: { value: number }, b: { value: number }) => b.value - a.value,
+            );
+        }
+
+        // Fallback to calculating current values
+        const agents = await getCompetitionAgents(competitionId);
+
+        // Use bulk portfolio value calculation to avoid N+1 queries
+        const portfolioValues =
+          await this.tradeSimulator.calculateBulkPortfolioValues(agents);
+
+        const leaderboard = agents.map((agentId) => ({
+          agentId,
+          value: portfolioValues.get(agentId) || 0,
+          pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
+        }));
+
         // Sort by value descending
-        return snapshots
-          .map((snapshot) => ({
-            agentId: snapshot.agentId,
-            value: snapshot.totalValue,
-            pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
-          }))
-          .sort(
-            (a: { value: number }, b: { value: number }) => b.value - a.value,
-          );
+        return leaderboard.sort((a, b) => b.value - a.value);
       }
 
-      // Fallback to calculating current values
+      // Case: `COMPETITION_STATUS.PENDING` will have no leaderboard—so we just return the agents
       const agents = await getCompetitionAgents(competitionId);
-
-      // Use bulk portfolio value calculation to avoid N+1 queries
-      const portfolioValues =
-        await this.tradeSimulator.calculateBulkPortfolioValues(agents);
-
-      const leaderboard = agents.map((agentId) => ({
+      return agents.map((agentId) => ({
         agentId,
-        value: portfolioValues.get(agentId) || 0,
-        pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
+        value: 0,
+        pnl: 0,
       }));
-
-      // Sort by value descending
-      return leaderboard.sort((a, b) => b.value - a.value);
     } catch (error) {
       console.error(
         `[CompetitionManager] Error getting leaderboard for competition ${competitionId}:`,
@@ -806,111 +821,20 @@ export class CompetitionManager {
       return metricsMap;
     } catch (error) {
       console.error(
-        `[CompetitionManager] Error in calculateBulkAgentMetrics:`,
+        `[CompetitionManager] Error in calculateBulkAgentMetrics, returning zero metrics:`,
         error,
       );
 
-      // Fallback to individual calculations
-      console.warn(
-        `[CompetitionManager] Falling back to individual metric calculations`,
-      );
       const metricsMap = new Map();
       for (const agentId of agentIds) {
-        const currentValue = currentValues.get(agentId) || 0;
-        const metrics = await this.calculateAgentMetrics(
-          competitionId,
-          agentId,
-          currentValue,
-        );
-        metricsMap.set(agentId, metrics);
+        metricsMap.set(agentId, {
+          pnl: 0,
+          pnlPercent: 0,
+          change24h: 0,
+          change24hPercent: 0,
+        });
       }
       return metricsMap;
-    }
-  }
-
-  /**
-   * Calculate PnL and 24h change metrics for an agent in a competition
-   * @param competitionId The competition ID
-   * @param agentId The agent ID
-   * @param currentValue The agent's current portfolio value
-   * @returns Object containing pnl, pnlPercent, change24h, change24hPercent
-   */
-  async calculateAgentMetrics(
-    competitionId: string,
-    agentId: string,
-    currentValue: number,
-  ) {
-    try {
-      // Get portfolio snapshots for this agent in this competition
-      const snapshots =
-        await this.portfolioSnapshotter.getAgentPortfolioSnapshots(
-          competitionId,
-          agentId,
-        );
-
-      // Default values
-      let pnl = 0;
-      let pnlPercent = 0;
-      let change24h = 0;
-      let change24hPercent = 0;
-
-      if (snapshots.length > 0) {
-        // Sort snapshots by timestamp (oldest first)
-        const sortedSnapshots = snapshots.sort(
-          (a, b) =>
-            (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
-        );
-
-        // Get starting value (earliest snapshot)
-        const startingSnapshot = sortedSnapshots[0];
-        const startingValue = startingSnapshot?.totalValue ?? 0;
-
-        // Calculate PnL
-        if (startingValue > 0) {
-          pnl = currentValue - startingValue;
-          pnlPercent = (pnl / startingValue) * 100;
-        }
-
-        // Calculate 24h change
-        const now = new Date();
-        const twentyFourHoursAgo = new Date(
-          now.getTime() - 24 * 60 * 60 * 1000,
-        );
-
-        // Find the snapshot closest to 24h ago
-        let closestSnapshot = null;
-        let smallestTimeDiff = Infinity;
-
-        for (const snapshot of snapshots) {
-          if (snapshot.timestamp) {
-            const timeDiff = Math.abs(
-              snapshot.timestamp.getTime() - twentyFourHoursAgo.getTime(),
-            );
-            if (timeDiff < smallestTimeDiff) {
-              smallestTimeDiff = timeDiff;
-              closestSnapshot = snapshot;
-            }
-          }
-        }
-
-        // Calculate 24h change
-        if (closestSnapshot) {
-          const value24hAgo = closestSnapshot.totalValue;
-          if (value24hAgo > 0) {
-            change24h = currentValue - value24hAgo;
-            change24hPercent = (change24h / value24hAgo) * 100;
-          }
-        }
-      }
-
-      return { pnl, pnlPercent, change24h, change24hPercent };
-    } catch (error) {
-      console.error(
-        `[CompetitionManager] Error calculating metrics for agent ${agentId}:`,
-        error,
-      );
-      // Return default values on error
-      return { pnl: 0, pnlPercent: 0, change24h: 0, change24hPercent: 0 };
     }
   }
 
