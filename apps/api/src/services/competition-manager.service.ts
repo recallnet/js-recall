@@ -28,6 +28,7 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import { UpdateCompetition } from "@/database/schema/core/types.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
+import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AgentManager,
   AgentRankService,
@@ -806,25 +807,10 @@ export class CompetitionManager {
       return metricsMap;
     } catch (error) {
       console.error(
-        `[CompetitionManager] Error in calculateBulkAgentMetrics:`,
+        "[CompetitionManager] cannot calculateBulkAgentMetrics:",
         error,
       );
-
-      // Fallback to individual calculations
-      console.warn(
-        `[CompetitionManager] Falling back to individual metric calculations`,
-      );
-      const metricsMap = new Map();
-      for (const agentId of agentIds) {
-        const currentValue = currentValues.get(agentId) || 0;
-        const metrics = await this.calculateAgentMetrics(
-          competitionId,
-          agentId,
-          currentValue,
-        );
-        metricsMap.set(agentId, metrics);
-      }
-      return metricsMap;
+      throw new ApiError(500, "cannot get agent metrics");
     }
   }
 
