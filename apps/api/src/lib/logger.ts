@@ -4,7 +4,7 @@ import { config } from "../config/index.js";
 
 // Create logger instance with appropriate configuration
 const logger = (pino.default || pino)({
-  level: config.server.nodeEnv === "development" ? "debug" : "info",
+  level: config.logging.level,
 
   // In development, use pretty printing for better readability
   ...(config.server.nodeEnv === "development" && {
