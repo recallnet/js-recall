@@ -211,6 +211,7 @@ export const config = {
   },
   database: {
     ssl: process.env.DB_SSL === "true",
+    maxConnections: parseInt(process.env.DATABASE_MAX_CONNECTIONS || "10", 10),
     url:
       process.env.DATABASE_URL ||
       "postgresql://postgres:postgres@localhost:5432/trading_simulator",

@@ -71,14 +71,31 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
 };
 
 interface Snapshot24hResult {
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  earliestSnapshots: Array<any>;
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  snapshots24hAgo: Array<any>;
+  earliestSnapshots: Array<{
+    id: number;
+    agentId: string;
+    competitionId: string;
+    timestamp: Date;
+    totalValue: number;
+  }>;
+  snapshots24hAgo: Array<{
+    id: number;
+    agentId: string;
+    competitionId: string;
+    timestamp: Date;
+    totalValue: number;
+  }>;
 }
 
 const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
+
+/**
+ * Clear the snapshot cache - used for testing
+ */
+export function clearSnapshotCache(): void {
+  snapshotCache.clear();
+}
 
 /**
  * Find all competitions
@@ -786,7 +803,7 @@ async function get24hSnapshotsImpl(
     `get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
   );
 
-  const cacheKey = competitionId + "-" + agentIds.join("-");
+  const cacheKey = `${competitionId}-${agentIds.join("-")}`;
   const cachedResult = snapshotCache.get(cacheKey);
   if (cachedResult) {
     const now = Date.now();
@@ -885,13 +902,15 @@ async function get24hSnapshotsImpl(
  * Get portfolio snapshots for an agent in a competition
  * @param competitionId Competition ID
  * @param agentId Agent ID
+ * @param limit Optional limit for the number of snapshots to return
  */
 async function getAgentPortfolioSnapshotsImpl(
   competitionId: string,
   agentId: string,
+  limit?: number,
 ) {
   try {
-    return await db
+    const query = db
       .select()
       .from(portfolioSnapshots)
       .where(
@@ -901,7 +920,13 @@ async function getAgentPortfolioSnapshotsImpl(
         ),
       )
       .orderBy(desc(portfolioSnapshots.timestamp));
-    // TODO: there's no limit here, this is a weakness in perf
+
+    // Apply limit if specified
+    if (limit !== undefined && limit > 0) {
+      return await query.limit(limit);
+    }
+
+    return await query;
   } catch (error) {
     repositoryLogger.error("Error in getAgentPortfolioSnapshots:", error);
     throw error;

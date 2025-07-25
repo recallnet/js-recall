@@ -7,6 +7,7 @@ import { expect } from "vitest";
 import { ApiSDK } from "@recallnet/api-sdk";
 
 import { db } from "@/database/db.js";
+import { clearSnapshotCache } from "@/database/repositories/competition-repository.js";
 import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
 import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
 
@@ -274,6 +275,9 @@ export async function cleanupTestState(): Promise<void> {
 
   // Also reset rate limiters to ensure clean state between tests
   resetRateLimiters();
+
+  // Clear snapshot cache
+  clearSnapshotCache();
 
   return dbManager.cleanupTestState();
 }

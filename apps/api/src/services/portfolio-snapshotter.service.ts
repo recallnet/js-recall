@@ -250,10 +250,19 @@ export class PortfolioSnapshotter {
    * Get portfolio snapshots for an agent in a competition
    * @param competitionId The competition ID
    * @param agentId The agent ID
+   * @param limit Optional limit for the number of snapshots to return
    * @returns Array of portfolio snapshots
    */
-  async getAgentPortfolioSnapshots(competitionId: string, agentId: string) {
-    const snapshots = await getAgentPortfolioSnapshots(competitionId, agentId);
+  async getAgentPortfolioSnapshots(
+    competitionId: string,
+    agentId: string,
+    limit?: number,
+  ) {
+    const snapshots = await getAgentPortfolioSnapshots(
+      competitionId,
+      agentId,
+      limit,
+    );
 
     const promises = snapshots.map(async (snapshot) => {
       const tokenValues = await getPortfolioTokenValues(snapshot.id);

@@ -4,6 +4,7 @@ import {
   findById as findAgentById,
   findByCompetition,
 } from "@/database/repositories/agent-repository.js";
+import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
 import {
   addAgentToCompetition,
   batchInsertLeaderboard,
@@ -29,6 +30,7 @@ import {
 import { UpdateCompetition } from "@/database/schema/core/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
+import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AgentManager,
   AgentRankService,
@@ -533,7 +535,34 @@ export class CompetitionManager {
    */
   async getLeaderboard(competitionId: string) {
     try {
-      // First try to get from the competitions_leaderboard table
+      const competition = await findById(competitionId);
+      const competitionStatus = competition?.status;
+
+      // Default case: `COMPETITION_STATUS.PENDING` will have no leaderboard—so we just return the agents
+      if (competitionStatus === COMPETITION_STATUS.PENDING) {
+        const agents = await getCompetitionAgents(competitionId);
+        const globalLeaderboard = await getAllAgentRanks(agents);
+
+        // Create map of agent IDs to their global rank scores and sort by global rank score (if applicable)
+        const globalLeaderboardMap = new Map(
+          globalLeaderboard.map((agent) => [agent.id, agent.score]),
+        );
+        return agents
+          .map((agentId) => ({
+            agentId,
+            value: 0,
+            pnl: 0,
+            globalScore: globalLeaderboardMap.get(agentId) ?? -1, // Use -1 for unranked agents so they appear after ranked ones
+          }))
+          .sort((a, b) => b.globalScore - a.globalScore)
+          .map(({ agentId, value, pnl }) => ({
+            agentId,
+            value,
+            pnl,
+          }));
+      }
+
+      // Case: an `COMPETITION_STATUS.ENDED` should have leaderboard entries in the `competitions_leaderboard` table, unless it was recently ended
       const leaderboardEntries =
         await findLeaderboardByTradingComp(competitionId);
       if (leaderboardEntries.length > 0) {
@@ -548,9 +577,8 @@ export class CompetitionManager {
         `[CompetitionManager] No leaderboard found in database for competition ${competitionId}, calculating from snapshots or current values`,
       );
 
-      // If no leaderboard entries, try to get from recent portfolio snapshots
+      // Case: `COMPETITION_STATUS.ACTIVE` or a recently ended competition will need to calculate from snapshots
       const snapshots = await getLatestPortfolioSnapshots(competitionId);
-
       if (snapshots.length > 0) {
         // Sort by value descending
         return snapshots
@@ -811,107 +839,10 @@ export class CompetitionManager {
         error,
       );
 
-      // Fallback to individual calculations
-      console.warn(
-        `[CompetitionManager] Falling back to individual metric calculations`,
+      throw new ApiError(
+        500,
+        `Failed to calculate bulk metrics: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
-      const metricsMap = new Map();
-      for (const agentId of agentIds) {
-        const currentValue = currentValues.get(agentId) || 0;
-        const metrics = await this.calculateAgentMetrics(
-          competitionId,
-          agentId,
-          currentValue,
-        );
-        metricsMap.set(agentId, metrics);
-      }
-      return metricsMap;
-    }
-  }
-
-  /**
-   * Calculate PnL and 24h change metrics for an agent in a competition
-   * @param competitionId The competition ID
-   * @param agentId The agent ID
-   * @param currentValue The agent's current portfolio value
-   * @returns Object containing pnl, pnlPercent, change24h, change24hPercent
-   */
-  async calculateAgentMetrics(
-    competitionId: string,
-    agentId: string,
-    currentValue: number,
-  ) {
-    try {
-      // Get portfolio snapshots for this agent in this competition
-      const snapshots =
-        await this.portfolioSnapshotter.getAgentPortfolioSnapshots(
-          competitionId,
-          agentId,
-        );
-
-      // Default values
-      let pnl = 0;
-      let pnlPercent = 0;
-      let change24h = 0;
-      let change24hPercent = 0;
-
-      if (snapshots.length > 0) {
-        // Sort snapshots by timestamp (oldest first)
-        const sortedSnapshots = snapshots.sort(
-          (a, b) =>
-            (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
-        );
-
-        // Get starting value (earliest snapshot)
-        const startingSnapshot = sortedSnapshots[0];
-        const startingValue = startingSnapshot?.totalValue ?? 0;
-
-        // Calculate PnL
-        if (startingValue > 0) {
-          pnl = currentValue - startingValue;
-          pnlPercent = (pnl / startingValue) * 100;
-        }
-
-        // Calculate 24h change
-        const now = new Date();
-        const twentyFourHoursAgo = new Date(
-          now.getTime() - 24 * 60 * 60 * 1000,
-        );
-
-        // Find the snapshot closest to 24h ago
-        let closestSnapshot = null;
-        let smallestTimeDiff = Infinity;
-
-        for (const snapshot of snapshots) {
-          if (snapshot.timestamp) {
-            const timeDiff = Math.abs(
-              snapshot.timestamp.getTime() - twentyFourHoursAgo.getTime(),
-            );
-            if (timeDiff < smallestTimeDiff) {
-              smallestTimeDiff = timeDiff;
-              closestSnapshot = snapshot;
-            }
-          }
-        }
-
-        // Calculate 24h change
-        if (closestSnapshot) {
-          const value24hAgo = closestSnapshot.totalValue;
-          if (value24hAgo > 0) {
-            change24h = currentValue - value24hAgo;
-            change24hPercent = (change24h / value24hAgo) * 100;
-          }
-        }
-      }
-
-      return { pnl, pnlPercent, change24h, change24hPercent };
-    } catch (error) {
-      serviceLogger.error(
-        `[CompetitionManager] Error calculating metrics for agent ${agentId}:`,
-        error,
-      );
-      // Return default values on error
-      return { pnl: 0, pnlPercent: 0, change24h: 0, change24hPercent: 0 };
     }
   }
 

@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
@@ -39,11 +39,13 @@ export interface AgentRankInfo {
  * the agent information and rank score.
  * @returns An array of objects with agent ID, name, and rank score
  */
-async function getAllAgentRanksImpl(): Promise<AgentRankInfo[]> {
+async function getAllAgentRanksImpl(
+  agentIds?: string[],
+): Promise<AgentRankInfo[]> {
   repositoryLogger.debug("getAllAgentRanks called");
 
   try {
-    const rows = await db
+    const query = db
       .select({
         id: agents.id,
         imageUrl: agents.imageUrl,
@@ -56,6 +58,12 @@ async function getAllAgentRanksImpl(): Promise<AgentRankInfo[]> {
       })
       .from(agentScore)
       .innerJoin(agents, eq(agentScore.agentId, agents.id));
+
+    if (agentIds) {
+      query.where(inArray(agentScore.agentId, agentIds));
+    }
+
+    const rows = await query;
 
     return rows.map((agent) => {
       return {
