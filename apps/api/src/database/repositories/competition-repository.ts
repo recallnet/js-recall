@@ -716,27 +716,35 @@ async function batchCreatePortfolioTokenValuesImpl(
  */
 async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
   try {
-    const result = await db.execute(sql`
-      WITH latest_snapshots AS (
-        SELECT DISTINCT ON (ps.agent_id)
-          ps.id,
-          ps.agent_id,
-          ps.competition_id,
-          ps.timestamp,
-          ps.total_value
+    const result = await db.execute<{
+      id: number;
+      agent_id: string;
+      competition_id: string;
+      timestamp: Date;
+      total_value: number;
+    }>(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM competition_agents ca
+      CROSS JOIN LATERAL (
+        SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
         FROM trading_comps.portfolio_snapshots ps
-        INNER JOIN competition_agents ca 
-          ON ps.agent_id = ca.agent_id 
-        AND ps.competition_id = ca.competition_id
-        WHERE 
-          ps.competition_id = ${competitionId}
-          AND ca.status = ${COMPETITION_STATUS.ACTIVE}
-        ORDER BY ps.agent_id, ps.timestamp DESC
-      )
-      SELECT *
-      FROM latest_snapshots;
+        WHERE ps.agent_id = ca.agent_id 
+          AND ps.competition_id = ca.competition_id
+        ORDER BY ps.timestamp DESC 
+        LIMIT 1
+      ) ps
+      WHERE ca.competition_id = ${competitionId}
+        AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
     `);
-    return result.rows;
+
+    // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
+    return result.rows.map((row) => ({
+      id: row.id,
+      agentId: row.agent_id,
+      competitionId: row.competition_id,
+      timestamp: row.timestamp,
+      totalValue: Number(row.total_value), // Convert string to number for numeric fields
+    }));
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in getLatestPortfolioSnapshotsImpl:",
