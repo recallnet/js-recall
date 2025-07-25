@@ -534,6 +534,9 @@ export class CompetitionManager {
    */
   async getLeaderboard(competitionId: string) {
     try {
+      // TODO: this function has many paths it potentially takes depending on
+      //  the state of several tables. We should refactor and ideally only have
+      //  one, which doesn't have to do calculations for every (uncached) request.
       const competition = await findById(competitionId);
       const competitionStatus = competition?.status;
 
