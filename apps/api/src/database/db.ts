@@ -82,12 +82,14 @@ const sslConfig = (() => {
 const pool = new Pool({
   connectionString: config.database.url,
   ...sslConfig,
+  max: config.database.maxConnections,
 });
 
 // Read replica connection pool
 const readReplicaPool = new Pool({
   connectionString: config.database.readReplicaUrl || config.database.url,
   ...sslConfig,
+  max: config.database.maxConnections,
 });
 
 /*
