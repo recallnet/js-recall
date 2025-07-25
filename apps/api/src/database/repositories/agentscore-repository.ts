@@ -11,6 +11,7 @@ import {
   InsertAgentScore,
   InsertAgentScoreHistory,
 } from "@/database/schema/ranking/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { AgentMetadata } from "@/types/index.js";
 
@@ -39,7 +40,7 @@ export interface AgentRankInfo {
  * @returns An array of objects with agent ID, name, and rank score
  */
 async function getAllAgentRanksImpl(): Promise<AgentRankInfo[]> {
-  console.log("[AgentRankRepository] getAllAgentRanks called");
+  repositoryLogger.info("getAllAgentRanks called");
 
   try {
     const rows = await db
@@ -69,7 +70,7 @@ async function getAllAgentRanksImpl(): Promise<AgentRankInfo[]> {
       };
     });
   } catch (error) {
-    console.error("[AgentRankRepository] Error in getAllAgentRanks:", error);
+    repositoryLogger.error("Error in getAllAgentRanks:", error);
     throw error;
   }
 }
@@ -91,9 +92,7 @@ async function getAgentRankByIdImpl(agentId: string): Promise<{
   rank: number;
   score: number;
 } | null> {
-  console.log(
-    `[AgentRankRepository] getAgentRankById called for agent ${agentId}`,
-  );
+  repositoryLogger.info(`getAgentRankById called for agent ${agentId}`);
 
   try {
     const result = await db.execute(sql`
@@ -110,15 +109,13 @@ async function getAgentRankByIdImpl(agentId: string): Promise<{
     `);
 
     if (!result.rows || result.rows.length === 0) {
-      console.log(`[AgentRankRepository] No rank found for agent ${agentId}`);
+      repositoryLogger.info(`No rank found for agent ${agentId}`);
       return null;
     }
 
     const agentRow = result.rows[0];
     if (!agentRow) {
-      console.log(
-        `[AgentRankRepository] No rank data found for agent ${agentId}`,
-      );
+      repositoryLogger.info(`No rank data found for agent ${agentId}`);
       return null;
     }
 
@@ -128,8 +125,8 @@ async function getAgentRankByIdImpl(agentId: string): Promise<{
       score: Number(agentRow.score),
     };
   } catch (error) {
-    console.error(
-      `[AgentRankRepository] Error in getAgentRankById for agent ${agentId}:`,
+    repositoryLogger.error(
+      `Error in getAgentRankById for agent ${agentId}:`,
       error,
     );
     throw error;
@@ -141,14 +138,12 @@ async function batchUpdateAgentRanksImpl(
   competitionId: string,
 ): Promise<InsertAgentScore[]> {
   if (dataArray.length === 0) {
-    console.log("[AgentRankRepository] No agent ranks to update in batch");
+    repositoryLogger.info("No agent ranks to update in batch");
     return [];
   }
 
   try {
-    console.log(
-      `[AgentRankRepository] Batch updating ${dataArray.length} agent ranks`,
-    );
+    repositoryLogger.info(`Batch updating ${dataArray.length} agent ranks`);
 
     return await db.transaction(async (tx) => {
       // Prepare rank data with IDs
@@ -214,10 +209,7 @@ async function batchUpdateAgentRanksImpl(
       return results;
     });
   } catch (error) {
-    console.error(
-      "[AgentRankRepository] Error in batchUpdateAgentRanks:",
-      error,
-    );
+    repositoryLogger.error("Error in batchUpdateAgentRanks:", error);
     throw error;
   }
 }
@@ -239,10 +231,7 @@ async function getAllAgentRankHistoryImpl(competitionId?: string) {
 
     return await query;
   } catch (error) {
-    console.error(
-      "[AgentRankRepository] Error in getAllAgentRankHistory:",
-      error,
-    );
+    repositoryLogger.error("Error in getAllAgentRankHistory:", error);
     throw error;
   }
 }
@@ -254,7 +243,7 @@ async function getAllRawAgentRanksImpl() {
   try {
     return await db.select().from(agentScore).orderBy(desc(agentScore.ordinal));
   } catch (error) {
-    console.error("[AgentRankRepository] Error in getAllRawAgentRanks:", error);
+    repositoryLogger.error("Error in getAllRawAgentRanks:", error);
     throw error;
   }
 }

@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
+import { authLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 export function makeAuthController(services: ServiceRegistry) {
@@ -61,8 +62,8 @@ export function makeAuthController(services: ServiceRegistry) {
             .status(401)
             .json({ error: "Unauthorized: invalid signature" });
         }
-        console.log(
-          `[AuthController] Login successful for ${wallet} (userId: ${userId ? userId : "N/A"})`,
+        authLogger.info(
+          `Login successful for ${wallet} (userId: ${userId ? userId : "N/A"})`,
         );
         res.status(200).json({ userId, wallet });
       } catch (error) {

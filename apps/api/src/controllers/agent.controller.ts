@@ -6,6 +6,7 @@ import {
   getPortfolioTokenValues,
 } from "@/database/repositories/competition-repository.js";
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
+import { agentLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -375,23 +376,23 @@ export function makeAgentController(services: ServiceRegistry) {
           }
 
           // No snapshot, but we should initiate one for future requests
-          console.log(
-            `[AgentController] No portfolio snapshots found for agent ${agentId} in competition ${activeCompetition.id}`,
+          agentLogger.info(
+            `No portfolio snapshots found for agent ${agentId} in competition ${activeCompetition.id}`,
           );
           // Request a snapshot for this agent asynchronously (don't await)
           services.portfolioSnapshotter
             .takePortfolioSnapshotForAgent(activeCompetition.id, agentId)
             .catch((error) => {
-              console.error(
-                `[AgentController] Error taking snapshot for agent ${agentId}:`,
+              agentLogger.error(
+                `Error taking snapshot for agent ${agentId}:`,
                 error,
               );
             });
         }
 
         // Fall back to calculating portfolio on-demand
-        console.log(
-          `[AgentController] Using live calculation for portfolio of agent ${agentId}`,
+        agentLogger.info(
+          `Using live calculation for portfolio of agent ${agentId}`,
         );
 
         // Get the balances

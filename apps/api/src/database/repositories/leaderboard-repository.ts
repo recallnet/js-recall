@@ -22,6 +22,7 @@ import {
   trades,
   tradingCompetitionsLeaderboard,
 } from "@/database/schema/trading/defs.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import {
   COMPETITION_AGENT_STATUS,
@@ -110,7 +111,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   totalVotes: number;
   competitionIds: string[];
 }> {
-  console.log("[CompetitionRepository] getGlobalStats called for type:", type);
+  repositoryLogger.info("getGlobalStats called for type:", type);
 
   // Filter competitions by `type` and `status` IN ['active', 'ended'].
   const relevantCompetitions = await dbRead
@@ -210,8 +211,8 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
     return [];
   }
 
-  console.log(
-    `[LeaderboardRepository] getBulkAgentMetrics called for ${agentIds.length} agents`,
+  repositoryLogger.info(
+    `getBulkAgentMetrics called for ${agentIds.length} agents`,
   );
 
   try {
@@ -476,15 +477,12 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       };
     });
 
-    console.log(
-      `[LeaderboardRepository] Successfully retrieved bulk metrics for ${result.length} agents`,
+    repositoryLogger.info(
+      `Successfully retrieved bulk metrics for ${result.length} agents`,
     );
     return result;
   } catch (error) {
-    console.error(
-      "[LeaderboardRepository] Error in getBulkAgentMetrics:",
-      error,
-    );
+    repositoryLogger.error("Error in getBulkAgentMetrics:", error);
     throw error;
   }
 }
@@ -507,7 +505,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
     voteCount: number;
   }>
 > {
-  console.log("[LeaderboardRepository] getOptimizedGlobalAgentMetrics called");
+  repositoryLogger.info("getOptimizedGlobalAgentMetrics called");
 
   try {
     // Get all agents with their basic info and scores
@@ -564,16 +562,13 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
       voteCount: voteCountMap.get(agent.id) ?? 0,
     }));
 
-    console.log(
-      `[LeaderboardRepository] Retrieved ${result.length} agent metrics with optimized query`,
+    repositoryLogger.info(
+      `Retrieved ${result.length} agent metrics with optimized query`,
     );
 
     return result;
   } catch (error) {
-    console.error(
-      "[LeaderboardRepository] Error in getOptimizedGlobalAgentMetrics:",
-      error,
-    );
+    repositoryLogger.error("Error in getOptimizedGlobalAgentMetrics:", error);
     throw error;
   }
 }

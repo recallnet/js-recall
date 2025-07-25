@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
+import { priceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
@@ -29,8 +30,8 @@ export function makePriceController(services: ServiceRegistry) {
           throw new ApiError(400, "Token address is required");
         }
 
-        console.log(
-          `[PriceController] Getting price for token ${token} requested by agent ${agentId}`,
+        priceLogger.info(
+          `Getting price for token ${token} requested by agent ${agentId}`,
         );
 
         // Determine the blockchain type for this token, using the requested chain if provided
@@ -119,8 +120,8 @@ export function makePriceController(services: ServiceRegistry) {
           throw new ApiError(400, "Token address is required");
         }
 
-        console.log(
-          `[PriceController] Getting token info for ${token} requested by agent ${agentId}`,
+        priceLogger.info(
+          `Getting token info for ${token} requested by agent ${agentId}`,
         );
 
         // Determine blockchain type using the requested chain if provided

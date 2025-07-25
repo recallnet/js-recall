@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
+import { middlewareLogger } from "@/lib/logger.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AdminManager } from "@/services/admin-manager.service.js";
@@ -11,20 +12,20 @@ import { AdminManager } from "@/services/admin-manager.service.js";
 export const adminAuthMiddleware = (adminManager: AdminManager) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log(`\n[AdminAuthMiddleware] ========== AUTH REQUEST ==========`);
-      console.log(
-        `[AdminAuthMiddleware] Received request to ${req.method} ${req.originalUrl}`,
+      middlewareLogger.info(`========== ADMIN AUTH REQUEST ==========`);
+      middlewareLogger.info(
+        `Received request to ${req.method} ${req.originalUrl}`,
       );
 
       // Extract API key from Authorization header
       const apiKey = extractApiKey(req);
 
-      console.log(
-        `[AdminAuthMiddleware] API Key extraction result: ${apiKey ? "Found key" : "No key found"}`,
+      middlewareLogger.info(
+        `API Key extraction result: ${apiKey ? "Found key" : "No key found"}`,
       );
 
       if (!apiKey) {
-        console.log("[AdminAuthMiddleware] No API key found in request");
+        middlewareLogger.warn("No API key found in request");
         throw new ApiError(
           401,
           "Admin authentication required. Use Authorization: Bearer YOUR_ADMIN_API_KEY",
@@ -32,17 +33,17 @@ export const adminAuthMiddleware = (adminManager: AdminManager) => {
       }
 
       // Validate admin API key
-      console.log(
-        `[AdminAuthMiddleware] Validating admin API key: ${apiKey.substring(0, 8)}...`,
+      middlewareLogger.info(
+        `Validating admin API key: ${apiKey.substring(0, 8)}...`,
       );
       const adminId = await adminManager.validateApiKey(apiKey);
 
-      console.log(
-        `[AdminAuthMiddleware] Validation result: ${adminId ? `Valid, admin: ${adminId}` : "Invalid key"}`,
+      middlewareLogger.info(
+        `Validation result: ${adminId ? `Valid, admin: ${adminId}` : "Invalid key"}`,
       );
 
       if (!adminId) {
-        console.log("[AdminAuthMiddleware] Invalid admin API key");
+        middlewareLogger.warn("Invalid admin API key");
         throw new ApiError(
           401,
           "Invalid admin API key. This key may have been reset or is no longer associated with an active admin account.",
@@ -50,18 +51,16 @@ export const adminAuthMiddleware = (adminManager: AdminManager) => {
       }
 
       // Get the admin details
-      console.log(
-        `[AdminAuthMiddleware] Getting admin details for ID: ${adminId}`,
-      );
+      middlewareLogger.info(`Getting admin details for ID: ${adminId}`);
       const admin = await adminManager.getAdmin(adminId);
 
-      console.log(
-        `[AdminAuthMiddleware] Admin details: ${admin ? `Username: ${admin.username}, Status: ${admin.status}` : "Admin not found"}`,
+      middlewareLogger.info(
+        `Admin details: ${admin ? `Username: ${admin.username}, Status: ${admin.status}` : "Admin not found"}`,
       );
 
       if (!admin || admin.status !== "active") {
-        console.log(
-          "[AdminAuthMiddleware] Admin access denied - admin not found or inactive",
+        middlewareLogger.warn(
+          "Admin access denied - admin not found or inactive",
         );
         throw new ApiError(403, "Admin access denied - account inactive");
       }
@@ -74,14 +73,14 @@ export const adminAuthMiddleware = (adminManager: AdminManager) => {
         name: admin.name || admin.username,
       };
 
-      console.log(
-        `[AdminAuthMiddleware] Admin authentication successful for: ${admin.username}`,
+      middlewareLogger.info(
+        `Admin authentication successful for: ${admin.username}`,
       );
-      console.log(`[AdminAuthMiddleware] ========== END AUTH ==========\n`);
+      middlewareLogger.info(`========== END ADMIN AUTH ==========`);
 
       next();
     } catch (error) {
-      console.log(`[AdminAuthMiddleware] Error in authentication:`, error);
+      middlewareLogger.error(`Error in authentication:`, error);
       next(error);
     }
   };

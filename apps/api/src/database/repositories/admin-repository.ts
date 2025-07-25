@@ -3,6 +3,7 @@ import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
 import { db } from "@/database/db.js";
 import { admins } from "@/database/schema/core/defs.js";
 import { InsertAdmin, SelectAdmin } from "@/database/schema/core/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SearchAdminsParams } from "@/types/index.js";
 
@@ -35,7 +36,7 @@ async function createImpl(admin: InsertAdmin): Promise<SelectAdmin> {
 
     return result;
   } catch (error) {
-    console.error("[AdminRepository] Error in create:", error);
+    repositoryLogger.error("Error in create:", error);
     throw error;
   }
 }
@@ -47,7 +48,7 @@ async function findAllImpl(): Promise<SelectAdmin[]> {
   try {
     return await db.select().from(admins);
   } catch (error) {
-    console.error("[AdminRepository] Error in findAll:", error);
+    repositoryLogger.error("Error in findAll:", error);
     throw error;
   }
 }
@@ -61,7 +62,7 @@ async function findByIdImpl(id: string): Promise<SelectAdmin | undefined> {
     const [result] = await db.select().from(admins).where(eq(admins.id, id));
     return result;
   } catch (error) {
-    console.error("[AdminRepository] Error in findById:", error);
+    repositoryLogger.error("Error in findById:", error);
     throw error;
   }
 }
@@ -81,7 +82,7 @@ async function findByUsernameImpl(
 
     return result;
   } catch (error) {
-    console.error("[AdminRepository] Error in findByUsername:", error);
+    repositoryLogger.error("Error in findByUsername:", error);
     throw error;
   }
 }
@@ -101,7 +102,7 @@ async function findByEmailImpl(
 
     return result;
   } catch (error) {
-    console.error("[AdminRepository] Error in findByEmail:", error);
+    repositoryLogger.error("Error in findByEmail:", error);
     throw error;
   }
 }
@@ -121,7 +122,7 @@ async function findByApiKeyImpl(
 
     return result;
   } catch (error) {
-    console.error("[AdminRepository] Error in findByApiKey:", error);
+    repositoryLogger.error("Error in findByApiKey:", error);
     throw error;
   }
 }
@@ -150,7 +151,7 @@ async function updateImpl(
 
     return result;
   } catch (error) {
-    console.error("[AdminRepository] Error in update:", error);
+    repositoryLogger.error("Error in update:", error);
     throw error;
   }
 }
@@ -169,7 +170,7 @@ async function deleteAdminImpl(id: string): Promise<boolean> {
 
     return !!result;
   } catch (error) {
-    console.error("[AdminRepository] Error in delete:", error);
+    repositoryLogger.error("Error in delete:", error);
     throw error;
   }
 }
@@ -197,7 +198,7 @@ async function setApiKeyImpl(id: string, apiKey: string): Promise<SelectAdmin> {
 
     return result;
   } catch (error) {
-    console.error("[AdminRepository] Error in setApiKey:", error);
+    repositoryLogger.error("Error in setApiKey:", error);
     throw error;
   }
 }
@@ -224,7 +225,7 @@ async function updateLastLoginImpl(id: string): Promise<SelectAdmin> {
 
     return result;
   } catch (error) {
-    console.error("[AdminRepository] Error in updateLastLogin:", error);
+    repositoryLogger.error("Error in updateLastLogin:", error);
     throw error;
   }
 }
@@ -255,7 +256,7 @@ async function updatePasswordImpl(
 
     return result;
   } catch (error) {
-    console.error("[AdminRepository] Error in updatePassword:", error);
+    repositoryLogger.error("Error in updatePassword:", error);
     throw error;
   }
 }
@@ -299,7 +300,7 @@ async function searchAdminsImpl(
       .from(admins)
       .where(and(...conditions));
   } catch (error) {
-    console.error("[AdminRepository] Error in searchAdmins:", error);
+    repositoryLogger.error("Error in searchAdmins:", error);
     throw error;
   }
 }
@@ -312,7 +313,7 @@ async function countImpl(): Promise<number> {
     const [result] = await db.select({ count: drizzleCount() }).from(admins);
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[AdminRepository] Error in count:", error);
+    repositoryLogger.error("Error in count:", error);
     throw error;
   }
 }

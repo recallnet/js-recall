@@ -15,6 +15,7 @@ import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
 import { migrateDb } from "@/database/db.js";
+import { apiLogger } from "@/lib/logger.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
@@ -57,19 +58,19 @@ const apiBasePath = config.server.apiPrefix
 if (process.env.NODE_ENV !== "production") {
   try {
     // Migrate the database if needed
-    console.log("Checking database connection...");
+    apiLogger.info("Checking database connection...");
     await migrateDb();
-    console.log("Database connection and schema verification completed");
+    apiLogger.info("Database connection and schema verification completed");
     databaseInitialized = true;
   } catch (error) {
-    console.error("Database initialization error:", error);
-    console.error(
+    apiLogger.error("Database initialization error:", error);
+    apiLogger.error(
       "Failed to start server due to database initialization error. Exiting...",
     );
     process.exit(1);
   }
 } else {
-  console.log("Production mode: Skipping automatic database migrations");
+  apiLogger.info("Production mode: Skipping automatic database migrations");
   databaseInitialized = true; // Assume database is already set up in production
 }
 
@@ -77,7 +78,7 @@ const services = new ServiceRegistry();
 
 // Load competition-specific configuration settings
 await services.configurationService.loadCompetitionSettings();
-console.log("Competition-specific configuration settings loaded");
+apiLogger.info("Competition-specific configuration settings loaded");
 
 // Start both schedulers after all services are ready
 services.startSchedulers();
@@ -260,16 +261,16 @@ app.use(errorHandler);
 
 // Start HTTP server
 const mainServer = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n========================================`);
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Environment: ${config.server.nodeEnv}`);
-  console.log(
+  apiLogger.info(`\n========================================`);
+  apiLogger.info(`Server is running on port ${PORT}`);
+  apiLogger.info(`Environment: ${config.server.nodeEnv}`);
+  apiLogger.info(
     `Database: ${databaseInitialized ? "Connected" : "Error - Limited functionality"}`,
   );
-  console.log(
+  apiLogger.info(
     `API documentation: http://localhost:${PORT}${apiBasePath}/api/docs`,
   );
-  console.log(`========================================\n`);
+  apiLogger.info(`========================================\n`);
 });
 
 // Start dedicated metrics server on separate port
@@ -281,16 +282,16 @@ const gracefulShutdown = async (signal: string) => {
   if (shuttingDown) return;
   shuttingDown = true;
 
-  console.log(
+  apiLogger.info(
     `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
   );
 
   // Close both servers
   mainServer.close(() => {
-    console.log("[Shutdown] Main server closed");
+    apiLogger.info("[Shutdown] Main server closed");
 
     metricsServer.close(() => {
-      console.log("[Shutdown] Metrics server closed");
+      apiLogger.info("[Shutdown] Metrics server closed");
 
       services.stopSchedulers();
 
@@ -299,7 +300,7 @@ const gracefulShutdown = async (signal: string) => {
     });
   });
   const timeout = setTimeout(function () {
-    console.error("Forcing exit after timeout");
+    apiLogger.error("Forcing exit after timeout");
     process.exit(1);
   }, 10000);
 };

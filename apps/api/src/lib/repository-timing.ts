@@ -1,6 +1,7 @@
 import client from "prom-client";
 
 import { config } from "@/config/index.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { getTraceId } from "@/lib/trace-context.js";
 
 // Global metrics cache to prevent multiple registrations
@@ -248,23 +249,20 @@ function wrapRepositoryFunction<
       if (shouldSample(config.logging.repositorySampleRate)) {
         const isDev = config.server.nodeEnv === "development";
         if (isDev) {
-          // Development: Human-readable console logs
-          console.log(
+          // Development: Human-readable logs
+          repositoryLogger.info(
             `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms`,
           );
         } else {
-          // Production: Structured JSON logs
-          console.log(
-            JSON.stringify({
-              traceId,
-              repository: repositoryName,
-              method: methodName,
-              operation,
-              duration: durationMs,
-              status: "success",
-              timestamp: new Date().toISOString(),
-            }),
-          );
+          // Production: Structured logs
+          repositoryLogger.info({
+            traceId,
+            repository: repositoryName,
+            method: methodName,
+            operation,
+            duration: durationMs,
+            status: "success",
+          });
         }
       }
 
@@ -289,22 +287,19 @@ function wrapRepositoryFunction<
         const isDev = config.server.nodeEnv === "development";
         if (isDev) {
           // Development: Human-readable error logs
-          console.log(
+          repositoryLogger.error(
             `[${traceId}] [${repositoryName}] ${methodName} - ${durationMs.toFixed(2)}ms - ERROR`,
           );
         } else {
-          // Production: Structured JSON error logs
-          console.log(
-            JSON.stringify({
-              traceId,
-              repository: repositoryName,
-              method: methodName,
-              operation,
-              duration: durationMs,
-              status: "error",
-              timestamp: new Date().toISOString(),
-            }),
-          );
+          // Production: Structured error logs
+          repositoryLogger.error({
+            traceId,
+            repository: repositoryName,
+            method: methodName,
+            operation,
+            duration: durationMs,
+            status: "error",
+          });
         }
       }
 

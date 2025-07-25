@@ -38,6 +38,7 @@ import {
   InsertPortfolioSnapshot,
   InsertPortfolioTokenValue,
 } from "@/database/schema/trading/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import {
   COMPETITION_AGENT_STATUS,
@@ -176,7 +177,7 @@ async function updateImpl(
     });
     return result;
   } catch (error) {
-    console.error("[CompetitionRepository] Error in update:", error);
+    repositoryLogger.error("Error in update:", error);
     throw error;
   }
 }
@@ -206,7 +207,7 @@ async function updateOneImpl(
 
     return result;
   } catch (error) {
-    console.error("[CompetitionRepository] Error in updateOne:", error);
+    repositoryLogger.error("Error in updateOne:", error);
     throw error;
   }
 }
@@ -232,8 +233,8 @@ async function addAgentToCompetitionImpl(
       })
       .onConflictDoNothing();
   } catch (error) {
-    console.error(
-      `[CompetitionRepository] Error adding agent ${agentId} to competition ${competitionId}:`,
+    repositoryLogger.error(
+      `Error adding agent ${agentId} to competition ${competitionId}:`,
       error,
     );
     throw error;
@@ -272,19 +273,19 @@ async function removeAgentFromCompetitionImpl(
     const wasUpdated = result.length > 0;
 
     if (wasUpdated) {
-      console.log(
-        `[CompetitionRepository] Removed agent ${agentId} from competition ${competitionId}`,
+      repositoryLogger.info(
+        `Removed agent ${agentId} from competition ${competitionId}`,
       );
     } else {
-      console.log(
-        `[CompetitionRepository] No active agent ${agentId} found in competition ${competitionId} to remove`,
+      repositoryLogger.info(
+        `No active agent ${agentId} found in competition ${competitionId} to remove`,
       );
     }
 
     return wasUpdated;
   } catch (error) {
-    console.error(
-      `[CompetitionRepository] Error removing agent ${agentId} from competition ${competitionId}:`,
+    repositoryLogger.error(
+      `Error removing agent ${agentId} from competition ${competitionId}:`,
       error,
     );
     throw error;
@@ -308,7 +309,7 @@ async function addAgentsImpl(competitionId: string, agentIds: string[]) {
   try {
     await db.insert(competitionAgents).values(values).onConflictDoNothing();
   } catch (error) {
-    console.error("[CompetitionRepository] Error in addAgents:", error);
+    repositoryLogger.error("Error in addAgents:", error);
     throw error;
   }
 }
@@ -335,7 +336,7 @@ async function getAgentsImpl(
 
     return result.map((row) => row.agentId);
   } catch (error) {
-    console.error("[CompetitionRepository] Error in getAgents:", error);
+    repositoryLogger.error("Error in getAgents:", error);
     throw error;
   }
 }
@@ -377,10 +378,7 @@ async function isAgentActiveInCompetitionImpl(
 
     return result.length > 0;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in isAgentActiveInCompetition:",
-      error,
-    );
+    repositoryLogger.error("Error in isAgentActiveInCompetition:", error);
     throw error;
   }
 }
@@ -409,10 +407,7 @@ async function getAgentCompetitionStatusImpl(
 
     return result.length > 0 ? result[0]!.status : null;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentCompetitionStatus:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentCompetitionStatus:", error);
     throw error;
   }
 }
@@ -453,10 +448,7 @@ async function getAgentCompetitionRecordImpl(
 
     return result.length > 0 ? result[0]! : null;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentCompetitionRecord:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentCompetitionRecord:", error);
     throw error;
   }
 }
@@ -486,8 +478,8 @@ export async function getBulkAgentCompetitionRecords(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] getBulkAgentCompetitionRecords called for ${agentIds.length} agents in competition ${competitionId}`,
+    repositoryLogger.info(
+      `getBulkAgentCompetitionRecords called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
     const result = await db
@@ -507,16 +499,13 @@ export async function getBulkAgentCompetitionRecords(
         ),
       );
 
-    console.log(
-      `[CompetitionRepository] Retrieved ${result.length} competition records for ${agentIds.length} agents`,
+    repositoryLogger.info(
+      `Retrieved ${result.length} competition records for ${agentIds.length} agents`,
     );
 
     return result;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getBulkAgentCompetitionRecords:",
-      error,
-    );
+    repositoryLogger.error("Error in getBulkAgentCompetitionRecords:", error);
     throw error;
   }
 }
@@ -569,17 +558,14 @@ async function updateAgentCompetitionStatusImpl(
     const wasUpdated = result.length > 0;
 
     if (wasUpdated) {
-      console.log(
-        `[CompetitionRepository] Updated agent ${agentId} status to ${status} in competition ${competitionId}`,
+      repositoryLogger.info(
+        `Updated agent ${agentId} status to ${status} in competition ${competitionId}`,
       );
     }
 
     return wasUpdated;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in updateAgentCompetitionStatusImpl:",
-      error,
-    );
+    repositoryLogger.error("Error in updateAgentCompetitionStatusImpl:", error);
     throw error;
   }
 }
@@ -623,7 +609,7 @@ async function findActiveImpl() {
       .limit(1);
     return result;
   } catch (error) {
-    console.error("[CompetitionRepository] Error in findActive:", error);
+    repositoryLogger.error("Error in findActive:", error);
     throw error;
   }
 }
@@ -650,10 +636,7 @@ async function createPortfolioSnapshotImpl(snapshot: InsertPortfolioSnapshot) {
 
     return result;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in createPortfolioSnapshot:",
-      error,
-    );
+    repositoryLogger.error("Error in createPortfolioSnapshot:", error);
     throw error;
   }
 }
@@ -671,8 +654,8 @@ async function batchCreatePortfolioTokenValuesImpl(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] Batch inserting ${tokenValues.length} portfolio token values`,
+    repositoryLogger.info(
+      `Batch inserting ${tokenValues.length} portfolio token values`,
     );
 
     const results = await db
@@ -680,14 +663,14 @@ async function batchCreatePortfolioTokenValuesImpl(
       .values(tokenValues)
       .returning();
 
-    console.log(
+    repositoryLogger.info(
       `[CompetitionRepository] Successfully inserted ${results.length} portfolio token values`,
     );
 
     return results;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error batch inserting portfolio token values:",
+    repositoryLogger.error(
+      "Error batch inserting portfolio token values:",
       error,
     );
     throw error;
@@ -738,10 +721,7 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
 
     return result.map((row) => row.portfolio_snapshots);
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getLatestPortfolioSnapshotsImpl:",
-      error,
-    );
+    repositoryLogger.error("Error in getLatestPortfolioSnapshotsImpl:", error);
     throw error;
   }
 }
@@ -762,8 +742,8 @@ async function getBulkAgentPortfolioSnapshotsImpl(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] getBulkAgentPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
+    repositoryLogger.info(
+      `getBulkAgentPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
     const result = await db
@@ -777,16 +757,13 @@ async function getBulkAgentPortfolioSnapshotsImpl(
       )
       .orderBy(desc(portfolioSnapshots.timestamp));
 
-    console.log(
-      `[CompetitionRepository] Retrieved ${result.length} portfolio snapshots for ${agentIds.length} agents`,
+    repositoryLogger.info(
+      `Retrieved ${result.length} portfolio snapshots for ${agentIds.length} agents`,
     );
 
     return result;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getBulkAgentPortfolioSnapshots:",
-      error,
-    );
+    repositoryLogger.error("Error in getBulkAgentPortfolioSnapshots:", error);
     throw error;
   }
 }
@@ -805,8 +782,8 @@ async function get24hSnapshotsImpl(
     return { earliestSnapshots: [], snapshots24hAgo: [] };
   }
 
-  console.log(
-    `[CompetitionRepository] get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
+  repositoryLogger.info(
+    `get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
   );
 
   const cacheKey = competitionId + "-" + agentIds.join("-");
@@ -815,9 +792,7 @@ async function get24hSnapshotsImpl(
     const now = Date.now();
     const [timestamp, result] = cachedResult;
     if (now - timestamp < MAX_CACHE_AGE) {
-      console.log(
-        `[CompetitionRepository] get24hSnapshotsImpl returning cached results`,
-      );
+      repositoryLogger.info(`get24hSnapshotsImpl returning cached results`);
       return result;
     }
   }
@@ -879,8 +854,8 @@ async function get24hSnapshotsImpl(
       )
       .where(eq(sql`rn`, 1));
 
-    console.log(
-      `[CompetitionRepository] Retrieved ${earliestSnapshots.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
+    repositoryLogger.info(
+      `Retrieved ${earliestSnapshots.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
     );
 
     const result = {
@@ -901,10 +876,7 @@ async function get24hSnapshotsImpl(
     snapshotCache.set(cacheKey, [now, result]);
     return result;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getBulkAgentMetricsSnapshots:",
-      error,
-    );
+    repositoryLogger.error("Error in getBulkAgentMetricsSnapshots:", error);
     throw error;
   }
 }
@@ -931,10 +903,7 @@ async function getAgentPortfolioSnapshotsImpl(
       .orderBy(desc(portfolioSnapshots.timestamp));
     // TODO: there's no limit here, this is a weakness in perf
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentPortfolioSnapshots:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentPortfolioSnapshots:", error);
     throw error;
   }
 }
@@ -990,10 +959,7 @@ async function getBoundedSnapshotsImpl(competitionId: string, agentId: string) {
       oldest: sortedResults[sortedResults.length - 1],
     };
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentPortfolioSnapshotBounds:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentPortfolioSnapshotBounds:", error);
     throw error;
   }
 }
@@ -1036,10 +1002,7 @@ async function getAgentCompetitionRankingImpl(
       totalAgents: sortedSnapshots.length,
     };
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentCompetitionRanking:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentCompetitionRanking:", error);
     // Return undefined on error - no reliable ranking data
     return undefined;
   }
@@ -1056,10 +1019,7 @@ async function getPortfolioTokenValuesImpl(snapshotId: number) {
       .from(portfolioTokenValues)
       .where(eq(portfolioTokenValues.portfolioSnapshotId, snapshotId));
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getPortfolioTokenValues:",
-      error,
-    );
+    repositoryLogger.error("Error in getPortfolioTokenValues:", error);
     throw error;
   }
 }
@@ -1081,10 +1041,7 @@ async function getAllPortfolioSnapshotsImpl(competitionId?: string) {
 
     return await query;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAllPortfolioSnapshots:",
-      error,
-    );
+    repositoryLogger.error("Error in getAllPortfolioSnapshots:", error);
     throw error;
   }
 }
@@ -1104,10 +1061,7 @@ async function getPortfolioTokenValuesByIdsImpl(snapshotIds: number[]) {
       .from(portfolioTokenValues)
       .where(inArray(portfolioTokenValues.portfolioSnapshotId, snapshotIds));
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getPortfolioTokenValuesByIds:",
-      error,
-    );
+    repositoryLogger.error("Error in getPortfolioTokenValuesByIds:", error);
     throw error;
   }
 }
@@ -1299,8 +1253,8 @@ export async function batchInsertLeaderboardImpl(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] Batch inserting ${entries.length} leaderboard entries`,
+    repositoryLogger.info(
+      `Batch inserting ${entries.length} leaderboard entries`,
     );
 
     const valuesToInsert = entries.map((entry) => ({
@@ -1467,8 +1421,8 @@ async function getBulkAgentCompetitionRankingsImpl(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] getBulkAgentCompetitionRankings called for ${agentIds.length} agents in competition ${competitionId}`,
+    repositoryLogger.info(
+      `getBulkAgentCompetitionRankings called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
     // Get ALL latest portfolio snapshots for the competition ONCE
@@ -1504,8 +1458,8 @@ async function getBulkAgentCompetitionRankingsImpl(
       // If agent not found in snapshots, don't add to map (undefined ranking)
     }
 
-    console.log(
-      `[CompetitionRepository] Calculated rankings for ${rankingsMap.size}/${agentIds.length} agents`,
+    repositoryLogger.info(
+      `Calculated rankings for ${rankingsMap.size}/${agentIds.length} agents`,
     );
 
     return rankingsMap;

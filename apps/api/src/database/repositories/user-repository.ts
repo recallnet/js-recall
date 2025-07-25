@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "@/database/db.js";
 import { users } from "@/database/schema/core/defs.js";
 import { InsertUser, SelectUser } from "@/database/schema/core/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { UserSearchParams } from "@/types/index.js";
 
@@ -68,8 +69,8 @@ async function createUserFromWalletImpl(
         `[UserRepository] Failed to create user from wallet ${normalizedWalletAddress} - no result returned`,
       );
     }
-    console.log(
-      `[UserRepository] Created new user ${result.id} for wallet ${normalizedWalletAddress}`,
+    repositoryLogger.info(
+      `Created new user ${result.id} for wallet ${normalizedWalletAddress}`,
     );
     return result;
   } catch (error) {

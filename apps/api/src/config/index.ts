@@ -7,6 +7,15 @@ import {
   SpecificChain,
 } from "@/types/index.js";
 
+// Simple console logging for config initialization (before full logger setup)
+const configLogger = {
+  info: (message: string) => console.log(`[Config] ${message}`),
+  error: (message: string, error?: Error) =>
+    console.error(`[Config] ${message}`, error),
+  warn: (message: string) => console.warn(`[Config] ${message}`),
+  debug: (message: string) => console.debug(`[Config] ${message}`),
+};
+
 // Environment file selection logic:
 // - When NODE_ENV=test, load from .env.test
 // - For all other environments (development, production), load from .env
@@ -20,7 +29,7 @@ const envFile =
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 // Log which environment file was loaded (helpful for debugging)
-console.log(`Config loaded environment variables from: ${envFile}`);
+configLogger.info(`Config loaded environment variables from: ${envFile}`);
 
 // Helper function to parse specific chain initial balance environment variables
 const getSpecificChainBalances = (): Record<
@@ -361,8 +370,8 @@ export function reloadSecurityConfig(): void {
   config.security.rootEncryptionKey = newRootKey;
   config.app.sessionPassword = newRootKey;
 
-  console.log(
-    "[Config] Security configuration reloaded with updated ROOT_ENCRYPTION_KEY",
+  configLogger.info(
+    "Security configuration reloaded with updated ROOT_ENCRYPTION_KEY",
   );
 }
 

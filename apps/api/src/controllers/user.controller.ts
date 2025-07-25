@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 import { config } from "@/config/index.js";
+import { userLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -293,7 +294,7 @@ export function makeUserController(services: ServiceRegistry) {
         // Auto-verify email (e.g. for development, test, or sandbox modes)
         if (!user.isEmailVerified) {
           if (config.email.autoVerifyUserEmail) {
-            console.log(
+            userLogger.info(
               `[DEV/TEST] Auto-verifying email for user ${userId} in ${config.server.nodeEnv} mode`,
             );
             await services.userManager.markEmailAsVerified(userId);
@@ -319,7 +320,7 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Audit log for security tracking
-        console.log(
+        userLogger.info(
           `[AUDIT] User ${userId} accessed API key for agent ${agentId}`,
         );
 

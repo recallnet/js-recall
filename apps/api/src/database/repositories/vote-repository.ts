@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "@/database/db.js";
 import { competitions, votes } from "@/database/schema/core/defs.js";
 import { InsertVote, SelectVote } from "@/database/schema/core/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { COMPETITION_STATUS } from "@/types/index.js";
 
@@ -36,8 +37,8 @@ async function createVoteImpl(vote: InsertVote): Promise<SelectVote> {
       throw new Error("Failed to create vote - no result returned");
     }
 
-    console.log(
-      `[VoteRepository] Created vote ${result.id} for user ${result.userId} on agent ${result.agentId} in competition ${result.competitionId}`,
+    repositoryLogger.info(
+      `Created vote ${result.id} for user ${result.userId} on agent ${result.agentId} in competition ${result.competitionId}`,
     );
     return result;
   } catch (error) {

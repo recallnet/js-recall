@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
+import { authLogger } from "@/lib/logger.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AdminManager } from "@/services/admin-manager.service.js";
@@ -28,10 +29,8 @@ export const authMiddleware = (
 ) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log(`\n[AuthMiddleware] ========== AUTH REQUEST ==========`);
-      console.log(
-        `[AuthMiddleware] Received request to ${req.method} ${req.originalUrl}`,
-      );
+      authLogger.info(`========== AUTH REQUEST ==========`);
+      authLogger.info(`Received request to ${req.method} ${req.originalUrl}`);
 
       /**
        * SIWE Session Authentication
@@ -201,7 +200,7 @@ export const authMiddleware = (
         "Invalid API key. This key may have been reset or is no longer associated with an active account. Please ensure you're using your most recent API key.",
       );
     } catch (error) {
-      console.error(`[AuthMiddleware] Error in authentication:`, error);
+      authLogger.error(`Error in authentication:`, error);
       next(error);
     }
   };
