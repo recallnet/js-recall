@@ -852,38 +852,20 @@ async function get24hSnapshotsImpl(
     );
 
     const result: Snapshot24hResult = {
-      // Filter out agents without snapshots (NULL values) and map the valid ones
-      earliestSnapshots: earliestResult.rows
-        .filter(
-          (row) =>
-            row.id !== null &&
-            row.timestamp !== null &&
-            row.total_value !== null &&
-            row.competition_id !== null,
-        )
-        .map((row) => ({
-          id: row.id,
-          agentId: row.agent_id,
-          competitionId: row.competition_id,
-          timestamp: row.timestamp,
-          totalValue: Number(row.total_value),
-        })),
-      // Filter out agents without snapshots (NULL values) and map the valid ones
-      snapshots24hAgo: snapshots24hResult.rows
-        .filter(
-          (row) =>
-            row.id !== null &&
-            row.timestamp !== null &&
-            row.total_value !== null &&
-            row.competition_id !== null,
-        )
-        .map((row) => ({
-          id: row.id,
-          agentId: row.agent_id,
-          competitionId: row.competition_id,
-          timestamp: row.timestamp,
-          totalValue: Number(row.total_value),
-        })),
+      earliestSnapshots: earliestResult.rows.map((row) => ({
+        id: row.id,
+        agentId: row.agent_id,
+        competitionId: row.competition_id,
+        timestamp: row.timestamp,
+        totalValue: Number(row.total_value),
+      })),
+      snapshots24hAgo: snapshots24hResult.rows.map((row) => ({
+        id: row.id,
+        agentId: row.agent_id,
+        competitionId: row.competition_id,
+        timestamp: row.timestamp,
+        totalValue: Number(row.total_value),
+      })),
     };
 
     // Cache the result
