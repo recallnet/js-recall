@@ -80,9 +80,6 @@ const services = new ServiceRegistry();
 await services.configurationService.loadCompetitionSettings();
 apiLogger.info("Competition-specific configuration settings loaded");
 
-// Start both schedulers after all services are ready
-services.startSchedulers();
-
 // Configure middleware
 // Trust proxy to get real IP addresses (important for rate limiting)
 app.set("trust proxy", true);
@@ -292,8 +289,6 @@ const gracefulShutdown = async (signal: string) => {
 
     metricsServer.close(() => {
       apiLogger.info("[Shutdown] Metrics server closed");
-
-      services.stopSchedulers();
 
       clearTimeout(timeout);
       process.exit(0);

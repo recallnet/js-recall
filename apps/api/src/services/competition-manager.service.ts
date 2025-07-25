@@ -1285,7 +1285,6 @@ export class CompetitionManager {
 
   /**
    * Check and automatically end competitions that have reached their end date
-   * This method is called periodically by the SchedulerService
    */
   async processCompetitionEndDateChecks(): Promise<void> {
     try {
@@ -1326,7 +1325,7 @@ export class CompetitionManager {
         "[CompetitionManager] Error in processCompetitionEndDateChecks:",
         error,
       );
-      throw error; // Re-throw so SchedulerService can handle or log
+      throw error;
     }
   }
 }

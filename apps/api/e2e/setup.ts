@@ -9,8 +9,6 @@ import fs from "fs";
 import { Server } from "http";
 import path from "path";
 
-import { SchedulerService } from "@/services/scheduler.service.js";
-
 import { dbManager } from "./utils/db-manager.js";
 import {
   killExistingServers,
@@ -180,10 +178,6 @@ export async function teardown() {
   log("🧹 Cleaning up test environment...");
 
   try {
-    // Clear all scheduler timers first
-    log("🕒 Clearing all scheduler timers...");
-    SchedulerService.clearAllTimers();
-
     // Stop server
     if (server) {
       log("🛑 Stopping server...");

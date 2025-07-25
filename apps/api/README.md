@@ -90,7 +90,6 @@ The application uses a layered architecture:
   - `CompetitionManager`: Competition lifecycle management
   - `UserManager`: User registration and authentication
   - `AgentManager`: Agent registration and authentication
-  - `SchedulerService`: Portfolio snapshot scheduling and background tasks
 
 - **Middleware**: Request processing and security
 
