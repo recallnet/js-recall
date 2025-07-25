@@ -95,17 +95,6 @@ async function calculateBulkAgentStats(
       }
 
       const pnl = newest.totalValue - oldest.totalValue;
-
-      // const { pnl, startingValue } =
-      //   await services.agentManager.getAgentPerformanceForComp(
-      //     agentId,
-      //     competitionId,
-      //   );
-
-      if (competitionId === "624b96af-be44-4274-a5ef-76a27397c9c6") {
-        console.log("here");
-      }
-
       const ranking = rankings.get(agentId);
       if (typeof ranking === "undefined") {
         throw new Error(`cannot get ranking for ${agentId}`);
@@ -212,7 +201,6 @@ async function backfillCompetitionPnl() {
         });
       }
       if (leaderboardEntries.length > 0) {
-        // TODO: can we just add more leaderboard data?  or do we have to remove old rows?
         await batchInsertLeaderboard(leaderboardEntries);
       }
     }
