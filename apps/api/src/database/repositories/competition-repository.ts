@@ -716,7 +716,7 @@ async function batchCreatePortfolioTokenValuesImpl(
  */
 async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
   try {
-    const result = await db.execute<{
+    const result = await dbRead.execute<{
       id: number;
       agent_id: string;
       competition_id: string;
