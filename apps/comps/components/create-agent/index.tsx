@@ -35,9 +35,6 @@ const formSchema = z
     skills: z.array(z.string()).min(1, "Select at least one skill"),
     otherSkill: z.string().optional(),
     description: asOptionalStringWithoutEmpty(z.string()),
-    email: asOptionalStringWithoutEmpty(
-      z.string().email({ message: "Invalid email address" }),
-    ),
     x: asOptionalStringWithoutEmpty(
       z.string().url({ message: "Must be a valid URL" }),
     ),
@@ -87,7 +84,6 @@ export function CreateAgent({
       skills: [],
       otherSkill: "",
       description: "",
-      email: "",
       x: "",
       telegram: "",
     },

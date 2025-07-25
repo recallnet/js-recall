@@ -1,3 +1,5 @@
+import { useRouter } from "next/navigation";
+
 import { Button } from "@recallnet/ui2/components/button";
 import {
   SortState,
@@ -33,6 +35,7 @@ export function CompetitionTable({
 
   total?: number;
 }) {
+  const router = useRouter();
   const hasMore = total > (competitions?.length || 0);
 
   return (
@@ -107,8 +110,9 @@ export function CompetitionTable({
                 return (
                   <TableRow
                     key={i}
+                    onClick={() => router.push(`/competitions/${comp.id}`)}
                     className={cn(
-                      "grid w-full",
+                      "grid w-full cursor-pointer",
                       canClaim ? "grid-cols-8" : "grid-cols-7",
                     )}
                   >

@@ -16,6 +16,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Pagination } from "@/components/pagination/index";
 import { LeaderboardAgent } from "@/types/agent";
+import { PaginationResponse } from "@/types/api";
 
 import BigNumberDisplay from "../bignumber/index";
 
@@ -25,6 +26,7 @@ export function LeaderboardTable({
   sortState,
   onPageChange,
   pagination = {
+    hasMore: false,
     total: 0,
     limit: 0,
     offset: 0,
@@ -33,11 +35,7 @@ export function LeaderboardTable({
   agents: LeaderboardAgent[];
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
-  pagination?: {
-    total: number;
-    limit: number;
-    offset: number;
-  };
+  pagination?: PaginationResponse;
   onPageChange: (page: number) => void;
 }) {
   const page =

@@ -14,7 +14,6 @@ import { ArrowUp, Search } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
 import { IconButton } from "@recallnet/ui2/components/icon-button";
 import { Input } from "@recallnet/ui2/components/input";
 import {
@@ -29,6 +28,7 @@ import {
 import { toast } from "@recallnet/ui2/components/toast";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { Pagination } from "@/components/pagination/index";
 import { useUserSession } from "@/hooks";
 import { useVote } from "@/hooks/useVote";
 import {
@@ -50,10 +50,9 @@ export interface AgentsTableProps {
   competition: Competition;
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
-  onLoadMore: () => void;
-  hasMore: boolean;
   pagination: PaginationResponse;
   ref: React.RefObject<HTMLDivElement | null>;
+  onPageChange: (page: number) => void;
 }
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
@@ -62,8 +61,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   competition,
   onFilterChange,
   onSortChange,
-  onLoadMore,
-  hasMore,
+  onPageChange,
   pagination,
   ref,
 }) => {
@@ -78,6 +76,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   );
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
   const { mutate: vote, isPending: isPendingVote } = useVote();
+  const page =
+    pagination.limit > 0
+      ? Math.floor(pagination.offset / pagination.limit) + 1
+      : 1;
 
   useEffect(() => {
     setColumnVisibility({
@@ -402,13 +404,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </TableBody>
         </Table>
       </div>
-      {hasMore && (
-        <div className="mt-4 flex justify-center">
-          <Button variant="outline" size="sm" onClick={onLoadMore}>
-            Show More
-          </Button>
-        </div>
-      )}
+      <Pagination
+        totalItems={pagination.total}
+        currentPage={page}
+        itemsPerPage={pagination.limit}
+        onPageChange={onPageChange}
+      />
+
       <ConfirmVoteModal
         isOpen={isVoteModalOpen}
         onClose={(open) => {
