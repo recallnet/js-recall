@@ -13,6 +13,7 @@ import {
   update,
 } from "@/database/repositories/user-repository.js";
 import { InsertUser, SelectUser } from "@/database/schema/core/types.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { EmailService } from "@/services/email.service.js";
 import { UserMetadata, UserSearchParams } from "@/types/index.js";
 
@@ -118,18 +119,21 @@ export class UserManager {
         await this.sendEmailVerification(savedUser);
       }
 
-      console.log(
+      serviceLogger.debug(
         `[UserManager] Registered user: ${name || "Unknown"} (${id}) with wallet ${normalizedWalletAddress}`,
       );
 
       return savedUser;
     } catch (error) {
       if (error instanceof Error) {
-        console.error("[UserManager] Error registering user:", error);
+        serviceLogger.error("[UserManager] Error registering user:", error);
         throw error;
       }
 
-      console.error("[UserManager] Unknown error registering user:", error);
+      serviceLogger.error(
+        "[UserManager] Unknown error registering user:",
+        error,
+      );
       throw new Error(`Failed to register user: ${error}`);
     }
   }
@@ -159,7 +163,10 @@ export class UserManager {
 
       return null;
     } catch (error) {
-      console.error(`[UserManager] Error retrieving user ${userId}:`, error);
+      serviceLogger.error(
+        `[UserManager] Error retrieving user ${userId}:`,
+        error,
+      );
       return null;
     }
   }
@@ -180,7 +187,7 @@ export class UserManager {
 
       return users;
     } catch (error) {
-      console.error("[UserManager] Error retrieving all users:", error);
+      serviceLogger.error("[UserManager] Error retrieving all users:", error);
       return [];
     }
   }
@@ -226,10 +233,13 @@ export class UserManager {
         await this.sendEmailVerification(updatedUser);
       }
 
-      console.log(`[UserManager] Updated user: ${user.id}`);
+      serviceLogger.debug(`[UserManager] Updated user: ${user.id}`);
       return updatedUser;
     } catch (error) {
-      console.error(`[UserManager] Error updating user ${user.id}:`, error);
+      serviceLogger.error(
+        `[UserManager] Error updating user ${user.id}:`,
+        error,
+      );
       throw new Error(
         `Failed to update user: ${error instanceof Error ? error.message : error}`,
       );
@@ -254,16 +264,19 @@ export class UserManager {
         this.userProfileCache.delete(userId);
         this.userWalletCache.delete(user.walletAddress);
 
-        console.log(
+        serviceLogger.debug(
           `[UserManager] Successfully deleted user: ${user.name || "Unknown"} (${userId})`,
         );
       } else {
-        console.log(`[UserManager] Failed to delete user: ${userId}`);
+        serviceLogger.debug(`[UserManager] Failed to delete user: ${userId}`);
       }
 
       return deleted;
     } catch (error) {
-      console.error(`[UserManager] Error deleting user ${userId}:`, error);
+      serviceLogger.error(
+        `[UserManager] Error deleting user ${userId}:`,
+        error,
+      );
       throw new Error(
         `Failed to delete user: ${error instanceof Error ? error.message : error}`,
       );
@@ -302,7 +315,7 @@ export class UserManager {
 
       return null;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[UserManager] Error retrieving user by wallet address ${walletAddress}:`,
         error,
       );
@@ -328,7 +341,7 @@ export class UserManager {
 
       return null;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[UserManager] Error retrieving user by email ${email}:`,
         error,
       );
@@ -353,7 +366,7 @@ export class UserManager {
 
       return users;
     } catch (error) {
-      console.error("[UserManager] Error searching users:", error);
+      serviceLogger.error("[UserManager] Error searching users:", error);
       return [];
     }
   }
@@ -367,7 +380,7 @@ export class UserManager {
       const res = await count();
       return res >= 0;
     } catch (error) {
-      console.error("[UserManager] Health check failed:", error);
+      serviceLogger.error("[UserManager] Health check failed:", error);
       return false;
     }
   }
@@ -378,7 +391,7 @@ export class UserManager {
   clearCache(): void {
     this.userWalletCache.clear();
     this.userProfileCache.clear();
-    console.log("[UserManager] All caches cleared");
+    serviceLogger.debug("[UserManager] All caches cleared");
   }
 
   /**
@@ -414,12 +427,12 @@ export class UserManager {
         expiresAt,
       });
 
-      console.log(
+      serviceLogger.debug(
         `[UserManager] Created email verification token for user ${userId}`,
       );
       return token;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[UserManager] Error creating email verification token for user ${userId}:`,
         error,
       );
@@ -447,11 +460,11 @@ export class UserManager {
 
       await this.emailService.sendTransactionalEmail(user.email, tokenString);
 
-      console.log(
+      serviceLogger.debug(
         `[UserManager] Sent verification email to ${user.email} for user ${user.id}`,
       );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[UserManager] Error sending verification email to user ${user.id}:`,
         error,
       );
@@ -471,10 +484,12 @@ export class UserManager {
         isEmailVerified: true,
       });
 
-      console.log(`[UserManager] Marked email as verified for user ${userId}`);
+      serviceLogger.debug(
+        `[UserManager] Marked email as verified for user ${userId}`,
+      );
       return updatedUser;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[UserManager] Error marking email as verified for user ${userId}:`,
         error,
       );
@@ -500,11 +515,11 @@ export class UserManager {
 
       await this.sendEmailVerification(user);
 
-      console.log(
+      serviceLogger.debug(
         `[UserManager] Email verification initiated for user ${userId}`,
       );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[UserManager] Error verifying email for user ${userId}:`,
         error,
       );

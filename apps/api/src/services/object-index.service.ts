@@ -4,13 +4,14 @@ import * as agentScoreRepository from "@/database/repositories/agentscore-reposi
 import * as competitionRepository from "@/database/repositories/competition-repository.js";
 import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import * as tradeRepository from "@/database/repositories/trade-repository.js";
+import { serviceLogger } from "@/lib/logger.js";
 
 export class ObjectIndexService {
   /**
    * Populate object_index with trade data
    */
   async populateTrades(competitionId?: string) {
-    console.log(
+    serviceLogger.debug(
       `Populating trades${competitionId ? ` for competition ${competitionId}` : ""}`,
     );
 
@@ -18,7 +19,7 @@ export class ObjectIndexService {
     const tradesToSync = await tradeRepository.getAllTrades(competitionId);
 
     if (tradesToSync.length === 0) {
-      console.log("No trades to sync");
+      serviceLogger.debug("No trades to sync");
       return;
     }
 
@@ -43,14 +44,14 @@ export class ObjectIndexService {
     }));
 
     await objectIndexRepository.insertObjectIndexEntries(entries);
-    console.log(`Inserted ${entries.length} trade entries`);
+    serviceLogger.debug(`Inserted ${entries.length} trade entries`);
   }
 
   /**
    * Populate object_index with agent rank history
    */
   async populateAgentScoreHistory(competitionId?: string) {
-    console.log(
+    serviceLogger.debug(
       `Populating agent rank history${competitionId ? ` for competition ${competitionId}` : ""}`,
     );
 
@@ -59,7 +60,7 @@ export class ObjectIndexService {
       await agentScoreRepository.getAllAgentRankHistory(competitionId);
 
     if (rankHistory.length === 0) {
-      console.log("No agent rank history to sync");
+      serviceLogger.debug("No agent rank history to sync");
       return;
     }
 
@@ -80,14 +81,16 @@ export class ObjectIndexService {
     }));
 
     await objectIndexRepository.insertObjectIndexEntries(entries);
-    console.log(`Inserted ${entries.length} agent rank history entries`);
+    serviceLogger.debug(
+      `Inserted ${entries.length} agent rank history entries`,
+    );
   }
 
   /**
    * Populate object_index with competitions leaderboard
    */
   async populateCompetitionsLeaderboard(competitionId?: string) {
-    console.log(
+    serviceLogger.debug(
       `Populating competitions leaderboard${competitionId ? ` for competition ${competitionId}` : ""}`,
     );
 
@@ -96,7 +99,7 @@ export class ObjectIndexService {
       await competitionRepository.getAllCompetitionsLeaderboard(competitionId);
 
     if (leaderboard.length === 0) {
-      console.log("No leaderboard entries to sync");
+      serviceLogger.debug("No leaderboard entries to sync");
       return;
     }
 
@@ -116,14 +119,14 @@ export class ObjectIndexService {
     }));
 
     await objectIndexRepository.insertObjectIndexEntries(entries);
-    console.log(`Inserted ${entries.length} leaderboard entries`);
+    serviceLogger.debug(`Inserted ${entries.length} leaderboard entries`);
   }
 
   /**
    * Populate object_index with portfolio snapshots
    */
   async populatePortfolioSnapshots(competitionId?: string) {
-    console.log(
+    serviceLogger.debug(
       `Populating portfolio snapshots${competitionId ? ` for competition ${competitionId}` : ""}`,
     );
 
@@ -132,7 +135,7 @@ export class ObjectIndexService {
       await competitionRepository.getAllPortfolioSnapshots(competitionId);
 
     if (snapshots.length === 0) {
-      console.log("No portfolio snapshots to sync");
+      serviceLogger.debug("No portfolio snapshots to sync");
       return;
     }
 
@@ -178,20 +181,22 @@ export class ObjectIndexService {
     });
 
     await objectIndexRepository.insertObjectIndexEntries(entries);
-    console.log(`Inserted ${entries.length} portfolio snapshot entries`);
+    serviceLogger.debug(
+      `Inserted ${entries.length} portfolio snapshot entries`,
+    );
   }
 
   /**
    * Populate object_index with current agent scores
    */
   async populateAgentScore() {
-    console.log("Populating current agent scores");
+    serviceLogger.debug("Populating current agent scores");
 
     // Use agent rank repository to fetch raw ranks
     const ranks = await agentScoreRepository.getAllRawAgentRanks();
 
     if (ranks.length === 0) {
-      console.log("No agent ranks to sync");
+      serviceLogger.debug("No agent ranks to sync");
       return;
     }
 
@@ -212,7 +217,7 @@ export class ObjectIndexService {
     }));
 
     await objectIndexRepository.insertObjectIndexEntries(entries);
-    console.log(`Inserted ${entries.length} agent rank entries`);
+    serviceLogger.debug(`Inserted ${entries.length} agent rank entries`);
   }
 
   /**

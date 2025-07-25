@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
+import { tradeLogger } from "@/lib/logger.js";
 import { calculateSlippage } from "@/lib/trade-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -62,8 +63,8 @@ export function makeTradeController(services: ServiceRegistry) {
           );
         }
 
-        console.log(
-          `[TradeController] Executing trade with competition ID: ${competitionId}`,
+        tradeLogger.debug(
+          `Executing trade with competition ID: ${competitionId}`,
         );
 
         // Fetch the competition and check if end date has passed
@@ -95,9 +96,8 @@ export function makeTradeController(services: ServiceRegistry) {
 
         // Log chain options if provided
         if (chainOptions) {
-          console.log(
-            `[TradeController] Using chain options:`,
-            JSON.stringify(chainOptions),
+          tradeLogger.debug(
+            `Using chain options: ${JSON.stringify(chainOptions)}`,
           );
         }
 
@@ -187,7 +187,7 @@ export function makeTradeController(services: ServiceRegistry) {
           toTokenChain ||
           toTokenSpecificChain
         ) {
-          console.log(`[TradeController] Quote with chain info:
+          tradeLogger.debug(`Quote with chain info:
           From Token Chain: ${fromTokenChain || "auto"}, Specific Chain: ${fromTokenSpecificChain || "auto"}
           To Token Chain: ${toTokenChain || "auto"}, Specific Chain: ${toTokenSpecificChain || "auto"}
         `);

@@ -1,3 +1,4 @@
+import { serviceLogger } from "@/lib/logger.js";
 import { AdminManager } from "@/services/admin-manager.service.js";
 import { AgentManager } from "@/services/agent-manager.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
@@ -110,7 +111,7 @@ class ServiceRegistry {
       this._portfolioSnapshotter,
     );
 
-    console.log("[ServiceRegistry] All services initialized");
+    serviceLogger.debug("[ServiceRegistry] All services initialized");
   }
 
   public static getInstance(): ServiceRegistry {
@@ -196,13 +197,13 @@ class ServiceRegistry {
   // Add method to start schedulers
   startSchedulers(): void {
     this._scheduler.start();
-    console.log("[ServiceRegistry] Schedulers started");
+    serviceLogger.info("[ServiceRegistry] Schedulers started");
   }
 
   // Add method to stop schedulers
   stopSchedulers(): void {
     this._scheduler.stop();
-    console.log("[ServiceRegistry] Schedulers stopped");
+    serviceLogger.info("[ServiceRegistry] Schedulers stopped");
   }
 }
 

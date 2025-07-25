@@ -56,8 +56,6 @@ describe("MultiChainProvider", () => {
       expect(priceReport).not.toBeNull();
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
-
-      console.log(`ETH price: $${priceReport?.price}`);
     });
 
     it("should fetch USDC price", async () => {
@@ -67,8 +65,6 @@ describe("MultiChainProvider", () => {
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
-
-      console.log(`USDC price: $${priceReport?.price}`);
     });
   });
 
@@ -83,8 +79,6 @@ describe("MultiChainProvider", () => {
       expect(priceReport).not.toBeNull();
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
-
-      console.log(`ETH on Base price: $${priceReport?.price}`);
     });
 
     it("should fetch USDC on Base with specificChain parameter", async () => {
@@ -98,8 +92,6 @@ describe("MultiChainProvider", () => {
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
-
-      console.log(`USDC on Base price: $${priceReport?.price}`);
     });
   });
 
@@ -117,8 +109,6 @@ describe("MultiChainProvider", () => {
 
       // End timing
       const duration = Date.now() - start;
-
-      console.log(`Cached price lookup took ${duration}ms`);
 
       // Second call should be very quick (under 5ms) as it's using the cache
       expect(duration).toBeLessThan(15);
@@ -141,10 +131,6 @@ describe("MultiChainProvider", () => {
         expect(tokenInfo.chain).toBe(BlockchainType.EVM);
         expect(tokenInfo.specificChain).toBe("eth");
         expect(tokenInfo.price).toBeGreaterThan(0);
-
-        console.log(
-          `ETH token info: Chain=${tokenInfo.specificChain}, Price=$${tokenInfo.price}`,
-        );
       }
     });
 
@@ -176,8 +162,6 @@ describe("MultiChainProvider", () => {
       expect(typeof price?.price).toBe("number");
       expect(price?.price).toBeGreaterThan(0);
 
-      console.log(`ETH price through multi-chain detection: $${price?.price}`);
-
       // Verify it detected the right chain
       const tokenInfo = await provider.getTokenInfo(
         ethereumTokens.ETH,
@@ -185,7 +169,6 @@ describe("MultiChainProvider", () => {
         "eth",
       );
       if (tokenInfo && tokenInfo.specificChain) {
-        console.log(`Detected ETH on chain: ${tokenInfo.specificChain}`);
         expect(tokenInfo.specificChain).toBe("eth");
       }
     });

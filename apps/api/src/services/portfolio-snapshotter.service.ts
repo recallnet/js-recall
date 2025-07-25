@@ -9,6 +9,8 @@ import {
   getPortfolioTokenValues,
 } from "@/database/repositories/competition-repository.js";
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
+import { repositoryLogger } from "@/lib/logger.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { BalanceManager, PriceTracker } from "@/services/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
 
@@ -42,7 +44,7 @@ export class PortfolioSnapshotter {
     reusedPriceCount: number;
     totalValue: number;
   }> {
-    console.log(
+    repositoryLogger.debug(
       `[PortfolioSnapshotter] Taking portfolio snapshot for agent ${agentId} in competition ${competitionId}`,
     );
 
@@ -54,7 +56,7 @@ export class PortfolioSnapshotter {
 
     const now = new Date();
     if (competition.endDate && now > competition.endDate) {
-      console.log(
+      repositoryLogger.debug(
         `[PortfolioSnapshotter] Competition ${competitionId} has ended (end date: ${competition.endDate.toISOString()}, current time: ${timestamp.toISOString()}). Skipping portfolio snapshot for agent ${agentId}`,
       );
       return {
@@ -118,12 +120,12 @@ export class PortfolioSnapshotter {
             token: latestPriceRecord.token,
           };
           reusedPriceCount++;
-          console.log(
+          repositoryLogger.debug(
             `[PortfolioSnapshotter] Using fresh price for ${balance.tokenAddress} from DB: $${priceResult.price} (${specificChain}) - age ${Math.round(priceAge / 1000)}s, threshold ${Math.round(config.portfolio.priceFreshnessMs / 1000)}s`,
           );
         } else if (specificChain && latestPriceRecord.chain) {
           // Use specific chain information to avoid chain detection when fetching a new price
-          console.log(
+          repositoryLogger.debug(
             `[PortfolioSnapshotter] Using specific chain info from DB for ${balance.tokenAddress}: ${specificChain}`,
           );
 
@@ -162,7 +164,7 @@ export class PortfolioSnapshotter {
         };
         totalValue += valueUsd;
       } else {
-        console.warn(
+        repositoryLogger.warn(
           `[PortfolioSnapshotter] No price available for token ${balance.tokenAddress}, excluding from portfolio snapshot`,
         );
       }
@@ -191,7 +193,7 @@ export class PortfolioSnapshotter {
 
     await batchCreatePortfolioTokenValues(tokenValuesToInsert);
 
-    console.log(
+    repositoryLogger.debug(
       `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} - Total value: $${totalValue.toFixed(2)}`,
     );
 
@@ -208,7 +210,7 @@ export class PortfolioSnapshotter {
    * @param competitionId The competition ID
    */
   async takePortfolioSnapshots(competitionId: string) {
-    console.log(
+    repositoryLogger.debug(
       `[PortfolioSnapshotter] Taking portfolio snapshots for competition ${competitionId}`,
     );
 
@@ -233,13 +235,13 @@ export class PortfolioSnapshotter {
     const endTime = Date.now();
     const duration = endTime - startTime;
 
-    console.log(
+    repositoryLogger.debug(
       `[PortfolioSnapshotter] Completed portfolio snapshots for ${agents.length} agents in ${duration}ms`,
     );
-    console.log(
+    repositoryLogger.debug(
       `[PortfolioSnapshotter] Price lookup stats: Total: ${totalPriceLookupCount}, DB hits: ${totalDbPriceHitCount}, Hit rate: ${((totalDbPriceHitCount / totalPriceLookupCount) * 100).toFixed(2)}%`,
     );
-    console.log(
+    repositoryLogger.debug(
       `[PortfolioSnapshotter] Reused existing prices: ${totalReusedPriceCount}/${totalPriceLookupCount} (${((totalReusedPriceCount / totalPriceLookupCount) * 100).toFixed(2)}%)`,
     );
   }
@@ -294,7 +296,7 @@ export class PortfolioSnapshotter {
       await findAll();
       return true;
     } catch (error) {
-      console.error("[PortfolioSnapshotter] Health check failed:", error);
+      serviceLogger.error("[PortfolioSnapshotter] Health check failed:", error);
       return false;
     }
   }

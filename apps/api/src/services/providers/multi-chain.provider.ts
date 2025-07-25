@@ -1,4 +1,5 @@
 import config from "@/config/index.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
 import { PriceReport, PriceSource } from "@/types/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
@@ -36,7 +37,7 @@ export class MultiChainProvider implements PriceSource {
     // Initialize the DexScreenerProvider for delegation
     this.dexScreenerProvider = new DexScreenerProvider();
 
-    console.log(
+    serviceLogger.debug(
       `[MultiChainProvider] Initialized with chains: ${this.defaultChains.join(", ")}`,
     );
   }
@@ -80,7 +81,7 @@ export class MultiChainProvider implements PriceSource {
           }
         : null;
     } catch (error) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Error fetching price for ${tokenAddress} on ${specificChain}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -127,7 +128,7 @@ export class MultiChainProvider implements PriceSource {
 
       // For Solana tokens, delegate directly to DexScreenerProvider
       if (detectedChainType === BlockchainType.SVM) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Getting price for Solana token ${normalizedAddress}`,
         );
         try {
@@ -150,7 +151,7 @@ export class MultiChainProvider implements PriceSource {
               price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found price for Solana token ${normalizedAddress}: $${price.price}`,
             );
             return {
@@ -167,12 +168,12 @@ export class MultiChainProvider implements PriceSource {
             };
           }
 
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] No price found for Solana token ${normalizedAddress}`,
           );
           return null;
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching price for Solana token ${normalizedAddress}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -181,18 +182,18 @@ export class MultiChainProvider implements PriceSource {
       }
 
       // For EVM tokens, continue with the existing logic
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Getting price for EVM token ${normalizedAddress}`,
       );
 
       // If a specific chain was provided, use it directly instead of trying multiple chains
       if (specificChain) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Using provided specific chain: ${specificChain}`,
         );
 
         try {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Attempting to fetch price for ${normalizedAddress} on ${specificChain} chain directly`,
           );
 
@@ -216,7 +217,7 @@ export class MultiChainProvider implements PriceSource {
               price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${specificChain} chain: $${price.price}`,
             );
             return {
@@ -233,13 +234,13 @@ export class MultiChainProvider implements PriceSource {
             };
           }
 
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] No price found for ${normalizedAddress} on specified chain ${specificChain}`,
           );
           // Important: Return null here without falling back to other chains
           return null;
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching price for ${normalizedAddress} on specified chain ${specificChain}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -255,7 +256,7 @@ export class MultiChainProvider implements PriceSource {
 
       // If we have a cached chain, try that first
       if (cachedChain) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Found cached chain ${cachedChain} for ${normalizedAddress}, trying it first`,
         );
         chainsToTry = [
@@ -267,7 +268,7 @@ export class MultiChainProvider implements PriceSource {
       // Try each chain until we get a price
       for (const chain of chainsToTry) {
         try {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Attempting to fetch price for ${normalizedAddress} on ${chain} chain`,
           );
 
@@ -291,7 +292,7 @@ export class MultiChainProvider implements PriceSource {
               price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${chain} chain: $${price.price}`,
             );
             return {
@@ -308,7 +309,7 @@ export class MultiChainProvider implements PriceSource {
             };
           }
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching price for ${normalizedAddress} on ${chain} chain:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -318,12 +319,12 @@ export class MultiChainProvider implements PriceSource {
         }
       }
 
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Could not find price for ${normalizedAddress} on any chain`,
       );
       return null;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[MultiChainProvider] Unexpected error fetching price for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -358,7 +359,7 @@ export class MultiChainProvider implements PriceSource {
       const price = await this.getPrice(tokenAddress, undefined, specificChain);
       return price !== null;
     } catch (error) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Error checking support for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -425,7 +426,7 @@ export class MultiChainProvider implements PriceSource {
               price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found Solana token info for ${normalizedAddress}: $${price.price}`,
             );
             return {
@@ -442,7 +443,7 @@ export class MultiChainProvider implements PriceSource {
             return null;
           }
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching token info for Solana token ${normalizedAddress}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -453,12 +454,12 @@ export class MultiChainProvider implements PriceSource {
 
       // If a specific chain was provided, use it directly
       if (specificChain) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Using provided specific chain for getTokenInfo: ${specificChain}`,
         );
 
         try {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Attempting to fetch token info for ${normalizedAddress} on ${specificChain} chain directly`,
           );
 
@@ -482,7 +483,7 @@ export class MultiChainProvider implements PriceSource {
               price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found token info for ${normalizedAddress} on ${specificChain} chain: $${price.price}`,
             );
 
@@ -498,14 +499,14 @@ export class MultiChainProvider implements PriceSource {
             };
           }
 
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] No price found for ${normalizedAddress} on specified chain ${specificChain}`,
           );
 
           // Return with the specific chain but null price
           return null;
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching token info for ${normalizedAddress} on specified chain ${specificChain}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -533,7 +534,7 @@ export class MultiChainProvider implements PriceSource {
 
       return null;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[MultiChainProvider] Error getting token info for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -573,7 +574,7 @@ export class MultiChainProvider implements PriceSource {
       const cached = this.tokenPriceCache.get(cacheKey);
 
       if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Using cached price for ${normalizedAddress} on ${specificChain}: $${cached.price}`,
         );
         return {
@@ -598,7 +599,7 @@ export class MultiChainProvider implements PriceSource {
       const cached = this.tokenPriceCache.get(cacheKey);
 
       if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Using cached price for ${normalizedAddress} from known chain ${knownChain}: $${cached.price}`,
         );
         return {
@@ -647,7 +648,7 @@ export class MultiChainProvider implements PriceSource {
       this.chainToTokenCache.set(normalizedAddress, specificChain);
     }
 
-    console.log(
+    serviceLogger.debug(
       `[MultiChainProvider] Cached price for ${normalizedAddress} on ${specificChain}: $${price}`,
     );
   }
@@ -716,7 +717,7 @@ export class MultiChainProvider implements PriceSource {
 
     // For Solana tokens, delegate to DexScreenerProvider
     if (detectedChainType === BlockchainType.SVM) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Getting batch prices for ${uncachedAddresses.length} Solana tokens`,
       );
       try {
@@ -758,7 +759,7 @@ export class MultiChainProvider implements PriceSource {
           }
         });
       } catch (error) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Error fetching batch prices for Solana tokens:`,
           error instanceof Error ? error.message : "Unknown error",
         );
@@ -771,13 +772,13 @@ export class MultiChainProvider implements PriceSource {
     }
 
     // For EVM tokens, handle batch processing
-    console.log(
+    serviceLogger.debug(
       `[MultiChainProvider] Getting batch prices for ${uncachedAddresses.length} EVM tokens`,
     );
 
     // If a specific chain was provided, use it directly
     if (specificChain) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Using provided specific chain: ${specificChain}`,
       );
 
@@ -820,7 +821,7 @@ export class MultiChainProvider implements PriceSource {
           }
         });
       } catch (error) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Error fetching batch prices for EVM tokens on ${specificChain}:`,
           error instanceof Error ? error.message : "Unknown error",
         );
@@ -841,7 +842,7 @@ export class MultiChainProvider implements PriceSource {
 
     // If we have a cached chain, try that first
     if (cachedChain) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Found cached chain ${cachedChain} for batch, trying it first`,
       );
       chainsToTry = [
@@ -857,7 +858,7 @@ export class MultiChainProvider implements PriceSource {
       if (remainingTokens.size === 0) break;
 
       try {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Attempting to fetch batch prices for ${remainingTokens.size} tokens on ${chain} chain`,
         );
 
@@ -900,7 +901,7 @@ export class MultiChainProvider implements PriceSource {
           }
         });
       } catch (error) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Error fetching batch prices on ${chain} chain:`,
           error instanceof Error ? error.message : "Unknown error",
         );
@@ -914,7 +915,7 @@ export class MultiChainProvider implements PriceSource {
       results.set(addr, null);
     });
 
-    console.log(
+    serviceLogger.debug(
       `[MultiChainProvider] Batch processing complete. Found prices for ${results.size - remainingTokens.size} out of ${uncachedAddresses.length} tokens`,
     );
 
