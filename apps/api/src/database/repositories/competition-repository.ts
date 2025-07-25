@@ -9,7 +9,6 @@ import {
   inArray,
   isNotNull,
   lte,
-  max,
   min,
   sql,
 } from "drizzle-orm";
@@ -700,43 +699,35 @@ async function batchCreatePortfolioTokenValuesImpl(
  */
 async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
   try {
-    // TODO: this query seems to be averaging almost 2 full seconds.
-    //  We added indexes on Jul 10, need to find out if indexing fixes the issue.
-    const subquery = dbRead
-      .select({
-        agentId: portfolioSnapshots.agentId,
-        maxTimestamp: max(portfolioSnapshots.timestamp).as("max_timestamp"),
-      })
-      .from(portfolioSnapshots)
-      .innerJoin(
-        competitionAgents,
-        and(
-          eq(portfolioSnapshots.agentId, competitionAgents.agentId),
-          eq(portfolioSnapshots.competitionId, competitionAgents.competitionId),
-        ),
-      )
-      .where(
-        and(
-          eq(portfolioSnapshots.competitionId, competitionId),
-          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
-        ),
-      )
-      .groupBy(portfolioSnapshots.agentId)
-      .as("latest_snapshots");
+    const result = await dbRead.execute<{
+      id: number;
+      agent_id: string;
+      competition_id: string;
+      timestamp: Date;
+      total_value: number;
+    }>(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM competition_agents ca
+      CROSS JOIN LATERAL (
+        SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+        FROM trading_comps.portfolio_snapshots ps
+        WHERE ps.agent_id = ca.agent_id 
+          AND ps.competition_id = ca.competition_id
+        ORDER BY ps.timestamp DESC 
+        LIMIT 1
+      ) ps
+      WHERE ca.competition_id = ${competitionId}
+        AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
+    `);
 
-    const result = await dbRead
-      .select()
-      .from(portfolioSnapshots)
-      .innerJoin(
-        subquery,
-        and(
-          eq(portfolioSnapshots.agentId, subquery.agentId),
-          eq(portfolioSnapshots.timestamp, subquery.maxTimestamp),
-        ),
-      )
-      .where(eq(portfolioSnapshots.competitionId, competitionId));
-
-    return result.map((row) => row.portfolio_snapshots);
+    // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
+    return result.rows.map((row) => ({
+      id: row.id,
+      agentId: row.agent_id,
+      competitionId: row.competition_id,
+      timestamp: row.timestamp,
+      totalValue: Number(row.total_value), // Convert string to number for numeric fields
+    }));
   } catch (error) {
     repositoryLogger.error("Error in getLatestPortfolioSnapshotsImpl:", error);
     throw error;
