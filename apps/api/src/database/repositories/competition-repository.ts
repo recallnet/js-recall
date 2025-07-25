@@ -736,7 +736,14 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
       SELECT *
       FROM latest_snapshots;
     `);
-    return result.rows;
+
+    return result.rows.map((row) => ({
+      id: row.id as string,
+      agentId: row.agent_id as string,
+      competitionId: row.competition_id as string,
+      timestamp: row.timestamp as string,
+      totalValue: row.total_value as number,
+    }));
   } catch (error) {
     console.error(
       "[CompetitionRepository] Error in getLatestPortfolioSnapshotsImpl:",
