@@ -9,7 +9,6 @@ import {
   inArray,
   isNotNull,
   lte,
-  min,
   sql,
 } from "drizzle-orm";
 import { unionAll } from "drizzle-orm/pg-core";
@@ -808,74 +807,64 @@ async function get24hSnapshotsImpl(
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // Get earliest snapshots for each agent (for PnL calculation)
-    const earliestSubquery = dbRead
-      .select({
-        agentId: portfolioSnapshots.agentId,
-        minTimestamp: min(portfolioSnapshots.timestamp).as("min_timestamp"),
-      })
-      .from(portfolioSnapshots)
-      .where(
-        and(
-          eq(portfolioSnapshots.competitionId, competitionId),
-          inArray(portfolioSnapshots.agentId, agentIds),
-        ),
-      )
-      .groupBy(portfolioSnapshots.agentId)
-      .as("earliest_snapshots");
+    // Get earliest snapshots for each agent using efficient UNNEST + CROSS JOIN LATERAL
+    const earliestResult = await dbRead.execute<{
+      id: number;
+      agent_id: string;
+      competition_id: string;
+      timestamp: Date;
+      total_value: string;
+    }>(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+      CROSS JOIN LATERAL (
+        SELECT id, agent_id, competition_id, timestamp, total_value
+        FROM trading_comps.portfolio_snapshots ps
+        WHERE ps.agent_id = agents.agent_id
+          AND ps.competition_id = ${competitionId}
+        ORDER BY ps.timestamp ASC
+        LIMIT 1
+      ) ps
+    `);
 
-    const earliestSnapshots = await dbRead
-      .select()
-      .from(portfolioSnapshots)
-      .innerJoin(
-        earliestSubquery,
-        and(
-          eq(portfolioSnapshots.agentId, earliestSubquery.agentId),
-          eq(portfolioSnapshots.timestamp, earliestSubquery.minTimestamp),
-        ),
-      )
-      .where(eq(portfolioSnapshots.competitionId, competitionId));
-
-    // Get snapshots closest to 24h ago using window functions
-    const snapshots24hAgo = await dbRead
-      .select()
-      .from(
-        dbRead
-          .select({
-            ...getTableColumns(portfolioSnapshots),
-            timeDiff:
-              sql<number>`ABS(EXTRACT(EPOCH FROM ${portfolioSnapshots.timestamp} - ${twentyFourHoursAgo}))`.as(
-                "time_diff",
-              ),
-            rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${portfolioSnapshots.agentId} ORDER BY ABS(EXTRACT(EPOCH FROM ${portfolioSnapshots.timestamp} - ${twentyFourHoursAgo})))`.as(
-              "rn",
-            ),
-          })
-          .from(portfolioSnapshots)
-          .where(
-            and(
-              eq(portfolioSnapshots.competitionId, competitionId),
-              inArray(portfolioSnapshots.agentId, agentIds),
-            ),
-          )
-          .as("ranked_snapshots"),
-      )
-      .where(eq(sql`rn`, 1));
+    // Get snapshots closest to 24h ago using efficient UNNEST + CROSS JOIN LATERAL
+    const snapshots24hResult = await dbRead.execute<{
+      id: number;
+      agent_id: string;
+      competition_id: string;
+      timestamp: Date;
+      total_value: string;
+    }>(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+      CROSS JOIN LATERAL (
+        SELECT id, agent_id, competition_id, timestamp, total_value
+        FROM trading_comps.portfolio_snapshots ps
+        WHERE ps.agent_id = agents.agent_id
+          AND ps.competition_id = ${competitionId}
+        ORDER BY ABS(EXTRACT(EPOCH FROM ps.timestamp - ${twentyFourHoursAgo}))
+        LIMIT 1
+      ) ps
+    `);
 
     repositoryLogger.debug(
-      `Retrieved ${earliestSnapshots.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
+      `Retrieved ${earliestResult.rows.length} earliest snapshots and ${snapshots24hResult.rows.length} 24h-ago snapshots for ${agentIds.length} agents`,
     );
 
-    const result = {
-      earliestSnapshots: earliestSnapshots.map(
-        (row) => row.portfolio_snapshots,
-      ),
-      snapshots24hAgo: snapshots24hAgo.map((row) => ({
+    const result: Snapshot24hResult = {
+      earliestSnapshots: earliestResult.rows.map((row) => ({
         id: row.id,
-        agentId: row.agentId,
-        competitionId: row.competitionId,
-        timestamp: row.timestamp,
-        totalValue: row.totalValue,
+        agentId: row.agent_id,
+        competitionId: row.competition_id,
+        timestamp: row.timestamp && new Date(row.timestamp),
+        totalValue: Number(row.total_value),
+      })),
+      snapshots24hAgo: snapshots24hResult.rows.map((row) => ({
+        id: row.id,
+        agentId: row.agent_id,
+        competitionId: row.competition_id,
+        timestamp: row.timestamp && new Date(row.timestamp),
+        totalValue: Number(row.total_value),
       })),
     };
 
@@ -884,7 +873,7 @@ async function get24hSnapshotsImpl(
     snapshotCache.set(cacheKey, [now, result]);
     return result;
   } catch (error) {
-    repositoryLogger.error("Error in getBulkAgentMetricsSnapshots:", error);
+    repositoryLogger.error("Error in get24hSnapshotsImpl:", error);
     throw error;
   }
 }
