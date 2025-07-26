@@ -856,14 +856,14 @@ async function get24hSnapshotsImpl(
         id: row.id,
         agentId: row.agent_id,
         competitionId: row.competition_id,
-        timestamp: row.timestamp,
+        timestamp: row.timestamp && new Date(row.timestamp),
         totalValue: Number(row.total_value),
       })),
       snapshots24hAgo: snapshots24hResult.rows.map((row) => ({
         id: row.id,
         agentId: row.agent_id,
         competitionId: row.competition_id,
-        timestamp: row.timestamp,
+        timestamp: row.timestamp && new Date(row.timestamp),
         totalValue: Number(row.total_value),
       })),
     };
