@@ -1,0 +1,96 @@
+# This is a test docker-compose file that is not intended for production use!
+name: recall
+
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - "postgres-data:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres || exit 1"]
+      interval: 600s
+      timeout: 5s
+      retries: 3
+      start_period: 1s
+
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - "redis-data:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 600s
+      timeout: 5s
+      retries: 3
+      start_period: 1s
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/trade-simulator-docker/Dockerfile
+    image: recall-api
+    container_name: recall-api
+    restart: always
+    ports:
+      - "${API_PORT:-3000}:${API_PORT:-3000}"
+      - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db/postgres
+      REDIS_URL: redis://redis:6379
+      API_PREFIX: ${API_PREFIX:-}
+      PORT: ${API_PORT:-3000}
+      METRICS_PORT: ${METRICS_PORT:-3003}
+    depends_on:
+      - db
+      - redis
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:${API_PORT:-3000}${API_PREFIX:+/${API_PREFIX}}/api/health || exit 1",
+        ]
+      interval: 600s
+      timeout: 5s
+      retries: 3
+      start_period: 1s
+
+  comps:
+    build:
+      context: .
+      dockerfile: apps/comps/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "http://api:${API_PORT:-3000}${API_PREFIX:+/${API_PREFIX}}/api"
+        NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:-}
+    image: recall-comps
+    container_name: recall-comps
+    restart: always
+    ports:
+      - "${COMPS_PORT:-3001}:${COMPS_PORT:-3001}"
+    environment:
+      PORT: ${COMPS_PORT:-3001}
+    depends_on:
+      - api
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:${COMPS_PORT:-3001}/competitions || exit 1",
+        ]
+      interval: 600s
+      timeout: 5s
+      retries: 3
+      start_period: 1s
+
+volumes:
+  postgres-data:
+  redis-data:
