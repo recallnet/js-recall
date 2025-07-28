@@ -1,12 +1,9 @@
 import chalk from "chalk";
-import { eq, sql } from "drizzle-orm";
-import { Rating, rate, rating } from "openskill";
+import { eq, notInArray, sql } from "drizzle-orm";
 import * as readline from "readline";
 import { parse } from "ts-command-line-args";
 
 import { db } from "@/database/db.js";
-import * as agentScoreRepo from "@/database/repositories/agentscore-repository.js";
-import * as competitionRepo from "@/database/repositories/competition-repository.js";
 import {
   competitionAgents,
   competitions,
@@ -315,7 +312,7 @@ async function deleteCompetitionData(
  * @param excludedCompetitionIds - Competition IDs to exclude from rank calculations
  */
 async function recalculateAgentScores(excludedCompetitionIds: string[] = []) {
-  console.log(chalk.blue("\nRecalculating agent scores..."));
+  console.log(chalk.blue("\nRecalculating agent scores from history..."));
 
   if (excludedCompetitionIds.length > 0) {
     console.log(
@@ -326,105 +323,79 @@ async function recalculateAgentScores(excludedCompetitionIds: string[] = []) {
   }
 
   try {
-    // Get all remaining competitions that have ended
-    const query = db
-      .select()
-      .from(competitions)
-      .where(eq(competitions.status, "ended"));
+    // First, if we have excluded competitions, delete their history entries
+    if (excludedCompetitionIds.length > 0) {
+      const deletedHistory = await db
+        .delete(agentScoreHistory)
+        .where(
+          sql`${agentScoreHistory.competitionId} = ANY(${excludedCompetitionIds})`,
+        )
+        .returning({ id: agentScoreHistory.id });
 
-    const endedCompetitions = await query.orderBy(competitions.endDate);
+      console.log(
+        chalk.gray(
+          `Deleted ${deletedHistory.length} history entries for excluded competitions`,
+        ),
+      );
+    }
 
-    // Filter out excluded competitions (note: pattern used for logging purposes)
-    const competitionsToProcess = endedCompetitions.filter(
-      (comp) => !excludedCompetitionIds.includes(comp.id),
+    // Get the most recent score history for each agent
+    const latestScoresRaw = await db.execute(sql`
+      WITH latest_scores AS (
+        SELECT DISTINCT ON (agent_id)
+          agent_id,
+          mu,
+          sigma,
+          ordinal,
+          created_at
+        FROM agent_score_history
+        ORDER BY agent_id, created_at DESC
+      )
+      SELECT * FROM latest_scores
+    `);
+    // Transform snake_case to camelCase
+    const latestScores = latestScoresRaw.rows.map((row) => ({
+      ...row,
+      agentId: String(row.agent_id),
+      mu: Number(row.mu),
+      sigma: Number(row.sigma),
+      ordinal: Number(row.ordinal),
+      createdAt: row.created_at,
+    }));
+    console.log(
+      chalk.gray(`Found ${latestScores.length} agents with score history`),
     );
 
+    // Clear existing agent scores for agents that are not in the current history
+    const deletedScores = await db.delete(agentScore).where(
+      notInArray(
+        agentScore.agentId,
+        latestScores.map((row) => row.agentId),
+      ),
+    );
     console.log(
       chalk.gray(
-        `Found ${competitionsToProcess.length} ended competitions to process (${endedCompetitions.length} total, ${excludedCompetitionIds.length} excluded)`,
+        `Deleted ${deletedScores.rowCount} agent scores for agents not in history`,
       ),
     );
 
-    // Clear existing agent scores
-    await db.delete(agentScore);
-    console.log(chalk.gray("Cleared existing agent scores"));
+    // Insert the latest scores for each agent
+    if (latestScores.length > 0) {
+      await db.transaction(async (tx) => {
+        for (const row of latestScores) {
+          await tx.update(agentScore).set({
+            agentId: row.agentId,
+            mu: row.mu,
+            sigma: row.sigma,
+            ordinal: row.ordinal,
+          });
+        }
+      });
 
-    // Process each competition in chronological order
-    for (const competition of competitionsToProcess) {
       console.log(
         chalk.gray(
-          `Processing competition: ${competition.name} (${competition.id})`,
+          `Updated scores for ${latestScores.length} agents from history`,
         ),
-      );
-
-      const leaderboard = await competitionRepo.findLeaderboardByCompetition(
-        competition.id,
-      );
-      if (!leaderboard || leaderboard.length === 0) {
-        console.log(chalk.yellow(`  No leaderboard entries found, skipping`));
-        continue;
-      }
-
-      const currentRanks = await agentScoreRepo.getAllAgentRanks();
-      const ratings: Record<string, Rating> = {};
-
-      // Initialize ratings for all agents in the leaderboard
-      for (const entry of leaderboard) {
-        const agentId = entry.agentId;
-        const existingRank = currentRanks.find((rank) => rank.id === agentId);
-        if (existingRank) {
-          ratings[agentId] = rating({
-            mu: existingRank.mu,
-            sigma: existingRank.sigma,
-          });
-        } else {
-          ratings[agentId] = rating(); // use default
-        }
-      }
-
-      const teams = leaderboard.map((entry) => [ratings[entry.agentId]!]);
-
-      // Update ratings using the PlackettLuce model
-      const updatedRatings = rate(teams);
-
-      const batchUpdateData = leaderboard.map((entry, index) => {
-        const agentId = entry.agentId;
-        const r = updatedRatings[index]![0]!;
-
-        // Calculate ordinal score scaled to match ELO range
-        const value = ordinal(r, { alpha: 24, target: 1500 });
-
-        return {
-          agentId,
-          mu: r.mu,
-          sigma: r.sigma,
-          ordinal: value,
-        };
-      });
-
-      // Update agent scores (this will create/update records)
-      await db.transaction(async (tx) => {
-        for (const data of batchUpdateData) {
-          await tx
-            .insert(agentScore)
-            .values({
-              id: crypto.randomUUID(),
-              ...data,
-            })
-            .onConflictDoUpdate({
-              target: agentScore.agentId,
-              set: {
-                mu: data.mu,
-                sigma: data.sigma,
-                ordinal: data.ordinal,
-                updatedAt: new Date(),
-              },
-            });
-        }
-      });
-
-      console.log(
-        chalk.gray(`  Updated scores for ${batchUpdateData.length} agents`),
       );
     }
 
@@ -433,21 +404,6 @@ async function recalculateAgentScores(excludedCompetitionIds: string[] = []) {
     console.error(chalk.red("Error recalculating agent scores:"), error);
     throw error;
   }
-}
-
-/**
- * Compute ordinal score (copied from agentrank.service.ts)
- */
-function ordinal(
-  { mu, sigma }: Rating,
-  options: {
-    z?: number;
-    alpha?: number;
-    target?: number;
-  } = {},
-): number {
-  const { z = 3.0, alpha = 1, target = 0 } = options;
-  return alpha * (mu - z * sigma + target / alpha);
 }
 
 /**
