@@ -1,19 +1,22 @@
 "use client";
+
 import React from "react";
-import {SortState} from "@recallnet/ui2/components/table";
-import {Tabs, TabsList, TabsTrigger} from "@recallnet/ui2/components/tabs";
-import {cn} from "@recallnet/ui2/lib/utils";
+
+import { SortState } from "@recallnet/ui2/components/table";
+import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
+import { cn } from "@recallnet/ui2/lib/utils";
+
 import BigNumberDisplay from "@/components/bignumber";
-import {LeaderboardTable} from "@/components/leaderboard-table";
-import {LoadingLeaderboard} from "@/components/leaderboard/loading";
-import {useLeaderboards} from "@/hooks/useLeaderboards";
-import {AGENT_SKILLS} from "@/constants/index";
+import { LeaderboardTable } from "@/components/leaderboard-table";
+import { LoadingLeaderboard } from "@/components/leaderboard/loading";
+import { AGENT_SKILLS } from "@/constants/index";
+import { useLeaderboards } from "@/hooks/useLeaderboards";
 
 const limit = 10;
 
 export function LeaderboardSection() {
   const [offset, setOffset] = React.useState(0);
-  const [filter, setFilter] = React.useState("all");
+  const [filter, setFilter] = React.useState("trading");
   const [sortState, setSorted] = React.useState(
     {} as Record<string, SortState>,
   );
@@ -25,7 +28,7 @@ export function LeaderboardSection() {
     }, "");
   }, [sortState]);
 
-  const {data: leaderboard, isLoading} = useLeaderboards({
+  const { data: leaderboard, isLoading } = useLeaderboards({
     limit,
     offset,
     sort: sortString,
@@ -37,7 +40,7 @@ export function LeaderboardSection() {
       const cur = sort[field];
       const nxt =
         !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return {[field]: nxt};
+      return { [field]: nxt };
     });
   }, []);
 
@@ -88,7 +91,11 @@ export function LeaderboardSection() {
         </div>
       </div>
 
-      <Tabs defaultValue="all" className="w-full" onValueChange={handleFilterChange}>
+      <Tabs
+        defaultValue="all"
+        className="w-full"
+        onValueChange={handleFilterChange}
+      >
         <TabsList className="mb-4 flex flex-wrap gap-2">
           <TabsTrigger
             value={"trading"}
