@@ -31,6 +31,7 @@ interface Args {
   competitions: string;
   execute?: boolean;
   force?: boolean;
+  exclude?: string;
 }
 
 /**
@@ -311,21 +312,36 @@ async function deleteCompetitionData(
 
 /**
  * Recalculate agent scores after deleting ended competitions
+ * @param excludedCompetitionIds - Competition IDs to exclude from rank calculations
  */
-async function recalculateAgentScores() {
+async function recalculateAgentScores(excludedCompetitionIds: string[] = []) {
   console.log(chalk.blue("\nRecalculating agent scores..."));
+
+  if (excludedCompetitionIds.length > 0) {
+    console.log(
+      chalk.yellow(
+        `Excluding competitions from rank calculations: ${excludedCompetitionIds.join(", ")}`,
+      ),
+    );
+  }
 
   try {
     // Get all remaining competitions that have ended
-    const endedCompetitions = await db
+    const query = db
       .select()
       .from(competitions)
-      .where(eq(competitions.status, "ended"))
-      .orderBy(competitions.endDate);
+      .where(eq(competitions.status, "ended"));
+
+    const endedCompetitions = await query.orderBy(competitions.endDate);
+
+    // Filter out excluded competitions (note: pattern used for logging purposes)
+    const competitionsToProcess = endedCompetitions.filter(
+      (comp) => !excludedCompetitionIds.includes(comp.id),
+    );
 
     console.log(
       chalk.gray(
-        `Found ${endedCompetitions.length} ended competitions to process`,
+        `Found ${competitionsToProcess.length} ended competitions to process (${endedCompetitions.length} total, ${excludedCompetitionIds.length} excluded)`,
       ),
     );
 
@@ -334,7 +350,7 @@ async function recalculateAgentScores() {
     console.log(chalk.gray("Cleared existing agent scores"));
 
     // Process each competition in chronological order
-    for (const competition of endedCompetitions) {
+    for (const competition of competitionsToProcess) {
       console.log(
         chalk.gray(
           `Processing competition: ${competition.name} (${competition.id})`,
@@ -448,6 +464,12 @@ async function main() {
       optional: true,
       description: "Execute the deletion (default is dry-run)",
     },
+    exclude: {
+      type: String,
+      optional: true,
+      description:
+        "Comma-separated list of competition IDs to exclude from global rank calculations",
+    },
     force: {
       type: Boolean,
       optional: true,
@@ -456,6 +478,9 @@ async function main() {
   });
 
   const competitionIds = args.competitions.split(",").map((id) => id.trim());
+  const excludedCompetitionIds = args.exclude
+    ? args.exclude.split(",").map((id) => id.trim())
+    : [];
   const isDryRun = !args.execute;
 
   console.log(chalk.bold("\n🗑️  Competition Data Deletion Script"));
@@ -472,6 +497,13 @@ async function main() {
     console.log(
       chalk.red("⚠️  Running in EXECUTE mode - data WILL be deleted!\n"),
     );
+  }
+
+  if (excludedCompetitionIds.length > 0) {
+    console.log(
+      chalk.blue("📌 Excluding competitions from global rank calculations:"),
+    );
+    console.log(chalk.gray(`   ${excludedCompetitionIds.join(", ")}\n`));
   }
 
   // Analyze competitions
@@ -541,7 +573,7 @@ async function main() {
 
   // Recalculate agent scores if we deleted any ended competitions
   if (hasEndedCompetitions && !isDryRun) {
-    await recalculateAgentScores();
+    await recalculateAgentScores(excludedCompetitionIds);
   }
 
   console.log(
