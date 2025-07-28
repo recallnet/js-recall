@@ -147,7 +147,6 @@ async function analyzeCompetitions(competitionIds: string[]) {
  */
 async function deleteCompetitionData(
   competitionId: string,
-  isEnded: boolean,
   dryRun: boolean = true,
 ) {
   console.log(
@@ -184,81 +183,78 @@ async function deleteCompetitionData(
         .returning({ id: votes.id });
       deletions.push({ table: "votes", count: votesDeleted.length });
 
-      // For ended competitions, delete additional data
-      if (isEnded) {
-        // Delete from agent_score_history
-        const scoreHistoryDeleted = await tx
-          .delete(agentScoreHistory)
-          .where(eq(agentScoreHistory.competitionId, competitionId))
-          .returning({ id: agentScoreHistory.id });
-        deletions.push({
-          table: "agent_score_history",
-          count: scoreHistoryDeleted.length,
-        });
+      // Delete from agent_score_history
+      const scoreHistoryDeleted = await tx
+        .delete(agentScoreHistory)
+        .where(eq(agentScoreHistory.competitionId, competitionId))
+        .returning({ id: agentScoreHistory.id });
+      deletions.push({
+        table: "agent_score_history",
+        count: scoreHistoryDeleted.length,
+      });
 
-        // Delete from portfolio_token_values (through portfolio_snapshots cascade)
-        const tokenValuesDeleted = await tx
-          .select({ count: sql<number>`count(*)` })
-          .from(portfolioTokenValues)
-          .innerJoin(
-            portfolioSnapshots,
-            eq(portfolioTokenValues.portfolioSnapshotId, portfolioSnapshots.id),
-          )
-          .where(eq(portfolioSnapshots.competitionId, competitionId))
-          .then((r) => r[0]?.count || 0);
-        deletions.push({
-          table: "portfolio_token_values",
-          count: Number(tokenValuesDeleted),
-        });
+      // Delete from portfolio_token_values (through portfolio_snapshots cascade)
+      const tokenValuesDeleted = await tx
+        .select({ count: sql<number>`count(*)` })
+        .from(portfolioTokenValues)
+        .innerJoin(
+          portfolioSnapshots,
+          eq(portfolioTokenValues.portfolioSnapshotId, portfolioSnapshots.id),
+        )
+        .where(eq(portfolioSnapshots.competitionId, competitionId))
+        .then((r) => r[0]?.count || 0);
+      deletions.push({
+        table: "portfolio_token_values",
+        count: Number(tokenValuesDeleted),
+      });
 
-        // Delete from portfolio_snapshots
-        const snapshotsDeleted = await tx
-          .delete(portfolioSnapshots)
-          .where(eq(portfolioSnapshots.competitionId, competitionId))
-          .returning({ id: portfolioSnapshots.id });
-        deletions.push({
-          table: "portfolio_snapshots",
-          count: snapshotsDeleted.length,
-        });
+      // Delete from portfolio_snapshots
+      const snapshotsDeleted = await tx
+        .delete(portfolioSnapshots)
+        .where(eq(portfolioSnapshots.competitionId, competitionId))
+        .returning({ id: portfolioSnapshots.id });
+      deletions.push({
+        table: "portfolio_snapshots",
+        count: snapshotsDeleted.length,
+      });
 
-        // Delete from trading_constraints
-        const constraintsDeleted = await tx
-          .delete(tradingConstraints)
-          .where(eq(tradingConstraints.competitionId, competitionId))
-          .returning({ id: tradingConstraints.competitionId });
-        deletions.push({
-          table: "trading_constraints",
-          count: constraintsDeleted.length,
-        });
+      // Delete from trading_constraints
+      const constraintsDeleted = await tx
+        .delete(tradingConstraints)
+        .where(eq(tradingConstraints.competitionId, competitionId))
+        .returning({ id: tradingConstraints.competitionId });
+      deletions.push({
+        table: "trading_constraints",
+        count: constraintsDeleted.length,
+      });
 
-        // Delete from trading_competitions_leaderboard
-        const tradingLeaderboardDeleted = await tx
-          .select({ count: sql<number>`count(*)` })
-          .from(tradingCompetitionsLeaderboard)
-          .innerJoin(
-            competitionsLeaderboard,
-            eq(
-              tradingCompetitionsLeaderboard.competitionsLeaderboardId,
-              competitionsLeaderboard.id,
-            ),
-          )
-          .where(eq(competitionsLeaderboard.competitionId, competitionId))
-          .then((r) => r[0]?.count || 0);
-        deletions.push({
-          table: "trading_competitions_leaderboard",
-          count: Number(tradingLeaderboardDeleted),
-        });
+      // Delete from trading_competitions_leaderboard
+      const tradingLeaderboardDeleted = await tx
+        .select({ count: sql<number>`count(*)` })
+        .from(tradingCompetitionsLeaderboard)
+        .innerJoin(
+          competitionsLeaderboard,
+          eq(
+            tradingCompetitionsLeaderboard.competitionsLeaderboardId,
+            competitionsLeaderboard.id,
+          ),
+        )
+        .where(eq(competitionsLeaderboard.competitionId, competitionId))
+        .then((r) => r[0]?.count || 0);
+      deletions.push({
+        table: "trading_competitions_leaderboard",
+        count: Number(tradingLeaderboardDeleted),
+      });
 
-        // Delete from competitions_leaderboard
-        const leaderboardDeleted = await tx
-          .delete(competitionsLeaderboard)
-          .where(eq(competitionsLeaderboard.competitionId, competitionId))
-          .returning({ id: competitionsLeaderboard.id });
-        deletions.push({
-          table: "competitions_leaderboard",
-          count: leaderboardDeleted.length,
-        });
-      }
+      // Delete from competitions_leaderboard
+      const leaderboardDeleted = await tx
+        .delete(competitionsLeaderboard)
+        .where(eq(competitionsLeaderboard.competitionId, competitionId))
+        .returning({ id: competitionsLeaderboard.id });
+      deletions.push({
+        table: "competitions_leaderboard",
+        count: leaderboardDeleted.length,
+      });
 
       // Delete from competition_agents
       const agentsDeleted = await tx
@@ -540,7 +536,7 @@ async function main() {
   console.log(chalk.blue("\nStarting deletion process..."));
 
   for (const result of validCompetitions) {
-    await deleteCompetitionData(result.id, result.isEnded ?? false, isDryRun);
+    await deleteCompetitionData(result.id, isDryRun);
   }
 
   // Recalculate agent scores if we deleted any ended competitions
