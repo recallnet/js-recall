@@ -1,38 +1,38 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import {ExternalLink} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
 import Card from "@recallnet/ui2/components/card";
-import { SortState } from "@recallnet/ui2/components/table";
-import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
-import { toast } from "@recallnet/ui2/components/toast";
+import {SortState} from "@recallnet/ui2/components/table";
+import {Tabs, TabsList, TabsTrigger} from "@recallnet/ui2/components/tabs";
+import {toast} from "@recallnet/ui2/components/toast";
 import Tooltip from "@recallnet/ui2/components/tooltip";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { Trophy, TrophyBadge } from "@/components/trophy-badge";
-import { DISABLE_LEADERBOARD, ENABLE_SANDBOX } from "@/config";
-import { useUpdateAgent, useUserAgents } from "@/hooks";
-import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
+import {Trophy, TrophyBadge} from "@/components/trophy-badge";
+import {DISABLE_LEADERBOARD, ENABLE_SANDBOX} from "@/config";
+import {useUpdateAgent, useUserAgents} from "@/hooks";
+import {useAgentCompetitions} from "@/hooks/useAgentCompetitions";
 import {
   useSandboxAgentApiKey,
   useUpdateSandboxAgent,
 } from "@/hooks/useSandbox";
-import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
+import {Agent, AgentWithOwnerResponse, Competition} from "@/types";
 
 import BigNumberDisplay from "../bignumber";
-import { BreadcrumbNav } from "../breadcrumb-nav";
-import { Clipboard } from "../clipboard";
-import { ShareModal } from "../share-modal/index";
-import { AgentImage } from "./agent-image";
+import {BreadcrumbNav} from "../breadcrumb-nav";
+import {Clipboard} from "../clipboard";
+import {ShareModal} from "../share-modal/index";
+import {AgentImage} from "./agent-image";
 import AgentBestPlacement from "./best-placement";
 import CompetitionTable from "./comps-table";
 import Credentials from "./credentials";
-import { EditAgentField } from "./edit-field";
-import { EditSkillsField } from "./edit-skills-field";
-import { AgentVerifiedBadge } from "./verify-badge";
+import {EditAgentField} from "./edit-field";
+import {EditSkillsField} from "./edit-skills-field";
+import {AgentVerifiedBadge} from "./verify-badge";
 
 function sortTrophies(items: Trophy[]): Trophy[] {
   return items.sort((a, b) => {
@@ -66,12 +66,12 @@ export default function AgentProfile({
   const skills = agent?.skills || [];
   const trophies = sortTrophies((agent.trophies || []) as Trophy[]);
 
-  const { data: userAgents } = useUserAgents({ limit: 100 });
+  const {data: userAgents} = useUserAgents({limit: 100});
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
   const updateAgent = useUpdateAgent();
 
   // Sandbox hooks for syncing agent updates
-  const { data: sandboxAgentData } = useSandboxAgentApiKey(
+  const {data: sandboxAgentData} = useSandboxAgentApiKey(
     isUserAgent && ENABLE_SANDBOX ? agent?.name || null : null,
   );
   const updateSandboxAgent = useUpdateSandboxAgent();
@@ -85,60 +85,60 @@ export default function AgentProfile({
 
   const handleSaveChange =
     (field: "imageUrl" | "description" | "name" | "skills") =>
-    async (value: unknown) => {
-      if (!agent) return;
+      async (value: unknown) => {
+        if (!agent) return;
 
-      try {
-        // Special handling for name changes since we *must* need the names to match across environments
-        if (field === "name" && ENABLE_SANDBOX && sandboxAgentData?.agent?.id) {
-          // Update in sandbox first
-          try {
-            await updateSandboxAgent.mutateAsync({
-              agentId: sandboxAgentData.agent.id,
-              name: value as string,
-            });
-          } catch (sandboxError) {
-            console.error(
-              "Failed to update agent name in sandbox:",
-              sandboxError,
-            );
+        try {
+          // Special handling for name changes since we *must* need the names to match across environments
+          if (field === "name" && ENABLE_SANDBOX && sandboxAgentData?.agent?.id) {
+            // Update in sandbox first
+            try {
+              await updateSandboxAgent.mutateAsync({
+                agentId: sandboxAgentData.agent.id,
+                name: value as string,
+              });
+            } catch (sandboxError) {
+              console.error(
+                "Failed to update agent name in sandbox:",
+                sandboxError,
+              );
 
-            toast.error("Failed to update agent name in sandbox environment", {
-              description: "The name was not updated. Please try again.",
-            });
-            return;
+              toast.error("Failed to update agent name in sandbox environment", {
+                description: "The name was not updated. Please try again.",
+              });
+              return;
+            }
           }
-        }
 
-        // Update in main environment
-        await updateAgent.mutateAsync({
-          agentId: agent.id,
-          params:
-            field === "skills"
-              ? { metadata: { skills: value as string[] } }
-              : {
+          // Update in main environment
+          await updateAgent.mutateAsync({
+            agentId: agent.id,
+            params:
+              field === "skills"
+                ? {metadata: {skills: value as string[]}}
+                : {
                   [field]: value,
                 },
-        });
+          });
 
-        toast.success("Agent updated successfully");
-      } catch (error) {
-        console.error("Failed to update agent:", error);
-      }
-    };
+          toast.success("Agent updated successfully");
+        } catch (error) {
+          console.error("Failed to update agent:", error);
+        }
+      };
 
   const options = {
     sort: sortString,
     limit,
     offset,
   };
-  const { data: compsData } = useAgentCompetitions(
+  const {data: compsData} = useAgentCompetitions(
     id,
-    status === "all" ? options : { ...options, status },
+    status === "all" ? options : {...options, status},
   );
-  const { total } = compsData?.pagination || { total: 0 };
+  const {total} = compsData?.pagination || {total: 0};
 
-  const competitions: (Competition & { trophies: Trophy[] })[] =
+  const competitions: (Competition & {trophies: Trophy[]})[] =
     React.useMemo(() => {
       return (
         compsData?.competitions.map((comp) => ({
@@ -152,9 +152,9 @@ export default function AgentProfile({
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL", href: "/" },
-          { label: "AGENTS", href: "/" },
-          { label: agent.name },
+          {label: "RECALL", href: "/"},
+          {label: "AGENTS", href: "/"},
+          {label: agent.name},
         ]}
         className="mb-10"
       />
@@ -362,13 +362,13 @@ export default function AgentProfile({
             >
               {skills.length > 0
                 ? skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="text-primary-foreground truncate rounded border px-2 py-1"
-                    >
-                      {skill}
-                    </span>
-                  ))
+                  <span
+                    key={index}
+                    className="text-primary-foreground truncate rounded border px-2 py-1"
+                  >
+                    {skill}
+                  </span>
+                ))
                 : "This agent hasn't showcased skills yet."}
             </div>
           </div>

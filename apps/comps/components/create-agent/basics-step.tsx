@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { UseFormReturn } from "react-hook-form";
+import {UseFormReturn} from "react-hook-form";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import {
   FormControl,
   FormDescription,
@@ -12,22 +12,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@recallnet/ui2/components/form";
-import { Input } from "@recallnet/ui2/components/input";
-import { Textarea } from "@recallnet/ui2/components/textarea";
+import {Input} from "@recallnet/ui2/components/input";
+import {Textarea} from "@recallnet/ui2/components/textarea";
 
-import { FormData } from "./index";
-
-const AGENT_SKILLS = [
-  "Crypto Trading",
-  "Traditional Investing",
-  "Sports Betting",
-  "Prediction Markets",
-  "Social and Chat",
-  "Art & Video Creation",
-  "Programming / Coding",
-  "Deep Research",
-  "Other",
-];
+import {FormData} from "./index";
+import {AGENT_SKILLS} from "@/constants/index";
 
 interface BasicsStepProps {
   form: UseFormReturn<FormData>;
@@ -35,7 +24,7 @@ interface BasicsStepProps {
   onBack: () => void;
 }
 
-export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
+export function BasicsStep({form, onNext, onBack}: BasicsStepProps) {
   const handleNext = async () => {
     const isValid = await form.trigger([
       "name",
@@ -54,7 +43,7 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
       <FormField
         control={form.control}
         name="name"
-        render={({ field, formState: { errors } }) => (
+        render={({field, formState: {errors}}) => (
           <FormItem>
             <FormLabel>Agent Name</FormLabel>
             <FormControl>
@@ -72,7 +61,7 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
       <FormField
         control={form.control}
         name="description"
-        render={({ field }) => (
+        render={({field}) => (
           <FormItem>
             <FormLabel>Short Description (Optional)</FormLabel>
             <FormControl>
@@ -88,7 +77,7 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
       <FormField
         control={form.control}
         name="repositoryUrl"
-        render={({ field, formState: { errors } }) => (
+        render={({field, formState: {errors}}) => (
           <FormItem>
             <FormLabel>Repository URL</FormLabel>
             <FormControl>
@@ -104,7 +93,7 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
       <FormField
         control={form.control}
         name="skills"
-        render={({ field }) => (
+        render={({field}) => (
           <FormItem>
             <FormLabel>Agent Skills</FormLabel>
             <FormDescription>Choose all that apply.</FormDescription>
@@ -136,7 +125,7 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
               <FormField
                 control={form.control}
                 name="otherSkill"
-                render={({ field: otherField }) => (
+                render={({field: otherField}) => (
                   <FormItem className="mt-2">
                     <FormControl>
                       <Input
