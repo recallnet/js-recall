@@ -585,6 +585,9 @@ async function main() {
       chalk.yellow("\nTo execute the deletion, run with --execute flag"),
     );
   }
+
+  // Clean exit
+  process.exit(0);
 }
 
 // Execute the script
