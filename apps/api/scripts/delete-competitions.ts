@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { eq, notInArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import * as readline from "readline";
 import { parse } from "ts-command-line-args";
 
@@ -327,9 +327,7 @@ async function recalculateAgentScores(excludedCompetitionIds: string[] = []) {
     if (excludedCompetitionIds.length > 0) {
       const deletedHistory = await db
         .delete(agentScoreHistory)
-        .where(
-          sql`${agentScoreHistory.competitionId} = ANY(${excludedCompetitionIds})`,
-        )
+        .where(inArray(agentScoreHistory.competitionId, excludedCompetitionIds))
         .returning({ id: agentScoreHistory.id });
 
       console.log(
@@ -355,40 +353,59 @@ async function recalculateAgentScores(excludedCompetitionIds: string[] = []) {
     `);
     // Transform snake_case to camelCase
     const latestScores = latestScoresRaw.rows.map((row) => ({
-      ...row,
       agentId: String(row.agent_id),
       mu: Number(row.mu),
       sigma: Number(row.sigma),
       ordinal: Number(row.ordinal),
-      createdAt: row.created_at,
     }));
     console.log(
       chalk.gray(`Found ${latestScores.length} agents with score history`),
     );
 
-    // Clear existing agent scores for agents that are not in the current history
-    const deletedScores = await db.delete(agentScore).where(
-      notInArray(
-        agentScore.agentId,
-        latestScores.map((row) => row.agentId),
-      ),
-    );
-    console.log(
-      chalk.gray(
-        `Deleted ${deletedScores.rowCount} agent scores for agents not in history`,
-      ),
-    );
+    // Get current agent IDs in agent_score table
+    const currentAgentIds = await db
+      .select({ agentId: agentScore.agentId })
+      .from(agentScore);
 
-    // Insert the latest scores for each agent
+    // Delete scores for agents not in the latest history
+    const agentIdsToKeep = new Set(latestScores.map((row) => row.agentId));
+    const agentIdsToDelete = currentAgentIds
+      .filter((row) => !agentIdsToKeep.has(row.agentId))
+      .map((row) => row.agentId);
+
+    if (agentIdsToDelete.length > 0) {
+      await db
+        .delete(agentScore)
+        .where(inArray(agentScore.agentId, agentIdsToDelete));
+      console.log(
+        chalk.gray(
+          `Deleted ${agentIdsToDelete.length} agent scores for agents not in history`,
+        ),
+      );
+    }
+
+    // Upsert the latest scores for each agent
     if (latestScores.length > 0) {
       await db.transaction(async (tx) => {
         for (const row of latestScores) {
-          await tx.update(agentScore).set({
-            agentId: row.agentId,
-            mu: row.mu,
-            sigma: row.sigma,
-            ordinal: row.ordinal,
-          });
+          await tx
+            .insert(agentScore)
+            .values({
+              id: crypto.randomUUID(),
+              agentId: row.agentId,
+              mu: row.mu,
+              sigma: row.sigma,
+              ordinal: row.ordinal,
+            })
+            .onConflictDoUpdate({
+              target: agentScore.agentId,
+              set: {
+                mu: row.mu,
+                sigma: row.sigma,
+                ordinal: row.ordinal,
+                updatedAt: new Date(),
+              },
+            });
         }
       });
 
