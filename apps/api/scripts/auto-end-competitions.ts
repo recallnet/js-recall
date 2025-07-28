@@ -4,11 +4,11 @@ import * as path from "path";
 import { createLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
 
-const services = new ServiceRegistry();
-const logger = createLogger("AutoEndCompetitions");
-
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+
+const services = new ServiceRegistry();
+const logger = createLogger("AutoEndCompetitions");
 
 /**
  * Auto end competitions that have reached their end date
