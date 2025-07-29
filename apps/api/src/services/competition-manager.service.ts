@@ -27,10 +27,14 @@ import {
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
-import { UpdateCompetition } from "@/database/schema/core/types.js";
+import {
+  SelectCompetitionReward,
+  UpdateCompetition,
+} from "@/database/schema/core/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import {
   AgentManager,
   AgentRankService,
@@ -83,6 +87,7 @@ export class CompetitionManager {
   private agentRankService: AgentRankService;
   private voteManager: VoteManager;
   private tradingConstraintsService: TradingConstraintsService;
+  private competitionRewardService: CompetitionRewardService;
 
   constructor(
     balanceManager: BalanceManager,
@@ -93,6 +98,7 @@ export class CompetitionManager {
     agentRankService: AgentRankService,
     voteManager: VoteManager,
     tradingConstraintsService: TradingConstraintsService,
+    competitionRewardService: CompetitionRewardService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -102,6 +108,7 @@ export class CompetitionManager {
     this.agentRankService = agentRankService;
     this.voteManager = voteManager;
     this.tradingConstraintsService = tradingConstraintsService;
+    this.competitionRewardService = competitionRewardService;
     // Load active competition on initialization
     this.loadActiveCompetition();
   }
@@ -154,6 +161,7 @@ export class CompetitionManager {
     joinStartDate?: Date,
     joinEndDate?: Date,
     tradingConstraints?: TradingConstraintsInput,
+    rewards?: Record<number, number>,
   ) {
     const id = uuidv4();
     const competition = {
@@ -188,11 +196,29 @@ export class CompetitionManager {
         `[CompetitionManager] Created trading constraints for competition ${id}`,
       );
     }
+    let createdRewards: SelectCompetitionReward[] = [];
+    if (rewards) {
+      createdRewards = await this.competitionRewardService.createRewards(
+        id,
+        rewards,
+      );
+      serviceLogger.debug(
+        `[CompetitionManager] Created rewards for competition ${id}: ${JSON.stringify(
+          createdRewards,
+        )}`,
+      );
+    }
 
     serviceLogger.debug(
-      `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}`,
+      `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}, type: ${type}}`,
     );
-    return competition;
+    return {
+      ...competition,
+      rewards: createdRewards.map((reward) => ({
+        rank: reward.rank,
+        reward: reward.reward,
+      })),
+    };
   }
 
   /**
@@ -283,12 +309,12 @@ export class CompetitionManager {
 
     // Create trading constraints if provided
     if (tradingConstraints) {
-      await this.tradingConstraintsService.createConstraints({
+      await this.tradingConstraintsService.upsertConstraints({
         competitionId,
         ...tradingConstraints,
       });
       serviceLogger.debug(
-        `[CompetitionManager] Created trading constraints for competition ${competitionId}`,
+        `[CompetitionManager] Upserted trading constraints for competition ${competitionId}`,
       );
     }
 

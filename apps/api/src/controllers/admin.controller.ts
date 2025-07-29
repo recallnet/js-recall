@@ -6,6 +6,10 @@ import * as path from "path";
 import { config, reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
+import {
+  SelectCompetitionReward,
+  UpdateCompetition,
+} from "@/database/schema/core/types.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -42,11 +46,9 @@ import {
   AdminUpdateAgentBodySchema,
   AdminUpdateAgentParamsSchema,
   AdminUpdateCompetitionParamsSchema,
+  AdminUpdateCompetitionSchema,
 } from "./admin.schema.js";
-import {
-  ensureCompetitionUpdate,
-  parseAdminSearchQuery,
-} from "./request-helpers.js";
+import { parseAdminSearchQuery } from "./request-helpers.js";
 
 // TODO: need user deactivation logic
 
@@ -528,6 +530,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinStartDate,
           joinEndDate,
           tradingConstraints,
+          rewards,
         } = result.data;
 
         // Create a new competition
@@ -545,6 +548,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinStartDate ? new Date(joinStartDate) : undefined,
           joinEndDate ? new Date(joinEndDate) : undefined,
           tradingConstraints,
+          rewards,
         );
 
         // Return the created competition
@@ -582,7 +586,10 @@ export function makeAdminController(services: ServiceRegistry) {
           endDate,
           votingStartDate,
           votingEndDate,
+          joinStartDate,
+          joinEndDate,
           tradingConstraints,
+          rewards,
         } = result.data;
 
         let finalAgentIds = [...agentIds]; // Start with provided agent IDs
@@ -651,6 +658,10 @@ export function makeAdminController(services: ServiceRegistry) {
             endDate ? new Date(endDate) : undefined,
             votingStartDate ? new Date(votingStartDate) : undefined,
             votingEndDate ? new Date(votingEndDate) : undefined,
+            joinStartDate ? new Date(joinStartDate) : undefined,
+            joinEndDate ? new Date(joinEndDate) : undefined,
+            tradingConstraints,
+            rewards,
           );
         }
 
@@ -697,6 +708,12 @@ export function makeAdminController(services: ServiceRegistry) {
         // Get final leaderboard
         const leaderboard =
           await services.competitionManager.getLeaderboard(competitionId);
+
+        // Assign winners to the rewards
+        await services.competitionRewardService.assignWinnersToRewards(
+          competitionId,
+          leaderboard,
+        );
 
         // Populate object_index with competition data
         try {
@@ -880,10 +897,25 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         const { competitionId } = paramsResult.data;
-        const updates = ensureCompetitionUpdate(req);
+        const bodyResult = flatParse(AdminUpdateCompetitionSchema, req.body);
+        if (!bodyResult.success) {
+          throw new ApiError(
+            400,
+            `Invalid request format: ${bodyResult.error}`,
+          );
+        }
+
+        // Extract rewards and tradingConstraints from the validated data
+        const { rewards, tradingConstraints, ...competitionUpdates } =
+          bodyResult.data;
+        const updates = competitionUpdates as UpdateCompetition;
 
         // Check if there are any updates to apply
-        if (Object.keys(updates).length === 0) {
+        if (
+          Object.keys(updates).length === 0 &&
+          !rewards &&
+          !tradingConstraints
+        ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
 
@@ -894,10 +926,34 @@ export function makeAdminController(services: ServiceRegistry) {
             updates,
           );
 
+        // Update the trading constraints
+        if (tradingConstraints) {
+          await services.tradingConstraintsService.updateConstraints(
+            competitionId,
+            tradingConstraints,
+          );
+        }
+
+        // Update the rewards
+        let updatedRewards: SelectCompetitionReward[] = [];
+        if (rewards) {
+          updatedRewards =
+            await services.competitionRewardService.replaceRewards(
+              competitionId,
+              rewards,
+            );
+        }
+
         // Return the updated competition
         res.status(200).json({
           success: true,
-          competition: updatedCompetition,
+          competition: {
+            ...updatedCompetition,
+            rewards: updatedRewards.map((reward) => ({
+              rank: reward.rank,
+              reward: reward.reward,
+            })),
+          },
         });
       } catch (error) {
         next(error);

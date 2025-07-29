@@ -18,6 +18,7 @@ import { CompetitionActions } from "./competition-actions";
 import { CompetitionStatusBanner } from "./competition-status-banner";
 import { TopLeadersList } from "./featured-competition/top-leaders-list";
 import { ParticipantsAvatars } from "./participants-avatars";
+import { Rewards } from "./rewards";
 
 interface FeaturedCompetitionProps {
   competition: UserCompetition;
@@ -70,13 +71,17 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             Duration
           </h3>
-          <p className="text-xl font-semibold">{duration}</p>
+          <p className="font-semibold">{duration}</p>
         </div>
         <div className="w-full px-6 py-4">
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             Reward
           </h3>
-          <p className="text-xl font-semibold">TBA</p>
+          {competition.rewards ? (
+            <Rewards rewards={competition.rewards} />
+          ) : (
+            <p className="font-semibold">TBA</p>
+          )}
         </div>
       </div>
 

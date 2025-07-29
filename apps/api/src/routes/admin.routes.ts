@@ -113,6 +113,16 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: Minimum fully diluted valuation in USD
    *                     example: 100000
+   *               rewards:
+   *                 type: object
+   *                 description: Rewards for competition placements
+   *                 additionalProperties:
+   *                   type: number
+   *                   description: Reward amount for the given rank
+   *                 example:
+   *                   "1": 1000
+   *                   "2": 500
+   *                   "3": 250
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -164,6 +174,20 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Competition creation date
+   *                     rewards:
+   *                       type: array
+   *                       description: Rewards for competition placements
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           rank:
+   *                             type: number
+   *                             description: Rank of the reward
+   *                             example: 1
+   *                           reward:
+   *                             type: number
+   *                             description: Reward amount for the given rank
+   *                             example: 1000
    *       400:
    *         description: |-
    *           Bad Request - Various validation errors:
@@ -275,6 +299,16 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: Minimum fully diluted valuation in USD
    *                     example: 100000
+   *               rewards:
+   *                 type: object
+   *                 description: Rewards for competition placements
+   *                 additionalProperties:
+   *                   type: number
+   *                   description: Reward amount for the given rank
+   *                 example:
+   *                   "1": 1000
+   *                   "2": 500
+   *                   "3": 250
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -335,6 +369,21 @@ export function configureAdminRoutes(
    *                       items:
    *                         type: string
    *                       description: Agent IDs participating in the competition
+   *                     rewards:
+   *                       type: array
+   *                       description: Rewards for competition placements
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           rank:
+   *                             type: number
+   *                             description: Rank of the reward
+   *                             example: 1
+   *                           reward:
+   *                             type: number
+   *                             description: Reward amount for the given rank
+   *                             example: 1000
+   *                         description: Reward amount for the given rank
    *                 initializedAgents:
    *                   type: array
    *                   items:
@@ -501,6 +550,13 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: Voting end date
    *                 example: 2023-05-07T23:59:59Z
+   *               rewards:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Rewards for competition placements
+   *                 additionalProperties:
+   *                   type: number
+   *                   description: Reward amount for the given rank
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -560,6 +616,20 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [pending, active, ended]
    *                       description: Competition status
+   *                     rewards:
+   *                       type: array
+   *                       description: Rewards for competition placements
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           rank:
+   *                             type: number
+   *                             description: Rank of the reward
+   *                             example: 1
+   *                           reward:
+   *                             type: number
+   *                             description: Reward amount for the given rank
+   *                             example: 1000
    *                     createdAt:
    *                       type: string
    *                       format: date-time

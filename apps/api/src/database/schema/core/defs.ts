@@ -400,3 +400,35 @@ export const emailVerificationTokens = pgTable(
     unique("email_verification_tokens_token_key").on(table.token),
   ],
 );
+
+/**
+ * Rewards for top agents in a competition
+ */
+export const competitionRewards = pgTable(
+  "competition_rewards",
+  {
+    id: uuid().primaryKey().notNull(),
+    competitionId: uuid("competition_id").notNull(),
+    rank: integer("rank").notNull(),
+    reward: integer("reward").notNull(),
+    agentId: uuid("agent_id"), // Note: nullable since upon creation, the agent ranking is unknown
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "competition_rewards_competition_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.agentId],
+      foreignColumns: [agents.id],
+      name: "competition_rewards_agent_id_fkey",
+    }).onDelete("set null"),
+    unique("competition_rewards_competition_id_rank_key").on(
+      table.competitionId,
+      table.rank,
+    ),
+    index("idx_competition_rewards_competition_id").on(table.competitionId),
+    index("idx_competition_rewards_agent_id").on(table.agentId),
+  ],
+);

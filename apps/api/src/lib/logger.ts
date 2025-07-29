@@ -50,6 +50,7 @@ export const authLogger = createLogger("Auth");
 export const apiLogger = createLogger("API");
 export const tradeLogger = createLogger("Trade");
 export const competitionLogger = createLogger("Competition");
+export const competitionRewardsLogger = createLogger("CompetitionRewards");
 export const adminLogger = createLogger("Admin");
 export const userLogger = createLogger("User");
 export const agentLogger = createLogger("Agent");

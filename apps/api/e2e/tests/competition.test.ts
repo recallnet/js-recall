@@ -28,7 +28,6 @@ import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
-  VISION_TOKEN,
   cleanupTestState,
   createSiweAuthenticatedClient,
   createTestClient,
@@ -261,7 +260,7 @@ describe("Competition API", () => {
     const buyTradeResponse = await agentClient.executeTrade({
       reason: "testing create comp with trading constraints",
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: VISION_TOKEN, // low 24h volume
+      toToken: config.specificChainTokens.svm.sol,
       amount: "100",
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
@@ -4128,6 +4127,102 @@ describe("Competition API", () => {
         (t: AgentTrophy) => t.competitionId === competitionId,
       );
       expect(activeTrophy).toBeUndefined(); // No trophy for active competition
+    });
+  });
+
+  describe("Competition Rewards Logic", () => {
+    test("should create a competition with rewards", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create 4 agents and register them
+      const agents = [];
+      for (let i = 0; i < 4; i++) {
+        const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: `Rewards Agent ${i}`,
+        });
+        agents.push(agent1);
+      }
+
+      // Create a competition with rewards
+      const competitionName = `Rewards Competition ${Date.now()}`;
+      const rewards = {
+        1: 100,
+        2: 50,
+        3: 25,
+        4: 10,
+      };
+
+      const createResult = await adminClient.createCompetition(
+        competitionName,
+        "Test rewards competition",
+        CROSS_CHAIN_TRADING_TYPE.ALLOW,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        looseConstraints,
+        rewards,
+      );
+      expect(createResult.success).toBe(true);
+      expect(
+        (createResult as CreateCompetitionResponse).competition.rewards,
+      ).toEqual(
+        Object.entries(rewards).map(([rank, reward]) => ({
+          rank: parseInt(rank),
+          reward,
+        })),
+      );
+      const competitionId = (createResult as CreateCompetitionResponse)
+        .competition.id;
+      const competitionRewardsInitial = (
+        createResult as CreateCompetitionResponse
+      ).competition.rewards;
+
+      // Start the competition
+      const startResult = await adminClient.startExistingCompetition(
+        competitionId,
+        agents.map((a) => a.id),
+      );
+      expect(startResult.success).toBe(true);
+      const endResult = await adminClient.endCompetition(competitionId);
+      expect(endResult.success).toBe(true);
+
+      // Get the final competition agent
+      const finalCompetitionAgentInfo =
+        await adminClient.getCompetitionAgents(competitionId);
+      expect(finalCompetitionAgentInfo.success).toBe(true);
+      const competitionAgents = (
+        finalCompetitionAgentInfo as CompetitionAgentsResponse
+      ).agents.sort((a, b) => a.rank - b.rank);
+
+      // Get the final competition rewards
+      const finalCompetitionRewards =
+        await adminClient.getCompetition(competitionId);
+      expect(finalCompetitionRewards.success).toBe(true);
+      const competitionRewards = (
+        finalCompetitionRewards as CompetitionDetailResponse
+      ).competition.rewards;
+
+      // Check that the final competition rewards are the same as the initial rewards, plus awarded to the agents
+      expect(competitionRewards?.length).toEqual(4);
+      for (let i = 0; i < 4; i++) {
+        expect(competitionRewards?.[i]?.rank).toEqual(
+          competitionRewardsInitial?.[i]?.rank,
+        );
+        expect(competitionRewards?.[i]?.reward).toEqual(
+          competitionRewardsInitial?.[i]?.reward,
+        );
+        expect(competitionRewards?.[i]?.agentId).toEqual(
+          competitionAgents[i]?.id,
+        );
+      }
     });
   });
 });
