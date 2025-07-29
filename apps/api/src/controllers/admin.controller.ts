@@ -7,7 +7,7 @@ import { config, reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import {
-  SelectReward,
+  SelectCompetitionReward,
   UpdateCompetition,
 } from "@/database/schema/core/types.js";
 import { flatParse } from "@/lib/flat-parse.js";
@@ -531,12 +531,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinEndDate,
           tradingConstraints,
           rewards,
-        } = req.body;
-
-        // Validate required parameters
-        if (!name) {
-          throw new ApiError(400, "Missing required parameter: name");
-        }
+        } = result.data;
 
         // Create a new competition
         const competition = await services.competitionManager.createCompetition(
@@ -910,15 +905,10 @@ export function makeAdminController(services: ServiceRegistry) {
           );
         }
 
-        // `rewards` and `tradingConstraints` are not `competitions` table fields, so we need to remove them from the request body
-        const { rewards, tradingConstraints } = bodyResult.data;
-        if (rewards) {
-          delete req.body.rewards;
-        }
-        if (tradingConstraints) {
-          delete req.body.tradingConstraints;
-        }
-        const updates = bodyResult.data as UpdateCompetition;
+        // Extract rewards and tradingConstraints from the validated data
+        const { rewards, tradingConstraints, ...competitionUpdates } =
+          bodyResult.data;
+        const updates = competitionUpdates as UpdateCompetition;
 
         // Check if there are any updates to apply
         if (
@@ -945,7 +935,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Update the rewards
-        let updatedRewards: SelectReward[] = [];
+        let updatedRewards: SelectCompetitionReward[] = [];
         if (rewards) {
           updatedRewards =
             await services.competitionRewardService.replaceRewards(

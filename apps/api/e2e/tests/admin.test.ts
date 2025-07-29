@@ -1546,4 +1546,72 @@ describe("Admin API", () => {
     const finalProfile = await agentClient.getAgentProfile();
     expect(finalProfile.success).toBe(true);
   });
+
+  test("should update a competition with rewards and tradingConstraints", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // First create a competition
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Test Competition with Rewards",
+        description: "Competition to test rewards update",
+        type: "trading",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.data.success).toBe(true);
+    const competitionId = createResponse.data.competition.id;
+
+    // Now update the competition with rewards
+    const updateResponse = await axios.put(
+      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+      {
+        name: "Updated Competition with Rewards",
+        description: "Updated with rewards",
+        rewards: {
+          1: 1000,
+          2: 500,
+          3: 250,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.data.success).toBe(true);
+    expect(updateResponse.data.competition).toBeDefined();
+    expect(updateResponse.data.competition.name).toBe(
+      "Updated Competition with Rewards",
+    );
+    expect(updateResponse.data.competition.description).toBe(
+      "Updated with rewards",
+    );
+    // Check that rewards were properly applied
+    expect(updateResponse.data.competition.rewards).toBeDefined();
+    expect(updateResponse.data.competition.rewards).toHaveLength(3);
+    expect(updateResponse.data.competition.rewards).toContainEqual({
+      rank: 1,
+      reward: 1000,
+    });
+    expect(updateResponse.data.competition.rewards).toContainEqual({
+      rank: 2,
+      reward: 500,
+    });
+    expect(updateResponse.data.competition.rewards).toContainEqual({
+      rank: 3,
+      reward: 250,
+    });
+  });
 });

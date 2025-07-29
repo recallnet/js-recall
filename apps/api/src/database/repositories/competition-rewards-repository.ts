@@ -3,7 +3,10 @@ import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
 import { competitionRewards } from "@/database/schema/core/defs.js";
-import { InsertReward, SelectReward } from "@/database/schema/core/types.js";
+import {
+  InsertCompetitionReward,
+  SelectCompetitionReward,
+} from "@/database/schema/core/types.js";
 import { competitionRewardsLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
@@ -19,10 +22,10 @@ import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
  * @throws Error if reward creation fails or if duplicates exist
  */
 export async function createRewardsImpl(
-  rewardsData: InsertReward[],
-): Promise<SelectReward[]> {
+  rewardsData: InsertCompetitionReward[],
+): Promise<SelectCompetitionReward[]> {
   try {
-    const data: InsertReward[] = rewardsData.map((reward) => ({
+    const data: InsertCompetitionReward[] = rewardsData.map((reward) => ({
       id: reward.id || uuidv4(),
       competitionId: reward.competitionId,
       rank: reward.rank,
@@ -49,7 +52,7 @@ export async function createRewardsImpl(
 export async function findRewardByCompetitionAndRankImpl(
   competitionId: string,
   rank: number,
-): Promise<SelectReward | undefined> {
+): Promise<SelectCompetitionReward | undefined> {
   try {
     const [result] = await db
       .select()
@@ -78,7 +81,7 @@ export async function findRewardByCompetitionAndRankImpl(
  */
 export async function findRewardsByCompetitionImpl(
   competitionId: string,
-): Promise<SelectReward[]> {
+): Promise<SelectCompetitionReward[]> {
   try {
     return await db
       .select()
@@ -100,7 +103,7 @@ export async function findRewardsByCompetitionImpl(
  */
 export async function findRewardsByCompetitionsImpl(
   competitionIds: string[],
-): Promise<SelectReward[]> {
+): Promise<SelectCompetitionReward[]> {
   try {
     if (competitionIds.length === 0) {
       return [];
@@ -127,7 +130,7 @@ export async function findRewardsByCompetitionsImpl(
  */
 export async function findRewardsByAgentImpl(
   agentId: string,
-): Promise<SelectReward[]> {
+): Promise<SelectCompetitionReward[]> {
   try {
     return await db
       .select()
@@ -150,8 +153,8 @@ export async function findRewardsByAgentImpl(
  */
 export async function updateRewardImpl(
   id: string,
-  update: Partial<InsertReward>,
-): Promise<SelectReward | undefined> {
+  update: Partial<InsertCompetitionReward>,
+): Promise<SelectCompetitionReward | undefined> {
   try {
     const [result] = await db
       .update(competitionRewards)
