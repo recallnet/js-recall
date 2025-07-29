@@ -1,31 +1,27 @@
 /**
- * Setup script for end-to-end tests
+ * Global Setup
  *
- * This file is automatically run by Jest before all tests.
- * It initializes the test environment, including the database and server.
+ *
+ * Initializes the test environment, including the database and server.
  */
 import { config } from "dotenv";
 import fs from "fs";
-import { Server } from "http";
 import path from "path";
 
-import { dbManager } from "./utils/db-manager.js";
-import {
-  killExistingServers,
-  startServer,
-  stopServer,
-} from "./utils/server.js";
+import { createLogger } from "@/lib/logger.js";
 
-// Store global server reference
-let server: Server;
+import { dbManager } from "./utils/db-manager.js";
+import { startServer, stopServer } from "./utils/server.js";
 
 // Path to log file
 const logFile = path.resolve(__dirname, "e2e-server.log");
-const fullSuiteFlag = path.resolve(__dirname, ".full-suite-running");
 
-// Function to log to both console and file
+// Create a test-specific logger
+const testLogger = createLogger("E2E-Setup");
+
+// Function to log to both Pino logger and file
 const log = (message: string) => {
-  console.log(message);
+  testLogger.info(message);
   fs.appendFileSync(logFile, message + "\n");
 };
 
@@ -36,13 +32,13 @@ export async function setup() {
   const envTestExists = fs.existsSync(envTestPath);
 
   // Log important environment loading information
-  console.log("========== E2E TEST ENVIRONMENT SETUP ==========");
-  console.log(`Looking for .env.test at: ${envTestPath}`);
-  console.log(`.env.test file exists: ${envTestExists}`);
+  testLogger.info("========== E2E TEST ENVIRONMENT SETUP ==========");
+  testLogger.info(`Looking for .env.test at: ${envTestPath}`);
+  testLogger.info(`.env.test file exists: ${envTestExists}`);
 
   // Check if leaderboard-access test is being run by examining command line arguments
   const args = process.argv.slice(2);
-  console.log(JSON.stringify(args), "42 setup");
+  testLogger.info({ args }, "42 setup");
   const isLeaderboardTest = args.some(
     (arg) =>
       arg.includes("leaderboard-access.test") ||
@@ -52,7 +48,7 @@ export async function setup() {
   const isTradingTest = args.some(
     (arg) => arg.includes("trading.test") || arg.includes("trading"),
   );
-  console.log(`Is trading test: ${isTradingTest}`);
+  testLogger.info(`Is trading test: ${isTradingTest}`);
   const isBaseTradingTest = args.some(
     (arg) => arg.includes("base-trades.test") || arg.includes("base-trades"),
   );
@@ -82,55 +78,55 @@ export async function setup() {
       }),
     });
 
-    console.log(
+    testLogger.info(
       `Loaded .env.test file: ${result.parsed ? "successfully" : "failed"}`,
     );
     if (result.parsed) {
-      console.log(
+      testLogger.info(
         `Loaded ${Object.keys(result.parsed).length} variables from .env.test`,
       );
 
       // Check specific test-critical variables
-      console.log("Critical variables after loading .env.test:");
-      console.log(
+      testLogger.info("Critical variables after loading .env.test:");
+      testLogger.info(
         `- INITIAL_BASE_USDC_BALANCE: ${process.env.INITIAL_BASE_USDC_BALANCE} (was: ${originalBaseUsdcBalance})`,
       );
-      console.log(
+      testLogger.info(
         `- DISABLE_PARTICIPANT_LEADERBOARD_ACCESS: ${process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS} (was: ${originalLeaderboardAccess})`,
       );
     }
   } else {
-    console.warn(
+    testLogger.warn(
       "⚠️ WARNING: .env.test file not found! Tests will use .env or default values.",
     );
 
     // Try loading from .env as fallback and log the result
     const envMainPath = path.resolve(__dirname, "../.env");
     const envMainExists = fs.existsSync(envMainPath);
-    console.log(`Using .env as fallback. File exists: ${envMainExists}`);
+    testLogger.info(`Using .env as fallback. File exists: ${envMainExists}`);
 
     if (envMainExists) {
       const result = config({ path: envMainPath, override: true });
-      console.log(
+      testLogger.info(
         `Loaded .env file: ${result.parsed ? "successfully" : "failed"}`,
       );
     }
   }
   if (isLeaderboardTest) {
     process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS = "true";
-    console.log(
+    testLogger.info(
       `DISABLE_PARTICIPANT_LEADERBOARD_ACCESS set to: ${process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS}`,
     );
   }
   if (isTradingTest) {
     process.env.MAX_TRADE_PERCENTAGE = "10";
-    console.log(
+    testLogger.info(
       `MAX_TRADE_PERCENTAGE set to: ${process.env.MAX_TRADE_PERCENTAGE}`,
     );
   }
   if (isBaseTradingTest) {
     process.env.MAX_TRADE_PERCENTAGE = "15";
-    console.log(
+    testLogger.info(
       `MAX_TRADE_PERCENTAGE set to: ${process.env.MAX_TRADE_PERCENTAGE}`,
     );
   }
@@ -143,25 +139,16 @@ export async function setup() {
     process.env.METRICS_PORT = "3003";
   }
 
-  // Check if this is an individual test run (not part of the full suite)
-  // If so, clear the log file first
-  if (!fs.existsSync(fullSuiteFlag)) {
-    fs.writeFileSync(logFile, "");
-  }
-
   log("🚀 Setting up E2E test environment...");
 
   try {
-    // Kill any existing server processes that might be hanging
-    await killExistingServers();
-
     // Initialize database using our new DbManager
     log("📦 Initializing database...");
     await dbManager.initialize();
 
     // Start server
     log("🌐 Starting server...");
-    server = await startServer();
+    await startServer();
 
     log("✅ Test environment ready");
   } catch (error) {
@@ -177,52 +164,13 @@ export async function setup() {
 export async function teardown() {
   log("🧹 Cleaning up test environment...");
 
-  try {
-    // Stop server
-    if (server) {
-      log("🛑 Stopping server...");
-      await stopServer(server);
-    }
+  // Close database connection using our DbManager
+  log("🔌 Closing database connection...");
+  await dbManager.close();
 
-    // As a safety measure, kill any remaining server processes
-    await killExistingServers();
+  // Stop server
+  log("🛑 Stopping server...");
+  stopServer();
 
-    // Close database connection using our DbManager
-    log("🔌 Closing database connection...");
-    await dbManager.close();
-
-    // Clean up the full suite flag if it exists
-    if (fs.existsSync(fullSuiteFlag)) {
-      fs.unlinkSync(fullSuiteFlag);
-    }
-
-    log("✅ Test environment cleaned up");
-  } catch (error) {
-    log(
-      "❌ Failed to clean up test environment: " +
-        (error instanceof Error ? error.message : String(error)),
-    );
-
-    // As a last resort, try to kill any server processes
-    try {
-      await killExistingServers();
-    } catch (secondError) {
-      log(
-        "Failed to kill server processes as a last resort: " +
-          String(secondError),
-      );
-    }
-
-    throw error;
-  }
-}
-
-// Setup and teardown for Jest Global Setup
-export default async function () {
-  await setup();
-
-  // Register the teardown to be handled by Jest itself
-  return async () => {
-    await teardown();
-  };
+  log("✅ Test environment cleaned up");
 }

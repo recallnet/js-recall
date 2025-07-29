@@ -1,6 +1,6 @@
 import axios from "axios";
 import { ChildProcess, spawn } from "child_process";
-import { Server } from "http";
+import kill from "tree-kill";
 
 // Reference to the server process
 let serverProcess: ChildProcess | null = null;
@@ -18,167 +18,64 @@ const BASE_URL = `http://${HOST}:${PORT}${API_PREFIX ? `/${API_PREFIX}` : ""}`;
  *
  * @returns A promise that resolves to the HTTP server instance
  */
-export async function startServer(): Promise<Server> {
-  // First try to kill any existing servers on the test port
-  await killExistingServers();
+export async function startServer(): Promise<void> {
+  if (serverProcess) {
+    throw new Error("Cannot start test server twice");
+  }
 
-  return new Promise((resolve, reject) => {
-    try {
-      const testPort = process.env.TEST_PORT || "3001";
-      const testHost = process.env.TEST_HOST || "0.0.0.0"; // Bind to all interfaces in Docker
+  const testHost = process.env.TEST_HOST || "0.0.0.0"; // Bind to all interfaces in Docker
 
-      console.log(`Starting test server on ${testHost}:${testPort}...`);
+  console.log(`Starting test server on ${testHost}:${PORT}...`);
 
-      // Start the server script in a separate process
-      // Use the index.ts file which is the main entry point
-      serverProcess = spawn("npx", ["tsx", "src/index.ts"], {
-        env: {
-          ...process.env,
-          NODE_ENV: "test",
-          PORT: testPort,
-          HOST: testHost,
-          METRICS_PORT: process.env.METRICS_PORT || "3003",
-          METRICS_HOST: "127.0.0.1", // Secure binding for tests
-          TEST_MODE: "true",
-        },
-        stdio: "inherit",
-        detached: true,
-      });
-
-      // Create a mock server object that we can use to track and shut down the server
-      const mockServer = {
-        close: (callback: () => void) => {
-          try {
-            // Kill the server process
-            if (serverProcess && serverProcess.pid) {
-              process.kill(-serverProcess.pid);
-            }
-            callback();
-          } catch (error) {
-            console.error("Error shutting down server:", error);
-            callback();
-          }
-        },
-      } as unknown as Server;
-
-      // Handle server process errors
-      serverProcess.on("error", (error) => {
-        console.error("Server process error:", error);
-        reject(error);
-      });
-
-      // Wait for the server to be ready
-      waitForServerReady(30, 500) // 30 retries, 500ms interval = 15 seconds max
-        .then(() => {
-          console.log(`Server started and ready on ${testHost}:${testPort}`);
-          resolve(mockServer);
-        })
-        .catch((error) => {
-          console.error("Server failed to start:", error);
-          // Try to kill the process if it's hanging
-          if (serverProcess && serverProcess.pid) {
-            try {
-              process.kill(-serverProcess.pid);
-            } catch (err) {
-              console.error(
-                "Error killing server process during startup failure:",
-                err,
-              );
-            }
-          }
-          reject(error);
-        });
-    } catch (error) {
-      console.error("Failed to start server:", error);
-      reject(error);
-    }
+  // Start the server script in a sub-process
+  serverProcess = spawn("npx", ["tsx", "src/index.ts"], {
+    env: {
+      ...process.env,
+      NODE_ENV: "test",
+      PORT: PORT,
+      HOST: testHost,
+      METRICS_PORT: process.env.METRICS_PORT || "3003",
+      METRICS_HOST: "127.0.0.1", // Secure binding for tests
+      TEST_MODE: "true",
+    },
+    stdio: "inherit",
+    shell: true,
   });
+
+  console.log("\n\n\n\n");
+  console.log("server process:", serverProcess.pid);
+  console.log("\n\n\n\n");
+
+  // Wait for the server to be ready
+  return await waitForServerReady(30, 500); // 30 retries, 500ms interval = 15 seconds max
 }
 
-/**
- * Stop the server
- *
- * @param server The HTTP server instance to stop
- */
-export async function stopServer(server: Server): Promise<void> {
-  return new Promise((resolve) => {
+export function stopServer() {
+  // Kill the server process if it exists
+  if (serverProcess && serverProcess.pid) {
     try {
-      console.log("Stopping server...");
-
-      // Kill the server process if it exists
-      if (serverProcess && serverProcess.pid) {
-        try {
-          console.log(`Killing server process with PID: ${serverProcess.pid}`);
-          // Use negative PID to kill the entire process group since we used detached: true
-          process.kill(-serverProcess.pid, "SIGTERM");
-          serverProcess = null;
-        } catch (error) {
-          console.error("Error killing server process:", error);
-        }
+      console.log(`Killing server process with PID: ${serverProcess.pid}`);
+      // Negative PID to kill process group, i.e all child processes
+      kill(serverProcess.pid);
+      serverProcess = null;
+    } catch (error: unknown) {
+      // If there is not a process with the expected PID we don't have to do
+      // anything since it's already been killed. This allows calling this
+      // function repeatedly.
+      if (
+        !(
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          error.code === "ESRCH"
+        )
+      ) {
+        // If there is some other error, we can log it and throw.
+        console.error("Error killing server process:", error);
+        throw error;
       }
-
-      // Close the server
-      server.close(() => {
-        console.log("Server stopped");
-        resolve();
-      });
-    } catch (error) {
-      console.error("Error in stopServer:", error);
-      resolve(); // Resolve anyway to avoid hanging promises
     }
-  });
-}
-
-/**
- * Kill any existing server processes running on the test ports
- * This includes both the main API server and the metrics server
- */
-export async function killExistingServers(): Promise<void> {
-  return new Promise<void>((resolve) => {
-    try {
-      const testPort = process.env.TEST_PORT || "3001";
-      const metricsPort = process.env.METRICS_PORT || "3003";
-      console.log(
-        `Checking for existing servers on ports ${testPort} and ${metricsPort}...`,
-      );
-
-      // Platform-specific command to find and kill processes using both ports
-      let command: string;
-      let args: string[];
-
-      if (process.platform === "win32") {
-        // Windows - kill processes on both ports
-        command = "cmd.exe";
-        args = [
-          "/c",
-          `(for /f "tokens=5" %a in ('netstat -ano ^| findstr :${testPort}') do taskkill /F /PID %a) & (for /f "tokens=5" %a in ('netstat -ano ^| findstr :${metricsPort}') do taskkill /F /PID %a)`,
-        ];
-      } else {
-        // Unix-like (macOS, Linux) - kill processes on both ports
-        command = "bash";
-        args = [
-          "-c",
-          `(lsof -i:${testPort} -t | xargs -r kill -9); (lsof -i:${metricsPort} -t | xargs -r kill -9)`,
-        ];
-      }
-
-      const killProcess = spawn(command, args, { stdio: "pipe" });
-
-      killProcess.on("close", (code) => {
-        if (code !== 0) {
-          console.log(
-            "No existing server processes found or unable to kill them.",
-          );
-        } else {
-          console.log("Successfully killed existing server processes.");
-        }
-        resolve();
-      });
-    } catch (error) {
-      console.error("Error killing existing servers:", error);
-      resolve(); // Resolve anyway to avoid hanging
-    }
-  });
+  }
 }
 
 /**
@@ -198,35 +95,28 @@ async function waitForServerReady(
       if (response.status === 200) {
         console.log("✅ Server is ready");
 
-        // Additional verification of API endpoints and metrics server
-        try {
-          // Wait a bit more to ensure all routes are registered
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Verify admin setup endpoint is available
+        const adminSetupResponse = await axios.get(`${BASE_URL}/api/health`);
+        console.log(
+          `Admin API health check: ${adminSetupResponse.status === 200 ? "OK" : "Failed"}`,
+        );
 
-          // Verify admin setup endpoint is available
-          const adminSetupResponse = await axios.get(`${BASE_URL}/api/health`);
-          console.log(
-            `Admin API health check: ${adminSetupResponse.status === 200 ? "OK" : "Failed"}`,
-          );
-
-          // Verify metrics server is available (always on localhost for security)
-          const metricsPort = process.env.METRICS_PORT || "3003";
-          const metricsUrl = `http://127.0.0.1:${metricsPort}`;
-          const metricsHealthResponse = await axios.get(`${metricsUrl}/health`);
-          console.log(
-            `Metrics server health check: ${metricsHealthResponse.status === 200 ? "OK" : "Failed"}`,
-          );
-        } catch (err) {
-          console.warn(
-            "Additional API/metrics verification failed, but continuing:",
-            err,
-          );
-        }
+        // Verify metrics server is available (always on localhost for security)
+        const metricsPort = process.env.METRICS_PORT || "3003";
+        const metricsUrl = `http://127.0.0.1:${metricsPort}`;
+        const metricsHealthResponse = await axios.get(`${metricsUrl}/health`);
+        console.log(
+          `Metrics server health check: ${metricsHealthResponse.status === 200 ? "OK" : "Failed"}`,
+        );
 
         return;
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
+      // @ts-expect-error - error is unknown type from catch block
+      if (error?.code !== "ECONNREFUSED") {
+        console.log("Test Server start failure:");
+        throw error;
+      }
       // Server not ready yet, retry after interval
       retries++;
       if (retries % 5 === 0) {

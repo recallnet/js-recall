@@ -1032,12 +1032,6 @@ To run the E2E tests:
 pnpm run test:e2e
 ```
 
-For a more comprehensive test run with database setup:
-
-```bash
-pnpm test:e2e:runner
-```
-
 ### Testing CI Workflows Locally
 
 This repository is configured to support local testing of GitHub Actions workflows using [act](https://github.com/nektos/act).
