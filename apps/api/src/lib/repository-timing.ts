@@ -179,7 +179,7 @@ function getOperationFromMethod(methodName: string): string {
     name.includes("confirm") ||
     name.includes("ensure") ||
     name.includes("test") ||
-    name.includes("count") || // countObjectIndex, countAgentTrades, countTotalVotes
+    name.includes("count") || // countAgentTrades, countTotalVotes
     name.includes("sum") ||
     name.includes("avg") ||
     name.includes("average") ||
