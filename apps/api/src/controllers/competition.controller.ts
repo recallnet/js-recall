@@ -1,6 +1,7 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
+import { SelectCompetitionReward } from "@/database/schema/core/types.js";
 import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -507,14 +508,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
                   minimumFdvUsd: tradingConstraintsRaw?.minimumFdvUsd,
                 };
                 const rewards =
-                  await services.coreRewardService.getRewardsByCompetition(
+                  await services.competitionRewardService.getRewardsByCompetition(
                     competition.id,
                   );
 
                 return {
                   ...competition,
                   tradingConstraints,
-                  rewards: rewards.map((r) => ({
+                  rewards: rewards.map((r: SelectCompetitionReward) => ({
                     rank: r.rank,
                     reward: r.reward,
                     agentId: r.agentId,
@@ -642,7 +643,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           minimumFdvUsd: tradingConstraintsRaw?.minimumFdvUsd,
         };
         const rewards =
-          await services.coreRewardService.getRewardsByCompetition(
+          await services.competitionRewardService.getRewardsByCompetition(
             competitionId,
           );
 
@@ -673,7 +674,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             ...competition,
             stats,
             tradingConstraints,
-            rewards: rewards.map((r) => {
+            rewards: rewards.map((r: SelectCompetitionReward) => {
               return {
                 rank: r.rank,
                 reward: r.reward,

@@ -5,7 +5,7 @@ import { AgentRankService } from "@/services/agentrank.service.js";
 import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
-import { CoreRewardService } from "@/services/competition-reward.service.js";
+import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { EmailVerificationService } from "@/services/email-verification.service.js";
 import { EmailService } from "@/services/email.service.js";
@@ -45,7 +45,7 @@ class ServiceRegistry {
   private _emailService: EmailService;
   private _emailVerificationService: EmailVerificationService;
   private _tradingConstraintsService: TradingConstraintsService;
-  private _coreRewardService: CoreRewardService;
+  private _competitionRewardService: CompetitionRewardService;
 
   constructor() {
     // Initialize services in dependency order
@@ -93,7 +93,7 @@ class ServiceRegistry {
     // Initialize trading constraints service (no dependencies)
     this._tradingConstraintsService = new TradingConstraintsService();
     // Initialize core reward service (no dependencies)
-    this._coreRewardService = new CoreRewardService();
+    this._competitionRewardService = new CompetitionRewardService();
 
     this._competitionManager = new CompetitionManager(
       this._balanceManager,
@@ -104,7 +104,7 @@ class ServiceRegistry {
       this._agentRankService,
       this._voteManager,
       this._tradingConstraintsService,
-      this._coreRewardService,
+      this._competitionRewardService,
     );
 
     // Initialize LeaderboardService with required dependencies
@@ -199,8 +199,8 @@ class ServiceRegistry {
     return this._tradingConstraintsService;
   }
 
-  get coreRewardService(): CoreRewardService {
-    return this._coreRewardService;
+  get competitionRewardService(): CompetitionRewardService {
+    return this._competitionRewardService;
   }
 
   // Add method to start schedulers
@@ -224,6 +224,7 @@ export {
   AuthService,
   BalanceManager,
   CompetitionManager,
+  CompetitionRewardService,
   ConfigurationService,
   EmailVerificationService,
   EmailService,
@@ -237,7 +238,6 @@ export {
   TradingConstraintsService,
   UserManager,
   VoteManager,
-  CoreRewardService,
 };
 
 export default ServiceRegistry;

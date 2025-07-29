@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "@/database/db.js";
 import { competitionRewards } from "@/database/schema/core/defs.js";
 import { InsertReward, SelectReward } from "@/database/schema/core/types.js";
+import { competitionRewardsLogger } from "@/lib/logger.js";
+import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 /**
  * Core Rewards Repository
@@ -16,7 +18,7 @@ import { InsertReward, SelectReward } from "@/database/schema/core/types.js";
  * @returns Array of created reward records
  * @throws Error if reward creation fails or if duplicates exist
  */
-export async function createRewards(
+export async function createRewardsImpl(
   rewardsData: InsertReward[],
 ): Promise<SelectReward[]> {
   try {
@@ -33,7 +35,7 @@ export async function createRewards(
     }
     return result;
   } catch (error) {
-    console.error("[CoreRewardRepository] Error in createRewards:", error);
+    competitionRewardsLogger.error(`Error in createRewards: ${error}`);
     throw error;
   }
 }
@@ -44,7 +46,7 @@ export async function createRewards(
  * @param rank The rank
  * @returns The reward record if found, undefined otherwise
  */
-export async function findRewardByCompetitionAndRank(
+export async function findRewardByCompetitionAndRankImpl(
   competitionId: string,
   rank: number,
 ): Promise<SelectReward | undefined> {
@@ -61,8 +63,8 @@ export async function findRewardByCompetitionAndRank(
       .limit(1);
     return result;
   } catch (error) {
-    console.error(
-      "[CoreRewardRepository] Error in findRewardByCompetitionAndRank:",
+    competitionRewardsLogger.error(
+      `Error in findRewardByCompetitionAndRank: ${error}`,
       error,
     );
     throw error;
@@ -74,7 +76,7 @@ export async function findRewardByCompetitionAndRank(
  * @param competitionId The competition ID
  * @returns Array of reward records
  */
-export async function findRewardsByCompetition(
+export async function findRewardsByCompetitionImpl(
   competitionId: string,
 ): Promise<SelectReward[]> {
   try {
@@ -83,8 +85,8 @@ export async function findRewardsByCompetition(
       .from(competitionRewards)
       .where(eq(competitionRewards.competitionId, competitionId));
   } catch (error) {
-    console.error(
-      "[CoreRewardRepository] Error in findRewardsByCompetition:",
+    competitionRewardsLogger.error(
+      `Error in findRewardsByCompetition: ${error}`,
       error,
     );
     throw error;
@@ -96,7 +98,7 @@ export async function findRewardsByCompetition(
  * @param competitionIds Array of competition IDs
  * @returns Array of reward records grouped by competition ID
  */
-export async function findRewardsByCompetitions(
+export async function findRewardsByCompetitionsImpl(
   competitionIds: string[],
 ): Promise<SelectReward[]> {
   try {
@@ -110,8 +112,8 @@ export async function findRewardsByCompetitions(
       .where(inArray(competitionRewards.competitionId, competitionIds))
       .orderBy(competitionRewards.rank);
   } catch (error) {
-    console.error(
-      "[CoreRewardRepository] Error in findRewardsByCompetitions:",
+    competitionRewardsLogger.error(
+      `Error in findRewardsByCompetitions: ${error}`,
       error,
     );
     throw error;
@@ -123,7 +125,7 @@ export async function findRewardsByCompetitions(
  * @param agentId The agent ID
  * @returns Array of reward records
  */
-export async function findRewardsByAgent(
+export async function findRewardsByAgentImpl(
   agentId: string,
 ): Promise<SelectReward[]> {
   try {
@@ -132,7 +134,10 @@ export async function findRewardsByAgent(
       .from(competitionRewards)
       .where(eq(competitionRewards.agentId, agentId));
   } catch (error) {
-    console.error("[CoreRewardRepository] Error in findRewardsByAgent:", error);
+    competitionRewardsLogger.error(
+      `Error in findRewardsByAgent: ${error}`,
+      error,
+    );
     throw error;
   }
 }
@@ -143,7 +148,7 @@ export async function findRewardsByAgent(
  * @param update Partial update object
  * @returns The updated reward record if found, undefined otherwise
  */
-export async function updateReward(
+export async function updateRewardImpl(
   id: string,
   update: Partial<InsertReward>,
 ): Promise<SelectReward | undefined> {
@@ -155,7 +160,7 @@ export async function updateReward(
       .returning();
     return result;
   } catch (error) {
-    console.error("[CoreRewardRepository] Error in updateReward:", error);
+    competitionRewardsLogger.error(`Error in updateReward: ${error}`, error);
     throw error;
   }
 }
@@ -165,14 +170,14 @@ export async function updateReward(
  * @param id The reward ID
  * @returns True if deleted, false otherwise
  */
-export async function deleteReward(id: string): Promise<boolean> {
+export async function deleteRewardImpl(id: string): Promise<boolean> {
   try {
     const result = await db
       .delete(competitionRewards)
       .where(eq(competitionRewards.id, id));
     return (result?.rowCount ?? 0) > 0;
   } catch (error) {
-    console.error("[CoreRewardRepository] Error in deleteReward:", error);
+    competitionRewardsLogger.error(`Error in deleteReward: ${error}`, error);
     throw error;
   }
 }
@@ -182,7 +187,7 @@ export async function deleteReward(id: string): Promise<boolean> {
  * @param competitionId The competition ID
  * @returns True if deleted, false otherwise
  */
-export async function deleteRewardsByCompetition(
+export async function deleteRewardsByCompetitionImpl(
   competitionId: string,
 ): Promise<boolean> {
   try {
@@ -191,8 +196,8 @@ export async function deleteRewardsByCompetition(
       .where(eq(competitionRewards.competitionId, competitionId));
     return (result?.rowCount ?? 0) > 0;
   } catch (error) {
-    console.error(
-      "[CoreRewardRepository] Error in deleteRewardsByCompetition:",
+    competitionRewardsLogger.error(
+      `Error in deleteRewardsByCompetition: ${error}`,
       error,
     );
     throw error;
@@ -205,33 +210,101 @@ export async function deleteRewardsByCompetition(
  * @param leaderboard Array of { agentId, value } objects, index+1 = rank
  * @returns void
  */
-export async function assignWinnersToRewards(
+export async function assignWinnersToRewardsImpl(
   competitionId: string,
   leaderboard: { agentId: string; value: number }[],
 ): Promise<void> {
-  // Fetch all rewards for the competition
-  const rewardRecords = await findRewardsByCompetition(competitionId);
+  try {
+    // Fetch all rewards for the competition
+    const rewardRecords = await findRewardsByCompetitionImpl(competitionId);
 
-  const updates = rewardRecords
-    .map((reward) => {
-      const leaderboardEntry = leaderboard[reward.rank - 1];
-      if (!leaderboardEntry) return null;
-      return {
-        id: reward.id,
-        agentId: leaderboardEntry.agentId,
-      };
-    })
-    .filter(Boolean);
+    const updates = rewardRecords
+      .map((reward) => {
+        const leaderboardEntry = leaderboard[reward.rank - 1];
+        if (!leaderboardEntry) return null;
+        return {
+          id: reward.id,
+          agentId: leaderboardEntry.agentId,
+        };
+      })
+      .filter(Boolean);
 
-  await db.transaction(async (tx) => {
-    const promises = updates.map((update) => {
-      if (!update) return null;
-      return tx
-        .update(competitionRewards)
-        .set({ agentId: update.agentId })
-        .where(eq(competitionRewards.id, update.id));
+    await db.transaction(async (tx) => {
+      const promises = updates.map((update) => {
+        if (!update) return null;
+        return tx
+          .update(competitionRewards)
+          .set({ agentId: update.agentId })
+          .where(eq(competitionRewards.id, update.id));
+      });
+
+      await Promise.all(promises);
     });
-
-    await Promise.all(promises);
-  });
+  } catch (error) {
+    competitionRewardsLogger.error(`Error in assignWinnersToRewards: ${error}`);
+    throw error;
+  }
 }
+
+// ----------------------------------------------------------------------------
+// EXPORTED REPOSITORY FUNCTIONS WITH TIMING
+// ----------------------------------------------------------------------------
+
+/**
+ * All repository functions wrapped with timing and metrics
+ * These are the functions that should be imported by services
+ */
+
+export const createRewards = createTimedRepositoryFunction(
+  createRewardsImpl,
+  "CompetitionRewardsRepository",
+  "createRewards",
+);
+
+export const findRewardByCompetitionAndRank = createTimedRepositoryFunction(
+  findRewardByCompetitionAndRankImpl,
+  "CompetitionRewardsRepository",
+  "findRewardByCompetitionAndRank",
+);
+
+export const findRewardsByCompetition = createTimedRepositoryFunction(
+  findRewardsByCompetitionImpl,
+  "CompetitionRewardsRepository",
+  "findRewardsByCompetition",
+);
+
+export const findRewardsByCompetitions = createTimedRepositoryFunction(
+  findRewardsByCompetitionsImpl,
+  "CompetitionRewardsRepository",
+  "findRewardsByCompetitions",
+);
+
+export const findRewardsByAgent = createTimedRepositoryFunction(
+  findRewardsByAgentImpl,
+  "CompetitionRewardsRepository",
+  "findRewardsByAgent",
+);
+
+export const updateReward = createTimedRepositoryFunction(
+  updateRewardImpl,
+  "CompetitionRewardsRepository",
+  "updateReward",
+);
+
+export const deleteReward = createTimedRepositoryFunction(
+  deleteRewardImpl,
+  "CompetitionRewardsRepository",
+  "deleteReward",
+);
+
+export const deleteRewardsByCompetition = createTimedRepositoryFunction(
+  deleteRewardsByCompetitionImpl,
+  "CompetitionRewardsRepository",
+  "deleteRewardsByCompetition",
+);
+
+export const assignWinnersToRewards = createTimedRepositoryFunction(
+  assignWinnersToRewardsImpl,
+  "CompetitionRewardsRepository",
+  "assignWinnersToRewards",
+);

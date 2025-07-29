@@ -1,13 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
 
-import * as coreRewardRepository from "@/database/repositories/competition-rewards-repository.js";
-import { InsertReward, SelectReward } from "@/database/schema/core/types.js";
+import * as competitionRewardsRepository from "@/database/repositories/competition-rewards-repository.js";
+import {
+  InsertCompetitionReward,
+  SelectCompetitionReward,
+} from "@/database/schema/core/types.js";
 
 /**
- * CoreRewardService
- * Service for managing rewards in the core schema
+ * CompetitionRewardService
+ * Service for managing rewards in the competition rewards schema
  */
-export class CoreRewardService {
+export class CompetitionRewardService {
   /**
    * Assign winners to rewards for a competition
    * @param competitionId The competition ID
@@ -18,7 +21,7 @@ export class CoreRewardService {
     competitionId: string,
     leaderboard: { agentId: string; value: number }[],
   ): Promise<void> {
-    await coreRewardRepository.assignWinnersToRewards(
+    await competitionRewardsRepository.assignWinnersToRewards(
       competitionId,
       leaderboard,
     );
@@ -33,8 +36,8 @@ export class CoreRewardService {
   async createRewards(
     competitionId: string,
     rewards: Record<number, number>,
-  ): Promise<SelectReward[]> {
-    const rewardsData: InsertReward[] = Object.entries(rewards).map(
+  ): Promise<SelectCompetitionReward[]> {
+    const rewardsData: InsertCompetitionReward[] = Object.entries(rewards).map(
       ([rank, reward]) => ({
         id: uuidv4(),
         competitionId,
@@ -42,7 +45,7 @@ export class CoreRewardService {
         reward,
       }),
     );
-    return coreRewardRepository.createRewards(rewardsData);
+    return competitionRewardsRepository.createRewards(rewardsData);
   }
 
   /**
@@ -54,8 +57,8 @@ export class CoreRewardService {
   async getRewardByCompetitionAndRank(
     competitionId: string,
     rank: number,
-  ): Promise<SelectReward | undefined> {
-    return coreRewardRepository.findRewardByCompetitionAndRank(
+  ): Promise<SelectCompetitionReward | undefined> {
+    return competitionRewardsRepository.findRewardByCompetitionAndRank(
       competitionId,
       rank,
     );
@@ -68,8 +71,8 @@ export class CoreRewardService {
    */
   async getRewardsByCompetition(
     competitionId: string,
-  ): Promise<SelectReward[]> {
-    return coreRewardRepository.findRewardsByCompetition(competitionId);
+  ): Promise<SelectCompetitionReward[]> {
+    return competitionRewardsRepository.findRewardsByCompetition(competitionId);
   }
 
   /**
@@ -77,8 +80,8 @@ export class CoreRewardService {
    * @param agentId The agent ID
    * @returns Array of reward records
    */
-  async getRewardsByAgent(agentId: string): Promise<SelectReward[]> {
-    return coreRewardRepository.findRewardsByAgent(agentId);
+  async getRewardsByAgent(agentId: string): Promise<SelectCompetitionReward[]> {
+    return competitionRewardsRepository.findRewardsByAgent(agentId);
   }
 
   /**
@@ -89,9 +92,9 @@ export class CoreRewardService {
    */
   async updateReward(
     id: string,
-    update: Partial<InsertReward>,
-  ): Promise<SelectReward | undefined> {
-    return coreRewardRepository.updateReward(id, update);
+    update: Partial<InsertCompetitionReward>,
+  ): Promise<SelectCompetitionReward | undefined> {
+    return competitionRewardsRepository.updateReward(id, update);
   }
 
   /**
@@ -100,7 +103,7 @@ export class CoreRewardService {
    * @returns True if deleted, false otherwise
    */
   async deleteReward(id: string): Promise<boolean> {
-    return coreRewardRepository.deleteReward(id);
+    return competitionRewardsRepository.deleteReward(id);
   }
 
   /**
@@ -109,7 +112,9 @@ export class CoreRewardService {
    * @returns True if deleted, false otherwise
    */
   async deleteRewardsByCompetition(competitionId: string): Promise<boolean> {
-    return coreRewardRepository.deleteRewardsByCompetition(competitionId);
+    return competitionRewardsRepository.deleteRewardsByCompetition(
+      competitionId,
+    );
   }
 
   /**
@@ -121,7 +126,7 @@ export class CoreRewardService {
   async replaceRewards(
     competitionId: string,
     rewards: Record<number, number>,
-  ): Promise<SelectReward[]> {
+  ): Promise<SelectCompetitionReward[]> {
     await this.deleteRewardsByCompetition(competitionId);
     return this.createRewards(competitionId, rewards);
   }
@@ -143,7 +148,9 @@ export class CoreRewardService {
 
     // Get all rewards for these competitions
     const allRewards =
-      await coreRewardRepository.findRewardsByCompetitions(competitionIds);
+      await competitionRewardsRepository.findRewardsByCompetitions(
+        competitionIds,
+      );
 
     // Group rewards by competition ID
     const rewardsByCompetition = new Map<string, Record<number, number>>();

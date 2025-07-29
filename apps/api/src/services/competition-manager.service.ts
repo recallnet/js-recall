@@ -28,13 +28,13 @@ import {
   updateOne,
 } from "@/database/repositories/competition-repository.js";
 import {
-  SelectReward,
+  SelectCompetitionReward,
   UpdateCompetition,
 } from "@/database/schema/core/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import { CoreRewardService } from "@/services/competition-reward.service.js";
+import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import {
   AgentManager,
   AgentRankService,
@@ -87,7 +87,7 @@ export class CompetitionManager {
   private agentRankService: AgentRankService;
   private voteManager: VoteManager;
   private tradingConstraintsService: TradingConstraintsService;
-  private coreRewardService: CoreRewardService;
+  private competitionRewardService: CompetitionRewardService;
 
   constructor(
     balanceManager: BalanceManager,
@@ -98,7 +98,7 @@ export class CompetitionManager {
     agentRankService: AgentRankService,
     voteManager: VoteManager,
     tradingConstraintsService: TradingConstraintsService,
-    coreRewardService: CoreRewardService,
+    competitionRewardService: CompetitionRewardService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -108,7 +108,7 @@ export class CompetitionManager {
     this.agentRankService = agentRankService;
     this.voteManager = voteManager;
     this.tradingConstraintsService = tradingConstraintsService;
-    this.coreRewardService = coreRewardService;
+    this.competitionRewardService = competitionRewardService;
     // Load active competition on initialization
     this.loadActiveCompetition();
   }
@@ -196,9 +196,12 @@ export class CompetitionManager {
         `[CompetitionManager] Created trading constraints for competition ${id}`,
       );
     }
-    let createdRewards: SelectReward[] = [];
+    let createdRewards: SelectCompetitionReward[] = [];
     if (rewards) {
-      createdRewards = await this.coreRewardService.createRewards(id, rewards);
+      createdRewards = await this.competitionRewardService.createRewards(
+        id,
+        rewards,
+      );
       serviceLogger.debug(
         `[CompetitionManager] Created rewards for competition ${id}: ${JSON.stringify(
           createdRewards,

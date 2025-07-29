@@ -715,7 +715,7 @@ export function makeAdminController(services: ServiceRegistry) {
           await services.competitionManager.getLeaderboard(competitionId);
 
         // Assign winners to the rewards
-        await services.coreRewardService.assignWinnersToRewards(
+        await services.competitionRewardService.assignWinnersToRewards(
           competitionId,
           leaderboard,
         );
@@ -947,10 +947,11 @@ export function makeAdminController(services: ServiceRegistry) {
         // Update the rewards
         let updatedRewards: SelectReward[] = [];
         if (rewards) {
-          updatedRewards = await services.coreRewardService.replaceRewards(
-            competitionId,
-            rewards,
-          );
+          updatedRewards =
+            await services.competitionRewardService.replaceRewards(
+              competitionId,
+              rewards,
+            );
         }
 
         // Return the updated competition
