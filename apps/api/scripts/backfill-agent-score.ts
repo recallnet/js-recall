@@ -421,6 +421,7 @@ async function main() {
 
   const competitionsToBackfill: string[] = [];
   let foundMissingData = false;
+  let firstMissingIndex = -1; // Track when we first find missing data
 
   // Get all competitions for our list of competitionIds—and sort chronologically, in case we need
   // to recalculate scores for a competition that depends on the previous one.
@@ -464,6 +465,11 @@ async function main() {
           ),
         );
         foundMissingData = true; // Mark that we found missing data
+        if (firstMissingIndex === -1) {
+          firstMissingIndex = competitionsSorted.findIndex(
+            (c) => c.id === competitionId,
+          );
+        }
       } else {
         console.log(
           chalk.yellow(
@@ -490,10 +496,12 @@ async function main() {
       ),
     );
 
-    // Count how many competitions are affected by cascade (simplified check)
-    const cascadeCount = competitionsToBackfill.filter(
-      (_, index) => index > 0 && foundMissingData,
-    ).length;
+    // Count how many competitions are affected by cascade
+    // All competitions after the first one with missing data need recalculation
+    const cascadeCount =
+      firstMissingIndex >= 0
+        ? competitionsSorted.length - firstMissingIndex - 1
+        : 0;
 
     if (cascadeCount > 0) {
       console.log(
