@@ -51,7 +51,21 @@ const TradingConstraintsSchema = z
   .optional();
 
 /**
- * Admin create competition schema
+ * Rewards Schema (enforces that the key and value are both numbers)
+ */
+export const RewardsSchema = z
+  .record(z.string().regex(/^\d+$/), z.number())
+  .transform((val) => {
+    const result: Record<number, number> = {};
+    for (const [key, value] of Object.entries(val)) {
+      result[parseInt(key, 10)] = value;
+    }
+    return result;
+  })
+  .optional();
+
+/**
+ * Admin create or update competition schema
  */
 export const AdminCreateCompetitionSchema = z
   .object({
@@ -62,12 +76,14 @@ export const AdminCreateCompetitionSchema = z
     externalUrl: z.url().optional(),
     imageUrl: z.url().optional(),
     type: CompetitionTypeSchema.optional(),
+    startDate: z.iso.datetime().optional(),
     endDate: z.iso.datetime().optional(),
     votingStartDate: z.iso.datetime().optional(),
     votingEndDate: z.iso.datetime().optional(),
     joinStartDate: z.iso.datetime().optional(),
     joinEndDate: z.iso.datetime().optional(),
     tradingConstraints: TradingConstraintsSchema,
+    rewards: RewardsSchema,
   })
   .refine(
     (data) => {
@@ -81,6 +97,15 @@ export const AdminCreateCompetitionSchema = z
       path: ["joinStartDate"],
     },
   );
+
+/**
+ * Admin update competition schema (note: mostly the same as competition creation, but with optional name)
+ */
+export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
+  name: true,
+}).extend({
+  name: z.string().optional(),
+});
 
 /**
  * Admin start competition schema
@@ -98,7 +123,10 @@ export const AdminStartCompetitionSchema = z
     endDate: z.iso.datetime().optional(),
     votingStartDate: z.iso.datetime().optional(),
     votingEndDate: z.iso.datetime().optional(),
+    joinStartDate: z.iso.datetime().optional(),
+    joinEndDate: z.iso.datetime().optional(),
     tradingConstraints: TradingConstraintsSchema,
+    rewards: RewardsSchema,
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",

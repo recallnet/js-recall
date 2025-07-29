@@ -710,8 +710,14 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   type: CompetitionTypeSchema.optional(),
   externalUrl: z.string().optional(),
   imageUrl: z.string().optional(),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
   votingStartDate: z.date().optional(),
   votingEndDate: z.date().optional(),
+  joinStartDate: z.date().optional(),
+  joinEndDate: z.date().optional(),
+  rewards: z.record(z.number(), z.number()).optional(),
+  tradingConstraints: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type CompetitionAllowedUpdate = z.infer<

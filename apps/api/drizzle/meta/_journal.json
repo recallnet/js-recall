@@ -176,6 +176,13 @@
       "when": 1753206362111,
       "tag": "0024_same_juggernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1753816733690,
+      "tag": "0025_unknown_vindicator",
+      "breakpoints": true
     }
   ]
 }

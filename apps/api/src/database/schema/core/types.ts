@@ -32,3 +32,6 @@ export type SelectEmailVerificationToken =
   typeof defs.emailVerificationTokens.$inferSelect;
 export type InsertEmailVerificationToken =
   typeof defs.emailVerificationTokens.$inferInsert;
+
+export type SelectReward = typeof defs.rewards.$inferSelect;
+export type InsertReward = typeof defs.rewards.$inferInsert;
