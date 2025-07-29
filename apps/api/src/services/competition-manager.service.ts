@@ -77,7 +77,6 @@ export class CompetitionManager {
   private balanceManager: BalanceManager;
   private tradeSimulator: TradeSimulator;
   private portfolioSnapshotter: PortfolioSnapshotter;
-  private activeCompetitionCache: string | null = null;
   private agentManager: AgentManager;
   private configurationService: ConfigurationService;
   private agentRankService: AgentRankService;
@@ -102,26 +101,6 @@ export class CompetitionManager {
     this.agentRankService = agentRankService;
     this.voteManager = voteManager;
     this.tradingConstraintsService = tradingConstraintsService;
-    // Load active competition on initialization
-    this.loadActiveCompetition();
-  }
-
-  /**
-   * Load the active competition from the database
-   * This is used at startup to restore the active competition state
-   */
-  private async loadActiveCompetition() {
-    try {
-      const activeCompetition = await findActive();
-      if (activeCompetition) {
-        this.activeCompetitionCache = activeCompetition.id;
-      }
-    } catch (error) {
-      serviceLogger.error(
-        "[CompetitionManager] Error loading active competition:",
-        error,
-      );
-    }
   }
 
   /**
@@ -271,9 +250,6 @@ export class CompetitionManager {
     competition.updatedAt = new Date();
     await updateCompetition(competition);
 
-    // Update cache
-    this.activeCompetitionCache = competitionId;
-
     serviceLogger.debug(
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
     );
@@ -317,10 +293,9 @@ export class CompetitionManager {
       throw new Error(`Competition is not active: ${competition.status}`);
     }
 
-    if (this.activeCompetitionCache !== competitionId) {
-      throw new Error(
-        `Competition is not the active one: ${this.activeCompetitionCache}`,
-      );
+    const activeCompetition = await findActive();
+    if (!activeCompetition || activeCompetition.id !== competitionId) {
+      throw new Error(`Competition is not the active one`);
     }
 
     // Take final portfolio snapshots
@@ -339,9 +314,6 @@ export class CompetitionManager {
     competition.updatedAt = new Date();
 
     await updateCompetition(competition);
-
-    // Update cache
-    this.activeCompetitionCache = null;
 
     serviceLogger.debug(
       `[CompetitionManager] Ended competition: ${competition.name} (${competitionId})`,
@@ -405,23 +377,7 @@ export class CompetitionManager {
    * @returns The active competition or null if none
    */
   async getActiveCompetition() {
-    // First check cache for better performance
-    if (this.activeCompetitionCache) {
-      const competition = await findById(this.activeCompetitionCache);
-      if (competition?.status === COMPETITION_STATUS.ACTIVE) {
-        return competition;
-      } else {
-        // Cache is out of sync, clear it
-        this.activeCompetitionCache = null;
-      }
-    }
-
-    // Fallback to database query
-    const activeCompetition = await findActive();
-    if (activeCompetition) {
-      this.activeCompetitionCache = activeCompetition.id;
-    }
-    return activeCompetition;
+    return findActive();
   }
 
   /**
@@ -914,11 +870,6 @@ export class CompetitionManager {
     serviceLogger.debug(
       `[CompetitionManager] Updated competition: ${competitionId}`,
     );
-
-    // Clear cache if this was the active competition
-    if (this.activeCompetitionCache === competitionId) {
-      this.activeCompetitionCache = null;
-    }
 
     return updatedCompetition;
   }
