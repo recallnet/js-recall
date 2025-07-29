@@ -61,16 +61,16 @@ async function takePortfolioSnapshots() {
 }
 
 // Schedule the task to run every 5 minutes
-cron.schedule("*/5 * * * *", () => {
+cron.schedule("*/5 * * * *", async () => {
   logger.info("Running scheduled portfolio snapshots task");
-  takePortfolioSnapshots();
+  await takePortfolioSnapshots();
 });
 
 // Also run immediately if called directly
 if (process.argv.includes("--run-once")) {
   logger.info("Running portfolio snapshots task once");
   try {
-    takePortfolioSnapshots();
+    await takePortfolioSnapshots();
   } catch {
     process.exit(1);
   } finally {

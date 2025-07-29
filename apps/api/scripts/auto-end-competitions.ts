@@ -38,16 +38,16 @@ async function autoEndCompetitions() {
 }
 
 // Schedule the task to run every minute
-cron.schedule("* * * * *", () => {
+cron.schedule("* * * * *", async () => {
   logger.info("Running scheduled auto end competitions task");
-  autoEndCompetitions();
+  await autoEndCompetitions();
 });
 
 // Also run immediately if called directly
 if (process.argv.includes("--run-once")) {
   logger.info("Running auto end competitions task once");
   try {
-    autoEndCompetitions();
+    await autoEndCompetitions();
   } catch {
     process.exit(1);
   } finally {

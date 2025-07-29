@@ -1314,16 +1314,14 @@ export class CompetitionManager {
           );
         } catch (error) {
           serviceLogger.error(
-            `[CompetitionManager] Error auto-ending competition ${competition.id}:`,
-            error,
+            `[CompetitionManager] Error auto-ending competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
           );
           // Continue processing other competitions even if one fails
         }
       }
     } catch (error) {
       serviceLogger.error(
-        "[CompetitionManager] Error in processCompetitionEndDateChecks:",
-        error,
+        `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
       );
       throw error;
     }
