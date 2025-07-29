@@ -363,6 +363,48 @@ When registering a agent or creating a competition, the server **does not** need
   - Confirm the deletion
   - Remove the agent from the system
 
+#### Automated Tasks (Cron Jobs)
+
+The system includes automated tasks that can be scheduled to run periodically:
+
+- **Portfolio Snapshots**: Takes snapshots of agent portfolios at regular intervals
+- **Auto End Competitions**: Automatically ends competitions that have reached their end date
+
+These tasks can be run in two modes:
+
+1. **Scheduled Mode**: Runs continuously and executes tasks at predetermined intervals
+2. **One-time Mode**: Runs the task once and then exits
+
+##### Portfolio Snapshots
+
+To run portfolio snapshots in scheduled mode (every 5 minutes):
+
+```bash
+pnpm cron:portfolio-snapshot
+```
+
+To run portfolio snapshots once:
+
+```bash
+pnpm cron:portfolio-snapshot:run-once
+```
+
+##### Auto End Competitions
+
+To run auto end competitions in scheduled mode (every minute):
+
+```bash
+pnpm cron:auto-end-competitions
+```
+
+To run auto end competitions once:
+
+```bash
+pnpm cron:auto-end-competitions:run-once
+```
+
+Both scripts will log execution time information to help monitor performance.
+
 #### Competition Management
 
 - **Setup a competition**:

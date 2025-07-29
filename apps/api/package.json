@@ -53,7 +53,9 @@
     "generate-docs": "pnpm generate-openapi && pnpm generate-markdown",
     "generate": "pnpm generate-docs && prettier --write openapi",
     "cron:portfolio-snapshot": "tsx scripts/take-portfolio-snapshots.ts",
-    "cron:auto-end-competitions": "tsx scripts/auto-end-competitions.ts"
+    "cron:auto-end-competitions": "tsx scripts/auto-end-competitions.ts",
+    "cron:portfolio-snapshot:run-once": "tsx scripts/take-portfolio-snapshots.ts --run-once",
+    "cron:auto-end-competitions:run-once": "tsx scripts/auto-end-competitions.ts --run-once"
   },
   "keywords": [
     "solana",
@@ -80,6 +82,7 @@
     "jsonwebtoken": "^9.0.2",
     "keccak256": "^1.0.6",
     "merkletreejs": "^0.5.2",
+    "node-cron": "^4.2.1",
     "openskill": "^4.1.0",
     "pg": "^8.10.0",
     "pino": "^9.7.0",

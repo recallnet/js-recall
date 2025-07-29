@@ -1,4 +1,5 @@
 import * as dotenv from "dotenv";
+import cron from "node-cron";
 import * as path from "path";
 
 import { createLogger } from "@/lib/logger.js";
@@ -14,14 +15,18 @@ const logger = createLogger("PortfolioSnapshots");
  * Take portfolio snapshots for the active competition
  */
 async function takePortfolioSnapshots() {
+  const startTime = Date.now();
+  logger.info("Starting portfolio snapshots task...");
+
   try {
     // Check if a competition is active
     const activeCompetition =
       await services.competitionManager.getActiveCompetition();
 
     if (!activeCompetition) {
+      const duration = Date.now() - startTime;
       logger.info(
-        "There is no active competition. No snapshots will be taken.",
+        `There is no active competition. No snapshots will be taken. (took ${duration}ms)`,
       );
       return;
     }
@@ -43,18 +48,32 @@ async function takePortfolioSnapshots() {
       activeCompetition.id,
     );
 
-    logger.info("Portfolio snapshots completed successfully!");
+    const duration = Date.now() - startTime;
+    logger.info(`Portfolio snapshots completed successfully in ${duration}ms!`);
   } catch (error) {
     logger.error(
       "Error taking portfolio snapshots:",
       error instanceof Error ? error.message : String(error),
     );
-    process.exit(1);
-  } finally {
-    // Exit the process
-    process.exit(0);
+
+    throw error;
   }
 }
 
-// Run the function
-takePortfolioSnapshots();
+// Schedule the task to run every 5 minutes
+cron.schedule("*/5 * * * *", () => {
+  logger.info("Running scheduled portfolio snapshots task");
+  takePortfolioSnapshots();
+});
+
+// Also run immediately if called directly
+if (process.argv.includes("--run-once")) {
+  logger.info("Running portfolio snapshots task once");
+  try {
+    takePortfolioSnapshots();
+  } catch {
+    process.exit(1);
+  } finally {
+    process.exit(0);
+  }
+}

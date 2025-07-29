@@ -1,4 +1,5 @@
 import * as dotenv from "dotenv";
+import cron from "node-cron";
 import * as path from "path";
 
 import { createLogger } from "@/lib/logger.js";
@@ -14,23 +15,42 @@ const logger = createLogger("AutoEndCompetitions");
  * Auto end competitions that have reached their end date
  */
 async function autoEndCompetitions() {
+  const startTime = Date.now();
+  logger.info("Starting auto end competitions task...");
+
   try {
     // Process competition end date checks
     logger.info("Checking competition end dates...");
     await services.competitionManager.processCompetitionEndDateChecks();
 
-    logger.info("Auto end competitions completed successfully!");
+    const duration = Date.now() - startTime;
+    logger.info(
+      `Auto end competitions completed successfully in ${duration}ms!`,
+    );
   } catch (error) {
     logger.error(
       "Error checking competition end dates:",
       error instanceof Error ? error.message : String(error),
     );
-    process.exit(1);
-  } finally {
-    // Exit the process
-    process.exit(0);
+
+    throw error;
   }
 }
 
-// Run the function
-autoEndCompetitions();
+// Schedule the task to run every minute
+cron.schedule("* * * * *", () => {
+  logger.info("Running scheduled auto end competitions task");
+  autoEndCompetitions();
+});
+
+// Also run immediately if called directly
+if (process.argv.includes("--run-once")) {
+  logger.info("Running auto end competitions task once");
+  try {
+    autoEndCompetitions();
+  } catch {
+    process.exit(1);
+  } finally {
+    process.exit(0);
+  }
+}
