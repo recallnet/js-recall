@@ -4,7 +4,6 @@ import {
   AgentMetadataSchema,
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
-  SyncDataTypeSchema,
   UuidSchema,
 } from "@/types/index.js";
 
@@ -109,25 +108,6 @@ export const AdminStartCompetitionSchema = z
  */
 export const AdminEndCompetitionSchema = z.object({
   competitionId: UuidSchema,
-});
-
-/**
- * Admin sync object index schema
- */
-export const AdminSyncObjectIndexSchema = z.object({
-  competitionId: UuidSchema.optional(),
-  dataTypes: z.array(SyncDataTypeSchema).optional(),
-});
-
-/**
- * Admin get object index query schema
- */
-export const AdminGetObjectIndexQuerySchema = z.object({
-  competitionId: UuidSchema.optional(),
-  agentId: UuidSchema.optional(),
-  dataType: SyncDataTypeSchema.optional(),
-  limit: z.coerce.number().min(1).max(1000).default(100),
-  offset: z.coerce.number().min(0).default(0),
 });
 
 /**
