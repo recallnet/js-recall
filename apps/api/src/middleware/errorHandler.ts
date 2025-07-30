@@ -39,7 +39,7 @@ const errorHandler = (
 
   // Handle inactive agent errors
   if (err.message && err.message.includes("inactive")) {
-    // TODO: if an error has the word "inactive" in it's message, it does mean
+    // TODO: if an error has the word "inactive" in it's message, it does NOT mean
     //  it's a 403. Instead of catching individual cases here, the check for
     //  inactive agents should throw a 403, and this should be removed.
     return res.status(403).json({

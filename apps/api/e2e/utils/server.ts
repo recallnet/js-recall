@@ -42,10 +42,6 @@ export async function startServer(): Promise<void> {
     shell: true,
   });
 
-  console.log("\n\n\n\n");
-  console.log("server process:", serverProcess.pid);
-  console.log("\n\n\n\n");
-
   // Wait for the server to be ready
   return await waitForServerReady(30, 500); // 30 retries, 500ms interval = 15 seconds max
 }
