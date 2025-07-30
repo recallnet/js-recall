@@ -42,8 +42,13 @@ export async function startServer(): Promise<void> {
     shell: true,
   });
 
-  // Wait for the server to be ready
-  return await waitForServerReady(30, 500); // 30 retries, 500ms interval = 15 seconds max
+  try {
+    // Wait for the server to be ready
+    await waitForServerReady(30, 500); // 30 retries, 500ms interval = 15 seconds max
+  } catch (error) {
+    console.error("Cannot start server:", error);
+    stopServer();
+  }
 }
 
 export function stopServer() {
