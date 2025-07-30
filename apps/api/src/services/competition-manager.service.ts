@@ -293,11 +293,6 @@ export class CompetitionManager {
       throw new Error(`Competition is not active: ${competition.status}`);
     }
 
-    const activeCompetition = await findActive();
-    if (!activeCompetition || activeCompetition.id !== competitionId) {
-      throw new Error(`Competition is not the active one`);
-    }
-
     // Take final portfolio snapshots
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
