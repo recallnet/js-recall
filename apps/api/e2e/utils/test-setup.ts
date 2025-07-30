@@ -127,16 +127,6 @@ beforeEach(async () => {
     }
   }
 
-  // Reset CompetitionManager cache
-  if (services.competitionManager) {
-    // @ts-expect-error known private class property
-    if (services.competitionManager.activeCompetitionCache !== null) {
-      log("[Global Setup] Resetting CompetitionManager.activeCompetitionCache");
-      // @ts-expect-error known private class property
-      services.competitionManager.activeCompetitionCache = null;
-    }
-  }
-
   // Reset BalanceManager cache
   if (services.balanceManager) {
     // @ts-expect-error known private class property
