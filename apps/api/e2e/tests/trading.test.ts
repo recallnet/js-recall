@@ -28,6 +28,7 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
+  looseConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -646,7 +647,15 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Price Calculation Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+      undefined,
+      undefined,
+      undefined,
+      looseConstraints,
+    );
 
     // Wait for balances to be properly initialized
     await wait(500);
