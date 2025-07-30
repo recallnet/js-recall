@@ -1,9 +1,3 @@
-import {
-  AgentHandleSchema,
-  MAX_HANDLE_LENGTH,
-  MIN_HANDLE_LENGTH,
-} from "@/types/index.js";
-
 /**
  * Utility functions for agent handle generation and validation
  */
@@ -14,29 +8,16 @@ import {
  * @returns A valid handle string
  * @example
  * generateHandleFromName("John Doe") // returns "john_doe"
- * generateHandleFromName("Agent@123!") // returns "agent_123_"
+ * generateHandleFromName("Agent@123!") // returns "agent123"
  * generateHandleFromName("My Cool Agent") // returns "my_cool_agent"
- * generateHandleFromName("_underscore") // returns "_underscore"
  */
 export function generateHandleFromName(name: string): string {
-  const handle = name
+  return name
     .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, "_") // Replace non-alphanumeric chars with underscore
-    .replace(/_+/g, "_") // Replace two or more underscores in a row with a single underscore
-    .substring(0, MAX_HANDLE_LENGTH); // Enforce max length
-
-  // Ensure minimum length of 3 characters
-  if (handle.length < MIN_HANDLE_LENGTH) {
-    return (
-      handle +
-      "_" +
-      Math.random()
-        .toString(36)
-        .substring(2, 5 - handle.length)
-    );
-  }
-
-  return handle;
+    .replace(/[^a-z0-9]+/g, "_") // Replace non-alphanumeric chars with underscore
+    .replace(/^_+|_+$/g, "") // Remove leading/trailing underscores
+    .replace(/_+/g, "_") // Replace multiple underscores with single
+    .substring(0, 50); // Enforce max length
 }
 
 /**
@@ -45,7 +26,12 @@ export function generateHandleFromName(name: string): string {
  * @returns True if valid, false otherwise
  */
 export function isValidHandle(handle: string): boolean {
-  return AgentHandleSchema.safeParse(handle).success;
+  // Handle must be:
+  // - 1-50 characters long
+  // - Lowercase alphanumeric and underscores only
+  // - Cannot start or end with underscore
+  const handleRegex = /^[a-z0-9]([a-z0-9_]{0,48}[a-z0-9])?$/;
+  return handleRegex.test(handle);
 }
 
 /**
@@ -58,7 +44,7 @@ export function isValidHandle(handle: string): boolean {
  */
 export function appendHandleSuffix(baseHandle: string, suffix: number): string {
   const suffixStr = suffix.toString();
-  const maxBaseLength = MAX_HANDLE_LENGTH - suffixStr.length;
+  const maxBaseLength = 50 - suffixStr.length;
   const truncatedBase = baseHandle.substring(0, maxBaseLength);
   return `${truncatedBase}${suffixStr}`;
 }

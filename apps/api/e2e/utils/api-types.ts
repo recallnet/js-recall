@@ -121,7 +121,7 @@ export interface Agent {
   walletAddress?: string;
   isVerified: boolean;
   name: string;
-  handle: string;
+  handle?: string;
   description?: string;
   imageUrl?: string;
   email?: string;

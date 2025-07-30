@@ -1,5 +1,4 @@
 import * as crypto from "crypto";
-import { DatabaseError } from "pg";
 import { generateNonce } from "siwe";
 import { v4 as uuidv4 } from "uuid";
 import { recoverMessageAddress } from "viem";
@@ -51,6 +50,7 @@ import {
   SelectAgent,
   SelectCompetition,
 } from "@/database/schema/core/types.js";
+import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { transformToTrophy } from "@/lib/trophy-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -113,7 +113,7 @@ export class AgentManager {
   }: {
     ownerId: string;
     name: string;
-    handle: string;
+    handle?: string;
     description?: string;
     imageUrl?: string;
     metadata?: AgentMetadata;
@@ -126,6 +126,12 @@ export class AgentManager {
         throw new Error(
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
+      }
+
+      // Generate handle if not provided
+      let finalHandle = handle;
+      if (!finalHandle) {
+        finalHandle = generateHandleFromName(name);
       }
 
       // Generate agent ID
@@ -142,7 +148,7 @@ export class AgentManager {
         id,
         ownerId,
         name,
-        handle,
+        handle: finalHandle,
         description,
         imageUrl,
         apiKey: encryptedApiKey, // Store encrypted key in database
@@ -157,31 +163,29 @@ export class AgentManager {
       let savedAgent;
       try {
         savedAgent = await create(agent);
-      } catch (error) {
-        if (error instanceof DatabaseError) {
-          // Check for unique constraint violations
-          if (error.code === "23505") {
-            if (error.constraint === "agents_handle_key") {
-              throw new ApiError(
-                409,
-                `An agent with handle '${handle}' already exists`,
-              );
-            }
-            if (error.constraint === "agents_owner_id_name_key") {
-              throw new ApiError(
-                409,
-                `You already have an agent with name '${name}'`,
-              );
-            }
-            if (error.constraint === "agents_wallet_address_key") {
-              throw new ApiError(
-                409,
-                `An agent with wallet address '${walletAddress}' already exists`,
-              );
-            }
+      } catch (dbError: any) {
+        // Check for unique constraint violations
+        if (dbError.code === "23505") {
+          if (dbError.constraint === "agents_handle_key") {
+            throw new ApiError(
+              409,
+              `An agent with handle '${finalHandle}' already exists`,
+            );
+          }
+          if (dbError.constraint === "agents_owner_id_name_key") {
+            throw new ApiError(
+              409,
+              `You already have an agent with name '${name}'`,
+            );
+          }
+          if (dbError.constraint === "agents_wallet_address_key") {
+            throw new ApiError(
+              409,
+              `An agent with wallet address '${walletAddress}' already exists`,
+            );
           }
         }
-        throw error;
+        throw dbError;
       }
 
       // Update cache with plaintext key
@@ -204,13 +208,18 @@ export class AgentManager {
         apiKey, // Return unencrypted key
       };
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error creating agent:", error);
+      // Re-throw ApiError instances directly
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new Error(
-        `Failed to create agent: ${error instanceof Error ? error.message : String(error)}`,
-      );
+
+      serviceLogger.error("[AgentManager] Error creating agent:", error);
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error(`Failed to create agent: ${error}`);
     }
   }
 
@@ -701,31 +710,32 @@ export class AgentManager {
           );
           return undefined;
         }
-      } catch (error) {
-        if (error instanceof DatabaseError) {
-          // Check for unique constraint violations
-          if (error.code === "23505") {
-            if (error.constraint === "agents_handle_key") {
-              throw new ApiError(
-                409,
-                `An agent with handle '${agent.handle}' already exists`,
-              );
-            }
-            if (error.constraint === "agents_owner_id_name_key") {
-              throw new ApiError(
-                409,
-                `You already have an agent with name '${agent.name}'`,
-              );
-            }
-            if (error.constraint === "agents_wallet_address_key") {
-              throw new ApiError(
-                409,
-                `An agent with wallet address '${agent.walletAddress}' already exists`,
-              );
-            }
+      } catch (dbError: any) {
+        // Check for unique constraint violations
+        if (dbError.code === "23505") {
+          if (dbError.constraint === "agents_handle_key") {
+            serviceLogger.debug(
+              `[AgentManager] Handle conflict for agent ${agent.id}: ${agent.handle}`,
+            );
+            throw new ApiError(
+              409,
+              `An agent with handle '${agent.handle}' already exists`,
+            );
+          }
+          if (dbError.constraint === "agents_owner_id_name_key") {
+            throw new ApiError(
+              409,
+              `You already have an agent with name '${agent.name}'`,
+            );
+          }
+          if (dbError.constraint === "agents_wallet_address_key") {
+            throw new ApiError(
+              409,
+              `An agent with wallet address '${agent.walletAddress}' already exists`,
+            );
           }
         }
-        throw error;
+        throw dbError;
       }
 
       // Send verification email if email has changed
@@ -1049,7 +1059,6 @@ export class AgentManager {
           "createdAt",
           "status",
           "agentName",
-          "agentHandle",
           "rank",
         ];
         const sortParts = validatedParams.sort.split(",");
@@ -1667,7 +1676,6 @@ export class AgentManager {
             }
             break;
           }
-          case "agentHandle":
           case "agentName": {
             // Sort by the lexicographically FIRST agent name that belongs to the
             // authenticated user within each competition. This guarantees a
