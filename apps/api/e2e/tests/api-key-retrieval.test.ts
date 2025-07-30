@@ -18,9 +18,6 @@ describe("API Key Retrieval", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    // Store the admin API key for authentication
-    adminApiKey = await getAdminApiKey();
-
     // Note: This test needs adminId which is not returned by getAdminApiKey helper
     // So we still need to make the direct call to get the admin ID
     const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
@@ -28,7 +25,10 @@ describe("API Key Retrieval", () => {
       password: ADMIN_PASSWORD,
       email: ADMIN_EMAIL,
     });
-    adminId = response.data.admin.id;
+    // Store the admin API key and ID for authentication
+    adminApiKey = response.data.admin.apiKey;
+    adminId = response.data.admin.id; // Store the admin ID
+    expect(adminApiKey).toBeDefined();
 
     expect(adminId).toBeDefined();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
