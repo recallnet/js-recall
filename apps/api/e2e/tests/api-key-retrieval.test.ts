@@ -8,7 +8,6 @@ import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   createTestClient,
-  getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
