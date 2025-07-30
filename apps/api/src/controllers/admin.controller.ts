@@ -295,6 +295,7 @@ export function makeAdminController(services: ServiceRegistry) {
               agent = await services.agentManager.createAgent({
                 ownerId: user.id,
                 name: agentName,
+                handle: undefined, // Auto-generate from name
                 description: agentDescription,
                 imageUrl: agentImageUrl,
                 metadata: agentMetadata,
@@ -415,6 +416,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const { id: userId, walletAddress: userWalletAddress } = user;
         const {
           name,
+          handle,
           email,
           walletAddress: agentWalletAddress,
           description,
@@ -443,6 +445,7 @@ export function makeAdminController(services: ServiceRegistry) {
           const agent = await services.agentManager.createAgent({
             ownerId: existingUser.id,
             name,
+            handle,
             description,
             email,
             imageUrl,
@@ -1363,7 +1366,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         const { agentId } = paramsResult.data;
-        const { name, description, imageUrl, email, metadata } =
+        const { name, handle, description, imageUrl, email, metadata } =
           bodyResult.data;
 
         // Get the current agent
@@ -1379,6 +1382,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const updateData = {
           id: agentId,
           name: name ?? agent.name,
+          handle: handle ?? agent.handle,
           description: description ?? agent.description,
           imageUrl: imageUrl ?? agent.imageUrl,
           email: email ?? agent.email,

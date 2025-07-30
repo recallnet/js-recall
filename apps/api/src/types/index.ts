@@ -567,6 +567,7 @@ export const AgentSchema = z.object({
   id: z.string(),
   ownerId: z.string(),
   name: z.string(),
+  handle: z.nullish(z.string()),
   walletAddress: z.nullish(z.string()),
   email: z.nullish(z.email()),
   description: z.nullish(z.string()),
@@ -766,6 +767,18 @@ export const UpdateUserProfileSchema = z
   .strict();
 
 /**
+ * Agent handle validation schema
+ */
+export const AgentHandleSchema = z
+  .string()
+  .min(1, { message: "Handle is required" })
+  .max(50, { message: "Handle must be 50 characters or less" })
+  .regex(/^[a-z0-9]([a-z0-9_]{0,48}[a-z0-9])?$/, {
+    message:
+      "Handle must be lowercase alphanumeric with underscores (cannot start/end with underscore)",
+  });
+
+/**
  * Create agent parameters schema
  */
 export const CreateAgentBodySchema = z
@@ -773,7 +786,9 @@ export const CreateAgentBodySchema = z
     name: z
       .string("Invalid name format")
       .trim()
-      .min(1, { message: "Name is required" }),
+      .min(1, { message: "Name is required" })
+      .max(100, { message: "Name must be 100 characters or less" }),
+    handle: AgentHandleSchema.optional(), // Optional - will be auto-generated if not provided
     description: z
       .string("Invalid description format")
       .trim()
@@ -804,7 +819,9 @@ export const UpdateUserAgentProfileBodySchema = z
       .string("Invalid name format")
       .trim()
       .min(1, { message: "Name must be at least 1 character" })
+      .max(100, { message: "Name must be 100 characters or less" })
       .optional(),
+    handle: AgentHandleSchema.optional(),
     description: z
       .string("Invalid description format")
       .trim()
@@ -1055,7 +1072,10 @@ export const AdminCreateAgentSchema = z.object({
       message: "Must provide either user ID or user wallet address",
     }),
   agent: z.object({
-    name: z.string(),
+    name: z
+      .string()
+      .max(100, { message: "Name must be 100 characters or less" }),
+    handle: AgentHandleSchema.optional(),
     email: z.string().optional(),
     walletAddress: z.string().optional(),
     description: z.string().optional(),

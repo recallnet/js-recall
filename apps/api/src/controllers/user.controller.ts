@@ -131,7 +131,7 @@ export function makeUserController(services: ServiceRegistry) {
         }
         const {
           userId,
-          body: { name, description, imageUrl, email, metadata },
+          body: { name, handle, description, imageUrl, email, metadata },
         } = data;
 
         // Verify the user exists
@@ -144,6 +144,7 @@ export function makeUserController(services: ServiceRegistry) {
         const agent = await services.agentManager.createAgent({
           ownerId: userId,
           name,
+          handle,
           description,
           imageUrl,
           metadata,
@@ -357,7 +358,7 @@ export function makeUserController(services: ServiceRegistry) {
         const {
           userId,
           agentId,
-          body: { name, description, imageUrl, email, metadata },
+          body: { name, handle, description, imageUrl, email, metadata },
         } = data;
 
         // Get the agent to verify ownership
@@ -376,6 +377,7 @@ export function makeUserController(services: ServiceRegistry) {
         const updateData = {
           id: agentId,
           name: name ?? agent.name,
+          handle: handle ?? agent.handle,
           description,
           imageUrl,
           email,

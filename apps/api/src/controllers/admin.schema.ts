@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 
 import {
+  AgentHandleSchema,
   AgentMetadataSchema,
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
@@ -213,7 +214,12 @@ export const AdminUpdateAgentParamsSchema = z.object({
  * Admin update agent body schema
  */
 export const AdminUpdateAgentBodySchema = z.object({
-  name: z.string().min(1, "Name must be at least 1 character").optional(),
+  name: z
+    .string()
+    .min(1, "Name must be at least 1 character")
+    .max(100)
+    .optional(),
+  handle: AgentHandleSchema.optional(),
   description: z.string().optional(),
   imageUrl: z.url("Invalid image URL format").optional(),
   email: z.email("Invalid email format").optional(),

@@ -50,6 +50,7 @@ import {
   SelectAgent,
   SelectCompetition,
 } from "@/database/schema/core/types.js";
+import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { transformToTrophy } from "@/lib/trophy-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -92,6 +93,7 @@ export class AgentManager {
    * Create a new agent
    * @param ownerId User ID who owns this agent
    * @param name Agent name
+   * @param handle Optional agent handle (auto-generated if not provided)
    * @param description Agent description
    * @param imageUrl Optional URL to the agent's image
    * @param metadata Optional agent metadata
@@ -102,6 +104,7 @@ export class AgentManager {
   async createAgent({
     ownerId,
     name,
+    handle,
     description,
     imageUrl,
     metadata,
@@ -110,6 +113,7 @@ export class AgentManager {
   }: {
     ownerId: string;
     name: string;
+    handle?: string;
     description?: string;
     imageUrl?: string;
     metadata?: AgentMetadata;
@@ -122,6 +126,12 @@ export class AgentManager {
         throw new Error(
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
+      }
+
+      // Generate handle if not provided
+      let finalHandle = handle;
+      if (!finalHandle) {
+        finalHandle = generateHandleFromName(name);
       }
 
       // Generate agent ID
@@ -138,6 +148,7 @@ export class AgentManager {
         id,
         ownerId,
         name,
+        handle: finalHandle,
         description,
         imageUrl,
         apiKey: encryptedApiKey, // Store encrypted key in database
@@ -149,7 +160,33 @@ export class AgentManager {
       };
 
       // Store in database
-      const savedAgent = await create(agent);
+      let savedAgent;
+      try {
+        savedAgent = await create(agent);
+      } catch (dbError: any) {
+        // Check for unique constraint violations
+        if (dbError.code === "23505") {
+          if (dbError.constraint === "agents_handle_key") {
+            throw new ApiError(
+              409,
+              `An agent with handle '${finalHandle}' already exists`,
+            );
+          }
+          if (dbError.constraint === "agents_owner_id_name_key") {
+            throw new ApiError(
+              409,
+              `You already have an agent with name '${name}'`,
+            );
+          }
+          if (dbError.constraint === "agents_wallet_address_key") {
+            throw new ApiError(
+              409,
+              `An agent with wallet address '${walletAddress}' already exists`,
+            );
+          }
+        }
+        throw dbError;
+      }
 
       // Update cache with plaintext key
       this.apiKeyCache.set(apiKey, {
@@ -171,35 +208,17 @@ export class AgentManager {
         apiKey, // Return unencrypted key
       };
     } catch (error) {
-      if (error instanceof Error) {
-        serviceLogger.error("[AgentManager] Error creating agent:", error);
-
-        // Check if this is a unique constraint violation for agent name
-        // PostgreSQL throws various error formats depending on the driver and ORM
-        const errorMessage = error.message.toLowerCase();
-        const isUniqueConstraintViolation =
-          errorMessage.includes("duplicate key value") ||
-          errorMessage.includes("violates unique constraint") ||
-          ("code" in error && error.code === "23505");
-
-        const isAgentNameConstraint =
-          errorMessage.includes("agents_owner_id_name_key") ||
-          (errorMessage.includes("owner_id") && errorMessage.includes("name"));
-
-        if (isUniqueConstraintViolation && isAgentNameConstraint) {
-          throw new ApiError(
-            409,
-            `An agent with the name "${name}" already exists for this user`,
-          );
-        }
-
+      // Re-throw ApiError instances directly
+      if (error instanceof ApiError) {
         throw error;
       }
 
-      serviceLogger.error(
-        "[AgentManager] Unknown error creating agent:",
-        error,
-      );
+      serviceLogger.error("[AgentManager] Error creating agent:", error);
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
       throw new Error(`Failed to create agent: ${error}`);
     }
   }
@@ -682,12 +701,41 @@ export class AgentManager {
       agent.updatedAt = new Date();
 
       // Save to database
-      const updatedAgent = await update(agent);
-      if (!updatedAgent) {
-        serviceLogger.debug(
-          `[AgentManager] Failed to update agent: ${agent.id}`,
-        );
-        return undefined;
+      let updatedAgent;
+      try {
+        updatedAgent = await update(agent);
+        if (!updatedAgent) {
+          serviceLogger.debug(
+            `[AgentManager] Failed to update agent: ${agent.id}`,
+          );
+          return undefined;
+        }
+      } catch (dbError: any) {
+        // Check for unique constraint violations
+        if (dbError.code === "23505") {
+          if (dbError.constraint === "agents_handle_key") {
+            serviceLogger.debug(
+              `[AgentManager] Handle conflict for agent ${agent.id}: ${agent.handle}`,
+            );
+            throw new ApiError(
+              409,
+              `An agent with handle '${agent.handle}' already exists`,
+            );
+          }
+          if (dbError.constraint === "agents_owner_id_name_key") {
+            throw new ApiError(
+              409,
+              `You already have an agent with name '${agent.name}'`,
+            );
+          }
+          if (dbError.constraint === "agents_wallet_address_key") {
+            throw new ApiError(
+              409,
+              `An agent with wallet address '${agent.walletAddress}' already exists`,
+            );
+          }
+        }
+        throw dbError;
       }
 
       // Send verification email if email has changed
@@ -700,6 +748,11 @@ export class AgentManager {
       );
       return updatedAgent;
     } catch (error) {
+      // Re-throw ApiError instances directly
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
       serviceLogger.error(
         `[AgentManager] Error updating agent ${agent.id}:`,
         error,
