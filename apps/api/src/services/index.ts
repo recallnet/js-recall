@@ -8,7 +8,6 @@ import { ConfigurationService } from "@/services/configuration.service.js";
 import { EmailVerificationService } from "@/services/email-verification.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
-import { ObjectIndexService } from "@/services/object-index.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
@@ -37,7 +36,6 @@ class ServiceRegistry {
   private _leaderboardService: LeaderboardService;
   private _voteManager: VoteManager;
   private _agentRankService: AgentRankService;
-  private _objectIndexService: ObjectIndexService;
   private _emailService: EmailService;
   private _emailVerificationService: EmailVerificationService;
   private _tradingConstraintsService: TradingConstraintsService;
@@ -67,9 +65,6 @@ class ServiceRegistry {
 
     // Initialize vote manager (no dependencies)
     this._voteManager = new VoteManager();
-
-    // Initialize object index service (no dependencies)
-    this._objectIndexService = new ObjectIndexService();
 
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
@@ -163,10 +158,6 @@ class ServiceRegistry {
     return this._agentRankService;
   }
 
-  get objectIndexService(): ObjectIndexService {
-    return this._objectIndexService;
-  }
-
   get emailService(): EmailService {
     return this._emailService;
   }
@@ -192,7 +183,6 @@ export {
   EmailVerificationService,
   EmailService,
   LeaderboardService,
-  ObjectIndexService,
   PortfolioSnapshotter,
   PriceTracker,
   ServiceRegistry,

@@ -595,69 +595,6 @@ Search for users and agents based on various criteria
 | --------------- | ------ |
 | BearerAuth      |        |
 
-### /api/admin/object-index/sync
-
-#### POST
-
-##### Summary:
-
-Sync object index
-
-##### Description:
-
-Manually trigger population of object_index table with competition data
-
-##### Responses
-
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 200  | Sync initiated successfully                  |
-| 401  | Unauthorized - Admin authentication required |
-| 500  | Server error                                 |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| BearerAuth      |        |
-
-### /api/admin/object-index
-
-#### GET
-
-##### Summary:
-
-Get object index entries
-
-##### Description:
-
-Retrieve object index entries with optional filters
-
-##### Parameters
-
-| Name          | Located in | Description                         | Required | Schema        |
-| ------------- | ---------- | ----------------------------------- | -------- | ------------- |
-| competitionId | query      | Filter by competition ID            | No       | string (uuid) |
-| agentId       | query      | Filter by agent ID                  | No       | string (uuid) |
-| dataType      | query      | Filter by data type                 | No       | string        |
-| limit         | query      | Maximum number of entries to return | No       | integer       |
-| offset        | query      | Number of entries to skip           | No       | integer       |
-
-##### Responses
-
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 200  | Object index entries retrieved successfully  |
-| 400  | Bad request - Invalid parameters             |
-| 401  | Unauthorized - Admin authentication required |
-| 500  | Server error                                 |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| ApiKeyAuth      |        |
-
 ### /api/admin/competitions/{competitionId}/agents/{agentId}
 
 #### POST

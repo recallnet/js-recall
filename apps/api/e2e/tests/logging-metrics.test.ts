@@ -660,7 +660,7 @@ describe("Logging and Metrics API", () => {
       },
       { pattern: 'method="getRewardsByEpoch"', expectedOp: "SELECT" },
       { pattern: 'method="getLatestPortfolioSnapshots"', expectedOp: "SELECT" },
-      { pattern: 'method="countObjectIndex"', expectedOp: "SELECT" },
+
       { pattern: 'method="countAgentTrades"', expectedOp: "SELECT" },
       { pattern: 'method="countTotalVotes"', expectedOp: "SELECT" },
       { pattern: 'method="count"', expectedOp: "SELECT" },
@@ -687,7 +687,7 @@ describe("Logging and Metrics API", () => {
       },
       { pattern: 'method="insertRewards"', expectedOp: "INSERT" },
       { pattern: 'method="insertRewardsTree"', expectedOp: "INSERT" },
-      { pattern: 'method="insertObjectIndexEntries"', expectedOp: "INSERT" },
+
       {
         pattern: 'method="batchCreatePortfolioTokenValues"',
         expectedOp: "INSERT",
