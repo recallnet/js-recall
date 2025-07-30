@@ -1,3 +1,4 @@
+import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { ErrorResponse, LeaderboardResponse } from "@/e2e/utils/api-types.js";
