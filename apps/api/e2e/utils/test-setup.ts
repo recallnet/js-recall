@@ -42,26 +42,10 @@ beforeAll(async () => {
 
   // Ensure database is initialized
   await dbManager.initialize();
-
-  // Ensure scheduler is reset at the start of tests
-  if (services.scheduler) {
-    log("[Global Setup] Resetting scheduler service...");
-    services.scheduler.reset();
-    // Start the scheduler after resetting it
-    services.startSchedulers();
-  }
 });
 
 // Before each test
 beforeEach(async () => {
-  // Reset scheduler to ensure a clean state for each test
-  if (services.scheduler) {
-    log("[Global Setup] Resetting scheduler service for new test...");
-    services.scheduler.reset();
-    // Start the scheduler after resetting it
-    services.startSchedulers();
-  }
-
   // Reset caches to ensure a clean state for each test
   log("[Global Setup] Resetting service caches...");
 
@@ -187,13 +171,6 @@ afterAll(async () => {
   log("[Global Teardown] Cleaning up test environment...");
 
   try {
-    // Stop the scheduler to prevent ongoing database connections
-    if (services.scheduler) {
-      log("[Global Teardown] Stopping scheduler service...");
-      services.scheduler.stopSnapshotScheduler();
-      log("[Global Teardown] Scheduler service stopped");
-    }
-
     // Clean up logging infrastructure resources
     log("[Global Teardown] Cleaning up logging infrastructure...");
 

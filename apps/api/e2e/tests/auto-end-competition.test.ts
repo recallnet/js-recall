@@ -15,8 +15,9 @@ import {
   registerUserAndAgentAndGetClient,
   wait,
 } from "@/e2e/utils/test-helpers.js";
+import { ServiceRegistry } from "@/services/index.js";
 
-describe("Competition End Date Scheduler", () => {
+describe("Competition End Date Processing", () => {
   let adminApiKey: string;
 
   beforeEach(async () => {
@@ -86,9 +87,11 @@ describe("Competition End Date Scheduler", () => {
       (activeCompetition as CompetitionDetailResponse).competition.status,
     ).toBe("active");
 
-    // Wait for the end date to pass plus some buffer time for the scheduler to run
-    // The scheduler runs every 5 seconds in test mode
-    await wait(12000);
+    // This is simulating a cron execution of auto-end-competitions script.
+    await wait(7000);
+
+    const services = new ServiceRegistry();
+    await services.competitionManager.processCompetitionEndDateChecks();
 
     // Check if competition has been automatically ended
     const endedCompetition = await adminClient.getCompetition(competition.id);
@@ -152,8 +155,9 @@ describe("Competition End Date Scheduler", () => {
       (activeCompetition as CompetitionDetailResponse).competition.status,
     ).toBe("active");
 
-    // Wait for a scheduler cycle to run (6 seconds to be safe)
-    await wait(6000);
+    // This is simulating a cron execution of auto-end-competitions script.
+    const services = new ServiceRegistry();
+    await services.competitionManager.processCompetitionEndDateChecks();
 
     // Competition should still be active since end date hasn't passed
     const stillActiveCompetition = await adminClient.getCompetition(

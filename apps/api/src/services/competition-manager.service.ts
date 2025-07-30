@@ -1234,7 +1234,6 @@ export class CompetitionManager {
 
   /**
    * Check and automatically end competitions that have reached their end date
-   * This method is called periodically by the SchedulerService
    */
   async processCompetitionEndDateChecks(): Promise<void> {
     try {
@@ -1264,18 +1263,16 @@ export class CompetitionManager {
           );
         } catch (error) {
           serviceLogger.error(
-            `[CompetitionManager] Error auto-ending competition ${competition.id}:`,
-            error,
+            `[CompetitionManager] Error auto-ending competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
           );
           // Continue processing other competitions even if one fails
         }
       }
     } catch (error) {
       serviceLogger.error(
-        "[CompetitionManager] Error in processCompetitionEndDateChecks:",
-        error,
+        `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
       );
-      throw error; // Re-throw so SchedulerService can handle or log
+      throw error;
     }
   }
 }

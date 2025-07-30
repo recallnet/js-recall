@@ -1,4 +1,3 @@
-import { serviceLogger } from "@/lib/logger.js";
 import { AdminManager } from "@/services/admin-manager.service.js";
 import { AgentManager } from "@/services/agent-manager.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
@@ -12,7 +11,6 @@ import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { ObjectIndexService } from "@/services/object-index.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
-import { SchedulerService } from "@/services/scheduler.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserManager } from "@/services/user-manager.service.js";
@@ -34,7 +32,6 @@ class ServiceRegistry {
   private _userManager: UserManager;
   private _agentManager: AgentManager;
   private _adminManager: AdminManager;
-  private _scheduler: SchedulerService;
   private _configurationService: ConfigurationService;
   private _portfolioSnapshotter: PortfolioSnapshotter;
   private _leaderboardService: LeaderboardService;
@@ -104,14 +101,6 @@ class ServiceRegistry {
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentManager);
-
-    // Initialize and start the scheduler
-    this._scheduler = new SchedulerService(
-      this._competitionManager,
-      this._portfolioSnapshotter,
-    );
-
-    serviceLogger.debug("[ServiceRegistry] All services initialized");
   }
 
   public static getInstance(): ServiceRegistry {
@@ -162,10 +151,6 @@ class ServiceRegistry {
     return this._adminManager;
   }
 
-  get scheduler(): SchedulerService {
-    return this._scheduler;
-  }
-
   get configurationService(): ConfigurationService {
     return this._configurationService;
   }
@@ -193,18 +178,6 @@ class ServiceRegistry {
   get tradingConstraintsService(): TradingConstraintsService {
     return this._tradingConstraintsService;
   }
-
-  // Add method to start schedulers
-  startSchedulers(): void {
-    this._scheduler.start();
-    serviceLogger.info("[ServiceRegistry] Schedulers started");
-  }
-
-  // Add method to stop schedulers
-  stopSchedulers(): void {
-    this._scheduler.stop();
-    serviceLogger.info("[ServiceRegistry] Schedulers stopped");
-  }
 }
 
 // Export service types for convenience
@@ -223,7 +196,6 @@ export {
   PortfolioSnapshotter,
   PriceTracker,
   ServiceRegistry,
-  SchedulerService,
   TradeSimulator,
   TradingConstraintsService,
   UserManager,
