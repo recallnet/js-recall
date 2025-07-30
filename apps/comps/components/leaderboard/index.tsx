@@ -4,6 +4,7 @@ import React from "react";
 
 import { SortState } from "@recallnet/ui2/components/table";
 import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
+import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import BigNumberDisplay from "@/components/bignumber";
@@ -106,15 +107,19 @@ export function LeaderboardSection() {
           >
             {AGENT_SKILLS[0]}
           </TabsTrigger>
-          <TabsTrigger
-            value="all"
-            className={cn(
-              "rounded border p-2 text-black",
-              filter === "all" ? "bg-white" : "text-primary-foreground",
-            )}
-          >
-            More skills comming soon!
-          </TabsTrigger>
+          <Tooltip content="Not available">
+            <TabsTrigger
+              value="all"
+              className={cn(
+                "rounded border p-2 text-black",
+                filter === "all" ? "bg-white" : "text-primary-foreground",
+                //disabled for now
+                "text-secondary-foreground pointer-events-none",
+              )}
+            >
+              More skills comming soon!
+            </TabsTrigger>
+          </Tooltip>
         </TabsList>
 
         <LeaderboardTable
