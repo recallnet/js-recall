@@ -1,9 +1,9 @@
-import { ArrowLeft, ArrowRight, Bot } from "lucide-react";
+import {ArrowLeft, ArrowRight, Bot} from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import React, { useState } from "react";
+import {usePathname} from "next/navigation";
+import React, {useState} from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
+import {Button} from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogClose,
@@ -13,10 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { AgentCard } from "@/components/user-agents/agent-card";
-import { type Agent, Competition } from "@/types";
+import {AgentCard} from "@/components/user-agents/agent-card";
+import {type Agent, Competition} from "@/types";
 
 interface ChooseAgentModalProps {
   isOpen: boolean;
@@ -37,7 +37,7 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
   const pathname = usePathname();
 
   const agentsGrouped = Array.from(
-    { length: Math.ceil(agents.length / 3) },
+    {length: Math.ceil(agents.length / 3)},
     (_, i) => agents.slice(i * 3, i * 3 + 3),
   );
 
@@ -86,6 +86,7 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
                         <AgentCard
                           key={j}
                           agent={agent}
+                          nameComponent='text'
                           className="h-85 w-65 hover:scale-80 flex-shrink-0 scale-75 transition-all duration-200 hover:shadow-lg"
                           onClick={() => onContinue(agent.id)}
                         />

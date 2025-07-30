@@ -1,21 +1,20 @@
-import { usePathname } from "next/navigation";
-import { type ComponentProps, type ReactNode, useState } from "react";
+import {usePathname} from "next/navigation";
+import {type ComponentProps, type ReactNode, useState} from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
-import { toast } from "@recallnet/ui2/components/toast";
+import {Button} from "@recallnet/ui2/components/button";
+import {toast} from "@recallnet/ui2/components/toast";
 
-import { useUserAgents } from "@/hooks/useAgents";
-import { useUserSession } from "@/hooks/useAuth";
-import { useCompetition } from "@/hooks/useCompetition";
-import { useJoinCompetition } from "@/hooks/useJoinCompetition";
+import {useUserAgents} from "@/hooks/useAgents";
+import {useUserSession} from "@/hooks/useAuth";
+import {useCompetition} from "@/hooks/useCompetition";
+import {useJoinCompetition} from "@/hooks/useJoinCompetition";
 
 import AgentRegisteredModal from "./modals/agent-registered";
-import { ChooseAgentModal } from "./modals/choose-agent";
+import {ChooseAgentModal} from "./modals/choose-agent";
 import ConfirmAgentEntryModal from "./modals/confirm-agent-entry";
-import { ConnectWalletModal } from "./modals/connect-wallet";
-import { CreateAccountModal } from "./modals/create-account";
-import { SetupAgentModal } from "./modals/setup-agent";
-import VerifyAgentModal from "./modals/verify-agent";
+import {ConnectWalletModal} from "./modals/connect-wallet";
+import {CreateAccountModal} from "./modals/create-account";
+import {SetupAgentModal} from "./modals/setup-agent";
 
 interface JoinCompetitionButtonProps
   extends Omit<ComponentProps<typeof Button>, "variant"> {
@@ -29,7 +28,6 @@ type ModalTypes =
   | "chooseAgent"
   | "setupAgent"
   | "createAccount"
-  | "verifyAgent"
   | "confirmAgentEntry"
   | "loadingJoin"
   | "registered"
@@ -42,8 +40,8 @@ export function JoinCompetitionButton({
   ...props
 }: JoinCompetitionButtonProps) {
   const session = useUserSession();
-  const { data: userAgents } = useUserAgents();
-  const { data: competition } = useCompetition(competitionId);
+  const {data: userAgents} = useUserAgents();
+  const {data: competition} = useCompetition(competitionId);
   const [activeModal, setActiveModal] = useState<ModalTypes>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string>("");
 
@@ -52,7 +50,7 @@ export function JoinCompetitionButton({
   );
 
   const pathname = usePathname();
-  const { mutate: joinCompetition, isPending: isJoining } =
+  const {mutate: joinCompetition, isPending: isJoining} =
     useJoinCompetition();
 
   // Check if registration is allowed based on join dates
@@ -139,10 +137,6 @@ export function JoinCompetitionButton({
   };
 
   const handleSelectAgent = (agentId: string) => {
-    const agent = userAgents?.agents.find((a) => a.id === agentId);
-    const isVerified = !!agent?.walletAddress;
-    if (!isVerified) return setActiveModal("verifyAgent");
-
     setSelectedAgentId(agentId);
     setActiveModal("confirmAgentEntry");
   };
@@ -150,9 +144,9 @@ export function JoinCompetitionButton({
   const handleJoin = () => {
     setActiveModal("loadingJoin");
     joinCompetition(
-      { agentId: selectedAgentId, competitionId },
+      {agentId: selectedAgentId, competitionId},
       {
-        onSuccess: (data: { message: string; success: boolean }) => {
+        onSuccess: (data: {message: string; success: boolean}) => {
           //small timeout to show loading
           setTimeout(() => {
             if (data.success) {
@@ -195,11 +189,6 @@ export function JoinCompetitionButton({
         onContinue={handleSelectAgent}
         competition={competition}
         agents={userAgents?.agents || []}
-      />
-      <VerifyAgentModal
-        isOpen={activeModal === "verifyAgent"}
-        onClose={() => setActiveModal(null)}
-        onBack={() => setActiveModal("chooseAgent")}
       />
       <ConfirmAgentEntryModal
         isOpen={activeModal === "confirmAgentEntry" && !!selectedAgent}

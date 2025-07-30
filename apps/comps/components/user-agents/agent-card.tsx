@@ -1,30 +1,33 @@
 "use client";
 
-import { Award } from "lucide-react";
+import {Award} from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {useRouter} from "next/navigation";
 
-import { displayAddress } from "@recallnet/address-utils/display";
-import Card, { CardProps } from "@recallnet/ui2/components/card";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {displayAddress} from "@recallnet/address-utils/display";
+import Card, {CardProps} from "@recallnet/ui2/components/card";
+import {cn} from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
-import { Agent } from "@/types";
-import { formatCompactNumber, toOrdinal } from "@/utils/format";
+import {Agent} from "@/types";
+import {formatCompactNumber, toOrdinal} from "@/utils/format";
 
-import { VerificationBadge } from "../verification-badge";
+import {VerificationBadge} from "../verification-badge";
 
 type AgentCardProps = {
   agent: Agent;
+  nameComponent?: 'link' | 'text'
 };
 
 export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
   className,
   agent,
+  nameComponent,
   children,
   ...props
 }) => {
   const router = useRouter();
+  console.log({nameComp: !nameComponent || nameComponent === 'link'})
 
   return (
     <Card
@@ -62,7 +65,12 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
         className="text-secondary-foreground w-full truncate text-center text-2xl font-bold"
         title={agent.name}
       >
-        <Link href={`/agents/${agent.id}`}>{agent.name}</Link>
+        {
+          !nameComponent || nameComponent === 'link' ?
+            <Link href={`/agents/${agent.id}`}>{agent.name}</Link>
+            :
+            <span>{agent.name}</span>
+        }
       </span>
       <div className="flex justify-center gap-3">
         <div className="text-secondary-foreground text-nowrap rounded border p-2">
