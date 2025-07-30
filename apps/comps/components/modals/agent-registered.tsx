@@ -1,9 +1,9 @@
-import {DotLottieReact} from "@lottiefiles/dotlottie-react";
-import {CircleCheckBig, ExternalLink, Hourglass} from "lucide-react";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { CircleCheckBig, ExternalLink, Hourglass } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
-import {Button} from "@recallnet/ui2/components/button";
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogContent,
@@ -13,8 +13,8 @@ import {
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 
-import {Agent, Competition} from "@/types";
-import {formatDate} from "@/utils/format";
+import { Agent, Competition } from "@/types";
+import { formatDate } from "@/utils/format";
 
 import SquarePathAnimation from "../animations/square-path";
 
@@ -68,26 +68,21 @@ export const AgentRegisteredModal: React.FC<Props> = ({
             </h3>
             <div className="text-secondary-foreground space-y-2 rounded-lg border border-gray-700 px-6 py-4 text-gray-300">
               <span>
-                {
-                  competition.startDate ?
-                    <>
-                      This competition starts on the
-                      <span className="text-primary-foreground">
-                        {` ${formatDate(competition.startDate as string)} `}
-                      </span>
-                      - make sure you’re ready to compete by then!
-                    </>
-                    :
-                    <>
-                      This competition starts
-                      {" "}
-                      <span className="text-primary-foreground">
-                        soon
-                      </span>
-                      {" "}
-                      - make sure you’re ready to compete by then!
-                    </>
-                }
+                {competition.startDate ? (
+                  <>
+                    This competition starts on the
+                    <span className="text-primary-foreground">
+                      {` ${formatDate(competition.startDate as string)} `}
+                    </span>
+                    - make sure you’re ready to compete by then!
+                  </>
+                ) : (
+                  <>
+                    This competition starts{" "}
+                    <span className="text-primary-foreground">soon</span> - make
+                    sure you’re ready to compete by then!
+                  </>
+                )}
               </span>
               <div className="border-t-1 my-3" />
               <span className="">
