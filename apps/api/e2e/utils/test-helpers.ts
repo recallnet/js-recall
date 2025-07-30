@@ -1,3 +1,4 @@
+import axios from "axios";
 import * as crypto from "crypto";
 import { and, asc, eq } from "drizzle-orm";
 import { getAddress } from "viem";
@@ -7,16 +8,13 @@ import { expect } from "vitest";
 import { ApiSDK } from "@recallnet/api-sdk";
 
 import { db } from "@/database/db.js";
-import { clearSnapshotCache } from "@/database/repositories/competition-repository.js";
 import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
-import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
 
 import { ApiClient } from "./api-client.js";
 import {
   CreateCompetitionResponse,
   StartCompetitionResponse,
 } from "./api-types.js";
-import { dbManager } from "./db-manager.js";
 import { getBaseUrl } from "./server.js";
 import {
   createSiweMessage,
@@ -43,8 +41,6 @@ export const looseConstraints = {
   minimumLiquidityUsd: 5000,
   minimumPairAgeHours: 0,
 };
-// Flag to track if database is initialized
-let isDatabaseInitialized = false;
 
 /**
  * Create a new API client for testing with random credentials
@@ -83,9 +79,6 @@ export async function registerUserAndAgentAndGetClient({
   agentMetadata?: Record<string, unknown>;
   agentWalletAddress?: string;
 }) {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
   const sdk = getApiSdk(adminApiKey);
 
   // Register a new user with optional agent creation
@@ -160,9 +153,6 @@ export async function startTestCompetition(
     minimumFdvUsd?: number;
   },
 ): Promise<StartCompetitionResponse> {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
   const result = await adminClient.startCompetition(
     name,
     `Test competition description for ${name}`,
@@ -199,9 +189,6 @@ export async function createTestCompetition(
   joinStartDate?: string,
   joinEndDate?: string,
 ): Promise<CreateCompetitionResponse> {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
   const result = await adminClient.createCompetition(
     name,
     description || `Test competition description for ${name}`,
@@ -235,9 +222,6 @@ export async function startExistingTestCompetition(
   externalUrl?: string,
   imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
   const result = await adminClient.startExistingCompetition(
     competitionId,
     agentIds,
@@ -252,34 +236,6 @@ export async function startExistingTestCompetition(
   }
 
   return result as StartCompetitionResponse;
-}
-
-/**
- * Ensure the database is initialized before using it
- */
-async function ensureDatabaseInitialized(): Promise<void> {
-  if (!isDatabaseInitialized) {
-    console.log("Initializing database for tests...");
-    await dbManager.initialize();
-    isDatabaseInitialized = true;
-  }
-}
-
-/**
- * Clean up database state for a given test case
- * This can be used in beforeEach to ensure a clean state
- * Now delegated to the DbManager for consistency
- */
-export async function cleanupTestState(): Promise<void> {
-  await ensureDatabaseInitialized();
-
-  // Also reset rate limiters to ensure clean state between tests
-  resetRateLimiters();
-
-  // Clear snapshot cache
-  clearSnapshotCache();
-
-  return dbManager.cleanupTestState();
 }
 
 /**
@@ -342,9 +298,6 @@ export async function createSiweAuthenticatedClient({
   userEmail?: string;
   userImageUrl?: string;
 }) {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
   const sdk = getApiSdk(adminApiKey);
 
   // Generate a unique wallet for this test
@@ -534,4 +487,18 @@ export async function getStartingValue(agentId: string, competitionId: string) {
   }
 
   return val;
+}
+
+export async function getAdminApiKey() {
+  // Create admin account
+  const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
+    username: ADMIN_USERNAME,
+    password: ADMIN_PASSWORD,
+    email: ADMIN_EMAIL,
+  });
+
+  const adminApiKey = response.data.admin.apiKey;
+  expect(adminApiKey).toBeDefined();
+
+  return adminApiKey;
 }

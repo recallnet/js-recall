@@ -7,7 +7,6 @@ import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
@@ -18,19 +17,18 @@ describe("API Key Retrieval", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
+    // Note: This test needs adminId which is not returned by getAdminApiKey helper
+    // So we still need to make the direct call to get the admin ID
     const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
       username: ADMIN_USERNAME,
       password: ADMIN_PASSWORD,
       email: ADMIN_EMAIL,
     });
-
     // Store the admin API key and ID for authentication
     adminApiKey = response.data.admin.apiKey;
     adminId = response.data.admin.id; // Store the admin ID
     expect(adminApiKey).toBeDefined();
+
     expect(adminId).toBeDefined();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
     console.log(`Admin ID: ${adminId}`);

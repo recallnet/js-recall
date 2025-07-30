@@ -1,16 +1,11 @@
-import axios from "axios";
 import dotenv from "dotenv";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { TokenInfoResponse } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
@@ -39,18 +34,8 @@ describe("Chain Detection Debug", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
 
     // Setup admin client

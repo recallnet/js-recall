@@ -14,11 +14,8 @@ import {
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
   looseConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
@@ -65,18 +62,8 @@ describe("Multi-Agent Competition", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 

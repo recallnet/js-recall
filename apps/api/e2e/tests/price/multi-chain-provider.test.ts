@@ -8,11 +8,8 @@ import { PriceResponse } from "@/e2e/utils/api-types.js";
 import { dbManager } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
@@ -76,19 +73,8 @@ describe("Multi-Chain Provider Tests", () => {
       await dbManager.initialize();
     }
 
-    // Set up authenticated clients
-    await cleanupTestState();
-
-    // Create admin account directly
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
 
     // Setup admin client
@@ -110,9 +96,6 @@ describe("Multi-Chain Provider Tests", () => {
     if (!runTests) {
       return;
     }
-
-    // Clean up the test state using the DbManager
-    await dbManager.cleanupTestState();
 
     // Initialize providers
     multiChainProvider = new MultiChainProvider();
