@@ -24,7 +24,7 @@ import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 
-const limit = 1;
+const limit = 10;
 
 export default function CompetitionPage({
   params,
