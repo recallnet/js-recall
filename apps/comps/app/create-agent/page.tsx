@@ -26,7 +26,6 @@ function CreateAgentView() {
     const result = await createAgent.mutateAsync({
       name: data.name,
       imageUrl: data.imageUrl,
-      email: data.email,
       description: data.description,
       metadata: {
         skills: data.skills,
@@ -55,7 +54,6 @@ function CreateAgentView() {
           name: data.name,
           description: data.description,
           imageUrl: data.imageUrl,
-          email: data.email,
           metadata: {
             skills: data.skills,
             repositoryUrl: data.repositoryUrl,
