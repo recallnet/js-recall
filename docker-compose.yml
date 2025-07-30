@@ -1,12 +1,16 @@
 # This is a test docker-compose file that is not intended for production use!
 name: recall
 
+networks:
+  recall-network:
+    driver: bridge
+
 services:
   db:
     image: postgres
     restart: always
-    ports:
-      - "5432:5432"
+    networks:
+      - recall-network
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -23,8 +27,8 @@ services:
   redis:
     image: redis:alpine
     restart: always
-    ports:
-      - "6379:6379"
+    networks:
+      - recall-network
     volumes:
       - "redis-data:/data"
     healthcheck:
@@ -41,6 +45,8 @@ services:
     image: recall-api
     container_name: recall-api
     restart: always
+    networks:
+      - recall-network
     ports:
       - "${API_PORT:-3000}:${API_PORT:-3000}"
       - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}"
@@ -74,6 +80,8 @@ services:
     image: recall-comps
     container_name: recall-comps
     restart: always
+    networks:
+      - recall-network
     ports:
       - "${COMPS_PORT:-3001}:${COMPS_PORT:-3001}"
     environment:
