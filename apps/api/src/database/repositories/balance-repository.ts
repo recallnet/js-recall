@@ -212,7 +212,7 @@ async function updateBalanceInTransactionImpl(
   agentId: string,
   tokenAddress: string,
   amountDelta: number,
-  specificChain: string,
+  specificChain: SpecificChain,
   symbol: string,
 ): Promise<void> {
   const [result] = await tx
@@ -269,7 +269,7 @@ async function incrementBalanceInTransactionImpl(
   agentId: string,
   tokenAddress: string,
   amount: number,
-  specificChain: string,
+  specificChain: SpecificChain,
   symbol: string,
 ): Promise<void> {
   await updateBalanceInTransactionImpl(
@@ -296,7 +296,7 @@ async function decrementBalanceInTransactionImpl(
   agentId: string,
   tokenAddress: string,
   amount: number,
-  specificChain: string,
+  specificChain: SpecificChain,
   symbol: string,
 ): Promise<void> {
   await updateBalanceInTransactionImpl(
@@ -321,7 +321,7 @@ async function incrementBalanceImpl(
   agentId: string,
   tokenAddress: string,
   amount: number,
-  specificChain: string,
+  specificChain: SpecificChain,
   symbol: string,
 ): Promise<void> {
   return await db.transaction(async (tx) => {
@@ -348,7 +348,7 @@ async function decrementBalanceImpl(
   agentId: string,
   tokenAddress: string,
   amount: number,
-  specificChain: string,
+  specificChain: SpecificChain,
   symbol: string,
 ): Promise<void> {
   return await db.transaction(async (tx) => {

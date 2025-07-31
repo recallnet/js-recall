@@ -1,10 +1,15 @@
 import { and, desc, count as drizzleCount, eq } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
+import {
+  decrementBalanceInTransaction,
+  incrementBalanceInTransaction,
+} from "@/database/repositories/balance-repository.js";
 import { trades } from "@/database/schema/trading/defs.js";
 import { InsertTrade } from "@/database/schema/trading/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
+import { SpecificChain } from "@/types/index.js";
 
 /**
  * Trade Repository
@@ -34,6 +39,53 @@ async function createImpl(trade: InsertTrade) {
     repositoryLogger.error("Error in create:", error);
     throw error;
   }
+}
+
+/**
+ * Create a trade and update balances atomically
+ * @param trade Trade to create
+ */
+async function createTradeWithBalancesImpl(
+  trade: InsertTrade,
+): Promise<typeof trades.$inferSelect> {
+  return await db.transaction(async (tx) => {
+    // Decrement the "from" token balance using the helper function
+    await decrementBalanceInTransaction(
+      tx,
+      trade.agentId,
+      trade.fromToken,
+      trade.fromAmount,
+      trade.fromSpecificChain as SpecificChain,
+      trade.fromTokenSymbol,
+    );
+
+    // Only increment the "to" token balance for non-burn addresses (toAmount > 0)
+    if (trade.toAmount > 0) {
+      await incrementBalanceInTransaction(
+        tx,
+        trade.agentId,
+        trade.toToken,
+        trade.toAmount,
+        trade.toSpecificChain as SpecificChain,
+        trade.toTokenSymbol,
+      );
+    }
+
+    // Create the trade record
+    const [result] = await tx
+      .insert(trades)
+      .values({
+        ...trade,
+        timestamp: trade.timestamp || new Date(),
+      })
+      .returning();
+
+    if (!result) {
+      throw new Error("Failed to create trade - no result returned");
+    }
+
+    return result;
+  });
 }
 
 /**
@@ -189,6 +241,12 @@ export const create = createTimedRepositoryFunction(
   createImpl,
   "TradeRepository",
   "create",
+);
+
+export const createTradeWithBalances = createTimedRepositoryFunction(
+  createTradeWithBalancesImpl,
+  "TradeRepository",
+  "createTradeWithBalances",
 );
 
 export const getAgentTrades = createTimedRepositoryFunction(
