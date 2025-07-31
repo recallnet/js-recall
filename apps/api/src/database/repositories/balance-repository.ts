@@ -214,7 +214,7 @@ async function updateBalanceInTransactionImpl(
   amountDelta: number,
   specificChain: SpecificChain,
   symbol: string,
-): Promise<void> {
+): Promise<number> {
   const [result] = await tx
     .update(balances)
     .set({
@@ -234,15 +234,24 @@ async function updateBalanceInTransactionImpl(
   if (!result) {
     if (amountDelta > 0) {
       // Create balance if it doesn't exist for increments
-      await tx.insert(balances).values({
-        agentId,
-        tokenAddress,
-        amount: amountDelta,
-        specificChain,
-        symbol,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      const [newResult] = await tx
+        .insert(balances)
+        .values({
+          agentId,
+          tokenAddress,
+          amount: amountDelta,
+          specificChain,
+          symbol,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      if (!newResult) {
+        throw new Error("Failed to create new balance");
+      }
+
+      return newResult.amount;
     } else {
       throw new Error(
         `Balance not found for agent ${agentId}, token ${tokenAddress}`,
@@ -253,6 +262,8 @@ async function updateBalanceInTransactionImpl(
       `Insufficient balance. Current: ${result.amount - amountDelta}, Requested: ${Math.abs(amountDelta)}`,
     );
   }
+
+  return result.amount;
 }
 
 /**
@@ -263,6 +274,7 @@ async function updateBalanceInTransactionImpl(
  * @param amount Amount to add
  * @param specificChain Specific chain for the token
  * @param symbol Token symbol
+ * @returns The new balance amount
  */
 async function incrementBalanceInTransactionImpl(
   tx: DatabaseTransaction,
@@ -271,8 +283,8 @@ async function incrementBalanceInTransactionImpl(
   amount: number,
   specificChain: SpecificChain,
   symbol: string,
-): Promise<void> {
-  await updateBalanceInTransactionImpl(
+): Promise<number> {
+  return await updateBalanceInTransactionImpl(
     tx,
     agentId,
     tokenAddress,
@@ -290,6 +302,7 @@ async function incrementBalanceInTransactionImpl(
  * @param amount Amount to subtract
  * @param specificChain Specific chain for the token
  * @param symbol Token symbol
+ * @returns The new balance amount
  */
 async function decrementBalanceInTransactionImpl(
   tx: DatabaseTransaction,
@@ -298,8 +311,8 @@ async function decrementBalanceInTransactionImpl(
   amount: number,
   specificChain: SpecificChain,
   symbol: string,
-): Promise<void> {
-  await updateBalanceInTransactionImpl(
+): Promise<number> {
+  return await updateBalanceInTransactionImpl(
     tx,
     agentId,
     tokenAddress,
@@ -316,6 +329,7 @@ async function decrementBalanceInTransactionImpl(
  * @param amount Amount to add
  * @param specificChain Specific chain for the token
  * @param symbol Token symbol
+ * @returns The new balance amount
  */
 async function incrementBalanceImpl(
   agentId: string,
@@ -323,9 +337,9 @@ async function incrementBalanceImpl(
   amount: number,
   specificChain: SpecificChain,
   symbol: string,
-): Promise<void> {
+): Promise<number> {
   return await db.transaction(async (tx) => {
-    await incrementBalanceInTransactionImpl(
+    return await incrementBalanceInTransactionImpl(
       tx,
       agentId,
       tokenAddress,
@@ -343,6 +357,7 @@ async function incrementBalanceImpl(
  * @param amount Amount to subtract
  * @param specificChain Specific chain for the token
  * @param symbol Token symbol
+ * @returns The new balance amount
  */
 async function decrementBalanceImpl(
   agentId: string,
@@ -350,9 +365,9 @@ async function decrementBalanceImpl(
   amount: number,
   specificChain: SpecificChain,
   symbol: string,
-): Promise<void> {
+): Promise<number> {
   return await db.transaction(async (tx) => {
-    await decrementBalanceInTransactionImpl(
+    return await decrementBalanceInTransactionImpl(
       tx,
       agentId,
       tokenAddress,

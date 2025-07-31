@@ -19,13 +19,18 @@ import { SpecificChain } from "@/types/index.js";
 /**
  * Create a trade and update balances atomically
  * @param trade Trade to create
+ * @returns Object containing the created trade and updated balance amounts
  */
-async function createTradeWithBalancesImpl(
-  trade: InsertTrade,
-): Promise<typeof trades.$inferSelect> {
+async function createTradeWithBalancesImpl(trade: InsertTrade): Promise<{
+  trade: typeof trades.$inferSelect;
+  updatedBalances: {
+    fromTokenBalance: number;
+    toTokenBalance?: number;
+  };
+}> {
   return await db.transaction(async (tx) => {
     // Decrement the "from" token balance using the helper function
-    await decrementBalanceInTransaction(
+    const fromTokenBalance = await decrementBalanceInTransaction(
       tx,
       trade.agentId,
       trade.fromToken,
@@ -34,9 +39,11 @@ async function createTradeWithBalancesImpl(
       trade.fromTokenSymbol,
     );
 
+    let toTokenBalance: number | undefined;
+
     // Only increment the "to" token balance for non-burn addresses (toAmount > 0)
     if (trade.toAmount > 0) {
-      await incrementBalanceInTransaction(
+      toTokenBalance = await incrementBalanceInTransaction(
         tx,
         trade.agentId,
         trade.toToken,
@@ -59,7 +66,13 @@ async function createTradeWithBalancesImpl(
       throw new Error("Failed to create trade - no result returned");
     }
 
-    return result;
+    return {
+      trade: result,
+      updatedBalances: {
+        fromTokenBalance,
+        toTokenBalance,
+      },
+    };
   });
 }
 

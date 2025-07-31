@@ -982,9 +982,23 @@ export class TradeSimulator {
     // Execute the trade atomically (updates balances and creates trade record in one transaction)
     const result = await createTradeWithBalances(trade);
 
-    // Update cache
+    // Update balance cache with absolute values from the database
+    this.balanceManager.updateBalanceCache(
+      agentId,
+      fromToken,
+      result.updatedBalances.fromTokenBalance,
+    );
+    if (result.updatedBalances.toTokenBalance !== undefined) {
+      this.balanceManager.updateBalanceCache(
+        agentId,
+        toToken,
+        result.updatedBalances.toTokenBalance,
+      );
+    }
+
+    // Update trade cache
     const cachedTrades = this.tradeCache.get(agentId) || [];
-    cachedTrades.unshift(result); // Add to beginning of array (newest first)
+    cachedTrades.unshift(result.trade); // Add to beginning of array (newest first)
     // Limit cache size to 100 trades per agent
     if (cachedTrades.length > 100) {
       cachedTrades.pop();
@@ -993,10 +1007,10 @@ export class TradeSimulator {
 
     serviceLogger.debug(`[TradeSimulator] Trade executed successfully:
                 Initial ${fromToken} Balance: ${currentBalance}
-                New ${fromToken} Balance: ${await this.balanceManager.getBalance(agentId, fromToken)}
-                New ${toToken} Balance: ${await this.balanceManager.getBalance(agentId, toToken)}
+                New ${fromToken} Balance: ${result.updatedBalances.fromTokenBalance}
+                New ${toToken} Balance: ${result.updatedBalances.toTokenBalance ?? "N/A (burn)"}
             `);
 
-    return result;
+    return result.trade;
   }
 }

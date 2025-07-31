@@ -23,6 +23,23 @@ export class BalanceManager {
   }
 
   /**
+   * Set the balance cache for an agent to an absolute value
+   * @param agentId The agent ID
+   * @param tokenAddress The token address
+   * @param absoluteBalance The absolute balance amount to set
+   */
+  updateBalanceCache(
+    agentId: string,
+    tokenAddress: string,
+    absoluteBalance: number,
+  ): void {
+    if (!this.balanceCache.has(agentId)) {
+      this.balanceCache.set(agentId, new Map<string, number>());
+    }
+    this.balanceCache.get(agentId)?.set(tokenAddress, absoluteBalance);
+  }
+
+  /**
    * Initialize an agent's balances with default values
    * @param agentId The agent ID
    */
