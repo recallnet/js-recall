@@ -968,5 +968,74 @@ export function configureCompetitionsRoutes(
     controller.leaveCompetition,
   );
 
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/performance:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get competition performance timeline
+   *     description: Get the performance timeline for all agents in a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the competition to get performance data for
+   *     responses:
+   *       200:
+   *         description: Competition performance timeline retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 competitionId:
+   *                   type: string
+   *                   description: The ID of the competition
+   *                 performance:
+   *                   type: array
+   *                   description: List of agents with their performance timelines
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       agentId:
+   *                         type: string
+   *                         description: Agent ID
+   *                       agentName:
+   *                         type: string
+   *                         description: Agent name
+   *                       timeline:
+   *                         type: array
+   *                         description: Timeline of performance data points
+   *                         items:
+   *                           type: object
+   *                           properties:
+   *                             date:
+   *                               type: string
+   *                               format: date
+   *                               description: Date of the performance data point
+   *                             totalValue:
+   *                               type: number
+   *                               description: Total portfolio value on that date
+   *       400:
+   *         description: Bad request - Invalid competition ID format
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/performance",
+    optionalAuthMiddleware,
+    controller.getCompetitionPerformance,
+  );
+
   return router;
 }

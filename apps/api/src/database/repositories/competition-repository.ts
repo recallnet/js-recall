@@ -1755,6 +1755,59 @@ export const findActiveCompetitionsPastEndDate = createTimedRepositoryFunction(
   "findActiveCompetitionsPastEndDate",
 );
 
+/**
+ * Get portfolio timeline for agents in a competition
+ * @param competitionId Competition ID
+ * @returns Array of portfolio timelines per agent
+ */
+async function getAgentPortfolioTimelineImpl(competitionId: string) {
+  try {
+    const result = await dbRead.execute<{
+      date: string;
+      agent_id: string;
+      agent_name: string;
+      competition_id: string;
+      total_value: number;
+    }>(sql`
+      SELECT DATE(timestamp) AS date, agent_id, name AS agent_name, competition_id, total_value FROM (
+        SELECT 
+          ROW_NUMBER() OVER (
+            PARTITION BY agent_id, competition_id, DATE(timestamp)
+            ORDER BY timestamp DESC
+          ) AS rn,
+          timestamp,
+          agent_id,
+          name,
+          competition_id,
+          total_value
+        FROM trading_comps.portfolio_snapshots 
+        JOIN agents on agents.id = agent_id
+        WHERE competition_id = ${competitionId}
+      ) AS ranked_snapshots
+      WHERE rn = 1 
+      ORDER BY name, date
+    `);
+
+    // Convert snake_case to camelCase
+    return result.rows.map((row) => ({
+      date: row.date,
+      agentId: row.agent_id,
+      agentName: row.agent_name,
+      competitionId: row.competition_id,
+      totalValue: Number(row.total_value),
+    }));
+  } catch (error) {
+    repositoryLogger.error("Error in getAgentPortfolioTimelineImpl:", error);
+    throw error;
+  }
+}
+
+export const getAgentPortfolioTimeline = createTimedRepositoryFunction(
+  getAgentPortfolioTimelineImpl,
+  "CompetitionRepository",
+  "getAgentPortfolioTimeline",
+);
+
 export const get24hSnapshots = createTimedRepositoryFunction(
   get24hSnapshotsImpl,
   "CompetitionRepository",
