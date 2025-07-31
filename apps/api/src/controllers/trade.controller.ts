@@ -83,6 +83,19 @@ export function makeTradeController(services: ServiceRegistry) {
           );
         }
 
+        // Check if agent is registered and active in the competition
+        const isAgentActive =
+          await services.competitionManager.isAgentActiveInCompetition(
+            competitionId,
+            agentId,
+          );
+        if (!isAgentActive) {
+          throw new ApiError(
+            403,
+            `Agent ${agentId} is not registered for competition ${competitionId}. Trading is not allowed.`,
+          );
+        }
+
         // Create chain options object if any chain parameters were provided
         const chainOptions =
           fromChain || fromSpecificChain || toChain || toSpecificChain
