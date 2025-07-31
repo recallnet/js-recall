@@ -97,56 +97,59 @@ export class PriceTracker {
       `[PriceTracker] ${blockchainType ? "Using provided" : "Detected"} token ${tokenAddress} on chain: ${tokenChain}`,
     );
 
-    // If no cache hit, use MultiChainProvider
-    if (this.multiChainProvider) {
-      try {
+    if (!this.multiChainProvider) {
+      serviceLogger.error(`[PriceTracker] No MultiChainProvider available`);
+
+      return null;
+    }
+
+    try {
+      serviceLogger.debug(
+        `[PriceTracker] Using MultiChainProvider for token ${tokenAddress}`,
+      );
+
+      // Get price from MultiChainProvider (which has its own cache)
+      const priceResult = await this.multiChainProvider.getPrice(
+        tokenAddress,
+        tokenChain,
+        specificChain,
+      );
+
+      if (priceResult !== null) {
+        // Handle both number and PriceReport return types
+        const price = priceResult.price;
+        const chain = priceResult.chain;
+
+        // For number results, ensure we have a valid specificChain
+        const tokenSpecificChain = priceResult.specificChain;
+
+        // Get the symbol
+        const symbol = priceResult.symbol;
+
         serviceLogger.debug(
-          `[PriceTracker] Using MultiChainProvider for token ${tokenAddress}`,
+          `[PriceTracker] Got price $${price} from MultiChainProvider`,
         );
 
-        // Get price from MultiChainProvider (which has its own cache)
-        const priceResult = await this.multiChainProvider.getPrice(
+        // Store price in database for historical record
+        await this.storePrice(
           tokenAddress,
-          tokenChain,
-          specificChain,
+          price,
+          symbol,
+          chain,
+          tokenSpecificChain,
         );
 
-        if (priceResult !== null) {
-          // Handle both number and PriceReport return types
-          const price = priceResult.price;
-          const chain = priceResult.chain;
-
-          // For number results, ensure we have a valid specificChain
-          const tokenSpecificChain = priceResult.specificChain;
-
-          // Get the symbol
-          const symbol = priceResult.symbol;
-
-          serviceLogger.debug(
-            `[PriceTracker] Got price $${price} from MultiChainProvider`,
-          );
-
-          // Store price in database for historical record
-          await this.storePrice(
-            tokenAddress,
-            price,
-            symbol,
-            chain,
-            tokenSpecificChain,
-          );
-
-          return priceResult;
-        } else {
-          serviceLogger.debug(
-            `[PriceTracker] No price available from MultiChainProvider for ${tokenAddress}`,
-          );
-        }
-      } catch (error) {
-        serviceLogger.error(
-          `[PriceTracker] Error fetching price from MultiChainProvider:`,
-          error instanceof Error ? error.message : "Unknown error",
+        return priceResult;
+      } else {
+        serviceLogger.debug(
+          `[PriceTracker] No price available from MultiChainProvider for ${tokenAddress}`,
         );
       }
+    } catch (error) {
+      serviceLogger.error(
+        `[PriceTracker] Error fetching price from MultiChainProvider:`,
+        error instanceof Error ? error.message : "Unknown error",
+      );
     }
 
     serviceLogger.debug(

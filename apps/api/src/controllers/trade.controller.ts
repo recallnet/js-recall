@@ -102,7 +102,7 @@ export function makeTradeController(services: ServiceRegistry) {
         }
 
         // Execute the trade with optional chain parameters
-        const result = await services.tradeSimulator.executeTrade(
+        const trade = await services.tradeSimulator.executeTrade(
           agentId,
           competitionId,
           fromToken,
@@ -113,14 +113,10 @@ export function makeTradeController(services: ServiceRegistry) {
           chainOptions,
         );
 
-        if (!result.success) {
-          throw new ApiError(400, result.error || "Trade execution failed");
-        }
-
         // Return successful trade result
         res.status(200).json({
           success: true,
-          transaction: result.trade,
+          transaction: trade,
         });
       } catch (error) {
         next(error);
