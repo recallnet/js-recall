@@ -322,62 +322,6 @@ async function decrementBalanceInTransactionImpl(
   );
 }
 
-/**
- * Atomic balance increment (standalone version)
- * @param agentId Agent ID
- * @param tokenAddress Token address
- * @param amount Amount to add
- * @param specificChain Specific chain for the token
- * @param symbol Token symbol
- * @returns The new balance amount
- */
-async function incrementBalanceImpl(
-  agentId: string,
-  tokenAddress: string,
-  amount: number,
-  specificChain: SpecificChain,
-  symbol: string,
-): Promise<number> {
-  return await db.transaction(async (tx) => {
-    return await incrementBalanceInTransactionImpl(
-      tx,
-      agentId,
-      tokenAddress,
-      amount,
-      specificChain,
-      symbol,
-    );
-  });
-}
-
-/**
- * Atomic balance decrement (standalone version)
- * @param agentId Agent ID
- * @param tokenAddress Token address
- * @param amount Amount to subtract
- * @param specificChain Specific chain for the token
- * @param symbol Token symbol
- * @returns The new balance amount
- */
-async function decrementBalanceImpl(
-  agentId: string,
-  tokenAddress: string,
-  amount: number,
-  specificChain: SpecificChain,
-  symbol: string,
-): Promise<number> {
-  return await db.transaction(async (tx) => {
-    return await decrementBalanceInTransactionImpl(
-      tx,
-      agentId,
-      tokenAddress,
-      amount,
-      specificChain,
-      symbol,
-    );
-  });
-}
-
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -428,16 +372,4 @@ export const decrementBalanceInTransaction = createTimedRepositoryFunction(
   decrementBalanceInTransactionImpl,
   "BalanceRepository",
   "decrementBalanceInTransaction",
-);
-
-export const incrementBalance = createTimedRepositoryFunction(
-  incrementBalanceImpl,
-  "BalanceRepository",
-  "incrementBalance",
-);
-
-export const decrementBalance = createTimedRepositoryFunction(
-  decrementBalanceImpl,
-  "BalanceRepository",
-  "decrementBalance",
 );
