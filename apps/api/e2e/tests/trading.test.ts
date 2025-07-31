@@ -624,7 +624,7 @@ describe("Trading API", () => {
       undefined,
       undefined,
       undefined,
-      looseTradingConstraints,
+      { ...looseTradingConstraints, minimumLiquidityUsd: 500 },
     );
 
     // Wait for balances to be properly initialized

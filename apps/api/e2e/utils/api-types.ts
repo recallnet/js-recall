@@ -364,12 +364,7 @@ export interface Competition {
   // Join date constraint fields
   joinStartDate: string | null;
   joinEndDate: string | null;
-  tradingConstraints?: {
-    minimumPairAgeHours?: number;
-    minimum24hVolumeUsd?: number;
-    minimumLiquidityUsd?: number;
-    minimumFdvUsd?: number;
-  };
+  tradingConstraints?: TradingConstraints;
   rewards?: {
     rank: number;
     reward: number;
@@ -802,9 +797,9 @@ export interface GlobalLeaderboardResponse extends ApiResponse {
   };
 }
 
-// ===========================
+// ---------------------------
 // Vote-related types
-// ===========================
+// ---------------------------
 
 /**
  * Response type for casting a vote
@@ -938,5 +933,3 @@ export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
     status: string;
   };
 }
-
-// ===========================
