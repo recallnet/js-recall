@@ -1,4 +1,4 @@
-import { and, count as drizzleCount, eq, inArray } from "drizzle-orm";
+import { and, count as drizzleCount, eq, inArray, sql } from "drizzle-orm";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
@@ -6,6 +6,8 @@ import { balances } from "@/database/schema/trading/defs.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChain } from "@/types/index.js";
+
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Balance Repository
@@ -21,56 +23,6 @@ async function countImpl() {
     throw new Error("No count result returned");
   }
   return res[0]!.count;
-}
-
-/**
- * Create or update a balance
- * @param agentId Agent ID
- * @param tokenAddress Token address
- * @param amount Amount
- * @param specificChain Specific chain for the token
- * @param symbol Token symbol
- */
-async function saveBalanceImpl(
-  agentId: string,
-  tokenAddress: string,
-  amount: number,
-  specificChain: string,
-  symbol: string,
-) {
-  try {
-    const now = new Date();
-    const [result] = await db
-      .insert(balances)
-      .values({
-        agentId,
-        tokenAddress,
-        amount,
-        specificChain,
-        symbol,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: [balances.agentId, balances.tokenAddress],
-        set: {
-          amount,
-          updatedAt: new Date(),
-          specificChain,
-          symbol,
-        },
-      })
-      .returning();
-
-    if (!result) {
-      throw new Error("Failed to save balance - no result returned");
-    }
-
-    return result;
-  } catch (error) {
-    repositoryLogger.error("Error in saveBalance:", error);
-    throw error;
-  }
 }
 
 /**
@@ -246,6 +198,171 @@ async function resetAgentBalancesImpl(
   }
 }
 
+/**
+ * Atomic balance update within a transaction
+ * @param tx Database transaction
+ * @param agentId Agent ID
+ * @param tokenAddress Token address
+ * @param amountDelta Positive for increment, negative for decrement
+ * @param specificChain Specific chain for the token
+ * @param symbol Token symbol
+ */
+async function updateBalanceInTransactionImpl(
+  tx: DatabaseTransaction,
+  agentId: string,
+  tokenAddress: string,
+  amountDelta: number,
+  specificChain: string,
+  symbol: string,
+): Promise<void> {
+  const [result] = await tx
+    .update(balances)
+    .set({
+      amount: sql`${balances.amount} + ${amountDelta}`,
+      updatedAt: new Date(),
+      specificChain,
+      symbol,
+    })
+    .where(
+      and(
+        eq(balances.agentId, agentId),
+        eq(balances.tokenAddress, tokenAddress),
+      ),
+    )
+    .returning();
+
+  if (!result) {
+    if (amountDelta > 0) {
+      // Create balance if it doesn't exist for increments
+      await tx.insert(balances).values({
+        agentId,
+        tokenAddress,
+        amount: amountDelta,
+        specificChain,
+        symbol,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    } else {
+      throw new Error(
+        `Balance not found for agent ${agentId}, token ${tokenAddress}`,
+      );
+    }
+  } else if (amountDelta < 0 && result.amount < 0) {
+    throw new Error(
+      `Insufficient balance. Current: ${result.amount - amountDelta}, Requested: ${Math.abs(amountDelta)}`,
+    );
+  }
+}
+
+/**
+ * Atomic balance increment within a transaction
+ * @param tx Database transaction
+ * @param agentId Agent ID
+ * @param tokenAddress Token address
+ * @param amount Amount to add
+ * @param specificChain Specific chain for the token
+ * @param symbol Token symbol
+ */
+async function incrementBalanceInTransactionImpl(
+  tx: DatabaseTransaction,
+  agentId: string,
+  tokenAddress: string,
+  amount: number,
+  specificChain: string,
+  symbol: string,
+): Promise<void> {
+  await updateBalanceInTransactionImpl(
+    tx,
+    agentId,
+    tokenAddress,
+    amount,
+    specificChain,
+    symbol,
+  );
+}
+
+/**
+ * Atomic balance decrement within a transaction
+ * @param tx Database transaction
+ * @param agentId Agent ID
+ * @param tokenAddress Token address
+ * @param amount Amount to subtract
+ * @param specificChain Specific chain for the token
+ * @param symbol Token symbol
+ */
+async function decrementBalanceInTransactionImpl(
+  tx: DatabaseTransaction,
+  agentId: string,
+  tokenAddress: string,
+  amount: number,
+  specificChain: string,
+  symbol: string,
+): Promise<void> {
+  await updateBalanceInTransactionImpl(
+    tx,
+    agentId,
+    tokenAddress,
+    -amount,
+    specificChain,
+    symbol,
+  );
+}
+
+/**
+ * Atomic balance increment (standalone version)
+ * @param agentId Agent ID
+ * @param tokenAddress Token address
+ * @param amount Amount to add
+ * @param specificChain Specific chain for the token
+ * @param symbol Token symbol
+ */
+async function incrementBalanceImpl(
+  agentId: string,
+  tokenAddress: string,
+  amount: number,
+  specificChain: string,
+  symbol: string,
+): Promise<void> {
+  return await db.transaction(async (tx) => {
+    await incrementBalanceInTransactionImpl(
+      tx,
+      agentId,
+      tokenAddress,
+      amount,
+      specificChain,
+      symbol,
+    );
+  });
+}
+
+/**
+ * Atomic balance decrement (standalone version)
+ * @param agentId Agent ID
+ * @param tokenAddress Token address
+ * @param amount Amount to subtract
+ * @param specificChain Specific chain for the token
+ * @param symbol Token symbol
+ */
+async function decrementBalanceImpl(
+  agentId: string,
+  tokenAddress: string,
+  amount: number,
+  specificChain: string,
+  symbol: string,
+): Promise<void> {
+  return await db.transaction(async (tx) => {
+    await decrementBalanceInTransactionImpl(
+      tx,
+      agentId,
+      tokenAddress,
+      amount,
+      specificChain,
+      symbol,
+    );
+  });
+}
+
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -259,12 +376,6 @@ export const count = createTimedRepositoryFunction(
   countImpl,
   "BalanceRepository",
   "count",
-);
-
-export const saveBalance = createTimedRepositoryFunction(
-  saveBalanceImpl,
-  "BalanceRepository",
-  "saveBalance",
 );
 
 export const getBalance = createTimedRepositoryFunction(
@@ -289,4 +400,29 @@ export const resetAgentBalances = createTimedRepositoryFunction(
   resetAgentBalancesImpl,
   "BalanceRepository",
   "resetAgentBalances",
+);
+
+// Export atomic balance functions
+export const incrementBalanceInTransaction = createTimedRepositoryFunction(
+  incrementBalanceInTransactionImpl,
+  "BalanceRepository",
+  "incrementBalanceInTransaction",
+);
+
+export const decrementBalanceInTransaction = createTimedRepositoryFunction(
+  decrementBalanceInTransactionImpl,
+  "BalanceRepository",
+  "decrementBalanceInTransaction",
+);
+
+export const incrementBalance = createTimedRepositoryFunction(
+  incrementBalanceImpl,
+  "BalanceRepository",
+  "incrementBalance",
+);
+
+export const decrementBalance = createTimedRepositoryFunction(
+  decrementBalanceImpl,
+  "BalanceRepository",
+  "decrementBalance",
 );

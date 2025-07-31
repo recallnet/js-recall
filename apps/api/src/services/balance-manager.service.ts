@@ -1,12 +1,13 @@
 import { config } from "@/config/index.js";
 import {
   count,
+  decrementBalance,
   getAgentBalances,
   getAgentsBulkBalances,
   getBalance,
+  incrementBalance,
   initializeAgentBalances,
   resetAgentBalances,
-  saveBalance,
 } from "@/database/repositories/balance-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { SpecificChain } from "@/types/index.js";
@@ -227,44 +228,24 @@ export class BalanceManager {
   }
 
   /**
-   * Update an agent's token balance
+   * Helper method to update the balance cache
    * @param agentId The agent ID
    * @param tokenAddress The token address
-   * @param amount The new balance amount
-   * @param specificChain The specific chain for the token
-   * @param symbol The token symbol
+   * @param amountDelta The amount to add/subtract from the cached balance
    */
-  async updateBalance(
+  private updateBalanceCache(
     agentId: string,
     tokenAddress: string,
-    amount: number,
-    specificChain: SpecificChain,
-    symbol: string,
-  ): Promise<void> {
-    try {
-      if (amount < 0) {
-        throw new Error("Balance cannot be negative");
-      }
-
-      // Save to database
-      await saveBalance(agentId, tokenAddress, amount, specificChain, symbol);
-
-      // Update cache
-      if (!this.balanceCache.has(agentId)) {
-        this.balanceCache.set(agentId, new Map<string, number>());
-      }
-      this.balanceCache.get(agentId)?.set(tokenAddress, amount);
-
-      serviceLogger.debug(
-        `[BalanceManager] Updated balance for agent ${agentId}, token ${tokenAddress} (${symbol}): ${amount}`,
-      );
-    } catch (error) {
-      serviceLogger.error(
-        `[BalanceManager] Error updating balance for agent ${agentId}, token ${tokenAddress}:`,
-        error,
-      );
-      throw error;
+    amountDelta: number,
+  ): void {
+    if (!this.balanceCache.has(agentId)) {
+      this.balanceCache.set(agentId, new Map<string, number>());
     }
+    const currentBalance =
+      this.balanceCache.get(agentId)?.get(tokenAddress) || 0;
+    this.balanceCache
+      .get(agentId)
+      ?.set(tokenAddress, currentBalance + amountDelta);
   }
 
   /**
@@ -283,14 +264,20 @@ export class BalanceManager {
     symbol: string,
   ): Promise<void> {
     try {
-      const currentBalance = await this.getBalance(agentId, tokenAddress);
-      const newBalance = currentBalance + amount;
-      await this.updateBalance(
+      // Use atomic increment operation
+      await incrementBalance(
         agentId,
         tokenAddress,
-        newBalance,
+        amount,
         specificChain,
         symbol,
+      );
+
+      // Update cache
+      this.updateBalanceCache(agentId, tokenAddress, amount);
+
+      serviceLogger.debug(
+        `[BalanceManager] Added ${amount} to balance for agent ${agentId}, token ${tokenAddress} (${symbol})`,
       );
     } catch (error) {
       serviceLogger.error(
@@ -317,21 +304,20 @@ export class BalanceManager {
     symbol: string,
   ): Promise<void> {
     try {
-      const currentBalance = await this.getBalance(agentId, tokenAddress);
-      const newBalance = currentBalance - amount;
-
-      if (newBalance < 0) {
-        throw new Error(
-          `Insufficient balance. Current: ${currentBalance}, Requested: ${amount}`,
-        );
-      }
-
-      await this.updateBalance(
+      // Use atomic decrement operation
+      await decrementBalance(
         agentId,
         tokenAddress,
-        newBalance,
+        amount,
         specificChain,
         symbol,
+      );
+
+      // Update cache
+      this.updateBalanceCache(agentId, tokenAddress, -amount);
+
+      serviceLogger.debug(
+        `[BalanceManager] Subtracted ${amount} from balance for agent ${agentId}, token ${tokenAddress} (${symbol})`,
       );
     } catch (error) {
       serviceLogger.error(
