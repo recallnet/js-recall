@@ -19,6 +19,7 @@ import { CompetitionVotingBanner } from "@/components/competition-voting-banner"
 import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
+import { PerformanceChart } from "@/components/performance-chart/index";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
@@ -207,6 +208,7 @@ export default function CompetitionPage({
           onPageChange={handlePageChange}
         />
       )}
+      <PerformanceChart />
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />
     </div>
