@@ -1013,6 +1013,65 @@ describe("Competition API", () => {
     );
   });
 
+  test("should include trading constraints in competition details by ID", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Trading Constraints Detail Test Agent",
+    });
+
+    // Create a competition with custom trading constraints
+    const competitionName = `Trading Constraints Detail Test ${Date.now()}`;
+    const customConstraints = {
+      minimumPairAgeHours: 72,
+      minimum24hVolumeUsd: 500000,
+      minimumLiquidityUsd: 300000,
+      minimumFdvUsd: 5000000,
+    };
+
+    const createResponse = (await adminClient.createCompetition(
+      competitionName,
+      "Test competition with trading constraints for detail endpoint",
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      customConstraints,
+    )) as CreateCompetitionResponse;
+
+    // Test getting competition details includes trading constraints
+    const detailResponse = (await agentClient.getCompetition(
+      createResponse.competition.id,
+    )) as CompetitionDetailResponse;
+
+    // Verify the response includes trading constraints
+    expect(detailResponse.success).toBe(true);
+    expect(detailResponse.competition).toBeDefined();
+    expect(detailResponse.competition.tradingConstraints).toBeDefined();
+    expect(
+      detailResponse.competition.tradingConstraints?.minimumPairAgeHours,
+    ).toBe(72);
+    expect(
+      detailResponse.competition.tradingConstraints?.minimum24hVolumeUsd,
+    ).toBe(500000);
+    expect(
+      detailResponse.competition.tradingConstraints?.minimumLiquidityUsd,
+    ).toBe(300000);
+    expect(detailResponse.competition.tradingConstraints?.minimumFdvUsd).toBe(
+      5000000,
+    );
+  });
+
   test("should return 404 for non-existent competition", async () => {
     // Setup admin client
     const adminClient = createTestClient();

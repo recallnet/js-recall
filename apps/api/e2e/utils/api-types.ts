@@ -364,6 +364,8 @@ export interface Competition {
   // Join date constraint fields
   joinStartDate: string | null;
   joinEndDate: string | null;
+  // Trading constraints
+  tradingConstraints?: TradingConstraints;
 }
 
 // Leaderboard entry (per-competition leaderboard)

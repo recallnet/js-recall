@@ -591,6 +591,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
+
         const trades =
           await services.tradeSimulator.getCompetitionTrades(competitionId);
 
@@ -637,6 +638,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
+        // Get trading constraints for this competition
+        const tradingConstraints =
+          await services.tradingConstraintsService.getConstraintsWithDefaults(
+            competitionId,
+          );
+
         // Return the competition details
         res.status(200).json({
           success: true,
@@ -645,6 +652,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             stats,
             votingEnabled,
             userVotingInfo,
+            tradingConstraints,
           },
         });
       } catch (error) {
