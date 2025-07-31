@@ -79,7 +79,7 @@ async function createTradeWithBalancesImpl(trade: InsertTrade): Promise<{
     }
 
     repositoryLogger.debug(
-      `[TradeRepository] Trade created successfully: agent=${trade.agentId}, tradeId=${result.id}, fromBalance=${fromTokenBalance}, toBalance=${toTokenBalance ?? 'N/A (burn)'}`,
+      `[TradeRepository] Trade created successfully: agent=${trade.agentId}, tradeId=${result.id}, fromBalance=${fromTokenBalance}, toBalance=${toTokenBalance ?? "N/A (burn)"}`,
     );
 
     return {
