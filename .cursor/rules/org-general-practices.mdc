@@ -12,7 +12,8 @@ alwaysApply: true
 – **Environment Awareness:** Write code that correctly handles different environments (e.g., dev, test, prod).
 – **Focused Changes:** Only make changes that are requested or clearly understood and directly related to the task. Avoid implementing unrelated improvements or refactors without explicit instruction (see Agent Task Scope below).
 – **Incremental Improvement:** When fixing bugs, avoid introducing new patterns/technologies unless necessary after exhausting existing options. If a new pattern replaces an old one, remove the old implementation.
-– **File Size:** Avoid overly long files. Consider refactoring files exceeding 200–300 lines.
+– **File Size:** Avoid overly long files. Consider refactoring files exceeding 200–300 lines
+- **Function Size:** Avoid overly long functions.  Break up large functions using helper functions that encapsulate related functionality into smaller and more focused pieces.
 – **Script Usage:** Avoid writing one-off scripts if a more integrated solution is feasible.
 
 ## Data Handling
