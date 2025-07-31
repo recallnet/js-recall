@@ -17,31 +17,6 @@ import { SpecificChain } from "@/types/index.js";
  */
 
 /**
- * Create a new trade
- * @param trade Trade to create
- */
-async function createImpl(trade: InsertTrade) {
-  try {
-    const [result] = await db
-      .insert(trades)
-      .values({
-        ...trade,
-        timestamp: trade.timestamp || new Date(),
-      })
-      .returning();
-
-    if (!result) {
-      throw new Error("Failed to create trade - no result returned");
-    }
-
-    return result;
-  } catch (error) {
-    repositoryLogger.error("Error in create:", error);
-    throw error;
-  }
-}
-
-/**
  * Create a trade and update balances atomically
  * @param trade Trade to create
  */
@@ -236,12 +211,6 @@ async function getAllTradesImpl(competitionId?: string) {
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
-
-export const create = createTimedRepositoryFunction(
-  createImpl,
-  "TradeRepository",
-  "create",
-);
 
 export const createTradeWithBalances = createTimedRepositoryFunction(
   createTradeWithBalancesImpl,

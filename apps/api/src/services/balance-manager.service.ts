@@ -1,11 +1,9 @@
 import { config } from "@/config/index.js";
 import {
   count,
-  decrementBalance,
   getAgentBalances,
   getAgentsBulkBalances,
   getBalance,
-  incrementBalance,
   initializeAgentBalances,
   resetAgentBalances,
 } from "@/database/repositories/balance-repository.js";
@@ -224,107 +222,6 @@ export class BalanceManager {
         error,
       );
       return [];
-    }
-  }
-
-  /**
-   * Helper method to update the balance cache
-   * @param agentId The agent ID
-   * @param tokenAddress The token address
-   * @param amountDelta The amount to add/subtract from the cached balance
-   */
-  private updateBalanceCache(
-    agentId: string,
-    tokenAddress: string,
-    amountDelta: number,
-  ): void {
-    if (!this.balanceCache.has(agentId)) {
-      this.balanceCache.set(agentId, new Map<string, number>());
-    }
-    const currentBalance =
-      this.balanceCache.get(agentId)?.get(tokenAddress) || 0;
-    this.balanceCache
-      .get(agentId)
-      ?.set(tokenAddress, currentBalance + amountDelta);
-  }
-
-  /**
-   * Add amount to an agent's token balance
-   * @param agentId The agent ID
-   * @param tokenAddress The token address
-   * @param amount The amount to add
-   * @param specificChain The specific chain for the token
-   * @param symbol The token symbol
-   */
-  async addAmount(
-    agentId: string,
-    tokenAddress: string,
-    amount: number,
-    specificChain: SpecificChain,
-    symbol: string,
-  ): Promise<void> {
-    try {
-      // Use atomic increment operation
-      await incrementBalance(
-        agentId,
-        tokenAddress,
-        amount,
-        specificChain,
-        symbol,
-      );
-
-      // Update cache
-      this.updateBalanceCache(agentId, tokenAddress, amount);
-
-      serviceLogger.debug(
-        `[BalanceManager] Added ${amount} to balance for agent ${agentId}, token ${tokenAddress} (${symbol})`,
-      );
-    } catch (error) {
-      serviceLogger.error(
-        `[BalanceManager] Error adding amount for agent ${agentId}, token ${tokenAddress}:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Subtract amount from an agent's token balance
-   * @param agentId The agent ID
-   * @param tokenAddress The token address
-   * @param amount The amount to subtract
-   * @param specificChain The specific chain for the token
-   * @param symbol The token symbol
-   */
-  async subtractAmount(
-    agentId: string,
-    tokenAddress: string,
-    amount: number,
-    specificChain: SpecificChain,
-    symbol: string,
-  ): Promise<void> {
-    try {
-      // Use atomic decrement operation
-      await decrementBalance(
-        agentId,
-        tokenAddress,
-        amount,
-        specificChain,
-        symbol,
-      );
-
-      // Update cache
-      this.updateBalanceCache(agentId, tokenAddress, -amount);
-
-      serviceLogger.debug(
-        `[BalanceManager] Subtracted ${amount} from balance for agent ${agentId}, token ${tokenAddress} (${symbol})`,
-      );
-    } catch (error) {
-      serviceLogger.error(
-        `[BalanceManager] Error subtracting amount for agent ${agentId}, token ${tokenAddress}:`,
-        error,
-      );
-      throw error;
     }
   }
 
