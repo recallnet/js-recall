@@ -27,6 +27,7 @@ import {
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
+  CompetitionPerformanceResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CreateCompetitionResponse,
@@ -1065,6 +1066,20 @@ export class ApiClient {
     const url = `/api/competitions/${competitionId}/agents${queryString ? `?${queryString}` : ""}`;
 
     return this.request<CompetitionAgentsResponse>("get", url);
+  }
+
+  /**
+   * Get performance timeline for a competition
+   * @param competitionId Competition ID
+   * @returns Competition performance response
+   */
+  async getCompetitionPerformance(
+    competitionId: string,
+  ): Promise<CompetitionPerformanceResponse | ErrorResponse> {
+    return this.request(
+      "get",
+      `/api/competitions/${competitionId}/performance`,
+    );
   }
 
   /**
