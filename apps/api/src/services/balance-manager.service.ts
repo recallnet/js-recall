@@ -28,7 +28,7 @@ export class BalanceManager {
    * @param tokenAddress The token address
    * @param absoluteBalance The absolute balance amount to set
    */
-  updateBalanceCache(
+  setBalanceCache(
     agentId: string,
     tokenAddress: string,
     absoluteBalance: number,

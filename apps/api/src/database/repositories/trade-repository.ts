@@ -39,6 +39,10 @@ async function createTradeWithBalancesImpl(trade: InsertTrade): Promise<{
       trade.fromTokenSymbol,
     );
 
+    repositoryLogger.debug(
+      `[TradeRepository] From token balance updated: agent=${trade.agentId}, token=${trade.fromToken} (${trade.fromTokenSymbol}), newBalance=${fromTokenBalance}`,
+    );
+
     let toTokenBalance: number | undefined;
 
     // Only increment the "to" token balance for non-burn addresses (toAmount > 0)
@@ -50,6 +54,14 @@ async function createTradeWithBalancesImpl(trade: InsertTrade): Promise<{
         trade.toAmount,
         trade.toSpecificChain as SpecificChain,
         trade.toTokenSymbol,
+      );
+
+      repositoryLogger.debug(
+        `[TradeRepository] To token balance updated: agent=${trade.agentId}, token=${trade.toToken} (${trade.toTokenSymbol}), newBalance=${toTokenBalance}`,
+      );
+    } else {
+      repositoryLogger.debug(
+        `[TradeRepository] Skipping to token balance update (burn trade): agent=${trade.agentId}, token=${trade.toToken} (${trade.toTokenSymbol})`,
       );
     }
 
@@ -65,6 +77,10 @@ async function createTradeWithBalancesImpl(trade: InsertTrade): Promise<{
     if (!result) {
       throw new Error("Failed to create trade - no result returned");
     }
+
+    repositoryLogger.debug(
+      `[TradeRepository] Trade created successfully: agent=${trade.agentId}, tradeId=${result.id}, fromBalance=${fromTokenBalance}, toBalance=${toTokenBalance ?? 'N/A (burn)'}`,
+    );
 
     return {
       trade: result,

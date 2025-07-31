@@ -983,13 +983,13 @@ export class TradeSimulator {
     const result = await createTradeWithBalances(trade);
 
     // Update balance cache with absolute values from the database
-    this.balanceManager.updateBalanceCache(
+    this.balanceManager.setBalanceCache(
       agentId,
       fromToken,
       result.updatedBalances.fromTokenBalance,
     );
     if (result.updatedBalances.toTokenBalance !== undefined) {
-      this.balanceManager.updateBalanceCache(
+      this.balanceManager.setBalanceCache(
         agentId,
         toToken,
         result.updatedBalances.toTokenBalance,

@@ -265,6 +265,10 @@ async function updateBalanceInTransactionImpl(
     );
   }
 
+  repositoryLogger.debug(
+    `[BalanceRepository] Updated balance: agent=${agentId}, token=${tokenAddress} (${symbol}), newAmount=${result.amount}`,
+  );
+
   return result.amount;
 }
 
