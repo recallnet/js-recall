@@ -206,6 +206,7 @@ async function resetAgentBalancesImpl(
  * @param amountDelta Positive for increment, negative for decrement
  * @param specificChain Specific chain for the token
  * @param symbol Token symbol
+ * @returns The new balance amount
  */
 async function updateBalanceInTransactionImpl(
   tx: DatabaseTransaction,
@@ -253,6 +254,7 @@ async function updateBalanceInTransactionImpl(
 
       return newResult.amount;
     } else {
+      // For decrements, the balance should already exist
       throw new Error(
         `Balance not found for agent ${agentId}, token ${tokenAddress}`,
       );
