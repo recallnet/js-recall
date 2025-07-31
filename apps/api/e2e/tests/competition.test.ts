@@ -258,6 +258,82 @@ describe("Competition API", () => {
     expect(buyTradeResponse.success).toBe(false);
   });
 
+  test("agents can view trading constraints in competition rules", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Rules Test",
+      });
+
+    // Start a competition with specific trading constraints
+    const competitionName = `Rules Test Competition ${Date.now()}`;
+    const customConstraints = {
+      minimumPairAgeHours: 48,
+      minimum24hVolumeUsd: 250000,
+      minimumLiquidityUsd: 150000,
+      minimumFdvUsd: 2000000,
+    };
+
+    const createResponse = (await adminClient.createCompetition(
+      competitionName,
+      "Test competition - check rules endpoint",
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      customConstraints,
+    )) as CreateCompetitionResponse;
+
+    const competitionResponse = await startExistingTestCompetition(
+      adminClient,
+      createResponse.competition.id,
+      [agent.id],
+    );
+    expect(competitionResponse.success).toBe(true);
+
+    // Agent gets competition rules
+    const rulesResponse =
+      (await agentClient.getRules()) as CompetitionRulesResponse;
+    expect(rulesResponse.success).toBe(true);
+    expect(rulesResponse.rules).toBeDefined();
+    expect(rulesResponse.rules.tradingRules).toBeDefined();
+    expect(rulesResponse.rules.tradingRules).toBeInstanceOf(Array);
+
+    // Verify trading constraints are included in the trading rules
+    const tradingRules = rulesResponse.rules.tradingRules;
+    expect(
+      tradingRules.some((rule: string) =>
+        rule.includes("minimum 48 hours of trading history"),
+      ),
+    ).toBe(true);
+    expect(
+      tradingRules.some((rule: string) =>
+        rule.includes("minimum 24h volume of $250,000 USD"),
+      ),
+    ).toBe(true);
+    expect(
+      tradingRules.some((rule: string) =>
+        rule.includes("minimum liquidity of $150,000 USD"),
+      ),
+    ).toBe(true);
+    expect(
+      tradingRules.some((rule: string) =>
+        rule.includes("minimum FDV of $2,000,000 USD"),
+      ),
+    ).toBe(true);
+  });
+
   test("agents can view competition status and leaderboard", async () => {
     // Setup admin client and register an agent
     const adminClient = createTestClient();
