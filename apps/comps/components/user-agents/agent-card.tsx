@@ -16,15 +16,18 @@ import { VerificationBadge } from "../verification-badge";
 
 type AgentCardProps = {
   agent: Agent;
+  nameComponent?: "link" | "text";
 };
 
 export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
   className,
   agent,
+  nameComponent,
   children,
   ...props
 }) => {
   const router = useRouter();
+  console.log({ nameComp: !nameComponent || nameComponent === "link" });
 
   return (
     <Card
@@ -62,7 +65,11 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
         className="text-secondary-foreground w-full truncate text-center text-2xl font-bold"
         title={agent.name}
       >
-        <Link href={`/agents/${agent.id}`}>{agent.name}</Link>
+        {!nameComponent || nameComponent === "link" ? (
+          <Link href={`/agents/${agent.id}`}>{agent.name}</Link>
+        ) : (
+          <span>{agent.name}</span>
+        )}
       </span>
       <div className="flex justify-center gap-3">
         <div className="text-secondary-foreground text-nowrap rounded border p-2">
