@@ -565,6 +565,7 @@ export class ApiClient {
     agentId: string,
     profileData: {
       name?: string;
+      handle?: string;
       description?: string;
       imageUrl?: string;
       email?: string;
