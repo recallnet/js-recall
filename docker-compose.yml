@@ -3,7 +3,8 @@ name: recall
 
 services:
   db:
-    image: postgres
+    image: postgres:17-alpine
+    container_name: recall-db
     restart: always
     ports:
       - "5432:5432"
@@ -13,26 +14,15 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - "postgres-data:/var/lib/postgresql/data"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres || exit 1"]
-      interval: 600s
-      timeout: 5s
-      retries: 3
-      start_period: 1s
 
   redis:
     image: redis:alpine
+    container_name: recall-redis
     restart: always
     ports:
       - "6379:6379"
     volumes:
       - "redis-data:/data"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 600s
-      timeout: 5s
-      retries: 3
-      start_period: 1s
 
   api:
     build:
@@ -53,16 +43,6 @@ services:
     depends_on:
       - db
       - redis
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://127.0.0.1:${API_PORT:-3000}${API_PREFIX:+/${API_PREFIX}}/api/health || exit 1",
-        ]
-      interval: 600s
-      timeout: 5s
-      retries: 3
-      start_period: 1s
 
   comps:
     build:
@@ -80,16 +60,6 @@ services:
       PORT: ${COMPS_PORT:-3001}
     depends_on:
       - api
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://127.0.0.1:${COMPS_PORT:-3001}/competitions || exit 1",
-        ]
-      interval: 600s
-      timeout: 5s
-      retries: 3
-      start_period: 1s
 
 volumes:
   postgres-data:
