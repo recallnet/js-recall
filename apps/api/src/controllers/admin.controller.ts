@@ -10,6 +10,7 @@ import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
+  ACTOR_STATUS,
   ActorStatus,
   AdminCreateAgentSchema,
   COMPETITION_STATUS,
@@ -581,7 +582,35 @@ export function makeAdminController(services: ServiceRegistry) {
           tradingConstraints,
         } = result.data;
 
-        let finalAgentIds = [...agentIds]; // Start with provided agent IDs
+        // Validate that all provided agent IDs exist in the database and are active
+        const invalidAgentIds: string[] = [];
+        const validAgentIds: string[] = [];
+
+        for (const agentId of agentIds) {
+          const agent = await services.agentManager.getAgent(agentId);
+
+          if (!agent) {
+            invalidAgentIds.push(agentId);
+            continue;
+          }
+
+          if (agent.status !== ACTOR_STATUS.ACTIVE) {
+            invalidAgentIds.push(agentId);
+            continue;
+          }
+
+          validAgentIds.push(agentId);
+        }
+
+        // If there are invalid agent IDs, return an error with the list
+        if (invalidAgentIds.length > 0) {
+          throw new ApiError(
+            400,
+            `Cannot start competition: the following agent IDs are invalid or inactive: ${invalidAgentIds.join(", ")}`,
+          );
+        }
+
+        let finalAgentIds = [...validAgentIds]; // Start with validated agent IDs
 
         // Get pre-registered agents from the database if we have a competitionId
         if (competitionId) {
@@ -608,7 +637,7 @@ export function makeAdminController(services: ServiceRegistry) {
         if (finalAgentIds.length === 0) {
           throw new ApiError(
             400,
-            "Cannot start competition: no agents provided in agentIds and no agents have joined the competition",
+            "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
           );
         }
 
