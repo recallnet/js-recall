@@ -84,6 +84,7 @@ export class LeaderboardService {
       rank: 0, // Will be set during sorting
       id: agent.id,
       name: agent.name,
+      handle: agent.handle,
       description: agent.description,
       imageUrl: agent.imageUrl,
       metadata: agent.metadata as AgentMetadata,

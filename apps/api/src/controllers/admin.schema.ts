@@ -29,6 +29,7 @@ export const AdminRegisterUserSchema = z.object({
   userImageUrl: z.url().optional(),
   userMetadata: z.record(z.string(), z.unknown()).optional(),
   agentName: z.string().optional(),
+  agentHandle: z.string().optional(),
   agentDescription: z.string().optional(),
   agentImageUrl: z.url().optional(),
   agentMetadata: AgentMetadataSchema.optional(),

@@ -560,6 +560,10 @@ async function searchAgentsImpl(
       conditions.push(ilike(agents.name, `%${searchParams.name}%`));
     }
 
+    if (searchParams.handle) {
+      conditions.push(eq(agents.handle, searchParams.handle));
+    }
+
     if (searchParams.ownerId) {
       conditions.push(eq(agents.ownerId, searchParams.ownerId));
     }

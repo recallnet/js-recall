@@ -561,13 +561,18 @@ export const ActorStatusSchema = z.enum(ACTOR_STATUS_VALUES);
 export type ActorStatus = z.infer<typeof ActorStatusSchema>;
 
 /**
+ * Maximum length of an agent handle.
+ */
+export const MAX_AGENT_HANDLE_LENGTH = 15;
+
+/**
  * Agent information Object
  */
 export const AgentSchema = z.object({
   id: z.string(),
   ownerId: z.string(),
   name: z.string(),
-  handle: z.nullish(z.string()),
+  handle: z.string(),
   walletAddress: z.nullish(z.string()),
   email: z.nullish(z.email()),
   description: z.nullish(z.string()),
@@ -771,11 +776,14 @@ export const UpdateUserProfileSchema = z
  */
 export const AgentHandleSchema = z
   .string()
+  .trim()
   .min(1, { message: "Handle is required" })
-  .max(50, { message: "Handle must be 50 characters or less" })
-  .regex(/^[a-z0-9]([a-z0-9_]{0,48}[a-z0-9])?$/, {
+  .max(MAX_AGENT_HANDLE_LENGTH, {
+    message: `Handle must be ${MAX_AGENT_HANDLE_LENGTH} characters or less`,
+  })
+  .regex(new RegExp(`^[a-z0-9][a-z0-9_]{0,${MAX_AGENT_HANDLE_LENGTH - 1}}$`), {
     message:
-      "Handle must be lowercase alphanumeric with underscores (cannot start/end with underscore)",
+      "Handle must be lowercase alphanumeric with underscores (cannot start with underscore)",
   });
 
 /**
@@ -788,7 +796,7 @@ export const CreateAgentBodySchema = z
       .trim()
       .min(1, { message: "Name is required" })
       .max(100, { message: "Name must be 100 characters or less" }),
-    handle: AgentHandleSchema.optional(), // Optional - will be auto-generated if not provided
+    handle: AgentHandleSchema,
     description: z
       .string("Invalid description format")
       .trim()
@@ -913,7 +921,10 @@ export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;
  * Structure for an agent entry in the global leaderboard
  */
 export interface LeaderboardAgent
-  extends Pick<Agent, "id" | "name" | "description" | "imageUrl" | "metadata"> {
+  extends Pick<
+    Agent,
+    "id" | "name" | "handle" | "description" | "imageUrl" | "metadata"
+  > {
   rank: number;
   score: number;
   numCompetitions: number;
@@ -1103,6 +1114,7 @@ export type UserSearchParams = z.infer<typeof UserSearchParamsSchema>;
  */
 export const AgentSearchParamsSchema = z.object({
   name: z.string().optional(),
+  handle: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
   status: ActorStatusSchema.optional(),

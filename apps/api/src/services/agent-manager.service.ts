@@ -51,7 +51,6 @@ import {
   SelectAgent,
   SelectCompetition,
 } from "@/database/schema/core/types.js";
-import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { transformToTrophy } from "@/lib/trophy-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -114,7 +113,7 @@ export class AgentManager {
   }: {
     ownerId: string;
     name: string;
-    handle?: string;
+    handle: string;
     description?: string;
     imageUrl?: string;
     metadata?: AgentMetadata;
@@ -127,12 +126,6 @@ export class AgentManager {
         throw new Error(
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
-      }
-
-      // Generate handle if not provided
-      let finalHandle = handle;
-      if (!finalHandle) {
-        finalHandle = generateHandleFromName(name);
       }
 
       // Generate agent ID
@@ -149,7 +142,7 @@ export class AgentManager {
         id,
         ownerId,
         name,
-        handle: finalHandle,
+        handle,
         description,
         imageUrl,
         apiKey: encryptedApiKey, // Store encrypted key in database
@@ -171,7 +164,7 @@ export class AgentManager {
             if (error.constraint === "agents_handle_key") {
               throw new ApiError(
                 409,
-                `An agent with handle '${finalHandle}' already exists`,
+                `An agent with handle '${handle}' already exists`,
               );
             }
             if (error.constraint === "agents_owner_id_name_key") {

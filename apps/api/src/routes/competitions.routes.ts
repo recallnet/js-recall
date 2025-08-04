@@ -777,6 +777,9 @@ export function configureCompetitionsRoutes(
    *                       name:
    *                         type: string
    *                         description: Agent name
+   *                       handle:
+   *                         type: string
+   *                         description: Agent handle
    *                       description:
    *                         type: string
    *                         nullable: true

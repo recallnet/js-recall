@@ -85,6 +85,7 @@ describe("Email Verification API", () => {
     const secondAgent = await agentManager.createAgent({
       ownerId: agent.ownerId,
       name: "Second Agent",
+      handle: "second_agent",
       email: agentEmail,
     });
 
@@ -370,6 +371,7 @@ describe("Email Verification API", () => {
     const testAgent = await agentManager.createAgent({
       ownerId: agent.ownerId,
       name: "Test Agent For Email Update",
+      handle: "test_agent_for_email_update",
       email: initialEmail,
     });
 

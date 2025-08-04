@@ -6,6 +6,7 @@ import * as path from "path";
 import { config, reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
+import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -53,6 +54,7 @@ interface Agent {
   ownerId: string;
   walletAddress: string | null;
   name: string;
+  handle: string;
   description: string | null;
   imageUrl: string | null;
   apiKey: string;
@@ -258,6 +260,7 @@ export function makeAdminController(services: ServiceRegistry) {
           userImageUrl,
           userMetadata,
           agentName,
+          agentHandle,
           agentDescription,
           agentImageUrl,
           agentMetadata,
@@ -295,7 +298,7 @@ export function makeAdminController(services: ServiceRegistry) {
               agent = await services.agentManager.createAgent({
                 ownerId: user.id,
                 name: agentName,
-                handle: undefined, // Auto-generate from name
+                handle: agentHandle ?? generateHandleFromName(agentName), // Auto-generate from name
                 description: agentDescription,
                 imageUrl: agentImageUrl,
                 metadata: agentMetadata,
@@ -347,6 +350,7 @@ export function makeAdminController(services: ServiceRegistry) {
               ownerId: agent.ownerId,
               walletAddress: agent.walletAddress,
               name: agent.name,
+              handle: agent.handle ?? generateHandleFromName(agent.name),
               description: agent.description,
               imageUrl: agent.imageUrl,
               apiKey: agent.apiKey,
@@ -445,7 +449,7 @@ export function makeAdminController(services: ServiceRegistry) {
           const agent = await services.agentManager.createAgent({
             ownerId: existingUser.id,
             name,
-            handle,
+            handle: handle ?? generateHandleFromName(name),
             description,
             email,
             imageUrl,
@@ -1005,6 +1009,7 @@ export function makeAdminController(services: ServiceRegistry) {
             ownerId: agent.ownerId,
             walletAddress: agent.walletAddress,
             name: agent.name,
+            handle: agent.handle,
             description: agent.description,
             status: agent.status,
             imageUrl: agent.imageUrl,
