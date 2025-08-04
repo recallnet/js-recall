@@ -27,81 +27,18 @@ export const TEST_TOKEN_ADDRESS =
   process.env.TEST_SOL_TOKEN_ADDRESS ||
   "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 
-/**
- * Create a test agent with automatic unique handle generation
- * This wrapper ensures all test agents have unique handles
- */
-export async function createTestAgent(
-  client: ApiClient,
-  name: string,
-  description?: string,
-  imageUrl?: string,
-  metadata?: Record<string, unknown>,
-  handle?: string,
-) {
-  // Generate a unique handle if not provided
-  const agentHandle =
-    handle ||
-    generateTestHandle(
-      name
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")
-        .slice(0, 8),
-    );
-
-  return client.createAgent(name, agentHandle, description, imageUrl, metadata);
-}
-
-/**
- * Generate a unique handle for testing
- * Ensures uniqueness by using timestamp and random suffix
- */
-export function generateTestHandle(prefix: string = "agent"): string {
-  // Clean the prefix: lowercase, remove non-alphanumeric except underscores
-  const cleanPrefix = prefix
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "")
-    .slice(0, 8);
-
-  // If prefix is empty after cleaning, use a default
-  const name = cleanPrefix || "agent";
-
-  // Generate random suffix (4 chars)
-  const random = Math.random().toString(36).slice(2, 6);
-
-  // Combine with underscore separator
-  let handle = `${name}_${random}`;
-
-  // Ensure it's within length limit
-  handle = handle.slice(0, 15);
-
-  // Final safety check: if handle is somehow empty or only whitespace
-  if (!handle || handle.trim().length === 0) {
-    handle = `agent${Date.now().toString(36).slice(-6)}`;
-  }
-
-  return handle;
-}
-
-// HAY token - should be volatile & infrequently traded https://coinmarketcap.com/currencies/haycoin/
-export const VOLATILE_TOKEN = "0xfa3e941d1f6b7b10ed84a0c211bfa8aee907965e";
+// Vision token - should be volitile https://coinmarketcap.com/currencies/openvision/
+export const VISION_TOKEN = "0xe6f98920852A360497dBcc8ec895F1bB1F7c8Df4";
 
 // Fixed admin credentials - must match setup-admin.ts
 export const ADMIN_USERNAME = "admin";
 export const ADMIN_PASSWORD = "admin123";
 export const ADMIN_EMAIL = "admin@test.com";
 
-export const looseTradingConstraints = {
+export const looseConstraints = {
   minimum24hVolumeUsd: 5000,
   minimumFdvUsd: 50000,
   minimumLiquidityUsd: 5000,
-  minimumPairAgeHours: 0,
-};
-
-export const noTradingConstraints = {
-  minimum24hVolumeUsd: 0,
-  minimumFdvUsd: 0,
-  minimumLiquidityUsd: 0,
   minimumPairAgeHours: 0,
 };
 
@@ -153,7 +90,8 @@ export async function registerUserAndAgentAndGetClient({
     email: userEmail || `user-${generateRandomString(8)}@test.com`,
     userImageUrl,
     agentName: agentName || `Agent ${generateRandomString(8)}`,
-    agentHandle: agentHandle || generateTestHandle(agentName),
+    agentHandle:
+      agentHandle || `agent_${generateRandomString(8).toLowerCase()}`,
     agentDescription:
       agentDescription || `Test agent for ${agentName || "testing"}`,
     agentImageUrl,

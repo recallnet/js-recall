@@ -3211,6 +3211,7 @@ describe("User API", () => {
       "/api/user/agents",
       {
         name: "My Cool Agent",
+        handle: "my_cool_agent",
         description: "Test agent with auto-generated handle",
       },
     );
@@ -3263,13 +3264,17 @@ describe("User API", () => {
       "/api/user/agents",
       {
         name: "Agent@123!",
+        handle: "agent@123!",
         description: "Test handle generation from special chars",
       },
     );
 
-    expect(response4.success).toBe(true);
-    if (response4.success) {
-      expect(response4.agent.handle).toBe("agent_123");
+    expect(response4.success).toBe(false);
+    if (!response4.success) {
+      expect((response4 as ErrorResponse).error).toContain(
+        "Handle must be lowercase alphanumeric",
+      );
+      expect((response4 as ErrorResponse).status).toBe(400);
     }
 
     // Test 5: Invalid handle format
