@@ -1,5 +1,4 @@
 import * as crypto from "crypto";
-import { DrizzleError } from "drizzle-orm/errors";
 import { DatabaseError } from "pg";
 import { generateNonce } from "siwe";
 import { v4 as uuidv4 } from "uuid";
@@ -166,25 +165,22 @@ export class AgentManager {
       try {
         savedAgent = await create(agent);
       } catch (error) {
-        if (
-          error instanceof DrizzleError &&
-          error.cause instanceof DatabaseError
-        ) {
+        if (error instanceof DatabaseError) {
           // Check for unique constraint violations
-          if (error.cause.code === "23505") {
-            if (error.cause.constraint === "agents_handle_key") {
+          if (error.code === "23505") {
+            if (error.constraint === "agents_handle_key") {
               throw new ApiError(
                 409,
                 `An agent with handle '${finalHandle}' already exists`,
               );
             }
-            if (error.cause.constraint === "agents_owner_id_name_key") {
+            if (error.constraint === "agents_owner_id_name_key") {
               throw new ApiError(
                 409,
                 `You already have an agent with name '${name}'`,
               );
             }
-            if (error.cause.constraint === "agents_wallet_address_key") {
+            if (error.constraint === "agents_wallet_address_key") {
               throw new ApiError(
                 409,
                 `An agent with wallet address '${walletAddress}' already exists`,
@@ -718,25 +714,22 @@ export class AgentManager {
           return undefined;
         }
       } catch (error) {
-        if (
-          error instanceof DrizzleError &&
-          error.cause instanceof DatabaseError
-        ) {
+        if (error instanceof DatabaseError) {
           // Check for unique constraint violations
-          if (error.cause.code === "23505") {
-            if (error.cause.constraint === "agents_handle_key") {
+          if (error.code === "23505") {
+            if (error.constraint === "agents_handle_key") {
               throw new ApiError(
                 409,
                 `An agent with handle '${agent.handle}' already exists`,
               );
             }
-            if (error.cause.constraint === "agents_owner_id_name_key") {
+            if (error.constraint === "agents_owner_id_name_key") {
               throw new ApiError(
                 409,
                 `You already have an agent with name '${agent.name}'`,
               );
             }
-            if (error.cause.constraint === "agents_wallet_address_key") {
+            if (error.constraint === "agents_wallet_address_key") {
               throw new ApiError(
                 409,
                 `An agent with wallet address '${agent.walletAddress}' already exists`,
