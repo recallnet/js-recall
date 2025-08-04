@@ -1,5 +1,5 @@
 {
-  "id": "bd4a91ba-de68-427b-a97f-ddf5e732e6cf",
+  "id": "b63c7ff4-5ed3-48a6-a90e-989cfdb457e9",
   "prevId": "785cb2f3-bb93-4632-a007-9d546696135e",
   "version": "7",
   "dialect": "postgresql",
@@ -325,12 +325,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "handle": {
-          "name": "handle",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "email": {
           "name": "email",
           "type": "varchar(100)",
@@ -449,21 +443,6 @@
           "method": "btree",
           "with": {}
         },
-        "idx_agents_handle": {
-          "name": "idx_agents_handle",
-          "columns": [
-            {
-              "expression": "handle",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_agents_api_key": {
           "name": "idx_agents_api_key",
           "columns": [
@@ -507,11 +486,6 @@
           "name": "agents_owner_id_name_key",
           "nullsNotDistinct": false,
           "columns": ["owner_id", "name"]
-        },
-        "agents_handle_key": {
-          "name": "agents_handle_key",
-          "nullsNotDistinct": false,
-          "columns": ["handle"]
         },
         "agents_api_key_key": {
           "name": "agents_api_key_key",
@@ -1536,176 +1510,6 @@
           "columnsFrom": ["competition_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.object_index": {
-      "name": "object_index",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "competition_id": {
-          "name": "competition_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "agent_id": {
-          "name": "agent_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "data_type": {
-          "name": "data_type",
-          "type": "sync_data_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "data": {
-          "name": "data",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "size_bytes": {
-          "name": "size_bytes",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "metadata": {
-          "name": "metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "event_timestamp": {
-          "name": "event_timestamp",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_object_index_competition_id": {
-          "name": "idx_object_index_competition_id",
-          "columns": [
-            {
-              "expression": "competition_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_object_index_agent_id": {
-          "name": "idx_object_index_agent_id",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_object_index_data_type": {
-          "name": "idx_object_index_data_type",
-          "columns": [
-            {
-              "expression": "data_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_object_index_competition_agent": {
-          "name": "idx_object_index_competition_agent",
-          "columns": [
-            {
-              "expression": "competition_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_object_index_created_at": {
-          "name": "idx_object_index_created_at",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "object_index_competition_id_fkey": {
-          "name": "object_index_competition_id_fkey",
-          "tableFrom": "object_index",
-          "tableTo": "competitions",
-          "columnsFrom": ["competition_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "object_index_agent_id_fkey": {
-          "name": "object_index_agent_id_fkey",
-          "tableFrom": "object_index",
-          "tableTo": "agents",
-          "columnsFrom": ["agent_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -3499,17 +3303,6 @@
       "name": "competition_type",
       "schema": "public",
       "values": ["trading"]
-    },
-    "public.sync_data_type": {
-      "name": "sync_data_type",
-      "schema": "public",
-      "values": [
-        "trade",
-        "agent_score_history",
-        "agent_score",
-        "competitions_leaderboard",
-        "portfolio_snapshot"
-      ]
     },
     "trading_comps.cross_chain_trading_type": {
       "name": "cross_chain_trading_type",
