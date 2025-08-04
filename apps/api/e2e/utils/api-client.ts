@@ -332,7 +332,6 @@ export class ApiClient {
     };
     agent: {
       name: string;
-      handle?: string;
       email?: string;
       walletAddress?: string;
       description?: string;
@@ -1469,14 +1468,14 @@ export class ApiClient {
   /**
    * Create a new agent for the authenticated user
    * @param name Agent name (required, must be unique for this user)
-   * @param handle Optional agent handle (auto-generated if not provided)
    * @param description Optional agent description
    * @param imageUrl Optional agent image URL
    * @param metadata Optional agent metadata
+   * @param handle Optional agent handle (auto-generated if not provided)
    */
   async createAgent(
     name: string,
-    handle: string,
+    handle?: string,
     description?: string,
     imageUrl?: string,
     metadata?: Record<string, unknown>,
