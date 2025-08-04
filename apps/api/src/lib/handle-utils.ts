@@ -2,6 +2,8 @@
  * Utility functions for agent handle generation and validation
  */
 
+const MAX_HANDLE_LENGTH = 15;
+
 /**
  * Converts a name to a valid handle format
  * @param name The display name to convert
@@ -14,10 +16,10 @@
 export function generateHandleFromName(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_") // Replace non-alphanumeric chars with underscore
-    .replace(/^_+|_+$/g, "") // Remove leading/trailing underscores
-    .replace(/_+/g, "_") // Replace multiple underscores with single
-    .substring(0, 50); // Enforce max length
+    .replace(/[^a-z0-9_]+/g, "_") // Replace non-alphanumeric chars with underscore
+    .replace(/^_+/g, "") // Remove leading underscores
+    .replace(/_+/g, "_") // Replace two or more underscores in a row with a single underscore
+    .substring(0, MAX_HANDLE_LENGTH); // Enforce max length
 }
 
 /**
@@ -27,10 +29,12 @@ export function generateHandleFromName(name: string): string {
  */
 export function isValidHandle(handle: string): boolean {
   // Handle must be:
-  // - 1-50 characters long
+  // - 1-15 characters long
   // - Lowercase alphanumeric and underscores only
-  // - Cannot start or end with underscore
-  const handleRegex = /^[a-z0-9]([a-z0-9_]{0,48}[a-z0-9])?$/;
+  // - Cannot start with underscore
+  const handleRegex = new RegExp(
+    `^[a-z0-9][a-z0-9_]{0,${MAX_HANDLE_LENGTH - 1}}$`,
+  );
   return handleRegex.test(handle);
 }
 
@@ -44,7 +48,7 @@ export function isValidHandle(handle: string): boolean {
  */
 export function appendHandleSuffix(baseHandle: string, suffix: number): string {
   const suffixStr = suffix.toString();
-  const maxBaseLength = 50 - suffixStr.length;
+  const maxBaseLength = MAX_HANDLE_LENGTH - suffixStr.length;
   const truncatedBase = baseHandle.substring(0, maxBaseLength);
   return `${truncatedBase}${suffixStr}`;
 }
