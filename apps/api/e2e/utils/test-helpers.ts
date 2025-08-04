@@ -63,6 +63,7 @@ export async function registerUserAndAgentAndGetClient({
   userEmail,
   userImageUrl,
   agentName,
+  agentHandle,
   agentDescription,
   agentImageUrl,
   agentMetadata,
@@ -74,20 +75,23 @@ export async function registerUserAndAgentAndGetClient({
   userEmail?: string;
   userImageUrl?: string;
   agentName?: string;
+  agentHandle?: string;
   agentDescription?: string;
   agentImageUrl?: string;
   agentMetadata?: Record<string, unknown>;
   agentWalletAddress?: string;
 }) {
-  const sdk = getApiSdk(adminApiKey);
+  const sdk = new ApiClient(adminApiKey);
 
   // Register a new user with optional agent creation
-  const result = await sdk.admin.postApiAdminUsers({
+  const result = await sdk.registerUser({
     walletAddress: walletAddress || generateRandomEthAddress(),
     name: userName || `User ${generateRandomString(8)}`,
     email: userEmail || `user-${generateRandomString(8)}@test.com`,
     userImageUrl,
     agentName: agentName || `Agent ${generateRandomString(8)}`,
+    agentHandle:
+      agentHandle || `agent_${generateRandomString(8).toLowerCase()}`,
     agentDescription:
       agentDescription || `Test agent for ${agentName || "testing"}`,
     agentImageUrl,
@@ -125,6 +129,7 @@ export async function registerUserAndAgentAndGetClient({
       ownerId: result.agent.ownerId || "",
       walletAddress: result.agent.walletAddress || "",
       name: result.agent.name || "",
+      handle: result.agent.handle || "",
       description: result.agent.description || "",
       imageUrl: result.agent.imageUrl || null,
       status: result.agent.status || "active",

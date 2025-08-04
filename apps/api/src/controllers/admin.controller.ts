@@ -807,6 +807,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agent.id,
             {
               name: agent.name,
+              handle: agent.handle,
               ownerName: userMap.get(agent.ownerId) || "Unknown Owner",
             },
           ]),
@@ -817,6 +818,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rank: index + 1,
           agentId: entry.agentId,
           agentName: agentMap.get(entry.agentId)?.name || "Unknown Agent",
+          agentHandle: agentMap.get(entry.agentId)?.handle || "unknown_agent",
           ownerName: agentMap.get(entry.agentId)?.ownerName || "Unknown Owner",
           portfolioValue: entry.value,
         }));
@@ -1062,6 +1064,7 @@ export function makeAdminController(services: ServiceRegistry) {
           ownerId: agent.ownerId,
           walletAddress: agent.walletAddress,
           name: agent.name,
+          handle: agent.handle,
           email: agent.email,
           description: agent.description,
           status: agent.status,
@@ -1183,6 +1186,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agent: {
               id: agent.id,
               name: agent.name,
+              handle: agent.handle,
               status: agent.status,
             },
           });
@@ -1257,6 +1261,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agent: {
               id: agent.id,
               name: agent.name,
+              handle: agent.handle,
               status: agent.status,
             },
           });
@@ -1322,6 +1327,7 @@ export function makeAdminController(services: ServiceRegistry) {
           ownerId: agent.ownerId,
           walletAddress: agent.walletAddress,
           name: agent.name,
+          handle: agent.handle,
           email: agent.email,
           description: agent.description,
           status: agent.status as ActorStatus,
@@ -1515,6 +1521,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agent: {
             id: agent.id,
             name: agent.name,
+            handle: agent.handle,
           },
           competition: {
             id: competition.id,
@@ -1606,6 +1613,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agent: {
             id: agent.id,
             name: agent.name,
+            handle: agent.handle,
           },
           competition: {
             id: competition.id,
@@ -1752,6 +1760,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agent: {
             id: agent.id,
             name: agent.name,
+            handle: agent.handle,
             ownerId: agent.ownerId,
           },
           competition: {

@@ -1054,6 +1054,7 @@ export class AgentManager {
           "createdAt",
           "status",
           "agentName",
+          "agentHandle",
           "rank",
         ];
         const sortParts = validatedParams.sort.split(",");
@@ -1671,6 +1672,7 @@ export class AgentManager {
             }
             break;
           }
+          case "agentHandle":
           case "agentName": {
             // Sort by the lexicographically FIRST agent name that belongs to the
             // authenticated user within each competition. This guarantees a

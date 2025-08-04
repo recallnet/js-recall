@@ -272,6 +272,7 @@ export class ApiClient {
     userImageUrl,
     userMetadata,
     agentName,
+    agentHandle,
     agentDescription,
     agentImageUrl,
     agentMetadata,
@@ -283,6 +284,7 @@ export class ApiClient {
     userImageUrl?: string;
     userMetadata?: UserMetadata;
     agentName?: string;
+    agentHandle?: string;
     agentDescription?: string;
     agentImageUrl?: string;
     agentMetadata?: AgentMetadata;
@@ -296,6 +298,7 @@ export class ApiClient {
         userImageUrl,
         userMetadata,
         agentName,
+        agentHandle,
         agentDescription,
         agentImageUrl,
         agentMetadata,

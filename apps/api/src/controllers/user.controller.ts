@@ -329,6 +329,7 @@ export function makeUserController(services: ServiceRegistry) {
           success: true,
           agentId,
           agentName: agent.name,
+          agentHandle: agent.handle,
           apiKey: result.apiKey,
         });
       } catch (error) {
