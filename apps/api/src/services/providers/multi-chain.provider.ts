@@ -55,41 +55,6 @@ export class MultiChainProvider implements PriceSource {
   }
 
   /**
-   * Get price for a specific EVM chain using DexScreener
-   * @param tokenAddress The token address to get price for
-   * @param specificChain The specific EVM chain to query
-   * @returns Object containing price and symbol information, or null if not found
-   */
-  async getPriceForSpecificEVMChain(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<DexScreenerTokenInfo | null> {
-    try {
-      const price = await this.dexScreenerProvider.getPrice(
-        tokenAddress,
-        BlockchainType.EVM,
-        specificChain,
-      );
-      return price !== null
-        ? {
-            price: price.price,
-            symbol: price.symbol,
-            pairCreatedAt: price.pairCreatedAt,
-            volume: price.volume,
-            liquidity: price.liquidity,
-            fdv: price.fdv,
-          }
-        : null;
-    } catch (error) {
-      serviceLogger.debug(
-        `[MultiChainProvider] Error fetching price for ${tokenAddress} on ${specificChain}:`,
-        error instanceof Error ? error.message : "Unknown error",
-      );
-      return null;
-    }
-  }
-
-  /**
    * Fetches token price from DexScreener API across multiple chains
    * @param tokenAddress Token address
    * @param blockchainType Optional blockchain type (EVM or SVM)
@@ -126,80 +91,22 @@ export class MultiChainProvider implements PriceSource {
       const detectedChainType =
         blockchainType || this.determineChain(normalizedAddress);
 
-      // For Solana tokens, delegate directly to DexScreenerProvider
+      // For Solana tokens, the chain is fixed
       if (detectedChainType === BlockchainType.SVM) {
-        serviceLogger.debug(
-          `[MultiChainProvider] Getting price for Solana token ${normalizedAddress}`,
-        );
-        try {
-          const price = await this.dexScreenerProvider.getPrice(
-            normalizedAddress,
-            BlockchainType.SVM,
-            "svm",
-          );
-          if (price !== null) {
-            // Cache the price
-            this.setCachedPrice(
-              normalizedAddress,
-              BlockchainType.SVM,
-              "svm",
-              price.price,
-              price.symbol,
-              price.pairCreatedAt,
-              price.volume,
-              price.liquidity,
-              price.fdv,
-            );
-
-            serviceLogger.debug(
-              `[MultiChainProvider] Successfully found price for Solana token ${normalizedAddress}: $${price.price}`,
-            );
-            return {
-              token: tokenAddress,
-              price: price.price,
-              symbol: price.symbol,
-              timestamp: new Date(),
-              chain: BlockchainType.SVM,
-              specificChain: "svm",
-              pairCreatedAt: price.pairCreatedAt,
-              volume: price.volume,
-              liquidity: price.liquidity,
-              fdv: price.fdv,
-            };
-          }
-
-          serviceLogger.debug(
-            `[MultiChainProvider] No price found for Solana token ${normalizedAddress}`,
-          );
-          return null;
-        } catch (error) {
-          serviceLogger.debug(
-            `[MultiChainProvider] Error fetching price for Solana token ${normalizedAddress}:`,
-            error instanceof Error ? error.message : "Unknown error",
-          );
-          return null;
-        }
+        specificChain = "svm";
       }
-
-      // For EVM tokens, continue with the existing logic
-      serviceLogger.debug(
-        `[MultiChainProvider] Getting price for EVM token ${normalizedAddress}`,
-      );
 
       // If a specific chain was provided, use it directly instead of trying multiple chains
       if (specificChain) {
-        serviceLogger.debug(
-          `[MultiChainProvider] Using provided specific chain: ${specificChain}`,
-        );
-
         try {
           serviceLogger.debug(
-            `[MultiChainProvider] Attempting to fetch price for ${normalizedAddress} on ${specificChain} chain directly`,
+            `[MultiChainProvider] Getting price for token ${normalizedAddress} on specific chain ${specificChain} with type ${detectedChainType}`,
           );
 
           // Use DexScreenerProvider to get price for a specific chain
-          const price = await this.getPriceForSpecificEVMChain(
+          const price = await this.dexScreenerProvider.getPrice(
             normalizedAddress,
+            detectedChainType,
             specificChain,
           );
 
@@ -207,7 +114,7 @@ export class MultiChainProvider implements PriceSource {
             // Cache the price
             this.setCachedPrice(
               normalizedAddress,
-              BlockchainType.EVM,
+              detectedChainType,
               specificChain,
               price.price,
               price.symbol,
@@ -225,7 +132,7 @@ export class MultiChainProvider implements PriceSource {
               price: price.price,
               symbol: price.symbol,
               timestamp: new Date(),
-              chain: BlockchainType.EVM,
+              chain: detectedChainType,
               specificChain,
               pairCreatedAt: price.pairCreatedAt,
               volume: price.volume,
@@ -273,8 +180,9 @@ export class MultiChainProvider implements PriceSource {
           );
 
           // Get price for a specific chain using DexScreener
-          const price = await this.getPriceForSpecificEVMChain(
+          const price = await this.getPrice(
             normalizedAddress,
+            detectedChainType,
             chain,
           );
 
@@ -300,7 +208,7 @@ export class MultiChainProvider implements PriceSource {
               price: price.price,
               symbol: price.symbol,
               timestamp: new Date(),
-              chain: BlockchainType.EVM,
+              chain: detectedChainType,
               specificChain: chain,
               pairCreatedAt: price.pairCreatedAt,
               volume: price.volume,
@@ -464,8 +372,9 @@ export class MultiChainProvider implements PriceSource {
           );
 
           // Get price for specific chain using DexScreener
-          const price = await this.getPriceForSpecificEVMChain(
+          const price = await this.getPrice(
             normalizedAddress,
+            generalChain,
             specificChain,
           );
 

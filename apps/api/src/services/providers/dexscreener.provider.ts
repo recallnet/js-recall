@@ -460,16 +460,16 @@ export class DexScreenerProvider implements PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null> {
+    // Determine chain if not provided
+    if (!chain) {
+      chain = this.determineChain(tokenAddress);
+    }
+
     // Handle burn addresses - always return price of 0
     if (this.isBurnAddress(tokenAddress)) {
       serviceLogger.debug(
         `[DexScreenerProvider] Burn address detected: ${tokenAddress}, returning price of 0`,
       );
-
-      // Determine chain if not provided
-      if (!chain) {
-        chain = this.determineChain(tokenAddress);
-      }
 
       return {
         price: 0,
@@ -500,11 +500,6 @@ export class DexScreenerProvider implements PriceSource {
         liquidity: cachedPrice.liquidity,
         fdv: cachedPrice.fdv,
       };
-    }
-
-    // Determine chain if not provided
-    if (!chain) {
-      chain = this.determineChain(tokenAddress);
     }
 
     // Get the DexScreener chain identifier
