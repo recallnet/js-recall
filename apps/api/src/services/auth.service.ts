@@ -5,6 +5,7 @@ import {
   createUserFromWallet,
   findByWalletAddress as findUserByWalletAddress,
 } from "@/database/repositories/user-repository.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { LoginResponse, SessionData } from "@/types/index.js";
 
 /**
@@ -58,12 +59,12 @@ export class AuthService {
       let userId = user?.id;
 
       if (!user) {
-        console.log(
+        serviceLogger.debug(
           `[AuthService] No user found for wallet ${wallet}. Creating new user.`,
         );
         user = await createUserFromWallet(wallet);
         userId = user.id;
-        console.log(
+        serviceLogger.debug(
           `[AuthService] New user ${userId} created for wallet ${wallet}`,
         );
       }
@@ -74,7 +75,7 @@ export class AuthService {
       session.wallet = wallet;
       await session.save();
 
-      console.log(
+      serviceLogger.debug(
         `[AuthService] User login successful for wallet: ${wallet}, userId: ${userId}`,
       );
 
@@ -84,7 +85,7 @@ export class AuthService {
         wallet,
       };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         "[AuthService] Error during SIWE verification process:",
         error,
       );
@@ -114,6 +115,6 @@ export class AuthService {
     await session.save();
     session.destroy();
 
-    console.log("[AuthService] User logged out successfully");
+    serviceLogger.debug("[AuthService] User logged out successfully");
   }
 }

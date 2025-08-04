@@ -19,7 +19,6 @@ export function useAnalytics() {
 
       try {
         posthog.capture(eventName, properties);
-        console.log("Event tracked:", eventName, properties);
       } catch (error) {
         console.error("Failed to track event:", eventName, error);
       }

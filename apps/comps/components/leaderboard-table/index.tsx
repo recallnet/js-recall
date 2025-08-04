@@ -16,6 +16,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Pagination } from "@/components/pagination/index";
 import { LeaderboardAgent } from "@/types/agent";
+import { PaginationResponse } from "@/types/api";
 
 import BigNumberDisplay from "../bignumber/index";
 
@@ -25,6 +26,7 @@ export function LeaderboardTable({
   sortState,
   onPageChange,
   pagination = {
+    hasMore: false,
     total: 0,
     limit: 0,
     offset: 0,
@@ -33,11 +35,7 @@ export function LeaderboardTable({
   agents: LeaderboardAgent[];
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
-  pagination?: {
-    total: number;
-    limit: number;
-    offset: number;
-  };
+  pagination?: PaginationResponse;
   onPageChange: (page: number) => void;
 }) {
   const page =
@@ -148,13 +146,14 @@ export function LeaderboardTable({
 
                     <TableCell className="flex items-center justify-center pl-10">
                       <div className="flex items-center gap-2">
-                        <Image
-                          src={agent.imageUrl || "/agent-placeholder.png"}
-                          alt="avatar"
-                          className="rounded-full border"
-                          width={35}
-                          height={35}
-                        />
+                        <div className="relative h-[35px] w-[35px] overflow-hidden rounded-full border">
+                          <Image
+                            src={agent.imageUrl || "/agent-placeholder.png"}
+                            alt="avatar"
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
                         <div className="md:w-70 w-40 text-left text-sm">
                           <div className="text-secondary-foreground mb-2 truncate font-medium leading-none">
                             {agent.name}

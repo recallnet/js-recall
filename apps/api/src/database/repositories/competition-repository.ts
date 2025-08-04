@@ -9,14 +9,12 @@ import {
   inArray,
   isNotNull,
   lte,
-  max,
-  min,
   sql,
 } from "drizzle-orm";
 import { unionAll } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
 
-import { db } from "@/database/db.js";
+import { db, dbRead } from "@/database/db.js";
 import {
   competitionAgents,
   competitions,
@@ -38,6 +36,7 @@ import {
   InsertPortfolioSnapshot,
   InsertPortfolioTokenValue,
 } from "@/database/schema/trading/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import {
   COMPETITION_AGENT_STATUS,
@@ -68,6 +67,33 @@ const competitionOrderByFields: Record<string, AnyColumn> = {
   endDate: competitions.endDate,
   createdAt: competitions.createdAt,
 };
+
+interface Snapshot24hResult {
+  earliestSnapshots: Array<{
+    id: number;
+    agentId: string;
+    competitionId: string;
+    timestamp: Date;
+    totalValue: number;
+  }>;
+  snapshots24hAgo: Array<{
+    id: number;
+    agentId: string;
+    competitionId: string;
+    timestamp: Date;
+    totalValue: number;
+  }>;
+}
+
+const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
+const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
+
+/**
+ * Clear the snapshot cache - used for testing
+ */
+export function clearSnapshotCache(): void {
+  snapshotCache.clear();
+}
 
 /**
  * Find all competitions
@@ -166,7 +192,7 @@ async function updateImpl(
     });
     return result;
   } catch (error) {
-    console.error("[CompetitionRepository] Error in update:", error);
+    repositoryLogger.error("Error in update:", error);
     throw error;
   }
 }
@@ -196,7 +222,7 @@ async function updateOneImpl(
 
     return result;
   } catch (error) {
-    console.error("[CompetitionRepository] Error in updateOne:", error);
+    repositoryLogger.error("Error in updateOne:", error);
     throw error;
   }
 }
@@ -222,8 +248,8 @@ async function addAgentToCompetitionImpl(
       })
       .onConflictDoNothing();
   } catch (error) {
-    console.error(
-      `[CompetitionRepository] Error adding agent ${agentId} to competition ${competitionId}:`,
+    repositoryLogger.error(
+      `Error adding agent ${agentId} to competition ${competitionId}:`,
       error,
     );
     throw error;
@@ -262,19 +288,19 @@ async function removeAgentFromCompetitionImpl(
     const wasUpdated = result.length > 0;
 
     if (wasUpdated) {
-      console.log(
-        `[CompetitionRepository] Removed agent ${agentId} from competition ${competitionId}`,
+      repositoryLogger.debug(
+        `Removed agent ${agentId} from competition ${competitionId}`,
       );
     } else {
-      console.log(
-        `[CompetitionRepository] No active agent ${agentId} found in competition ${competitionId} to remove`,
+      repositoryLogger.debug(
+        `No active agent ${agentId} found in competition ${competitionId} to remove`,
       );
     }
 
     return wasUpdated;
   } catch (error) {
-    console.error(
-      `[CompetitionRepository] Error removing agent ${agentId} from competition ${competitionId}:`,
+    repositoryLogger.error(
+      `Error removing agent ${agentId} from competition ${competitionId}:`,
       error,
     );
     throw error;
@@ -298,7 +324,7 @@ async function addAgentsImpl(competitionId: string, agentIds: string[]) {
   try {
     await db.insert(competitionAgents).values(values).onConflictDoNothing();
   } catch (error) {
-    console.error("[CompetitionRepository] Error in addAgents:", error);
+    repositoryLogger.error("Error in addAgents:", error);
     throw error;
   }
 }
@@ -325,7 +351,7 @@ async function getAgentsImpl(
 
     return result.map((row) => row.agentId);
   } catch (error) {
-    console.error("[CompetitionRepository] Error in getAgents:", error);
+    repositoryLogger.error("Error in getAgents:", error);
     throw error;
   }
 }
@@ -367,10 +393,7 @@ async function isAgentActiveInCompetitionImpl(
 
     return result.length > 0;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in isAgentActiveInCompetition:",
-      error,
-    );
+    repositoryLogger.error("Error in isAgentActiveInCompetition:", error);
     throw error;
   }
 }
@@ -399,10 +422,7 @@ async function getAgentCompetitionStatusImpl(
 
     return result.length > 0 ? result[0]!.status : null;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentCompetitionStatus:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentCompetitionStatus:", error);
     throw error;
   }
 }
@@ -443,10 +463,7 @@ async function getAgentCompetitionRecordImpl(
 
     return result.length > 0 ? result[0]! : null;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentCompetitionRecord:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentCompetitionRecord:", error);
     throw error;
   }
 }
@@ -476,8 +493,8 @@ export async function getBulkAgentCompetitionRecords(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] getBulkAgentCompetitionRecords called for ${agentIds.length} agents in competition ${competitionId}`,
+    repositoryLogger.debug(
+      `getBulkAgentCompetitionRecords called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
     const result = await db
@@ -497,16 +514,13 @@ export async function getBulkAgentCompetitionRecords(
         ),
       );
 
-    console.log(
-      `[CompetitionRepository] Retrieved ${result.length} competition records for ${agentIds.length} agents`,
+    repositoryLogger.debug(
+      `Retrieved ${result.length} competition records for ${agentIds.length} agents`,
     );
 
     return result;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getBulkAgentCompetitionRecords:",
-      error,
-    );
+    repositoryLogger.error("Error in getBulkAgentCompetitionRecords:", error);
     throw error;
   }
 }
@@ -559,17 +573,14 @@ async function updateAgentCompetitionStatusImpl(
     const wasUpdated = result.length > 0;
 
     if (wasUpdated) {
-      console.log(
-        `[CompetitionRepository] Updated agent ${agentId} status to ${status} in competition ${competitionId}`,
+      repositoryLogger.debug(
+        `Updated agent ${agentId} status to ${status} in competition ${competitionId}`,
       );
     }
 
     return wasUpdated;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in updateAgentCompetitionStatusImpl:",
-      error,
-    );
+    repositoryLogger.error("Error in updateAgentCompetitionStatusImpl:", error);
     throw error;
   }
 }
@@ -613,7 +624,7 @@ async function findActiveImpl() {
       .limit(1);
     return result;
   } catch (error) {
-    console.error("[CompetitionRepository] Error in findActive:", error);
+    repositoryLogger.error("Error in findActive:", error);
     throw error;
   }
 }
@@ -640,10 +651,7 @@ async function createPortfolioSnapshotImpl(snapshot: InsertPortfolioSnapshot) {
 
     return result;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in createPortfolioSnapshot:",
-      error,
-    );
+    repositoryLogger.error("Error in createPortfolioSnapshot:", error);
     throw error;
   }
 }
@@ -661,8 +669,8 @@ async function batchCreatePortfolioTokenValuesImpl(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] Batch inserting ${tokenValues.length} portfolio token values`,
+    repositoryLogger.debug(
+      `Batch inserting ${tokenValues.length} portfolio token values`,
     );
 
     const results = await db
@@ -670,14 +678,14 @@ async function batchCreatePortfolioTokenValuesImpl(
       .values(tokenValues)
       .returning();
 
-    console.log(
+    repositoryLogger.debug(
       `[CompetitionRepository] Successfully inserted ${results.length} portfolio token values`,
     );
 
     return results;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error batch inserting portfolio token values:",
+    repositoryLogger.error(
+      "Error batch inserting portfolio token values:",
       error,
     );
     throw error;
@@ -690,48 +698,37 @@ async function batchCreatePortfolioTokenValuesImpl(
  */
 async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
   try {
-    // TODO: this query seems to be averaging almost 2 full seconds.
-    //  We added indexes on Jul 10, need to find out if indexing fixes the issue.
-    const subquery = db
-      .select({
-        agentId: portfolioSnapshots.agentId,
-        maxTimestamp: max(portfolioSnapshots.timestamp).as("max_timestamp"),
-      })
-      .from(portfolioSnapshots)
-      .innerJoin(
-        competitionAgents,
-        and(
-          eq(portfolioSnapshots.agentId, competitionAgents.agentId),
-          eq(portfolioSnapshots.competitionId, competitionAgents.competitionId),
-        ),
-      )
-      .where(
-        and(
-          eq(portfolioSnapshots.competitionId, competitionId),
-          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
-        ),
-      )
-      .groupBy(portfolioSnapshots.agentId)
-      .as("latest_snapshots");
+    const result = await dbRead.execute<{
+      id: number;
+      agent_id: string;
+      competition_id: string;
+      timestamp: Date;
+      total_value: number;
+    }>(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM competition_agents ca
+      CROSS JOIN LATERAL (
+        SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+        FROM trading_comps.portfolio_snapshots ps
+        WHERE ps.agent_id = ca.agent_id 
+          AND ps.competition_id = ca.competition_id
+        ORDER BY ps.timestamp DESC 
+        LIMIT 1
+      ) ps
+      WHERE ca.competition_id = ${competitionId}
+        AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
+    `);
 
-    const result = await db
-      .select()
-      .from(portfolioSnapshots)
-      .innerJoin(
-        subquery,
-        and(
-          eq(portfolioSnapshots.agentId, subquery.agentId),
-          eq(portfolioSnapshots.timestamp, subquery.maxTimestamp),
-        ),
-      )
-      .where(eq(portfolioSnapshots.competitionId, competitionId));
-
-    return result.map((row) => row.portfolio_snapshots);
+    // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
+    return result.rows.map((row) => ({
+      id: row.id,
+      agentId: row.agent_id,
+      competitionId: row.competition_id,
+      timestamp: row.timestamp,
+      totalValue: Number(row.total_value), // Convert string to number for numeric fields
+    }));
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getLatestPortfolioSnapshotsImpl:",
-      error,
-    );
+    repositoryLogger.error("Error in getLatestPortfolioSnapshotsImpl:", error);
     throw error;
   }
 }
@@ -752,8 +749,8 @@ async function getBulkAgentPortfolioSnapshotsImpl(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] getBulkAgentPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
+    repositoryLogger.debug(
+      `getBulkAgentPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
     const result = await db
@@ -767,16 +764,13 @@ async function getBulkAgentPortfolioSnapshotsImpl(
       )
       .orderBy(desc(portfolioSnapshots.timestamp));
 
-    console.log(
-      `[CompetitionRepository] Retrieved ${result.length} portfolio snapshots for ${agentIds.length} agents`,
+    repositoryLogger.debug(
+      `Retrieved ${result.length} portfolio snapshots for ${agentIds.length} agents`,
     );
 
     return result;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getBulkAgentPortfolioSnapshots:",
-      error,
-    );
+    repositoryLogger.error("Error in getBulkAgentPortfolioSnapshots:", error);
     throw error;
   }
 }
@@ -787,93 +781,110 @@ async function getBulkAgentPortfolioSnapshotsImpl(
  * @param agentIds Array of agent IDs to get snapshots for
  * @returns Object containing earliest and 24h-ago snapshots by agent
  */
-async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
+async function get24hSnapshotsImpl(
+  competitionId: string,
+  agentIds: string[],
+): Promise<Snapshot24hResult> {
   if (agentIds.length === 0) {
     return { earliestSnapshots: [], snapshots24hAgo: [] };
   }
 
+  repositoryLogger.debug(
+    `get24hSnapshotsImpl called for ${agentIds.length} agents in competition ${competitionId}`,
+  );
+
+  const cacheKey = `${competitionId}-${agentIds.join("-")}`;
+  const cachedResult = snapshotCache.get(cacheKey);
+  if (cachedResult) {
+    const now = Date.now();
+    const [timestamp, result] = cachedResult;
+    if (now - timestamp < MAX_CACHE_AGE) {
+      repositoryLogger.debug(`get24hSnapshotsImpl returning cached results`);
+      return result;
+    }
+  }
+
   try {
-    console.log(
-      `[CompetitionRepository] getBulkAgentMetricsSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
-    );
-
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-    // Get earliest snapshots for each agent (for PnL calculation)
-    const earliestSubquery = db
-      .select({
-        agentId: portfolioSnapshots.agentId,
-        minTimestamp: min(portfolioSnapshots.timestamp).as("min_timestamp"),
-      })
-      .from(portfolioSnapshots)
+    const comp = await dbRead
+      .select({ endDate: competitions.endDate })
+      .from(competitions)
       .where(
         and(
-          eq(portfolioSnapshots.competitionId, competitionId),
-          inArray(portfolioSnapshots.agentId, agentIds),
+          eq(competitions.status, COMPETITION_STATUS.ENDED),
+          eq(competitions.id, competitionId),
         ),
-      )
-      .groupBy(portfolioSnapshots.agentId)
-      .as("earliest_snapshots");
+      );
+    const endDate = comp[0]?.endDate;
+    const endTime = endDate ? endDate.valueOf() : Date.now();
+    const twentyFourHoursAgo = new Date(endTime - 24 * 60 * 60 * 1000);
 
-    const earliestSnapshots = await db
-      .select()
-      .from(portfolioSnapshots)
-      .innerJoin(
-        earliestSubquery,
-        and(
-          eq(portfolioSnapshots.agentId, earliestSubquery.agentId),
-          eq(portfolioSnapshots.timestamp, earliestSubquery.minTimestamp),
-        ),
-      )
-      .where(eq(portfolioSnapshots.competitionId, competitionId));
+    // Get earliest snapshots for each agent using efficient UNNEST + CROSS JOIN LATERAL
+    const earliestResult = await dbRead.execute<{
+      id: number;
+      agent_id: string;
+      competition_id: string;
+      timestamp: Date;
+      total_value: string;
+    }>(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+      CROSS JOIN LATERAL (
+        SELECT id, agent_id, competition_id, timestamp, total_value
+        FROM trading_comps.portfolio_snapshots ps
+        WHERE ps.agent_id = agents.agent_id
+          AND ps.competition_id = ${competitionId}
+        ORDER BY ps.timestamp ASC
+        LIMIT 1
+      ) ps
+    `);
 
-    // Get snapshots closest to 24h ago using window functions
-    const snapshots24hAgo = await db
-      .select()
-      .from(
-        db
-          .select({
-            ...getTableColumns(portfolioSnapshots),
-            timeDiff:
-              sql<number>`ABS(EXTRACT(EPOCH FROM ${portfolioSnapshots.timestamp} - ${twentyFourHoursAgo}))`.as(
-                "time_diff",
-              ),
-            rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${portfolioSnapshots.agentId} ORDER BY ABS(EXTRACT(EPOCH FROM ${portfolioSnapshots.timestamp} - ${twentyFourHoursAgo})))`.as(
-              "rn",
-            ),
-          })
-          .from(portfolioSnapshots)
-          .where(
-            and(
-              eq(portfolioSnapshots.competitionId, competitionId),
-              inArray(portfolioSnapshots.agentId, agentIds),
-            ),
-          )
-          .as("ranked_snapshots"),
-      )
-      .where(eq(sql`rn`, 1));
+    // Get snapshots closest to 24h ago using efficient UNNEST + CROSS JOIN LATERAL
+    const snapshots24hResult = await dbRead.execute<{
+      id: number;
+      agent_id: string;
+      competition_id: string;
+      timestamp: Date;
+      total_value: string;
+    }>(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+      CROSS JOIN LATERAL (
+        SELECT id, agent_id, competition_id, timestamp, total_value
+        FROM trading_comps.portfolio_snapshots ps
+        WHERE ps.agent_id = agents.agent_id
+          AND ps.competition_id = ${competitionId}
+        ORDER BY ABS(EXTRACT(EPOCH FROM ps.timestamp - ${twentyFourHoursAgo}))
+        LIMIT 1
+      ) ps
+    `);
 
-    console.log(
-      `[CompetitionRepository] Retrieved ${earliestSnapshots.length} earliest snapshots and ${snapshots24hAgo.length} 24h-ago snapshots for ${agentIds.length} agents`,
+    repositoryLogger.debug(
+      `Retrieved ${earliestResult.rows.length} earliest snapshots and ${snapshots24hResult.rows.length} 24h-ago snapshots for ${agentIds.length} agents`,
     );
 
-    return {
-      earliestSnapshots: earliestSnapshots.map(
-        (row) => row.portfolio_snapshots,
-      ),
-      snapshots24hAgo: snapshots24hAgo.map((row) => ({
+    const result: Snapshot24hResult = {
+      earliestSnapshots: earliestResult.rows.map((row) => ({
         id: row.id,
-        agentId: row.agentId,
-        competitionId: row.competitionId,
-        timestamp: row.timestamp,
-        totalValue: row.totalValue,
+        agentId: row.agent_id,
+        competitionId: row.competition_id,
+        timestamp: row.timestamp && new Date(row.timestamp),
+        totalValue: Number(row.total_value),
+      })),
+      snapshots24hAgo: snapshots24hResult.rows.map((row) => ({
+        id: row.id,
+        agentId: row.agent_id,
+        competitionId: row.competition_id,
+        timestamp: row.timestamp && new Date(row.timestamp),
+        totalValue: Number(row.total_value),
       })),
     };
+
+    // Cache the result
+    const now = Date.now();
+    snapshotCache.set(cacheKey, [now, result]);
+    return result;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getBulkAgentMetricsSnapshots:",
-      error,
-    );
+    repositoryLogger.error("Error in get24hSnapshotsImpl:", error);
     throw error;
   }
 }
@@ -882,13 +893,15 @@ async function get24hSnapshotsImpl(competitionId: string, agentIds: string[]) {
  * Get portfolio snapshots for an agent in a competition
  * @param competitionId Competition ID
  * @param agentId Agent ID
+ * @param limit Optional limit for the number of snapshots to return
  */
 async function getAgentPortfolioSnapshotsImpl(
   competitionId: string,
   agentId: string,
+  limit?: number,
 ) {
   try {
-    return await db
+    const query = db
       .select()
       .from(portfolioSnapshots)
       .where(
@@ -898,12 +911,15 @@ async function getAgentPortfolioSnapshotsImpl(
         ),
       )
       .orderBy(desc(portfolioSnapshots.timestamp));
-    // TODO: there's no limit here, this is a weakness in perf
+
+    // Apply limit if specified
+    if (limit !== undefined && limit > 0) {
+      return await query.limit(limit);
+    }
+
+    return await query;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentPortfolioSnapshots:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentPortfolioSnapshots:", error);
     throw error;
   }
 }
@@ -959,10 +975,7 @@ async function getBoundedSnapshotsImpl(competitionId: string, agentId: string) {
       oldest: sortedResults[sortedResults.length - 1],
     };
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentPortfolioSnapshotBounds:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentPortfolioSnapshotBounds:", error);
     throw error;
   }
 }
@@ -1005,10 +1018,7 @@ async function getAgentCompetitionRankingImpl(
       totalAgents: sortedSnapshots.length,
     };
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAgentCompetitionRanking:",
-      error,
-    );
+    repositoryLogger.error("Error in getAgentCompetitionRanking:", error);
     // Return undefined on error - no reliable ranking data
     return undefined;
   }
@@ -1025,10 +1035,7 @@ async function getPortfolioTokenValuesImpl(snapshotId: number) {
       .from(portfolioTokenValues)
       .where(eq(portfolioTokenValues.portfolioSnapshotId, snapshotId));
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getPortfolioTokenValues:",
-      error,
-    );
+    repositoryLogger.error("Error in getPortfolioTokenValues:", error);
     throw error;
   }
 }
@@ -1050,10 +1057,7 @@ async function getAllPortfolioSnapshotsImpl(competitionId?: string) {
 
     return await query;
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getAllPortfolioSnapshots:",
-      error,
-    );
+    repositoryLogger.error("Error in getAllPortfolioSnapshots:", error);
     throw error;
   }
 }
@@ -1073,10 +1077,7 @@ async function getPortfolioTokenValuesByIdsImpl(snapshotIds: number[]) {
       .from(portfolioTokenValues)
       .where(inArray(portfolioTokenValues.portfolioSnapshotId, snapshotIds));
   } catch (error) {
-    console.error(
-      "[CompetitionRepository] Error in getPortfolioTokenValuesByIds:",
-      error,
-    );
+    repositoryLogger.error("Error in getPortfolioTokenValuesByIds:", error);
     throw error;
   }
 }
@@ -1268,8 +1269,8 @@ export async function batchInsertLeaderboardImpl(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] Batch inserting ${entries.length} leaderboard entries`,
+    repositoryLogger.debug(
+      `Batch inserting ${entries.length} leaderboard entries`,
     );
 
     const valuesToInsert = entries.map((entry) => ({
@@ -1436,8 +1437,8 @@ async function getBulkAgentCompetitionRankingsImpl(
   }
 
   try {
-    console.log(
-      `[CompetitionRepository] getBulkAgentCompetitionRankings called for ${agentIds.length} agents in competition ${competitionId}`,
+    repositoryLogger.debug(
+      `getBulkAgentCompetitionRankings called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
     // Get ALL latest portfolio snapshots for the competition ONCE
@@ -1473,8 +1474,8 @@ async function getBulkAgentCompetitionRankingsImpl(
       // If agent not found in snapshots, don't add to map (undefined ranking)
     }
 
-    console.log(
-      `[CompetitionRepository] Calculated rankings for ${rankingsMap.size}/${agentIds.length} agents`,
+    repositoryLogger.debug(
+      `Calculated rankings for ${rankingsMap.size}/${agentIds.length} agents`,
     );
 
     return rankingsMap;

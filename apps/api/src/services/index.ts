@@ -8,10 +8,8 @@ import { ConfigurationService } from "@/services/configuration.service.js";
 import { EmailVerificationService } from "@/services/email-verification.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
-import { ObjectIndexService } from "@/services/object-index.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
-import { SchedulerService } from "@/services/scheduler.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserManager } from "@/services/user-manager.service.js";
@@ -33,13 +31,11 @@ class ServiceRegistry {
   private _userManager: UserManager;
   private _agentManager: AgentManager;
   private _adminManager: AdminManager;
-  private _scheduler: SchedulerService;
   private _configurationService: ConfigurationService;
   private _portfolioSnapshotter: PortfolioSnapshotter;
   private _leaderboardService: LeaderboardService;
   private _voteManager: VoteManager;
   private _agentRankService: AgentRankService;
-  private _objectIndexService: ObjectIndexService;
   private _emailService: EmailService;
   private _emailVerificationService: EmailVerificationService;
   private _tradingConstraintsService: TradingConstraintsService;
@@ -69,9 +65,6 @@ class ServiceRegistry {
 
     // Initialize vote manager (no dependencies)
     this._voteManager = new VoteManager();
-
-    // Initialize object index service (no dependencies)
-    this._objectIndexService = new ObjectIndexService();
 
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
@@ -103,14 +96,6 @@ class ServiceRegistry {
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentManager);
-
-    // Initialize and start the scheduler
-    this._scheduler = new SchedulerService(
-      this._competitionManager,
-      this._portfolioSnapshotter,
-    );
-
-    console.log("[ServiceRegistry] All services initialized");
   }
 
   public static getInstance(): ServiceRegistry {
@@ -161,10 +146,6 @@ class ServiceRegistry {
     return this._adminManager;
   }
 
-  get scheduler(): SchedulerService {
-    return this._scheduler;
-  }
-
   get configurationService(): ConfigurationService {
     return this._configurationService;
   }
@@ -177,10 +158,6 @@ class ServiceRegistry {
     return this._agentRankService;
   }
 
-  get objectIndexService(): ObjectIndexService {
-    return this._objectIndexService;
-  }
-
   get emailService(): EmailService {
     return this._emailService;
   }
@@ -191,18 +168,6 @@ class ServiceRegistry {
 
   get tradingConstraintsService(): TradingConstraintsService {
     return this._tradingConstraintsService;
-  }
-
-  // Add method to start schedulers
-  startSchedulers(): void {
-    this._scheduler.start();
-    console.log("[ServiceRegistry] Schedulers started");
-  }
-
-  // Add method to stop schedulers
-  stopSchedulers(): void {
-    this._scheduler.stop();
-    console.log("[ServiceRegistry] Schedulers stopped");
   }
 }
 
@@ -218,11 +183,9 @@ export {
   EmailVerificationService,
   EmailService,
   LeaderboardService,
-  ObjectIndexService,
   PortfolioSnapshotter,
   PriceTracker,
   ServiceRegistry,
-  SchedulerService,
   TradeSimulator,
   TradingConstraintsService,
   UserManager,

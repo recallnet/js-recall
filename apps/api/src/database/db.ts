@@ -11,6 +11,7 @@ import { fileURLToPath } from "url";
 
 import { config } from "@/config/index.js";
 import schema from "@/database/schema/index.js";
+import { dbLogger as pinoDbLogger } from "@/lib/logger.js";
 import { getTraceId } from "@/lib/trace-context.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -82,6 +83,14 @@ const sslConfig = (() => {
 const pool = new Pool({
   connectionString: config.database.url,
   ...sslConfig,
+  max: config.database.maxConnections,
+});
+
+// Read replica connection pool
+const readReplicaPool = new Pool({
+  connectionString: config.database.readReplicaUrl || config.database.url,
+  ...sslConfig,
+  max: config.database.maxConnections,
 });
 
 /*
@@ -198,27 +207,14 @@ const dbLogger = {
     // Update Prometheus metrics (count only, no timing)
     dbQueryTotal.inc({ operation, status: "success" });
 
-    // Environment-aware logging (without timing)
-    const isDev = config.server.nodeEnv === "development";
-    if (isDev) {
-      // In development, show a more detailed console log
-      console.log(
-        `[${traceId}] [DB] ${operation} - ${query.substring(0, 100)}${query.length > 100 ? "..." : ""}`,
-      );
-    } else {
-      // In production, always include query preview for debugging classification issues
-      console.log(
-        JSON.stringify({
-          traceId,
-          type: "db",
-          operation,
-          status: "success",
-          timestamp: new Date().toISOString(),
-          queryPreview: query.substring(0, 100),
-          ...(query.length > 100 ? { queryTruncated: true } : {}),
-        }),
-      );
-    }
+    pinoDbLogger.debug({
+      traceId,
+      type: "db",
+      operation,
+      status: "success",
+      queryPreview: query.substring(0, 100),
+      ...(query.length > 100 ? { queryTruncated: true } : {}),
+    });
   },
 };
 
@@ -229,14 +225,32 @@ export const db = drizzle({
   logger: dbLogger,
 });
 
+// Create and export the read replica database instance
+export const dbRead = drizzle({
+  client: readReplicaPool,
+  schema,
+  logger: dbLogger,
+});
+
 // NOTE: logDbOperation export removed - all queries now automatically logged
 
-console.log(
-  "[DatabaseConnection] Connected to PostgreSQL using connection URL",
+pinoDbLogger.info("Connected to PostgreSQL using connection URL");
+
+pinoDbLogger.info(
+  `Read replica connection configured: ${
+    config.database.readReplicaUrl !== config.database.url
+      ? "separate replica"
+      : "same as primary"
+  }`,
 );
 
 db.$client.on("error", (err: Error) => {
-  console.error("Unexpected error on idle client", err);
+  pinoDbLogger.error("Unexpected error on idle client", err);
+  process.exit(-1);
+});
+
+dbRead.$client.on("error", (err: Error) => {
+  console.error("Unexpected error on read replica client", err);
   process.exit(-1);
 });
 
@@ -249,7 +263,7 @@ export async function resetDb() {
       // Wait a bit before each attempt to let any pending transactions complete
       if (retryCount > 0) {
         const delay = Math.pow(2, retryCount) * 100; // Exponential backoff: 200ms, 400ms, 800ms
-        console.log(
+        pinoDbLogger.info(
           `Retrying database reset (attempt ${retryCount + 1}/${maxRetries}) after ${delay}ms delay...`,
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
@@ -313,4 +327,31 @@ export async function migrateDb() {
 
 export async function seedDb() {
   await seed(db, schema);
+}
+
+/**
+ * Close all database connections
+ * This should be called during application shutdown to prevent connection leaks
+ */
+export async function closeDb(): Promise<void> {
+  try {
+    pinoDbLogger.info("Closing database connections...");
+
+    // Close the main connection pool
+    if (pool) {
+      await pool.end();
+      pinoDbLogger.info("Main database connection pool closed");
+    }
+
+    // Close the read replica connection pool
+    if (readReplicaPool && readReplicaPool !== pool) {
+      await readReplicaPool.end();
+      pinoDbLogger.info("Read replica connection pool closed");
+    }
+
+    pinoDbLogger.info("All database connections closed successfully");
+  } catch (error) {
+    pinoDbLogger.error("Error closing database connections:", error);
+    throw error;
+  }
 }

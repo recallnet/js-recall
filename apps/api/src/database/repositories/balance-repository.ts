@@ -3,6 +3,7 @@ import { and, count as drizzleCount, eq, inArray } from "drizzle-orm";
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { balances } from "@/database/schema/trading/defs.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChain } from "@/types/index.js";
 
@@ -67,7 +68,7 @@ async function saveBalanceImpl(
 
     return result;
   } catch (error) {
-    console.error("[BalanceRepository] Error in saveBalance:", error);
+    repositoryLogger.error("Error in saveBalance:", error);
     throw error;
   }
 }
@@ -91,7 +92,7 @@ async function getBalanceImpl(agentId: string, tokenAddress: string) {
 
     return result;
   } catch (error) {
-    console.error("[BalanceRepository] Error in getBalance:", error);
+    repositoryLogger.error("Error in getBalance:", error);
     throw error;
   }
 }
@@ -107,7 +108,7 @@ async function getAgentBalancesImpl(agentId: string) {
       .from(balances)
       .where(eq(balances.agentId, agentId));
   } catch (error) {
-    console.error("[BalanceRepository] Error in getAgentBalances:", error);
+    repositoryLogger.error("Error in getAgentBalances:", error);
     throw error;
   }
 }
@@ -127,7 +128,7 @@ export async function getAgentsBulkBalances(agentIds: string[]) {
       .from(balances)
       .where(inArray(balances.agentId, agentIds));
   } catch (error) {
-    console.error("[BalanceRepository] Error in getAgentsBulkBalances:", error);
+    repositoryLogger.error("Error in getAgentsBulkBalances:", error);
     throw error;
   }
 }
@@ -174,10 +175,7 @@ async function initializeAgentBalancesImpl(
       }
     });
   } catch (error) {
-    console.error(
-      "[BalanceRepository] Error in initializeAgentBalances:",
-      error,
-    );
+    repositoryLogger.error("Error in initializeAgentBalances:", error);
     throw error;
   }
 }
@@ -202,8 +200,8 @@ function getTokenSpecificChain(tokenAddress: string): string | null {
     }
   }
 
-  console.log(
-    `[BalanceRepository] Could not determine specific chain for token: ${tokenAddress}`,
+  repositoryLogger.warn(
+    `Could not determine specific chain for token: ${tokenAddress}`,
   );
   return null;
 }
@@ -243,7 +241,7 @@ async function resetAgentBalancesImpl(
       }
     });
   } catch (error) {
-    console.error("[BalanceRepository] Error in resetAgentBalances:", error);
+    repositoryLogger.error("Error in resetAgentBalances:", error);
     throw error;
   }
 }

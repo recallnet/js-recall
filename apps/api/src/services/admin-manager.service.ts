@@ -17,6 +17,7 @@ import {
   updatePassword,
 } from "@/database/repositories/admin-repository.js";
 import { InsertAdmin, SelectAdmin } from "@/database/schema/core/types.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { AdminMetadata, SearchAdminsParams } from "@/types/index.js";
 
 /**
@@ -94,7 +95,9 @@ export class AdminManager {
       this.apiKeyCache.set(apiKey, id);
       this.adminProfileCache.set(id, savedAdmin);
 
-      console.log(`[AdminManager] Setup initial admin: ${username} (${id})`);
+      serviceLogger.debug(
+        `[AdminManager] Setup initial admin: ${username} (${id})`,
+      );
 
       // Return admin with unencrypted API key
       return {
@@ -103,11 +106,17 @@ export class AdminManager {
       };
     } catch (error) {
       if (error instanceof Error) {
-        console.error("[AdminManager] Error setting up initial admin:", error);
+        serviceLogger.error(
+          "[AdminManager] Error setting up initial admin:",
+          error,
+        );
         throw error;
       }
 
-      console.error("[AdminManager] Unknown error setting up admin:", error);
+      serviceLogger.error(
+        "[AdminManager] Unknown error setting up admin:",
+        error,
+      );
       throw new Error(`Failed to setup admin: ${error}`);
     }
   }
@@ -173,16 +182,19 @@ export class AdminManager {
       // Update cache
       this.adminProfileCache.set(id, savedAdmin);
 
-      console.log(`[AdminManager] Created admin: ${username} (${id})`);
+      serviceLogger.debug(`[AdminManager] Created admin: ${username} (${id})`);
 
       return savedAdmin;
     } catch (error) {
       if (error instanceof Error) {
-        console.error("[AdminManager] Error creating admin:", error);
+        serviceLogger.error("[AdminManager] Error creating admin:", error);
         throw error;
       }
 
-      console.error("[AdminManager] Unknown error creating admin:", error);
+      serviceLogger.error(
+        "[AdminManager] Unknown error creating admin:",
+        error,
+      );
       throw new Error(`Failed to create admin: ${error}`);
     }
   }
@@ -211,7 +223,10 @@ export class AdminManager {
 
       return null;
     } catch (error) {
-      console.error(`[AdminManager] Error retrieving admin ${adminId}:`, error);
+      serviceLogger.error(
+        `[AdminManager] Error retrieving admin ${adminId}:`,
+        error,
+      );
       return null;
     }
   }
@@ -231,7 +246,7 @@ export class AdminManager {
 
       return admins;
     } catch (error) {
-      console.error("[AdminManager] Error retrieving all admins:", error);
+      serviceLogger.error("[AdminManager] Error retrieving all admins:", error);
       return [];
     }
   }
@@ -254,10 +269,13 @@ export class AdminManager {
       // Update cache
       this.adminProfileCache.set(admin.id, updatedAdmin);
 
-      console.log(`[AdminManager] Updated admin: ${admin.id}`);
+      serviceLogger.debug(`[AdminManager] Updated admin: ${admin.id}`);
       return updatedAdmin;
     } catch (error) {
-      console.error(`[AdminManager] Error updating admin ${admin.id}:`, error);
+      serviceLogger.error(
+        `[AdminManager] Error updating admin ${admin.id}:`,
+        error,
+      );
       throw new Error(
         `Failed to update admin: ${error instanceof Error ? error.message : error}`,
       );
@@ -291,16 +309,21 @@ export class AdminManager {
           }
         }
 
-        console.log(
+        serviceLogger.debug(
           `[AdminManager] Successfully deleted admin: ${admin.username} (${adminId})`,
         );
       } else {
-        console.log(`[AdminManager] Failed to delete admin: ${adminId}`);
+        serviceLogger.debug(
+          `[AdminManager] Failed to delete admin: ${adminId}`,
+        );
       }
 
       return deleted;
     } catch (error) {
-      console.error(`[AdminManager] Error deleting admin ${adminId}:`, error);
+      serviceLogger.error(
+        `[AdminManager] Error deleting admin ${adminId}:`,
+        error,
+      );
       throw new Error(
         `Failed to delete admin: ${error instanceof Error ? error.message : error}`,
       );
@@ -336,7 +359,7 @@ export class AdminManager {
 
       return admin.id;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AdminManager] Error authenticating admin ${username}:`,
         error,
       );
@@ -379,7 +402,7 @@ export class AdminManager {
               return admin.id;
             }
           } catch (decryptError) {
-            console.error(
+            serviceLogger.error(
               `[AdminManager] Error decrypting API key for admin ${admin.id}:`,
               decryptError,
             );
@@ -391,7 +414,7 @@ export class AdminManager {
 
       return null;
     } catch (error) {
-      console.error("[AdminManager] Error validating API key:", error);
+      serviceLogger.error("[AdminManager] Error validating API key:", error);
       return null;
     }
   }
@@ -412,10 +435,12 @@ export class AdminManager {
       // Update cache
       this.apiKeyCache.set(apiKey, adminId);
 
-      console.log(`[AdminManager] Generated new API key for admin: ${adminId}`);
+      serviceLogger.debug(
+        `[AdminManager] Generated new API key for admin: ${adminId}`,
+      );
       return apiKey;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AdminManager] Error generating API key for admin ${adminId}:`,
         error,
       );
@@ -443,7 +468,7 @@ export class AdminManager {
       // Generate new API key
       return await this.generateApiKeyForAdmin(adminId);
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AdminManager] Error resetting API key for admin ${adminId}:`,
         error,
       );
@@ -466,7 +491,7 @@ export class AdminManager {
         .toString("hex");
       return `${salt}:${hash}`;
     } catch (error) {
-      console.error("[AdminManager] Error hashing password:", error);
+      serviceLogger.error("[AdminManager] Error hashing password:", error);
       throw new Error("Failed to hash password");
     }
   }
@@ -485,9 +510,11 @@ export class AdminManager {
       const passwordHash = await this.hashPassword(newPassword);
       await updatePassword(adminId, passwordHash);
 
-      console.log(`[AdminManager] Updated password for admin: ${adminId}`);
+      serviceLogger.debug(
+        `[AdminManager] Updated password for admin: ${adminId}`,
+      );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AdminManager] Error updating password for admin ${adminId}:`,
         error,
       );
@@ -520,7 +547,7 @@ export class AdminManager {
         .toString("hex");
       return testHash === hash;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AdminManager] Error validating password for admin ${adminId}:`,
         error,
       );
@@ -536,7 +563,7 @@ export class AdminManager {
     try {
       await updateLastLogin(adminId);
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AdminManager] Error updating last login for admin ${adminId}:`,
         error,
       );
@@ -554,7 +581,7 @@ export class AdminManager {
       const admin = await this.getAdmin(adminId);
       return admin?.status === "active";
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AdminManager] Error checking admin status ${adminId}:`,
         error,
       );
@@ -579,11 +606,14 @@ export class AdminManager {
       // Remove from cache
       this.adminProfileCache.delete(adminId);
 
-      console.log(
+      serviceLogger.debug(
         `[AdminManager] Suspended admin: ${adminId}, reason: ${reason}`,
       );
     } catch (error) {
-      console.error(`[AdminManager] Error suspending admin ${adminId}:`, error);
+      serviceLogger.error(
+        `[AdminManager] Error suspending admin ${adminId}:`,
+        error,
+      );
       throw new Error(
         `Failed to suspend admin: ${error instanceof Error ? error.message : error}`,
       );
@@ -606,9 +636,9 @@ export class AdminManager {
       // Remove from cache to force refresh
       this.adminProfileCache.delete(adminId);
 
-      console.log(`[AdminManager] Reactivated admin: ${adminId}`);
+      serviceLogger.debug(`[AdminManager] Reactivated admin: ${adminId}`);
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AdminManager] Error reactivating admin ${adminId}:`,
         error,
       );
@@ -627,7 +657,7 @@ export class AdminManager {
     try {
       return await searchAdmins(searchParams);
     } catch (error) {
-      console.error("[AdminManager] Error searching admins:", error);
+      serviceLogger.error("[AdminManager] Error searching admins:", error);
       return [];
     }
   }
@@ -643,7 +673,9 @@ export class AdminManager {
 
     // Combine with a prefix and separator underscore for readability
     const key = `${segment1}_${segment2}`;
-    console.log(`[AdminManager] Generated API key with length: ${key.length}`);
+    serviceLogger.debug(
+      `[AdminManager] Generated API key with length: ${key.length}`,
+    );
     return key;
   }
 
@@ -654,7 +686,7 @@ export class AdminManager {
    */
   private encryptApiKey(key: string): string {
     try {
-      console.log(
+      serviceLogger.debug(
         `[AdminManager] Encrypting API key with length: ${key.length}`,
       );
       const algorithm = "aes-256-cbc";
@@ -672,10 +704,12 @@ export class AdminManager {
 
       // Return the IV and encrypted data together, clearly separated
       const result = `${iv.toString("hex")}:${encrypted}`;
-      console.log(`[AdminManager] Encrypted key length: ${result.length}`);
+      serviceLogger.debug(
+        `[AdminManager] Encrypted key length: ${result.length}`,
+      );
       return result;
     } catch (error) {
-      console.error("[AdminManager] Error encrypting API key:", error);
+      serviceLogger.error("[AdminManager] Error encrypting API key:", error);
       throw new Error("Failed to encrypt API key");
     }
   }
@@ -709,7 +743,7 @@ export class AdminManager {
 
       return decrypted;
     } catch (error) {
-      console.error("[AdminManager] Error decrypting API key:", error);
+      serviceLogger.error("[AdminManager] Error decrypting API key:", error);
       throw error;
     }
   }
@@ -723,7 +757,7 @@ export class AdminManager {
       const res = await count();
       return res >= 0;
     } catch (error) {
-      console.error("[AdminManager] Health check failed:", error);
+      serviceLogger.error("[AdminManager] Health check failed:", error);
       return false;
     }
   }
@@ -734,7 +768,7 @@ export class AdminManager {
   clearCache(): void {
     this.apiKeyCache.clear();
     this.adminProfileCache.clear();
-    console.log("[AdminManager] All caches cleared");
+    serviceLogger.debug("[AdminManager] All caches cleared");
   }
 
   /**

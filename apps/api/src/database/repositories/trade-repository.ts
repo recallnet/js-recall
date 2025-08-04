@@ -3,6 +3,7 @@ import { and, desc, count as drizzleCount, eq } from "drizzle-orm";
 import { db } from "@/database/db.js";
 import { trades } from "@/database/schema/trading/defs.js";
 import { InsertTrade } from "@/database/schema/trading/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 /**
@@ -30,7 +31,7 @@ async function createImpl(trade: InsertTrade) {
 
     return result;
   } catch (error) {
-    console.error("[TradeRepository] Error in create:", error);
+    repositoryLogger.error("Error in create:", error);
     throw error;
   }
 }
@@ -63,7 +64,7 @@ async function getAgentTradesImpl(
 
     return await query;
   } catch (error) {
-    console.error("[TradeRepository] Error in getAgentTrades:", error);
+    repositoryLogger.error("Error in getAgentTrades:", error);
     throw error;
   }
 }
@@ -96,7 +97,7 @@ async function getCompetitionTradesImpl(
 
     return await query;
   } catch (error) {
-    console.error("[TradeRepository] Error in getCompetitionTrades:", error);
+    repositoryLogger.error("Error in getCompetitionTrades:", error);
     throw error;
   }
 }
@@ -114,7 +115,7 @@ async function countAgentTradesImpl(agentId: string) {
 
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[TradeRepository] Error in countAgentTrades:", error);
+    repositoryLogger.error("Error in countAgentTrades:", error);
     throw error;
   }
 }
@@ -142,10 +143,7 @@ async function countAgentTradesInCompetitionImpl(
 
     return result?.count ?? 0;
   } catch (error) {
-    console.error(
-      "[TradeRepository] Error in countAgentTradesInCompetition:",
-      error,
-    );
+    repositoryLogger.error("Error in countAgentTradesInCompetition:", error);
     throw error;
   }
 }
@@ -159,7 +157,7 @@ async function countImpl() {
 
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[TradeRepository] Error in count:", error);
+    repositoryLogger.error("Error in count:", error);
     throw error;
   }
 }

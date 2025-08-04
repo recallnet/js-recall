@@ -7,6 +7,15 @@ import {
   SpecificChain,
 } from "@/types/index.js";
 
+// Simple console logging for config initialization (before full logger setup)
+const configLogger = {
+  info: (message: string) => console.log(`[Config] ${message}`),
+  error: (message: string, error?: Error) =>
+    console.error(`[Config] ${message}`, error),
+  warn: (message: string) => console.warn(`[Config] ${message}`),
+  debug: (message: string) => console.debug(`[Config] ${message}`),
+};
+
 // Environment file selection logic:
 // - When NODE_ENV=test, load from .env.test
 // - For all other environments (development, production), load from .env
@@ -20,7 +29,7 @@ const envFile =
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 // Log which environment file was loaded (helpful for debugging)
-console.log(`Config loaded environment variables from: ${envFile}`);
+configLogger.info(`Config loaded environment variables from: ${envFile}`);
 
 // Helper function to parse specific chain initial balance environment variables
 const getSpecificChainBalances = (): Record<
@@ -202,7 +211,12 @@ export const config = {
   },
   database: {
     ssl: process.env.DB_SSL === "true",
+    maxConnections: parseInt(process.env.DATABASE_MAX_CONNECTIONS || "10", 10),
     url:
+      process.env.DATABASE_URL ||
+      "postgresql://postgres:postgres@localhost:5432/trading_simulator",
+    readReplicaUrl:
+      process.env.DATABASE_READ_REPLICA_URL ||
       process.env.DATABASE_URL ||
       "postgresql://postgres:postgres@localhost:5432/trading_simulator",
   },
@@ -268,19 +282,12 @@ export const config = {
   },
   priceCacheDuration: parseInt(process.env.PRICE_CACHE_MS || "30000", 10), // 30 seconds
   portfolio: {
-    // Default snapshot interval: 2 minutes (120000ms), configurable via env
-    snapshotIntervalMs: parseInt(
-      process.env.PORTFOLIO_SNAPSHOT_INTERVAL_MS || "120000",
-      10,
-    ),
+    // Default snapshot interval: 5 minutes (600000ms)
+    // The snapshot is taken and configured via cron
+    snapshotIntervalMs: parseInt("600000", 10),
     // How fresh a price needs to be to reuse directly from DB (default: 10 minutes)
     priceFreshnessMs: parseInt(
       process.env.PORTFOLIO_PRICE_FRESHNESS_MS || "600000",
-      10,
-    ),
-    // Competition end date check interval (default: 1 minute)
-    competitionEndCheckIntervalMs: parseInt(
-      process.env.COMPETITION_END_CHECK_INTERVAL_MS || "60000",
       10,
     ),
   },
@@ -325,6 +332,7 @@ export const config = {
     ),
     // Sample rate for HTTP request logs (0.0 to 1.0)
     httpSampleRate: parseFloat(process.env.HTTP_LOG_SAMPLE_RATE || "0.1"),
+    level: process.env.LOG_LEVEL || "info",
   },
 };
 
@@ -357,8 +365,8 @@ export function reloadSecurityConfig(): void {
   config.security.rootEncryptionKey = newRootKey;
   config.app.sessionPassword = newRootKey;
 
-  console.log(
-    "[Config] Security configuration reloaded with updated ROOT_ENCRYPTION_KEY",
+  configLogger.info(
+    "Security configuration reloaded with updated ROOT_ENCRYPTION_KEY",
   );
 }
 

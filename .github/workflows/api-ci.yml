@@ -97,20 +97,20 @@ jobs:
 
           try {
             // Run the unit tests with NODE_ENV=test
-            execSync('pnpm test', { 
+            execSync('pnpm test', {
               stdio: 'inherit',
-              env: { 
+              env: {
                 ...process.env,
-                NODE_ENV: 'test', 
+                NODE_ENV: 'test',
                 TEST_MODE: 'true'
               }
             });
-            
+
             console.log('✅ Unit tests completed successfully');
             process.exit(0);
           } catch (error) {
             console.error('⚠️ Error in unit tests:', error.message);
-            
+
             // Properly fail the build when tests fail
             process.exit(1);
           }
@@ -185,16 +185,16 @@ jobs:
           # Check if we're running in act
           if [ -z "$ACTIONS_RUNTIME_URL" ]; then
             echo "Running in act - finding Postgres container IP"
-            
+
             # Get the container ID of the postgres container
             POSTGRES_CONTAINER_ID=$(docker ps --filter "ancestor=postgres:14" --format "{{.ID}}")
-            
+
             if [ -n "$POSTGRES_CONTAINER_ID" ]; then
               echo "Found postgres container: $POSTGRES_CONTAINER_ID"
-              
+
               # Get the IP address of the container
               POSTGRES_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $POSTGRES_CONTAINER_ID)
-              
+
               if [ -n "$POSTGRES_IP" ]; then
                 echo "Found postgres container IP: $POSTGRES_IP"
                 echo "db_host=$POSTGRES_IP" >> $GITHUB_OUTPUT
@@ -206,7 +206,7 @@ jobs:
               echo "Could not find postgres container, falling back to 127.0.0.1"
               echo "db_host=127.0.0.1" >> $GITHUB_OUTPUT
             fi
-            
+
             # For act, we need to use 0.0.0.0 to listen on all interfaces
             echo "test_host=0.0.0.0" >> $GITHUB_OUTPUT
           fi
@@ -287,7 +287,7 @@ jobs:
 
           # Metrics server configuration
           METRICS_PORT=3003
-          
+
           # Enable auto-verify user email
           ENABLE_AUTO_VERIFY_USER_EMAIL=true
           EOF
@@ -325,25 +325,25 @@ jobs:
 
           try {
             // Run the E2E tests
-            const result = spawnSync('pnpm', ['run', 'test:e2e'], { 
+            const result = spawnSync('pnpm', ['run', 'test:e2e'], {
               stdio: 'inherit',
-              env: { 
+              env: {
                 ...process.env,
                 // Set an environment flag to indicate we're running in CI with special error handling
                 E2E_TEST_DISTINGUISH_ERRORS: 'true'
               }
             });
-            
+
             // Check the exit code
             if (result.status !== 0) {
               // The process output is already passed through with stdio: 'inherit'
               // Jest will report clear test failures with "[FAIL]" in the output
-              
+
               // If exit code is 1 (standard Jest failure code), fail the build
               if (result.status === 1) {
                 console.error('❌ Tests failed with exit code 1 (standard test failure)');
                 process.exit(1);
-              } 
+              }
               // If exit code is greater than 1, it's likely a process/cleanup issue
               else {
                 console.warn('⚠️ Process exited with code', result.status, 'but may be a cleanup issue, treating as success');
@@ -356,9 +356,9 @@ jobs:
             }
           } catch (error) {
             console.error('⚠️ Error running tests:', error.message);
-            
+
             // Check if the error message suggests a test failure
-            if (error.message.includes('Test failed') || 
+            if (error.message.includes('Test failed') ||
                 error.message.includes('failed with exit code 1') ||
                 error.message.includes('tests failed')) {
               console.error('❌ Tests failed, failing the build');
@@ -377,6 +377,7 @@ jobs:
           CI: true
           DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
           TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
+          # TODO: I think the tests are Vitest, why do we have a JEST env here?
           JEST_WORKER_ID: 1 # Force single worker to prevent open handles from child processes
           DB_CONNECTION_TIMEOUT: 5000
           DB_IDLE_TIMEOUT: 1000

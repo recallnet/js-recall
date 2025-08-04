@@ -1,4 +1,3 @@
-import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
@@ -10,15 +9,11 @@ import {
   VoteResponse,
   VotingStateResponse,
 } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createSiweAuthenticatedClient,
   createTestClient,
   createTestCompetition,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
@@ -26,21 +21,9 @@ import {
 describe("Voting API", () => {
   let adminApiKey: string;
 
-  // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
+    adminApiKey = await getAdminApiKey();
   });
 
   describe("POST /api/user/vote", () => {

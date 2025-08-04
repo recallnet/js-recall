@@ -1,6 +1,5 @@
 import { relations } from "drizzle-orm/relations";
 
-import { objectIndex } from "@/database/schema/syncing/defs.js";
 import {
   stakes,
   voteAssignments,
@@ -42,7 +41,6 @@ export const agentsRelations = relations(agents, ({ one, many }) => ({
   portfolioSnapshots: many(portfolioSnapshots),
   competitionAgents: many(competitionAgents),
   votes: many(votes),
-  objectIndexes: many(objectIndex),
 }));
 
 export const competitionsRelations = relations(
@@ -53,7 +51,6 @@ export const competitionsRelations = relations(
     portfolioSnapshots: many(portfolioSnapshots),
     competitionAgents: many(competitionAgents),
     votes: many(votes),
-    objectIndexes: many(objectIndex),
   }),
 );
 

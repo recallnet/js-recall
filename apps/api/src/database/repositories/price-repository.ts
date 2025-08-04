@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/database/db.js";
 import { prices } from "@/database/schema/trading/defs.js";
 import { InsertPrice } from "@/database/schema/trading/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChain } from "@/types/index.js";
 
@@ -16,8 +17,8 @@ import { SpecificChain } from "@/types/index.js";
  * @returns The created price record
  */
 async function createImpl(priceData: InsertPrice) {
-  console.log(
-    `[PriceRepository] Storing price for ${priceData.token}: $${priceData.price}${priceData.chain ? ` on chain ${priceData.chain}` : ""}${priceData.specificChain ? ` (${priceData.specificChain})` : ""}`,
+  repositoryLogger.debug(
+    `Storing price for ${priceData.token}: $${priceData.price}${priceData.chain ? ` on chain ${priceData.chain}` : ""}${priceData.specificChain ? ` (${priceData.specificChain})` : ""}`,
   );
 
   try {
@@ -35,7 +36,7 @@ async function createImpl(priceData: InsertPrice) {
 
     return result;
   } catch (error) {
-    console.error("[PriceRepository] Error creating price record:", error);
+    repositoryLogger.error("Error creating price record:", error);
     throw error;
   }
 }
@@ -50,9 +51,7 @@ export async function createBatch(pricesData: InsertPrice[]) {
     return [];
   }
 
-  console.log(
-    `[PriceRepository] Storing ${pricesData.length} price records in batch`,
-  );
+  repositoryLogger.debug(`Storing ${pricesData.length} price records in batch`);
 
   try {
     const results = await db
@@ -67,10 +66,7 @@ export async function createBatch(pricesData: InsertPrice[]) {
 
     return results;
   } catch (error) {
-    console.error(
-      "[PriceRepository] Error creating price records in batch:",
-      error,
-    );
+    repositoryLogger.error("Error creating price records in batch:", error);
     throw error;
   }
 }
@@ -82,8 +78,8 @@ export async function createBatch(pricesData: InsertPrice[]) {
  * @returns The latest price record or null if not found
  */
 async function getLatestPriceImpl(token: string, specificChain: SpecificChain) {
-  console.log(
-    `[PriceRepository] Getting latest price for ${token}${specificChain ? ` on ${specificChain}` : ""}`,
+  repositoryLogger.debug(
+    `Getting latest price for ${token}${specificChain ? ` on ${specificChain}` : ""}`,
   );
 
   try {
@@ -103,7 +99,7 @@ async function getLatestPriceImpl(token: string, specificChain: SpecificChain) {
     const priceRecord = result[0]!;
     return priceRecord;
   } catch (error) {
-    console.error(`[PriceRepository] Error getting latest price:`, error);
+    repositoryLogger.error(`Error getting latest price:`, error);
     throw error;
   }
 }
@@ -120,8 +116,8 @@ async function getPriceHistoryImpl(
   hours: number,
   specificChain?: SpecificChain,
 ) {
-  console.log(
-    `[PriceRepository] Getting price history for ${token}${specificChain ? ` on ${specificChain}` : ""} (last ${hours} hours)`,
+  repositoryLogger.debug(
+    `Getting price history for ${token}${specificChain ? ` on ${specificChain}` : ""} (last ${hours} hours)`,
   );
 
   try {
@@ -137,7 +133,7 @@ async function getPriceHistoryImpl(
       )
       .orderBy(asc(prices.timestamp));
   } catch (error) {
-    console.error("[PriceRepository] Error getting price history:", error);
+    repositoryLogger.error("Error getting price history:", error);
     throw error;
   }
 }
@@ -170,7 +166,7 @@ async function getAveragePriceImpl(
 
     return result?.avgPrice;
   } catch (error) {
-    console.error("[PriceRepository] Error getting average price:", error);
+    repositoryLogger.error("Error getting average price:", error);
     throw error;
   }
 }
@@ -211,10 +207,7 @@ async function getPriceChangePercentageImpl(
 
     return ((lastPrice - firstPrice) / firstPrice) * 100;
   } catch (error) {
-    console.error(
-      "[PriceRepository] Error getting price change percentage:",
-      error,
-    );
+    repositoryLogger.error("Error getting price change percentage:", error);
     throw error;
   }
 }
@@ -230,7 +223,7 @@ async function countImpl() {
 
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[PriceRepository] Error in count:", error);
+    repositoryLogger.error("Error in count:", error);
     throw error;
   }
 }

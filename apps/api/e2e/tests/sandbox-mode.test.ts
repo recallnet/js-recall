@@ -1,4 +1,3 @@
-import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { ApiClient } from "@/e2e/utils/api-client.js";
@@ -11,15 +10,11 @@ import {
   StartCompetitionResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
   createTestCompetition,
   generateRandomEthAddress,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -30,17 +25,8 @@ describe("Sandbox Mode", () => {
   let adminClient: ApiClient;
 
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
+    adminApiKey = await getAdminApiKey();
     adminClient = createTestClient();
 
     // Login as admin
