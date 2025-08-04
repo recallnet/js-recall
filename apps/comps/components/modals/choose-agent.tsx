@@ -41,7 +41,7 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
 
   const registered = React.useMemo(
     () =>
-      compAgents.agents.reduce(
+      compAgents?.agents.reduce(
         (acc, cur) => {
           return {
             ...acc,
@@ -49,7 +49,7 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
           };
         },
         {} as Record<string, boolean>,
-      ),
+      ) || {},
     [compAgents],
   );
 
