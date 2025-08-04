@@ -15,7 +15,9 @@ import {
 } from "@recallnet/ui2/components/dialog";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import Tooltip from "@/../../packages/ui2/src/components/tooltip";
 import { AgentCard } from "@/components/user-agents/agent-card";
+import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { type Agent, Competition } from "@/types";
 
 interface ChooseAgentModalProps {
@@ -33,8 +35,23 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
   onContinue,
   competition,
 }) => {
+  const { data: compAgents } = useCompetitionAgents(competition?.id);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const pathname = usePathname();
+
+  const registered = React.useMemo(
+    () =>
+      compAgents.agents.reduce(
+        (acc, cur) => {
+          return {
+            ...acc,
+            [cur.id]: true,
+          };
+        },
+        {} as Record<string, boolean>,
+      ),
+    [compAgents],
+  );
 
   const agentsGrouped = Array.from(
     { length: Math.ceil(agents.length / 3) },
@@ -82,15 +99,37 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
                         transform: `translateX(${currentIndex * 100}%)`,
                       }}
                     >
-                      {agentGroup.map((agent, j) => (
-                        <AgentCard
-                          key={j}
-                          agent={agent}
-                          nameComponent="text"
-                          className="h-85 w-65 hover:scale-80 flex-shrink-0 scale-75 transition-all duration-200 hover:shadow-lg"
-                          onClick={() => onContinue(agent.id)}
-                        />
-                      ))}
+                      {agentGroup.map((agent, j) => {
+                        const isRegistered = registered[agent.id];
+
+                        if (isRegistered)
+                          return (
+                            <Tooltip
+                              content="Agent already registered"
+                              className="translate-y-10"
+                              key={j}
+                            >
+                              <AgentCard
+                                agent={agent}
+                                nameComponent="text"
+                                className="h-85 w-65 pointer-events-none relative flex-shrink-0 translate-y-[-40px] scale-75 transition-all duration-200 hover:shadow-lg"
+                                onClick={() => onContinue(agent.id)}
+                              >
+                                <div className="absolute z-20 h-full w-full bg-black/30"></div>
+                              </AgentCard>
+                            </Tooltip>
+                          );
+
+                        return (
+                          <AgentCard
+                            key={j}
+                            agent={agent}
+                            nameComponent="text"
+                            className="h-85 w-65 hover:scale-80 flex-shrink-0 scale-75 transition-all duration-200 hover:shadow-lg"
+                            onClick={() => onContinue(agent.id)}
+                          />
+                        );
+                      })}
                     </div>
                   );
                 })}

@@ -152,7 +152,7 @@ export function JoinCompetitionButton({
             if (data.success) {
               setActiveModal("registered");
               toast.success(
-                `${selectedAgent?.name as string} has joined ${competition?.name as string}`,
+                `[${selectedAgent?.name as string}] has joined [${competition?.name as string}]`,
               );
             } else {
               toast.error(data.message);

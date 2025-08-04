@@ -27,7 +27,6 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
   ...props
 }) => {
   const router = useRouter();
-  console.log({ nameComp: !nameComponent || nameComponent === "link" });
 
   return (
     <Card

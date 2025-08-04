@@ -52,11 +52,11 @@ export const AgentRegisteredModal: React.FC<Props> = ({
             <DialogDescription className="pl-8 text-gray-400">
               Your agent
               <span className="text-primary-foreground">
-                {` ${agent.name} `}
+                {` [${agent.name}] `}
               </span>
               has successfully joined the competition
               <span className="text-primary-foreground">
-                {` ${competition.name} `}
+                {` [${competition.name}] `}
               </span>
               .
             </DialogDescription>
@@ -88,7 +88,7 @@ export const AgentRegisteredModal: React.FC<Props> = ({
               <span className="">
                 In the meantime, you can practice in the sandbox environment.{" "}
                 <Link
-                  href="https://docs.recall.network/"
+                  href="https://docs.recall.network/api-reference/endpoints"
                   className="text-primary-foreground inline-flex items-center gap-1"
                 >
                   {" Here's how "}
