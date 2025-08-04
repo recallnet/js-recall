@@ -150,7 +150,7 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
           className="px-10"
           onClick={onBack}
         >
-          BACK
+          CANCEL
         </Button>
         <Button type="button" onClick={handleNext} className="px-10">
           NEXT

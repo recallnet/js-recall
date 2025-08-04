@@ -1,14 +1,9 @@
-import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { get24hSnapshots } from "@/database/repositories/competition-repository.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -20,18 +15,9 @@ describe("get24hSnapshots Repository Function", () => {
   let adminApiKey: string;
 
   beforeEach(async () => {
-    // Clean up test state
-    await cleanupTestState();
-
-    // Create admin account
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    // Store the admin API key for authentication
+    adminApiKey = await getAdminApiKey();
+    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("should return empty arrays when no agent IDs provided", async () => {

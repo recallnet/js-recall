@@ -13,7 +13,6 @@ import {
   rewardsTree,
 } from "@/database/schema/voting/defs.js";
 import { InsertReward } from "@/database/schema/voting/types.js";
-import { cleanupTestState } from "@/e2e/utils/test-helpers.js";
 import { RewardsService, createLeafNode } from "@/services/rewards.service.js";
 
 describe("Rewards Service", () => {
@@ -21,7 +20,6 @@ describe("Rewards Service", () => {
   let testEpochId: string;
 
   beforeEach(async () => {
-    await cleanupTestState();
     rewardsService = new RewardsService();
 
     // Create a test epoch with UUID

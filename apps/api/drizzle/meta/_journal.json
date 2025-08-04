@@ -176,6 +176,13 @@
       "when": 1753206362111,
       "tag": "0024_same_juggernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1753733426779,
+      "tag": "0025_flat_ghost_rider",
+      "breakpoints": true
     }
   ]
 }

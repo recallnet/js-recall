@@ -5,7 +5,6 @@ import * as path from "path";
 
 import { config, reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
-import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -15,7 +14,6 @@ import {
   AdminCreateAgentSchema,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
-  SYNC_DATA_TYPE,
 } from "@/types/index.js";
 
 import {
@@ -29,7 +27,6 @@ import {
   AdminGetAgentParamsSchema,
   AdminGetCompetitionSnapshotsParamsSchema,
   AdminGetCompetitionSnapshotsQuerySchema,
-  AdminGetObjectIndexQuerySchema,
   AdminGetPerformanceReportsQuerySchema,
   AdminReactivateAgentInCompetitionParamsSchema,
   AdminReactivateAgentParamsSchema,
@@ -38,7 +35,6 @@ import {
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
-  AdminSyncObjectIndexSchema,
   AdminUpdateAgentBodySchema,
   AdminUpdateAgentParamsSchema,
   AdminUpdateCompetitionParamsSchema,
@@ -698,26 +694,6 @@ export function makeAdminController(services: ServiceRegistry) {
         const leaderboard =
           await services.competitionManager.getLeaderboard(competitionId);
 
-        // Populate object_index with competition data
-        try {
-          await services.objectIndexService.populateTrades(competitionId);
-          await services.objectIndexService.populateAgentScoreHistory(
-            competitionId,
-          );
-          await services.objectIndexService.populateCompetitionsLeaderboard(
-            competitionId,
-          );
-          adminLogger.info(
-            `Successfully populated object_index for competition ${competitionId}`,
-          );
-        } catch (error) {
-          adminLogger.error(
-            `Failed to populate object_index for competition ${competitionId}:`,
-            error,
-          );
-          // Don't fail the request if object_index population fails
-        }
-
         adminLogger.info(
           `Successfully ended competition, id: ${competitionId}`,
         );
@@ -727,136 +703,6 @@ export function makeAdminController(services: ServiceRegistry) {
           success: true,
           competition: endedCompetition,
           leaderboard,
-        });
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Manually trigger object index population
-     * @param req Express request
-     * @param res Express response
-     * @param next Express next function
-     */
-    async syncObjectIndex(req: Request, res: Response, next: NextFunction) {
-      try {
-        // Validate request body using flatParse
-        const result = flatParse(AdminSyncObjectIndexSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
-        const { competitionId, dataTypes } = result.data;
-
-        // No need for ensureUuid here, Zod already validated
-        const validatedCompetitionId = competitionId;
-
-        const defaultDataTypes = [
-          SYNC_DATA_TYPE.TRADE,
-          SYNC_DATA_TYPE.AGENT_SCORE_HISTORY,
-          SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD,
-        ];
-        let typesToSync: string[] = defaultDataTypes;
-
-        if (dataTypes) {
-          typesToSync = dataTypes;
-        }
-
-        adminLogger.info(
-          `Starting object index sync for types: ${typesToSync.join(", ")}`,
-        );
-
-        for (const dataType of typesToSync) {
-          try {
-            switch (dataType) {
-              case SYNC_DATA_TYPE.TRADE:
-                await services.objectIndexService.populateTrades(
-                  validatedCompetitionId,
-                );
-                break;
-              case SYNC_DATA_TYPE.AGENT_SCORE_HISTORY:
-                await services.objectIndexService.populateAgentScoreHistory(
-                  validatedCompetitionId,
-                );
-                break;
-              case SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD:
-                await services.objectIndexService.populateCompetitionsLeaderboard(
-                  validatedCompetitionId,
-                );
-                break;
-              case SYNC_DATA_TYPE.PORTFOLIO_SNAPSHOT:
-                await services.objectIndexService.populatePortfolioSnapshots(
-                  validatedCompetitionId,
-                );
-                break;
-              case SYNC_DATA_TYPE.AGENT_SCORE:
-                await services.objectIndexService.populateAgentScore();
-                break;
-              default:
-                adminLogger.warn(`Unknown data type: ${dataType}`);
-            }
-          } catch (error) {
-            adminLogger.error(`Error syncing ${dataType}:`, error);
-            throw error;
-          }
-        }
-
-        res.status(200).json({
-          success: true,
-          message: "Object index sync initiated",
-          dataTypes: typesToSync,
-          competitionId: validatedCompetitionId || "all",
-        });
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Get object index entries with filters
-     * @param req Express request
-     * @param res Express response
-     * @param next Express next function
-     */
-    async getObjectIndex(req: Request, res: Response, next: NextFunction) {
-      try {
-        // Validate query parameters using flatParse
-        const result = flatParse(AdminGetObjectIndexQuerySchema, req.query);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid query parameters: ${result.error}`);
-        }
-
-        const { competitionId, agentId, dataType, limit, offset } = result.data;
-
-        // Get entries and count
-        const [entries, totalCount] = await Promise.all([
-          objectIndexRepository.getAll(
-            {
-              competitionId,
-              agentId,
-              dataType,
-            },
-            limit,
-            offset,
-          ),
-          objectIndexRepository.count({
-            competitionId,
-            agentId,
-            dataType,
-          }),
-        ]);
-
-        res.status(200).json({
-          success: true,
-          data: {
-            entries,
-            pagination: {
-              total: totalCount,
-              limit,
-              offset,
-            },
-          },
         });
       } catch (error) {
         next(error);

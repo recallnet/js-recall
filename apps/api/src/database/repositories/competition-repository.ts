@@ -805,7 +805,18 @@ async function get24hSnapshotsImpl(
   }
 
   try {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const comp = await dbRead
+      .select({ endDate: competitions.endDate })
+      .from(competitions)
+      .where(
+        and(
+          eq(competitions.status, COMPETITION_STATUS.ENDED),
+          eq(competitions.id, competitionId),
+        ),
+      );
+    const endDate = comp[0]?.endDate;
+    const endTime = endDate ? endDate.valueOf() : Date.now();
+    const twentyFourHoursAgo = new Date(endTime - 24 * 60 * 60 * 1000);
 
     // Get earliest snapshots for each agent using efficient UNNEST + CROSS JOIN LATERAL
     const earliestResult = await dbRead.execute<{

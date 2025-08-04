@@ -77,7 +77,6 @@ export class CompetitionManager {
   private balanceManager: BalanceManager;
   private tradeSimulator: TradeSimulator;
   private portfolioSnapshotter: PortfolioSnapshotter;
-  private activeCompetitionCache: string | null = null;
   private agentManager: AgentManager;
   private configurationService: ConfigurationService;
   private agentRankService: AgentRankService;
@@ -102,26 +101,6 @@ export class CompetitionManager {
     this.agentRankService = agentRankService;
     this.voteManager = voteManager;
     this.tradingConstraintsService = tradingConstraintsService;
-    // Load active competition on initialization
-    this.loadActiveCompetition();
-  }
-
-  /**
-   * Load the active competition from the database
-   * This is used at startup to restore the active competition state
-   */
-  private async loadActiveCompetition() {
-    try {
-      const activeCompetition = await findActive();
-      if (activeCompetition) {
-        this.activeCompetitionCache = activeCompetition.id;
-      }
-    } catch (error) {
-      serviceLogger.error(
-        "[CompetitionManager] Error loading active competition:",
-        error,
-      );
-    }
   }
 
   /**
@@ -271,9 +250,6 @@ export class CompetitionManager {
     competition.updatedAt = new Date();
     await updateCompetition(competition);
 
-    // Update cache
-    this.activeCompetitionCache = competitionId;
-
     serviceLogger.debug(
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
     );
@@ -317,12 +293,6 @@ export class CompetitionManager {
       throw new Error(`Competition is not active: ${competition.status}`);
     }
 
-    if (this.activeCompetitionCache !== competitionId) {
-      throw new Error(
-        `Competition is not the active one: ${this.activeCompetitionCache}`,
-      );
-    }
-
     // Take final portfolio snapshots
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
@@ -339,9 +309,6 @@ export class CompetitionManager {
     competition.updatedAt = new Date();
 
     await updateCompetition(competition);
-
-    // Update cache
-    this.activeCompetitionCache = null;
 
     serviceLogger.debug(
       `[CompetitionManager] Ended competition: ${competition.name} (${competitionId})`,
@@ -405,23 +372,7 @@ export class CompetitionManager {
    * @returns The active competition or null if none
    */
   async getActiveCompetition() {
-    // First check cache for better performance
-    if (this.activeCompetitionCache) {
-      const competition = await findById(this.activeCompetitionCache);
-      if (competition?.status === COMPETITION_STATUS.ACTIVE) {
-        return competition;
-      } else {
-        // Cache is out of sync, clear it
-        this.activeCompetitionCache = null;
-      }
-    }
-
-    // Fallback to database query
-    const activeCompetition = await findActive();
-    if (activeCompetition) {
-      this.activeCompetitionCache = activeCompetition.id;
-    }
-    return activeCompetition;
+    return findActive();
   }
 
   /**
@@ -535,6 +486,9 @@ export class CompetitionManager {
    */
   async getLeaderboard(competitionId: string) {
     try {
+      // TODO: this function has many paths it potentially takes depending on
+      //  the state of several tables. We should refactor and ideally only have
+      //  one, which doesn't have to do calculations for every (uncached) request.
       const competition = await findById(competitionId);
       const competitionStatus = competition?.status;
 
@@ -912,11 +866,6 @@ export class CompetitionManager {
       `[CompetitionManager] Updated competition: ${competitionId}`,
     );
 
-    // Clear cache if this was the active competition
-    if (this.activeCompetitionCache === competitionId) {
-      this.activeCompetitionCache = null;
-    }
-
     return updatedCompetition;
   }
 
@@ -1285,7 +1234,6 @@ export class CompetitionManager {
 
   /**
    * Check and automatically end competitions that have reached their end date
-   * This method is called periodically by the SchedulerService
    */
   async processCompetitionEndDateChecks(): Promise<void> {
     try {
@@ -1315,18 +1263,16 @@ export class CompetitionManager {
           );
         } catch (error) {
           serviceLogger.error(
-            `[CompetitionManager] Error auto-ending competition ${competition.id}:`,
-            error,
+            `[CompetitionManager] Error auto-ending competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
           );
           // Continue processing other competitions even if one fails
         }
       }
     } catch (error) {
       serviceLogger.error(
-        "[CompetitionManager] Error in processCompetitionEndDateChecks:",
-        error,
+        `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
       );
-      throw error; // Re-throw so SchedulerService can handle or log
+      throw error;
     }
   }
 }
