@@ -27,6 +27,18 @@ export const TEST_TOKEN_ADDRESS =
   process.env.TEST_SOL_TOKEN_ADDRESS ||
   "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 
+/**
+ * Generate a unique handle for testing
+ * Ensures uniqueness by using timestamp and random suffix
+ */
+export function generateTestHandle(prefix: string = "test"): string {
+  const timestamp = Date.now().toString(36).slice(-4);
+  const random = Math.random().toString(36).slice(2, 6);
+  const handle = `${prefix}_${timestamp}_${random}`.toLowerCase();
+  // Ensure it matches the handle requirements (lowercase alphanumeric with underscores, max 15 chars)
+  return handle.slice(0, 15);
+}
+
 // Vision token - should be volitile https://coinmarketcap.com/currencies/openvision/
 export const VISION_TOKEN = "0xe6f98920852A360497dBcc8ec895F1bB1F7c8Df4";
 
@@ -90,8 +102,7 @@ export async function registerUserAndAgentAndGetClient({
     email: userEmail || `user-${generateRandomString(8)}@test.com`,
     userImageUrl,
     agentName: agentName || `Agent ${generateRandomString(8)}`,
-    agentHandle:
-      agentHandle || `agent_${generateRandomString(8).toLowerCase()}`,
+    agentHandle: agentHandle || generateTestHandle(),
     agentDescription:
       agentDescription || `Test agent for ${agentName || "testing"}`,
     agentImageUrl,
@@ -492,6 +503,31 @@ export async function getStartingValue(agentId: string, competitionId: string) {
   }
 
   return val;
+}
+
+/**
+ * Create a test agent with automatic unique handle generation
+ * This wrapper ensures all test agents have unique handles
+ */
+export async function createTestAgent(
+  client: ApiClient,
+  name: string,
+  description?: string,
+  imageUrl?: string,
+  metadata?: Record<string, unknown>,
+  handle?: string,
+) {
+  // Generate a unique handle if not provided
+  const agentHandle =
+    handle ||
+    generateTestHandle(
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 8),
+    );
+
+  return client.createAgent(name, agentHandle, description, imageUrl, metadata);
 }
 
 export async function getAdminApiKey() {

@@ -1471,9 +1471,11 @@ export class ApiClient {
    * @param description Optional agent description
    * @param imageUrl Optional agent image URL
    * @param metadata Optional agent metadata
+   * @param handle Optional agent handle (auto-generated if not provided)
    */
   async createAgent(
     name: string,
+    handle?: string,
     description?: string,
     imageUrl?: string,
     metadata?: Record<string, unknown>,
@@ -1481,6 +1483,7 @@ export class ApiClient {
     try {
       const response = await this.axiosInstance.post("/api/user/agents", {
         name,
+        handle,
         description,
         imageUrl,
         metadata,
