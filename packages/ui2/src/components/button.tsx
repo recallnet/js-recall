@@ -1,7 +1,7 @@
-import {Slot} from "@radix-ui/react-slot";
-import {type VariantProps, cva} from "class-variance-authority";
+import { Slot } from "@radix-ui/react-slot";
+import { type VariantProps, cva } from "class-variance-authority";
 
-import {cn} from "@recallnet/ui2/lib/utils";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 // This is just an example of a component that uses the cva utility and Tailwind CSS classes.
 
@@ -74,10 +74,10 @@ function Button({
   return (
     <Comp
       // Merge variant-based styles with the incoming className
-      className={cn(buttonVariants({variant, size, className}))}
+      className={cn(buttonVariants({ variant, size, className }))}
       // Only set `href` when we are *actually* rendering an <a> ourselves.
       // When `asChild` is true the consumer is responsible for providing it.
-      {...(!asChild && as === "a" ? {href} : {})}
+      {...(!asChild && as === "a" ? { href } : {})}
       {...props}
     >
       {children}
@@ -85,4 +85,4 @@ function Button({
   );
 }
 
-export {Button, buttonVariants};
+export { Button, buttonVariants };
