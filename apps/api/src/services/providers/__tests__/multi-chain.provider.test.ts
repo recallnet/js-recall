@@ -111,6 +111,7 @@ describe("MultiChainProvider", () => {
       const duration = Date.now() - start;
 
       // Second call should be very quick (under 5ms) as it's using the cache
+      // TODO(stbrody): This is a bad way to check if the cache is being used. Make this check more targeted and less flaky.
       expect(duration).toBeLessThan(15);
 
       // Both prices should be the same
@@ -118,37 +119,37 @@ describe("MultiChainProvider", () => {
     });
   });
 
-  describe("Token info fetching", () => {
-    it("should get detailed token info for Ethereum tokens", async () => {
-      const tokenInfo = await provider.getTokenInfo(
+  describe("Token price fetching with specific chains", () => {
+    it("should get detailed price info for Ethereum tokens", async () => {
+      const priceReport = await provider.getPrice(
         ethereumTokens.ETH,
         BlockchainType.EVM,
         "eth",
       );
 
-      expect(tokenInfo).not.toBeNull();
-      if (tokenInfo) {
-        expect(tokenInfo.chain).toBe(BlockchainType.EVM);
-        expect(tokenInfo.specificChain).toBe("eth");
-        expect(tokenInfo.price).toBeGreaterThan(0);
+      expect(priceReport).not.toBeNull();
+      if (priceReport) {
+        expect(priceReport.chain).toBe(BlockchainType.EVM);
+        expect(priceReport.specificChain).toBe("eth");
+        expect(priceReport.price).toBeGreaterThan(0);
       }
     });
 
     it("should return chain and price info for Solana tokens", async () => {
-      const tokenInfo = await provider.getTokenInfo(
+      const priceReport = await provider.getPrice(
         solanaTokens.SOL,
         BlockchainType.SVM,
         "svm",
       );
 
-      expect(tokenInfo).not.toBeNull();
-      if (tokenInfo) {
-        expect(tokenInfo.chain).toBe(BlockchainType.SVM);
-        expect(tokenInfo.specificChain).toBe("svm");
+      expect(priceReport).not.toBeNull();
+      if (priceReport) {
+        expect(priceReport.chain).toBe(BlockchainType.SVM);
+        expect(priceReport.specificChain).toBe("svm");
         // MultiChainProvider now supports Solana tokens
-        expect(tokenInfo.price).not.toBeNull();
-        expect(typeof tokenInfo.price).toBe("number");
-        expect(tokenInfo.price).toBeGreaterThan(0);
+        expect(priceReport.price).not.toBeNull();
+        expect(typeof priceReport.price).toBe("number");
+        expect(priceReport.price).toBeGreaterThan(0);
       }
     });
   });
@@ -163,13 +164,13 @@ describe("MultiChainProvider", () => {
       expect(price?.price).toBeGreaterThan(0);
 
       // Verify it detected the right chain
-      const tokenInfo = await provider.getTokenInfo(
+      const priceReport = await provider.getPrice(
         ethereumTokens.ETH,
         BlockchainType.EVM,
         "eth",
       );
-      if (tokenInfo && tokenInfo.specificChain) {
-        expect(tokenInfo.specificChain).toBe("eth");
+      if (priceReport && priceReport.specificChain) {
+        expect(priceReport.specificChain).toBe("eth");
       }
     });
   });

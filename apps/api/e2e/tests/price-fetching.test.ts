@@ -1,12 +1,8 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
-import {
-  PriceResponse,
-  SpecificChain,
-  TokenInfoResponse,
-} from "@/e2e/utils/api-types.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
+import { PriceResponse, SpecificChain } from "@/e2e/utils/api-types.js";
 import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
@@ -247,50 +243,50 @@ describe("Price Fetching", () => {
     }
   });
 
-  test("should use detailed token info endpoint correctly", async () => {
-    // Test token-info endpoint for Ethereum token
+  test("should use price endpoint correctly", async () => {
+    // Test price endpoint for Ethereum token
     const client = new ApiClient(clientApiKey);
 
     try {
       const ethToken = ETHEREUM_TOKENS.ETH;
-      const tokenInfoResponse = await client.getTokenInfo(ethToken);
+      const priceResponse = await client.getPrice(ethToken);
 
-      expect(tokenInfoResponse.success).toBe(true);
-      const tokenInfoSuccessResponse = tokenInfoResponse as TokenInfoResponse;
-      expect(tokenInfoSuccessResponse.chain).toBe("evm");
-      expect(tokenInfoSuccessResponse.price).toBeGreaterThan(0);
-      if (tokenInfoSuccessResponse.specificChain) {
+      expect(priceResponse.success).toBe(true);
+      const priceSuccessResponse = priceResponse as PriceResponse;
+      expect(priceSuccessResponse.chain).toBe("evm");
+      expect(priceSuccessResponse.price).toBeGreaterThan(0);
+      if (priceSuccessResponse.specificChain) {
         console.log(
-          `ETH detected on chain: ${tokenInfoSuccessResponse.specificChain}`,
+          `ETH detected on chain: ${priceSuccessResponse.specificChain}`,
         );
       }
 
-      console.log(`Token info for ETH:`, tokenInfoResponse);
+      console.log(`Price info for ETH:`, priceResponse);
     } catch (error) {
       console.log(
-        `Error fetching token info for ETH: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Error fetching price for ETH: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
 
-    // Test token-info with specific chain parameter
+    // Test price endpoint with specific chain parameter
     try {
       const baseToken = BASE_TOKENS.ETH;
-      const tokenInfoResponse = await client.getTokenInfo(
+      const priceResponse = await client.getPrice(
         baseToken,
         BlockchainType.EVM,
         SpecificChain.BASE,
       );
 
-      expect(tokenInfoResponse.success).toBe(true);
-      const tokenInfoSuccessResponse = tokenInfoResponse as TokenInfoResponse;
-      expect(tokenInfoSuccessResponse.chain).toBe("evm");
-      expect(tokenInfoSuccessResponse.specificChain).toBe("base");
-      expect(tokenInfoSuccessResponse.price).toBeGreaterThan(0);
+      expect(priceResponse.success).toBe(true);
+      const priceSuccessResponse = priceResponse as PriceResponse;
+      expect(priceSuccessResponse.chain).toBe("evm");
+      expect(priceSuccessResponse.specificChain).toBe("base");
+      expect(priceSuccessResponse.price).toBeGreaterThan(0);
 
-      console.log(`Token info for Base ETH:`, tokenInfoResponse);
+      console.log(`Price info for Base ETH:`, priceResponse);
     } catch (error) {
       console.log(
-        `Error fetching token info for Base ETH: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Error fetching price for Base ETH: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   });
@@ -360,16 +356,16 @@ describe("Price Fetching", () => {
     }
 
     // Test token info endpoint also returns symbol
-    const tokenInfoResponse = await client.getTokenInfo(
+    const priceResponse = await client.getPrice(
       config.specificChainTokens.svm.sol,
     );
 
-    expect(tokenInfoResponse.success).toBe(true);
-    const tokenInfoSuccessResponse = tokenInfoResponse as TokenInfoResponse;
-    expect(tokenInfoSuccessResponse.symbol).toBeDefined();
-    expect(typeof tokenInfoSuccessResponse.symbol).toBe("string");
-    expect(tokenInfoSuccessResponse.symbol?.length).toBeGreaterThan(0);
-    console.log(`SOL token info symbol: ${tokenInfoSuccessResponse.symbol}`);
+    expect(priceResponse.success).toBe(true);
+    const priceSuccessResponse = priceResponse as PriceResponse;
+    expect(priceSuccessResponse.symbol).toBeDefined();
+    expect(typeof priceSuccessResponse.symbol).toBe("string");
+    expect(priceSuccessResponse.symbol?.length).toBeGreaterThan(0);
+    console.log(`SOL token info symbol: ${priceSuccessResponse.symbol}`);
 
     console.log(
       "✅ All price endpoints returning symbol information correctly",

@@ -1469,40 +1469,6 @@ Get the current price of a specified token
 | --- | --- |
 | BearerAuth | |
 
-### /api/price/token-info
-
-#### GET
-##### Summary:
-
-Get detailed token information
-
-##### Description:
-
-Get detailed token information including price and specific chain
-
-##### Parameters
-
-| Name | Located in | Description | Required | Schema |
-| ---- | ---------- | ----------- | -------- | ---- |
-| token | query | Token address | Yes | string |
-| chain | query | Blockchain type of the token | No | string |
-| specificChain | query | Specific chain for EVM tokens | No | string |
-
-##### Responses
-
-| Code | Description |
-| ---- | ----------- |
-| 200 | Token information |
-| 400 | Invalid request parameters |
-| 401 | Unauthorized - Missing or invalid authentication |
-| 500 | Server error |
-
-##### Security
-
-| Security Schema | Scopes |
-| --- | --- |
-| BearerAuth | |
-
 ### /api/trade/execute
 
 #### POST

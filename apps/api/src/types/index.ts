@@ -4,17 +4,6 @@ import { SiweMessage } from "siwe";
 import { z } from "zod/v4";
 
 /**
- * Token information interface
- */
-export interface TokenInfo {
-  address: string;
-  symbol: string;
-  decimals: number;
-  price?: number;
-  lastUpdated?: Date;
-}
-
-/**
  * Blockchain type enum
  */
 export enum BlockchainType {
