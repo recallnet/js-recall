@@ -462,8 +462,7 @@ export function makeAdminController(services: ServiceRegistry) {
             success: true,
             agent: {
               ...agent,
-              // TODO(dtb): remove `as string` once agent handle migration is complete
-              handle: agent.handle as string,
+              handle: agent.handle,
             },
           };
 
@@ -1044,8 +1043,7 @@ export function makeAdminController(services: ServiceRegistry) {
             ownerId: agent.ownerId,
             walletAddress: agent.walletAddress,
             name: agent.name,
-            // TODO(dtb): remove `as string` once agent handle migration is complete
-            handle: agent.handle as string,
+            handle: agent.handle,
             description: agent.description,
             status: agent.status,
             imageUrl: agent.imageUrl,
