@@ -18,7 +18,6 @@ import {
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
 import {
-  VISION_TOKEN,
   createSiweAuthenticatedClient,
   createTestClient,
   createTestCompetition,
@@ -2804,33 +2803,33 @@ describe("User API", () => {
       agentClients.push(agentClient);
     }
 
-    // Alpha Agent: (3 big stable trades)
+    // Alpha Agent: (3 small bad trades)
     for (let i = 0; i < 3; i++) {
       await agentClients[0]?.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
-        amount: "1000",
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
         reason: `Alpha Agent smart trade ${i + 1} - buying ETH`,
       });
       await wait(50);
     }
 
-    // Bravo Agent: (2 small stable trades)
+    // Bravo Agent: (2 small bad trades)
     for (let i = 0; i < 2; i++) {
       await agentClients[1]?.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
         reason: `Bravo Agent good trade ${i + 1}`,
       });
       await wait(50);
     }
 
-    // Charlie Agent: (1 large volitile trade)
+    // Charlie Agent: (1 medium bad trade)
     await agentClients[2]?.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: VISION_TOKEN,
-      amount: "2000",
+      toToken: "0x000000000000000000000000000000000000dead",
+      amount: "1000",
       reason: "Charlie Agent trade",
     });
     await wait(50);
