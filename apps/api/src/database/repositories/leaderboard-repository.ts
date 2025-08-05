@@ -559,16 +559,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
 
     // Combine all data
     const result = agentsWithScores.map((agent) => ({
-      // ...agent,
-      // TODO(dtb): remove below once agent handle migration is complete
-      id: agent.id,
-      name: agent.name,
-      handle: agent.handle as string,
-      description: agent.description,
-      imageUrl: agent.imageUrl,
-      metadata: agent.metadata,
-      score: agent.score,
-      // TODO(dtb): remove above once agent handle migration is complete
+      ...agent,
       numCompetitions: competitionCountMap.get(agent.id) ?? 0,
       voteCount: voteCountMap.get(agent.id) ?? 0,
     }));
