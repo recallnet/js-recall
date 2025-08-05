@@ -272,12 +272,11 @@ describe("Trading API", () => {
     expect(initialUsdcBalance).toBeGreaterThan(0);
 
     // The arbitrary token address to test with
-    const arbitraryTokenAddress =
-      "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
+    const wethTokenAddress = "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
     // Initial balance of the arbitrary token (likely 0)
     const initialArbitraryTokenBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.tokenAddress === arbitraryTokenAddress)
+        .find((b) => b.tokenAddress === wethTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(
@@ -288,13 +287,13 @@ describe("Trading API", () => {
     // We'll use the executeTrade method but we need to correctly map the parameters
     const tradeAmount = 10; // 10 USDC
     console.log(
-      `Trading ${tradeAmount} USDC for arbitrary token ${arbitraryTokenAddress}`,
+      `Trading ${tradeAmount} USDC for arbitrary token ${wethTokenAddress}`,
     );
 
     // Use the client's executeTrade which expects fromToken and toToken
     const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
-      toToken: arbitraryTokenAddress,
+      toToken: wethTokenAddress,
       amount: tradeAmount.toString(),
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
@@ -327,7 +326,7 @@ describe("Trading API", () => {
     // The arbitrary token balance should have increased
     const updatedArbitraryTokenBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
-        .find((b) => b.tokenAddress === arbitraryTokenAddress)
+        .find((b) => b.tokenAddress === wethTokenAddress)
         ?.amount.toString() || "0",
     );
     console.log(
@@ -350,7 +349,7 @@ describe("Trading API", () => {
     // Verify the last trade has the correct tokens
     const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
     expect(lastTrade?.fromToken).toBe(usdcTokenAddress);
-    expect(lastTrade?.toToken).toBe(arbitraryTokenAddress);
+    expect(lastTrade?.toToken).toBe(wethTokenAddress);
     expect((lastTrade as TradeTransaction)?.fromAmount).toBeCloseTo(
       tradeAmount,
       1,
@@ -656,50 +655,40 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
     expect(initialUsdcBalance).toBeGreaterThan(0);
 
-    // The arbitrary token address specified
-    const arbitraryTokenAddress =
-      "Grass7B4RdKfBCjTKgSqnXkqjwiGvQyFbuSCUJr3XXjs";
+    // WETH/SOL token address: https://dexscreener.com/solana/7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs
+    const wethTokenAddress = "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs";
+
     // Initial balance of the arbitrary token (likely 0)
     const initialArbitraryTokenBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.tokenAddress === arbitraryTokenAddress)
+        .find((b) => b.tokenAddress === wethTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Initial ${arbitraryTokenAddress} token balance: ${initialArbitraryTokenBalance}`,
     );
 
     // 1. Fetch the price for the arbitrary token
-    console.log(`Fetching price for token: ${arbitraryTokenAddress}`);
-    const priceResponse = await agentClient.getPrice(arbitraryTokenAddress);
+    const priceResponse = await agentClient.getPrice(wethTokenAddress);
     expect(priceResponse.success).toBe(true);
     expect((priceResponse as PriceResponse).price).toBeDefined();
 
     const tokenPrice = (priceResponse as PriceResponse).price;
-    console.log(`Token price: ${tokenPrice} USDC`);
     expect(tokenPrice).toBeGreaterThan(0);
 
     // 2. Calculate how much of the token can be bought with 10 USDC
     const usdcAmount = 10;
     const expectedTokenAmount = usdcAmount / (tokenPrice || 0); // Handle null case
-    console.log(
-      `With ${usdcAmount} USDC, expect to receive approximately ${expectedTokenAmount} tokens`,
-    );
 
     // 3. Execute the trade (buy the token with 10 USDC)
     const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
-      toToken: arbitraryTokenAddress,
+      toToken: wethTokenAddress,
       amount: usdcAmount.toString(),
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
     });
 
-    console.log(`Buy trade response: ${JSON.stringify(buyTradeResponse)}`);
     expect(buyTradeResponse.success).toBe(true);
     expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
     expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
@@ -717,15 +706,13 @@ describe("Trading API", () => {
         .find((b: TokenBalance) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Final USDC balance: ${finalUsdcBalance}`);
     expect(initialUsdcBalance - finalUsdcBalance).toBeCloseTo(usdcAmount, 1); // Allow for small rounding differences
     // The arbitrary token balance should have increased by the calculated amount
     const finalTokenBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
-        .find((b: TokenBalance) => b.tokenAddress === arbitraryTokenAddress)
+        .find((b: TokenBalance) => b.tokenAddress === wethTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Final token balance: ${finalTokenBalance}`);
     expect(finalTokenBalance - initialArbitraryTokenBalance).toBeCloseTo(
       expectedTokenAmount,
       1,
@@ -741,7 +728,7 @@ describe("Trading API", () => {
     // Verify the trade details in history
     const lastTrade = tradeHistory.trades[0];
     expect(lastTrade?.fromToken).toBe(usdcTokenAddress);
-    expect(lastTrade?.toToken).toBe(arbitraryTokenAddress);
+    expect(lastTrade?.toToken).toBe(wethTokenAddress);
     expect(lastTrade?.fromAmount).toBeCloseTo(usdcAmount, 1);
     expect(lastTrade?.toAmount).toBeCloseTo(expectedTokenAmount, 1);
   });
