@@ -21,7 +21,7 @@ import {
   COMPETITION_AGENT_STATUS_VALUES,
   COMPETITION_STATUS_VALUES,
   COMPETITION_TYPE_VALUES,
-  MAX_AGENT_HANDLE_LENGTH,
+  MAX_HANDLE_LENGTH,
 } from "@/types/index.js";
 
 /**
@@ -95,7 +95,7 @@ export const agents = pgTable(
     ownerId: uuid("owner_id").notNull(),
     walletAddress: varchar("wallet_address", { length: 42 }).unique(),
     name: varchar({ length: 100 }).notNull(),
-    handle: varchar({ length: MAX_AGENT_HANDLE_LENGTH }).notNull(),
+    handle: varchar({ length: MAX_HANDLE_LENGTH }).notNull(),
     email: varchar({ length: 100 }).unique(),
     description: text(),
     imageUrl: text("image_url"),

@@ -61,7 +61,6 @@ export function generateTestHandle(prefix: string = "agent"): string {
   const cleanPrefix = prefix
     .toLowerCase()
     .replace(/[^a-z0-9_]/g, "")
-    .replace(/^_+/, "") // Remove leading underscores
     .slice(0, 8);
 
   // If prefix is empty after cleaning, use a default
@@ -73,12 +72,12 @@ export function generateTestHandle(prefix: string = "agent"): string {
   // Combine with underscore separator
   let handle = `${name}_${random}`;
 
-  // Ensure it doesn't start with underscore and is within length limit
-  handle = handle.replace(/^_+/, "").slice(0, 15);
+  // Ensure it's within length limit
+  handle = handle.slice(0, 15);
 
-  // Final safety check: if handle is somehow invalid, generate a simple one
-  if (!handle.match(/^[a-z0-9]/)) {
-    handle = `t${Date.now().toString(36).slice(-6)}`;
+  // Final safety check: if handle is somehow empty or only whitespace
+  if (!handle || handle.trim().length === 0) {
+    handle = `agent${Date.now().toString(36).slice(-6)}`;
   }
 
   return handle;

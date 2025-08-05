@@ -561,9 +561,14 @@ export const ActorStatusSchema = z.enum(ACTOR_STATUS_VALUES);
 export type ActorStatus = z.infer<typeof ActorStatusSchema>;
 
 /**
- * Maximum length of an agent handle.
+ * Minimum length of a handle.
  */
-export const MAX_AGENT_HANDLE_LENGTH = 15;
+export const MIN_HANDLE_LENGTH = 3;
+
+/**
+ * Maximum length of a handle.
+ */
+export const MAX_HANDLE_LENGTH = 15;
 
 /**
  * Agent information Object
@@ -777,13 +782,15 @@ export const UpdateUserProfileSchema = z
 export const AgentHandleSchema = z
   .string()
   .trim()
-  .min(1, { message: "Handle is required" })
-  .max(MAX_AGENT_HANDLE_LENGTH, {
-    message: `Handle must be ${MAX_AGENT_HANDLE_LENGTH} characters or less`,
+  .min(MIN_HANDLE_LENGTH, {
+    message: `Handle must be at least ${MIN_HANDLE_LENGTH} characters`,
   })
-  .regex(new RegExp(`^[a-z0-9][a-z0-9_]{0,${MAX_AGENT_HANDLE_LENGTH - 1}}$`), {
+  .max(MAX_HANDLE_LENGTH, {
+    message: `Handle must be at most ${MAX_HANDLE_LENGTH} characters`,
+  })
+  .regex(new RegExp(`^[a-z0-9_]+$`), {
     message:
-      "Handle must be lowercase alphanumeric with underscores (cannot start with underscore)",
+      "Handle can only contain lowercase letters, numbers, and underscores",
   });
 
 /**
