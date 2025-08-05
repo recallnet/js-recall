@@ -83,18 +83,25 @@ export function generateTestHandle(prefix: string = "agent"): string {
   return handle;
 }
 
-// Vision token - should be volitile https://coinmarketcap.com/currencies/openvision/
-export const VISION_TOKEN = "0xe6f98920852A360497dBcc8ec895F1bB1F7c8Df4";
+// HAY token - should be volatile & infrequently traded https://coinmarketcap.com/currencies/haycoin/
+export const VOLATILE_TOKEN = "0xfa3e941d1f6b7b10ed84a0c211bfa8aee907965e";
 
 // Fixed admin credentials - must match setup-admin.ts
 export const ADMIN_USERNAME = "admin";
 export const ADMIN_PASSWORD = "admin123";
 export const ADMIN_EMAIL = "admin@test.com";
 
-export const looseConstraints = {
+export const looseTradingConstraints = {
   minimum24hVolumeUsd: 5000,
   minimumFdvUsd: 50000,
   minimumLiquidityUsd: 5000,
+  minimumPairAgeHours: 0,
+};
+
+export const noTradingConstraints = {
+  minimum24hVolumeUsd: 0,
+  minimumFdvUsd: 0,
+  minimumLiquidityUsd: 0,
   minimumPairAgeHours: 0,
 };
 

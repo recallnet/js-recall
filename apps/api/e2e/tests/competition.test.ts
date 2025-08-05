@@ -25,13 +25,13 @@ import {
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  VISION_TOKEN,
+  VOLATILE_TOKEN,
   createSiweAuthenticatedClient,
   createTestAgent,
   createTestClient,
   createTestCompetition,
   getAdminApiKey,
-  looseConstraints,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   startTestCompetition,
@@ -232,7 +232,7 @@ describe("Competition API", () => {
       undefined,
       undefined,
       {
-        ...looseConstraints,
+        ...looseTradingConstraints,
         // This 24 hour volume should block that trade below
         minimum24hVolumeUsd: 100000,
       },
@@ -249,7 +249,7 @@ describe("Competition API", () => {
     const buyTradeResponse = await agentClient.executeTrade({
       reason: "testing create comp with trading constraints",
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: VISION_TOKEN, // low 24h volume
+      toToken: VOLATILE_TOKEN, // low 24h volume
       amount: "100",
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
