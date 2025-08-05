@@ -31,6 +31,8 @@ import {
   VoteResponse,
   VotesResponse,
   VotingStateResponse,
+  GetCompetitionPerformanceParams,
+  CompetitionPerformanceResponse,
 } from "@/types";
 
 // Use proxy endpoint when we have a separate API base URL to leverage Next.js rewrites
@@ -255,6 +257,22 @@ export class ApiClient {
   }
 
   /**
+   * Get competition performance
+   * @param competitionId - Competition ID
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getCompetitionPerformance(
+    competitionId: string,
+    params: GetCompetitionPerformanceParams = {},
+  ): Promise<CompetitionPerformanceResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<CompetitionPerformanceResponse>(
+      `/competitions/${competitionId}/performance${queryParams}`,
+    );
+  }
+
+  /**
    * Join a competition
    * @param competitionId - Competition ID
    * @param agentId - Agent ID
@@ -311,8 +329,8 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getUserAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
-    return this.request<{ success: boolean; agent: Agent }>(
+  async getUserAgent(id: string): Promise<{success: boolean; agent: Agent}> {
+    return this.request<{success: boolean; agent: Agent}>(
       `/user/agents/${id}`,
     );
   }
