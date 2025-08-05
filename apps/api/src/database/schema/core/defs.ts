@@ -95,7 +95,7 @@ export const agents = pgTable(
     ownerId: uuid("owner_id").notNull(),
     walletAddress: varchar("wallet_address", { length: 42 }).unique(),
     name: varchar({ length: 100 }).notNull(),
-    handle: varchar({ length: MAX_HANDLE_LENGTH }), // TODO(dtb): add `notNull` once agent handle migration is complete
+    handle: varchar({ length: MAX_HANDLE_LENGTH }).notNull(),
     email: varchar({ length: 100 }).unique(),
     description: text(),
     imageUrl: text("image_url"),
