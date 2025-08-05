@@ -271,17 +271,19 @@ export function makeAgentController(services: ServiceRegistry) {
               }
             }
 
-            // If we don't have complete chain info, use getTokenInfo (which will update our database)
-            const tokenInfo = await services.priceTracker.getTokenInfo(
+            // If we don't have complete chain info, use getPrice (which will update our database)
+            // TODO(stbrody): We don't actually need price information, just the basic chain info.
+            // Consider if there's a simpler way to get this information.
+            const priceReport = await services.priceTracker.getPrice(
               balance.tokenAddress,
             );
 
-            if (tokenInfo) {
+            if (priceReport) {
               return {
                 ...balance,
-                chain: tokenInfo.chain,
-                specificChain: tokenInfo.specificChain,
-                symbol: tokenInfo.symbol || balance.symbol,
+                chain: priceReport.chain,
+                specificChain: priceReport.specificChain,
+                symbol: priceReport.symbol || balance.symbol,
               };
             }
 
@@ -325,6 +327,9 @@ export function makeAgentController(services: ServiceRegistry) {
         const activeCompetition = await findActive();
 
         // Check if we have snapshot data (preferred method)
+        // TODO(stbrody): Remove this block.  We don't need to use snapshot information to get the current portfolio.
+        // We can calculate it directly (which is currently the fallback method) as the main way to get this. We just
+        // need to make sure we have good caching in place.
         if (activeCompetition) {
           // Try to get the latest snapshot for this agent (limit to 1 for performance)
           const agentSnapshots = await getAgentPortfolioSnapshots(
@@ -406,15 +411,15 @@ export function makeAgentController(services: ServiceRegistry) {
           ...new Set(balances.map((balance) => balance.tokenAddress)),
         ];
 
-        // Get token info in bulk, this chunks dexscreener api requests to
+        // Get token price info in bulk, this chunks dexscreener api requests to
         // reduce load and rate limiting.
-        const tokenInfoMap =
-          await services.priceTracker.getBulkTokenInfo(uniqueTokens);
+        const priceMap =
+          await services.priceTracker.getBulkPrices(uniqueTokens);
 
         // Calculate values efficiently
         for (const balance of balances) {
-          const tokenInfo = tokenInfoMap.get(balance.tokenAddress);
-          const price = tokenInfo?.price || 0;
+          const priceReport = priceMap.get(balance.tokenAddress);
+          const price = priceReport?.price || 0;
           const value = price ? balance.amount * price : 0;
           totalValue += value;
 
@@ -423,9 +428,9 @@ export function makeAgentController(services: ServiceRegistry) {
             amount: balance.amount,
             price: price,
             value,
-            chain: tokenInfo?.chain,
-            specificChain: tokenInfo?.specificChain,
-            symbol: tokenInfo?.symbol || balance.symbol,
+            chain: priceReport?.chain,
+            specificChain: priceReport?.specificChain,
+            symbol: priceReport?.symbol || balance.symbol,
           });
         }
 
