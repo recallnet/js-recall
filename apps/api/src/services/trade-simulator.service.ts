@@ -346,8 +346,7 @@ export class TradeSimulator {
       ];
 
       // Step 3: Get all token prices USD in bulk
-      const tokenInfoMap =
-        await this.priceTracker.getBulkTokenInfo(uniqueTokens);
+      const priceMap = await this.priceTracker.getBulkPrices(uniqueTokens);
 
       // Step 4: Initialize portfolio values for all agents
       agentIds.forEach((agentId) => {
@@ -356,10 +355,10 @@ export class TradeSimulator {
 
       // Step 5: Calculate portfolio values efficiently
       allBalances.forEach((balance) => {
-        const tokenInfo = tokenInfoMap.get(balance.tokenAddress);
-        if (tokenInfo && tokenInfo.price) {
+        const priceReport = priceMap.get(balance.tokenAddress);
+        if (priceReport && priceReport.price) {
           const currentValue = portfolioValues.get(balance.agentId) || 0;
-          const tokenValue = balance.amount * tokenInfo.price;
+          const tokenValue = balance.amount * priceReport.price;
           portfolioValues.set(balance.agentId, currentValue + tokenValue);
         }
       });
