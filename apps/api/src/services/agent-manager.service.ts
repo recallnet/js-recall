@@ -204,18 +204,13 @@ export class AgentManager {
         apiKey, // Return unencrypted key
       };
     } catch (error) {
-      // Re-throw ApiError instances directly
+      serviceLogger.error("[AgentManager] Error creating agent:", error);
       if (error instanceof ApiError) {
         throw error;
       }
-
-      serviceLogger.error("[AgentManager] Error creating agent:", error);
-
-      if (error instanceof Error) {
-        throw error;
-      }
-
-      throw new Error(`Failed to create agent: ${error}`);
+      throw new Error(
+        `Failed to create agent: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
