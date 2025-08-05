@@ -54,7 +54,7 @@ interface Agent {
   ownerId: string;
   walletAddress: string | null;
   name: string;
-  handle: string | null; // TODO(dtb): remove `null` once agent handle migration is complete
+  handle: string;
   description: string | null;
   imageUrl: string | null;
   apiKey: string;
@@ -459,7 +459,11 @@ export function makeAdminController(services: ServiceRegistry) {
 
           const response: AdminAgentRegistrationResponse = {
             success: true,
-            agent,
+            agent: {
+              ...agent,
+              // TODO(dtb): remove `as string` once agent handle migration is complete
+              handle: agent.handle as string,
+            },
           };
 
           return res.status(201).json(response);
@@ -1011,7 +1015,8 @@ export function makeAdminController(services: ServiceRegistry) {
             ownerId: agent.ownerId,
             walletAddress: agent.walletAddress,
             name: agent.name,
-            handle: agent.handle,
+            // TODO(dtb): remove `as string` once agent handle migration is complete
+            handle: agent.handle as string,
             description: agent.description,
             status: agent.status,
             imageUrl: agent.imageUrl,
