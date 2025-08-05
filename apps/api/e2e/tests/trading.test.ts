@@ -268,39 +268,30 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
     expect(initialUsdcBalance).toBeGreaterThan(0);
 
-    // The arbitrary token address to test with
-    const wethTokenAddress = "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
+    // The arbitrary token address to test with (Raydium)
+    const raydiumTokenAddress = "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
     // Initial balance of the arbitrary token (likely 0)
     const initialArbitraryTokenBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.tokenAddress === wethTokenAddress)
+        .find((b) => b.tokenAddress === raydiumTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Initial arbitrary token balance: ${initialArbitraryTokenBalance}`,
     );
 
     // Execute a direct trade using the API's expected parameters
     // We'll use the executeTrade method but we need to correctly map the parameters
     const tradeAmount = 10; // 10 USDC
-    console.log(
-      `Trading ${tradeAmount} USDC for arbitrary token ${wethTokenAddress}`,
-    );
-
     // Use the client's executeTrade which expects fromToken and toToken
     const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
-      toToken: wethTokenAddress,
+      toToken: raydiumTokenAddress,
       amount: tradeAmount.toString(),
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
     });
 
-    console.log(`Buy trade response: ${JSON.stringify(buyTradeResponse)}`);
     expect(buyTradeResponse.success).toBe(true);
     if (buyTradeResponse.success) {
       const tradeResponse = buyTradeResponse as TradeResponse;
@@ -320,17 +311,13 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Updated USDC balance: ${updatedUsdcBalance}`);
     expect(updatedUsdcBalance).toBeLessThan(initialUsdcBalance);
     expect(initialUsdcBalance - updatedUsdcBalance).toBeCloseTo(tradeAmount, 1); // Allow for small rounding differences
     // The arbitrary token balance should have increased
     const updatedArbitraryTokenBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
-        .find((b) => b.tokenAddress === wethTokenAddress)
+        .find((b) => b.tokenAddress === raydiumTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Updated arbitrary token balance: ${updatedArbitraryTokenBalance}`,
     );
     expect(updatedArbitraryTokenBalance).toBeGreaterThan(
       initialArbitraryTokenBalance,
@@ -349,7 +336,7 @@ describe("Trading API", () => {
     // Verify the last trade has the correct tokens
     const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
     expect(lastTrade?.fromToken).toBe(usdcTokenAddress);
-    expect(lastTrade?.toToken).toBe(wethTokenAddress);
+    expect(lastTrade?.toToken).toBe(raydiumTokenAddress);
     expect((lastTrade as TradeTransaction)?.fromAmount).toBeCloseTo(
       tradeAmount,
       1,
