@@ -208,7 +208,7 @@ export default function CompetitionPage({
           onPageChange={handlePageChange}
         />
       )}
-      <PerformanceChart />
+      <PerformanceChart competitionId={competition.id} agents={agentsData?.agents} />
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />
     </div>

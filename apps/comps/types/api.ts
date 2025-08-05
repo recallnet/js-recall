@@ -21,6 +21,10 @@ export interface GetCompetitionAgentsParams {
   offset?: number;
 }
 
+// GET /competitions/{competitionId}/performance query parameters
+export interface GetCompetitionPerformanceParams {
+}
+
 // GET /agents query parameters
 export interface GetAgentsParams {
   filter?: string;
