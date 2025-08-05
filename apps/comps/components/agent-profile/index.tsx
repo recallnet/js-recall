@@ -93,8 +93,12 @@ export default function AgentProfile({
         const handle = value as string;
         const result = AgentHandleSchema.safeParse(handle);
         if (!result.success) {
-          toast.error(result.error.message);
-          return;
+          const errorMessage =
+            result.error.errors[0]?.message ||
+            "Handle can only contain lowercase letters, numbers, and underscores";
+          toast.error(errorMessage);
+          // Throw error to prevent field from updating
+          throw new Error(errorMessage);
         }
       }
 
