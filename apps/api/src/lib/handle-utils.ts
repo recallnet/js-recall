@@ -1,8 +1,12 @@
+import {
+  AgentHandleSchema,
+  MAX_HANDLE_LENGTH,
+  MIN_HANDLE_LENGTH,
+} from "@/types/index.js";
+
 /**
  * Utility functions for agent handle generation and validation
  */
-
-const MAX_HANDLE_LENGTH = 15;
 
 /**
  * Converts a name to a valid handle format
@@ -10,16 +14,29 @@ const MAX_HANDLE_LENGTH = 15;
  * @returns A valid handle string
  * @example
  * generateHandleFromName("John Doe") // returns "john_doe"
- * generateHandleFromName("Agent@123!") // returns "agent123"
+ * generateHandleFromName("Agent@123!") // returns "agent_123_"
  * generateHandleFromName("My Cool Agent") // returns "my_cool_agent"
+ * generateHandleFromName("_underscore") // returns "_underscore"
  */
 export function generateHandleFromName(name: string): string {
-  return name
+  const handle = name
     .toLowerCase()
     .replace(/[^a-z0-9_]+/g, "_") // Replace non-alphanumeric chars with underscore
-    .replace(/^_+/g, "") // Remove leading underscores
     .replace(/_+/g, "_") // Replace two or more underscores in a row with a single underscore
     .substring(0, MAX_HANDLE_LENGTH); // Enforce max length
+
+  // Ensure minimum length of 3 characters
+  if (handle.length < MIN_HANDLE_LENGTH) {
+    return (
+      handle +
+      "_" +
+      Math.random()
+        .toString(36)
+        .substring(2, 5 - handle.length)
+    );
+  }
+
+  return handle;
 }
 
 /**
@@ -28,14 +45,7 @@ export function generateHandleFromName(name: string): string {
  * @returns True if valid, false otherwise
  */
 export function isValidHandle(handle: string): boolean {
-  // Handle must be:
-  // - 1-15 characters long
-  // - Lowercase alphanumeric and underscores only
-  // - Cannot start with underscore
-  const handleRegex = new RegExp(
-    `^[a-z0-9][a-z0-9_]{0,${MAX_HANDLE_LENGTH - 1}}$`,
-  );
-  return handleRegex.test(handle);
+  return AgentHandleSchema.safeParse(handle).success;
 }
 
 /**

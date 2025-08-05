@@ -32,6 +32,7 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
+import { generateHandleFromName, isValidHandle } from "@/lib/handle-utils.js";
 
 describe("Agent API", () => {
   // Clean up test state before each test
@@ -2822,25 +2823,8 @@ Purpose: WALLET_VERIFICATION`;
         userEmail: "handle-test@example.com",
       });
 
-      // Test 1: Auto-generate handle from name
+      // Test 1: Custom handle
       const response1 = await siweClient.request<AgentProfileResponse>(
-        "post",
-        "/api/user/agents",
-        {
-          name: "My Cool Agent",
-          handle: "my_cool_agent",
-          description: "Test agent with auto-generated handle",
-        },
-      );
-
-      expect(response1.success).toBe(true);
-      if (response1.success) {
-        expect(response1.agent.name).toBe("My Cool Agent");
-        expect(response1.agent.handle).toBe("my_cool_agent");
-      }
-
-      // Test 2: Custom handle
-      const response2 = await siweClient.request<AgentProfileResponse>(
         "post",
         "/api/user/agents",
         {
@@ -2850,14 +2834,16 @@ Purpose: WALLET_VERIFICATION`;
         },
       );
 
-      expect(response2.success).toBe(true);
-      if (response2.success) {
-        expect(response2.agent.name).toBe("Another Agent");
-        expect(response2.agent.handle).toBe("custom_handle");
-      }
+      expect(response1.success).toBe(true);
+      expect((response1 as AgentProfileResponse).agent.name).toBe(
+        "Another Agent",
+      );
+      expect((response1 as AgentProfileResponse).agent.handle).toBe(
+        "custom_handle",
+      );
 
-      // Test 3: Duplicate handle rejection
-      const response3 = await siweClient.request<ErrorResponse>(
+      // Test 2: Duplicate handle rejection
+      const response2 = await siweClient.request<ErrorResponse>(
         "post",
         "/api/user/agents",
         {
@@ -2867,16 +2853,14 @@ Purpose: WALLET_VERIFICATION`;
         },
       );
 
-      expect(response3.success).toBe(false);
-      if (!response3.success) {
-        expect(response3.error).toContain(
-          "An agent with handle 'custom_handle' already exists",
-        );
-        expect(response3.status).toBe(409);
-      }
+      expect(response2.success).toBe(false);
+      expect(response2.error).toContain(
+        "An agent with handle 'custom_handle' already exists",
+      );
+      expect(response2.status).toBe(409);
 
-      // Test 4: Handle with special characters
-      const response4 = await siweClient.request<AgentProfileResponse>(
+      // Test 3: Handle with special characters
+      const response3 = await siweClient.request<AgentProfileResponse>(
         "post",
         "/api/user/agents",
         {
@@ -2886,16 +2870,14 @@ Purpose: WALLET_VERIFICATION`;
         },
       );
 
-      expect(response4.success).toBe(false);
-      if (!response4.success) {
-        expect((response4 as ErrorResponse).error).toContain(
-          "Handle must be lowercase alphanumeric",
-        );
-        expect((response4 as ErrorResponse).status).toBe(400);
-      }
+      expect(response3.success).toBe(false);
+      expect((response3 as ErrorResponse).error).toContain(
+        "Handle can only contain lowercase letters, numbers, and underscores",
+      );
+      expect((response3 as ErrorResponse).status).toBe(400);
 
-      // Test 5: Invalid handle format
-      const response5 = await siweClient.request<ErrorResponse>(
+      // Test 4: Invalid handle format (uppercase)
+      const response4 = await siweClient.request<ErrorResponse>(
         "post",
         "/api/user/agents",
         {
@@ -2905,12 +2887,44 @@ Purpose: WALLET_VERIFICATION`;
         },
       );
 
+      expect(response4.success).toBe(false);
+      expect((response4 as ErrorResponse).error).toContain(
+        "Handle can only contain lowercase letters, numbers, and underscores",
+      );
+
+      // Test 5: Invalid handle format (too long)
+      const response5 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Test Agent",
+          handle: "a".repeat(16), // Should fail - too long
+          description: "Should fail with invalid handle format",
+        },
+      );
+
       expect(response5.success).toBe(false);
-      if (!response5.success) {
-        expect(response5.error).toContain(
-          "Handle must be lowercase alphanumeric",
-        );
-      }
+      expect((response5 as ErrorResponse).error).toContain(
+        "Handle must be at most 15 characters",
+      );
+      expect(response5.status).toBe(400);
+
+      // Test 6: Invalid handle format (too short)
+      const response6 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Test Agent",
+          handle: "a", // Should fail - too short
+          description: "Should fail with invalid handle format",
+        },
+      );
+
+      expect(response6.success).toBe(false);
+      expect((response6 as ErrorResponse).error).toContain(
+        "Handle must be at least 3 characters",
+      );
+      expect(response6.status).toBe(400);
     });
 
     test("should update agent handle", async () => {
@@ -2934,9 +2948,7 @@ Purpose: WALLET_VERIFICATION`;
 
       expect(createResponse.success).toBe(true);
       let agentId = "";
-      if (createResponse.success) {
-        agentId = createResponse.agent.id;
-      }
+      agentId = (createResponse as AgentProfileResponse).agent.id;
 
       // Update the handle
       const updateResponse = await siweClient.updateUserAgentProfile(agentId, {
@@ -2963,9 +2975,7 @@ Purpose: WALLET_VERIFICATION`;
 
       expect(createResponse2.success).toBe(true);
       let agent2Id = "";
-      if (createResponse2.success) {
-        agent2Id = createResponse2.agent.id;
-      }
+      agent2Id = (createResponse2 as AgentProfileResponse).agent.id;
 
       // Try to update agent2's handle to agent1's handle (should fail)
       const updateResponse2 = await siweClient.updateUserAgentProfile(
@@ -2976,12 +2986,54 @@ Purpose: WALLET_VERIFICATION`;
       );
 
       expect(updateResponse2.success).toBe(false);
-      if (!updateResponse2.success) {
-        expect((updateResponse2 as ErrorResponse).error).toContain(
-          "An agent with handle 'updated_handle' already exists",
-        );
-        expect((updateResponse2 as ErrorResponse).status).toBe(409);
-      }
+      expect((updateResponse2 as ErrorResponse).error).toContain(
+        "An agent with handle 'updated_handle' already exists",
+      );
+      expect((updateResponse2 as ErrorResponse).status).toBe(409);
+    });
+  });
+
+  test("should properly parse handles with zod schema", async () => {
+    // Test generateHandleFromName
+    const nameTests = [
+      "John Doe",
+      "Agent@123!",
+      "My Cool Agent",
+      "_underscore",
+      "___triple",
+      "A",
+      "AB",
+      "Special!@#$%Characters",
+      "   Spaces   ",
+      "Very Long Name That Exceeds Maximum",
+    ];
+
+    nameTests.forEach((name) => {
+      const handle = generateHandleFromName(name);
+      const isValid = isValidHandle(handle);
+      expect(isValid).toBe(true);
+    });
+
+    // Test isValidHandle
+    const handleTests = [
+      { handle: "valid_handle", expected: true },
+      { handle: "_underscore", expected: true },
+      { handle: "__double", expected: true },
+      { handle: "123numeric", expected: true },
+      { handle: "abc", expected: true },
+      { handle: "ab", expected: false }, // too short
+      { handle: "a", expected: false }, // too short
+      { handle: "verylonghandlethatexceeds", expected: false }, // too long
+      { handle: "UPPERCASE", expected: false },
+      { handle: "with-dash", expected: false },
+      { handle: "with space", expected: false },
+      { handle: "", expected: false },
+      { handle: "___", expected: true },
+    ];
+
+    handleTests.forEach(({ handle, expected }) => {
+      const isValid = isValidHandle(handle);
+      expect(isValid).toBe(expected);
     });
   });
 });
