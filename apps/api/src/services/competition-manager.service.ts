@@ -157,16 +157,14 @@ export class CompetitionManager {
 
     await createCompetition(competition);
 
-    // Create trading constraints if provided
-    if (tradingConstraints) {
-      await this.tradingConstraintsService.createConstraints({
-        competitionId: id,
-        ...tradingConstraints,
-      });
-      serviceLogger.debug(
-        `[CompetitionManager] Created trading constraints for competition ${id}`,
-      );
-    }
+    // Always create trading constraints (with defaults if not provided)
+    await this.tradingConstraintsService.createConstraints({
+      competitionId: id,
+      ...tradingConstraints,
+    });
+    serviceLogger.debug(
+      `[CompetitionManager] Created trading constraints for competition ${id}`,
+    );
 
     serviceLogger.debug(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}`,
@@ -257,15 +255,24 @@ export class CompetitionManager {
       `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
     );
 
-    // Create trading constraints if provided
-    if (tradingConstraints) {
+    const existingConstraints =
+      await this.tradingConstraintsService.getConstraints(competitionId);
+    if (tradingConstraints && existingConstraints) {
+      // If the caller provided constraints and the already exist, we update
+      await this.tradingConstraintsService.updateConstraints(
+        competitionId,
+        tradingConstraints,
+      );
+      serviceLogger.debug(
+        `[CompetitionManager] Updating trading constraints for competition ${competitionId}`,
+      );
+    } else if (!existingConstraints) {
+      // if the constraints don't exist, we create them with defaults and
+      // (optionally) caller provided values.
       await this.tradingConstraintsService.createConstraints({
         competitionId,
         ...tradingConstraints,
       });
-      serviceLogger.debug(
-        `[CompetitionManager] Created trading constraints for competition ${competitionId}`,
-      );
     }
 
     // Take initial portfolio snapshots
