@@ -70,7 +70,7 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
           <SelectContent>
             {agents.map((agent) => (
               <SelectItem key={agent.id} value={agent.id}>
-                {agent.name}
+                {agent.name} (@{agent.handle})
               </SelectItem>
             ))}
           </SelectContent>

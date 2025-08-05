@@ -60,7 +60,7 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
                 className="text-secondary-foreground truncate font-semibold"
                 title={agent.name}
               >
-                {agent.name}
+                {agent.name} (@{agent.handle})
               </span>
             </Link>
             <div className="flex items-center gap-3">

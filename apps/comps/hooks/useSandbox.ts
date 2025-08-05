@@ -29,6 +29,7 @@ export const useCreateSandboxAgent = () => {
     Error,
     {
       name: string;
+      handle: string;
       description?: string;
       imageUrl?: string;
       email?: string;
@@ -63,6 +64,7 @@ export const useUpdateSandboxAgent = () => {
     {
       agentId: string;
       name?: string;
+      handle?: string;
       description?: string;
       imageUrl?: string;
       email?: string;
