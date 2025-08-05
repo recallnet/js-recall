@@ -13,7 +13,7 @@ import {
 import {
   createTestClient,
   getAdminApiKey,
-  looseConstraints,
+  noTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
@@ -257,7 +257,7 @@ describe("Specific Chains", () => {
     }
   });
 
-  test("can purchase token with address 0x0b2c639c533813f4aa9d7837caf62653d097ff85", async () => {
+  test("can purchase USDC token on optimism", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -277,14 +277,14 @@ describe("Specific Chains", () => {
       undefined,
       undefined,
       undefined,
-      looseConstraints,
+      noTradingConstraints,
     );
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
     expect(balanceResponse.success).toBe(true);
 
-    // Target token we want to purchase
+    // Target token we want to purchase (USDC on optimism)
     const targetTokenAddress = "0x0b2c639c533813f4aa9d7837caf62653d097ff85";
 
     // First try to find USDC
@@ -300,7 +300,6 @@ describe("Specific Chains", () => {
 
     // Verify the trade was successful
     expect(tradeResponse.success).toBe(true);
-    console.log(`Successfully purchased token ${targetTokenAddress}`);
 
     // Get updated balances to verify we received the target token
     const updatedBalanceResponse =
@@ -317,12 +316,7 @@ describe("Specific Chains", () => {
 
       // Verify we received some amount of the target token
       expect(targetTokenBalance).toBeDefined();
-      if (targetTokenBalance) {
-        expect(targetTokenBalance.amount).toBeGreaterThan(0);
-        console.log(
-          `Received ${targetTokenBalance.amount} of target token ${targetTokenAddress}`,
-        );
-      }
+      expect(targetTokenBalance?.amount).toBeGreaterThan(0);
     }
 
     // // Query the trades table to verify the trade was recorded correctly

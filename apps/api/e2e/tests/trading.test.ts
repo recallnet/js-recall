@@ -23,7 +23,7 @@ import {
 import {
   createTestClient,
   getAdminApiKey,
-  looseConstraints,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -638,7 +638,7 @@ describe("Trading API", () => {
       undefined,
       undefined,
       undefined,
-      looseConstraints,
+      looseTradingConstraints,
     );
 
     // Wait for balances to be properly initialized
