@@ -95,7 +95,7 @@ export const agents = pgTable(
     ownerId: uuid("owner_id").notNull(),
     walletAddress: varchar("wallet_address", { length: 42 }).unique(),
     name: varchar({ length: 100 }).notNull(),
-    handle: varchar({ length: MAX_HANDLE_LENGTH }).notNull(),
+    handle: varchar({ length: MAX_HANDLE_LENGTH }), // TODO(dtb): add `notNull` once agent handle migration is complete
     email: varchar({ length: 100 }).unique(),
     description: text(),
     imageUrl: text("image_url"),
@@ -130,7 +130,7 @@ export const agents = pgTable(
       name: "agents_owner_id_fkey",
     }).onDelete("cascade"),
     unique("agents_owner_id_name_key").on(table.ownerId, table.name),
-    unique("agents_handle_key").on(table.handle),
+    // unique("agents_handle_key").on(table.handle), // TODO(dtb): temporarily disabled for migration
     unique("agents_api_key_key").on(table.apiKey),
     unique("agents_wallet_address_key").on(table.walletAddress),
   ],

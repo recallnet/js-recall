@@ -54,7 +54,7 @@ interface Agent {
   ownerId: string;
   walletAddress: string | null;
   name: string;
-  handle: string;
+  handle: string | null; // TODO(dtb): remove `null` once agent handle migration is complete
   description: string | null;
   imageUrl: string | null;
   apiKey: string;
