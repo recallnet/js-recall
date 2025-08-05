@@ -2362,4 +2362,89 @@ describe("Trading API", () => {
 
     console.log("✅ All token burn tests passed!");
   });
+
+  test("agent cannot execute trade on competition they are not registered for", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register two agents - one for the competition, one for testing
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Unregistered Agent",
+    });
+
+    // Register another agent that will be in the competition
+    const { agent: competitionAgent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Competition Agent",
+    });
+
+    // Start a competition with only the second agent
+    const competitionName = `Unregistered Agent Test ${Date.now()}`;
+    const competitionResponse = await adminClient.startCompetition({
+      name: competitionName,
+      agentIds: [competitionAgent.id], // Only the second agent is registered
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    await wait(500);
+
+    // Get tokens to trade
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+    const solTokenAddress = config.specificChainTokens.svm.sol;
+
+    // Attempt to execute a trade - this should fail because the agent is not registered
+    console.log(
+      "Attempting to trade with agent not registered for competition",
+    );
+    const tradeResponse = await agentClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: solTokenAddress,
+      amount: "100",
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Testing trade with unregistered agent",
+    });
+
+    // Verify the trade failed
+    expect(tradeResponse.success).toBe(false);
+    expect((tradeResponse as ErrorResponse).error).toContain("not registered");
+    console.log(
+      `Trade failed as expected: ${(tradeResponse as ErrorResponse).error}`,
+    );
+
+    // Verify that the agent can get balance but it should be empty since they're not in the competition
+    const balanceResponse = await agentClient.getBalance();
+    expect(balanceResponse.success).toBe(true);
+    expect((balanceResponse as BalancesResponse).balances).toBeDefined();
+    expect((balanceResponse as BalancesResponse).balances.length).toBe(0);
+    console.log(
+      `Balance check returned empty as expected: ${(balanceResponse as BalancesResponse).balances.length} balances`,
+    );
+
+    // Verify that the agent can get trade history but it should be empty since they're not in the competition
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    expect(tradeHistoryResponse.success).toBe(true);
+    expect((tradeHistoryResponse as TradeHistoryResponse).trades).toBeDefined();
+    expect((tradeHistoryResponse as TradeHistoryResponse).trades.length).toBe(
+      0,
+    );
+    console.log(
+      `Trade history returned empty as expected: ${(tradeHistoryResponse as TradeHistoryResponse).trades.length} trades`,
+    );
+
+    // Verify that the agent can get portfolio but it should be empty since they're not in the competition
+    const portfolioResponse = await agentClient.getPortfolio();
+    expect(portfolioResponse.success).toBe(true);
+    expect((portfolioResponse as PortfolioResponse).tokens).toBeDefined();
+    expect((portfolioResponse as PortfolioResponse).tokens.length).toBe(0);
+    expect((portfolioResponse as PortfolioResponse).totalValue).toBe(0);
+    console.log(
+      `Portfolio returned empty as expected: ${(portfolioResponse as PortfolioResponse).tokens.length} tokens, total value: $${(portfolioResponse as PortfolioResponse).totalValue}`,
+    );
+
+    console.log("✅ All unregistered agent tests passed!");
+  });
 });
