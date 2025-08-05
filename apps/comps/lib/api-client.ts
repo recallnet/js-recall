@@ -5,6 +5,7 @@ import {
   AgentCompetitionsResponse,
   AgentWithOwnerResponse,
   AgentsResponse,
+  CompetitionPerformanceResponse,
   CompetitionResponse,
   CompetitionsResponse,
   CreateAgentRequest,
@@ -14,6 +15,7 @@ import {
   GetAgentCompetitionsParams,
   GetAgentsParams,
   GetCompetitionAgentsParams,
+  GetCompetitionPerformanceParams,
   GetCompetitionsParams,
   GetLeaderboardParams,
   GetVotesParams,
@@ -31,8 +33,6 @@ import {
   VoteResponse,
   VotesResponse,
   VotingStateResponse,
-  GetCompetitionPerformanceParams,
-  CompetitionPerformanceResponse,
 } from "@/types";
 
 // Use proxy endpoint when we have a separate API base URL to leverage Next.js rewrites
@@ -329,8 +329,8 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getUserAgent(id: string): Promise<{success: boolean; agent: Agent}> {
-    return this.request<{success: boolean; agent: Agent}>(
+  async getUserAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
+    return this.request<{ success: boolean; agent: Agent }>(
       `/user/agents/${id}`,
     );
   }
