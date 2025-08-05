@@ -22,8 +22,7 @@ export interface GetCompetitionAgentsParams {
 }
 
 // GET /competitions/{competitionId}/performance query parameters
-export interface GetCompetitionPerformanceParams {
-}
+export interface GetCompetitionPerformanceParams {}
 
 // GET /agents query parameters
 export interface GetAgentsParams {

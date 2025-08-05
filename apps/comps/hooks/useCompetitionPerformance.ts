@@ -1,7 +1,7 @@
-import {useQuery} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-import {ApiClient} from "@/lib/api-client";
-import {CompetitionPerformanceResponse} from "@/types";
+import { ApiClient } from "@/lib/api-client";
+import { CompetitionPerformanceResponse } from "@/types";
 
 const apiClient = new ApiClient();
 
@@ -13,9 +13,11 @@ const apiClient = new ApiClient();
 export const useCompetitionPerformance = (id?: string) =>
   useQuery({
     queryKey: ["competition", "performance", id],
-    queryFn: async (): Promise<CompetitionPerformanceResponse['performance']> => {
+    queryFn: async (): Promise<
+      CompetitionPerformanceResponse["performance"]
+    > => {
       if (!id) throw new Error("Competition ID is required");
-      return (await apiClient.getCompetitionPerformance(id)).performance
+      return (await apiClient.getCompetitionPerformance(id)).performance;
     },
     enabled: !!id,
   });
