@@ -109,6 +109,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
               rank: index + 1,
               agentId: entry.agentId,
               agentName: agent ? agent.name : "Unknown Agent",
+              agentHandle: agent ? agent.handle : "unknown_agent",
               portfolioValue: entry.value,
               active: true,
               deactivationReason: null,
@@ -122,6 +123,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           return {
             agentId: entry.agentId,
             agentName: agent ? agent.name : "Unknown Agent",
+            agentHandle: agent ? agent.handle : "unknown_agent",
             portfolioValue: entry.value,
             active: false,
             deactivationReason: entry.deactivationReason,

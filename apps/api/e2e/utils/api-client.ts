@@ -272,6 +272,7 @@ export class ApiClient {
     userImageUrl,
     userMetadata,
     agentName,
+    agentHandle,
     agentDescription,
     agentImageUrl,
     agentMetadata,
@@ -283,6 +284,7 @@ export class ApiClient {
     userImageUrl?: string;
     userMetadata?: UserMetadata;
     agentName?: string;
+    agentHandle?: string;
     agentDescription?: string;
     agentImageUrl?: string;
     agentMetadata?: AgentMetadata;
@@ -296,6 +298,7 @@ export class ApiClient {
         userImageUrl,
         userMetadata,
         agentName,
+        agentHandle,
         agentDescription,
         agentImageUrl,
         agentMetadata,
@@ -329,6 +332,7 @@ export class ApiClient {
     };
     agent: {
       name: string;
+      handle?: string;
       email?: string;
       walletAddress?: string;
       description?: string;
@@ -565,6 +569,7 @@ export class ApiClient {
     agentId: string,
     profileData: {
       name?: string;
+      handle?: string;
       description?: string;
       imageUrl?: string;
       email?: string;
@@ -1464,12 +1469,14 @@ export class ApiClient {
   /**
    * Create a new agent for the authenticated user
    * @param name Agent name (required, must be unique for this user)
+   * @param handle Optional agent handle (auto-generated if not provided)
    * @param description Optional agent description
    * @param imageUrl Optional agent image URL
    * @param metadata Optional agent metadata
    */
   async createAgent(
     name: string,
+    handle: string,
     description?: string,
     imageUrl?: string,
     metadata?: Record<string, unknown>,
@@ -1477,6 +1484,7 @@ export class ApiClient {
     try {
       const response = await this.axiosInstance.post("/api/user/agents", {
         name,
+        handle,
         description,
         imageUrl,
         metadata,

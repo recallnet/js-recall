@@ -448,6 +448,7 @@ export class CompetitionManager {
       return {
         id: agent.id,
         name: agent.name,
+        handle: agent.handle,
         description: agent.description,
         imageUrl: agent.imageUrl,
         score,
