@@ -16,6 +16,7 @@ import {
   Competition,
   CreateCompetitionResponse,
   EnhancedCompetition,
+  ErrorResponse,
   PriceResponse,
   PublicAgentResponse,
   ResetApiKeyResponse,
@@ -25,6 +26,7 @@ import { dbManager } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   createAgentVerificationSignature,
+  createSiweAuthenticatedClient,
   createTestClient,
   generateRandomEthAddress,
   getAdminApiKey,
@@ -76,6 +78,7 @@ describe("Agent API", () => {
     expect(agent).toBeDefined();
     expect(agent.id).toBeDefined();
     expect(agent.name).toBe(agentName);
+    expect(agent.handle).toBeDefined();
     expect(agent.description).toBe(agentDescription);
     expect(agent.ownerId).toBe(user.id);
     expect(apiKey).toBeDefined();
@@ -2807,6 +2810,178 @@ Purpose: WALLET_VERIFICATION`;
           portfolio: c.portfolioValue,
         })),
       });
+    });
+  });
+
+  describe("Agent handles", () => {
+    test("should reject duplicate handles or invalid format", async () => {
+      // Create a SIWE-authenticated client
+      const { client: siweClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Handle Test User",
+        userEmail: "handle-test@example.com",
+      });
+
+      // Test 1: Auto-generate handle from name
+      const response1 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "My Cool Agent",
+          handle: "my_cool_agent",
+          description: "Test agent with auto-generated handle",
+        },
+      );
+
+      expect(response1.success).toBe(true);
+      if (response1.success) {
+        expect(response1.agent.name).toBe("My Cool Agent");
+        expect(response1.agent.handle).toBe("my_cool_agent");
+      }
+
+      // Test 2: Custom handle
+      const response2 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Another Agent",
+          handle: "custom_handle",
+          description: "Test agent with custom handle",
+        },
+      );
+
+      expect(response2.success).toBe(true);
+      if (response2.success) {
+        expect(response2.agent.name).toBe("Another Agent");
+        expect(response2.agent.handle).toBe("custom_handle");
+      }
+
+      // Test 3: Duplicate handle rejection
+      const response3 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Third Agent",
+          handle: "custom_handle", // Same as agent 2
+          description: "Should fail with duplicate handle",
+        },
+      );
+
+      expect(response3.success).toBe(false);
+      if (!response3.success) {
+        expect(response3.error).toContain(
+          "An agent with handle 'custom_handle' already exists",
+        );
+        expect(response3.status).toBe(409);
+      }
+
+      // Test 4: Handle with special characters
+      const response4 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Agent@123!",
+          handle: "agent@123!",
+          description: "Test handle generation from special chars",
+        },
+      );
+
+      expect(response4.success).toBe(false);
+      if (!response4.success) {
+        expect((response4 as ErrorResponse).error).toContain(
+          "Handle must be lowercase alphanumeric",
+        );
+        expect((response4 as ErrorResponse).status).toBe(400);
+      }
+
+      // Test 5: Invalid handle format
+      const response5 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Test Agent",
+          handle: "UPPERCASE_HANDLE", // Should fail - must be lowercase
+          description: "Should fail with invalid handle format",
+        },
+      );
+
+      expect(response5.success).toBe(false);
+      if (!response5.success) {
+        expect(response5.error).toContain(
+          "Handle must be lowercase alphanumeric",
+        );
+      }
+    });
+
+    test("should update agent handle", async () => {
+      // Create a SIWE-authenticated client
+      const { client: siweClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Handle Update Test User",
+        userEmail: "handle-update@example.com",
+      });
+
+      // Create an agent
+      const createResponse = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Update Test Agent",
+          handle: "original_handle",
+          description: "Test agent for handle updates",
+        },
+      );
+
+      expect(createResponse.success).toBe(true);
+      let agentId = "";
+      if (createResponse.success) {
+        agentId = createResponse.agent.id;
+      }
+
+      // Update the handle
+      const updateResponse = await siweClient.updateUserAgentProfile(agentId, {
+        handle: "updated_handle",
+      });
+
+      expect(updateResponse.success).toBe(true);
+      if (updateResponse.success) {
+        expect((updateResponse as AgentProfileResponse).agent.handle).toBe(
+          "updated_handle",
+        );
+      }
+
+      // Create another agent
+      const createResponse2 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Second Update Test Agent",
+          handle: "second_handle",
+          description: "Second test agent",
+        },
+      );
+
+      expect(createResponse2.success).toBe(true);
+      let agent2Id = "";
+      if (createResponse2.success) {
+        agent2Id = createResponse2.agent.id;
+      }
+
+      // Try to update agent2's handle to agent1's handle (should fail)
+      const updateResponse2 = await siweClient.updateUserAgentProfile(
+        agent2Id,
+        {
+          handle: "updated_handle", // Same as agent 1
+        },
+      );
+
+      expect(updateResponse2.success).toBe(false);
+      if (!updateResponse2.success) {
+        expect((updateResponse2 as ErrorResponse).error).toContain(
+          "An agent with handle 'updated_handle' already exists",
+        );
+        expect((updateResponse2 as ErrorResponse).status).toBe(409);
+      }
     });
   });
 });

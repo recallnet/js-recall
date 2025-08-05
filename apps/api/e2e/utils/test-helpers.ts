@@ -28,15 +28,60 @@ export const TEST_TOKEN_ADDRESS =
   "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 
 /**
+ * Create a test agent with automatic unique handle generation
+ * This wrapper ensures all test agents have unique handles
+ */
+export async function createTestAgent(
+  client: ApiClient,
+  name: string,
+  description?: string,
+  imageUrl?: string,
+  metadata?: Record<string, unknown>,
+  handle?: string,
+) {
+  // Generate a unique handle if not provided
+  const agentHandle =
+    handle ||
+    generateTestHandle(
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 8),
+    );
+
+  return client.createAgent(name, agentHandle, description, imageUrl, metadata);
+}
+
+/**
  * Generate a unique handle for testing
  * Ensures uniqueness by using timestamp and random suffix
  */
-export function generateTestHandle(prefix: string = "test"): string {
-  const timestamp = Date.now().toString(36).slice(-4);
+export function generateTestHandle(prefix: string = "agent"): string {
+  // Clean the prefix: lowercase, remove non-alphanumeric except underscores
+  const cleanPrefix = prefix
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .replace(/^_+/, "") // Remove leading underscores
+    .slice(0, 8);
+
+  // If prefix is empty after cleaning, use a default
+  const name = cleanPrefix || "agent";
+
+  // Generate random suffix (4 chars)
   const random = Math.random().toString(36).slice(2, 6);
-  const handle = `${prefix}_${timestamp}_${random}`.toLowerCase();
-  // Ensure it matches the handle requirements (lowercase alphanumeric with underscores, max 15 chars)
-  return handle.slice(0, 15);
+
+  // Combine with underscore separator
+  let handle = `${name}_${random}`;
+
+  // Ensure it doesn't start with underscore and is within length limit
+  handle = handle.replace(/^_+/, "").slice(0, 15);
+
+  // Final safety check: if handle is somehow invalid, generate a simple one
+  if (!handle.match(/^[a-z0-9]/)) {
+    handle = `t${Date.now().toString(36).slice(-6)}`;
+  }
+
+  return handle;
 }
 
 // Vision token - should be volitile https://coinmarketcap.com/currencies/openvision/
@@ -102,7 +147,7 @@ export async function registerUserAndAgentAndGetClient({
     email: userEmail || `user-${generateRandomString(8)}@test.com`,
     userImageUrl,
     agentName: agentName || `Agent ${generateRandomString(8)}`,
-    agentHandle: agentHandle || generateTestHandle(),
+    agentHandle: agentHandle || generateTestHandle(agentName),
     agentDescription:
       agentDescription || `Test agent for ${agentName || "testing"}`,
     agentImageUrl,
@@ -503,31 +548,6 @@ export async function getStartingValue(agentId: string, competitionId: string) {
   }
 
   return val;
-}
-
-/**
- * Create a test agent with automatic unique handle generation
- * This wrapper ensures all test agents have unique handles
- */
-export async function createTestAgent(
-  client: ApiClient,
-  name: string,
-  description?: string,
-  imageUrl?: string,
-  metadata?: Record<string, unknown>,
-  handle?: string,
-) {
-  // Generate a unique handle if not provided
-  const agentHandle =
-    handle ||
-    generateTestHandle(
-      name
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")
-        .slice(0, 8),
-    );
-
-  return client.createAgent(name, agentHandle, description, imageUrl, metadata);
 }
 
 export async function getAdminApiKey() {
