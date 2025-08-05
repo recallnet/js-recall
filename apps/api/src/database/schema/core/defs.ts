@@ -130,7 +130,7 @@ export const agents = pgTable(
       name: "agents_owner_id_fkey",
     }).onDelete("cascade"),
     unique("agents_owner_id_name_key").on(table.ownerId, table.name),
-    // unique("agents_handle_key").on(table.handle), // TODO(dtb): temporarily disabled for migration
+    unique("agents_handle_key").on(table.handle),
     unique("agents_api_key_key").on(table.apiKey),
     unique("agents_wallet_address_key").on(table.walletAddress),
   ],
