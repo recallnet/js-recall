@@ -101,7 +101,8 @@ async function registerAgent() {
     let walletAddress = process.argv[2];
     let userName = process.argv[3];
     let agentName = process.argv[4];
-    let userEmail = process.argv[5];
+    let agentHandle = process.argv[5];
+    let userEmail = process.argv[6];
 
     // Temporarily restore console.log for input
     console.log = originalConsoleLog;
@@ -130,6 +131,12 @@ async function registerAgent() {
       }
     }
 
+    if (!agentHandle) {
+      agentHandle = await prompt("Enter agent handle: ");
+      if (!agentHandle) {
+        throw new Error("Agent handle is required");
+      }
+    }
     // Collect all input upfront before database operations
     if (!userName) {
       userName = await prompt("Enter user name (optional): ");
@@ -175,6 +182,7 @@ async function registerAgent() {
     const agent = await services.agentManager.createAgent({
       ownerId: user.id,
       name: agentName,
+      handle: agentHandle,
     });
 
     safeLog(`\n${colors.green}✓ Agent registered successfully!${colors.reset}`);

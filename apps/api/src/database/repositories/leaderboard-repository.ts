@@ -497,6 +497,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
   Array<{
     id: string;
     name: string;
+    handle: string;
     description: string | null;
     imageUrl: string | null;
     metadata: unknown;
@@ -513,6 +514,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
       .select({
         id: agents.id,
         name: agents.name,
+        handle: agents.handle,
         description: agents.description,
         imageUrl: agents.imageUrl,
         metadata: agents.metadata,
@@ -557,7 +559,16 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
 
     // Combine all data
     const result = agentsWithScores.map((agent) => ({
-      ...agent,
+      // ...agent,
+      // TODO(dtb): remove below once agent handle migration is complete
+      id: agent.id,
+      name: agent.name,
+      handle: agent.handle as string,
+      description: agent.description,
+      imageUrl: agent.imageUrl,
+      metadata: agent.metadata,
+      score: agent.score,
+      // TODO(dtb): remove above once agent handle migration is complete
       numCompetitions: competitionCountMap.get(agent.id) ?? 0,
       voteCount: voteCountMap.get(agent.id) ?? 0,
     }));

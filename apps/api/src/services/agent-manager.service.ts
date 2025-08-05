@@ -1,4 +1,5 @@
 import * as crypto from "crypto";
+import { DatabaseError } from "pg";
 import { generateNonce } from "siwe";
 import { v4 as uuidv4 } from "uuid";
 import { recoverMessageAddress } from "viem";
@@ -92,6 +93,7 @@ export class AgentManager {
    * Create a new agent
    * @param ownerId User ID who owns this agent
    * @param name Agent name
+   * @param handle Optional agent handle (auto-generated if not provided)
    * @param description Agent description
    * @param imageUrl Optional URL to the agent's image
    * @param metadata Optional agent metadata
@@ -102,6 +104,7 @@ export class AgentManager {
   async createAgent({
     ownerId,
     name,
+    handle,
     description,
     imageUrl,
     metadata,
@@ -110,6 +113,7 @@ export class AgentManager {
   }: {
     ownerId: string;
     name: string;
+    handle: string;
     description?: string;
     imageUrl?: string;
     metadata?: AgentMetadata;
@@ -138,6 +142,7 @@ export class AgentManager {
         id,
         ownerId,
         name,
+        handle,
         description,
         imageUrl,
         apiKey: encryptedApiKey, // Store encrypted key in database
@@ -149,7 +154,35 @@ export class AgentManager {
       };
 
       // Store in database
-      const savedAgent = await create(agent);
+      let savedAgent;
+      try {
+        savedAgent = await create(agent);
+      } catch (error) {
+        if (error instanceof DatabaseError) {
+          // Check for unique constraint violations
+          if (error.code === "23505") {
+            if (error.constraint === "agents_handle_key") {
+              throw new ApiError(
+                409,
+                `An agent with handle '${handle}' already exists`,
+              );
+            }
+            if (error.constraint === "agents_owner_id_name_key") {
+              throw new ApiError(
+                409,
+                `You already have an agent with name '${name}'`,
+              );
+            }
+            if (error.constraint === "agents_wallet_address_key") {
+              throw new ApiError(
+                409,
+                `An agent with wallet address '${walletAddress}' already exists`,
+              );
+            }
+          }
+        }
+        throw error;
+      }
 
       // Update cache with plaintext key
       this.apiKeyCache.set(apiKey, {
@@ -171,36 +204,13 @@ export class AgentManager {
         apiKey, // Return unencrypted key
       };
     } catch (error) {
-      if (error instanceof Error) {
-        serviceLogger.error("[AgentManager] Error creating agent:", error);
-
-        // Check if this is a unique constraint violation for agent name
-        // PostgreSQL throws various error formats depending on the driver and ORM
-        const errorMessage = error.message.toLowerCase();
-        const isUniqueConstraintViolation =
-          errorMessage.includes("duplicate key value") ||
-          errorMessage.includes("violates unique constraint") ||
-          ("code" in error && error.code === "23505");
-
-        const isAgentNameConstraint =
-          errorMessage.includes("agents_owner_id_name_key") ||
-          (errorMessage.includes("owner_id") && errorMessage.includes("name"));
-
-        if (isUniqueConstraintViolation && isAgentNameConstraint) {
-          throw new ApiError(
-            409,
-            `An agent with the name "${name}" already exists for this user`,
-          );
-        }
-
+      serviceLogger.error("[AgentManager] Error creating agent:", error);
+      if (error instanceof ApiError) {
         throw error;
       }
-
-      serviceLogger.error(
-        "[AgentManager] Unknown error creating agent:",
-        error,
+      throw new Error(
+        `Failed to create agent: ${error instanceof Error ? error.message : String(error)}`,
       );
-      throw new Error(`Failed to create agent: ${error}`);
     }
   }
 
@@ -682,12 +692,40 @@ export class AgentManager {
       agent.updatedAt = new Date();
 
       // Save to database
-      const updatedAgent = await update(agent);
-      if (!updatedAgent) {
-        serviceLogger.debug(
-          `[AgentManager] Failed to update agent: ${agent.id}`,
-        );
-        return undefined;
+      let updatedAgent;
+      try {
+        updatedAgent = await update(agent);
+        if (!updatedAgent) {
+          serviceLogger.debug(
+            `[AgentManager] Failed to update agent: ${agent.id}`,
+          );
+          return undefined;
+        }
+      } catch (error) {
+        if (error instanceof DatabaseError) {
+          // Check for unique constraint violations
+          if (error.code === "23505") {
+            if (error.constraint === "agents_handle_key") {
+              throw new ApiError(
+                409,
+                `An agent with handle '${agent.handle}' already exists`,
+              );
+            }
+            if (error.constraint === "agents_owner_id_name_key") {
+              throw new ApiError(
+                409,
+                `You already have an agent with name '${agent.name}'`,
+              );
+            }
+            if (error.constraint === "agents_wallet_address_key") {
+              throw new ApiError(
+                409,
+                `An agent with wallet address '${agent.walletAddress}' already exists`,
+              );
+            }
+          }
+        }
+        throw error;
       }
 
       // Send verification email if email has changed
@@ -700,6 +738,11 @@ export class AgentManager {
       );
       return updatedAgent;
     } catch (error) {
+      // Re-throw ApiError instances directly
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
       serviceLogger.error(
         `[AgentManager] Error updating agent ${agent.id}:`,
         error,
@@ -1006,6 +1049,7 @@ export class AgentManager {
           "createdAt",
           "status",
           "agentName",
+          "agentHandle",
           "rank",
         ];
         const sortParts = validatedParams.sort.split(",");
@@ -1623,6 +1667,7 @@ export class AgentManager {
             }
             break;
           }
+          case "agentHandle":
           case "agentName": {
             // Sort by the lexicographically FIRST agent name that belongs to the
             // authenticated user within each competition. This guarantees a
