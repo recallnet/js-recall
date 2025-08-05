@@ -13,7 +13,7 @@ import {
 import {
   createTestClient,
   getAdminApiKey,
-  noTradingConstraints,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
@@ -257,7 +257,7 @@ describe("Specific Chains", () => {
     }
   });
 
-  test("can purchase USDC token on optimism", async () => {
+  test("can purchase token on optimism", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -277,15 +277,15 @@ describe("Specific Chains", () => {
       undefined,
       undefined,
       undefined,
-      noTradingConstraints,
+      looseTradingConstraints,
     );
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
     expect(balanceResponse.success).toBe(true);
 
-    // Target token we want to purchase (USDC on optimism)
-    const targetTokenAddress = "0x0b2c639c533813f4aa9d7837caf62653d097ff85";
+    // Target token we want to purchase (LINK on optimism)
+    const targetTokenAddress = "0x350a791bfc2c21f9ed5d10980dad2e2638ffa7f6";
 
     // First try to find USDC
     const usdcAddress = config.specificChainTokens.optimism.usdc;

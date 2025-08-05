@@ -492,22 +492,12 @@ describe("Multi-Agent Competition", () => {
       expect(snapshotsResponse.snapshots).toBeDefined();
       expect(snapshotsResponse.snapshots.length).toBeGreaterThan(0);
 
-      // Get the most recent snapshot
-      const latestSnapshot =
-        snapshotsResponse.snapshots[snapshotsResponse.snapshots.length - 1];
-      const initialValue = latestSnapshot?.totalValue;
+      // Get the earliest snapshot
+      const earliestSnapshot = snapshotsResponse.snapshots[0];
+      const initialValue = earliestSnapshot?.totalValue;
       initialPortfolioValues[agent.agent.id] = initialValue;
       const token = tokensByAgent[agent.agent.id];
       assert(token, "Token is undefined");
-    }
-
-    // Step 6: Wait for a period of time to allow for multiple snapshots and price fluctuations
-    const waitTimeForPriceChanges = 20000; // 20 seconds
-
-    // Force several snapshots during the wait period to increase chances of capturing price changes
-    for (let i = 0; i < 4; i++) {
-      await wait(waitTimeForPriceChanges / 4);
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
     }
 
     // Step 7: Get final portfolio values
@@ -573,20 +563,7 @@ describe("Multi-Agent Competition", () => {
       previousPercentChange = percentChange;
     }
 
-    // Step 8: Verify that not all agents have exactly the same portfolio change
-    // This test could be flaky if market conditions are extremely stable during the test period
-    // or if there's a bug in the pricing system. We log a warning instead of failing in that case.
-    if (allAgentsHaveSameChange) {
-      console.warn(
-        "[Test] WARNING: All agents showed identical percentage changes in portfolio value.",
-      );
-      console.warn(
-        "[Test] This could indicate either extremely stable market conditions or a potential issue with pricing.",
-      );
-    } else {
-      console.log(
-        "[Test] Confirmed that agents with different tokens have different portfolio value changes.",
-      );
-    }
-  }, 60000); // Added timeout parameter
+    // Step 8: Verify that no agents have the exact same portfolio change
+    expect(allAgentsHaveSameChange).toBe(false);
+  }, 60000);
 });
