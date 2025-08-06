@@ -1223,7 +1223,7 @@ export class AgentManager {
         }
 
         // Track order only on first encounter to preserve sort order
-        if (!agentCompetitions.has(competitionId)) {
+        if (!agentCompetitions.has(competitionId) && competitionId) {
           competitionOrder.push(competitionId);
         }
 
