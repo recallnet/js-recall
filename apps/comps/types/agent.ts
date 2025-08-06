@@ -17,6 +17,7 @@ export interface Trophy {
 export interface Agent {
   id: string;
   name: string;
+  handle: string;
   walletAddress?: string;
   isVerified: boolean;
   ownerId?: string;
@@ -112,6 +113,7 @@ export interface AgentCompetitionResponse {
 export interface AgentCompetition {
   id: string;
   name: string;
+  handle: string;
   description: string;
   imageUrl: string;
   score: number;
@@ -128,6 +130,7 @@ export interface AgentCompetition {
 
 export interface CreateAgentRequest {
   name: string;
+  handle: string;
   imageUrl?: string;
   description?: string;
   email?: string;
