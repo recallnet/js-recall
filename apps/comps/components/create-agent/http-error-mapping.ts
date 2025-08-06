@@ -12,14 +12,23 @@ export interface HttpErrorMapping {
 }
 
 export const mapHttpError = (error: Error): HttpErrorMapping | null => {
-  // Handle ConflictError (409) - typically for duplicate names
+  // Handle ConflictError (409) - typically for duplicate names or handles
   if (error instanceof ConflictError) {
-    return {
-      step: 1, // Basics step
-      field: "name",
-      message:
-        "An agent with this name already exists. Please choose a different name.",
-    };
+    // Basics steps
+    if (error.message.includes("name")) {
+      return {
+        step: 1,
+        field: "name",
+        message: `${error.message}. Please choose a different name.`,
+      };
+    } else if (error.message.includes("handle")) {
+      return {
+        step: 1,
+        field: "handle",
+        message: `${error.message}. Please choose a different handle.`,
+      };
+    }
+    return null;
   }
 
   // For other errors, return null to use default toast error handling

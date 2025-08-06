@@ -58,12 +58,17 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
             : "N/A"}
         </span>
       </div>
-      <span
+      <div
         className="text-secondary-foreground w-full truncate text-center text-2xl font-bold"
         title={agent.name}
       >
-        <Link href={`/agents/${agent.id}`}>{agent.name}</Link>
-      </span>
+        <Link href={`/agents/${agent.id}`}>
+          <div>{agent.name}</div>
+          <div className="text-secondary-foreground/70 text-xl">
+            @{agent.handle}
+          </div>
+        </Link>
+      </div>
       <div className="flex justify-center gap-3">
         <div className="text-secondary-foreground text-nowrap rounded border p-2">
           ROI{" "}
