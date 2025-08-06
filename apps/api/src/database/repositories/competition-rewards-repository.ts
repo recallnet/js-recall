@@ -233,15 +233,13 @@ export async function assignWinnersToRewardsImpl(
       .filter(Boolean);
 
     await db.transaction(async (tx) => {
-      const promises = updates.map((update) => {
-        if (!update) return null;
-        return tx
+      for (const update of updates) {
+        if (!update) continue;
+        await tx
           .update(competitionRewards)
           .set({ agentId: update.agentId })
           .where(eq(competitionRewards.id, update.id));
-      });
-
-      await Promise.all(promises);
+      }
     });
   } catch (error) {
     competitionRewardsLogger.error(`Error in assignWinnersToRewards: ${error}`);
