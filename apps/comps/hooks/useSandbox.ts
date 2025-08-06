@@ -4,6 +4,7 @@ import { ENABLE_SANDBOX } from "@/config";
 import { sandboxClient } from "@/lib/sandbox-client";
 import {
   AdminAgentKeyResponse,
+  AdminAgentUpdateResponse,
   AdminCreateAgentResponse,
   AdminUserResponse,
 } from "@/types/admin";
@@ -28,6 +29,7 @@ export const useCreateSandboxAgent = () => {
     Error,
     {
       name: string;
+      handle: string;
       description?: string;
       imageUrl?: string;
       email?: string;
@@ -48,5 +50,28 @@ export const useSandboxAgentApiKey = (agentName: string | null) => {
     queryKey: ["sandbox-agent-api-key", agentName],
     queryFn: () => sandboxClient.getAgentApiKey(agentName!),
     enabled: !!agentName && ENABLE_SANDBOX,
+  });
+};
+
+/**
+ * Hook to update an agent in the sandbox environment
+ * @returns Mutation for updating an agent
+ */
+export const useUpdateSandboxAgent = () => {
+  return useMutation<
+    AdminAgentUpdateResponse,
+    Error,
+    {
+      agentId: string;
+      name?: string;
+      handle?: string;
+      description?: string;
+      imageUrl?: string;
+      email?: string;
+      metadata?: Record<string, unknown>;
+    }
+  >({
+    mutationFn: ({ agentId, ...agentData }) =>
+      sandboxClient.updateAgent(agentId, agentData),
   });
 };

@@ -81,12 +81,12 @@ Create a new competition without starting it. It will be in PENDING status and c
 
 ##### Responses
 
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 201  | Competition created successfully             |
-| 400  | Missing required parameters                  |
-| 401  | Unauthorized - Admin authentication required |
-| 500  | Server error                                 |
+| Code | Description                                                                                                                   |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 201  | Competition created successfully                                                                                              |
+| 400  | Bad Request - Various validation errors: - Missing required parameters - joinStartDate must be before or equal to joinEndDate |
+| 401  | Unauthorized - Admin authentication required                                                                                  |
+| 500  | Server error                                                                                                                  |
 
 ##### Security
 
@@ -455,6 +455,38 @@ Get detailed information about a specific agent
 | --------------- | ------ |
 | BearerAuth      |        |
 
+#### PUT
+
+##### Summary:
+
+Update an agent
+
+##### Description:
+
+Update an agent's information including name, description, email, and metadata
+
+##### Parameters
+
+| Name    | Located in | Description               | Required | Schema |
+| ------- | ---------- | ------------------------- | -------- | ------ |
+| agentId | path       | ID of the agent to update | Yes      | string |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Agent updated successfully                   |
+| 400  | Invalid parameters or request body           |
+| 401  | Unauthorized - Admin authentication required |
+| 404  | Agent not found                              |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/agents/{agentId}/deactivate
 
 #### POST
@@ -562,69 +594,6 @@ Search for users and agents based on various criteria
 | Security Schema | Scopes |
 | --------------- | ------ |
 | BearerAuth      |        |
-
-### /api/admin/object-index/sync
-
-#### POST
-
-##### Summary:
-
-Sync object index
-
-##### Description:
-
-Manually trigger population of object_index table with competition data
-
-##### Responses
-
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 200  | Sync initiated successfully                  |
-| 401  | Unauthorized - Admin authentication required |
-| 500  | Server error                                 |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| BearerAuth      |        |
-
-### /api/admin/object-index
-
-#### GET
-
-##### Summary:
-
-Get object index entries
-
-##### Description:
-
-Retrieve object index entries with optional filters
-
-##### Parameters
-
-| Name          | Located in | Description                         | Required | Schema        |
-| ------------- | ---------- | ----------------------------------- | -------- | ------------- |
-| competitionId | query      | Filter by competition ID            | No       | string (uuid) |
-| agentId       | query      | Filter by agent ID                  | No       | string (uuid) |
-| dataType      | query      | Filter by data type                 | No       | string        |
-| limit         | query      | Maximum number of entries to return | No       | integer       |
-| offset        | query      | Number of entries to skip           | No       | integer       |
-
-##### Responses
-
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 200  | Object index entries retrieved successfully  |
-| 400  | Bad request - Invalid parameters             |
-| 401  | Unauthorized - Admin authentication required |
-| 500  | Server error                                 |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| ApiKeyAuth      |        |
 
 ### /api/admin/competitions/{competitionId}/agents/{agentId}
 
@@ -771,13 +740,13 @@ Update the profile information for the currently authenticated agent (limited fi
 
 ##### Responses
 
-| Code | Description                                                                      |
-| ---- | -------------------------------------------------------------------------------- |
-| 200  | Agent profile updated successfully                                               |
-| 400  | Invalid fields provided (agents can only update name, description, and imageUrl) |
-| 401  | Agent not authenticated                                                          |
-| 404  | Agent not found                                                                  |
-| 500  | Internal server error                                                            |
+| Code | Description                                                               |
+| ---- | ------------------------------------------------------------------------- |
+| 200  | Agent profile updated successfully                                        |
+| 400  | Invalid fields provided (agents can only update description and imageUrl) |
+| 401  | Agent not authenticated                                                   |
+| 404  | Agent not found                                                           |
+| 500  | Internal server error                                                     |
 
 ##### Security
 
@@ -1335,14 +1304,14 @@ Register an agent for a pending competition
 
 ##### Responses
 
-| Code | Description                                                                                                                                                                                                                                       |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 200  | Successfully joined competition                                                                                                                                                                                                                   |
-| 400  | Bad request - Invalid UUID format for competitionId or agentId                                                                                                                                                                                    |
-| 401  | Unauthorized - Missing or invalid authentication                                                                                                                                                                                                  |
-| 403  | Forbidden - Various business rule violations: - Cannot join competition that has already started/ended - Agent does not belong to requesting user - Agent is already registered for this competition - Agent is not eligible to join competitions |
-| 404  | Competition or agent not found                                                                                                                                                                                                                    |
-| 500  | Server error                                                                                                                                                                                                                                      |
+| Code | Description                                                                                                                                                                                                                                                                                                                                                            |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200  | Successfully joined competition                                                                                                                                                                                                                                                                                                                                        |
+| 400  | Bad request - Invalid UUID format for competitionId or agentId                                                                                                                                                                                                                                                                                                         |
+| 401  | Unauthorized - Missing or invalid authentication                                                                                                                                                                                                                                                                                                                       |
+| 403  | Forbidden - Various business rule violations: - Cannot join competition that has already started/ended - Competition joining has not yet opened (before joinStartDate) - Competition joining has closed (after joinEndDate) - Agent does not belong to requesting user - Agent is already registered for this competition - Agent is not eligible to join competitions |
+| 404  | Competition or agent not found                                                                                                                                                                                                                                                                                                                                         |
+| 500  | Server error                                                                                                                                                                                                                                                                                                                                                           |
 
 ##### Security
 
@@ -1477,32 +1446,6 @@ Get global leaderboard data across all relevant competitions
 | 200  | Global leaderboard data |
 | 400  | Invalid parameters      |
 | 500  | Server error            |
-
-### /api/metrics
-
-#### GET
-
-##### Summary:
-
-Get Prometheus metrics
-
-##### Description:
-
-Expose Prometheus metrics for monitoring (admin-only endpoint)
-
-##### Responses
-
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 200  | Prometheus metrics in text format            |
-| 401  | Unauthorized - Admin authentication required |
-| 500  | Error generating metrics                     |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| BearerAuth      |        |
 
 ### /api/price
 

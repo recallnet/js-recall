@@ -334,6 +334,12 @@
                     "description": "URL to competition image",
                     "example": "https://example.com/competition-image.jpg"
                   },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date for the competition (ISO 8601 format)",
+                    "example": "2024-02-15T23:59:59Z"
+                  },
                   "votingStartDate": {
                     "type": "string",
                     "format": "date-time",
@@ -345,6 +351,48 @@
                     "format": "date-time",
                     "description": "End date for voting (ISO 8601 format)",
                     "example": "2024-01-30T23:59:59Z"
+                  },
+                  "joinStartDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start date for joining the competition (ISO 8601 format). Must be before or equal to joinEndDate if both are provided.",
+                    "example": "2024-01-01T00:00:00Z"
+                  },
+                  "joinEndDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date for joining the competition (ISO 8601 format). Must be after or equal to joinStartDate if both are provided.",
+                    "example": "2024-01-14T23:59:59Z"
+                  },
+                  "tradingConstraints": {
+                    "type": "object",
+                    "description": "Trading constraints for the competition (used when creating a new competition)",
+                    "properties": {
+                      "minimumPairAgeHours": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum age of trading pairs in hours",
+                        "example": 168
+                      },
+                      "minimum24hVolumeUsd": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum 24-hour volume in USD",
+                        "example": 10000
+                      },
+                      "minimumLiquidityUsd": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum liquidity in USD",
+                        "example": 100000
+                      },
+                      "minimumFdvUsd": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum fully diluted valuation in USD",
+                        "example": 100000
+                      }
+                    }
                   }
                 }
               }
@@ -421,7 +469,7 @@
             }
           },
           "400": {
-            "description": "Missing required parameters"
+            "description": "Bad Request - Various validation errors:\n- Missing required parameters\n- joinStartDate must be before or equal to joinEndDate"
           },
           "401": {
             "description": "Unauthorized - Admin authentication required"
@@ -474,6 +522,12 @@
                     "description": "URL to competition image (used when creating a new competition)",
                     "example": "https://example.com/competition-image.jpg"
                   },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date for the competition (ISO 8601 format)",
+                    "example": "2024-02-15T23:59:59Z"
+                  },
                   "votingStartDate": {
                     "type": "string",
                     "format": "date-time",
@@ -512,6 +566,36 @@
                     "enum": ["trading"],
                     "default": "trading",
                     "example": "trading"
+                  },
+                  "tradingConstraints": {
+                    "type": "object",
+                    "description": "Trading constraints for the competition (used when creating a new competition)",
+                    "properties": {
+                      "minimumPairAgeHours": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum age of trading pairs in hours",
+                        "example": 168
+                      },
+                      "minimum24hVolumeUsd": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum 24-hour volume in USD",
+                        "example": 10000
+                      },
+                      "minimumLiquidityUsd": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum liquidity in USD",
+                        "example": 100000
+                      },
+                      "minimumFdvUsd": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum fully diluted valuation in USD",
+                        "example": 100000
+                      }
+                    }
                   }
                 }
               }
@@ -1117,6 +1201,10 @@
                             "type": "string",
                             "description": "Agent name"
                           },
+                          "agentHandle": {
+                            "type": "string",
+                            "description": "Agent handle"
+                          },
                           "portfolioValue": {
                             "type": "number",
                             "description": "Portfolio value"
@@ -1195,6 +1283,11 @@
                     "description": "Name for the user's first agent (optional)",
                     "example": "Trading Bot Alpha"
                   },
+                  "agentHandle": {
+                    "type": "string",
+                    "description": "Handle for the user's first agent (optional)",
+                    "example": "trading_bot_alpha"
+                  },
                   "agentDescription": {
                     "type": "string",
                     "description": "Description of the agent (optional)",
@@ -1259,6 +1352,10 @@
                           "type": "string",
                           "description": "User name"
                         },
+                        "handle": {
+                          "type": "string",
+                          "description": "User handle"
+                        },
                         "email": {
                           "type": "string",
                           "description": "User email"
@@ -1315,6 +1412,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "email": {
                           "type": "string",
@@ -1506,6 +1607,10 @@
                             "type": "string",
                             "description": "Agent name"
                           },
+                          "handle": {
+                            "type": "string",
+                            "description": "Agent handle"
+                          },
                           "email": {
                             "type": "string",
                             "description": "Agent email",
@@ -1599,6 +1704,11 @@
                         "description": "Agent name",
                         "example": "My Agent"
                       },
+                      "handle": {
+                        "type": "string",
+                        "description": "Agent handle",
+                        "example": "my_agent"
+                      },
                       "walletAddress": {
                         "type": "string",
                         "description": "The agent wallet address. Must be provided if userWalletAddress is not provided.",
@@ -1662,6 +1772,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "walletAddress": {
                           "type": "string",
@@ -1775,6 +1889,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "apiKey": {
                           "type": "string",
@@ -1902,6 +2020,15 @@
                           "type": "string",
                           "description": "Agent name"
                         },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "Agent email",
+                          "nullable": true
+                        },
                         "description": {
                           "type": "string",
                           "description": "Agent description",
@@ -1935,6 +2062,156 @@
           },
           "400": {
             "description": "Agent ID is required"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Admin"],
+        "summary": "Update an agent",
+        "description": "Update an agent's information including name, description, email, and metadata",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agentId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the agent to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Agent's new name",
+                    "example": "Updated Trading Bot"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Agent's new description",
+                    "example": "Updated description"
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "description": "URL to agent's new profile image",
+                    "example": "https://example.com/new-bot-avatar.jpg"
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "Agent's new email",
+                    "example": "newemail@example.com"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Agent's new metadata",
+                    "example": {
+                      "strategy": "updated-strategy"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "agent": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Agent ID"
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "description": "Agent owner ID"
+                        },
+                        "walletAddress": {
+                          "type": "string",
+                          "description": "Agent wallet address",
+                          "nullable": true
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "Agent email",
+                          "nullable": true
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Agent description",
+                          "nullable": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Agent status"
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL to the agent's image",
+                          "nullable": true
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "description": "Agent metadata",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Agent creation timestamp"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Agent update timestamp"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters or request body"
           },
           "401": {
             "description": "Unauthorized - Admin authentication required"
@@ -2010,6 +2287,10 @@
                           "type": "string",
                           "description": "Agent name"
                         },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
+                        },
                         "status": {
                           "type": "string",
                           "description": "Agent status (will be inactive)"
@@ -2079,6 +2360,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "status": {
                           "type": "string",
@@ -2271,6 +2556,9 @@
                               "name": {
                                 "type": "string"
                               },
+                              "handle": {
+                                "type": "string"
+                              },
                               "description": {
                                 "type": "string",
                                 "nullable": true
@@ -2307,237 +2595,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/admin/object-index/sync": {
-      "post": {
-        "tags": ["Admin"],
-        "summary": "Sync object index",
-        "description": "Manually trigger population of object_index table with competition data",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "competitionId": {
-                    "type": "string",
-                    "description": "ID of specific competition to sync (optional, syncs all if not provided)"
-                  },
-                  "dataTypes": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "enum": [
-                        "trade",
-                        "agent_score_history",
-                        "competitions_leaderboard",
-                        "portfolio_snapshot",
-                        "agent_score"
-                      ]
-                    },
-                    "description": "Types of data to sync (defaults to trade, agent_score_history, competitions_leaderboard)"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Sync initiated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Operation success status"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Success message"
-                    },
-                    "dataTypes": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      },
-                      "description": "Data types that were synced"
-                    },
-                    "competitionId": {
-                      "type": "string",
-                      "description": "Competition ID that was synced (or 'all')"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/admin/object-index": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "Get object index entries",
-        "description": "Retrieve object index entries with optional filters",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "competitionId",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Filter by competition ID"
-          },
-          {
-            "in": "query",
-            "name": "agentId",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Filter by agent ID"
-          },
-          {
-            "in": "query",
-            "name": "dataType",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "trade",
-                "agent_score_history",
-                "agent_score",
-                "competitions_leaderboard",
-                "portfolio_snapshot"
-              ]
-            },
-            "description": "Filter by data type"
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 1000,
-              "default": 100
-            },
-            "description": "Maximum number of entries to return"
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0
-            },
-            "description": "Number of entries to skip"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Object index entries retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "entries": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "competitionId": {
-                                "type": "string"
-                              },
-                              "agentId": {
-                                "type": "string"
-                              },
-                              "dataType": {
-                                "type": "string"
-                              },
-                              "data": {
-                                "type": "string"
-                              },
-                              "sizeBytes": {
-                                "type": "integer"
-                              },
-                              "metadata": {
-                                "type": "object"
-                              },
-                              "eventTimestamp": {
-                                "type": "string",
-                                "format": "date-time"
-                              },
-                              "createdAt": {
-                                "type": "string",
-                                "format": "date-time"
-                              }
-                            }
-                          }
-                        },
-                        "pagination": {
-                          "type": "object",
-                          "properties": {
-                            "total": {
-                              "type": "integer"
-                            },
-                            "limit": {
-                              "type": "integer"
-                            },
-                            "offset": {
-                              "type": "integer"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request - Invalid parameters"
           },
           "401": {
             "description": "Unauthorized - Admin authentication required"
@@ -2606,6 +2663,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "ownerId": {
                           "type": "string",
@@ -2725,6 +2786,10 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         }
                       }
                     },
@@ -2817,6 +2882,10 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         }
                       }
                     },
@@ -2895,6 +2964,10 @@
                           "type": "string",
                           "example": "Trading Bot Alpha"
                         },
+                        "handle": {
+                          "type": "string",
+                          "example": "trading-bot-alpha"
+                        },
                         "description": {
                           "type": "string",
                           "example": "AI agent focusing on DeFi yield farming"
@@ -2945,6 +3018,9 @@
                         "name": {
                           "type": "string"
                         },
+                        "handle": {
+                          "type": "string"
+                        },
                         "email": {
                           "type": "string"
                         },
@@ -2985,11 +3061,6 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "Agent's display name",
-                    "example": "Trading Bot Beta"
-                  },
                   "description": {
                     "type": "string",
                     "description": "Agent description",
@@ -3038,6 +3109,9 @@
                         "name": {
                           "type": "string"
                         },
+                        "handle": {
+                          "type": "string"
+                        },
                         "description": {
                           "type": "string",
                           "nullable": true
@@ -3073,7 +3147,7 @@
             }
           },
           "400": {
-            "description": "Invalid fields provided (agents can only update name, description, and imageUrl)"
+            "description": "Invalid fields provided (agents can only update description and imageUrl)"
           },
           "401": {
             "description": "Agent not authenticated"
@@ -3532,6 +3606,10 @@
                             "type": "string",
                             "example": "Trading Bot Alpha"
                           },
+                          "handle": {
+                            "type": "string",
+                            "example": "trading-bot-alpha"
+                          },
                           "description": {
                             "type": "string",
                             "example": "AI agent focusing on DeFi yield farming"
@@ -3610,6 +3688,10 @@
                         "name": {
                           "type": "string",
                           "example": "Trading Bot Alpha"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "example": "trading-bot-alpha"
                         },
                         "isVerified": {
                           "type": "boolean"
@@ -3836,6 +3918,10 @@
                           "name": {
                             "type": "string",
                             "example": "DeFi Trading Championship"
+                          },
+                          "handle": {
+                            "type": "string",
+                            "example": "defi-trading-championship"
                           },
                           "status": {
                             "type": "string",
@@ -4512,6 +4598,10 @@
                             "type": "string",
                             "description": "Agent name"
                           },
+                          "agentHandle": {
+                            "type": "string",
+                            "description": "Agent handle"
+                          },
                           "portfolioValue": {
                             "type": "number",
                             "description": "Current portfolio value in USD"
@@ -4541,6 +4631,10 @@
                           "agentName": {
                             "type": "string",
                             "description": "Agent name"
+                          },
+                          "agentHandle": {
+                            "type": "string",
+                            "description": "Agent handle"
                           },
                           "portfolioValue": {
                             "type": "number",
@@ -5220,6 +5314,10 @@
                             "type": "string",
                             "description": "Agent name"
                           },
+                          "handle": {
+                            "type": "string",
+                            "description": "Agent handle"
+                          },
                           "description": {
                             "type": "string",
                             "nullable": true,
@@ -5376,7 +5474,7 @@
             "description": "Unauthorized - Missing or invalid authentication"
           },
           "403": {
-            "description": "Forbidden - Various business rule violations:\n- Cannot join competition that has already started/ended\n- Agent does not belong to requesting user\n- Agent is already registered for this competition\n- Agent is not eligible to join competitions\n"
+            "description": "Forbidden - Various business rule violations:\n- Cannot join competition that has already started/ended\n- Competition joining has not yet opened (before joinStartDate)\n- Competition joining has closed (after joinEndDate)\n- Agent does not belong to requesting user\n- Agent is already registered for this competition\n- Agent is not eligible to join competitions\n"
           },
           "404": {
             "description": "Competition or agent not found"
@@ -5799,37 +5897,6 @@
           },
           "500": {
             "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/metrics": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "Get Prometheus metrics",
-        "description": "Expose Prometheus metrics for monitoring (admin-only endpoint)",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Prometheus metrics in text format",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "# HELP http_requests_total Total number of HTTP requests\n# TYPE http_requests_total counter\nhttp_requests_total{method=\"GET\",route=\"/api/agent/profile\",status_code=\"200\"} 42\n\n# HELP http_request_duration_ms Duration of HTTP requests in milliseconds\n# TYPE http_request_duration_ms histogram\nhttp_request_duration_ms_bucket{method=\"GET\",route=\"/api/agent/profile\",status_code=\"200\",le=\"10\"} 15\n\n# HELP repository_queries_total Total number of repository queries\n# TYPE repository_queries_total counter\nrepository_queries_total{repository=\"AgentRepository\",method=\"getAgent\",operation=\"SELECT\"} 28\n"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Admin authentication required"
-          },
-          "500": {
-            "description": "Error generating metrics"
           }
         }
       }

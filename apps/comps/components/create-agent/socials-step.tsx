@@ -56,19 +56,6 @@ export function SocialsStep({ onBack, isSubmitting, form }: SocialsStepProps) {
       />
       <FormField
         control={form.control}
-        name="email"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Email Address (Optional)</FormLabel>
-            <FormControl>
-              <Input placeholder="E.g.: agentemail@gmail.com" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
         name="x"
         render={({ field }) => (
           <FormItem>

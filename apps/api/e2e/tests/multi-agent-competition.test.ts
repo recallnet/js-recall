@@ -14,11 +14,9 @@ import {
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
+  noTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -36,7 +34,7 @@ describe("Multi-Agent Competition", () => {
 
   // Base tokens for each agent to trade
   const BASE_TOKENS = [
-    "0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf", //VVV
+    "0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf", // VVV
     "0x3992B27dA26848C2b19CeA6Fd25ad5568B68AB98", // DEGEN
     "0x63706e401c06ac8513145b7687A14804d17f814b", // MOBY
     "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c", // SUSHI
@@ -64,18 +62,8 @@ describe("Multi-Agent Competition", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
@@ -262,16 +250,12 @@ describe("Multi-Agent Competition", () => {
   });
 
   test("each agent should purchase a different token resulting in unique portfolio compositions", async () => {
-    console.log("[Test] Starting multi-agent unique token purchasing test");
-
     // Step 1: Setup admin client
     adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Step 2: Register 6 agents with unique names
-    console.log(`Registering ${NUM_AGENTS} agents...`);
     agentClients = [];
-
     for (let i = 0; i < NUM_AGENTS; i++) {
       const agentName = `Agent ${i + 1} ${Date.now()}`;
 
@@ -281,9 +265,6 @@ describe("Multi-Agent Competition", () => {
       });
 
       agentClients.push(agentData);
-      console.log(
-        `Registered agent: ${agentName} with ID: ${agentData.agent.id}`,
-      );
     }
 
     expect(agentClients.length).toBe(NUM_AGENTS);
@@ -293,11 +274,14 @@ describe("Multi-Agent Competition", () => {
     const competitionName = `Multi-Agent Token Trading ${Date.now()}`;
     const agentIds = agentClients.map((tc) => tc.agent.id);
 
-    console.log(`Starting competition with ${agentIds.length} agents...`);
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
       agentIds,
+      undefined,
+      undefined,
+      undefined,
+      noTradingConstraints,
     );
 
     expect(competitionResponse.success).toBe(true);
@@ -308,9 +292,6 @@ describe("Multi-Agent Competition", () => {
     await wait(500);
 
     // Step 4: Each agent trades for a different token
-    console.log("Executing unique token trades for each agent...");
-
-    // Amount of USDC each agent will trade
     const tradeAmount = 100;
 
     // Store token quantities for validation
@@ -322,10 +303,6 @@ describe("Multi-Agent Competition", () => {
       const tokenToTrade = BASE_TOKENS[i];
 
       expect(tokenToTrade).toBeDefined();
-
-      console.log(
-        `Agent ${i + 1} trading ${tradeAmount} USDC for token ${tokenToTrade}`,
-      );
 
       // Execute trade using the client - each agent buys a different BASE token with 100 USDC
       const tradeResponse = (await agent?.client.executeTrade({
@@ -347,9 +324,6 @@ describe("Multi-Agent Competition", () => {
       if (tradeResponse.transaction.toAmount) {
         const tokenAmount = tradeResponse.transaction.toAmount;
         tokenQuantities[tokenToTrade!] = tokenAmount;
-        console.log(
-          `Agent ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`,
-        );
       }
       // Wait briefly between trades
       await wait(100);
@@ -359,8 +333,6 @@ describe("Multi-Agent Competition", () => {
     await wait(500);
 
     // Step 5: Verify each agent has a unique token composition
-    console.log("Verifying unique token portfolios...");
-
     for (let i = 0; i < NUM_AGENTS; i++) {
       const agent = agentClients[i];
       const expectedToken = BASE_TOKENS[i];
@@ -375,9 +347,6 @@ describe("Multi-Agent Competition", () => {
         balanceResponse.balances
           .find((b) => b.tokenAddress === expectedToken)
           ?.amount.toString() || "0",
-      );
-      console.log(
-        `Agent ${i + 1} final balance of token ${expectedToken}: ${tokenBalance}`,
       );
 
       // Verify they have a non-zero balance of their unique token
@@ -406,9 +375,6 @@ describe("Multi-Agent Competition", () => {
     }
 
     // Step 6: Verify that token quantities differ due to different token prices
-    console.log("Verifying token quantities differ between agents...");
-
-    // Get unique token quantities
     const uniqueQuantities = Object.values(tokenQuantities);
 
     // Verify that no two agents received the same token quantity (within a reasonable precision)
@@ -423,26 +389,17 @@ describe("Multi-Agent Competition", () => {
         // Allow a tiny bit of precision error (0.0001), but quantities should differ by more than this
         const areDifferent = Math.abs(qty1! - qty2!) > 0.0001;
         expect(areDifferent).toBe(true);
-
-        console.log(
-          `Token quantity comparison: ${qty1} vs ${qty2} - Are different: ${areDifferent}`,
-        );
       }
     }
-
-    console.log("[Test] Completed multi-agent unique token purchasing test");
   });
 
   // Test that portfolio values change over time due to price fluctuations
   test("portfolio values should change differently for agents holding different tokens", async () => {
-    console.log("[Test] Starting portfolio value fluctuation test");
-
     // Step 1: Setup admin client
     adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Step 2: Register agents with unique names
-    console.log(`Registering ${NUM_AGENTS} agents...`);
     agentClients = [];
 
     // Store token quantities and initial portfolio values
@@ -459,9 +416,6 @@ describe("Multi-Agent Competition", () => {
       });
 
       agentClients.push(agentData);
-      console.log(
-        `Registered agent: ${agentName} with ID: ${agentData.agent.id}`,
-      );
     }
 
     expect(agentClients.length).toBe(NUM_AGENTS);
@@ -471,11 +425,14 @@ describe("Multi-Agent Competition", () => {
     const competitionName = `Portfolio Value Test ${Date.now()}`;
     const agentIds = agentClients.map((tc) => tc.agent.id);
 
-    console.log(`Starting competition with ${agentIds.length} agents...`);
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
       agentIds,
+      undefined,
+      undefined,
+      undefined,
+      noTradingConstraints,
     );
 
     expect(competitionResponse.success).toBe(true);
@@ -486,9 +443,6 @@ describe("Multi-Agent Competition", () => {
     await wait(1000);
 
     // Step 4: Each agent trades for a different token
-    console.log("Executing unique token trades for each agent...");
-
-    // Amount of USDC each agent will trade
     const tradeAmount = 500; // Using a larger amount to make price fluctuations more noticeable
 
     // Execute trades for each agent
@@ -496,10 +450,6 @@ describe("Multi-Agent Competition", () => {
       const agent = agentClients[i]!;
       const tokenToTrade = BASE_TOKENS[i]!;
       tokensByAgent[agent.agent.id] = tokenToTrade;
-
-      console.log(
-        `Agent ${i + 1} (${agent?.agent.name}) trading ${tradeAmount} USDC for token ${tokenToTrade}`,
-      );
 
       // Execute trade - each agent buys a different BASE token with USDC
       const tradeResponse = (await agent?.client.executeTrade({
@@ -516,17 +466,6 @@ describe("Multi-Agent Competition", () => {
       // Verify trade was successful
       expect(tradeResponse.success).toBe(true);
       expect(tradeResponse.transaction).toBeDefined();
-
-      // Log the token amount received
-      if (tradeResponse.transaction.toAmount) {
-        const tokenAmount = parseFloat(
-          String(tradeResponse.transaction.toAmount),
-        );
-        console.log(
-          `Agent ${i + 1} received ${tokenAmount} of token ${tokenToTrade}`,
-        );
-      }
-
       // Wait briefly between trades
       await wait(100);
     }
@@ -535,8 +474,6 @@ describe("Multi-Agent Competition", () => {
     await wait(1000);
 
     // Step 5: Get initial portfolio values after trades
-    console.log("\n[Test] Getting initial portfolio values after trades...");
-
     for (let i = 0; i < NUM_AGENTS; i++) {
       const agent = agentClients[i];
 
@@ -555,45 +492,15 @@ describe("Multi-Agent Competition", () => {
       expect(snapshotsResponse.snapshots).toBeDefined();
       expect(snapshotsResponse.snapshots.length).toBeGreaterThan(0);
 
-      // Get the most recent snapshot
-      const latestSnapshot =
-        snapshotsResponse.snapshots[snapshotsResponse.snapshots.length - 1];
-      const initialValue = latestSnapshot?.totalValue;
+      // Get the earliest snapshot
+      const earliestSnapshot = snapshotsResponse.snapshots[0];
+      const initialValue = earliestSnapshot?.totalValue;
       initialPortfolioValues[agent.agent.id] = initialValue;
-
-      console.log(
-        `Agent ${i + 1} (${agent.agent.name}) initial portfolio value: $${initialValue?.toFixed(2)}`,
-      );
-
-      // Log token-specific details
       const token = tokensByAgent[agent.agent.id];
       assert(token, "Token is undefined");
-      const tokenValue = latestSnapshot?.valuesByToken[token];
-      if (tokenValue) {
-        console.log(
-          `  - Token ${token}: ${tokenValue.amount} units at $${tokenValue.valueUsd / tokenValue.amount} = $${tokenValue.valueUsd.toFixed(2)}`,
-        );
-      }
-    }
-
-    // Step 6: Wait for a period of time to allow for multiple snapshots and price fluctuations
-    const waitTimeForPriceChanges = 20000; // 20 seconds
-    console.log(
-      `\n[Test] Waiting ${waitTimeForPriceChanges / 1000} seconds for price fluctuations...`,
-    );
-
-    // Force several snapshots during the wait period to increase chances of capturing price changes
-    for (let i = 0; i < 4; i++) {
-      await wait(waitTimeForPriceChanges / 4);
-      console.log(`Taking snapshot ${i + 1}/4 during wait period...`);
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
     }
 
     // Step 7: Get final portfolio values
-    console.log(
-      "\n[Test] Getting final portfolio values after waiting period...",
-    );
-
     const finalPortfolioValues: { [agentId: string]: number | undefined } = {};
     const portfolioChanges: {
       [agentId: string]: {
@@ -646,24 +553,6 @@ describe("Multi-Agent Competition", () => {
         percentChange: percentChange,
       };
 
-      // Log detailed information
-      console.log(
-        `Agent ${i + 1} (${agent.agent.name}) final portfolio value: $${finalValue.toFixed(2)}`,
-      );
-      console.log(
-        `  - Change: $${absoluteChange.toFixed(2)} (${percentChange.toFixed(2)}%)`,
-      );
-
-      // Log token-specific details
-      const token = tokensByAgent[agent.agent.id];
-      assert(token, "Token is undefined");
-      const tokenValue = latestSnapshot?.valuesByToken[token];
-      if (tokenValue) {
-        console.log(
-          `  - Token ${token}: ${tokenValue.amount} units, value = $${tokenValue.valueUsd.toFixed(2)}`,
-        );
-      }
-
       // Check if this percent change is different from previous agents
       if (previousPercentChange !== null) {
         // Allow a tiny bit of precision error (0.00001), but changes should differ by more than this
@@ -674,33 +563,7 @@ describe("Multi-Agent Competition", () => {
       previousPercentChange = percentChange;
     }
 
-    // Step 8: Summary of portfolio changes
-    console.log("\n[Test] Portfolio change summary:");
-    for (let i = 0; i < NUM_AGENTS; i++) {
-      const agent = agentClients[i];
-      assert(agent, "Agent is undefined");
-      const changes = portfolioChanges[agent.agent.id];
-      console.log(
-        `Agent ${i + 1} (${agent.agent.name}): $${changes?.initial.toFixed(2)} → $${changes?.final.toFixed(2)}, Change: ${changes?.percentChange.toFixed(4)}%`,
-      );
-    }
-
-    // Step 9: Verify that not all agents have exactly the same portfolio change
-    // This test could be flaky if market conditions are extremely stable during the test period
-    // or if there's a bug in the pricing system. We log a warning instead of failing in that case.
-    if (allAgentsHaveSameChange) {
-      console.warn(
-        "[Test] WARNING: All agents showed identical percentage changes in portfolio value.",
-      );
-      console.warn(
-        "[Test] This could indicate either extremely stable market conditions or a potential issue with pricing.",
-      );
-    } else {
-      console.log(
-        "[Test] Confirmed that agents with different tokens have different portfolio value changes.",
-      );
-    }
-
-    console.log("[Test] Completed portfolio value fluctuation test");
-  }, 60000); // Added timeout parameter
+    // Step 8: Verify that no agents have the exact same portfolio change
+    expect(allAgentsHaveSameChange).toBe(false);
+  }, 60000);
 });

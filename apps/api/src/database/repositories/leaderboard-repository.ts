@@ -9,7 +9,7 @@ import {
   sum,
 } from "drizzle-orm";
 
-import { db } from "@/database/db.js";
+import { dbRead } from "@/database/db.js";
 import {
   agents,
   competitionAgents,
@@ -22,6 +22,7 @@ import {
   trades,
   tradingCompetitionsLeaderboard,
 } from "@/database/schema/trading/defs.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import {
   COMPETITION_AGENT_STATUS,
@@ -33,6 +34,67 @@ import {
  * Leaderboard Repository
  * Handles database operations for leaderboards
  */
+
+/**
+ * Get the total ROI as percentage (decimal format) for a single agent across all finished competitions
+ * @param agentId The agent ID to get ROI for
+ * @returns The total ROI as percentage in decimal format (e.g., 0.37 for 37%) or null if no completed competitions
+ */
+export async function getAgentTotalRoi(
+  agentId: string,
+): Promise<number | null> {
+  try {
+    const result = await dbRead
+      .select({
+        totalPnl: sum(tradingCompetitionsLeaderboard.pnl).as("totalPnl"),
+        totalStartingValue: sum(
+          tradingCompetitionsLeaderboard.startingValue,
+        ).as("totalStartingValue"),
+      })
+      .from(competitionsLeaderboard)
+      .innerJoin(
+        tradingCompetitionsLeaderboard,
+        eq(
+          tradingCompetitionsLeaderboard.competitionsLeaderboardId,
+          competitionsLeaderboard.id,
+        ),
+      )
+      .innerJoin(
+        competitions,
+        eq(competitionsLeaderboard.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          eq(competitionsLeaderboard.agentId, agentId),
+          eq(competitions.status, "ended"),
+        ),
+      )
+      .groupBy(competitionsLeaderboard.agentId);
+
+    if (!result[0]) {
+      return null;
+    }
+
+    const totalPnl = Number(result[0].totalPnl);
+    const totalStartingValue = Number(result[0].totalStartingValue);
+
+    if (
+      typeof totalPnl !== "number" ||
+      typeof totalStartingValue !== "number" ||
+      isNaN(totalPnl) ||
+      isNaN(totalStartingValue) ||
+      totalStartingValue <= 0
+    ) {
+      return null;
+    }
+
+    // Calculate ROI as percentage in decimal format (e.g., 0.37 for 37%)
+    return totalPnl / totalStartingValue;
+  } catch (error) {
+    console.error("[LeaderboardRepository] Error in getAgentBestRoi:", error);
+    return null;
+  }
+}
 
 /**
  * Get global statistics for a specific competition type across all relevant competitions.
@@ -49,10 +111,10 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   totalVotes: number;
   competitionIds: string[];
 }> {
-  console.log("[CompetitionRepository] getGlobalStats called for type:", type);
+  repositoryLogger.debug("getGlobalStats called for type:", type);
 
   // Filter competitions by `type` and `status` IN ['active', 'ended'].
-  const relevantCompetitions = await db
+  const relevantCompetitions = await dbRead
     .select({ id: competitions.id })
     .from(competitions)
     .where(
@@ -76,7 +138,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   const relevantCompetitionIds = relevantCompetitions.map((c) => c.id);
 
   // Sum up total trades and total volume from these competitions.
-  const tradeStatsResult = await db
+  const tradeStatsResult = await dbRead
     .select({
       totalTrades: drizzleCount(trades.id),
       totalVolume: sum(trades.tradeAmountUsd).mapWith(Number),
@@ -84,7 +146,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
     .from(trades)
     .where(inArray(trades.competitionId, relevantCompetitionIds));
 
-  const voteStatsResult = await db
+  const voteStatsResult = await dbRead
     .select({
       totalVotes: drizzleCount(votes.id),
     })
@@ -93,7 +155,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
 
   // agents remain 'active' in completed competitions
   // count distinct active agents in these competitions.
-  const totalActiveAgents = await db
+  const totalActiveAgents = await dbRead
     .select({
       totalActiveAgents: countDistinct(competitionAgents.agentId),
     })
@@ -142,19 +204,20 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       totalAgents: number;
     } | null;
     bestPnl: number | null;
+    totalRoi: number | null;
   }>
 > {
   if (agentIds.length === 0) {
     return [];
   }
 
-  console.log(
-    `[LeaderboardRepository] getBulkAgentMetrics called for ${agentIds.length} agents`,
+  repositoryLogger.debug(
+    `getBulkAgentMetrics called for ${agentIds.length} agents`,
   );
 
   try {
     // Query 1: Agent basic info + global scores
-    const agentRanksQuery = db
+    const agentRanksQuery = dbRead
       .select({
         agentId: agents.id,
         name: agents.name,
@@ -168,7 +231,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .where(inArray(agents.id, agentIds));
 
     // Query 2: Competition counts (only completed competitions)
-    const competitionCountsQuery = db
+    const competitionCountsQuery = dbRead
       .select({
         agentId: competitionAgents.agentId,
         completedCompetitions: countDistinct(competitions.id),
@@ -187,7 +250,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .groupBy(competitionAgents.agentId);
 
     // Query 3: Vote counts
-    const voteCountsQuery = db
+    const voteCountsQuery = dbRead
       .select({
         agentId: votes.agentId,
         totalVotes: drizzleCount(),
@@ -197,7 +260,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .groupBy(votes.agentId);
 
     // Query 4: Trade counts
-    const tradeCountsQuery = db
+    const tradeCountsQuery = dbRead
       .select({
         agentId: trades.agentId,
         totalTrades: drizzleCount(),
@@ -207,7 +270,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .groupBy(trades.agentId);
 
     // Query 5: Best placements - get the best rank for each agent
-    const bestPlacementsSubquery = db
+    const bestPlacementsSubquery = dbRead
       .select({
         agentId: competitionsLeaderboard.agentId,
         minRank: min(competitionsLeaderboard.rank).as("minRank"),
@@ -217,7 +280,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .groupBy(competitionsLeaderboard.agentId)
       .as("bestRanks");
 
-    const bestPlacementsQuery = db
+    const bestPlacementsQuery = dbRead
       .select({
         competitionId: competitionsLeaderboard.competitionId,
         agentId: competitionsLeaderboard.agentId,
@@ -236,7 +299,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       .where(inArray(competitionsLeaderboard.agentId, agentIds));
 
     // Query 6: Best Profit/Loss
-    const bestPnlQuery = db
+    const bestPnlQuery = dbRead
       .selectDistinctOn([competitionsLeaderboard.agentId], {
         competitionId: competitionsLeaderboard.competitionId,
         agentId: competitionsLeaderboard.agentId,
@@ -256,6 +319,35 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
         desc(tradingCompetitionsLeaderboard.pnl),
       );
 
+    // Query 7: Total ROI - calculate ROI percentage across all finished competitions
+    const totalRoiQuery = dbRead
+      .select({
+        agentId: competitionsLeaderboard.agentId,
+        totalPnl: sum(tradingCompetitionsLeaderboard.pnl).as("totalPnl"),
+        totalStartingValue: sum(
+          tradingCompetitionsLeaderboard.startingValue,
+        ).as("totalStartingValue"),
+      })
+      .from(competitionsLeaderboard)
+      .innerJoin(
+        tradingCompetitionsLeaderboard,
+        eq(
+          tradingCompetitionsLeaderboard.competitionsLeaderboardId,
+          competitionsLeaderboard.id,
+        ),
+      )
+      .innerJoin(
+        competitions,
+        eq(competitionsLeaderboard.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          inArray(competitionsLeaderboard.agentId, agentIds),
+          eq(competitions.status, "ended"),
+        ),
+      )
+      .groupBy(competitionsLeaderboard.agentId);
+
     // Execute all queries in parallel
     const [
       agentRanksResult,
@@ -264,6 +356,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       tradeCountsResult,
       bestPlacementResult,
       bestPnlResult,
+      totalRoiResult,
     ] = await Promise.all([
       agentRanksQuery,
       competitionCountsQuery,
@@ -271,10 +364,11 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       tradeCountsQuery,
       bestPlacementsQuery,
       bestPnlQuery,
+      totalRoiQuery,
     ]);
 
     // Query 6: Get actual ranks - need to get all ranks first then calculate
-    const allRanksQuery = db
+    const allRanksQuery = dbRead
       .select({
         agentId: agentScore.agentId,
         ordinal: agentScore.ordinal,
@@ -332,6 +426,29 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       ]),
     );
 
+    const totalRoiMap = new Map(
+      totalRoiResult.map((row) => {
+        const totalPnl = row.totalPnl ? Number(row.totalPnl) : null;
+        const totalStartingValue = row.totalStartingValue
+          ? Number(row.totalStartingValue)
+          : null;
+
+        if (
+          typeof totalPnl !== "number" ||
+          typeof totalStartingValue !== "number" ||
+          isNaN(totalPnl) ||
+          isNaN(totalStartingValue) ||
+          totalStartingValue <= 0
+        ) {
+          return [row.agentId, null];
+        }
+
+        // Calculate ROI as percentage in decimal format (e.g., 0.37 for 37%)
+        const roiPercent = totalPnl / totalStartingValue;
+        return [row.agentId, roiPercent];
+      }),
+    );
+
     // Combine all data
     const result = agentIds.map((agentId) => {
       const agentData = agentRanksMap.get(agentId);
@@ -341,6 +458,7 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       const bestPlacement = bestPlacementMap.get(agentId) ?? null;
       const bestPnl = bestPnlMap.get(agentId)?.pnl ?? null;
       const globalRank = ranksMap.get(agentId) ?? null;
+      const totalRoi = totalRoiMap.get(agentId) ?? null;
 
       return {
         agentId,
@@ -348,25 +466,23 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
         description: agentData?.description ?? null,
         imageUrl: agentData?.imageUrl ?? null,
         metadata: agentData?.metadata ?? null,
-        globalRank,
         globalScore: agentData?.globalScore ?? null,
+        globalRank,
         completedCompetitions,
         totalVotes,
         totalTrades,
         bestPlacement,
         bestPnl,
+        totalRoi,
       };
     });
 
-    console.log(
-      `[LeaderboardRepository] Successfully retrieved bulk metrics for ${result.length} agents`,
+    repositoryLogger.debug(
+      `Successfully retrieved bulk metrics for ${result.length} agents`,
     );
     return result;
   } catch (error) {
-    console.error(
-      "[LeaderboardRepository] Error in getBulkAgentMetrics:",
-      error,
-    );
+    repositoryLogger.error("Error in getBulkAgentMetrics:", error);
     throw error;
   }
 }
@@ -381,6 +497,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
   Array<{
     id: string;
     name: string;
+    handle: string;
     description: string | null;
     imageUrl: string | null;
     metadata: unknown;
@@ -389,14 +506,15 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
     voteCount: number;
   }>
 > {
-  console.log("[LeaderboardRepository] getOptimizedGlobalAgentMetrics called");
+  repositoryLogger.debug("getOptimizedGlobalAgentMetrics called");
 
   try {
     // Get all agents with their basic info and scores
-    const agentsWithScores = await db
+    const agentsWithScores = await dbRead
       .select({
         id: agents.id,
         name: agents.name,
+        handle: agents.handle,
         description: agents.description,
         imageUrl: agents.imageUrl,
         metadata: agents.metadata,
@@ -412,7 +530,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
     const agentIds = agentsWithScores.map((agent) => agent.id);
 
     // Get competition counts for all agents in one query
-    const competitionCounts = await db
+    const competitionCounts = await dbRead
       .select({
         agentId: competitionAgents.agentId,
         numCompetitions: countDistinct(competitionAgents.competitionId),
@@ -422,7 +540,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
       .groupBy(competitionAgents.agentId);
 
     // Get vote counts for all agents in one query
-    const voteCounts = await db
+    const voteCounts = await dbRead
       .select({
         agentId: votes.agentId,
         voteCount: drizzleCount(votes.id),
@@ -446,23 +564,20 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
       voteCount: voteCountMap.get(agent.id) ?? 0,
     }));
 
-    console.log(
-      `[LeaderboardRepository] Retrieved ${result.length} agent metrics with optimized query`,
+    repositoryLogger.debug(
+      `Retrieved ${result.length} agent metrics with optimized query`,
     );
 
     return result;
   } catch (error) {
-    console.error(
-      "[LeaderboardRepository] Error in getOptimizedGlobalAgentMetrics:",
-      error,
-    );
+    repositoryLogger.error("Error in getOptimizedGlobalAgentMetrics:", error);
     throw error;
   }
 }
 
-// =============================================================================
+// ----------------------------------------------------------------------------
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
-// =============================================================================
+// ----------------------------------------------------------------------------
 
 /**
  * All repository functions wrapped with timing and metrics

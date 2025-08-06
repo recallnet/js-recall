@@ -164,6 +164,18 @@ export interface DexScreenerPair {
 
 export type DexScreenerResponse = DexScreenerPair[];
 
+/**
+ * Token information returned by DexScreener API
+ */
+export interface DexScreenerTokenInfo {
+  price: number;
+  symbol: string;
+  pairCreatedAt?: number;
+  volume?: { h24?: number };
+  liquidity?: { usd?: number };
+  fdv?: number;
+}
+
 export interface PriceReport {
   token: string;
   price: number;
@@ -171,6 +183,15 @@ export interface PriceReport {
   chain: BlockchainType;
   specificChain: SpecificChain;
   symbol: string;
+  // Additional DexScreener data for trading constraints
+  pairCreatedAt?: number;
+  volume?: {
+    h24?: number;
+  };
+  liquidity?: {
+    usd?: number;
+  };
+  fdv?: number;
 }
 
 /**
@@ -246,6 +267,7 @@ export const AgentStatsSchema = z.object({
     .optional(),
   rank: z.number().optional(),
   score: z.number().optional(),
+  totalRoi: z.number().optional(),
 });
 
 export type AgentStats = z.infer<typeof AgentStatsSchema>;
@@ -399,6 +421,8 @@ export interface Competition {
   endDate: Date | null;
   votingStartDate: Date | null;
   votingEndDate: Date | null;
+  joinStartDate: Date | null;
+  joinEndDate: Date | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
   sandboxMode: boolean; // Controls automatic agent joining behavior
@@ -537,12 +561,23 @@ export const ActorStatusSchema = z.enum(ACTOR_STATUS_VALUES);
 export type ActorStatus = z.infer<typeof ActorStatusSchema>;
 
 /**
+ * Minimum length of a handle.
+ */
+export const MIN_HANDLE_LENGTH = 3;
+
+/**
+ * Maximum length of a handle.
+ */
+export const MAX_HANDLE_LENGTH = 15;
+
+/**
  * Agent information Object
  */
 export const AgentSchema = z.object({
   id: z.string(),
   ownerId: z.string(),
   name: z.string(),
+  handle: z.string(),
   walletAddress: z.nullish(z.string()),
   email: z.nullish(z.email()),
   description: z.nullish(z.string()),
@@ -556,9 +591,12 @@ export const AgentSchema = z.object({
 export type Agent = z.infer<typeof AgentSchema>;
 
 /**
- * Pulic Agent information Object, omits apiKey
+ * Public Agent information Object, omits apiKey and email
  */
-export const AgentPublicSchema = AgentSchema.omit({ apiKey: true }).extend({
+export const AgentPublicSchema = AgentSchema.omit({
+  apiKey: true,
+  email: true,
+}).extend({
   isVerified: z.boolean(),
 });
 export type AgentPublic = z.infer<typeof AgentPublicSchema>;
@@ -644,38 +682,6 @@ export const CompetitionTypeSchema = z.enum(COMPETITION_TYPE_VALUES);
  * Status of a competition.
  */
 export type CompetitionType = z.infer<typeof CompetitionTypeSchema>;
-
-/**
- * Sync data type values for zod or database enum.
- */
-export const SYNC_DATA_TYPE_VALUES = [
-  "trade",
-  "agent_score_history",
-  "agent_score",
-  "competitions_leaderboard",
-  "portfolio_snapshot",
-] as const;
-
-/**
- * Sync data types.
- */
-export const SYNC_DATA_TYPE = {
-  TRADE: "trade",
-  AGENT_SCORE_HISTORY: "agent_score_history",
-  AGENT_SCORE: "agent_score",
-  COMPETITIONS_LEADERBOARD: "competitions_leaderboard",
-  PORTFOLIO_SNAPSHOT: "portfolio_snapshot",
-} as const;
-
-/**
- * Zod schema for sync data types.
- */
-export const SyncDataTypeSchema = z.enum(SYNC_DATA_TYPE_VALUES);
-
-/**
- * Sync data type.
- */
-export type SyncDataType = z.infer<typeof SyncDataTypeSchema>;
 
 export const CompetitionAllowedUpdateSchema = z.strictObject({
   name: z.string().optional(),
@@ -771,6 +777,23 @@ export const UpdateUserProfileSchema = z
   .strict();
 
 /**
+ * Agent handle validation schema
+ */
+export const AgentHandleSchema = z
+  .string()
+  .trim()
+  .min(MIN_HANDLE_LENGTH, {
+    message: `Handle must be at least ${MIN_HANDLE_LENGTH} characters`,
+  })
+  .max(MAX_HANDLE_LENGTH, {
+    message: `Handle must be at most ${MAX_HANDLE_LENGTH} characters`,
+  })
+  .regex(new RegExp(`^[a-z0-9_]+$`), {
+    message:
+      "Handle can only contain lowercase letters, numbers, and underscores",
+  });
+
+/**
  * Create agent parameters schema
  */
 export const CreateAgentBodySchema = z
@@ -778,7 +801,9 @@ export const CreateAgentBodySchema = z
     name: z
       .string("Invalid name format")
       .trim()
-      .min(1, { message: "Name is required" }),
+      .min(1, { message: "Name is required" })
+      .max(100, { message: "Name must be 100 characters or less" }),
+    handle: AgentHandleSchema,
     description: z
       .string("Invalid description format")
       .trim()
@@ -809,7 +834,9 @@ export const UpdateUserAgentProfileBodySchema = z
       .string("Invalid name format")
       .trim()
       .min(1, { message: "Name must be at least 1 character" })
+      .max(100, { message: "Name must be 100 characters or less" })
       .optional(),
+    handle: AgentHandleSchema.optional(),
     description: z
       .string("Invalid description format")
       .trim()
@@ -837,11 +864,6 @@ export const UpdateUserAgentProfileSchema = z
  */
 export const UpdateAgentProfileBodySchema = z
   .object({
-    name: z
-      .string("Invalid name format")
-      .trim()
-      .min(1, { message: "Name must be at least 1 character" })
-      .optional(),
     description: z
       .string("Invalid description format")
       .trim()
@@ -906,7 +928,10 @@ export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;
  * Structure for an agent entry in the global leaderboard
  */
 export interface LeaderboardAgent
-  extends Pick<Agent, "id" | "name" | "description" | "imageUrl" | "metadata"> {
+  extends Pick<
+    Agent,
+    "id" | "name" | "handle" | "description" | "imageUrl" | "metadata"
+  > {
   rank: number;
   score: number;
   numCompetitions: number;
@@ -1065,7 +1090,10 @@ export const AdminCreateAgentSchema = z.object({
       message: "Must provide either user ID or user wallet address",
     }),
   agent: z.object({
-    name: z.string(),
+    name: z
+      .string()
+      .max(100, { message: "Name must be 100 characters or less" }),
+    handle: AgentHandleSchema.optional(),
     email: z.string().optional(),
     walletAddress: z.string().optional(),
     description: z.string().optional(),
@@ -1093,6 +1121,7 @@ export type UserSearchParams = z.infer<typeof UserSearchParamsSchema>;
  */
 export const AgentSearchParamsSchema = z.object({
   name: z.string().optional(),
+  handle: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
   status: ActorStatusSchema.optional(),
@@ -1119,3 +1148,27 @@ export const AdminSearchUsersAndAgentsQuerySchema = z.strictObject({
 export type AdminSearchUsersAndAgentsQuery = z.infer<
   typeof AdminSearchUsersAndAgentsQuerySchema
 >;
+
+/**
+ * Competition join error types for specific error handling
+ */
+export const COMPETITION_JOIN_ERROR_TYPES = {
+  COMPETITION_NOT_FOUND: "COMPETITION_NOT_FOUND",
+  AGENT_NOT_FOUND: "AGENT_NOT_FOUND",
+  AGENT_NOT_ELIGIBLE: "AGENT_NOT_ELIGIBLE",
+  COMPETITION_ALREADY_STARTED: "COMPETITION_ALREADY_STARTED",
+  AGENT_ALREADY_REGISTERED: "AGENT_ALREADY_REGISTERED",
+  JOIN_NOT_YET_OPEN: "JOIN_NOT_YET_OPEN",
+  JOIN_CLOSED: "JOIN_CLOSED",
+} as const;
+
+export type CompetitionJoinErrorType =
+  (typeof COMPETITION_JOIN_ERROR_TYPES)[keyof typeof COMPETITION_JOIN_ERROR_TYPES];
+
+/**
+ * Competition join error interface
+ */
+export interface CompetitionJoinError extends Error {
+  type: CompetitionJoinErrorType;
+  code: number;
+}

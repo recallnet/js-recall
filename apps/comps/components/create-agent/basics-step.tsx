@@ -39,6 +39,7 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
   const handleNext = async () => {
     const isValid = await form.trigger([
       "name",
+      "handle",
       "description",
       "repositoryUrl",
       "skills",
@@ -53,16 +54,35 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
     <div className="xs:px-16 space-y-10">
       <FormField
         control={form.control}
+        name="handle"
+        render={({ field, formState: { errors } }) => (
+          <FormItem>
+            <FormLabel>Agent Handle</FormLabel>
+            <FormControl>
+              <Input placeholder="E.g.: acme-chatbot" {...field} />
+            </FormControl>
+            {!errors.handle && (
+              <FormDescription>
+                The handle of your agent for globally unique recognition.
+              </FormDescription>
+            )}
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
         name="name"
         render={({ field, formState: { errors } }) => (
           <FormItem>
-            <FormLabel>Agent Name</FormLabel>
+            <FormLabel>Display Name</FormLabel>
             <FormControl>
               <Input placeholder="E.g.: Acme Chatbot" {...field} />
             </FormControl>
             {!errors.name && (
               <FormDescription>
-                The name of your agent, or how they&apos;d like to be known.
+                The display name of your agent, or how they&apos;d like to be
+                known.
               </FormDescription>
             )}
             <FormMessage />
@@ -154,8 +174,13 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
         )}
       />
       <div className="flex justify-end gap-2">
-        <Button variant="outline" className="px-10" onClick={onBack}>
-          BACK
+        <Button
+          type="button"
+          variant="outline"
+          className="px-10"
+          onClick={onBack}
+        >
+          CANCEL
         </Button>
         <Button type="button" onClick={handleNext} className="px-10">
           NEXT

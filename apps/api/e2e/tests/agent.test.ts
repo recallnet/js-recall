@@ -1,8 +1,10 @@
 import axios from "axios";
+import { eq } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { config } from "@/config/index.js";
+import { agents } from "@/database/schema/core/defs.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentsListResponse,
@@ -14,41 +16,31 @@ import {
   Competition,
   CreateCompetitionResponse,
   EnhancedCompetition,
+  ErrorResponse,
   PriceResponse,
   PublicAgentResponse,
   ResetApiKeyResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
+import { dbManager } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createAgentVerificationSignature,
+  createSiweAuthenticatedClient,
   createTestClient,
   generateRandomEthAddress,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
+import { generateHandleFromName, isValidHandle } from "@/lib/handle-utils.js";
 
 describe("Agent API", () => {
   // Clean up test state before each test
   let adminApiKey: string;
 
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
+    adminApiKey = await getAdminApiKey();
   });
 
   test("admin can register a user and agent and agent can authenticate", async () => {
@@ -87,6 +79,7 @@ describe("Agent API", () => {
     expect(agent).toBeDefined();
     expect(agent.id).toBeDefined();
     expect(agent.name).toBe(agentName);
+    expect(agent.handle).toBeDefined();
     expect(agent.description).toBe(agentDescription);
     expect(agent.ownerId).toBe(user.id);
     expect(apiKey).toBeDefined();
@@ -139,7 +132,7 @@ describe("Agent API", () => {
     );
   });
 
-  test("agents can update their profile with name and imageUrl", async () => {
+  test("agents can update their profile with description and imageUrl", async () => {
     // Setup admin client
     const client = createTestClient();
     console.log(
@@ -154,20 +147,17 @@ describe("Agent API", () => {
     });
 
     // Define update data for the agent (excluding metadata since it's not allowed in agent self-service)
-    const newName = "Updated Agent Name";
     const newDescription = "Updated agent description";
     const newImageUrl = "https://example.com/new-agent-image.jpg";
 
     // Update agent profile with all allowed fields
     const updateResponse = await agentClient.updateAgentProfile({
-      name: newName,
       description: newDescription,
       imageUrl: newImageUrl,
     });
 
     expect(updateResponse.success).toBe(true);
     expect((updateResponse as AgentProfileResponse).agent).toBeDefined();
-    expect((updateResponse as AgentProfileResponse).agent.name).toBe(newName);
     expect((updateResponse as AgentProfileResponse).agent.description).toBe(
       newDescription,
     );
@@ -178,7 +168,6 @@ describe("Agent API", () => {
     // Verify changes persisted
     const profileResponse = await agentClient.getAgentProfile();
     expect(profileResponse.success).toBe(true);
-    expect((profileResponse as AgentProfileResponse).agent.name).toBe(newName);
     expect((profileResponse as AgentProfileResponse).agent.description).toBe(
       newDescription,
     );
@@ -546,11 +535,13 @@ describe("Agent API", () => {
 
     // Step 4: Update the agent's profile multiple times in rapid succession
     // This tests that cache consistency is maintained during updates
-    const newName = "Cache Test Agent Updated";
+    const originalDescription = "Cache Test Agent Updated";
+    const originalImageUrl = "https://example.com/agent-image-updated.jpg";
 
-    // Update 1: Set name
+    // Update 1: Set description
     const updateResponse1 = await agentClient.updateAgentProfile({
-      name: newName,
+      imageUrl: originalImageUrl,
+      description: originalDescription,
     });
     expect(updateResponse1.success).toBe(true);
 
@@ -573,22 +564,24 @@ describe("Agent API", () => {
     ); // USDC token
     expect(priceResponse2.success).toBe(true);
 
-    // Update 3: Change both name and description
+    // Update 3: Change both imageUrl and description
+    const newImageUrl = "https://example.com/agent-image-updated.jpg";
+    const newDescription2 = `Cache Test Description ${Date.now()}`;
     const updateResponse3 = await agentClient.updateAgentProfile({
-      name: `${newName} Final`,
-      description: `${newDescription} Updated`,
+      imageUrl: newImageUrl,
+      description: newDescription2,
     });
     expect(updateResponse3.success).toBe(true);
 
     // Step 5: Verify final profile state
     const finalProfileResponse = await agentClient.getAgentProfile();
     expect(finalProfileResponse.success).toBe(true);
-    expect((finalProfileResponse as AgentProfileResponse).agent.name).toBe(
-      `${newName} Final`,
-    );
     expect(
       (finalProfileResponse as AgentProfileResponse).agent.description,
-    ).toBe(`${newDescription} Updated`);
+    ).toBe(newDescription2);
+    expect((finalProfileResponse as AgentProfileResponse).agent.imageUrl).toBe(
+      newImageUrl,
+    );
 
     // Step 6: Make multiple API calls to verify authentication still works
     // This confirms the apiKeyCache remains consistent
@@ -752,17 +745,19 @@ describe("Agent API", () => {
     expect(agent.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
 
     // Define new values for both fields
-    const newName = "Combined Bot";
     const newImageUrl = "https://example.com/combined-update-image.jpg";
+    const newDescription = "Combined Bot Description";
 
     // Update both fields in a single request
     const updateResponse = await agentClient.updateAgentProfile({
-      name: newName,
+      description: newDescription,
       imageUrl: newImageUrl,
     });
 
     expect(updateResponse.success).toBe(true);
-    expect((updateResponse as AgentProfileResponse).agent.name).toBe(newName);
+    expect((updateResponse as AgentProfileResponse).agent.description).toBe(
+      newDescription,
+    );
     expect((updateResponse as AgentProfileResponse).agent.imageUrl).toBe(
       newImageUrl,
     );
@@ -772,7 +767,7 @@ describe("Agent API", () => {
     expect(profileResponse.success).toBe(true);
 
     const updatedProfile = (profileResponse as AgentProfileResponse).agent;
-    expect(updatedProfile.name).toBe(newName);
+    expect(updatedProfile.description).toBe(newDescription);
     expect(updatedProfile.imageUrl).toBe(newImageUrl);
 
     // Verify admin can see both updated fields
@@ -781,7 +776,7 @@ describe("Agent API", () => {
         email: userEmail,
       },
       agent: {
-        name: newName,
+        name: agentName,
       },
     });
 
@@ -953,7 +948,52 @@ describe("Agent API", () => {
     if (agentData.owner.name !== null) {
       expect(typeof agentData.owner.name).toBe("string");
     }
+  });
+
+  test("should not expose api key or email in public agent info", async () => {
+    // Setup admin client and login
+    const adminClient = createTestClient();
+    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(adminLoginSuccess).toBe(true);
+
+    // Register a user and agent
+    const userName = `Get Agent Test User ${Date.now()}`;
+    const userEmail = `get-agent-${Date.now()}@example.com`;
+    const agentName = `Get Agent Test ${Date.now()}`;
+    const agentEmail = `get-agent-${Date.now()}@example.com`;
+    const agentDescription = "Agent for GET endpoint test";
+
+    const res = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName,
+      userEmail,
+      agentName,
+      agentDescription,
+    });
+    const agentId = res.agent.id;
+
+    // Manually update database entry to include email
+    const db = await dbManager.connect();
+    await db
+      .update(agents)
+      .set({ email: agentEmail })
+      .where(eq(agents.id, agentId));
+    const agent = (
+      await db.select().from(agents).where(eq(agents.id, agentId))
+    )[0];
+
+    expect(agent).toBeDefined();
+    expect(agent?.id).toBeDefined();
+
+    // Make a public GET request to fetch the agent details using the agent ID
+    const response = await axios.get(`${getBaseUrl()}/api/agents/${agent?.id}`);
+
+    // Validate response
+    expect(response.status).toBe(200);
+    const agentData = response.data as AgentProfileResponse;
+    expect(agentData.success).toBe(true);
     // make sure public info is not exposed
+    expect(agentData.agent.email).not.toBeDefined();
     expect(agentData.agent.apiKey).not.toBeDefined();
   });
 
@@ -2771,6 +2811,229 @@ Purpose: WALLET_VERIFICATION`;
           portfolio: c.portfolioValue,
         })),
       });
+    });
+  });
+
+  describe("Agent handles", () => {
+    test("should reject duplicate handles or invalid format", async () => {
+      // Create a SIWE-authenticated client
+      const { client: siweClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Handle Test User",
+        userEmail: "handle-test@example.com",
+      });
+
+      // Test 1: Custom handle
+      const response1 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Another Agent",
+          handle: "custom_handle",
+          description: "Test agent with custom handle",
+        },
+      );
+
+      expect(response1.success).toBe(true);
+      expect((response1 as AgentProfileResponse).agent.name).toBe(
+        "Another Agent",
+      );
+      expect((response1 as AgentProfileResponse).agent.handle).toBe(
+        "custom_handle",
+      );
+
+      // Test 2: Duplicate handle rejection
+      const response2 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Third Agent",
+          handle: "custom_handle", // Same as agent 2
+          description: "Should fail with duplicate handle",
+        },
+      );
+
+      expect(response2.success).toBe(false);
+      expect(response2.error).toContain(
+        "An agent with handle 'custom_handle' already exists",
+      );
+      expect(response2.status).toBe(409);
+
+      // Test 3: Handle with special characters
+      const response3 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Agent@123!",
+          handle: "agent@123!",
+          description: "Test handle generation from special chars",
+        },
+      );
+
+      expect(response3.success).toBe(false);
+      expect((response3 as ErrorResponse).error).toContain(
+        "Handle can only contain lowercase letters, numbers, and underscores",
+      );
+      expect((response3 as ErrorResponse).status).toBe(400);
+
+      // Test 4: Invalid handle format (uppercase)
+      const response4 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Test Agent",
+          handle: "UPPERCASE_HANDLE", // Should fail - must be lowercase
+          description: "Should fail with invalid handle format",
+        },
+      );
+
+      expect(response4.success).toBe(false);
+      expect((response4 as ErrorResponse).error).toContain(
+        "Handle can only contain lowercase letters, numbers, and underscores",
+      );
+
+      // Test 5: Invalid handle format (too long)
+      const response5 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Test Agent",
+          handle: "a".repeat(16), // Should fail - too long
+          description: "Should fail with invalid handle format",
+        },
+      );
+
+      expect(response5.success).toBe(false);
+      expect((response5 as ErrorResponse).error).toContain(
+        "Handle must be at most 15 characters",
+      );
+      expect(response5.status).toBe(400);
+
+      // Test 6: Invalid handle format (too short)
+      const response6 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Test Agent",
+          handle: "a", // Should fail - too short
+          description: "Should fail with invalid handle format",
+        },
+      );
+
+      expect(response6.success).toBe(false);
+      expect((response6 as ErrorResponse).error).toContain(
+        "Handle must be at least 3 characters",
+      );
+      expect(response6.status).toBe(400);
+    });
+
+    test("should update agent handle", async () => {
+      // Create a SIWE-authenticated client
+      const { client: siweClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Handle Update Test User",
+        userEmail: "handle-update@example.com",
+      });
+
+      // Create an agent
+      const createResponse = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Update Test Agent",
+          handle: "original_handle",
+          description: "Test agent for handle updates",
+        },
+      );
+
+      expect(createResponse.success).toBe(true);
+      let agentId = "";
+      agentId = (createResponse as AgentProfileResponse).agent.id;
+
+      // Update the handle
+      const updateResponse = await siweClient.updateUserAgentProfile(agentId, {
+        handle: "updated_handle",
+      });
+
+      expect(updateResponse.success).toBe(true);
+      if (updateResponse.success) {
+        expect((updateResponse as AgentProfileResponse).agent.handle).toBe(
+          "updated_handle",
+        );
+      }
+
+      // Create another agent
+      const createResponse2 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Second Update Test Agent",
+          handle: "second_handle",
+          description: "Second test agent",
+        },
+      );
+
+      expect(createResponse2.success).toBe(true);
+      let agent2Id = "";
+      agent2Id = (createResponse2 as AgentProfileResponse).agent.id;
+
+      // Try to update agent2's handle to agent1's handle (should fail)
+      const updateResponse2 = await siweClient.updateUserAgentProfile(
+        agent2Id,
+        {
+          handle: "updated_handle", // Same as agent 1
+        },
+      );
+
+      expect(updateResponse2.success).toBe(false);
+      expect((updateResponse2 as ErrorResponse).error).toContain(
+        "An agent with handle 'updated_handle' already exists",
+      );
+      expect((updateResponse2 as ErrorResponse).status).toBe(409);
+    });
+  });
+
+  test("should properly parse handles with zod schema", async () => {
+    // Test generateHandleFromName
+    const nameTests = [
+      "John Doe",
+      "Agent@123!",
+      "My Cool Agent",
+      "_underscore",
+      "___triple",
+      "A",
+      "AB",
+      "Special!@#$%Characters",
+      "   Spaces   ",
+      "Very Long Name That Exceeds Maximum",
+    ];
+
+    nameTests.forEach((name) => {
+      const handle = generateHandleFromName(name);
+      const isValid = isValidHandle(handle);
+      expect(isValid).toBe(true);
+    });
+
+    // Test isValidHandle
+    const handleTests = [
+      { handle: "valid_handle", expected: true },
+      { handle: "_underscore", expected: true },
+      { handle: "__double", expected: true },
+      { handle: "123numeric", expected: true },
+      { handle: "abc", expected: true },
+      { handle: "ab", expected: false }, // too short
+      { handle: "a", expected: false }, // too short
+      { handle: "verylonghandlethatexceeds", expected: false }, // too long
+      { handle: "UPPERCASE", expected: false },
+      { handle: "with-dash", expected: false },
+      { handle: "with space", expected: false },
+      { handle: "", expected: false },
+      { handle: "___", expected: true },
+    ];
+
+    handleTests.forEach(({ handle, expected }) => {
+      const isValid = isValidHandle(handle);
+      expect(isValid).toBe(expected);
     });
   });
 });

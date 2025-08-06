@@ -1,4 +1,5 @@
 import { SquarePen } from "lucide-react";
+import Image from "next/image";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
@@ -10,8 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-
-import MirrorImage from "@/components/mirror-image";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { ImageURLInput } from "../image-input/index";
 
@@ -19,11 +19,13 @@ export const AgentImage = ({
   agentImage,
   onSave,
 }: {
-  agentImage: string;
+  agentImage?: string;
   onSave: (imageUrl: string) => void;
 }) => {
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [image, setImage] = React.useState(agentImage);
+  const [image, setImage] = React.useState(
+    agentImage || "/agent-placeholder.png",
+  );
   const [inputImage, setInputImage] = React.useState("");
   const [invalidImage, setInvalidImage] = React.useState(false);
 
@@ -39,23 +41,27 @@ export const AgentImage = ({
 
   return (
     <>
-      <MirrorImage image={image} width={170} height={170}>
-        <div
-          className="bg-card/70 group absolute flex h-full w-full cursor-pointer flex-col justify-end justify-center overflow-hidden rounded-full opacity-0 transition-opacity duration-300 hover:opacity-100"
-          onClick={() => setDialogOpen(true)}
-        >
-          <div className="bg-card flex h-1/2 w-full translate-y-20 flex-col items-center justify-start gap-1 px-3 pt-2 transition-all duration-700 group-hover:translate-y-0">
-            <div className="flex items-center text-xs font-medium">
-              <SquarePen
-                className="mr-2 inline-block text-gray-500"
-                size={17}
-              />
-              <span>Picture URL</span>
-            </div>
-            <span className="text-xs text-gray-500">Public image</span>
+      <div
+        className="bg-card/70 group absolute z-10 flex h-full w-full cursor-pointer flex-col justify-end justify-center overflow-hidden opacity-0 transition-opacity duration-300 hover:opacity-100"
+        onClick={() => setDialogOpen(true)}
+      >
+        <div className="bg-card flex h-1/4 w-full translate-y-20 flex-col items-center justify-start gap-1 px-3 pt-2 transition-all duration-700 group-hover:translate-y-0">
+          <div className="flex items-center text-xs font-medium">
+            <SquarePen className="mr-2 inline-block text-gray-500" size={17} />
+            <span>Picture URL</span>
           </div>
+          <span className="text-xs text-gray-500">Public image</span>
         </div>
-      </MirrorImage>
+      </div>
+
+      <Image
+        src={image}
+        alt=""
+        fill={!!agentImage}
+        width={agentImage ? undefined : 50}
+        height={agentImage ? undefined : 50}
+        className={cn(agentImage ? "absolute z-0 object-cover" : "w-50 h-50")}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

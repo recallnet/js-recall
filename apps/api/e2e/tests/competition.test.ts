@@ -8,6 +8,7 @@ import { agents, competitionAgents } from "@/database/schema/core/defs.js";
 import {
   AgentProfileResponse,
   AgentTrophy,
+  BlockchainType,
   CROSS_CHAIN_TRADING_TYPE,
   CompetitionAgentsResponse,
   CompetitionDetailResponse,
@@ -24,13 +25,13 @@ import {
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
+  VOLATILE_TOKEN,
   createSiweAuthenticatedClient,
+  createTestAgent,
   createTestClient,
   createTestCompetition,
+  getAdminApiKey,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   startTestCompetition,
@@ -43,18 +44,8 @@ describe("Competition API", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
@@ -210,6 +201,61 @@ describe("Competition API", () => {
       expect(error.success).toBe(false);
       expect(error.error).toContain("active");
     }
+  });
+
+  test("should create a competition with trading constraints", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Alpha",
+      });
+
+    // Start a competition
+    const competitionName = `Test Competition ${Date.now()}`;
+    // Create the competitions
+    const createResponse = (await adminClient.createCompetition(
+      competitionName,
+      "Test competition - check trading constraints",
+      CROSS_CHAIN_TRADING_TYPE.ALLOW,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      {
+        ...looseTradingConstraints,
+        // This 24 hour volume should block that trade below
+        minimum24hVolumeUsd: 100000,
+      },
+    )) as CreateCompetitionResponse;
+
+    const competitionResponse = await startExistingTestCompetition(
+      adminClient,
+      createResponse.competition.id,
+      [agent.id],
+    );
+    expect(competitionResponse.success).toBe(true);
+
+    // Execute a buy trade (buying SOL with USDC)
+    const buyTradeResponse = await agentClient.executeTrade({
+      reason: "testing create comp with trading constraints",
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: VOLATILE_TOKEN, // low 24h volume
+      amount: "100",
+      fromChain: BlockchainType.EVM,
+      toChain: BlockchainType.EVM,
+    });
+
+    expect(buyTradeResponse.success).toBe(false);
   });
 
   test("agents can view competition status and leaderboard", async () => {
@@ -2326,7 +2372,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Competition Join Agent",
       "Agent for testing competition joining",
     );
@@ -2383,7 +2430,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Competition Leave Agent",
       "Agent for testing competition leaving",
     );
@@ -2467,7 +2515,8 @@ describe("Competition API", () => {
     });
 
     // User 2 creates an agent
-    const createAgentResponse = await user2Client.createAgent(
+    const createAgentResponse = await createTestAgent(
+      user2Client,
       "User 2 Agent",
       "Agent owned by user 2",
     );
@@ -2505,7 +2554,8 @@ describe("Competition API", () => {
       userEmail: "dummy-user@example.com",
     });
 
-    const dummyAgentResponse = await dummyUserClient.createAgent(
+    const dummyAgentResponse = await createTestAgent(
+      dummyUserClient,
       "Dummy Agent",
       "Agent to make competition startable",
     );
@@ -2520,7 +2570,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Non-Pending Test Agent",
       "Agent for testing non-pending competition join",
     );
@@ -2576,7 +2627,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Duplicate Join Agent",
       "Agent for testing duplicate join prevention",
     );
@@ -2626,7 +2678,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Deleted Agent",
       "Agent to be deleted for testing",
     );
@@ -2667,7 +2720,8 @@ describe("Competition API", () => {
       userEmail: "active-leave@example.com",
     });
 
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Active Leave Agent",
       "Agent for testing active competition leave",
     );
@@ -2731,7 +2785,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Ended Leave Agent",
       "Agent for testing ended competition leave",
     );
@@ -2777,7 +2832,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Non-Existent Competition Agent",
       "Agent for testing non-existent competition",
     );
@@ -2819,7 +2875,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Not In Competition Agent",
       "Agent for testing leave without join",
     );
@@ -2965,6 +3022,532 @@ describe("Competition API", () => {
     if ("error" in joinResponse) {
       expect(joinResponse.error).toContain("does not match agent ID in URL");
     }
+  });
+
+  describe("Competition Join Date Constraints", () => {
+    test("should allow joining when current time is within join date window", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a SIWE-authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Join Window User",
+        userEmail: "join-window@example.com",
+      });
+
+      // User creates an agent
+      const createAgentResponse = await createTestAgent(
+        userClient,
+        "Join Window Agent",
+        "Agent for testing join window constraints",
+      );
+      expect(createAgentResponse.success).toBe(true);
+      const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+      // Create competition with join window (past start, future end)
+      const now = new Date();
+      const joinStart = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+      const joinEnd = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+
+      const competitionName = `Join Window Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition with join window",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        joinStart.toISOString(),
+        joinEnd.toISOString(),
+      );
+      const competition = createResponse.competition;
+
+      // Verify join dates are set correctly
+      expect(competition.joinStartDate).toBe(joinStart.toISOString());
+      expect(competition.joinEndDate).toBe(joinEnd.toISOString());
+
+      // Should be able to join (current time is within window)
+      const joinResponse = await userClient.joinCompetition(
+        competition.id,
+        agent.id,
+      );
+      expect("success" in joinResponse && joinResponse.success).toBe(true);
+      if ("message" in joinResponse) {
+        expect(joinResponse.message).toBe("Successfully joined competition");
+      }
+    });
+
+    test("should reject joining when current time is before join start date", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a SIWE-authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Early Join User",
+        userEmail: "early-join@example.com",
+      });
+
+      // User creates an agent
+      const createAgentResponse = await createTestAgent(
+        userClient,
+        "Early Join Agent",
+        "Agent for testing early join rejection",
+      );
+      expect(createAgentResponse.success).toBe(true);
+      const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+      // Create competition with future join start date
+      const now = new Date();
+      const joinStart = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+      const joinEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours from now
+
+      const competitionName = `Early Join Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition with future join start",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        joinStart.toISOString(),
+        joinEnd.toISOString(),
+      );
+      const competition = createResponse.competition;
+
+      // Should NOT be able to join (current time is before join start)
+      const joinResponse = await userClient.joinCompetition(
+        competition.id,
+        agent.id,
+      );
+      expect("success" in joinResponse && joinResponse.success).toBe(false);
+      if ("error" in joinResponse) {
+        expect(joinResponse.error).toContain("Competition joining opens at");
+        expect(joinResponse.error).toContain(joinStart.toISOString());
+      }
+    });
+
+    test("should reject joining when current time is after join end date", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a SIWE-authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Late Join User",
+        userEmail: "late-join@example.com",
+      });
+
+      // User creates an agent
+      const createAgentResponse = await createTestAgent(
+        userClient,
+        "Late Join Agent",
+        "Agent for testing late join rejection",
+      );
+      expect(createAgentResponse.success).toBe(true);
+      const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+      // Create competition with past join end date
+      const now = new Date();
+      const joinStart = new Date(now.getTime() - 2 * 60 * 60 * 1000); // 2 hours ago
+      const joinEnd = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+
+      const competitionName = `Late Join Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition with past join end",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        joinStart.toISOString(),
+        joinEnd.toISOString(),
+      );
+      const competition = createResponse.competition;
+
+      // Should NOT be able to join (current time is after join end)
+      const joinResponse = await userClient.joinCompetition(
+        competition.id,
+        agent.id,
+      );
+      expect("success" in joinResponse && joinResponse.success).toBe(false);
+      if ("error" in joinResponse) {
+        expect(joinResponse.error).toContain("Competition joining closed at");
+        expect(joinResponse.error).toContain(joinEnd.toISOString());
+      }
+    });
+
+    test("should allow joining when only join start date is set and current time is after it", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a SIWE-authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Start Only User",
+        userEmail: "start-only@example.com",
+      });
+
+      // User creates an agent
+      const createAgentResponse = await createTestAgent(
+        userClient,
+        "Start Only Agent",
+        "Agent for testing start-only join constraint",
+      );
+      expect(createAgentResponse.success).toBe(true);
+      const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+      // Create competition with only join start date (no end date)
+      const now = new Date();
+      const joinStart = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+
+      const competitionName = `Start Only Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition with only join start date",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        joinStart.toISOString(),
+        undefined, // joinEndDate (null)
+      );
+      const competition = createResponse.competition;
+
+      // Verify only start date is set
+      expect(competition.joinStartDate).toBe(joinStart.toISOString());
+      expect(competition.joinEndDate).toBeNull();
+
+      // Should be able to join (current time is after join start, no end restriction)
+      const joinResponse = await userClient.joinCompetition(
+        competition.id,
+        agent.id,
+      );
+      expect("success" in joinResponse && joinResponse.success).toBe(true);
+      if ("message" in joinResponse) {
+        expect(joinResponse.message).toBe("Successfully joined competition");
+      }
+    });
+
+    test("should allow joining when only join end date is set and current time is before it", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a SIWE-authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "End Only User",
+        userEmail: "end-only@example.com",
+      });
+
+      // User creates an agent
+      const createAgentResponse = await createTestAgent(
+        userClient,
+        "End Only Agent",
+        "Agent for testing end-only join constraint",
+      );
+      expect(createAgentResponse.success).toBe(true);
+      const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+      // Create competition with only join end date (no start date)
+      const now = new Date();
+      const joinEnd = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+
+      const competitionName = `End Only Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition with only join end date",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate (null)
+        joinEnd.toISOString(),
+      );
+      const competition = createResponse.competition;
+
+      // Verify only end date is set
+      expect(competition.joinStartDate).toBeNull();
+      expect(competition.joinEndDate).toBe(joinEnd.toISOString());
+
+      // Should be able to join (no start restriction, current time is before join end)
+      const joinResponse = await userClient.joinCompetition(
+        competition.id,
+        agent.id,
+      );
+      expect("success" in joinResponse && joinResponse.success).toBe(true);
+      if ("message" in joinResponse) {
+        expect(joinResponse.message).toBe("Successfully joined competition");
+      }
+    });
+
+    test("should maintain backward compatibility when no join dates are set", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a SIWE-authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Backward Compat User",
+        userEmail: "backward-compat@example.com",
+      });
+
+      // User creates an agent
+      const createAgentResponse = await createTestAgent(
+        userClient,
+        "Backward Compat Agent",
+        "Agent for testing backward compatibility",
+      );
+      expect(createAgentResponse.success).toBe(true);
+      const agent = (createAgentResponse as AgentProfileResponse).agent;
+
+      // Create competition with NO join dates (should work like before)
+      const competitionName = `Backward Compat Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition with no join date constraints",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate (null)
+        undefined, // joinEndDate (null)
+      );
+      const competition = createResponse.competition;
+
+      // Verify no join dates are set
+      expect(competition.joinStartDate).toBeNull();
+      expect(competition.joinEndDate).toBeNull();
+
+      // Should be able to join (no join date restrictions, only status check applies)
+      const joinResponse = await userClient.joinCompetition(
+        competition.id,
+        agent.id,
+      );
+      expect("success" in joinResponse && joinResponse.success).toBe(true);
+      if ("message" in joinResponse) {
+        expect(joinResponse.message).toBe("Successfully joined competition");
+      }
+    });
+
+    test("should work with admin-created competition via start competition endpoint", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agents for the competition
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Start Competition Agent 1",
+      });
+
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Start Competition User",
+        userEmail: "start-competition@example.com",
+      });
+
+      const createAgentResponse = await createTestAgent(
+        userClient,
+        "Start Competition Agent 2",
+        "Agent for testing start competition with join dates",
+      );
+      expect(createAgentResponse.success).toBe(true);
+      const agent2 = (createAgentResponse as AgentProfileResponse).agent;
+
+      // Create competition with join dates and then start it
+      const now = new Date();
+      const joinStart = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+      const joinEnd = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+
+      const competitionName = `Start Competition Join Dates Test ${Date.now()}`;
+
+      // First create the competition with join dates
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition for start with join dates",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        joinStart.toISOString(),
+        joinEnd.toISOString(),
+      );
+
+      // Then start the existing competition
+      const startResponse = await startExistingTestCompetition(
+        adminClient,
+        createResponse.competition.id,
+        [agent1.id], // Start with one agent
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+      );
+
+      // Verify competition was created with join dates
+      expect(startResponse.success).toBe(true);
+      expect(startResponse.competition.joinStartDate).toBe(
+        joinStart.toISOString(),
+      );
+      expect(startResponse.competition.joinEndDate).toBe(joinEnd.toISOString());
+
+      // Even though competition is ACTIVE, agent should still be able to join if dates allow
+      // (This tests that the date check happens before the status check)
+      const joinResponse = await userClient.joinCompetition(
+        startResponse.competition.id,
+        agent2.id,
+      );
+
+      // This should fail because competition is ACTIVE, not because of join dates
+      expect("success" in joinResponse && joinResponse.success).toBe(false);
+      if ("error" in joinResponse) {
+        expect(joinResponse.error).toContain("already started/ended");
+      }
+    });
+
+    test("should work with start existing competition endpoint (join dates set at creation)", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agents for the competition
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Start Existing Agent 1",
+      });
+
+      // Set join dates for creation
+      const now = new Date();
+      const joinStart = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+      const joinEnd = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+
+      // Create competition in PENDING state WITH join dates
+      const competitionName = `Start Existing Join Dates Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition for start existing with join dates",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        joinStart.toISOString(),
+        joinEnd.toISOString(),
+      );
+
+      // Start the existing competition (join dates already set at creation)
+      const startResponse = await startExistingTestCompetition(
+        adminClient,
+        createResponse.competition.id,
+        [agent1.id],
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+      );
+
+      // Verify competition was started and retains join dates from creation
+      expect(startResponse.success).toBe(true);
+      expect(startResponse.competition.joinStartDate).toBe(
+        joinStart.toISOString(),
+      );
+      expect(startResponse.competition.joinEndDate).toBe(joinEnd.toISOString());
+      expect(startResponse.competition.status).toBe("active");
+    });
+
+    test("should validate join dates are properly included in competition response fields", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create competition with join dates
+      const now = new Date();
+      const joinStart = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+      const joinEnd = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+
+      const competitionName = `Join Dates Response Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition for response field validation",
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        joinStart.toISOString(),
+        joinEnd.toISOString(),
+      );
+
+      // Test 1: Create competition response includes join dates
+      expect(createResponse.competition.joinStartDate).toBe(
+        joinStart.toISOString(),
+      );
+      expect(createResponse.competition.joinEndDate).toBe(
+        joinEnd.toISOString(),
+      );
+
+      // Test 2: Get competition details includes join dates
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Response Test Agent",
+      });
+
+      const detailResponse = await agentClient.getCompetition(
+        createResponse.competition.id,
+      );
+      expect(detailResponse.success).toBe(true);
+      if ("competition" in detailResponse) {
+        expect(detailResponse.competition.joinStartDate).toBe(
+          joinStart.toISOString(),
+        );
+        expect(detailResponse.competition.joinEndDate).toBe(
+          joinEnd.toISOString(),
+        );
+      }
+
+      // Test 3: Get competitions list includes join dates
+      const listResponse = await agentClient.getCompetitions("pending");
+      expect(listResponse.success).toBe(true);
+      if ("competitions" in listResponse) {
+        const foundCompetition = listResponse.competitions.find(
+          (comp) => comp.id === createResponse.competition.id,
+        );
+        expect(foundCompetition).toBeDefined();
+        expect(foundCompetition?.joinStartDate).toBe(joinStart.toISOString());
+        expect(foundCompetition?.joinEndDate).toBe(joinEnd.toISOString());
+      }
+    });
   });
 
   describe("Public Competition Access (No Authentication Required)", () => {
@@ -3313,14 +3896,16 @@ describe("Competition API", () => {
       });
 
       // Create agents for each user
-      const agent1Response = await user1Client.createAgent(
+      const agent1Response = await createTestAgent(
+        user1Client,
         "User 1 Gold Agent",
         "Agent designed to win 1st place for User 1",
       );
       expect(agent1Response.success).toBe(true);
       const agent1 = (agent1Response as AgentProfileResponse).agent;
 
-      const agent2Response = await user2Client.createAgent(
+      const agent2Response = await createTestAgent(
+        user2Client,
         "User 2 Silver Agent",
         "Agent designed to get 2nd place for User 2",
       );
@@ -3466,7 +4051,8 @@ describe("Competition API", () => {
       });
 
       // Create agent but don't put them in any competitions
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "No Competitions Agent",
         "Agent that won't participate in any competitions",
       );
@@ -3551,6 +4137,79 @@ describe("Competition API", () => {
         (t: AgentTrophy) => t.competitionId === competitionId,
       );
       expect(activeTrophy).toBeUndefined(); // No trophy for active competition
+    });
+
+    test("should validate agent IDs before combining with pre-registered agents", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create multiple agents
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent One",
+      });
+
+      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Two",
+      });
+
+      const { agent: agent3 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Three",
+      });
+
+      // Create a competition first
+      const competitionName = `Pre-registered Test Competition ${Date.now()}`;
+      const createResult = await adminClient.createCompetition(
+        competitionName,
+        "Test competition for pre-registered agent validation",
+      );
+      expect(createResult.success).toBe(true);
+      if (!createResult.success)
+        throw new Error("Failed to create competition");
+      const competitionId = createResult.competition.id;
+
+      // Add agent1 to the competition (pre-registered)
+      await adminClient.addAgentToCompetition(competitionId, agent1.id);
+
+      // Deactivate agent2
+      await adminClient.deactivateAgent(
+        agent2.id,
+        "Testing inactive agent validation",
+      );
+
+      // Test: Try to start competition with invalid agent2 and valid agent3
+      // Should fail because agent2 is inactive, even though agent1 is pre-registered
+      const startResponse = await adminClient.startExistingCompetition(
+        competitionId,
+        [agent2.id, agent3.id], // agent2 is inactive, agent3 is valid
+        CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      );
+
+      expect(startResponse.success).toBe(false);
+      if (startResponse.success) throw new Error("Expected failure");
+      expect(startResponse.error).toContain(
+        "Cannot start competition: the following agent IDs are invalid or inactive:",
+      );
+      expect(startResponse.error).toContain(agent2.id);
+      // Should NOT mention agent1 (pre-registered) or agent3 (valid) in the error
+      expect(startResponse.error).not.toContain(agent1.id);
+      expect(startResponse.error).not.toContain(agent3.id);
+
+      // Test: Try to start competition with only valid agents
+      // Should succeed because agent1 is pre-registered and agent3 is valid
+      const startResponse2 = await adminClient.startExistingCompetition(
+        competitionId,
+        [agent3.id], // Only valid agent
+        CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      );
+
+      expect(startResponse2.success).toBe(true);
+      if (!startResponse2.success) throw new Error("Expected success");
+      const competition = (startResponse2 as StartCompetitionResponse)
+        .competition;
+      expect(competition.status).toBe("active");
     });
   });
 });

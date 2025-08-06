@@ -16,6 +16,7 @@ import {
   SelectCompetition,
   SelectVote,
 } from "@/database/schema/core/types.js";
+import { serviceLogger } from "@/lib/logger.js";
 import {
   COMPETITION_STATUS,
   CompetitionVotingStatus,
@@ -58,13 +59,13 @@ export class VoteManager {
 
       const vote = await createVote(voteData);
 
-      console.log(
+      serviceLogger.debug(
         `[VoteManager] User ${userId} successfully voted for agent ${agentId} in competition ${competitionId}`,
       );
 
       return vote;
     } catch (error) {
-      console.error("[VoteManager] Error in castVote:", error);
+      serviceLogger.error("[VoteManager] Error in castVote:", error);
       throw error;
     }
   }
@@ -82,7 +83,7 @@ export class VoteManager {
     try {
       return await findVotesByUser(userId, competitionId);
     } catch (error) {
-      console.error("[VoteManager] Error in getUserVotes:", error);
+      serviceLogger.error("[VoteManager] Error in getUserVotes:", error);
       throw error;
     }
   }
@@ -105,7 +106,7 @@ export class VoteManager {
 
       return voteMap;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         "[VoteManager] Error in getVoteCountsByCompetition:",
         error,
       );
@@ -129,7 +130,7 @@ export class VoteManager {
       const userVote = await getUserVoteForCompetition(userId, competitionId);
       return userVote?.agentId === agentId;
     } catch (error) {
-      console.error("[VoteManager] Error in hasUserVoted:", error);
+      serviceLogger.error("[VoteManager] Error in hasUserVoted:", error);
       throw error;
     }
   }
@@ -148,7 +149,10 @@ export class VoteManager {
       const vote = await getUserVoteForCompetition(userId, competitionId);
       return vote || null;
     } catch (error) {
-      console.error("[VoteManager] Error in getUserVoteForCompetition:", error);
+      serviceLogger.error(
+        "[VoteManager] Error in getUserVoteForCompetition:",
+        error,
+      );
       throw error;
     }
   }
@@ -212,7 +216,10 @@ export class VoteManager {
         info: userVoteInfo,
       };
     } catch (error) {
-      console.error("[VoteManager] Error in getCompetitionVotingState:", error);
+      serviceLogger.error(
+        "[VoteManager] Error in getCompetitionVotingState:",
+        error,
+      );
       throw error;
     }
   }
@@ -230,7 +237,7 @@ export class VoteManager {
     try {
       return await countVotesByAgent(agentId, competitionId);
     } catch (error) {
-      console.error("[VoteManager] Error in getAgentVoteCount:", error);
+      serviceLogger.error("[VoteManager] Error in getAgentVoteCount:", error);
       throw error;
     }
   }
@@ -337,7 +344,7 @@ export class VoteManager {
     const now = new Date();
 
     // If at least one voting date is not set, voting for the comp is disabled
-    if (!competition.votingStartDate && !competition.votingEndDate) {
+    if (!competition.votingStartDate || !competition.votingEndDate) {
       return {
         canVote: false,
         reason: "voting is not enabled for this competition",

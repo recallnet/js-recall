@@ -7,6 +7,15 @@ import {
   SpecificChain,
 } from "@/types/index.js";
 
+// Simple console logging for config initialization (before full logger setup)
+const configLogger = {
+  info: (message: string) => console.log(`[Config] ${message}`),
+  error: (message: string, error?: Error) =>
+    console.error(`[Config] ${message}`, error),
+  warn: (message: string) => console.warn(`[Config] ${message}`),
+  debug: (message: string) => console.debug(`[Config] ${message}`),
+};
+
 // Environment file selection logic:
 // - When NODE_ENV=test, load from .env.test
 // - For all other environments (development, production), load from .env
@@ -20,7 +29,7 @@ const envFile =
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 // Log which environment file was loaded (helpful for debugging)
-console.log(`Config loaded environment variables from: ${envFile}`);
+configLogger.info(`Config loaded environment variables from: ${envFile}`);
 
 // Helper function to parse specific chain initial balance environment variables
 const getSpecificChainBalances = (): Record<
@@ -202,7 +211,12 @@ export const config = {
   },
   database: {
     ssl: process.env.DB_SSL === "true",
+    maxConnections: parseInt(process.env.DATABASE_MAX_CONNECTIONS || "10", 10),
     url:
+      process.env.DATABASE_URL ||
+      "postgresql://postgres:postgres@localhost:5432/trading_simulator",
+    readReplicaUrl:
+      process.env.DATABASE_READ_REPLICA_URL ||
       process.env.DATABASE_URL ||
       "postgresql://postgres:postgres@localhost:5432/trading_simulator",
   },
@@ -228,7 +242,6 @@ export const config = {
       eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
       usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
       usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
-      vision: "0xe6f98920852A360497dBcc8ec895F1bB1F7c8Df4", // Vision token - should be volitile https://coinmarketcap.com/currencies/openvision/
     },
     polygon: {
       eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Weth on Polygon
@@ -269,19 +282,12 @@ export const config = {
   },
   priceCacheDuration: parseInt(process.env.PRICE_CACHE_MS || "30000", 10), // 30 seconds
   portfolio: {
-    // Default snapshot interval: 2 minutes (120000ms), configurable via env
-    snapshotIntervalMs: parseInt(
-      process.env.PORTFOLIO_SNAPSHOT_INTERVAL_MS || "120000",
-      10,
-    ),
+    // Default snapshot interval: 5 minutes (600000ms)
+    // The snapshot is taken and configured via cron
+    snapshotIntervalMs: parseInt("600000", 10),
     // How fresh a price needs to be to reuse directly from DB (default: 10 minutes)
     priceFreshnessMs: parseInt(
       process.env.PORTFOLIO_PRICE_FRESHNESS_MS || "600000",
-      10,
-    ),
-    // Competition end date check interval (default: 1 minute)
-    competitionEndCheckIntervalMs: parseInt(
-      process.env.COMPETITION_END_CHECK_INTERVAL_MS || "60000",
       10,
     ),
   },
@@ -293,6 +299,30 @@ export const config = {
   // Maximum trade size as percentage of portfolio value
   // Defaults to 25% if not specified
   maxTradePercentage: parseInt(process.env.MAX_TRADE_PERCENTAGE || "25", 10),
+  // Trading constraints configuration
+  tradingConstraints: {
+    // Default minimum pair age in hours (7 days)
+    defaultMinimumPairAgeHours: parseInt(
+      process.env.DEFAULT_MINIMUM_PAIR_AGE_HOURS || "168",
+      10,
+    ),
+    // Default minimum 24h volume in USD ($100,000)
+    defaultMinimum24hVolumeUsd: parseInt(
+      process.env.DEFAULT_MINIMUM_24H_VOLUME_USD || "100000",
+      10,
+    ),
+    // Default minimum liquidity in USD ($100,000)
+    defaultMinimumLiquidityUsd: parseInt(
+      process.env.DEFAULT_MINIMUM_LIQUIDITY_USD || "100000",
+      10,
+    ),
+    // Default minimum FDV in USD ($1,000,000)
+    defaultMinimumFdvUsd: parseInt(
+      process.env.DEFAULT_MINIMUM_FDV_USD || "1000000",
+      10,
+    ),
+  },
+
   // Logging configuration
   logging: {
     // Sample rate for repository timing logs (0.0 to 1.0)
@@ -302,6 +332,7 @@ export const config = {
     ),
     // Sample rate for HTTP request logs (0.0 to 1.0)
     httpSampleRate: parseFloat(process.env.HTTP_LOG_SAMPLE_RATE || "0.1"),
+    level: process.env.LOG_LEVEL || "info",
   },
 };
 
@@ -334,8 +365,8 @@ export function reloadSecurityConfig(): void {
   config.security.rootEncryptionKey = newRootKey;
   config.app.sessionPassword = newRootKey;
 
-  console.log(
-    "[Config] Security configuration reloaded with updated ROOT_ENCRYPTION_KEY",
+  configLogger.info(
+    "Security configuration reloaded with updated ROOT_ENCRYPTION_KEY",
   );
 }
 

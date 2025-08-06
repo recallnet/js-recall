@@ -48,6 +48,9 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                     name:
    *                       type: string
    *                       example: "Trading Bot Alpha"
+   *                     handle:
+   *                       type: string
+   *                       example: "trading-bot-alpha"
    *                     description:
    *                       type: string
    *                       example: "AI agent focusing on DeFi yield farming"
@@ -83,6 +86,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       type: string
    *                     name:
    *                       type: string
+   *                     handle:
+   *                       type: string
    *                     email:
    *                       type: string
    *                     imageUrl:
@@ -113,10 +118,6 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *           schema:
    *             type: object
    *             properties:
-   *               name:
-   *                 type: string
-   *                 description: Agent's display name
-   *                 example: "Trading Bot Beta"
    *               description:
    *                 type: string
    *                 description: Agent description
@@ -152,6 +153,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       type: boolean
    *                     name:
    *                       type: string
+   *                     handle:
+   *                       type: string
    *                     description:
    *                       type: string
    *                       nullable: true
@@ -173,7 +176,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       type: string
    *                       format: date-time
    *       400:
-   *         description: Invalid fields provided (agents can only update name, description, and imageUrl)
+   *         description: Invalid fields provided (agents can only update description and imageUrl)
    *       401:
    *         description: Agent not authenticated
    *       404:

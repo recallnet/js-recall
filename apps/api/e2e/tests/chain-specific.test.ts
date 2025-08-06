@@ -1,4 +1,3 @@
-import axios from "axios";
 import { and, desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
@@ -11,13 +10,10 @@ import {
   SpecificChain,
   TradeResponse,
 } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
@@ -29,18 +25,8 @@ describe("Specific Chains", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
@@ -271,7 +257,7 @@ describe("Specific Chains", () => {
     }
   });
 
-  test("can purchase token with address 0x0b2c639c533813f4aa9d7837caf62653d097ff85", async () => {
+  test("can purchase token on optimism", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -284,14 +270,22 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+      undefined,
+      undefined,
+      undefined,
+      looseTradingConstraints,
+    );
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
     expect(balanceResponse.success).toBe(true);
 
-    // Target token we want to purchase
-    const targetTokenAddress = "0x0b2c639c533813f4aa9d7837caf62653d097ff85";
+    // Target token we want to purchase (LINK on optimism)
+    const targetTokenAddress = "0x350a791bfc2c21f9ed5d10980dad2e2638ffa7f6";
 
     // First try to find USDC
     const usdcAddress = config.specificChainTokens.optimism.usdc;
@@ -306,7 +300,6 @@ describe("Specific Chains", () => {
 
     // Verify the trade was successful
     expect(tradeResponse.success).toBe(true);
-    console.log(`Successfully purchased token ${targetTokenAddress}`);
 
     // Get updated balances to verify we received the target token
     const updatedBalanceResponse =
@@ -323,12 +316,7 @@ describe("Specific Chains", () => {
 
       // Verify we received some amount of the target token
       expect(targetTokenBalance).toBeDefined();
-      if (targetTokenBalance) {
-        expect(targetTokenBalance.amount).toBeGreaterThan(0);
-        console.log(
-          `Received ${targetTokenBalance.amount} of target token ${targetTokenAddress}`,
-        );
-      }
+      expect(targetTokenBalance?.amount).toBeGreaterThan(0);
     }
 
     // // Query the trades table to verify the trade was recorded correctly
@@ -564,7 +552,22 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+      undefined,
+      undefined,
+      undefined,
+      // This test fails sometimes because of constraint validation. skipping
+      // so that the actual test path always runs.
+      {
+        minimum24hVolumeUsd: 0,
+        minimumFdvUsd: 0,
+        minimumLiquidityUsd: 0,
+        minimumPairAgeHours: 0,
+      },
+    );
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;

@@ -2,7 +2,7 @@
 
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -23,7 +23,8 @@ import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { AgentCompetition } from "@/types";
+
+const limit = 10;
 
 export default function CompetitionPage({
   params,
@@ -35,9 +36,7 @@ export default function CompetitionPage({
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
-  const [agentsLimit] = React.useState(10);
-  const [agentsOffset, setAgentsOffset] = React.useState(0);
-  const [allAgents, setAllAgents] = React.useState<AgentCompetition[]>([]);
+  const [offset, setOffset] = React.useState(0);
   const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
   const {
@@ -49,30 +48,23 @@ export default function CompetitionPage({
     data: agentsData,
     isLoading: isLoadingAgents,
     error: agentsError,
-    isFetching: isFetchingAgents,
   } = useCompetitionAgents(id, {
     filter: debouncedFilterTerm,
     sort: agentsSort,
-    limit: agentsLimit,
-    offset: agentsOffset,
+    offset: offset,
+    limit,
   });
 
-  React.useEffect(() => {
-    setAgentsOffset(0);
-  }, [debouncedFilterTerm, agentsSort]);
-
-  React.useEffect(() => {
-    if (!agentsData?.agents || isFetchingAgents) return;
-
-    if (agentsOffset === 0) {
-      setAllAgents(agentsData.agents);
-    } else {
-      setAllAgents((prev) => [...prev, ...agentsData.agents]);
-    }
-  }, [agentsData?.agents, isFetchingAgents, agentsOffset]);
+  const handlePageChange = (page: number) => {
+    setOffset(limit * (page - 1));
+  };
 
   const isLoading = isLoadingCompetition || isLoadingAgents;
   const error = competitionError;
+
+  React.useEffect(() => {
+    handlePageChange(1);
+  }, [debouncedFilterTerm, agentsSort]);
 
   if (isLoading) {
     return <CompetitionSkeleton />;
@@ -128,13 +120,13 @@ export default function CompetitionPage({
             </Button>
             <JoinCompetitionButton
               competitionId={id}
-              variant="ghost"
+              variant="outline"
               className="w-1/2 justify-between uppercase"
               disabled={competition.status !== "pending"}
               size="lg"
             >
-              <span className="font-semibold">Join Competition</span>{" "}
-              <ChevronRight className="ml-2" size={18} />
+              <span className="font-semibold">COMPETE</span>{" "}
+              <Plus className="ml-2" size={18} />
             </JoinCompetitionButton>
             {competition.userVotingInfo?.canVote ? (
               <Button
@@ -151,7 +143,7 @@ export default function CompetitionPage({
                   }
                 }}
               >
-                <span className="font-semibold">Vote on an Agent</span>{" "}
+                <span className="font-semibold">VOTE</span>{" "}
                 <ChevronRight className="ml-2" size={18} />
               </Button>
             ) : null}
@@ -207,15 +199,12 @@ export default function CompetitionPage({
         <AgentsTable
           ref={agentsTableRef}
           competition={competition}
-          agents={allAgents}
+          agents={agentsData.agents}
           onFilterChange={setAgentsFilter}
           onSortChange={setAgentsSort}
-          onLoadMore={() => {
-            setAgentsOffset((prev) => prev + agentsLimit);
-          }}
-          hasMore={agentsData.pagination.hasMore}
           pagination={agentsData.pagination}
           totalVotes={competition.stats.totalVotes}
+          onPageChange={handlePageChange}
         />
       )}
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />

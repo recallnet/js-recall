@@ -238,18 +238,13 @@ describe("Batch Functionality Tests", () => {
       // Clear any existing cache by using a fresh provider
       const freshProvider = new MultiChainProvider();
 
-      // Time batch request
-      const batchStart = Date.now();
       const batchResults = await freshProvider.getBatchTokenInfo(
         testTokens,
         BlockchainType.EVM,
         "eth",
       );
-      const batchEnd = Date.now();
-      const batchTime = batchEnd - batchStart;
 
       // Time individual requests
-      const individualStart = Date.now();
       const individualResults = new Map();
       for (const token of testTokens) {
         const result = await freshProvider.getTokenInfo(
@@ -259,12 +254,6 @@ describe("Batch Functionality Tests", () => {
         );
         individualResults.set(token, result);
       }
-      const individualEnd = Date.now();
-      const individualTime = individualEnd - individualStart;
-
-      console.log(`Batch time: ${batchTime}ms`);
-      console.log(`Individual time: ${individualTime}ms`);
-      console.log(`Speedup: ${(individualTime / batchTime).toFixed(2)}x`);
 
       // Verify both methods return the same results
       expect(batchResults.size).toBe(individualResults.size);
@@ -278,16 +267,6 @@ describe("Batch Functionality Tests", () => {
           expect(batchResult.symbol).toBe(individualResult.symbol);
         }
       });
-
-      // Batch should generally be faster (allowing for some variance due to network conditions)
-      // We don't enforce this strictly since network conditions can vary
-      if (batchTime < individualTime) {
-        console.log("✓ Batch processing was faster than individual requests");
-      } else {
-        console.log(
-          "ℹ Individual requests were faster this time (possibly due to caching or network conditions)",
-        );
-      }
     });
   });
 });

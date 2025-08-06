@@ -72,6 +72,13 @@ export const tradingCompetitionsLeaderboard = tradingComps.table(
     })
       .notNull()
       .default(0),
+    startingValue: numeric("starting_value", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    })
+      .notNull()
+      .default(0),
   },
   (table) => [index("idx_trading_competitions_leaderboard_pnl").on(table.pnl)],
 );
@@ -261,5 +268,45 @@ export const portfolioTokenValues = tradingComps.table(
       foreignColumns: [portfolioSnapshots.id],
       name: "portfolio_token_values_portfolio_snapshot_id_fkey",
     }).onDelete("cascade"),
+  ],
+);
+
+/**
+ * Table for trading constraints per competition.
+ */
+export const tradingConstraints = tradingComps.table(
+  "trading_constraints",
+  {
+    competitionId: uuid("competition_id")
+      .primaryKey()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    minimumPairAgeHours: integer("minimum_pair_age_hours").notNull(),
+    minimum24hVolumeUsd: numeric("minimum_24h_volume_usd", {
+      precision: 20,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
+    minimumLiquidityUsd: numeric("minimum_liquidity_usd", {
+      precision: 20,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
+    minimumFdvUsd: numeric("minimum_fdv_usd", {
+      precision: 20,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).defaultNow(),
+  },
+  (table) => [
+    index("idx_trading_constraints_competition_id").on(table.competitionId),
   ],
 );

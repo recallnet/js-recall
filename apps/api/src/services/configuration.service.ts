@@ -1,5 +1,6 @@
 import { features } from "@/config/index.js";
 import { findActive } from "@/database/repositories/competition-repository.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { CrossChainTradingType } from "@/types/index.js";
 
 /**
@@ -22,7 +23,7 @@ export class ConfigurationService {
           activeCompetition.crossChainTradingType as CrossChainTradingType;
         features.SANDBOX_MODE = activeCompetition.sandboxMode;
 
-        console.log(
+        serviceLogger.debug(
           `[ConfigurationService] Updated competition settings from competition ${activeCompetition.id}:`,
           {
             crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
@@ -32,7 +33,7 @@ export class ConfigurationService {
       } else {
         // No active competition, keep the environment variable settings
         features.SANDBOX_MODE = false; // Default to false when no active competition
-        console.log(
+        serviceLogger.debug(
           `[ConfigurationService] No active competition, using environment settings:`,
           {
             crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
@@ -41,7 +42,7 @@ export class ConfigurationService {
         );
       }
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         "[ConfigurationService] Error loading competition settings:",
         error,
       );

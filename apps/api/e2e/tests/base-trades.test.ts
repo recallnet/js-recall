@@ -1,5 +1,4 @@
-import axios from "axios";
-import { afterAll, beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import { features } from "@/config/index.js";
 import {
@@ -8,13 +7,10 @@ import {
   TradeHistoryResponse,
   TradeResponse,
 } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -48,23 +44,9 @@ describe("Base Chain Trading", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
-  });
-
-  afterAll(async () => {
-    await cleanupTestState();
   });
 
   test("agent can trade Base tokens with explicit chain parameters", async () => {
@@ -84,7 +66,16 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Base Trading Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+      undefined, // sandboxMode
+      undefined, // externalUrl
+      undefined, // imageUrl
+      // loosen the trading constraints since these tokens aren't as common
+      looseTradingConstraints,
+    );
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -471,7 +462,16 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Spending Limit Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+      undefined, // sandboxMode
+      undefined, // externalUrl
+      undefined, // imageUrl
+      // loosen the trading constraints since these tokens aren't as common
+      looseTradingConstraints,
+    );
 
     // Wait for balances to be properly initialized
     await wait(500);

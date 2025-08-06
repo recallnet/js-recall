@@ -8,7 +8,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { format } from "date-fns";
 import { SquareArrowOutUpRight } from "lucide-react";
 import Link from "next/link";
 import React, { useMemo, useRef, useState } from "react";
@@ -28,6 +27,7 @@ import { RankBadge } from "@/components/agents-table/rank-badge";
 import { CompetitionStatusBadge } from "@/components/competition-status-badge";
 import { ParticipantsAvatars } from "@/components/participants-avatars";
 import { EnrichedVote, PaginationResponse } from "@/types";
+import { formatDate } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
 export interface VotesTableProps {
@@ -91,7 +91,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
                 className="truncate"
               >
                 <span className="text-secondary-foreground font-semibold leading-tight">
-                  {row.original.agent.name}
+                  {row.original.agent.name} (@{row.original.agent.handle})
                 </span>
               </Link>
               <span className="text-secondary-foreground/70 block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs">
@@ -112,7 +112,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
         cell: ({ row }) => (
           <span>
             {row.original.createdAt
-              ? format(new Date(row.original.createdAt), "MM/dd")
+              ? formatDate(new Date(row.original.createdAt))
               : "TBA"}
           </span>
         ),

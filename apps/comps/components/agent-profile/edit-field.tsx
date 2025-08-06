@@ -18,7 +18,7 @@ interface EditAgentFieldProps {
   title: string;
   value: string;
   useTextarea?: boolean;
-  onSave: (newValue: string) => void;
+  onSave: (newValue: string) => Promise<void>;
   placeholder?: string;
   children: React.ReactNode;
 }
@@ -35,10 +35,21 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
   const [localValue, setLocalValue] = useState(value);
   const [inputValue, setInputValue] = useState("");
 
+  // Update localValue when the parent's value prop changes
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
   const handleSave = async () => {
-    onSave(inputValue);
-    setLocalValue(inputValue);
-    setDialogOpen(false);
+    try {
+      await onSave(inputValue);
+      // Only update local value and close dialog if save succeeds
+      setLocalValue(inputValue);
+      setDialogOpen(false);
+    } catch {
+      // Keep dialog open on error, the parent component will handle showing the error
+      // Don't update localValue so it retains the last valid value
+    }
   };
 
   useEffect(() => {
@@ -90,7 +101,7 @@ export const EditAgentField: React.FC<EditAgentFieldProps> = ({
             <Button
               className="rounded bg-white text-black hover:bg-gray-200"
               onClick={handleSave}
-              disabled={!inputValue || inputValue === localValue}
+              disabled={!inputValue || inputValue === value}
             >
               Save
             </Button>

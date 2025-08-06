@@ -1,7 +1,9 @@
 import config from "@/config/index.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
 import { PriceReport, PriceSource } from "@/types/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
+import { DexScreenerTokenInfo } from "@/types/index.js";
 
 // Export the supported EVM chains list for use in tests
 export const supportedEvmChains: SpecificChain[] = config.evmChains;
@@ -16,9 +18,7 @@ export class MultiChainProvider implements PriceSource {
   // Add cache for token prices with composite key (tokenAddress:specificChain)
   private readonly tokenPriceCache: Map<
     string,
-    {
-      price: number;
-      symbol: string;
+    DexScreenerTokenInfo & {
       timestamp: number;
       chain: BlockchainType;
       specificChain: SpecificChain;
@@ -37,7 +37,7 @@ export class MultiChainProvider implements PriceSource {
     // Initialize the DexScreenerProvider for delegation
     this.dexScreenerProvider = new DexScreenerProvider();
 
-    console.log(
+    serviceLogger.debug(
       `[MultiChainProvider] Initialized with chains: ${this.defaultChains.join(", ")}`,
     );
   }
@@ -63,10 +63,7 @@ export class MultiChainProvider implements PriceSource {
   async getPriceForSpecificEVMChain(
     tokenAddress: string,
     specificChain: SpecificChain,
-  ): Promise<{
-    price: number;
-    symbol: string;
-  } | null> {
+  ): Promise<DexScreenerTokenInfo | null> {
     try {
       const price = await this.dexScreenerProvider.getPrice(
         tokenAddress,
@@ -77,10 +74,14 @@ export class MultiChainProvider implements PriceSource {
         ? {
             price: price.price,
             symbol: price.symbol,
+            pairCreatedAt: price.pairCreatedAt,
+            volume: price.volume,
+            liquidity: price.liquidity,
+            fdv: price.fdv,
           }
         : null;
     } catch (error) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Error fetching price for ${tokenAddress} on ${specificChain}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -114,6 +115,10 @@ export class MultiChainProvider implements PriceSource {
           timestamp: new Date(),
           chain: cachedPrice.chain,
           specificChain: cachedPrice.specificChain,
+          pairCreatedAt: cachedPrice.pairCreatedAt,
+          volume: cachedPrice.volume,
+          liquidity: cachedPrice.liquidity,
+          fdv: cachedPrice.fdv,
         };
       }
 
@@ -123,7 +128,7 @@ export class MultiChainProvider implements PriceSource {
 
       // For Solana tokens, delegate directly to DexScreenerProvider
       if (detectedChainType === BlockchainType.SVM) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Getting price for Solana token ${normalizedAddress}`,
         );
         try {
@@ -140,9 +145,13 @@ export class MultiChainProvider implements PriceSource {
               "svm",
               price.price,
               price.symbol,
+              price.pairCreatedAt,
+              price.volume,
+              price.liquidity,
+              price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found price for Solana token ${normalizedAddress}: $${price.price}`,
             );
             return {
@@ -152,15 +161,19 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.SVM,
               specificChain: "svm",
+              pairCreatedAt: price.pairCreatedAt,
+              volume: price.volume,
+              liquidity: price.liquidity,
+              fdv: price.fdv,
             };
           }
 
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] No price found for Solana token ${normalizedAddress}`,
           );
           return null;
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching price for Solana token ${normalizedAddress}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -169,18 +182,18 @@ export class MultiChainProvider implements PriceSource {
       }
 
       // For EVM tokens, continue with the existing logic
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Getting price for EVM token ${normalizedAddress}`,
       );
 
       // If a specific chain was provided, use it directly instead of trying multiple chains
       if (specificChain) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Using provided specific chain: ${specificChain}`,
         );
 
         try {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Attempting to fetch price for ${normalizedAddress} on ${specificChain} chain directly`,
           );
 
@@ -198,9 +211,13 @@ export class MultiChainProvider implements PriceSource {
               specificChain,
               price.price,
               price.symbol,
+              price.pairCreatedAt,
+              price.volume,
+              price.liquidity,
+              price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${specificChain} chain: $${price.price}`,
             );
             return {
@@ -210,16 +227,20 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain,
+              pairCreatedAt: price.pairCreatedAt,
+              volume: price.volume,
+              liquidity: price.liquidity,
+              fdv: price.fdv,
             };
           }
 
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] No price found for ${normalizedAddress} on specified chain ${specificChain}`,
           );
           // Important: Return null here without falling back to other chains
           return null;
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching price for ${normalizedAddress} on specified chain ${specificChain}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -235,7 +256,7 @@ export class MultiChainProvider implements PriceSource {
 
       // If we have a cached chain, try that first
       if (cachedChain) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Found cached chain ${cachedChain} for ${normalizedAddress}, trying it first`,
         );
         chainsToTry = [
@@ -247,7 +268,7 @@ export class MultiChainProvider implements PriceSource {
       // Try each chain until we get a price
       for (const chain of chainsToTry) {
         try {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Attempting to fetch price for ${normalizedAddress} on ${chain} chain`,
           );
 
@@ -265,9 +286,13 @@ export class MultiChainProvider implements PriceSource {
               chain,
               price.price,
               price.symbol,
+              price.pairCreatedAt,
+              price.volume,
+              price.liquidity,
+              price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${chain} chain: $${price.price}`,
             );
             return {
@@ -277,10 +302,14 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain: chain,
+              pairCreatedAt: price.pairCreatedAt,
+              volume: price.volume,
+              liquidity: price.liquidity,
+              fdv: price.fdv,
             };
           }
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching price for ${normalizedAddress} on ${chain} chain:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -290,12 +319,12 @@ export class MultiChainProvider implements PriceSource {
         }
       }
 
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Could not find price for ${normalizedAddress} on any chain`,
       );
       return null;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[MultiChainProvider] Unexpected error fetching price for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -330,7 +359,7 @@ export class MultiChainProvider implements PriceSource {
       const price = await this.getPrice(tokenAddress, undefined, specificChain);
       return price !== null;
     } catch (error) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Error checking support for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -349,12 +378,13 @@ export class MultiChainProvider implements PriceSource {
     tokenAddress: string,
     blockchainType: BlockchainType,
     specificChain?: SpecificChain,
-  ): Promise<{
-    price: number;
-    chain: BlockchainType;
-    specificChain: SpecificChain;
-    symbol: string;
-  } | null> {
+  ): Promise<
+    | (DexScreenerTokenInfo & {
+        chain: BlockchainType;
+        specificChain: SpecificChain;
+      })
+    | null
+  > {
     try {
       // Normalize token address
       const normalizedAddress = tokenAddress.toLowerCase();
@@ -390,9 +420,13 @@ export class MultiChainProvider implements PriceSource {
               "svm",
               price.price,
               price.symbol,
+              price.pairCreatedAt,
+              price.volume,
+              price.liquidity,
+              price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found Solana token info for ${normalizedAddress}: $${price.price}`,
             );
             return {
@@ -400,12 +434,16 @@ export class MultiChainProvider implements PriceSource {
               symbol: price.symbol,
               chain: BlockchainType.SVM,
               specificChain: "svm",
+              pairCreatedAt: price.pairCreatedAt,
+              volume: price.volume,
+              liquidity: price.liquidity,
+              fdv: price.fdv,
             };
           } else {
             return null;
           }
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching token info for Solana token ${normalizedAddress}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -416,12 +454,12 @@ export class MultiChainProvider implements PriceSource {
 
       // If a specific chain was provided, use it directly
       if (specificChain) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Using provided specific chain for getTokenInfo: ${specificChain}`,
         );
 
         try {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Attempting to fetch token info for ${normalizedAddress} on ${specificChain} chain directly`,
           );
 
@@ -439,9 +477,13 @@ export class MultiChainProvider implements PriceSource {
               specificChain,
               price.price,
               price.symbol,
+              price.pairCreatedAt,
+              price.volume,
+              price.liquidity,
+              price.fdv,
             );
 
-            console.log(
+            serviceLogger.debug(
               `[MultiChainProvider] Successfully found token info for ${normalizedAddress} on ${specificChain} chain: $${price.price}`,
             );
 
@@ -450,17 +492,21 @@ export class MultiChainProvider implements PriceSource {
               symbol: price.symbol,
               chain: generalChain,
               specificChain,
+              pairCreatedAt: price.pairCreatedAt,
+              volume: price.volume,
+              liquidity: price.liquidity,
+              fdv: price.fdv,
             };
           }
 
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] No price found for ${normalizedAddress} on specified chain ${specificChain}`,
           );
 
           // Return with the specific chain but null price
           return null;
         } catch (error) {
-          console.log(
+          serviceLogger.debug(
             `[MultiChainProvider] Error fetching token info for ${normalizedAddress} on specified chain ${specificChain}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -479,12 +525,16 @@ export class MultiChainProvider implements PriceSource {
           symbol: price.symbol,
           chain: price.chain,
           specificChain: price.specificChain,
+          pairCreatedAt: price.pairCreatedAt,
+          volume: price.volume,
+          liquidity: price.liquidity,
+          fdv: price.fdv,
         };
       }
 
       return null;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[MultiChainProvider] Error getting token info for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -510,12 +560,12 @@ export class MultiChainProvider implements PriceSource {
   private getCachedPrice(
     tokenAddress: string,
     specificChain?: SpecificChain,
-  ): {
-    price: number;
-    symbol: string;
-    chain: BlockchainType;
-    specificChain: SpecificChain;
-  } | null {
+  ):
+    | (DexScreenerTokenInfo & {
+        chain: BlockchainType;
+        specificChain: SpecificChain;
+      })
+    | null {
     const normalizedAddress = tokenAddress.toLowerCase();
 
     // If specificChain is provided, use the composite key
@@ -524,7 +574,7 @@ export class MultiChainProvider implements PriceSource {
       const cached = this.tokenPriceCache.get(cacheKey);
 
       if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Using cached price for ${normalizedAddress} on ${specificChain}: $${cached.price}`,
         );
         return {
@@ -532,6 +582,10 @@ export class MultiChainProvider implements PriceSource {
           symbol: cached.symbol,
           chain: cached.chain,
           specificChain: cached.specificChain,
+          pairCreatedAt: cached.pairCreatedAt,
+          volume: cached.volume,
+          liquidity: cached.liquidity,
+          fdv: cached.fdv,
         };
       }
       return null;
@@ -545,7 +599,7 @@ export class MultiChainProvider implements PriceSource {
       const cached = this.tokenPriceCache.get(cacheKey);
 
       if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Using cached price for ${normalizedAddress} from known chain ${knownChain}: $${cached.price}`,
         );
         return {
@@ -569,6 +623,10 @@ export class MultiChainProvider implements PriceSource {
     specificChain: SpecificChain,
     price: number,
     symbol: string,
+    pairCreatedAt?: number,
+    volume?: { h24?: number },
+    liquidity?: { usd?: number },
+    fdv?: number,
   ): void {
     const normalizedAddress = tokenAddress.toLowerCase();
     const cacheKey = this.getCacheKey(normalizedAddress, specificChain);
@@ -579,6 +637,10 @@ export class MultiChainProvider implements PriceSource {
       chain,
       specificChain,
       timestamp: Date.now(),
+      pairCreatedAt,
+      volume,
+      liquidity,
+      fdv,
     });
 
     // Also cache the token-to-chain mapping for future lookups
@@ -586,7 +648,7 @@ export class MultiChainProvider implements PriceSource {
       this.chainToTokenCache.set(normalizedAddress, specificChain);
     }
 
-    console.log(
+    serviceLogger.debug(
       `[MultiChainProvider] Cached price for ${normalizedAddress} on ${specificChain}: $${price}`,
     );
   }
@@ -655,7 +717,7 @@ export class MultiChainProvider implements PriceSource {
 
     // For Solana tokens, delegate to DexScreenerProvider
     if (detectedChainType === BlockchainType.SVM) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Getting batch prices for ${uncachedAddresses.length} Solana tokens`,
       );
       try {
@@ -674,6 +736,10 @@ export class MultiChainProvider implements PriceSource {
               "svm",
               result.price,
               result.symbol,
+              result.pairCreatedAt,
+              result.volume,
+              result.liquidity,
+              result.fdv,
             );
 
             results.set(tokenAddress, {
@@ -683,13 +749,17 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.SVM,
               specificChain: "svm",
+              pairCreatedAt: result.pairCreatedAt,
+              volume: result.volume,
+              liquidity: result.liquidity,
+              fdv: result.fdv,
             });
           } else {
             results.set(tokenAddress, null);
           }
         });
       } catch (error) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Error fetching batch prices for Solana tokens:`,
           error instanceof Error ? error.message : "Unknown error",
         );
@@ -702,13 +772,13 @@ export class MultiChainProvider implements PriceSource {
     }
 
     // For EVM tokens, handle batch processing
-    console.log(
+    serviceLogger.debug(
       `[MultiChainProvider] Getting batch prices for ${uncachedAddresses.length} EVM tokens`,
     );
 
     // If a specific chain was provided, use it directly
     if (specificChain) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Using provided specific chain: ${specificChain}`,
       );
 
@@ -728,6 +798,10 @@ export class MultiChainProvider implements PriceSource {
               specificChain,
               result.price,
               result.symbol,
+              result.pairCreatedAt,
+              result.volume,
+              result.liquidity,
+              result.fdv,
             );
 
             results.set(tokenAddress, {
@@ -737,13 +811,17 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain,
+              pairCreatedAt: result.pairCreatedAt,
+              volume: result.volume,
+              liquidity: result.liquidity,
+              fdv: result.fdv,
             });
           } else {
             results.set(tokenAddress, null);
           }
         });
       } catch (error) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Error fetching batch prices for EVM tokens on ${specificChain}:`,
           error instanceof Error ? error.message : "Unknown error",
         );
@@ -764,7 +842,7 @@ export class MultiChainProvider implements PriceSource {
 
     // If we have a cached chain, try that first
     if (cachedChain) {
-      console.log(
+      serviceLogger.debug(
         `[MultiChainProvider] Found cached chain ${cachedChain} for batch, trying it first`,
       );
       chainsToTry = [
@@ -780,7 +858,7 @@ export class MultiChainProvider implements PriceSource {
       if (remainingTokens.size === 0) break;
 
       try {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Attempting to fetch batch prices for ${remainingTokens.size} tokens on ${chain} chain`,
         );
 
@@ -799,6 +877,10 @@ export class MultiChainProvider implements PriceSource {
               chain,
               result.price,
               result.symbol,
+              result.pairCreatedAt,
+              result.volume,
+              result.liquidity,
+              result.fdv,
             );
 
             results.set(tokenAddress, {
@@ -808,6 +890,10 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain: chain,
+              pairCreatedAt: result.pairCreatedAt,
+              volume: result.volume,
+              liquidity: result.liquidity,
+              fdv: result.fdv,
             });
 
             // Remove from remaining tokens
@@ -815,7 +901,7 @@ export class MultiChainProvider implements PriceSource {
           }
         });
       } catch (error) {
-        console.log(
+        serviceLogger.debug(
           `[MultiChainProvider] Error fetching batch prices on ${chain} chain:`,
           error instanceof Error ? error.message : "Unknown error",
         );
@@ -829,7 +915,7 @@ export class MultiChainProvider implements PriceSource {
       results.set(addr, null);
     });
 
-    console.log(
+    serviceLogger.debug(
       `[MultiChainProvider] Batch processing complete. Found prices for ${results.size - remainingTokens.size} out of ${uncachedAddresses.length} tokens`,
     );
 

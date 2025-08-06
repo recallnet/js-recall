@@ -1,10 +1,10 @@
 import { z } from "zod/v4";
 
 import {
+  AgentHandleSchema,
   AgentMetadataSchema,
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
-  SyncDataTypeSchema,
   UuidSchema,
 } from "@/types/index.js";
 
@@ -29,6 +29,7 @@ export const AdminRegisterUserSchema = z.object({
   userImageUrl: z.url().optional(),
   userMetadata: z.record(z.string(), z.unknown()).optional(),
   agentName: z.string().optional(),
+  agentHandle: AgentHandleSchema.optional(),
   agentDescription: z.string().optional(),
   agentImageUrl: z.url().optional(),
   agentMetadata: AgentMetadataSchema.optional(),
@@ -39,20 +40,48 @@ export const AdminRegisterUserSchema = z.object({
 });
 
 /**
+ * Trading Constraint Schema
+ */
+const TradingConstraintsSchema = z
+  .object({
+    minimumPairAgeHours: z.number().min(0),
+    minimum24hVolumeUsd: z.number().min(0),
+    minimumLiquidityUsd: z.number().min(0),
+    minimumFdvUsd: z.number().min(0),
+  })
+  .optional();
+
+/**
  * Admin create competition schema
  */
-export const AdminCreateCompetitionSchema = z.object({
-  name: z.string().min(1, "Competition name is required"),
-  description: z.string().optional(),
-  tradingType: CrossChainTradingTypeSchema.optional(),
-  sandboxMode: z.boolean().optional(),
-  externalUrl: z.url().optional(),
-  imageUrl: z.url().optional(),
-  type: CompetitionTypeSchema.optional(),
-  endDate: z.iso.datetime().optional(),
-  votingStartDate: z.iso.datetime().optional(),
-  votingEndDate: z.iso.datetime().optional(),
-});
+export const AdminCreateCompetitionSchema = z
+  .object({
+    name: z.string().min(1, "Competition name is required"),
+    description: z.string().optional(),
+    tradingType: CrossChainTradingTypeSchema.optional(),
+    sandboxMode: z.boolean().optional(),
+    externalUrl: z.url().optional(),
+    imageUrl: z.url().optional(),
+    type: CompetitionTypeSchema.optional(),
+    endDate: z.iso.datetime().optional(),
+    votingStartDate: z.iso.datetime().optional(),
+    votingEndDate: z.iso.datetime().optional(),
+    joinStartDate: z.iso.datetime().optional(),
+    joinEndDate: z.iso.datetime().optional(),
+    tradingConstraints: TradingConstraintsSchema,
+  })
+  .refine(
+    (data) => {
+      if (data.joinStartDate && data.joinEndDate) {
+        return new Date(data.joinStartDate) <= new Date(data.joinEndDate);
+      }
+      return true;
+    },
+    {
+      message: "joinStartDate must be before or equal to joinEndDate",
+      path: ["joinStartDate"],
+    },
+  );
 
 /**
  * Admin start competition schema
@@ -70,6 +99,7 @@ export const AdminStartCompetitionSchema = z
     endDate: z.iso.datetime().optional(),
     votingStartDate: z.iso.datetime().optional(),
     votingEndDate: z.iso.datetime().optional(),
+    tradingConstraints: TradingConstraintsSchema,
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
@@ -80,25 +110,6 @@ export const AdminStartCompetitionSchema = z
  */
 export const AdminEndCompetitionSchema = z.object({
   competitionId: UuidSchema,
-});
-
-/**
- * Admin sync object index schema
- */
-export const AdminSyncObjectIndexSchema = z.object({
-  competitionId: UuidSchema.optional(),
-  dataTypes: z.array(SyncDataTypeSchema).optional(),
-});
-
-/**
- * Admin get object index query schema
- */
-export const AdminGetObjectIndexQuerySchema = z.object({
-  competitionId: UuidSchema.optional(),
-  agentId: UuidSchema.optional(),
-  dataType: SyncDataTypeSchema.optional(),
-  limit: z.coerce.number().min(1).max(1000).default(100),
-  offset: z.coerce.number().min(0).default(0),
 });
 
 /**
@@ -191,4 +202,27 @@ export const AdminDeleteAgentParamsSchema = z.object({
 export const AdminAddAgentToCompetitionParamsSchema = z.object({
   competitionId: UuidSchema,
   agentId: UuidSchema,
+});
+
+/**
+ * Admin update agent params schema
+ */
+export const AdminUpdateAgentParamsSchema = z.object({
+  agentId: UuidSchema,
+});
+
+/**
+ * Admin update agent body schema
+ */
+export const AdminUpdateAgentBodySchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name must be at least 1 character")
+    .max(100)
+    .optional(),
+  handle: AgentHandleSchema.optional(),
+  description: z.string().optional(),
+  imageUrl: z.url("Invalid image URL format").optional(),
+  email: z.email("Invalid email format").optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });

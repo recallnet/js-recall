@@ -5,6 +5,7 @@ import {
   createBatch as createPriceBatch,
   getPriceHistory,
 } from "@/database/repositories/price-repository.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import { BlockchainType, PriceSource, SpecificChain } from "@/types/index.js";
 
@@ -20,7 +21,7 @@ export class PriceTracker {
   constructor() {
     // Initialize only the MultiChainProvider
     this.multiChainProvider = new MultiChainProvider();
-    console.log(
+    serviceLogger.debug(
       "[PriceTracker] Initialized MultiChainProvider for all token price fetching",
     );
 
@@ -32,11 +33,11 @@ export class PriceTracker {
       this.providers.push(this.multiChainProvider);
     }
 
-    console.log(
+    serviceLogger.debug(
       `[PriceTracker] Initialized with ${this.providers.length} providers`,
     );
     this.providers.forEach((p) =>
-      console.log(`[PriceTracker] Loaded provider: ${p.getName()}`),
+      serviceLogger.debug(`[PriceTracker] Loaded provider: ${p.getName()}`),
     );
   }
 
@@ -86,18 +87,20 @@ export class PriceTracker {
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
   ) {
-    console.log(`[PriceTracker] Getting price for token: ${tokenAddress}`);
+    serviceLogger.debug(
+      `[PriceTracker] Getting price for token: ${tokenAddress}`,
+    );
 
     // Determine which chain this token belongs to if not provided
     const tokenChain = blockchainType || this.determineChain(tokenAddress);
-    console.log(
+    serviceLogger.debug(
       `[PriceTracker] ${blockchainType ? "Using provided" : "Detected"} token ${tokenAddress} on chain: ${tokenChain}`,
     );
 
     // If no cache hit, use MultiChainProvider
     if (this.multiChainProvider) {
       try {
-        console.log(
+        serviceLogger.debug(
           `[PriceTracker] Using MultiChainProvider for token ${tokenAddress}`,
         );
 
@@ -119,7 +122,7 @@ export class PriceTracker {
           // Get the symbol
           const symbol = priceResult.symbol;
 
-          console.log(
+          serviceLogger.debug(
             `[PriceTracker] Got price $${price} from MultiChainProvider`,
           );
 
@@ -134,19 +137,21 @@ export class PriceTracker {
 
           return priceResult;
         } else {
-          console.log(
+          serviceLogger.debug(
             `[PriceTracker] No price available from MultiChainProvider for ${tokenAddress}`,
           );
         }
       } catch (error) {
-        console.error(
+        serviceLogger.error(
           `[PriceTracker] Error fetching price from MultiChainProvider:`,
           error instanceof Error ? error.message : "Unknown error",
         );
       }
     }
 
-    console.log(`[PriceTracker] No price available for ${tokenAddress}`);
+    serviceLogger.debug(
+      `[PriceTracker] No price available for ${tokenAddress}`,
+    );
 
     return null;
   }
@@ -163,7 +168,7 @@ export class PriceTracker {
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
   ) {
-    console.log(
+    serviceLogger.debug(
       `[PriceTracker] Getting detailed token info for: ${tokenAddress}`,
     );
 
@@ -223,14 +228,14 @@ export class PriceTracker {
           };
         }
       } catch (error) {
-        console.log(
+        serviceLogger.debug(
           `[PriceTracker] Failed to get token info from MultiChainProvider: ${error}`,
         );
       }
     }
 
     // If MultiChainProvider failed or returned null, try to get just the price
-    console.log(
+    serviceLogger.debug(
       `[PriceTracker] Falling back to just getting price for token info: ${tokenAddress}`,
     );
     const price = await this.getPrice(tokenAddress, chainType, specificChain);
@@ -255,7 +260,7 @@ export class PriceTracker {
   async getBulkTokenInfo(
     tokenAddresses: string[],
   ): Promise<Map<string, Awaited<ReturnType<typeof this.getTokenInfo>>>> {
-    console.log(
+    serviceLogger.debug(
       `[PriceTracker] Getting bulk token info for ${tokenAddresses.length} tokens`,
     );
 
@@ -317,7 +322,7 @@ export class PriceTracker {
         // Store all prices in a single batch operation
         await this.storePrices(pricesToStore);
       } catch (error) {
-        console.error(
+        serviceLogger.error(
           "[PriceTracker] Error in bulk EVM token processing:",
           error,
         );
@@ -365,7 +370,7 @@ export class PriceTracker {
         // Store all prices in a single batch operation
         await this.storePrices(pricesToStore);
       } catch (error) {
-        console.error(
+        serviceLogger.error(
           "[PriceTracker] Error in bulk SVM token processing:",
           error,
         );
@@ -377,7 +382,7 @@ export class PriceTracker {
       }
     }
 
-    console.log(
+    serviceLogger.debug(
       `[PriceTracker] Successfully retrieved bulk token info for ${Array.from(resultMap.values()).filter((v) => v !== null).length}/${tokenAddresses.length} tokens`,
     );
 
@@ -409,7 +414,10 @@ export class PriceTracker {
         specificChain,
       });
     } catch (error) {
-      console.error(`[PriceTracker] Error storing price in database:`, error);
+      serviceLogger.error(
+        `[PriceTracker] Error storing price in database:`,
+        error,
+      );
     }
   }
 
@@ -442,7 +450,10 @@ export class PriceTracker {
 
       await createPriceBatch(insertData);
     } catch (error) {
-      console.error(`[PriceTracker] Error storing prices in database:`, error);
+      serviceLogger.error(
+        `[PriceTracker] Error storing prices in database:`,
+        error,
+      );
     }
   }
 
@@ -465,7 +476,7 @@ export class PriceTracker {
         specificChain,
       );
     } catch (error) {
-      console.log(
+      serviceLogger.debug(
         `[PriceTracker] Error checking support for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -485,7 +496,7 @@ export class PriceTracker {
     timeframe: string,
     allowMockData: boolean = config.allowMockPriceHistory,
   ): Promise<{ timestamp: string; price: number }[] | null> {
-    console.log(
+    serviceLogger.debug(
       `[PriceTracker] Getting price history for ${tokenAddress} (${timeframe})`,
     );
 
@@ -502,7 +513,7 @@ export class PriceTracker {
       const history = await getPriceHistory(tokenAddress, hours);
 
       if (history && history.length > 0) {
-        console.log(
+        serviceLogger.debug(
           `[PriceTracker] Retrieved ${history.length} historical price points from database`,
         );
         return history.map((point) => ({
@@ -511,19 +522,22 @@ export class PriceTracker {
         }));
       }
     } catch (error) {
-      console.error(`[PriceTracker] Error fetching price history:`, error);
+      serviceLogger.error(
+        `[PriceTracker] Error fetching price history:`,
+        error,
+      );
     }
 
     // If we don't have enough historical data in the database or an error occurred,
     // generate mock data based on current price, but only if allowed
     if (!allowMockData) {
-      console.log(
+      serviceLogger.debug(
         `[PriceTracker] No historical data available and mock data generation is disabled`,
       );
       return null;
     }
 
-    console.log(
+    serviceLogger.debug(
       `[PriceTracker] WARNING: Generating SIMULATED price history data (not real market data)`,
     );
     const currentPrice = await this.getPrice(tokenAddress);
@@ -564,7 +578,7 @@ export class PriceTracker {
       });
     }
 
-    console.log(
+    serviceLogger.debug(
       `[PriceTracker] Generated ${dataPoints} simulated data points for ${timeframe} timeframe`,
     );
     return history.reverse(); // Return in chronological order
@@ -588,7 +602,7 @@ export class PriceTracker {
           );
           return price !== null;
         } catch (error) {
-          console.error(
+          serviceLogger.error(
             "[PriceTracker] Health check failed on price fetch:",
             error,
           );
@@ -598,7 +612,7 @@ export class PriceTracker {
 
       return false;
     } catch (error) {
-      console.error("[PriceTracker] Health check failed:", error);
+      serviceLogger.error("[PriceTracker] Health check failed:", error);
       return false;
     }
   }

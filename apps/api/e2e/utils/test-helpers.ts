@@ -1,18 +1,20 @@
+import axios from "axios";
 import * as crypto from "crypto";
+import { and, asc, eq } from "drizzle-orm";
 import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { expect } from "vitest";
 
 import { ApiSDK } from "@recallnet/api-sdk";
 
-import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
+import { db } from "@/database/db.js";
+import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
 
 import { ApiClient } from "./api-client.js";
 import {
   CreateCompetitionResponse,
   StartCompetitionResponse,
 } from "./api-types.js";
-import { dbManager } from "./db-manager.js";
 import { getBaseUrl } from "./server.js";
 import {
   createSiweMessage,
@@ -25,13 +27,83 @@ export const TEST_TOKEN_ADDRESS =
   process.env.TEST_SOL_TOKEN_ADDRESS ||
   "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 
+/**
+ * Create a test agent with automatic unique handle generation
+ * This wrapper ensures all test agents have unique handles
+ */
+export async function createTestAgent(
+  client: ApiClient,
+  name: string,
+  description?: string,
+  imageUrl?: string,
+  metadata?: Record<string, unknown>,
+  handle?: string,
+) {
+  // Generate a unique handle if not provided
+  const agentHandle =
+    handle ||
+    generateTestHandle(
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 8),
+    );
+
+  return client.createAgent(name, agentHandle, description, imageUrl, metadata);
+}
+
+/**
+ * Generate a unique handle for testing
+ * Ensures uniqueness by using timestamp and random suffix
+ */
+export function generateTestHandle(prefix: string = "agent"): string {
+  // Clean the prefix: lowercase, remove non-alphanumeric except underscores
+  const cleanPrefix = prefix
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 8);
+
+  // If prefix is empty after cleaning, use a default
+  const name = cleanPrefix || "agent";
+
+  // Generate random suffix (4 chars)
+  const random = Math.random().toString(36).slice(2, 6);
+
+  // Combine with underscore separator
+  let handle = `${name}_${random}`;
+
+  // Ensure it's within length limit
+  handle = handle.slice(0, 15);
+
+  // Final safety check: if handle is somehow empty or only whitespace
+  if (!handle || handle.trim().length === 0) {
+    handle = `agent${Date.now().toString(36).slice(-6)}`;
+  }
+
+  return handle;
+}
+
+// HAY token - should be volatile & infrequently traded https://coinmarketcap.com/currencies/haycoin/
+export const VOLATILE_TOKEN = "0xfa3e941d1f6b7b10ed84a0c211bfa8aee907965e";
+
 // Fixed admin credentials - must match setup-admin.ts
 export const ADMIN_USERNAME = "admin";
 export const ADMIN_PASSWORD = "admin123";
 export const ADMIN_EMAIL = "admin@test.com";
 
-// Flag to track if database is initialized
-let isDatabaseInitialized = false;
+export const looseTradingConstraints = {
+  minimum24hVolumeUsd: 5000,
+  minimumFdvUsd: 50000,
+  minimumLiquidityUsd: 5000,
+  minimumPairAgeHours: 0,
+};
+
+export const noTradingConstraints = {
+  minimum24hVolumeUsd: 0,
+  minimumFdvUsd: 0,
+  minimumLiquidityUsd: 0,
+  minimumPairAgeHours: 0,
+};
 
 /**
  * Create a new API client for testing with random credentials
@@ -54,6 +126,7 @@ export async function registerUserAndAgentAndGetClient({
   userEmail,
   userImageUrl,
   agentName,
+  agentHandle,
   agentDescription,
   agentImageUrl,
   agentMetadata,
@@ -65,23 +138,22 @@ export async function registerUserAndAgentAndGetClient({
   userEmail?: string;
   userImageUrl?: string;
   agentName?: string;
+  agentHandle?: string;
   agentDescription?: string;
   agentImageUrl?: string;
   agentMetadata?: Record<string, unknown>;
   agentWalletAddress?: string;
 }) {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
-  const sdk = getApiSdk(adminApiKey);
+  const sdk = new ApiClient(adminApiKey);
 
   // Register a new user with optional agent creation
-  const result = await sdk.admin.postApiAdminUsers({
+  const result = await sdk.registerUser({
     walletAddress: walletAddress || generateRandomEthAddress(),
     name: userName || `User ${generateRandomString(8)}`,
     email: userEmail || `user-${generateRandomString(8)}@test.com`,
     userImageUrl,
     agentName: agentName || `Agent ${generateRandomString(8)}`,
+    agentHandle: agentHandle || generateTestHandle(agentName),
     agentDescription:
       agentDescription || `Test agent for ${agentName || "testing"}`,
     agentImageUrl,
@@ -119,6 +191,7 @@ export async function registerUserAndAgentAndGetClient({
       ownerId: result.agent.ownerId || "",
       walletAddress: result.agent.walletAddress || "",
       name: result.agent.name || "",
+      handle: result.agent.handle || "",
       description: result.agent.description || "",
       imageUrl: result.agent.imageUrl || null,
       status: result.agent.status || "active",
@@ -140,10 +213,13 @@ export async function startTestCompetition(
   sandboxMode?: boolean,
   externalUrl?: string,
   imageUrl?: string,
+  tradingConstraints?: {
+    minimumPairAgeHours?: number;
+    minimum24hVolumeUsd?: number;
+    minimumLiquidityUsd?: number;
+    minimumFdvUsd?: number;
+  },
 ): Promise<StartCompetitionResponse> {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
   const result = await adminClient.startCompetition(
     name,
     `Test competition description for ${name}`,
@@ -152,6 +228,9 @@ export async function startTestCompetition(
     sandboxMode,
     externalUrl,
     imageUrl,
+    undefined, // votingStartDate
+    undefined, // votingEndDate
+    tradingConstraints,
   );
 
   if (!result.success) {
@@ -174,10 +253,9 @@ export async function createTestCompetition(
   type?: string,
   votingStartDate?: string,
   votingEndDate?: string,
+  joinStartDate?: string,
+  joinEndDate?: string,
 ): Promise<CreateCompetitionResponse> {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
   const result = await adminClient.createCompetition(
     name,
     description || `Test competition description for ${name}`,
@@ -189,6 +267,8 @@ export async function createTestCompetition(
     undefined, // endDate
     votingStartDate,
     votingEndDate,
+    joinStartDate,
+    joinEndDate,
   );
 
   if (!result.success) {
@@ -209,9 +289,6 @@ export async function startExistingTestCompetition(
   externalUrl?: string,
   imageUrl?: string,
 ): Promise<StartCompetitionResponse> {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
   const result = await adminClient.startExistingCompetition(
     competitionId,
     agentIds,
@@ -226,31 +303,6 @@ export async function startExistingTestCompetition(
   }
 
   return result as StartCompetitionResponse;
-}
-
-/**
- * Ensure the database is initialized before using it
- */
-async function ensureDatabaseInitialized(): Promise<void> {
-  if (!isDatabaseInitialized) {
-    console.log("Initializing database for tests...");
-    await dbManager.initialize();
-    isDatabaseInitialized = true;
-  }
-}
-
-/**
- * Clean up database state for a given test case
- * This can be used in beforeEach to ensure a clean state
- * Now delegated to the DbManager for consistency
- */
-export async function cleanupTestState(): Promise<void> {
-  await ensureDatabaseInitialized();
-
-  // Also reset rate limiters to ensure clean state between tests
-  resetRateLimiters();
-
-  return dbManager.cleanupTestState();
 }
 
 /**
@@ -313,9 +365,6 @@ export async function createSiweAuthenticatedClient({
   userEmail?: string;
   userImageUrl?: string;
 }) {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized();
-
   const sdk = getApiSdk(adminApiKey);
 
   // Generate a unique wallet for this test
@@ -483,4 +532,40 @@ export async function generateTestCompetitions(adminApiKey: string) {
     user2,
     user3,
   };
+}
+
+export async function getStartingValue(agentId: string, competitionId: string) {
+  // Direct database lookup for oldest portfolio snapshot
+  const oldestSnapshot = await db
+    .select()
+    .from(portfolioSnapshots)
+    .where(
+      and(
+        eq(portfolioSnapshots.agentId, agentId),
+        eq(portfolioSnapshots.competitionId, competitionId),
+      ),
+    )
+    .orderBy(asc(portfolioSnapshots.timestamp))
+    .limit(1);
+
+  const val = oldestSnapshot[0]?.totalValue;
+  if (typeof val !== "number" || val <= 0) {
+    throw new Error("no starting value found");
+  }
+
+  return val;
+}
+
+export async function getAdminApiKey() {
+  // Create admin account
+  const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
+    username: ADMIN_USERNAME,
+    password: ADMIN_PASSWORD,
+    email: ADMIN_EMAIL,
+  });
+
+  const adminApiKey = response.data.admin.apiKey;
+  expect(adminApiKey).toBeDefined();
+
+  return adminApiKey;
 }

@@ -4,7 +4,7 @@ import path from "path";
 import { Client } from "pg";
 
 // Import production initialization code
-import { db, dropAll, migrateDb, resetDb } from "@/database/db.js";
+import { closeDb, db, dropAll, migrateDb, resetDb } from "@/database/db.js";
 
 /**
  * Database Manager for E2E Tests
@@ -153,23 +153,31 @@ export class DbManager {
   }
 
   /**
-   * Clean up the test database state but keep tables intact
-   * This is usually what you want between test runs
+   * Connect to the database
+   * @returns The database connection
    */
-  public async cleanupTestState(): Promise<void> {
-    await this.resetDatabase();
+  public async connect() {
+    return db;
   }
 
   /**
    * Close the database connection
-   * This does nothing since we're using the shared connection
-   * that should stay alive for the application.
+   * Properly closes database connection pools to prevent connection leaks
    */
   public async close(): Promise<void> {
-    // We don't actually close the connection pool since it's shared
-    // with the main application. The app should handle closing it.
-    this.initialized = false;
-    console.log("Database manager reset (connection maintained for app use)");
+    try {
+      console.log("Closing database connections...");
+
+      // Close the database connection pools
+      await closeDb();
+
+      this.initialized = false;
+      console.log("Database connections closed successfully");
+    } catch (error) {
+      console.error("Error closing database connections:", error);
+      // Don't throw the error to avoid masking test failures
+      this.initialized = false;
+    }
   }
 }
 
@@ -181,7 +189,7 @@ export async function initializeDb(): Promise<void> {
   return dbManager.initialize();
 }
 
-export async function closeDb(): Promise<void> {
+export async function closeManagerDb(): Promise<void> {
   return dbManager.close();
 }
 
@@ -189,6 +197,6 @@ export async function resetDatabase(): Promise<void> {
   return dbManager.resetDatabase();
 }
 
-export async function cleanupTestState(): Promise<void> {
-  return dbManager.cleanupTestState();
+export async function connectToDb(): Promise<typeof db> {
+  return dbManager.connect();
 }

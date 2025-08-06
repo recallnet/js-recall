@@ -4,6 +4,7 @@ import {
   findById as findAgentById,
   findByCompetition,
 } from "@/database/repositories/agent-repository.js";
+import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
 import {
   addAgentToCompetition,
   batchInsertLeaderboard,
@@ -27,7 +28,9 @@ import {
   updateOne,
 } from "@/database/repositories/competition-repository.js";
 import { UpdateCompetition } from "@/database/schema/core/types.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
+import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AgentManager,
   AgentRankService,
@@ -35,15 +38,18 @@ import {
   ConfigurationService,
   PortfolioSnapshotter,
   TradeSimulator,
+  TradingConstraintsService,
   VoteManager,
 } from "@/services/index.js";
 import {
   ACTOR_STATUS,
   COMPETITION_AGENT_STATUS,
+  COMPETITION_JOIN_ERROR_TYPES,
   COMPETITION_STATUS,
   COMPETITION_TYPE,
   CROSS_CHAIN_TRADING_TYPE,
   CompetitionAgentStatus,
+  CompetitionJoinError,
   CompetitionStatus,
   CompetitionStatusSchema,
   CompetitionType,
@@ -56,6 +62,13 @@ import {
   AgentQueryParams,
 } from "@/types/sort/agent.js";
 
+interface TradingConstraintsInput {
+  minimumPairAgeHours?: number;
+  minimum24hVolumeUsd?: number;
+  minimumLiquidityUsd?: number;
+  minimumFdvUsd?: number;
+}
+
 /**
  * Competition Manager Service
  * Manages trading competitions with agent-based participation
@@ -64,11 +77,11 @@ export class CompetitionManager {
   private balanceManager: BalanceManager;
   private tradeSimulator: TradeSimulator;
   private portfolioSnapshotter: PortfolioSnapshotter;
-  private activeCompetitionCache: string | null = null;
   private agentManager: AgentManager;
   private configurationService: ConfigurationService;
   private agentRankService: AgentRankService;
   private voteManager: VoteManager;
+  private tradingConstraintsService: TradingConstraintsService;
 
   constructor(
     balanceManager: BalanceManager,
@@ -78,6 +91,7 @@ export class CompetitionManager {
     configurationService: ConfigurationService,
     agentRankService: AgentRankService,
     voteManager: VoteManager,
+    tradingConstraintsService: TradingConstraintsService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -86,26 +100,7 @@ export class CompetitionManager {
     this.configurationService = configurationService;
     this.agentRankService = agentRankService;
     this.voteManager = voteManager;
-    // Load active competition on initialization
-    this.loadActiveCompetition();
-  }
-
-  /**
-   * Load the active competition from the database
-   * This is used at startup to restore the active competition state
-   */
-  private async loadActiveCompetition() {
-    try {
-      const activeCompetition = await findActive();
-      if (activeCompetition) {
-        this.activeCompetitionCache = activeCompetition.id;
-      }
-    } catch (error) {
-      console.error(
-        "[CompetitionManager] Error loading active competition:",
-        error,
-      );
-    }
+    this.tradingConstraintsService = tradingConstraintsService;
   }
 
   /**
@@ -120,6 +115,8 @@ export class CompetitionManager {
    * @param endDate Optional end date for the competition
    * @param votingStartDate Optional voting start date
    * @param votingEndDate Optional voting end date
+   * @param joinStartDate Optional start date for joining the competition
+   * @param joinEndDate Optional end date for joining the competition
    * @returns The created competition
    */
   async createCompetition(
@@ -133,6 +130,9 @@ export class CompetitionManager {
     endDate?: Date,
     votingStartDate?: Date,
     votingEndDate?: Date,
+    joinStartDate?: Date,
+    joinEndDate?: Date,
+    tradingConstraints?: TradingConstraintsInput,
   ) {
     const id = uuidv4();
     const competition = {
@@ -145,6 +145,8 @@ export class CompetitionManager {
       endDate: endDate || null,
       votingStartDate: votingStartDate || null,
       votingEndDate: votingEndDate || null,
+      joinStartDate: joinStartDate || null,
+      joinEndDate: joinEndDate || null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
       sandboxMode,
@@ -155,7 +157,18 @@ export class CompetitionManager {
 
     await createCompetition(competition);
 
-    console.log(
+    // Create trading constraints if provided
+    if (tradingConstraints) {
+      await this.tradingConstraintsService.createConstraints({
+        competitionId: id,
+        ...tradingConstraints,
+      });
+      serviceLogger.debug(
+        `[CompetitionManager] Created trading constraints for competition ${id}`,
+      );
+    }
+
+    serviceLogger.debug(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}`,
     );
     return competition;
@@ -182,9 +195,14 @@ export class CompetitionManager {
    * Start a competition
    * @param competitionId The competition ID
    * @param agentIds Array of agent IDs participating in the competition
+   * @param tradingConstraints Optional trading constraints for the competition
    * @returns The updated competition
    */
-  async startCompetition(competitionId: string, agentIds: string[]) {
+  async startCompetition(
+    competitionId: string,
+    agentIds: string[],
+    tradingConstraints?: TradingConstraintsInput,
+  ) {
     const competition = await findById(competitionId);
     if (!competition) {
       throw new Error(`Competition not found: ${competitionId}`);
@@ -221,7 +239,7 @@ export class CompetitionManager {
         );
       }
 
-      console.log(
+      serviceLogger.debug(
         `[CompetitionManager] Agent ${agentId} ready for competition`,
       );
     }
@@ -232,22 +250,30 @@ export class CompetitionManager {
     competition.updatedAt = new Date();
     await updateCompetition(competition);
 
-    // Update cache
-    this.activeCompetitionCache = competitionId;
-
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
     );
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
     );
+
+    // Create trading constraints if provided
+    if (tradingConstraints) {
+      await this.tradingConstraintsService.createConstraints({
+        competitionId,
+        ...tradingConstraints,
+      });
+      serviceLogger.debug(
+        `[CompetitionManager] Created trading constraints for competition ${competitionId}`,
+      );
+    }
 
     // Take initial portfolio snapshots
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
     // Reload competition-specific configuration settings
     await this.configurationService.loadCompetitionSettings();
-    console.log(`[CompetitionManager] Reloaded configuration settings`);
+    serviceLogger.debug(`[CompetitionManager] Reloaded configuration settings`);
 
     return competition;
   }
@@ -267,19 +293,13 @@ export class CompetitionManager {
       throw new Error(`Competition is not active: ${competition.status}`);
     }
 
-    if (this.activeCompetitionCache !== competitionId) {
-      throw new Error(
-        `Competition is not the active one: ${this.activeCompetitionCache}`,
-      );
-    }
-
     // Take final portfolio snapshots
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
     // Get agents in the competition
     const competitionAgents = await getCompetitionAgents(competitionId);
 
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Competition ended. ${competitionAgents.length} agents remain 'active' in completed competition`,
     );
 
@@ -290,16 +310,13 @@ export class CompetitionManager {
 
     await updateCompetition(competition);
 
-    // Update cache
-    this.activeCompetitionCache = null;
-
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Ended competition: ${competition.name} (${competitionId})`,
     );
 
     // Reload configuration settings (revert to environment defaults)
     await this.configurationService.loadCompetitionSettings();
-    console.log(`[CompetitionManager] Reloaded configuration settings`);
+    serviceLogger.debug(`[CompetitionManager] Reloaded configuration settings`);
 
     const leaderboard = await this.getLeaderboard(competitionId);
 
@@ -311,16 +328,18 @@ export class CompetitionManager {
       const entry = leaderboard[i];
       if (entry === undefined) continue;
       const agentId = entry.agentId;
-      const pnl = await this.agentManager.getAgentPnlForComp(
-        agentId,
-        competitionId,
-      );
+      const { pnl, startingValue } =
+        await this.agentManager.getAgentPerformanceForComp(
+          agentId,
+          competitionId,
+        );
 
       const val = {
         agentId,
         competitionId,
         rank: i + 1, // 1-based ranking
-        pnl: pnl.pnl,
+        pnl,
+        startingValue,
         totalAgents: competitionAgents.length,
         score: entry.value, // Use the the total portfolio value in usd is saved as `score`
       };
@@ -353,23 +372,7 @@ export class CompetitionManager {
    * @returns The active competition or null if none
    */
   async getActiveCompetition() {
-    // First check cache for better performance
-    if (this.activeCompetitionCache) {
-      const competition = await findById(this.activeCompetitionCache);
-      if (competition?.status === COMPETITION_STATUS.ACTIVE) {
-        return competition;
-      } else {
-        // Cache is out of sync, clear it
-        this.activeCompetitionCache = null;
-      }
-    }
-
-    // Fallback to database query
-    const activeCompetition = await findActive();
-    if (activeCompetition) {
-      this.activeCompetitionCache = activeCompetition.id;
-    }
-    return activeCompetition;
+    return findActive();
   }
 
   /**
@@ -445,6 +448,7 @@ export class CompetitionManager {
       return {
         id: agent.id,
         name: agent.name,
+        handle: agent.handle,
         description: agent.description,
         imageUrl: agent.imageUrl,
         score,
@@ -483,7 +487,37 @@ export class CompetitionManager {
    */
   async getLeaderboard(competitionId: string) {
     try {
-      // First try to get from the competitions_leaderboard table
+      // TODO: this function has many paths it potentially takes depending on
+      //  the state of several tables. We should refactor and ideally only have
+      //  one, which doesn't have to do calculations for every (uncached) request.
+      const competition = await findById(competitionId);
+      const competitionStatus = competition?.status;
+
+      // Default case: `COMPETITION_STATUS.PENDING` will have no leaderboard—so we just return the agents
+      if (competitionStatus === COMPETITION_STATUS.PENDING) {
+        const agents = await getCompetitionAgents(competitionId);
+        const globalLeaderboard = await getAllAgentRanks(agents);
+
+        // Create map of agent IDs to their global rank scores and sort by global rank score (if applicable)
+        const globalLeaderboardMap = new Map(
+          globalLeaderboard.map((agent) => [agent.id, agent.score]),
+        );
+        return agents
+          .map((agentId) => ({
+            agentId,
+            value: 0,
+            pnl: 0,
+            globalScore: globalLeaderboardMap.get(agentId) ?? -1, // Use -1 for unranked agents so they appear after ranked ones
+          }))
+          .sort((a, b) => b.globalScore - a.globalScore)
+          .map(({ agentId, value, pnl }) => ({
+            agentId,
+            value,
+            pnl,
+          }));
+      }
+
+      // Case: an `COMPETITION_STATUS.ENDED` should have leaderboard entries in the `competitions_leaderboard` table, unless it was recently ended
       const leaderboardEntries =
         await findLeaderboardByTradingComp(competitionId);
       if (leaderboardEntries.length > 0) {
@@ -494,13 +528,12 @@ export class CompetitionManager {
         }));
       }
 
-      console.log(
+      serviceLogger.debug(
         `[CompetitionManager] No leaderboard found in database for competition ${competitionId}, calculating from snapshots or current values`,
       );
 
-      // If no leaderboard entries, try to get from recent portfolio snapshots
+      // Case: `COMPETITION_STATUS.ACTIVE` or a recently ended competition will need to calculate from snapshots
       const snapshots = await getLatestPortfolioSnapshots(competitionId);
-
       if (snapshots.length > 0) {
         // Sort by value descending
         return snapshots
@@ -530,7 +563,7 @@ export class CompetitionManager {
       // Sort by value descending
       return leaderboard.sort((a, b) => b.value - a.value);
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[CompetitionManager] Error getting leaderboard for competition ${competitionId}:`,
         error,
       );
@@ -605,7 +638,7 @@ export class CompetitionManager {
           };
         });
 
-        console.log(
+        serviceLogger.debug(
           `[CompetitionManager] Successfully retrieved ${inactiveAgents.length} inactive agents using bulk operations`,
         );
       }
@@ -618,7 +651,7 @@ export class CompetitionManager {
         inactiveAgents,
       };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[CompetitionManager] Error getting leaderboard with inactive agents for competition ${competitionId}:`,
         error,
       );
@@ -692,7 +725,7 @@ export class CompetitionManager {
       return new Map();
     }
 
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Calculating bulk metrics for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
@@ -751,117 +784,20 @@ export class CompetitionManager {
         });
       }
 
-      console.log(
+      serviceLogger.debug(
         `[CompetitionManager] Successfully calculated bulk metrics for ${agentIds.length} agents`,
       );
       return metricsMap;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[CompetitionManager] Error in calculateBulkAgentMetrics:`,
         error,
       );
 
-      // Fallback to individual calculations
-      console.warn(
-        `[CompetitionManager] Falling back to individual metric calculations`,
+      throw new ApiError(
+        500,
+        `Failed to calculate bulk metrics: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
-      const metricsMap = new Map();
-      for (const agentId of agentIds) {
-        const currentValue = currentValues.get(agentId) || 0;
-        const metrics = await this.calculateAgentMetrics(
-          competitionId,
-          agentId,
-          currentValue,
-        );
-        metricsMap.set(agentId, metrics);
-      }
-      return metricsMap;
-    }
-  }
-
-  /**
-   * Calculate PnL and 24h change metrics for an agent in a competition
-   * @param competitionId The competition ID
-   * @param agentId The agent ID
-   * @param currentValue The agent's current portfolio value
-   * @returns Object containing pnl, pnlPercent, change24h, change24hPercent
-   */
-  async calculateAgentMetrics(
-    competitionId: string,
-    agentId: string,
-    currentValue: number,
-  ) {
-    try {
-      // Get portfolio snapshots for this agent in this competition
-      const snapshots =
-        await this.portfolioSnapshotter.getAgentPortfolioSnapshots(
-          competitionId,
-          agentId,
-        );
-
-      // Default values
-      let pnl = 0;
-      let pnlPercent = 0;
-      let change24h = 0;
-      let change24hPercent = 0;
-
-      if (snapshots.length > 0) {
-        // Sort snapshots by timestamp (oldest first)
-        const sortedSnapshots = snapshots.sort(
-          (a, b) =>
-            (a.timestamp?.getTime() ?? 0) - (b.timestamp?.getTime() ?? 0),
-        );
-
-        // Get starting value (earliest snapshot)
-        const startingSnapshot = sortedSnapshots[0];
-        const startingValue = startingSnapshot?.totalValue ?? 0;
-
-        // Calculate PnL
-        if (startingValue > 0) {
-          pnl = currentValue - startingValue;
-          pnlPercent = (pnl / startingValue) * 100;
-        }
-
-        // Calculate 24h change
-        const now = new Date();
-        const twentyFourHoursAgo = new Date(
-          now.getTime() - 24 * 60 * 60 * 1000,
-        );
-
-        // Find the snapshot closest to 24h ago
-        let closestSnapshot = null;
-        let smallestTimeDiff = Infinity;
-
-        for (const snapshot of snapshots) {
-          if (snapshot.timestamp) {
-            const timeDiff = Math.abs(
-              snapshot.timestamp.getTime() - twentyFourHoursAgo.getTime(),
-            );
-            if (timeDiff < smallestTimeDiff) {
-              smallestTimeDiff = timeDiff;
-              closestSnapshot = snapshot;
-            }
-          }
-        }
-
-        // Calculate 24h change
-        if (closestSnapshot) {
-          const value24hAgo = closestSnapshot.totalValue;
-          if (value24hAgo > 0) {
-            change24h = currentValue - value24hAgo;
-            change24hPercent = (change24h / value24hAgo) * 100;
-          }
-        }
-      }
-
-      return { pnl, pnlPercent, change24h, change24hPercent };
-    } catch (error) {
-      console.error(
-        `[CompetitionManager] Error calculating metrics for agent ${agentId}:`,
-        error,
-      );
-      // Return default values on error
-      return { pnl: 0, pnlPercent: 0, change24h: 0, change24hPercent: 0 };
     }
   }
 
@@ -875,7 +811,7 @@ export class CompetitionManager {
       await findAll();
       return true;
     } catch (error) {
-      console.error("[CompetitionManager] Health check failed:", error);
+      serviceLogger.error("[CompetitionManager] Health check failed:", error);
       return false;
     }
   }
@@ -927,12 +863,9 @@ export class CompetitionManager {
     // Update the competition
     const updatedCompetition = await updateOne(competitionId, updates);
 
-    console.log(`[CompetitionManager] Updated competition: ${competitionId}`);
-
-    // Clear cache if this was the active competition
-    if (this.activeCompetitionCache === competitionId) {
-      this.activeCompetitionCache = null;
-    }
+    serviceLogger.debug(
+      `[CompetitionManager] Updated competition: ${competitionId}`,
+    );
 
     return updatedCompetition;
   }
@@ -948,7 +881,7 @@ export class CompetitionManager {
     agentId: string,
     userId: string,
   ): Promise<void> {
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Join competition request: agent ${agentId} to competition ${competitionId} by user ${userId}`,
     );
 
@@ -969,7 +902,28 @@ export class CompetitionManager {
       throw new Error("Agent does not belong to requesting user");
     }
 
-    // 4. Check agent status is eligible
+    // 4. Check join date constraints FIRST (must take precedence over other errors)
+    const now = new Date();
+
+    if (competition.joinStartDate && now < competition.joinStartDate) {
+      const error = new Error(
+        `Competition joining opens at ${competition.joinStartDate.toISOString()}`,
+      ) as CompetitionJoinError;
+      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN;
+      error.code = 403;
+      throw error;
+    }
+
+    if (competition.joinEndDate && now > competition.joinEndDate) {
+      const error = new Error(
+        `Competition joining closed at ${competition.joinEndDate.toISOString()}`,
+      ) as CompetitionJoinError;
+      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED;
+      error.code = 403;
+      throw error;
+    }
+
+    // 5. Check agent status is eligible
     if (
       agent.status === ACTOR_STATUS.DELETED ||
       agent.status === ACTOR_STATUS.SUSPENDED
@@ -977,12 +931,12 @@ export class CompetitionManager {
       throw new Error("Agent is not eligible to join competitions");
     }
 
-    // 5. Check if competition status is pending
+    // 6. Check if competition status is pending
     if (competition.status !== COMPETITION_STATUS.PENDING) {
       throw new Error("Cannot join competition that has already started/ended");
     }
 
-    // 6. Check if agent is already actively registered
+    // 7. Check if agent is already actively registered
     const isAlreadyActive = await isAgentActiveInCompetition(
       competitionId,
       agentId,
@@ -996,7 +950,7 @@ export class CompetitionManager {
     // Add agent to competition
     await addAgentToCompetition(competitionId, agentId);
 
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId}`,
     );
   }
@@ -1012,7 +966,7 @@ export class CompetitionManager {
     agentId: string,
     userId: string,
   ): Promise<void> {
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Leave competition request: agent ${agentId} from competition ${competitionId} by user ${userId}`,
     );
 
@@ -1053,7 +1007,7 @@ export class CompetitionManager {
         COMPETITION_AGENT_STATUS.WITHDRAWN,
         `Withdrew from competition ${competition.name}`,
       );
-      console.log(
+      serviceLogger.debug(
         `[CompetitionManager] Marked agent ${agentId} as withdrawn from active competition ${competitionId}`,
       );
     } else if (competition.status === COMPETITION_STATUS.PENDING) {
@@ -1064,12 +1018,12 @@ export class CompetitionManager {
         COMPETITION_AGENT_STATUS.WITHDRAWN,
         `Withdrew from competition ${competition.name} before it started`,
       );
-      console.log(
+      serviceLogger.debug(
         `[CompetitionManager] Marked agent ${agentId} as left from pending competition ${competitionId}`,
       );
     }
 
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Successfully processed leave request for agent ${agentId} from competition ${competitionId}`,
     );
   }
@@ -1123,7 +1077,7 @@ export class CompetitionManager {
       reason || "Disqualified by admin",
     );
 
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Admin removed agent ${agentId} from competition ${competitionId}`,
     );
   }
@@ -1160,7 +1114,7 @@ export class CompetitionManager {
       "Reactivated by admin",
     );
 
-    console.log(
+    serviceLogger.debug(
       `[CompetitionManager] Admin reactivated agent ${agentId} in competition ${competitionId}`,
     );
   }
@@ -1217,7 +1171,7 @@ export class CompetitionManager {
       // Check if there's an active competition
       const activeCompetition = await this.getActiveCompetition();
       if (!activeCompetition) {
-        console.log(
+        serviceLogger.debug(
           `[CompetitionManager] No active competition found for auto-join of agent ${agentId}`,
         );
         return;
@@ -1226,14 +1180,14 @@ export class CompetitionManager {
       // Check if agent exists and is active
       const agent = await findAgentById(agentId);
       if (!agent) {
-        console.log(
+        serviceLogger.debug(
           `[CompetitionManager] Agent ${agentId} not found, skipping auto-join`,
         );
         return;
       }
 
       if (agent.status !== ACTOR_STATUS.ACTIVE) {
-        console.log(
+        serviceLogger.debug(
           `[CompetitionManager] Agent ${agentId} is not active (status: ${agent.status}), skipping auto-join`,
         );
         return;
@@ -1245,13 +1199,13 @@ export class CompetitionManager {
         agentId,
       );
       if (isAlreadyInCompetition) {
-        console.log(
+        serviceLogger.debug(
           `[CompetitionManager] Agent ${agentId} is already in competition ${activeCompetition.id}, skipping auto-join`,
         );
         return;
       }
 
-      console.log(
+      serviceLogger.debug(
         `[CompetitionManager] Auto-joining agent ${agentId} to active competition ${activeCompetition.id}`,
       );
 
@@ -1267,12 +1221,12 @@ export class CompetitionManager {
         agentId,
       );
 
-      console.log(
+      serviceLogger.debug(
         `[CompetitionManager] Successfully auto-joined agent ${agentId} to competition ${activeCompetition.id}`,
       );
     } catch (error) {
       // Log the error but don't throw - we don't want auto-join failures to break agent registration
-      console.error(
+      serviceLogger.error(
         `[CompetitionManager] Error auto-joining agent ${agentId} to active competition:`,
         error,
       );
@@ -1281,46 +1235,45 @@ export class CompetitionManager {
 
   /**
    * Check and automatically end competitions that have reached their end date
-   * This method is called periodically by the SchedulerService
    */
   async processCompetitionEndDateChecks(): Promise<void> {
     try {
       const competitionsToEnd = await findActiveCompetitionsPastEndDate();
 
       if (competitionsToEnd.length === 0) {
-        console.log("[CompetitionManager] No competitions ready to end");
+        serviceLogger.debug(
+          "[CompetitionManager] No competitions ready to end",
+        );
         return;
       }
 
-      console.log(
+      serviceLogger.debug(
         `[CompetitionManager] Found ${competitionsToEnd.length} competitions ready to end`,
       );
 
       for (const competition of competitionsToEnd) {
         try {
-          console.log(
+          serviceLogger.debug(
             `[CompetitionManager] Auto-ending competition: ${competition.name} (${competition.id}) - scheduled end: ${competition.endDate!.toISOString()}`,
           );
 
           await this.endCompetition(competition.id);
 
-          console.log(
+          serviceLogger.debug(
             `[CompetitionManager] Successfully auto-ended competition: ${competition.name} (${competition.id})`,
           );
         } catch (error) {
-          console.error(
-            `[CompetitionManager] Error auto-ending competition ${competition.id}:`,
-            error,
+          serviceLogger.error(
+            `[CompetitionManager] Error auto-ending competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
           );
           // Continue processing other competitions even if one fails
         }
       }
     } catch (error) {
-      console.error(
-        "[CompetitionManager] Error in processCompetitionEndDateChecks:",
-        error,
+      serviceLogger.error(
+        `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
       );
-      throw error; // Re-throw so SchedulerService can handle or log
+      throw error;
     }
   }
 }

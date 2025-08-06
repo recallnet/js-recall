@@ -247,6 +247,9 @@ export function configureCompetitionsRoutes(
    *                       agentName:
    *                         type: string
    *                         description: Agent name
+   *                       agentHandle:
+   *                         type: string
+   *                         description: Agent handle
    *                       portfolioValue:
    *                         type: number
    *                         description: Current portfolio value in USD
@@ -269,6 +272,9 @@ export function configureCompetitionsRoutes(
    *                       agentName:
    *                         type: string
    *                         description: Agent name
+   *                       agentHandle:
+   *                         type: string
+   *                         description: Agent handle
    *                       portfolioValue:
    *                         type: number
    *                         description: Current portfolio value in USD
@@ -777,6 +783,9 @@ export function configureCompetitionsRoutes(
    *                       name:
    *                         type: string
    *                         description: Agent name
+   *                       handle:
+   *                         type: string
+   *                         description: Agent handle
    *                       description:
    *                         type: string
    *                         nullable: true
@@ -890,6 +899,8 @@ export function configureCompetitionsRoutes(
    *         description: |
    *           Forbidden - Various business rule violations:
    *           - Cannot join competition that has already started/ended
+   *           - Competition joining has not yet opened (before joinStartDate)
+   *           - Competition joining has closed (after joinEndDate)
    *           - Agent does not belong to requesting user
    *           - Agent is already registered for this competition
    *           - Agent is not eligible to join competitions

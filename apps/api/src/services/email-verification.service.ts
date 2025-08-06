@@ -7,6 +7,7 @@ import {
   markTokenAsUsed,
 } from "@/database/repositories/email-verification-repository.js";
 import { findById as findUserById } from "@/database/repositories/user-repository.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { AgentManager } from "@/services/agent-manager.service.js";
 import { UserManager } from "@/services/user-manager.service.js";
 
@@ -130,7 +131,10 @@ export class EmailVerificationService {
         },
       };
     } catch (error) {
-      console.error("[EmailVerificationService] Error verifying token:", error);
+      serviceLogger.error(
+        "[EmailVerificationService] Error verifying token:",
+        error,
+      );
       return {
         success: false,
         error: {
@@ -156,7 +160,7 @@ export class EmailVerificationService {
       // Get the Loops API key from environment variables
       const loopsApiKey = config.email.apiKey;
       if (!loopsApiKey) {
-        console.error(
+        serviceLogger.error(
           "[EmailVerificationService] Missing LOOPS_API_KEY in environment variables",
         );
         return;
@@ -182,17 +186,20 @@ export class EmailVerificationService {
       );
 
       if (response.status !== 200) {
-        console.error(
+        serviceLogger.error(
           "[EmailVerificationService] Loops API error:",
           response.data,
         );
       } else {
-        console.log(
+        serviceLogger.debug(
           `[EmailVerificationService] Successfully updated Loops with Verified status for ${email}`,
         );
       }
     } catch (error) {
-      console.error("[EmailVerificationService] Error updating Loops:", error);
+      serviceLogger.error(
+        "[EmailVerificationService] Error updating Loops:",
+        error,
+      );
       // Don't throw error to prevent blocking the verification flow
     }
   }

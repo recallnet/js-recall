@@ -1,12 +1,15 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
+import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
+  COMPETITION_JOIN_ERROR_TYPES,
   COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
+  CompetitionJoinError,
   CompetitionStatusSchema,
   PagingParamsSchema,
 } from "@/types/index.js";
@@ -63,8 +66,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Authentication and Authorization
         if (isAdmin) {
           // Admin access: Log and proceed
-          console.log(
-            `[CompetitionController] Admin accessing leaderboard for competition ${competitionId}.`,
+          competitionLogger.debug(
+            `Admin accessing leaderboard for competition ${competitionId}.`,
           );
         } else {
           // Not an admin, an agentId is required
@@ -106,6 +109,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
               rank: index + 1,
               agentId: entry.agentId,
               agentName: agent ? agent.name : "Unknown Agent",
+              agentHandle: agent ? agent.handle : "unknown_agent",
               portfolioValue: entry.value,
               active: true,
               deactivationReason: null,
@@ -119,6 +123,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           return {
             agentId: entry.agentId,
             agentName: agent ? agent.name : "Unknown Agent",
+            agentHandle: agent ? agent.handle : "unknown_agent",
             portfolioValue: entry.value,
             active: false,
             deactivationReason: entry.deactivationReason,
@@ -155,7 +160,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If no active competition, return null status
         if (!activeCompetition) {
-          console.log("[CompetitionController] No active competition found");
+          competitionLogger.debug("No active competition found");
           return res.status(200).json({
             success: true,
             active: false,
@@ -163,8 +168,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
             message: "No active competition found",
           });
         }
-        console.log(
-          `[CompetitionController] Found active competition: ${activeCompetition.id}`,
+        competitionLogger.debug(
+          `Found active competition: ${activeCompetition.id}`,
         );
 
         // Get agent ID from request (if authenticated)
@@ -173,8 +178,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If admin, return full status
         if (isAdmin) {
-          console.log(
-            `[CompetitionController] Admin ${agentId} accessing competition status`,
+          competitionLogger.debug(
+            `Admin ${agentId} accessing competition status`,
           );
           return res.status(200).json({
             success: true,
@@ -211,8 +216,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If agent is not actively participating and not an admin, return limited info
         if (!isAgentActiveInCompetitionResult) {
-          console.log(
-            `[CompetitionController] Agent ${agentId} is not in competition ${activeCompetition.id}`,
+          competitionLogger.debug(
+            `Agent ${agentId} is not in competition ${activeCompetition.id}`,
           );
 
           return res.status(200).json({
@@ -228,8 +233,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Agent is participating
-        console.log(
-          `[CompetitionController] Agent ${agentId} is participating in competition ${activeCompetition.id}`,
+        competitionLogger.debug(
+          `Agent ${agentId} is participating in competition ${activeCompetition.id}`,
         );
 
         // Return full competition info
@@ -274,8 +279,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Authentication and Authorization
         if (isAdmin) {
           // Admin access: Log and proceed
-          console.log(
-            `[CompetitionController] Admin accessing rules for competition ${activeCompetition.id}.`,
+          competitionLogger.debug(
+            `Admin accessing rules for competition ${activeCompetition.id}.`,
           );
         } else {
           // Not an admin, an agentId is required
@@ -404,14 +409,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // If no agent ID, they can't be authenticated
         if (isAdmin) {
-          console.log(
-            `[CompetitionController] Admin ${agentId} requesting upcoming competitions`,
+          competitionLogger.debug(
+            `Admin ${agentId} requesting upcoming competitions`,
           );
         } else if (!agentId) {
           throw new ApiError(401, "Authentication required");
         } else {
-          console.log(
-            `[CompetitionController] Agent ${agentId} requesting upcoming competitions`,
+          competitionLogger.debug(
+            `Agent ${agentId} requesting upcoming competitions`,
           );
         }
         // Get upcoming competitions
@@ -443,18 +448,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const userId = req.userId;
         const isAdmin = req.isAdmin === true;
         if (isAdmin) {
-          console.log(`[CompetitionController] Admin requesting competitions`);
+          competitionLogger.debug(`Admin requesting competitions`);
         } else if (agentId) {
-          console.log(
-            `[CompetitionController] Agent ${agentId} requesting competitions`,
-          );
+          competitionLogger.debug(`Agent ${agentId} requesting competitions`);
         } else if (userId) {
-          console.log(
-            `[CompetitionController] User ${userId} requesting competitions`,
-          );
+          competitionLogger.debug(`User ${userId} requesting competitions`);
         } else {
-          console.log(
-            `[CompetitionController] Unauthenticated request for competitions (public access)`,
+          competitionLogger.debug(
+            `Unauthenticated request for competitions (public access)`,
           );
         }
 
@@ -502,8 +503,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
                 };
               } catch (error) {
                 // If there's an error getting vote data, just return the competition without vote info
-                console.warn(
-                  `[CompetitionController] Failed to get vote data for competition ${competition.id}:`,
+                competitionLogger.warn(
+                  `Failed to get vote data for competition ${competition.id}:`,
                   error,
                 );
                 return {
@@ -553,20 +554,18 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Authentication check
         if (isAdmin) {
-          console.log(
-            `[CompetitionController] Admin requesting competition details`,
-          );
+          competitionLogger.debug(`Admin requesting competition details`);
         } else if (agentId) {
-          console.log(
-            `[CompetitionController] Agent ${agentId} requesting competition details`,
+          competitionLogger.debug(
+            `Agent ${agentId} requesting competition details`,
           );
         } else if (userId) {
-          console.log(
-            `[CompetitionController] User ${userId} requesting competition details`,
+          competitionLogger.debug(
+            `User ${userId} requesting competition details`,
           );
         } else {
-          console.log(
-            `[CompetitionController] Unauthenticated request for competition details (public access)`,
+          competitionLogger.debug(
+            `Unauthenticated request for competition details (public access)`,
           );
         }
 
@@ -621,8 +620,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
             userVotingInfo = votingState;
             votingEnabled = votingState.canVote || votingState.info.hasVoted;
           } catch (error) {
-            console.warn(
-              `[CompetitionController] Failed to get voting state for user ${userId} in competition ${competitionId}:`,
+            competitionLogger.warn(
+              `Failed to get voting state for user ${userId} in competition ${competitionId}:`,
               error,
             );
           }
@@ -662,20 +661,18 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Authentication check
         if (isAdmin) {
-          console.log(
-            `[CompetitionController] Admin requesting competition agents`,
-          );
+          competitionLogger.debug(`Admin requesting competition agents`);
         } else if (agentId) {
-          console.log(
-            `[CompetitionController] Agent ${agentId} requesting competition agents`,
+          competitionLogger.debug(
+            `Agent ${agentId} requesting competition agents`,
           );
         } else if (userId) {
-          console.log(
-            `[CompetitionController] User ${userId} requesting competition agents`,
+          competitionLogger.debug(
+            `User ${userId} requesting competition agents`,
           );
         } else {
-          console.log(
-            `[CompetitionController] Unauthenticated request for competition agents (public access)`,
+          competitionLogger.debug(
+            `Unauthenticated request for competition agents (public access)`,
           );
         }
 
@@ -783,7 +780,28 @@ export function makeCompetitionController(services: ServiceRegistry) {
           message: "Successfully joined competition",
         });
       } catch (error) {
-        // Convert service layer errors to appropriate HTTP errors
+        // Handle typed competition join errors
+        if (error && typeof error === "object" && "type" in error) {
+          const joinError = error as CompetitionJoinError;
+          switch (joinError.type) {
+            case COMPETITION_JOIN_ERROR_TYPES.COMPETITION_NOT_FOUND:
+            case COMPETITION_JOIN_ERROR_TYPES.AGENT_NOT_FOUND:
+              next(new ApiError(404, joinError.message));
+              break;
+            case COMPETITION_JOIN_ERROR_TYPES.COMPETITION_ALREADY_STARTED:
+            case COMPETITION_JOIN_ERROR_TYPES.AGENT_ALREADY_REGISTERED:
+            case COMPETITION_JOIN_ERROR_TYPES.AGENT_NOT_ELIGIBLE:
+            case COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN:
+            case COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED:
+              next(new ApiError(403, joinError.message));
+              break;
+            default:
+              next(new ApiError(500, "Failed to join competition"));
+          }
+          return;
+        }
+
+        // Handle legacy string-based errors (fallback for existing code)
         if (error instanceof Error) {
           if (error.message.includes("not found")) {
             next(new ApiError(404, error.message));

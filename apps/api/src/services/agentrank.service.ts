@@ -2,6 +2,7 @@ import { Rating, rate, rating } from "openskill";
 
 import * as agentScoreRepo from "@/database/repositories/agentscore-repository.js";
 import * as competitionRepo from "@/database/repositories/competition-repository.js";
+import { serviceLogger } from "@/lib/logger.js";
 
 /**
  * Agent Rank Service
@@ -14,7 +15,7 @@ export class AgentRankService {
    * @returns Promise resolving to void
    */
   async updateAgentRanksForCompetition(competitionId: string): Promise<void> {
-    console.log(
+    serviceLogger.debug(
       `[AgentRankService] Updating agent ranks for ended competition: ${competitionId}`,
     );
 
@@ -71,11 +72,11 @@ export class AgentRankService {
         competitionId,
       );
 
-      console.log(
+      serviceLogger.debug(
         `[AgentRankService] Successfully updated ranks for ${updatedRanks.length} agents from competition ${competitionId}`,
       );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[AgentRankService] Error updating agent ranks for competition ${competitionId}:`,
         error,
       );

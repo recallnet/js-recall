@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
+import { middlewareLogger } from "@/lib/logger.js";
+
 /**
  * Custom error class with HTTP status code
  */
@@ -24,8 +26,8 @@ const errorHandler = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   next: NextFunction,
 ) => {
-  console.error(`Error: ${err.message}`);
-  console.error(err.stack);
+  middlewareLogger.error(`Error: ${err.message}`);
+  middlewareLogger.error(err.stack);
 
   // Handle specific API errors
   if (err instanceof ApiError) {
@@ -37,6 +39,9 @@ const errorHandler = (
 
   // Handle inactive agent errors
   if (err.message && err.message.includes("inactive")) {
+    // TODO: if an error has the word "inactive" in it's message, it does NOT mean
+    //  it's a 403. Instead of catching individual cases here, the check for
+    //  inactive agents should throw a 403, and this should be removed.
     return res.status(403).json({
       success: false,
       error: err.message,

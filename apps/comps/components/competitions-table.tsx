@@ -8,7 +8,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { format } from "date-fns";
 import { SquareArrowOutUpRight } from "lucide-react";
 import Link from "next/link";
 import React, { useMemo, useRef, useState } from "react";
@@ -25,6 +24,7 @@ import {
 } from "@recallnet/ui2/components/table";
 
 import { PaginationResponse, UserCompetition } from "@/types";
+import { formatDate } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
 import { RankBadge } from "./agents-table/rank-badge";
@@ -94,7 +94,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
                 <div className="flex min-w-0 flex-1 flex-col">
                   <Link href={`/agents/${agent.id}`} className="truncate">
                     <span className="text-secondary-foreground font-semibold leading-tight">
-                      {agent.name}
+                      {agent.name} (@{agent.handle})
                     </span>
                   </Link>
                   <span className="text-secondary-foreground/70 block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs">
@@ -119,7 +119,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
         cell: ({ row }) => (
           <span>
             {row.original.startDate
-              ? format(new Date(row.original.startDate), "MM/dd")
+              ? formatDate(new Date(row.original.startDate))
               : "TBA"}
           </span>
         ),

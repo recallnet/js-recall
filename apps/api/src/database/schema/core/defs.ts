@@ -21,6 +21,7 @@ import {
   COMPETITION_AGENT_STATUS_VALUES,
   COMPETITION_STATUS_VALUES,
   COMPETITION_TYPE_VALUES,
+  MAX_HANDLE_LENGTH,
 } from "@/types/index.js";
 
 /**
@@ -94,6 +95,7 @@ export const agents = pgTable(
     ownerId: uuid("owner_id").notNull(),
     walletAddress: varchar("wallet_address", { length: 42 }).unique(),
     name: varchar({ length: 100 }).notNull(),
+    handle: varchar({ length: MAX_HANDLE_LENGTH }).notNull(),
     email: varchar({ length: 100 }).unique(),
     description: text(),
     imageUrl: text("image_url"),
@@ -120,6 +122,7 @@ export const agents = pgTable(
     index("idx_agents_owner_id").on(table.ownerId),
     index("idx_agents_status").on(table.status),
     index("idx_agents_wallet_address").on(table.walletAddress),
+    index("idx_agents_handle").on(table.handle),
     index("idx_agents_api_key").on(table.apiKey),
     foreignKey({
       columns: [table.ownerId],
@@ -127,6 +130,7 @@ export const agents = pgTable(
       name: "agents_owner_id_fkey",
     }).onDelete("cascade"),
     unique("agents_owner_id_name_key").on(table.ownerId, table.name),
+    unique("agents_handle_key").on(table.handle),
     unique("agents_api_key_key").on(table.apiKey),
     unique("agents_wallet_address_key").on(table.walletAddress),
   ],
@@ -183,6 +187,8 @@ export const competitions = pgTable(
     endDate: timestamp("end_date", { withTimezone: true }),
     votingStartDate: timestamp("voting_start_date", { withTimezone: true }),
     votingEndDate: timestamp("voting_end_date", { withTimezone: true }),
+    joinStartDate: timestamp("join_start_date", { withTimezone: true }),
+    joinEndDate: timestamp("join_end_date", { withTimezone: true }),
     status: competitionStatus("status").notNull(),
     sandboxMode: boolean("sandbox_mode").notNull().default(false),
     createdAt: timestamp("created_at", {

@@ -6,6 +6,7 @@ import {
   getPortfolioTokenValues,
 } from "@/database/repositories/competition-repository.js";
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
+import { agentLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -78,7 +79,7 @@ export function makeAgentController(services: ServiceRegistry) {
 
     /**
      * Update profile for the authenticated agent
-     * Limited to name, description, and imageUrl only (agent self-service)
+     * Limited to description and imageUrl only (agent self-service)
      * @param req Express request with agentId from API key
      * @param res Express response
      * @param next Express next function
@@ -94,7 +95,7 @@ export function makeAgentController(services: ServiceRegistry) {
         }
         const {
           agentId,
-          body: { name, description, imageUrl },
+          body: { description, imageUrl },
         } = data;
 
         // Get the current agent
@@ -106,7 +107,6 @@ export function makeAgentController(services: ServiceRegistry) {
         // Prepare update data with only allowed fields
         const updateData = {
           id: agentId,
-          name: name ?? agent.name,
           description,
           imageUrl,
         };
@@ -326,10 +326,11 @@ export function makeAgentController(services: ServiceRegistry) {
 
         // Check if we have snapshot data (preferred method)
         if (activeCompetition) {
-          // Try to get the latest snapshot for this agent
+          // Try to get the latest snapshot for this agent (limit to 1 for performance)
           const agentSnapshots = await getAgentPortfolioSnapshots(
             activeCompetition.id,
             agentId,
+            1, // Only fetch the most recent snapshot
           );
 
           // If we have a snapshot, use it
@@ -376,23 +377,23 @@ export function makeAgentController(services: ServiceRegistry) {
           }
 
           // No snapshot, but we should initiate one for future requests
-          console.log(
-            `[AgentController] No portfolio snapshots found for agent ${agentId} in competition ${activeCompetition.id}`,
+          agentLogger.debug(
+            `No portfolio snapshots found for agent ${agentId} in competition ${activeCompetition.id}`,
           );
           // Request a snapshot for this agent asynchronously (don't await)
           services.portfolioSnapshotter
             .takePortfolioSnapshotForAgent(activeCompetition.id, agentId)
             .catch((error) => {
-              console.error(
-                `[AgentController] Error taking snapshot for agent ${agentId}:`,
+              agentLogger.error(
+                `Error taking snapshot for agent ${agentId}:`,
                 error,
               );
             });
         }
 
         // Fall back to calculating portfolio on-demand
-        console.log(
-          `[AgentController] Using live calculation for portfolio of agent ${agentId}`,
+        agentLogger.debug(
+          `Using live calculation for portfolio of agent ${agentId}`,
         );
 
         // Get the balances
