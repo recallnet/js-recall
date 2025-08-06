@@ -64,12 +64,18 @@ export const Rewards: React.FC<RewardsProps> = ({
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="text-primary-foreground font-bold">
-        $
-        {total.toLocaleString(undefined, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
-        })}{" "}
-        in rewards!
+        {total > 0 ? (
+          <>
+            $
+            {total.toLocaleString(undefined, {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            })}
+            in rewards!
+          </>
+        ) : (
+          "TBA"
+        )}
       </div>
       <div className="flex flex-col flex-wrap gap-2 lg:flex-row lg:gap-3">
         {sorted.slice(0, 3).map((r) => (
