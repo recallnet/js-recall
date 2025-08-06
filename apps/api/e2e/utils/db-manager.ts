@@ -161,14 +161,6 @@ export class DbManager {
   }
 
   /**
-   * Connect to the database
-   * @returns The database connection
-   */
-  public async connect() {
-    return db;
-  }
-
-  /**
    * Close the database connection
    * This does nothing since we're using the shared connection
    * that should stay alive for the application.
@@ -199,8 +191,4 @@ export async function resetDatabase(): Promise<void> {
 
 export async function cleanupTestState(): Promise<void> {
   return dbManager.cleanupTestState();
-}
-
-export async function connectToDb(): Promise<typeof db> {
-  return dbManager.connect();
 }

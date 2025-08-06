@@ -1,11 +1,11 @@
 "use client";
 
+import { format } from "date-fns";
 import React, { useState } from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Competition } from "@/types/competition";
-import { formatDate } from "@/utils/format";
 
 import { CompetitionStatusBadge } from "./competition-status-badge";
 
@@ -30,10 +30,10 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
   const [expanded, setExpanded] = useState(false);
 
   const startDate = competition.startDate
-    ? formatDate(new Date(competition.startDate))
+    ? format(new Date(competition.startDate), "MM/dd")
     : "TBA";
   const endDate = competition.endDate
-    ? formatDate(new Date(competition.endDate))
+    ? format(new Date(competition.endDate), "MM/dd")
     : "TBA";
 
   const SHORT_DESC_LENGTH = 120;
@@ -73,18 +73,20 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
             <CompetitionStatusBadge status={competition.status} />
           </div>
           <span>
-            {startDate} - {endDate}
+            {startDate} -- {endDate}
           </span>
         </div>
       </div>
 
       <div className="flex items-center gap-2 border-b p-[25px]">
         <CellTitle>Skills</CellTitle>
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded border p-2 text-xs capitalize">
-            {competition.type}
-          </span>
-        </div>
+        {/* <div className="flex flex-wrap gap-2">
+          {competition.skills.map((skill, i) => (
+            <span key={skill + i} className="rounded border p-2 text-xs">
+              {skill}
+            </span>
+          ))} 
+        </div>*/}
       </div>
 
       <div className="border-b">

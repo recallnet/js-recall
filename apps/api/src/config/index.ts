@@ -228,6 +228,7 @@ export const config = {
       eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
       usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
       usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
+      vision: "0xe6f98920852A360497dBcc8ec895F1bB1F7c8Df4", // Vision token - should be volitile https://coinmarketcap.com/currencies/openvision/
     },
     polygon: {
       eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Weth on Polygon
@@ -292,30 +293,6 @@ export const config = {
   // Maximum trade size as percentage of portfolio value
   // Defaults to 25% if not specified
   maxTradePercentage: parseInt(process.env.MAX_TRADE_PERCENTAGE || "25", 10),
-  // Trading constraints configuration
-  tradingConstraints: {
-    // Default minimum pair age in hours (7 days)
-    defaultMinimumPairAgeHours: parseInt(
-      process.env.DEFAULT_MINIMUM_PAIR_AGE_HOURS || "168",
-      10,
-    ),
-    // Default minimum 24h volume in USD ($100,000)
-    defaultMinimum24hVolumeUsd: parseInt(
-      process.env.DEFAULT_MINIMUM_24H_VOLUME_USD || "100000",
-      10,
-    ),
-    // Default minimum liquidity in USD ($100,000)
-    defaultMinimumLiquidityUsd: parseInt(
-      process.env.DEFAULT_MINIMUM_LIQUIDITY_USD || "100000",
-      10,
-    ),
-    // Default minimum FDV in USD ($1,000,000)
-    defaultMinimumFdvUsd: parseInt(
-      process.env.DEFAULT_MINIMUM_FDV_USD || "1000000",
-      10,
-    ),
-  },
-
   // Logging configuration
   logging: {
     // Sample rate for repository timing logs (0.0 to 1.0)

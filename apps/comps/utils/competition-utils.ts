@@ -1,8 +1,7 @@
+import { format } from "date-fns";
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
 import { Competition, CompetitionStatus, UserCompetition } from "@/types";
-
-import { formatDate } from "./format";
 
 export const STATUS_ICONS = {
   [CompetitionStatus.Active]: Play,
@@ -23,8 +22,8 @@ export function formatCompetitionDates(
   startDate?: Date | number | string | null,
   endDate?: Date | number | string | null,
 ): string {
-  const start = startDate ? formatDate(new Date(startDate)) : "TBA";
-  const end = endDate ? formatDate(new Date(endDate)) : "TBA";
+  const start = startDate ? format(new Date(startDate), "MM/dd") : "TBA";
+  const end = endDate ? format(new Date(endDate), "MM/dd") : "TBA";
 
   return `${start} - ${end}`;
 }
@@ -51,25 +50,4 @@ export function mergeCompetitionsWithUserData(
       agents: userCompetition?.agents ?? [],
     };
   });
-}
-
-/**
- * Formats a competition type for display in the UI.
- * Maps internal competition types to user-friendly display names.
- *
- * @param type - The raw competition type from the API
- * @returns The formatted display name for the competition type
- *
- * @example
- * ```ts
- * formatCompetitionType("trading"); // "Crypto Trading"
- * formatCompetitionType("unknown"); // "unknown"
- * ```
- */
-export function formatCompetitionType(type: string): string {
-  const typeMap: Record<string, string> = {
-    trading: "Crypto Trading",
-  };
-
-  return typeMap[type] || type;
 }

@@ -13,7 +13,6 @@ import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.j
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { SchedulerService } from "@/services/scheduler.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
-import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserManager } from "@/services/user-manager.service.js";
 import { VoteManager } from "@/services/vote-manager.service.js";
 
@@ -42,7 +41,6 @@ class ServiceRegistry {
   private _objectIndexService: ObjectIndexService;
   private _emailService: EmailService;
   private _emailVerificationService: EmailVerificationService;
-  private _tradingConstraintsService: TradingConstraintsService;
 
   constructor() {
     // Initialize services in dependency order
@@ -87,9 +85,6 @@ class ServiceRegistry {
       this._agentManager,
     );
 
-    // Initialize trading constraints service (no dependencies)
-    this._tradingConstraintsService = new TradingConstraintsService();
-
     this._competitionManager = new CompetitionManager(
       this._balanceManager,
       this._tradeSimulator,
@@ -98,7 +93,6 @@ class ServiceRegistry {
       this._configurationService,
       this._agentRankService,
       this._voteManager,
-      this._tradingConstraintsService,
     );
 
     // Initialize LeaderboardService with required dependencies
@@ -189,10 +183,6 @@ class ServiceRegistry {
     return this._emailVerificationService;
   }
 
-  get tradingConstraintsService(): TradingConstraintsService {
-    return this._tradingConstraintsService;
-  }
-
   // Add method to start schedulers
   startSchedulers(): void {
     this._scheduler.start();
@@ -215,16 +205,14 @@ export {
   BalanceManager,
   CompetitionManager,
   ConfigurationService,
-  EmailVerificationService,
   EmailService,
+  EmailVerificationService,
   LeaderboardService,
   ObjectIndexService,
   PortfolioSnapshotter,
   PriceTracker,
   ServiceRegistry,
-  SchedulerService,
   TradeSimulator,
-  TradingConstraintsService,
   UserManager,
   VoteManager,
 };

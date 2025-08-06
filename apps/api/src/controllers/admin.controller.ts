@@ -38,8 +38,6 @@ import {
   AdminSetupSchema,
   AdminStartCompetitionSchema,
   AdminSyncObjectIndexSchema,
-  AdminUpdateAgentBodySchema,
-  AdminUpdateAgentParamsSchema,
   AdminUpdateCompetitionParamsSchema,
 } from "./admin.schema.js";
 import {
@@ -547,9 +545,6 @@ export function makeAdminController(services: ServiceRegistry) {
           endDate,
           votingStartDate,
           votingEndDate,
-          joinStartDate,
-          joinEndDate,
-          tradingConstraints,
         } = result.data;
 
         // Create a new competition
@@ -564,9 +559,6 @@ export function makeAdminController(services: ServiceRegistry) {
           endDate ? new Date(endDate) : undefined,
           votingStartDate ? new Date(votingStartDate) : undefined,
           votingEndDate ? new Date(votingEndDate) : undefined,
-          joinStartDate ? new Date(joinStartDate) : undefined,
-          joinEndDate ? new Date(joinEndDate) : undefined,
-          tradingConstraints,
         );
 
         // Return the created competition
@@ -604,7 +596,6 @@ export function makeAdminController(services: ServiceRegistry) {
           endDate,
           votingStartDate,
           votingEndDate,
-          tradingConstraints,
         } = result.data;
 
         let finalAgentIds = [...agentIds]; // Start with provided agent IDs
@@ -681,7 +672,6 @@ export function makeAdminController(services: ServiceRegistry) {
           await services.competitionManager.startCompetition(
             competition.id,
             finalAgentIds,
-            tradingConstraints,
           );
 
         // Return the started competition
@@ -1226,7 +1216,6 @@ export function makeAdminController(services: ServiceRegistry) {
           ownerId: agent.ownerId,
           walletAddress: agent.walletAddress,
           name: agent.name,
-          email: agent.email,
           description: agent.description,
           status: agent.status,
           imageUrl: agent.imageUrl,
@@ -1486,7 +1475,6 @@ export function makeAdminController(services: ServiceRegistry) {
           ownerId: agent.ownerId,
           walletAddress: agent.walletAddress,
           name: agent.name,
-          email: agent.email,
           description: agent.description,
           status: agent.status as ActorStatus,
           imageUrl: agent.imageUrl,
@@ -1496,94 +1484,6 @@ export function makeAdminController(services: ServiceRegistry) {
         };
 
         // Return the agent
-        res.status(200).json({
-          success: true,
-          agent: formattedAgent,
-        });
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Update an agent by ID
-     * @param req Express request
-     * @param res Express response
-     * @param next Express next function
-     */
-    async updateAgent(req: Request, res: Response, next: NextFunction) {
-      try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminUpdateAgentParamsSchema,
-          req.params,
-        );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        // Validate body using flatParse
-        const bodyResult = flatParse(AdminUpdateAgentBodySchema, req.body);
-        if (!bodyResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid request body: ${bodyResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
-        const { name, description, imageUrl, email, metadata } =
-          bodyResult.data;
-
-        // Get the current agent
-        const agent = await services.agentManager.getAgent(agentId);
-        if (!agent) {
-          return res.status(404).json({
-            success: false,
-            error: "Agent not found",
-          });
-        }
-
-        // Prepare update data with only provided fields
-        const updateData = {
-          id: agentId,
-          name: name ?? agent.name,
-          description: description ?? agent.description,
-          imageUrl: imageUrl ?? agent.imageUrl,
-          email: email ?? agent.email,
-          metadata: metadata ?? agent.metadata,
-        };
-
-        const updatedAgent = await services.agentManager.updateAgent({
-          ...agent,
-          ...updateData,
-        });
-
-        if (!updatedAgent) {
-          return res.status(500).json({
-            success: false,
-            error: "Failed to update agent",
-          });
-        }
-
-        // Format the response
-        const formattedAgent = {
-          id: updatedAgent.id,
-          ownerId: updatedAgent.ownerId,
-          walletAddress: updatedAgent.walletAddress,
-          name: updatedAgent.name,
-          email: updatedAgent.email,
-          description: updatedAgent.description,
-          status: updatedAgent.status as ActorStatus,
-          imageUrl: updatedAgent.imageUrl,
-          metadata: updatedAgent.metadata,
-          createdAt: updatedAgent.createdAt,
-          updatedAt: updatedAgent.updatedAt,
-        };
-
         res.status(200).json({
           success: true,
           agent: formattedAgent,

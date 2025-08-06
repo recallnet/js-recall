@@ -14,11 +14,10 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentCard } from "@/components/user-agents/agent-card";
 import AgentsSummary from "@/components/user-agents/agents-summary";
-import { useAnalytics } from "@/hooks/usePostHog";
 import { Agent } from "@/types";
 
 export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
-  const { trackEvent } = useAnalytics();
+  let agentList = <NoAgents />;
   const nAgents = agents.length;
 
   const bestPlacement = useMemo(
@@ -59,46 +58,40 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
     }, 0);
   }, [agents]);
 
-  const renderAgentList = () => {
-    if (nAgents === 0) {
-      return <NoAgents trackEvent={trackEvent} />;
-    }
-
-    if (nAgents > 0 && nAgents <= 3) {
-      return (
+  if (nAgents > 0 && nAgents <= 3)
+    agentList = (
+      <div
+        className={cn(`flex w-full flex-col justify-around gap-4`, {
+          "xs:flex-row": nAgents == 1,
+          "sm:flex-row": nAgents == 2,
+          "lg:flex-row": nAgents == 3,
+        })}
+      >
         <div
-          className={cn(`flex w-full flex-col justify-around gap-4`, {
-            "xs:flex-row": nAgents == 1,
-            "sm:flex-row": nAgents == 2,
-            "lg:flex-row": nAgents == 3,
+          className={cn("flex gap-6", {
+            "xs:overflow-x-visible overflow-x-auto": nAgents < 3,
+            "overflow-x-auto md:overflow-x-visible": nAgents == 3,
           })}
         >
-          <div
-            className={cn("flex gap-6", {
-              "xs:overflow-x-visible overflow-x-auto": nAgents < 3,
-              "overflow-x-auto md:overflow-x-visible": nAgents == 3,
-            })}
-          >
-            {agents.map((agent, i) => (
-              <AgentCard
-                key={i}
-                agent={agent}
-                className="h-87 min-w-64 max-w-80 flex-1"
-              />
-            ))}
-          </div>
-          <AgentsSummary
-            nAgents={nAgents}
-            bestPlacement={bestPlacement}
-            completedComps={completedComps}
-            highest={highest}
-          />
+          {agents.map((agent, i) => (
+            <AgentCard
+              key={i}
+              agent={agent}
+              className="h-87 min-w-64 max-w-80 flex-1"
+            />
+          ))}
         </div>
-      );
-    }
+        <AgentsSummary
+          nAgents={nAgents}
+          bestPlacement={bestPlacement}
+          completedComps={completedComps}
+          highest={highest}
+        />
+      </div>
+    );
 
-    // nAgents >= 4
-    return (
+  if (nAgents >= 4)
+    agentList = (
       <div className="flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
           {agents.map((agent, i) => (
@@ -117,7 +110,6 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
         />
       </div>
     );
-  };
 
   return (
     <Collapsible defaultOpen className="my-7">
@@ -128,27 +120,16 @@ export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
             <span className="text-secondary-foreground">({nAgents})</span>
           </div>
           <Button asChild>
-            <Link
-              href="/create-agent"
-              onClick={() => trackEvent("UserClickedAddAgentButton")}
-            >
-              {"+ ADD AGENT"}
-            </Link>
+            <Link href="/create-agent">{"+ ADD AGENT"}</Link>
           </Button>
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent className="w-full">
-        {renderAgentList()}
-      </CollapsibleContent>
+      <CollapsibleContent className="w-full">{agentList}</CollapsibleContent>
     </Collapsible>
   );
 }
 
-const NoAgents = ({
-  trackEvent,
-}: {
-  trackEvent: (eventName: string, properties?: Record<string, unknown>) => void;
-}) => {
+const NoAgents = () => {
   return (
     <div className="relative h-[350px] w-full">
       <div className="md:px-50 2xl:px-100 flex w-full flex-col items-center px-10 pt-10 text-center sm:px-20">
@@ -159,12 +140,7 @@ const NoAgents = ({
           {`Kick things off by creating your very first AI agent. It'll start competing and climbing the leaderboard in no time!`}
         </span>
         <Button asChild className="mt-6 w-40 whitespace-nowrap px-8 py-5">
-          <Link
-            href="/create-agent"
-            onClick={() => trackEvent("UserClickedAddAgentButton")}
-          >
-            {"+ ADD AGENT"}
-          </Link>
+          <Link href="/create-agent">{"+ ADD AGENT"}</Link>
         </Button>
       </div>
       <Image

@@ -78,7 +78,7 @@ export function makeAgentController(services: ServiceRegistry) {
 
     /**
      * Update profile for the authenticated agent
-     * Limited to description and imageUrl only (agent self-service)
+     * Limited to name, description, and imageUrl only (agent self-service)
      * @param req Express request with agentId from API key
      * @param res Express response
      * @param next Express next function
@@ -94,7 +94,7 @@ export function makeAgentController(services: ServiceRegistry) {
         }
         const {
           agentId,
-          body: { description, imageUrl },
+          body: { name, description, imageUrl },
         } = data;
 
         // Get the current agent
@@ -106,6 +106,7 @@ export function makeAgentController(services: ServiceRegistry) {
         // Prepare update data with only allowed fields
         const updateData = {
           id: agentId,
+          name: name ?? agent.name,
           description,
           imageUrl,
         };

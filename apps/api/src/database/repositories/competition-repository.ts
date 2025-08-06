@@ -1257,11 +1257,8 @@ async function findBestPlacementForAgentImpl(agentId: string) {
  * @param entries Array of leaderboard entries to insert
  * @returns Array of inserted leaderboard entries
  */
-export async function batchInsertLeaderboardImpl(
-  entries: (Omit<InsertCompetitionsLeaderboard, "id"> & {
-    pnl?: number;
-    startingValue?: number;
-  })[],
+async function batchInsertLeaderboardImpl(
+  entries: (Omit<InsertCompetitionsLeaderboard, "id"> & { pnl?: number })[],
 ) {
   if (!entries.length) {
     return [];
@@ -1277,15 +1274,12 @@ export async function batchInsertLeaderboardImpl(
       id: uuidv4(),
     }));
 
-    let results: (InsertCompetitionsLeaderboard & {
-      pnl?: number;
-      startingValue?: number;
-    })[] = await db
+    let results: (InsertCompetitionsLeaderboard & { pnl?: number })[] = await db
       .insert(competitionsLeaderboard)
       .values(valuesToInsert)
       .returning();
 
-    const pnlsToInsert = valuesToInsert.filter((e) => e.pnl !== undefined);
+    const pnlsToInsert = valuesToInsert.filter((e) => e.pnl);
     if (pnlsToInsert.length) {
       const pnlResults = await db
         .insert(tradingCompetitionsLeaderboard)
@@ -1293,7 +1287,6 @@ export async function batchInsertLeaderboardImpl(
           pnlsToInsert.map((entry) => {
             return {
               pnl: entry.pnl,
-              startingValue: entry.startingValue || 0,
               competitionsLeaderboardId: entry.id,
             };
           }),
@@ -1304,7 +1297,7 @@ export async function batchInsertLeaderboardImpl(
         const pnl = pnlResults.find(
           (p) => p.competitionsLeaderboardId === r.id,
         );
-        return { ...r, pnl: pnl?.pnl, startingValue: pnl?.startingValue };
+        return { ...r, pnl: pnl?.pnl };
       });
     }
 

@@ -10,7 +10,6 @@ import { IconButton } from "@recallnet/ui2/components/icon-button";
 import CountdownClock from "@/components/clock";
 import { StringList } from "@/components/string-list";
 import { Competition } from "@/types";
-import { formatCompetitionType } from "@/utils/competition-utils";
 
 interface UpComingCompetitionProps {
   competition: Competition;
@@ -22,9 +21,7 @@ export const UpComingCompetition: React.FC<UpComingCompetitionProps> = ({
   return (
     <div className="bg-card p-8">
       <div className="mb-30 flex items-start justify-between">
-        <StringList
-          strings={["UPCOMING", formatCompetitionType(competition.type)]}
-        />
+        <StringList strings={["UPCOMING", competition.type]} />
         <IconButton
           Icon={Share1Icon}
           aria-label="Share"

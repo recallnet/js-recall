@@ -55,11 +55,6 @@ export interface AdminAgentKeyResponse {
   agent: AdminAgentWithKey;
 }
 
-export interface AdminAgentUpdateResponse {
-  success: boolean;
-  agent: Omit<AdminAgent, "apiKey">;
-}
-
 export interface AdminUser {
   id: string;
   walletAddress: string;

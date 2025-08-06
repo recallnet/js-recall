@@ -35,67 +35,6 @@ import {
  */
 
 /**
- * Get the total ROI as percentage (decimal format) for a single agent across all finished competitions
- * @param agentId The agent ID to get ROI for
- * @returns The total ROI as percentage in decimal format (e.g., 0.37 for 37%) or null if no completed competitions
- */
-export async function getAgentTotalRoi(
-  agentId: string,
-): Promise<number | null> {
-  try {
-    const result = await db
-      .select({
-        totalPnl: sum(tradingCompetitionsLeaderboard.pnl).as("totalPnl"),
-        totalStartingValue: sum(
-          tradingCompetitionsLeaderboard.startingValue,
-        ).as("totalStartingValue"),
-      })
-      .from(competitionsLeaderboard)
-      .innerJoin(
-        tradingCompetitionsLeaderboard,
-        eq(
-          tradingCompetitionsLeaderboard.competitionsLeaderboardId,
-          competitionsLeaderboard.id,
-        ),
-      )
-      .innerJoin(
-        competitions,
-        eq(competitionsLeaderboard.competitionId, competitions.id),
-      )
-      .where(
-        and(
-          eq(competitionsLeaderboard.agentId, agentId),
-          eq(competitions.status, "ended"),
-        ),
-      )
-      .groupBy(competitionsLeaderboard.agentId);
-
-    if (!result[0]) {
-      return null;
-    }
-
-    const totalPnl = Number(result[0].totalPnl);
-    const totalStartingValue = Number(result[0].totalStartingValue);
-
-    if (
-      typeof totalPnl !== "number" ||
-      typeof totalStartingValue !== "number" ||
-      isNaN(totalPnl) ||
-      isNaN(totalStartingValue) ||
-      totalStartingValue <= 0
-    ) {
-      return null;
-    }
-
-    // Calculate ROI as percentage in decimal format (e.g., 0.37 for 37%)
-    return totalPnl / totalStartingValue;
-  } catch (error) {
-    console.error("[LeaderboardRepository] Error in getAgentBestRoi:", error);
-    return null;
-  }
-}
-
-/**
  * Get global statistics for a specific competition type across all relevant competitions.
  * Relevant competitions are those with status 'ended'.
  * @param type The type of competition (e.g., 'trading')
@@ -203,7 +142,6 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       totalAgents: number;
     } | null;
     bestPnl: number | null;
-    totalRoi: number | null;
   }>
 > {
   if (agentIds.length === 0) {
@@ -318,35 +256,6 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
         desc(tradingCompetitionsLeaderboard.pnl),
       );
 
-    // Query 7: Total ROI - calculate ROI percentage across all finished competitions
-    const totalRoiQuery = db
-      .select({
-        agentId: competitionsLeaderboard.agentId,
-        totalPnl: sum(tradingCompetitionsLeaderboard.pnl).as("totalPnl"),
-        totalStartingValue: sum(
-          tradingCompetitionsLeaderboard.startingValue,
-        ).as("totalStartingValue"),
-      })
-      .from(competitionsLeaderboard)
-      .innerJoin(
-        tradingCompetitionsLeaderboard,
-        eq(
-          tradingCompetitionsLeaderboard.competitionsLeaderboardId,
-          competitionsLeaderboard.id,
-        ),
-      )
-      .innerJoin(
-        competitions,
-        eq(competitionsLeaderboard.competitionId, competitions.id),
-      )
-      .where(
-        and(
-          inArray(competitionsLeaderboard.agentId, agentIds),
-          eq(competitions.status, "ended"),
-        ),
-      )
-      .groupBy(competitionsLeaderboard.agentId);
-
     // Execute all queries in parallel
     const [
       agentRanksResult,
@@ -355,7 +264,6 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       tradeCountsResult,
       bestPlacementResult,
       bestPnlResult,
-      totalRoiResult,
     ] = await Promise.all([
       agentRanksQuery,
       competitionCountsQuery,
@@ -363,7 +271,6 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       tradeCountsQuery,
       bestPlacementsQuery,
       bestPnlQuery,
-      totalRoiQuery,
     ]);
 
     // Query 6: Get actual ranks - need to get all ranks first then calculate
@@ -425,29 +332,6 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       ]),
     );
 
-    const totalRoiMap = new Map(
-      totalRoiResult.map((row) => {
-        const totalPnl = row.totalPnl ? Number(row.totalPnl) : null;
-        const totalStartingValue = row.totalStartingValue
-          ? Number(row.totalStartingValue)
-          : null;
-
-        if (
-          typeof totalPnl !== "number" ||
-          typeof totalStartingValue !== "number" ||
-          isNaN(totalPnl) ||
-          isNaN(totalStartingValue) ||
-          totalStartingValue <= 0
-        ) {
-          return [row.agentId, null];
-        }
-
-        // Calculate ROI as percentage in decimal format (e.g., 0.37 for 37%)
-        const roiPercent = totalPnl / totalStartingValue;
-        return [row.agentId, roiPercent];
-      }),
-    );
-
     // Combine all data
     const result = agentIds.map((agentId) => {
       const agentData = agentRanksMap.get(agentId);
@@ -457,7 +341,6 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       const bestPlacement = bestPlacementMap.get(agentId) ?? null;
       const bestPnl = bestPnlMap.get(agentId)?.pnl ?? null;
       const globalRank = ranksMap.get(agentId) ?? null;
-      const totalRoi = totalRoiMap.get(agentId) ?? null;
 
       return {
         agentId,
@@ -465,14 +348,13 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
         description: agentData?.description ?? null,
         imageUrl: agentData?.imageUrl ?? null,
         metadata: agentData?.metadata ?? null,
-        globalScore: agentData?.globalScore ?? null,
         globalRank,
+        globalScore: agentData?.globalScore ?? null,
         completedCompetitions,
         totalVotes,
         totalTrades,
         bestPlacement,
         bestPnl,
-        totalRoi,
       };
     });
 
@@ -578,9 +460,9 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
   }
 }
 
-// ----------------------------------------------------------------------------
+// =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
-// ----------------------------------------------------------------------------
+// =============================================================================
 
 /**
  * All repository functions wrapped with timing and metrics

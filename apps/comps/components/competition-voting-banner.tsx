@@ -8,7 +8,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { Competition, CompetitionStatus } from "@/types";
 
 import CountdownClock from "./clock";
-import { getCompetitionStateConfig } from "./competition-state-config";
+import { getCompetitionVotingConfig } from "./competition-voting-config";
 
 export interface CompetitionVotingBannerProps {
   competition: Competition;
@@ -19,7 +19,7 @@ export interface CompetitionVotingBannerProps {
 export const CompetitionVotingBanner: React.FC<
   CompetitionVotingBannerProps
 > = ({ competition, className, onClose }) => {
-  const config = getCompetitionStateConfig(
+  const config = getCompetitionVotingConfig(
     competition,
     competition.userVotingInfo?.info?.hasVoted || false,
   );
@@ -33,7 +33,7 @@ export const CompetitionVotingBanner: React.FC<
   };
 
   const countdownFinished = () => {
-    const config = getCompetitionStateConfig(
+    const config = getCompetitionVotingConfig(
       competition,
       competition.userVotingInfo?.info?.hasVoted || false,
     );

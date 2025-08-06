@@ -23,8 +23,3 @@ export type SelectPortfolioTokenValue =
   typeof defs.portfolioTokenValues.$inferSelect;
 export type InsertPortfolioTokenValue =
   typeof defs.portfolioTokenValues.$inferInsert;
-
-export type SelectTradingConstraints =
-  typeof defs.tradingConstraints.$inferSelect;
-export type InsertTradingConstraints =
-  typeof defs.tradingConstraints.$inferInsert;

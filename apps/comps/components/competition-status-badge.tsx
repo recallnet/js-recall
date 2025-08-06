@@ -12,7 +12,7 @@ export function getCompetitionStatusConfig(
 ): StatusConfig {
   return status === CompetitionStatus.Active
     ? {
-        text: "Ongoing",
+        text: "On-going",
         variant: "green",
       }
     : status === CompetitionStatus.Pending

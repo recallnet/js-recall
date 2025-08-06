@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useClickAway } from "@uidotdev/usehooks";
 import { BadgeCheckIcon, CircleAlertIcon, SquarePen } from "lucide-react";
 import React, { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -19,7 +18,6 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { useVerifyEmail } from "@/hooks/useVerifyEmail";
-import { ConflictError } from "@/lib/api-client";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
@@ -48,14 +46,6 @@ export default function UserInfoSection({
   const { mutate: verifyEmail } = useVerifyEmail();
   const verified = user.isEmailVerified;
 
-  // Click away ref to dismiss edit mode
-  const editFieldRef = useClickAway<HTMLDivElement>(() => {
-    if (editField) {
-      setEditField(null);
-      form.reset();
-    }
-  });
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
 
@@ -81,23 +71,8 @@ export default function UserInfoSection({
 
       await onSave(transformedData);
       setEditField(null);
-    } catch (error: unknown) {
-      // Handle ConflictError (409) for duplicate emails
-      if (
-        error instanceof ConflictError &&
-        error.message.toLowerCase().includes("email")
-      ) {
-        toast.error("Profile Update Failed", {
-          description: error.message,
-        });
-      } else {
-        toast.error("Profile Update Failed", {
-          description:
-            error instanceof Error
-              ? error.message
-              : "An unexpected error occurred",
-        });
-      }
+    } catch (error) {
+      console.error(`Failed to save:`, error);
     }
   };
 
@@ -115,7 +90,7 @@ export default function UserInfoSection({
               </span>
             </div>,
           );
-          setTimeout(setEmailVerifyClicked, 60 * 1000, false); // wait 60 seconds
+          setTimeout(setEmailVerifyClicked, 60 * 1000, false); //wait 60 seconds
         } else {
           toast.error(res.message);
         }
@@ -148,10 +123,10 @@ export default function UserInfoSection({
             className="w-full space-y-4"
           >
             {/* Email row */}
-            <div className="text-secondary-foreground flex min-h-[40px] flex-wrap items-center gap-4">
+            <div className="text-secondary-foreground flex flex-wrap items-center gap-4">
               <span className="text-foreground w-20 font-semibold">E-mail</span>
               {editField === "email" ? (
-                <div ref={editFieldRef} className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <FormField
                     control={form.control}
                     name="email"
@@ -219,12 +194,12 @@ export default function UserInfoSection({
             </div>
 
             {/* Website row */}
-            <div className="text-secondary-foreground flex min-h-[40px] flex-wrap items-center gap-4">
+            <div className="text-secondary-foreground flex flex-wrap items-center gap-4">
               <span className="text-foreground w-20 font-semibold">
                 Website
               </span>
               {editField === "website" ? (
-                <div ref={editFieldRef} className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <FormField
                     control={form.control}
                     name="website"

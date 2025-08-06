@@ -19,7 +19,6 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  looseConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -299,10 +298,6 @@ describe("Multi-Agent Competition", () => {
       adminClient,
       competitionName,
       agentIds,
-      undefined,
-      undefined,
-      undefined,
-      looseConstraints,
     );
 
     expect(competitionResponse.success).toBe(true);
@@ -481,10 +476,6 @@ describe("Multi-Agent Competition", () => {
       adminClient,
       competitionName,
       agentIds,
-      undefined,
-      undefined,
-      undefined,
-      looseConstraints,
     );
 
     expect(competitionResponse.success).toBe(true);

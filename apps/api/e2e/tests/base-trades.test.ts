@@ -15,7 +15,6 @@ import {
   ADMIN_USERNAME,
   cleanupTestState,
   createTestClient,
-  looseConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -85,16 +84,7 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Base Trading Test ${Date.now()}`;
-    await startTestCompetition(
-      adminClient,
-      competitionName,
-      [agent.id],
-      undefined, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
-      // loosen the trading constraints since these tokens aren't as common
-      looseConstraints,
-    );
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -481,16 +471,7 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Spending Limit Test ${Date.now()}`;
-    await startTestCompetition(
-      adminClient,
-      competitionName,
-      [agent.id],
-      undefined, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
-      // loosen the trading constraints since these tokens aren't as common
-      looseConstraints,
-    );
+    await startTestCompetition(adminClient, competitionName, [agent.id]);
 
     // Wait for balances to be properly initialized
     await wait(500);

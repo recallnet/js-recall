@@ -8,6 +8,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { format } from "date-fns";
 import { SquareArrowOutUpRight } from "lucide-react";
 import Link from "next/link";
 import React, { useMemo, useRef, useState } from "react";
@@ -24,7 +25,6 @@ import {
 } from "@recallnet/ui2/components/table";
 
 import { PaginationResponse, UserCompetition } from "@/types";
-import { formatDate } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
 import { RankBadge } from "./agents-table/rank-badge";
@@ -119,7 +119,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
         cell: ({ row }) => (
           <span>
             {row.original.startDate
-              ? formatDate(new Date(row.original.startDate))
+              ? format(new Date(row.original.startDate), "MM/dd")
               : "TBA"}
           </span>
         ),

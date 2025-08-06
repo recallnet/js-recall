@@ -87,7 +87,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-secondary-foreground mb-0 flex items-center gap-2 font-mono text-xs hover:text-white"
+              className="text-secondary-foreground mb-0 flex items-center gap-2 font-mono text-xs"
             >
               <span className="text-md">¬</span>
               <span>{text}</span>
@@ -101,7 +101,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-secondary-foreground mb-0 flex items-center gap-2 font-mono text-xs hover:text-white"
+              className="text-secondary-foreground mb-0 flex items-center gap-2 font-mono text-xs"
             >
               <span className="text-md">¬</span>
               <span>{text}</span>
@@ -118,7 +118,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
             >
               <link.icon
                 size={25}
-                className="text-secondary-foreground text-xl transition duration-300 ease-in-out hover:text-white"
+                className="text-secondary-foreground text-xl"
               />
             </a>
           ))}

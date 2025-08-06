@@ -1,1 +1,0 @@
-ALTER TABLE "trading_comps"."trading_competitions_leaderboard" ADD COLUMN "starting_value" numeric(30, 15) DEFAULT 0 NOT NULL;

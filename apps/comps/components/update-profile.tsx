@@ -16,7 +16,6 @@ import {
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
 
-import { ConflictError } from "@/lib/api-client";
 import { UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils/zod";
 
@@ -34,7 +33,7 @@ const formSchema = z.object({
 export type FormData = z.infer<typeof formSchema>;
 
 type UpdateProfileProps = {
-  onSubmit: (data: UpdateProfileRequest) => Promise<void>;
+  onSubmit: (data: UpdateProfileRequest) => void;
 };
 
 export const UpdateProfile: React.FC<UpdateProfileProps> = ({ onSubmit }) => {
@@ -48,30 +47,14 @@ export const UpdateProfile: React.FC<UpdateProfileProps> = ({ onSubmit }) => {
     },
   });
 
-  const handleSubmit = async (data: FormData) => {
-    try {
-      const transformedData: UpdateProfileRequest = {
-        name: data.name,
-        email: data.email,
-        imageUrl: data.image || undefined,
-        metadata: data.website ? { website: data.website } : undefined,
-      };
-      await onSubmit(transformedData);
-    } catch (error: unknown) {
-      // Handle ConflictError (409) for duplicate emails
-      if (
-        error instanceof ConflictError &&
-        error.message.toLowerCase().includes("email")
-      ) {
-        form.setError("email", {
-          type: "manual",
-          message: error.message,
-        });
-      } else {
-        // Re-throw other errors to be handled by parent
-        throw error;
-      }
-    }
+  const handleSubmit = (data: FormData) => {
+    const transformedData: UpdateProfileRequest = {
+      name: data.name,
+      email: data.email,
+      imageUrl: data.image || undefined,
+      metadata: data.website ? { website: data.website } : undefined,
+    };
+    onSubmit(transformedData);
   };
 
   return (
@@ -115,7 +98,8 @@ export const UpdateProfile: React.FC<UpdateProfileProps> = ({ onSubmit }) => {
                 </FormControl>
                 {!errors.email && (
                   <FormDescription>
-                    We&apos;ll send an email to verify your email address.
+                    We&apos;ll email your API key here - make sure it&apos;s one
+                    you check often.
                   </FormDescription>
                 )}
                 <FormMessage />

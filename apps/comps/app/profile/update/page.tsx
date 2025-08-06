@@ -27,8 +27,12 @@ function UpdateProfileView() {
   }
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
-    await updateProfile.mutateAsync(data);
-    redirect();
+    try {
+      await updateProfile.mutateAsync(data);
+      redirect();
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+    }
   };
 
   return (

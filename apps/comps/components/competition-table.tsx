@@ -14,7 +14,6 @@ import {
 } from "@recallnet/ui2/components/table";
 
 import { Competition } from "@/types";
-import { formatCompetitionType } from "@/utils/competition-utils";
 
 interface CompetitionTableProps {
   competitions: Competition[];
@@ -49,7 +48,7 @@ export const CompetitionTable: React.FC<CompetitionTableProps> = ({
                   className="text-secondary mt-1 text-xs"
                   style={{ color: "hsla(214, 35%, 54%, 1)" }}
                 >
-                  {formatCompetitionType(competition.type)}
+                  {competition.type}
                 </div>
               </div>
             </TableCell>

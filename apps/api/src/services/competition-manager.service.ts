@@ -35,18 +35,15 @@ import {
   ConfigurationService,
   PortfolioSnapshotter,
   TradeSimulator,
-  TradingConstraintsService,
   VoteManager,
 } from "@/services/index.js";
 import {
   ACTOR_STATUS,
   COMPETITION_AGENT_STATUS,
-  COMPETITION_JOIN_ERROR_TYPES,
   COMPETITION_STATUS,
   COMPETITION_TYPE,
   CROSS_CHAIN_TRADING_TYPE,
   CompetitionAgentStatus,
-  CompetitionJoinError,
   CompetitionStatus,
   CompetitionStatusSchema,
   CompetitionType,
@@ -58,13 +55,6 @@ import {
   AgentDbSortFields,
   AgentQueryParams,
 } from "@/types/sort/agent.js";
-
-interface TradingConstraintsInput {
-  minimumPairAgeHours?: number;
-  minimum24hVolumeUsd?: number;
-  minimumLiquidityUsd?: number;
-  minimumFdvUsd?: number;
-}
 
 /**
  * Competition Manager Service
@@ -79,7 +69,6 @@ export class CompetitionManager {
   private configurationService: ConfigurationService;
   private agentRankService: AgentRankService;
   private voteManager: VoteManager;
-  private tradingConstraintsService: TradingConstraintsService;
 
   constructor(
     balanceManager: BalanceManager,
@@ -89,7 +78,6 @@ export class CompetitionManager {
     configurationService: ConfigurationService,
     agentRankService: AgentRankService,
     voteManager: VoteManager,
-    tradingConstraintsService: TradingConstraintsService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -98,7 +86,6 @@ export class CompetitionManager {
     this.configurationService = configurationService;
     this.agentRankService = agentRankService;
     this.voteManager = voteManager;
-    this.tradingConstraintsService = tradingConstraintsService;
     // Load active competition on initialization
     this.loadActiveCompetition();
   }
@@ -133,8 +120,6 @@ export class CompetitionManager {
    * @param endDate Optional end date for the competition
    * @param votingStartDate Optional voting start date
    * @param votingEndDate Optional voting end date
-   * @param joinStartDate Optional start date for joining the competition
-   * @param joinEndDate Optional end date for joining the competition
    * @returns The created competition
    */
   async createCompetition(
@@ -148,9 +133,6 @@ export class CompetitionManager {
     endDate?: Date,
     votingStartDate?: Date,
     votingEndDate?: Date,
-    joinStartDate?: Date,
-    joinEndDate?: Date,
-    tradingConstraints?: TradingConstraintsInput,
   ) {
     const id = uuidv4();
     const competition = {
@@ -163,8 +145,6 @@ export class CompetitionManager {
       endDate: endDate || null,
       votingStartDate: votingStartDate || null,
       votingEndDate: votingEndDate || null,
-      joinStartDate: joinStartDate || null,
-      joinEndDate: joinEndDate || null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
       sandboxMode,
@@ -174,17 +154,6 @@ export class CompetitionManager {
     };
 
     await createCompetition(competition);
-
-    // Create trading constraints if provided
-    if (tradingConstraints) {
-      await this.tradingConstraintsService.createConstraints({
-        competitionId: id,
-        ...tradingConstraints,
-      });
-      console.log(
-        `[CompetitionManager] Created trading constraints for competition ${id}`,
-      );
-    }
 
     console.log(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}`,
@@ -213,14 +182,9 @@ export class CompetitionManager {
    * Start a competition
    * @param competitionId The competition ID
    * @param agentIds Array of agent IDs participating in the competition
-   * @param tradingConstraints Optional trading constraints for the competition
    * @returns The updated competition
    */
-  async startCompetition(
-    competitionId: string,
-    agentIds: string[],
-    tradingConstraints?: TradingConstraintsInput,
-  ) {
+  async startCompetition(competitionId: string, agentIds: string[]) {
     const competition = await findById(competitionId);
     if (!competition) {
       throw new Error(`Competition not found: ${competitionId}`);
@@ -277,17 +241,6 @@ export class CompetitionManager {
     console.log(
       `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
     );
-
-    // Create trading constraints if provided
-    if (tradingConstraints) {
-      await this.tradingConstraintsService.createConstraints({
-        competitionId,
-        ...tradingConstraints,
-      });
-      console.log(
-        `[CompetitionManager] Created trading constraints for competition ${competitionId}`,
-      );
-    }
 
     // Take initial portfolio snapshots
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
@@ -358,18 +311,16 @@ export class CompetitionManager {
       const entry = leaderboard[i];
       if (entry === undefined) continue;
       const agentId = entry.agentId;
-      const { pnl, startingValue } =
-        await this.agentManager.getAgentPerformanceForComp(
-          agentId,
-          competitionId,
-        );
+      const pnl = await this.agentManager.getAgentPnlForComp(
+        agentId,
+        competitionId,
+      );
 
       const val = {
         agentId,
         competitionId,
         rank: i + 1, // 1-based ranking
-        pnl,
-        startingValue,
+        pnl: pnl.pnl,
         totalAgents: competitionAgents.length,
         score: entry.value, // Use the the total portfolio value in usd is saved as `score`
       };
@@ -1018,28 +969,7 @@ export class CompetitionManager {
       throw new Error("Agent does not belong to requesting user");
     }
 
-    // 4. Check join date constraints FIRST (must take precedence over other errors)
-    const now = new Date();
-
-    if (competition.joinStartDate && now < competition.joinStartDate) {
-      const error = new Error(
-        `Competition joining opens at ${competition.joinStartDate.toISOString()}`,
-      ) as CompetitionJoinError;
-      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN;
-      error.code = 403;
-      throw error;
-    }
-
-    if (competition.joinEndDate && now > competition.joinEndDate) {
-      const error = new Error(
-        `Competition joining closed at ${competition.joinEndDate.toISOString()}`,
-      ) as CompetitionJoinError;
-      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED;
-      error.code = 403;
-      throw error;
-    }
-
-    // 5. Check agent status is eligible
+    // 4. Check agent status is eligible
     if (
       agent.status === ACTOR_STATUS.DELETED ||
       agent.status === ACTOR_STATUS.SUSPENDED
@@ -1047,12 +977,12 @@ export class CompetitionManager {
       throw new Error("Agent is not eligible to join competitions");
     }
 
-    // 6. Check if competition status is pending
+    // 5. Check if competition status is pending
     if (competition.status !== COMPETITION_STATUS.PENDING) {
       throw new Error("Cannot join competition that has already started/ended");
     }
 
-    // 7. Check if agent is already actively registered
+    // 6. Check if agent is already actively registered
     const isAlreadyActive = await isAgentActiveInCompetition(
       competitionId,
       agentId,

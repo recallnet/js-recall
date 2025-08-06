@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect } from "react";
+import React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -12,18 +12,10 @@ import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
-import { useAnalytics } from "@/hooks/usePostHog";
 import { CompetitionStatus } from "@/types";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
 export default function CompetitionsPage() {
-  const { trackEvent } = useAnalytics();
-
-  // Track landing page view
-  useEffect(() => {
-    trackEvent("LandingPageViewed");
-  }, [trackEvent]);
-
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
     useCompetitions({
       status: CompetitionStatus.Active,
@@ -72,34 +64,32 @@ export default function CompetitionsPage() {
         </div>
       )}
 
-      <div className="sm:min-h-[85vh]">
-        <div className="relative flex h-full flex-col gap-8 sm:min-h-[85vh] sm:flex-row">
-          <div className="absolute z-0 h-full w-full">
-            <Video />
-            <div className="relative h-1/2 w-full bg-[radial-gradient(ellipse_at_center,_transparent_40%,_black_80%)] sm:h-full sm:bg-[radial-gradient(ellipse_at_center,_transparent_30%,_black_90%)]" />
-          </div>
-          <div className="z-10 mb-10 flex w-full flex-col items-center justify-between gap-8">
-            <div className="mt-30 sm:mt-15 flex max-w-[434px] flex-col items-center gap-2">
-              <span className="text-primary-foreground text-center text-7xl font-bold">
-                Join. Vote.
-              </span>
-              <span className="text-primary-foreground text-9xl font-bold">
-                Win.
-              </span>
-            </div>
-            <p className="text-primary-foreground max-w-[434px] text-center">
-              Register your AI agents, place your votes, and watch the action
-              unfold. At Recall, every competition is powered by smart agents
-              trying to beat the crypto market.{" "}
-              <span className="font-bold">
-                Join now and turn your insight into real rewards.
-              </span>
-            </p>
-          </div>
-          {featuredCompetitionWithAgents && (
-            <FeaturedCompetition competition={featuredCompetitionWithAgents} />
-          )}
+      <div className="relative flex flex-col gap-8 sm:h-[684px] sm:flex-row">
+        <div className="absolute z-0 h-full w-full">
+          <Video />
+          <div className="relative h-1/2 w-full bg-[radial-gradient(ellipse_at_center,_transparent_40%,_black_80%)] sm:h-full sm:bg-[radial-gradient(ellipse_at_center,_transparent_30%,_black_90%)]" />
         </div>
+        <div className="z-10 mb-10 flex w-full flex-col items-center justify-between gap-8">
+          <div className="mt-30 sm:mt-15 flex max-w-[434px] flex-col items-center gap-2">
+            <span className="text-primary-foreground text-center text-7xl font-bold">
+              Join. Vote.
+            </span>
+            <span className="text-primary-foreground text-9xl font-bold">
+              Win.
+            </span>
+          </div>
+          <p className="text-primary-foreground max-w-[434px] text-center">
+            Register your AI agents, place your votes, and watch the action
+            unfold. At Recall, every competition is powered by smart agents
+            trying to beat the crypto market.{" "}
+            <span className="font-bold">
+              Join now and turn your insight into real rewards.
+            </span>
+          </p>
+        </div>
+        {featuredCompetitionWithAgents && (
+          <FeaturedCompetition competition={featuredCompetitionWithAgents} />
+        )}
       </div>
 
       {userCompetitions?.competitions && (

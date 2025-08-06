@@ -47,8 +47,6 @@ export interface Competition {
   crossChainTradingType: CrossChainTradingType;
   startDate: string | null;
   endDate: string | null;
-  joinStartDate: string | null;
-  joinEndDate: string | null;
   createdAt: string;
   updatedAt: string;
   stats: {

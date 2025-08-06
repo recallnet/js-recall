@@ -79,40 +79,6 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for voting (ISO 8601 format)
    *                 example: "2024-01-30T23:59:59Z"
-   *               joinStartDate:
-   *                 type: string
-   *                 format: date-time
-   *                 description: Start date for joining the competition (ISO 8601 format). Must be before or equal to joinEndDate if both are provided.
-   *                 example: "2024-01-01T00:00:00Z"
-   *               joinEndDate:
-   *                 type: string
-   *                 format: date-time
-   *                 description: End date for joining the competition (ISO 8601 format). Must be after or equal to joinStartDate if both are provided.
-   *                 example: "2024-01-14T23:59:59Z"
-   *               tradingConstraints:
-   *                 type: object
-   *                 description: Trading constraints for the competition (used when creating a new competition)
-   *                 properties:
-   *                   minimumPairAgeHours:
-   *                     type: number
-   *                     minimum: 0
-   *                     description: Minimum age of trading pairs in hours
-   *                     example: 168
-   *                   minimum24hVolumeUsd:
-   *                     type: number
-   *                     minimum: 0
-   *                     description: Minimum 24-hour volume in USD
-   *                     example: 10000
-   *                   minimumLiquidityUsd:
-   *                     type: number
-   *                     minimum: 0
-   *                     description: Minimum liquidity in USD
-   *                     example: 100000
-   *                   minimumFdvUsd:
-   *                     type: number
-   *                     minimum: 0
-   *                     description: Minimum fully diluted valuation in USD
-   *                     example: 100000
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -165,10 +131,7 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       description: Competition creation date
    *       400:
-   *         description: |-
-   *           Bad Request - Various validation errors:
-   *           - Missing required parameters
-   *           - joinStartDate must be before or equal to joinEndDate
+   *         description: Missing required parameters
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       500:
@@ -251,30 +214,6 @@ export function configureAdminRoutes(
    *                 enum: [trading]
    *                 default: trading
    *                 example: trading
-   *               tradingConstraints:
-   *                 type: object
-   *                 description: Trading constraints for the competition (used when creating a new competition)
-   *                 properties:
-   *                   minimumPairAgeHours:
-   *                     type: number
-   *                     minimum: 0
-   *                     description: Minimum age of trading pairs in hours
-   *                     example: 168
-   *                   minimum24hVolumeUsd:
-   *                     type: number
-   *                     minimum: 0
-   *                     description: Minimum 24-hour volume in USD
-   *                     example: 10000
-   *                   minimumLiquidityUsd:
-   *                     type: number
-   *                     minimum: 0
-   *                     description: Minimum liquidity in USD
-   *                     example: 100000
-   *                   minimumFdvUsd:
-   *                     type: number
-   *                     minimum: 0
-   *                     description: Minimum fully diluted valuation in USD
-   *                     example: 100000
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -1441,10 +1380,6 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
-   *                     email:
-   *                       type: string
-   *                       description: Agent email
-   *                       nullable: true
    *                     description:
    *                       type: string
    *                       description: Agent description
@@ -1474,115 +1409,6 @@ export function configureAdminRoutes(
    *         description: Server error
    */
   router.get("/agents/:agentId", controller.getAgent);
-
-  /**
-   * @openapi
-   * /api/admin/agents/{agentId}:
-   *   put:
-   *     tags:
-   *       - Admin
-   *     summary: Update an agent
-   *     description: Update an agent's information including name, description, email, and metadata
-   *     security:
-   *       - BearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: agentId
-   *         schema:
-   *           type: string
-   *         required: true
-   *         description: ID of the agent to update
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             properties:
-   *               name:
-   *                 type: string
-   *                 description: Agent's new name
-   *                 example: "Updated Trading Bot"
-   *               description:
-   *                 type: string
-   *                 description: Agent's new description
-   *                 example: "Updated description"
-   *               imageUrl:
-   *                 type: string
-   *                 description: URL to agent's new profile image
-   *                 example: "https://example.com/new-bot-avatar.jpg"
-   *               email:
-   *                 type: string
-   *                 description: Agent's new email
-   *                 example: "newemail@example.com"
-   *               metadata:
-   *                 type: object
-   *                 description: Agent's new metadata
-   *                 example: { "strategy": "updated-strategy" }
-   *     responses:
-   *       200:
-   *         description: Agent updated successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 agent:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       description: Agent ID
-   *                     ownerId:
-   *                       type: string
-   *                       description: Agent owner ID
-   *                     walletAddress:
-   *                       type: string
-   *                       description: Agent wallet address
-   *                       nullable: true
-   *                     name:
-   *                       type: string
-   *                       description: Agent name
-   *                     email:
-   *                       type: string
-   *                       description: Agent email
-   *                       nullable: true
-   *                     description:
-   *                       type: string
-   *                       description: Agent description
-   *                       nullable: true
-   *                     status:
-   *                       type: string
-   *                       description: Agent status
-   *                     imageUrl:
-   *                       type: string
-   *                       description: URL to the agent's image
-   *                       nullable: true
-   *                     metadata:
-   *                       type: object
-   *                       description: Agent metadata
-   *                       nullable: true
-   *                     createdAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Agent creation timestamp
-   *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                       description: Agent update timestamp
-   *       400:
-   *         description: Invalid parameters or request body
-   *       401:
-   *         description: Unauthorized - Admin authentication required
-   *       404:
-   *         description: Agent not found
-   *       500:
-   *         description: Server error
-   */
-  router.put("/agents/:agentId", controller.updateAgent);
 
   /**
    * @openapi

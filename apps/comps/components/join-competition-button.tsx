@@ -6,7 +6,6 @@ import { toast } from "@recallnet/ui2/components/toast";
 
 import { useUserAgents } from "@/hooks/useAgents";
 import { useUserSession } from "@/hooks/useAuth";
-import { useCompetition } from "@/hooks/useCompetition";
 import { useJoinCompetition } from "@/hooks/useJoinCompetition";
 
 import { ChooseAgentModal } from "./modals/choose-agent";
@@ -29,7 +28,6 @@ export function JoinCompetitionButton({
 }: JoinCompetitionButtonProps) {
   const session = useUserSession();
   const { data: userAgents } = useUserAgents();
-  const { data: competition } = useCompetition(competitionId);
   const [activeModal, setActiveModal] = useState<
     "connectWallet" | "chooseAgent" | "setupAgent" | "createAccount" | null
   >(null);
@@ -37,66 +35,8 @@ export function JoinCompetitionButton({
   const { mutate: joinCompetition, isPending: isJoining } =
     useJoinCompetition();
 
-  // Check if registration is allowed based on join dates
-  const canJoin = () => {
-    if (!competition) return false;
-
-    const now = new Date();
-    const joinStart = competition.joinStartDate
-      ? new Date(competition.joinStartDate)
-      : null;
-    const joinEnd = competition.joinEndDate
-      ? new Date(competition.joinEndDate)
-      : null;
-
-    if (joinStart === null && joinEnd === null) return false;
-
-    // Check if registration is open
-    if (joinStart && now < joinStart) return false;
-    if (joinEnd && now > joinEnd) return false;
-
-    // Check competition status
-    if (competition.status !== "pending") return false;
-
-    return true;
-  };
-
   const handleClick = () => {
     if (!session.isInitialized) {
-      return;
-    }
-
-    // Check if registration is allowed
-    if (!canJoin()) {
-      const now = new Date();
-      const joinStart = competition?.joinStartDate
-        ? new Date(competition.joinStartDate)
-        : null;
-      const joinEnd = competition?.joinEndDate
-        ? new Date(competition.joinEndDate)
-        : null;
-
-      if (joinStart && now < joinStart) {
-        toast.error("Registration not open yet", {
-          description: `Registration opens at ${joinStart.toLocaleString()}`,
-        });
-        return;
-      }
-
-      if (joinEnd && now > joinEnd) {
-        toast.error("Registration closed", {
-          description: `Registration closed at ${joinEnd.toLocaleString()}`,
-        });
-        return;
-      }
-
-      if (competition?.status !== "pending") {
-        toast.error("Competition not available", {
-          description: "This competition is not accepting registrations",
-        });
-        return;
-      }
-
       return;
     }
 
@@ -147,7 +87,7 @@ export function JoinCompetitionButton({
         variant={variant}
         {...props}
         onClick={handleClick}
-        disabled={isJoining || props.disabled || !canJoin()}
+        disabled={isJoining || props.disabled}
       >
         {children}
       </Button>

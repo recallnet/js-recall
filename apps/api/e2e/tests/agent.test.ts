@@ -1,10 +1,8 @@
 import axios from "axios";
-import { eq } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { config } from "@/config/index.js";
-import { agents } from "@/database/schema/core/defs.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentsListResponse,
@@ -21,7 +19,6 @@ import {
   ResetApiKeyResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
-import { dbManager } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -142,7 +139,7 @@ describe("Agent API", () => {
     );
   });
 
-  test("agents can update their profile with description and imageUrl", async () => {
+  test("agents can update their profile with name and imageUrl", async () => {
     // Setup admin client
     const client = createTestClient();
     console.log(
@@ -157,17 +154,20 @@ describe("Agent API", () => {
     });
 
     // Define update data for the agent (excluding metadata since it's not allowed in agent self-service)
+    const newName = "Updated Agent Name";
     const newDescription = "Updated agent description";
     const newImageUrl = "https://example.com/new-agent-image.jpg";
 
     // Update agent profile with all allowed fields
     const updateResponse = await agentClient.updateAgentProfile({
+      name: newName,
       description: newDescription,
       imageUrl: newImageUrl,
     });
 
     expect(updateResponse.success).toBe(true);
     expect((updateResponse as AgentProfileResponse).agent).toBeDefined();
+    expect((updateResponse as AgentProfileResponse).agent.name).toBe(newName);
     expect((updateResponse as AgentProfileResponse).agent.description).toBe(
       newDescription,
     );
@@ -178,6 +178,7 @@ describe("Agent API", () => {
     // Verify changes persisted
     const profileResponse = await agentClient.getAgentProfile();
     expect(profileResponse.success).toBe(true);
+    expect((profileResponse as AgentProfileResponse).agent.name).toBe(newName);
     expect((profileResponse as AgentProfileResponse).agent.description).toBe(
       newDescription,
     );
@@ -545,13 +546,11 @@ describe("Agent API", () => {
 
     // Step 4: Update the agent's profile multiple times in rapid succession
     // This tests that cache consistency is maintained during updates
-    const originalDescription = "Cache Test Agent Updated";
-    const originalImageUrl = "https://example.com/agent-image-updated.jpg";
+    const newName = "Cache Test Agent Updated";
 
-    // Update 1: Set description
+    // Update 1: Set name
     const updateResponse1 = await agentClient.updateAgentProfile({
-      imageUrl: originalImageUrl,
-      description: originalDescription,
+      name: newName,
     });
     expect(updateResponse1.success).toBe(true);
 
@@ -574,24 +573,22 @@ describe("Agent API", () => {
     ); // USDC token
     expect(priceResponse2.success).toBe(true);
 
-    // Update 3: Change both imageUrl and description
-    const newImageUrl = "https://example.com/agent-image-updated.jpg";
-    const newDescription2 = `Cache Test Description ${Date.now()}`;
+    // Update 3: Change both name and description
     const updateResponse3 = await agentClient.updateAgentProfile({
-      imageUrl: newImageUrl,
-      description: newDescription2,
+      name: `${newName} Final`,
+      description: `${newDescription} Updated`,
     });
     expect(updateResponse3.success).toBe(true);
 
     // Step 5: Verify final profile state
     const finalProfileResponse = await agentClient.getAgentProfile();
     expect(finalProfileResponse.success).toBe(true);
+    expect((finalProfileResponse as AgentProfileResponse).agent.name).toBe(
+      `${newName} Final`,
+    );
     expect(
       (finalProfileResponse as AgentProfileResponse).agent.description,
-    ).toBe(newDescription2);
-    expect((finalProfileResponse as AgentProfileResponse).agent.imageUrl).toBe(
-      newImageUrl,
-    );
+    ).toBe(`${newDescription} Updated`);
 
     // Step 6: Make multiple API calls to verify authentication still works
     // This confirms the apiKeyCache remains consistent
@@ -755,19 +752,17 @@ describe("Agent API", () => {
     expect(agent.imageUrl).toBeNull(); // No initial imageUrl (database returns null, not undefined)
 
     // Define new values for both fields
+    const newName = "Combined Bot";
     const newImageUrl = "https://example.com/combined-update-image.jpg";
-    const newDescription = "Combined Bot Description";
 
     // Update both fields in a single request
     const updateResponse = await agentClient.updateAgentProfile({
-      description: newDescription,
+      name: newName,
       imageUrl: newImageUrl,
     });
 
     expect(updateResponse.success).toBe(true);
-    expect((updateResponse as AgentProfileResponse).agent.description).toBe(
-      newDescription,
-    );
+    expect((updateResponse as AgentProfileResponse).agent.name).toBe(newName);
     expect((updateResponse as AgentProfileResponse).agent.imageUrl).toBe(
       newImageUrl,
     );
@@ -777,7 +772,7 @@ describe("Agent API", () => {
     expect(profileResponse.success).toBe(true);
 
     const updatedProfile = (profileResponse as AgentProfileResponse).agent;
-    expect(updatedProfile.description).toBe(newDescription);
+    expect(updatedProfile.name).toBe(newName);
     expect(updatedProfile.imageUrl).toBe(newImageUrl);
 
     // Verify admin can see both updated fields
@@ -786,7 +781,7 @@ describe("Agent API", () => {
         email: userEmail,
       },
       agent: {
-        name: agentName,
+        name: newName,
       },
     });
 
@@ -958,52 +953,7 @@ describe("Agent API", () => {
     if (agentData.owner.name !== null) {
       expect(typeof agentData.owner.name).toBe("string");
     }
-  });
-
-  test("should not expose api key or email in public agent info", async () => {
-    // Setup admin client and login
-    const adminClient = createTestClient();
-    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
-    expect(adminLoginSuccess).toBe(true);
-
-    // Register a user and agent
-    const userName = `Get Agent Test User ${Date.now()}`;
-    const userEmail = `get-agent-${Date.now()}@example.com`;
-    const agentName = `Get Agent Test ${Date.now()}`;
-    const agentEmail = `get-agent-${Date.now()}@example.com`;
-    const agentDescription = "Agent for GET endpoint test";
-
-    const res = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      userName,
-      userEmail,
-      agentName,
-      agentDescription,
-    });
-    const agentId = res.agent.id;
-
-    // Manually update database entry to include email
-    const db = await dbManager.connect();
-    await db
-      .update(agents)
-      .set({ email: agentEmail })
-      .where(eq(agents.id, agentId));
-    const agent = (
-      await db.select().from(agents).where(eq(agents.id, agentId))
-    )[0];
-
-    expect(agent).toBeDefined();
-    expect(agent?.id).toBeDefined();
-
-    // Make a public GET request to fetch the agent details using the agent ID
-    const response = await axios.get(`${getBaseUrl()}/api/agents/${agent?.id}`);
-
-    // Validate response
-    expect(response.status).toBe(200);
-    const agentData = response.data as AgentProfileResponse;
-    expect(agentData.success).toBe(true);
     // make sure public info is not exposed
-    expect(agentData.agent.email).not.toBeDefined();
     expect(agentData.agent.apiKey).not.toBeDefined();
   });
 

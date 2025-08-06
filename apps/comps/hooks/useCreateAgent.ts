@@ -3,8 +3,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiClient } from "@/lib/api-client";
 import { CreateAgentRequest } from "@/types";
 
-import { useAnalytics } from "./usePostHog";
-
 const apiClient = new ApiClient();
 
 /**
@@ -13,18 +11,12 @@ const apiClient = new ApiClient();
  */
 export const useCreateAgent = () => {
   const queryClient = useQueryClient();
-  const { trackEvent } = useAnalytics();
 
   return useMutation({
     mutationFn: async (data: CreateAgentRequest) => {
       return apiClient.createAgent(data);
     },
-    onSuccess: (response, variables) => {
-      trackEvent("UserSuccessfullyCreatedAgent", {
-        agent_id: response.agent?.id,
-        agent_name: variables.name,
-      });
-
+    onSuccess: () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["agents"] });

@@ -164,18 +164,6 @@ export interface DexScreenerPair {
 
 export type DexScreenerResponse = DexScreenerPair[];
 
-/**
- * Token information returned by DexScreener API
- */
-export interface DexScreenerTokenInfo {
-  price: number;
-  symbol: string;
-  pairCreatedAt?: number;
-  volume?: { h24?: number };
-  liquidity?: { usd?: number };
-  fdv?: number;
-}
-
 export interface PriceReport {
   token: string;
   price: number;
@@ -183,15 +171,6 @@ export interface PriceReport {
   chain: BlockchainType;
   specificChain: SpecificChain;
   symbol: string;
-  // Additional DexScreener data for trading constraints
-  pairCreatedAt?: number;
-  volume?: {
-    h24?: number;
-  };
-  liquidity?: {
-    usd?: number;
-  };
-  fdv?: number;
 }
 
 /**
@@ -267,7 +246,6 @@ export const AgentStatsSchema = z.object({
     .optional(),
   rank: z.number().optional(),
   score: z.number().optional(),
-  totalRoi: z.number().optional(),
 });
 
 export type AgentStats = z.infer<typeof AgentStatsSchema>;
@@ -421,8 +399,6 @@ export interface Competition {
   endDate: Date | null;
   votingStartDate: Date | null;
   votingEndDate: Date | null;
-  joinStartDate: Date | null;
-  joinEndDate: Date | null;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
   sandboxMode: boolean; // Controls automatic agent joining behavior
@@ -580,12 +556,9 @@ export const AgentSchema = z.object({
 export type Agent = z.infer<typeof AgentSchema>;
 
 /**
- * Public Agent information Object, omits apiKey and email
+ * Pulic Agent information Object, omits apiKey
  */
-export const AgentPublicSchema = AgentSchema.omit({
-  apiKey: true,
-  email: true,
-}).extend({
+export const AgentPublicSchema = AgentSchema.omit({ apiKey: true }).extend({
   isVerified: z.boolean(),
 });
 export type AgentPublic = z.infer<typeof AgentPublicSchema>;
@@ -864,6 +837,11 @@ export const UpdateUserAgentProfileSchema = z
  */
 export const UpdateAgentProfileBodySchema = z
   .object({
+    name: z
+      .string("Invalid name format")
+      .trim()
+      .min(1, { message: "Name must be at least 1 character" })
+      .optional(),
     description: z
       .string("Invalid description format")
       .trim()
@@ -1141,27 +1119,3 @@ export const AdminSearchUsersAndAgentsQuerySchema = z.strictObject({
 export type AdminSearchUsersAndAgentsQuery = z.infer<
   typeof AdminSearchUsersAndAgentsQuerySchema
 >;
-
-/**
- * Competition join error types for specific error handling
- */
-export const COMPETITION_JOIN_ERROR_TYPES = {
-  COMPETITION_NOT_FOUND: "COMPETITION_NOT_FOUND",
-  AGENT_NOT_FOUND: "AGENT_NOT_FOUND",
-  AGENT_NOT_ELIGIBLE: "AGENT_NOT_ELIGIBLE",
-  COMPETITION_ALREADY_STARTED: "COMPETITION_ALREADY_STARTED",
-  AGENT_ALREADY_REGISTERED: "AGENT_ALREADY_REGISTERED",
-  JOIN_NOT_YET_OPEN: "JOIN_NOT_YET_OPEN",
-  JOIN_CLOSED: "JOIN_CLOSED",
-} as const;
-
-export type CompetitionJoinErrorType =
-  (typeof COMPETITION_JOIN_ERROR_TYPES)[keyof typeof COMPETITION_JOIN_ERROR_TYPES];
-
-/**
- * Competition join error interface
- */
-export interface CompetitionJoinError extends Error {
-  type: CompetitionJoinErrorType;
-  code: number;
-}

@@ -2,7 +2,6 @@ import config from "@/config/index.js";
 import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
 import { PriceReport, PriceSource } from "@/types/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
-import { DexScreenerTokenInfo } from "@/types/index.js";
 
 // Export the supported EVM chains list for use in tests
 export const supportedEvmChains: SpecificChain[] = config.evmChains;
@@ -17,7 +16,9 @@ export class MultiChainProvider implements PriceSource {
   // Add cache for token prices with composite key (tokenAddress:specificChain)
   private readonly tokenPriceCache: Map<
     string,
-    DexScreenerTokenInfo & {
+    {
+      price: number;
+      symbol: string;
       timestamp: number;
       chain: BlockchainType;
       specificChain: SpecificChain;
@@ -62,7 +63,10 @@ export class MultiChainProvider implements PriceSource {
   async getPriceForSpecificEVMChain(
     tokenAddress: string,
     specificChain: SpecificChain,
-  ): Promise<DexScreenerTokenInfo | null> {
+  ): Promise<{
+    price: number;
+    symbol: string;
+  } | null> {
     try {
       const price = await this.dexScreenerProvider.getPrice(
         tokenAddress,
@@ -73,10 +77,6 @@ export class MultiChainProvider implements PriceSource {
         ? {
             price: price.price,
             symbol: price.symbol,
-            pairCreatedAt: price.pairCreatedAt,
-            volume: price.volume,
-            liquidity: price.liquidity,
-            fdv: price.fdv,
           }
         : null;
     } catch (error) {
@@ -114,10 +114,6 @@ export class MultiChainProvider implements PriceSource {
           timestamp: new Date(),
           chain: cachedPrice.chain,
           specificChain: cachedPrice.specificChain,
-          pairCreatedAt: cachedPrice.pairCreatedAt,
-          volume: cachedPrice.volume,
-          liquidity: cachedPrice.liquidity,
-          fdv: cachedPrice.fdv,
         };
       }
 
@@ -144,10 +140,6 @@ export class MultiChainProvider implements PriceSource {
               "svm",
               price.price,
               price.symbol,
-              price.pairCreatedAt,
-              price.volume,
-              price.liquidity,
-              price.fdv,
             );
 
             console.log(
@@ -160,10 +152,6 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.SVM,
               specificChain: "svm",
-              pairCreatedAt: price.pairCreatedAt,
-              volume: price.volume,
-              liquidity: price.liquidity,
-              fdv: price.fdv,
             };
           }
 
@@ -210,10 +198,6 @@ export class MultiChainProvider implements PriceSource {
               specificChain,
               price.price,
               price.symbol,
-              price.pairCreatedAt,
-              price.volume,
-              price.liquidity,
-              price.fdv,
             );
 
             console.log(
@@ -226,10 +210,6 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain,
-              pairCreatedAt: price.pairCreatedAt,
-              volume: price.volume,
-              liquidity: price.liquidity,
-              fdv: price.fdv,
             };
           }
 
@@ -285,10 +265,6 @@ export class MultiChainProvider implements PriceSource {
               chain,
               price.price,
               price.symbol,
-              price.pairCreatedAt,
-              price.volume,
-              price.liquidity,
-              price.fdv,
             );
 
             console.log(
@@ -301,10 +277,6 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain: chain,
-              pairCreatedAt: price.pairCreatedAt,
-              volume: price.volume,
-              liquidity: price.liquidity,
-              fdv: price.fdv,
             };
           }
         } catch (error) {
@@ -377,13 +349,12 @@ export class MultiChainProvider implements PriceSource {
     tokenAddress: string,
     blockchainType: BlockchainType,
     specificChain?: SpecificChain,
-  ): Promise<
-    | (DexScreenerTokenInfo & {
-        chain: BlockchainType;
-        specificChain: SpecificChain;
-      })
-    | null
-  > {
+  ): Promise<{
+    price: number;
+    chain: BlockchainType;
+    specificChain: SpecificChain;
+    symbol: string;
+  } | null> {
     try {
       // Normalize token address
       const normalizedAddress = tokenAddress.toLowerCase();
@@ -419,10 +390,6 @@ export class MultiChainProvider implements PriceSource {
               "svm",
               price.price,
               price.symbol,
-              price.pairCreatedAt,
-              price.volume,
-              price.liquidity,
-              price.fdv,
             );
 
             console.log(
@@ -433,10 +400,6 @@ export class MultiChainProvider implements PriceSource {
               symbol: price.symbol,
               chain: BlockchainType.SVM,
               specificChain: "svm",
-              pairCreatedAt: price.pairCreatedAt,
-              volume: price.volume,
-              liquidity: price.liquidity,
-              fdv: price.fdv,
             };
           } else {
             return null;
@@ -476,10 +439,6 @@ export class MultiChainProvider implements PriceSource {
               specificChain,
               price.price,
               price.symbol,
-              price.pairCreatedAt,
-              price.volume,
-              price.liquidity,
-              price.fdv,
             );
 
             console.log(
@@ -491,10 +450,6 @@ export class MultiChainProvider implements PriceSource {
               symbol: price.symbol,
               chain: generalChain,
               specificChain,
-              pairCreatedAt: price.pairCreatedAt,
-              volume: price.volume,
-              liquidity: price.liquidity,
-              fdv: price.fdv,
             };
           }
 
@@ -524,10 +479,6 @@ export class MultiChainProvider implements PriceSource {
           symbol: price.symbol,
           chain: price.chain,
           specificChain: price.specificChain,
-          pairCreatedAt: price.pairCreatedAt,
-          volume: price.volume,
-          liquidity: price.liquidity,
-          fdv: price.fdv,
         };
       }
 
@@ -559,12 +510,12 @@ export class MultiChainProvider implements PriceSource {
   private getCachedPrice(
     tokenAddress: string,
     specificChain?: SpecificChain,
-  ):
-    | (DexScreenerTokenInfo & {
-        chain: BlockchainType;
-        specificChain: SpecificChain;
-      })
-    | null {
+  ): {
+    price: number;
+    symbol: string;
+    chain: BlockchainType;
+    specificChain: SpecificChain;
+  } | null {
     const normalizedAddress = tokenAddress.toLowerCase();
 
     // If specificChain is provided, use the composite key
@@ -581,10 +532,6 @@ export class MultiChainProvider implements PriceSource {
           symbol: cached.symbol,
           chain: cached.chain,
           specificChain: cached.specificChain,
-          pairCreatedAt: cached.pairCreatedAt,
-          volume: cached.volume,
-          liquidity: cached.liquidity,
-          fdv: cached.fdv,
         };
       }
       return null;
@@ -622,10 +569,6 @@ export class MultiChainProvider implements PriceSource {
     specificChain: SpecificChain,
     price: number,
     symbol: string,
-    pairCreatedAt?: number,
-    volume?: { h24?: number },
-    liquidity?: { usd?: number },
-    fdv?: number,
   ): void {
     const normalizedAddress = tokenAddress.toLowerCase();
     const cacheKey = this.getCacheKey(normalizedAddress, specificChain);
@@ -636,10 +579,6 @@ export class MultiChainProvider implements PriceSource {
       chain,
       specificChain,
       timestamp: Date.now(),
-      pairCreatedAt,
-      volume,
-      liquidity,
-      fdv,
     });
 
     // Also cache the token-to-chain mapping for future lookups
@@ -735,10 +674,6 @@ export class MultiChainProvider implements PriceSource {
               "svm",
               result.price,
               result.symbol,
-              result.pairCreatedAt,
-              result.volume,
-              result.liquidity,
-              result.fdv,
             );
 
             results.set(tokenAddress, {
@@ -748,10 +683,6 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.SVM,
               specificChain: "svm",
-              pairCreatedAt: result.pairCreatedAt,
-              volume: result.volume,
-              liquidity: result.liquidity,
-              fdv: result.fdv,
             });
           } else {
             results.set(tokenAddress, null);
@@ -797,10 +728,6 @@ export class MultiChainProvider implements PriceSource {
               specificChain,
               result.price,
               result.symbol,
-              result.pairCreatedAt,
-              result.volume,
-              result.liquidity,
-              result.fdv,
             );
 
             results.set(tokenAddress, {
@@ -810,10 +737,6 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain,
-              pairCreatedAt: result.pairCreatedAt,
-              volume: result.volume,
-              liquidity: result.liquidity,
-              fdv: result.fdv,
             });
           } else {
             results.set(tokenAddress, null);
@@ -876,10 +799,6 @@ export class MultiChainProvider implements PriceSource {
               chain,
               result.price,
               result.symbol,
-              result.pairCreatedAt,
-              result.volume,
-              result.liquidity,
-              result.fdv,
             );
 
             results.set(tokenAddress, {
@@ -889,10 +808,6 @@ export class MultiChainProvider implements PriceSource {
               timestamp: new Date(),
               chain: BlockchainType.EVM,
               specificChain: chain,
-              pairCreatedAt: result.pairCreatedAt,
-              volume: result.volume,
-              liquidity: result.liquidity,
-              fdv: result.fdv,
             });
 
             // Remove from remaining tokens

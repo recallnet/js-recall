@@ -1,13 +1,10 @@
 import * as crypto from "crypto";
-import { and, asc, eq } from "drizzle-orm";
 import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { expect } from "vitest";
 
 import { ApiSDK } from "@recallnet/api-sdk";
 
-import { db } from "@/database/db.js";
-import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
 import { resetRateLimiters } from "@/middleware/rate-limiter.middleware.js";
 
 import { ApiClient } from "./api-client.js";
@@ -28,20 +25,11 @@ export const TEST_TOKEN_ADDRESS =
   process.env.TEST_SOL_TOKEN_ADDRESS ||
   "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 
-// Vision token - should be volitile https://coinmarketcap.com/currencies/openvision/
-export const VISION_TOKEN = "0xe6f98920852A360497dBcc8ec895F1bB1F7c8Df4";
-
 // Fixed admin credentials - must match setup-admin.ts
 export const ADMIN_USERNAME = "admin";
 export const ADMIN_PASSWORD = "admin123";
 export const ADMIN_EMAIL = "admin@test.com";
 
-export const looseConstraints = {
-  minimum24hVolumeUsd: 5000,
-  minimumFdvUsd: 50000,
-  minimumLiquidityUsd: 5000,
-  minimumPairAgeHours: 0,
-};
 // Flag to track if database is initialized
 let isDatabaseInitialized = false;
 
@@ -152,12 +140,6 @@ export async function startTestCompetition(
   sandboxMode?: boolean,
   externalUrl?: string,
   imageUrl?: string,
-  tradingConstraints?: {
-    minimumPairAgeHours?: number;
-    minimum24hVolumeUsd?: number;
-    minimumLiquidityUsd?: number;
-    minimumFdvUsd?: number;
-  },
 ): Promise<StartCompetitionResponse> {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -170,9 +152,6 @@ export async function startTestCompetition(
     sandboxMode,
     externalUrl,
     imageUrl,
-    undefined, // votingStartDate
-    undefined, // votingEndDate
-    tradingConstraints,
   );
 
   if (!result.success) {
@@ -195,8 +174,6 @@ export async function createTestCompetition(
   type?: string,
   votingStartDate?: string,
   votingEndDate?: string,
-  joinStartDate?: string,
-  joinEndDate?: string,
 ): Promise<CreateCompetitionResponse> {
   // Ensure database is initialized
   await ensureDatabaseInitialized();
@@ -212,8 +189,6 @@ export async function createTestCompetition(
     undefined, // endDate
     votingStartDate,
     votingEndDate,
-    joinStartDate,
-    joinEndDate,
   );
 
   if (!result.success) {
@@ -508,26 +483,4 @@ export async function generateTestCompetitions(adminApiKey: string) {
     user2,
     user3,
   };
-}
-
-export async function getStartingValue(agentId: string, competitionId: string) {
-  // Direct database lookup for oldest portfolio snapshot
-  const oldestSnapshot = await db
-    .select()
-    .from(portfolioSnapshots)
-    .where(
-      and(
-        eq(portfolioSnapshots.agentId, agentId),
-        eq(portfolioSnapshots.competitionId, competitionId),
-      ),
-    )
-    .orderBy(asc(portfolioSnapshots.timestamp))
-    .limit(1);
-
-  const val = oldestSnapshot[0]?.totalValue;
-  if (typeof val !== "number" || val <= 0) {
-    throw new Error("no starting value found");
-  }
-
-  return val;
 }
