@@ -40,7 +40,7 @@ export const BasicCompetitionCard: React.FC<BasicCompetitionCardProps> = ({
       ) : (
         <div className="absolute z-0 flex h-full w-full items-end justify-end pb-14 pr-14">
           <Image
-            src={"/competition_image_container.png"}
+            src={"/competition_image_container.svg"}
             alt={competition.name}
             width={550}
             height={550}
