@@ -44,6 +44,7 @@
     "end:competition": "tsx scripts/end-competition.ts",
     "comp:status": "tsx scripts/competition-status.ts",
     "scripts:backfill-agent-score": "tsx scripts/backfill-agent-score.ts",
+    "scripts:backfill-constraints": "tsx scripts/backfill-comp-constraints.ts",
     "scripts:backfill-stats": "tsx scripts/backfill-stats.ts",
     "scripts:delete-competitions": "tsx scripts/delete-competitions.ts",
     "scripts:populate-agent-handles": "tsx scripts/populate-agent-handles.ts",

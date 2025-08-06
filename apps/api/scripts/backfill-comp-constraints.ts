@@ -71,6 +71,8 @@ async function findCompetitionsWithoutConstraints() {
  * Create default trading constraints for competitions that don't have them
  */
 async function backfillTradingConstraints(execute: boolean = false) {
+  // wait for db connection to improve log output
+  await new Promise((resolve) => setTimeout(() => resolve(null), 2000));
   console.log(
     chalk.bold("\n🔧  Competition Trading Constraints Backfill Script"),
   );
