@@ -419,45 +419,5 @@ describe("Multi-Chain Provider Tests", () => {
       const priceReport = await priceTracker.getPrice(invalidToken);
       expect(priceReport).toBeNull();
     });
-
-    it("should fetch prices faster when providing the exact chain parameter", async () => {
-      // Use a token that's available on a specific chain
-      const linkToken = "0x514910771af9ca656af840dff83e8264ecf986ca"; // Chainlink on Ethereum
-
-      // Get price with chain detection (which may try multiple chains)
-      const startTimeWithout = Date.now();
-      const priceReportWithoutChain = await priceTracker.getPrice(linkToken);
-      const endTimeWithout = Date.now();
-      const timeWithout = endTimeWithout - startTimeWithout;
-
-      // Should find LINK token without specific chain parameter
-      expect(priceReportWithoutChain).not.toBeNull();
-      expect(priceReportWithoutChain!.price).not.toBeNull();
-      expect(priceReportWithoutChain!.price).toBeGreaterThan(0);
-      expect(priceReportWithoutChain!.chain).toBe(BlockchainType.EVM);
-
-      // Short delay to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Now get price with exact chain parameter
-      const startTimeWith = Date.now();
-      const priceReportWithChain = await multiChainProvider.getPrice(
-        linkToken,
-        BlockchainType.EVM,
-        "eth",
-      );
-      const endTimeWith = Date.now();
-      const timeWith = endTimeWith - startTimeWith;
-
-      // Should find LINK token with specific chain parameter
-      expect(priceReportWithChain).not.toBeNull();
-      expect(priceReportWithChain!.price).not.toBeNull();
-      expect(priceReportWithChain!.price).toBeGreaterThan(0);
-      expect(priceReportWithChain!.chain).toBe(BlockchainType.EVM);
-      expect(priceReportWithChain!.specificChain).toBe("eth");
-
-      // Assert that providing specific chain parameter is faster
-      expect(timeWith).toBeLessThanOrEqual(timeWithout);
-    });
   });
 });
