@@ -131,7 +131,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 className="block w-full overflow-hidden"
               >
                 <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight">
-                  {row.original.name}
+                  {row.original.name} (@{row.original.handle})
                 </span>
               </Link>
               <span className="text-secondary-foreground block w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">
