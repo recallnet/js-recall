@@ -42,7 +42,7 @@ export const AdminRegisterUserSchema = z.object({
 /**
  * Trading Constraint Schema
  */
-const TradingConstraintsSchema = z
+export const TradingConstraintsSchema = z
   .object({
     minimumPairAgeHours: z.number().min(0),
     minimum24hVolumeUsd: z.number().min(0),

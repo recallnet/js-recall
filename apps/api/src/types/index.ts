@@ -3,6 +3,8 @@ import { IronSession } from "iron-session";
 import { SiweMessage } from "siwe";
 import { z } from "zod/v4";
 
+import { TradingConstraintsSchema } from "@/controllers/admin.schema.js";
+
 /**
  * Token information interface
  */
@@ -696,7 +698,7 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   joinStartDate: z.date().optional(),
   joinEndDate: z.date().optional(),
   rewards: z.record(z.number(), z.number()).optional(),
-  tradingConstraints: z.record(z.string(), z.unknown()).optional(),
+  tradingConstraints: TradingConstraintsSchema.optional(),
 });
 
 export type CompetitionAllowedUpdate = z.infer<
