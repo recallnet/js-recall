@@ -3,8 +3,6 @@ import { IronSession } from "iron-session";
 import { SiweMessage } from "siwe";
 import { z } from "zod/v4";
 
-import { TradingConstraintsSchema } from "@/controllers/admin.schema.js";
-
 /**
  * Token information interface
  */
@@ -602,6 +600,18 @@ export const AgentPublicSchema = AgentSchema.omit({
   isVerified: z.boolean(),
 });
 export type AgentPublic = z.infer<typeof AgentPublicSchema>;
+
+/**
+ * Trading Constraint Schema
+ */
+export const TradingConstraintsSchema = z
+  .object({
+    minimumPairAgeHours: z.number().min(0),
+    minimum24hVolumeUsd: z.number().min(0),
+    minimumLiquidityUsd: z.number().min(0),
+    minimumFdvUsd: z.number().min(0),
+  })
+  .optional();
 
 /**
  * Competition status values for zod or database enum.

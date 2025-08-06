@@ -5,6 +5,7 @@ import {
   AgentMetadataSchema,
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
+  TradingConstraintsSchema,
   UuidSchema,
 } from "@/types/index.js";
 
@@ -38,18 +39,6 @@ export const AdminRegisterUserSchema = z.object({
     .regex(/^0x[0-9a-fA-F]{40}$/)
     .optional(),
 });
-
-/**
- * Trading Constraint Schema
- */
-export const TradingConstraintsSchema = z
-  .object({
-    minimumPairAgeHours: z.number().min(0),
-    minimum24hVolumeUsd: z.number().min(0),
-    minimumLiquidityUsd: z.number().min(0),
-    minimumFdvUsd: z.number().min(0),
-  })
-  .optional();
 
 /**
  * Rewards Schema (enforces that the key and value are both numbers)
