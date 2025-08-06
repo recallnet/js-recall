@@ -9,7 +9,7 @@ import { trades } from "@/database/schema/trading/defs.js";
 import { InsertTrade } from "@/database/schema/trading/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
-import { SpecificChain } from "@/types/index.js";
+import { SpecificChainSchema } from "@/types/index.js";
 
 /**
  * Trade Repository
@@ -29,13 +29,18 @@ async function createTradeWithBalancesImpl(trade: InsertTrade): Promise<{
   };
 }> {
   return await db.transaction(async (tx) => {
+    // Validate and parse the fromSpecificChain
+    const fromSpecificChain = SpecificChainSchema.parse(
+      trade.fromSpecificChain,
+    );
+
     // Decrement the "from" token balance using the helper function
     const fromTokenBalance = await decrementBalanceInTransaction(
       tx,
       trade.agentId,
       trade.fromToken,
       trade.fromAmount,
-      trade.fromSpecificChain as SpecificChain,
+      fromSpecificChain,
       trade.fromTokenSymbol,
     );
 
@@ -47,12 +52,15 @@ async function createTradeWithBalancesImpl(trade: InsertTrade): Promise<{
 
     // Only increment the "to" token balance for non-burn addresses (toAmount > 0)
     if (trade.toAmount > 0) {
+      // Validate and parse the toSpecificChain
+      const toSpecificChain = SpecificChainSchema.parse(trade.toSpecificChain);
+
       toTokenBalance = await incrementBalanceInTransaction(
         tx,
         trade.agentId,
         trade.toToken,
         trade.toAmount,
-        trade.toSpecificChain as SpecificChain,
+        toSpecificChain,
         trade.toTokenSymbol,
       );
 
