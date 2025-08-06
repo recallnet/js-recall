@@ -328,3 +328,30 @@ export async function migrateDb() {
 export async function seedDb() {
   await seed(db, schema);
 }
+
+/**
+ * Close all database connections
+ * This should be called during application shutdown to prevent connection leaks
+ */
+export async function closeDb(): Promise<void> {
+  try {
+    pinoDbLogger.info("Closing database connections...");
+
+    // Close the main connection pool
+    if (pool) {
+      await pool.end();
+      pinoDbLogger.info("Main database connection pool closed");
+    }
+
+    // Close the read replica connection pool
+    if (readReplicaPool && readReplicaPool !== pool) {
+      await readReplicaPool.end();
+      pinoDbLogger.info("Read replica connection pool closed");
+    }
+
+    pinoDbLogger.info("All database connections closed successfully");
+  } catch (error) {
+    pinoDbLogger.error("Error closing database connections:", error);
+    throw error;
+  }
+}

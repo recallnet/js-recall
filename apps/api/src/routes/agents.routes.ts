@@ -98,6 +98,9 @@ export function configureAgentsRoutes(
    *                       name:
    *                         type: string
    *                         example: "Trading Bot Alpha"
+   *                       handle:
+   *                         type: string
+   *                         example: "trading-bot-alpha"
    *                       description:
    *                         type: string
    *                         example: "AI agent focusing on DeFi yield farming"
@@ -157,6 +160,9 @@ export function configureAgentsRoutes(
    *                     name:
    *                       type: string
    *                       example: "Trading Bot Alpha"
+   *                     handle:
+   *                       type: string
+   *                       example: "trading-bot-alpha"
    *                     isVerified:
    *                       type: boolean
    *                     imageUrl:
@@ -322,6 +328,9 @@ export function configureAgentsRoutes(
    *                       name:
    *                         type: string
    *                         example: "DeFi Trading Championship"
+   *                       handle:
+   *                         type: string
+   *                         example: "defi-trading-championship"
    *                       status:
    *                         type: string
    *                         enum: [active, completed, upcoming]

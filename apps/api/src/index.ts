@@ -14,7 +14,7 @@ import { makePriceController } from "@/controllers/price.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
-import { migrateDb } from "@/database/db.js";
+import { closeDb, migrateDb } from "@/database/db.js";
 import { apiLogger } from "@/lib/logger.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
@@ -79,9 +79,6 @@ const services = new ServiceRegistry();
 // Load competition-specific configuration settings
 await services.configurationService.loadCompetitionSettings();
 apiLogger.info("Competition-specific configuration settings loaded");
-
-// Start both schedulers after all services are ready
-services.startSchedulers();
 
 // Configure middleware
 // Trust proxy to get real IP addresses (important for rate limiting)
@@ -287,13 +284,22 @@ const gracefulShutdown = async (signal: string) => {
   );
 
   // Close both servers
-  mainServer.close(() => {
+  mainServer.close(async () => {
     apiLogger.info("[Shutdown] Main server closed");
 
-    metricsServer.close(() => {
+    metricsServer.close(async () => {
       apiLogger.info("[Shutdown] Metrics server closed");
 
-      services.stopSchedulers();
+      // Close database connections
+      try {
+        await closeDb();
+        apiLogger.info("[Shutdown] Database connections closed");
+      } catch (error) {
+        apiLogger.error(
+          "[Shutdown] Error closing database connections:",
+          error,
+        );
+      }
 
       clearTimeout(timeout);
       process.exit(0);

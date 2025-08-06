@@ -14,7 +14,7 @@ alwaysApply: true
 
 ## Code Quality Tooling
 - **ESLint:** Follow rules defined in the `@recallnet/eslint-config` package.
-- **Prettier:** Maintain consistent formatting using Prettier (configuration likely shared or in `package.json`).
+- **Prettier:** Maintain consistent formatting using Prettier (configuration likely shared or in `package.json` under the "format" action).
 
 ## Application Development (Next.js)
 - **Framework:** Use Next.js for web applications (`apps/portal`, `apps/faucet`).

@@ -1,10 +1,10 @@
 import { z } from "zod/v4";
 
 import {
+  AgentHandleSchema,
   AgentMetadataSchema,
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
-  SyncDataTypeSchema,
   UuidSchema,
 } from "@/types/index.js";
 
@@ -29,6 +29,7 @@ export const AdminRegisterUserSchema = z.object({
   userImageUrl: z.url().optional(),
   userMetadata: z.record(z.string(), z.unknown()).optional(),
   agentName: z.string().optional(),
+  agentHandle: AgentHandleSchema.optional(),
   agentDescription: z.string().optional(),
   agentImageUrl: z.url().optional(),
   agentMetadata: AgentMetadataSchema.optional(),
@@ -140,25 +141,6 @@ export const AdminEndCompetitionSchema = z.object({
 });
 
 /**
- * Admin sync object index schema
- */
-export const AdminSyncObjectIndexSchema = z.object({
-  competitionId: UuidSchema.optional(),
-  dataTypes: z.array(SyncDataTypeSchema).optional(),
-});
-
-/**
- * Admin get object index query schema
- */
-export const AdminGetObjectIndexQuerySchema = z.object({
-  competitionId: UuidSchema.optional(),
-  agentId: UuidSchema.optional(),
-  dataType: SyncDataTypeSchema.optional(),
-  limit: z.coerce.number().min(1).max(1000).default(100),
-  offset: z.coerce.number().min(0).default(0),
-});
-
-/**
  * Admin get performance reports query schema
  */
 export const AdminGetPerformanceReportsQuerySchema = z.object({
@@ -261,7 +243,12 @@ export const AdminUpdateAgentParamsSchema = z.object({
  * Admin update agent body schema
  */
 export const AdminUpdateAgentBodySchema = z.object({
-  name: z.string().min(1, "Name must be at least 1 character").optional(),
+  name: z
+    .string()
+    .min(1, "Name must be at least 1 character")
+    .max(100)
+    .optional(),
+  handle: AgentHandleSchema.optional(),
   description: z.string().optional(),
   imageUrl: z.url("Invalid image URL format").optional(),
   email: z.email("Invalid email format").optional(),

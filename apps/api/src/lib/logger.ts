@@ -59,5 +59,4 @@ export const balanceLogger = createLogger("Balance");
 export const repositoryLogger = createLogger("Repository");
 export const middlewareLogger = createLogger("Middleware");
 export const serviceLogger = createLogger("Service");
-export const schedulerLogger = createLogger("Scheduler");
 export const configLogger = createLogger("Config");

@@ -1,6 +1,6 @@
 {
-  "id": "b63c7ff4-5ed3-48a6-a90e-989cfdb457e9",
-  "prevId": "785cb2f3-bb93-4632-a007-9d546696135e",
+  "id": "8e367baf-bdac-436d-9266-1bbc7b470ab5",
+  "prevId": "b63c7ff4-5ed3-48a6-a90e-989cfdb457e9",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -325,6 +325,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "handle": {
+          "name": "handle",
+          "type": "varchar(15)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "email": {
           "name": "email",
           "type": "varchar(100)",
@@ -443,6 +449,21 @@
           "method": "btree",
           "with": {}
         },
+        "idx_agents_handle": {
+          "name": "idx_agents_handle",
+          "columns": [
+            {
+              "expression": "handle",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_agents_api_key": {
           "name": "idx_agents_api_key",
           "columns": [
@@ -486,6 +507,11 @@
           "name": "agents_owner_id_name_key",
           "nullsNotDistinct": false,
           "columns": ["owner_id", "name"]
+        },
+        "agents_handle_key": {
+          "name": "agents_handle_key",
+          "nullsNotDistinct": false,
+          "columns": ["handle"]
         },
         "agents_api_key_key": {
           "name": "agents_api_key_key",

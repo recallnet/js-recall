@@ -497,6 +497,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
   Array<{
     id: string;
     name: string;
+    handle: string;
     description: string | null;
     imageUrl: string | null;
     metadata: unknown;
@@ -513,6 +514,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
       .select({
         id: agents.id,
         name: agents.name,
+        handle: agents.handle,
         description: agents.description,
         imageUrl: agents.imageUrl,
         metadata: agents.metadata,

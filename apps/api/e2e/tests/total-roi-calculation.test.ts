@@ -1,4 +1,3 @@
-import axios from "axios";
 import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
@@ -8,13 +7,9 @@ import {
   CROSS_CHAIN_TRADING_TYPE,
   StartCompetitionResponse,
 } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
   getStartingValue,
   registerUserAndAgentAndGetClient,
   wait,
@@ -30,17 +25,8 @@ describe("Total ROI Calculation Tests", () => {
   let adminApiKey: string;
 
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    // Store the admin API key for authentication
+    adminApiKey = await getAdminApiKey();
   });
 
   test("should calculate totalRoi correctly for single competition", async () => {

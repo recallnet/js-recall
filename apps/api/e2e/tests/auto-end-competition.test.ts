@@ -1,37 +1,23 @@
-import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
   CompetitionDetailResponse,
   CreateCompetitionResponse,
 } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
   wait,
 } from "@/e2e/utils/test-helpers.js";
+import { ServiceRegistry } from "@/services/index.js";
 
-describe("Competition End Date Scheduler", () => {
+describe("Competition End Date Processing", () => {
   let adminApiKey: string;
 
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
@@ -86,9 +72,11 @@ describe("Competition End Date Scheduler", () => {
       (activeCompetition as CompetitionDetailResponse).competition.status,
     ).toBe("active");
 
-    // Wait for the end date to pass plus some buffer time for the scheduler to run
-    // The scheduler runs every 5 seconds in test mode
-    await wait(12000);
+    // This is simulating a cron execution of auto-end-competitions script.
+    await wait(7000);
+
+    const services = new ServiceRegistry();
+    await services.competitionManager.processCompetitionEndDateChecks();
 
     // Check if competition has been automatically ended
     const endedCompetition = await adminClient.getCompetition(competition.id);
@@ -152,8 +140,9 @@ describe("Competition End Date Scheduler", () => {
       (activeCompetition as CompetitionDetailResponse).competition.status,
     ).toBe("active");
 
-    // Wait for a scheduler cycle to run (6 seconds to be safe)
-    await wait(6000);
+    // This is simulating a cron execution of auto-end-competitions script.
+    const services = new ServiceRegistry();
+    await services.competitionManager.processCompetitionEndDateChecks();
 
     // Competition should still be active since end date hasn't passed
     const stillActiveCompetition = await adminClient.getCompetition(

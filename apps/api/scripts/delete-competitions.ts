@@ -14,7 +14,6 @@ import {
   agentScore,
   agentScoreHistory,
 } from "@/database/schema/ranking/defs.js";
-import { objectIndex } from "@/database/schema/syncing/defs.js";
 import {
   portfolioSnapshots,
   portfolioTokenValues,
@@ -76,7 +75,7 @@ async function analyzeCompetitions(competitionIds: string[]) {
         tradeCount,
         snapshotCount,
         leaderboardCount,
-        objectIndexCount,
+
         scoreHistoryCount,
       ] = await Promise.all([
         db
@@ -104,11 +103,7 @@ async function analyzeCompetitions(competitionIds: string[]) {
           .from(competitionsLeaderboard)
           .where(eq(competitionsLeaderboard.competitionId, competitionId))
           .then((r) => r[0]?.count || 0),
-        db
-          .select({ count: sql<number>`count(*)` })
-          .from(objectIndex)
-          .where(eq(objectIndex.competitionId, competitionId))
-          .then((r) => r[0]?.count || 0),
+
         db
           .select({ count: sql<number>`count(*)` })
           .from(agentScoreHistory)
@@ -130,7 +125,7 @@ async function analyzeCompetitions(competitionIds: string[]) {
           trades: tradeCount,
           snapshots: snapshotCount,
           leaderboard: leaderboardCount,
-          objectIndex: objectIndexCount,
+
           scoreHistory: scoreHistoryCount,
         },
       };
@@ -158,14 +153,6 @@ async function deleteCompetitionData(
   try {
     await db.transaction(async (tx) => {
       // Delete from object_index
-      const objectIndexDeleted = await tx
-        .delete(objectIndex)
-        .where(eq(objectIndex.competitionId, competitionId))
-        .returning({ id: objectIndex.id });
-      deletions.push({
-        table: "object_index",
-        count: objectIndexDeleted.length,
-      });
 
       // Delete from trades
       const tradesDeleted = await tx

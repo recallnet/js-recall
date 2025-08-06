@@ -8,11 +8,8 @@ import {
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 
@@ -20,18 +17,8 @@ describe("Logging and Metrics API", () => {
   let adminApiKey: string;
 
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
@@ -660,7 +647,7 @@ describe("Logging and Metrics API", () => {
       },
       { pattern: 'method="getRewardsByEpoch"', expectedOp: "SELECT" },
       { pattern: 'method="getLatestPortfolioSnapshots"', expectedOp: "SELECT" },
-      { pattern: 'method="countObjectIndex"', expectedOp: "SELECT" },
+
       { pattern: 'method="countAgentTrades"', expectedOp: "SELECT" },
       { pattern: 'method="countTotalVotes"', expectedOp: "SELECT" },
       { pattern: 'method="count"', expectedOp: "SELECT" },
@@ -687,7 +674,7 @@ describe("Logging and Metrics API", () => {
       },
       { pattern: 'method="insertRewards"', expectedOp: "INSERT" },
       { pattern: 'method="insertRewardsTree"', expectedOp: "INSERT" },
-      { pattern: 'method="insertObjectIndexEntries"', expectedOp: "INSERT" },
+
       {
         pattern: 'method="batchCreatePortfolioTokenValues"',
         expectedOp: "INSERT",

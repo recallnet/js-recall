@@ -21,11 +21,10 @@ import {
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
   generateRandomEthAddress,
+  generateTestHandle,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -36,19 +35,8 @@ describe("Admin API", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
+    adminApiKey = await getAdminApiKey();
   });
 
   test("should authenticate as admin", async () => {
@@ -165,6 +153,7 @@ describe("Admin API", () => {
     // Register a new user with no agent
     const userName = `Test User ${Date.now()}`;
     const agentName = `Test Agent ${Date.now()}`;
+    const agentHandle = generateTestHandle();
 
     // Setup admin client with the API key
     const adminClient = createTestClient();
@@ -188,6 +177,7 @@ describe("Admin API", () => {
       },
       agent: {
         name: agentName,
+        handle: agentHandle,
       },
     })) as AdminAgentResponse;
 
@@ -196,8 +186,10 @@ describe("Admin API", () => {
     expect(agentResult.agent).toBeDefined();
     expect(agentResult.agent.ownerId).toBe(userId);
     expect(agentResult.agent.name).toBe(agentName);
+    expect(agentResult.agent.handle).toBe(agentHandle);
 
     const agentName2 = `Test Agent ${Date.now()}`;
+    const agentHandle2 = generateTestHandle();
     const agentDescription = "A test trading agent";
     const agentWalletAddress = generateRandomEthAddress();
     const agentEmail = `test-agent-${Date.now()}@test.com`;
@@ -213,6 +205,7 @@ describe("Admin API", () => {
       },
       agent: {
         name: agentName2,
+        handle: agentHandle2,
         description: agentDescription,
         walletAddress: agentWalletAddress,
         email: agentEmail,
@@ -225,6 +218,7 @@ describe("Admin API", () => {
     expect(agentResult2.agent).toBeDefined();
     expect(agentResult2.agent.ownerId).toBe(userId);
     expect(agentResult2.agent.name).toBe(agentName2);
+    expect(agentResult2.agent.handle).toBe(agentHandle2);
     expect(agentResult2.agent.description).toBe(agentDescription);
     expect(agentResult2.agent.apiKey).toBeDefined();
     expect(agentResult2.agent.walletAddress).toBe(
@@ -558,11 +552,13 @@ describe("Admin API", () => {
     const user1Name = `Search User Alpha ${timestamp}`;
     const user1Email = `search-alpha-${timestamp}@test.com`;
     const agent1Name = `Search Agent Alpha ${timestamp}`;
+    const agent1Handle = generateTestHandle();
     const user1Result = (await adminClient.registerUser({
       walletAddress: generateRandomEthAddress(),
       name: user1Name,
       email: user1Email,
       agentName: agent1Name,
+      agentHandle: agent1Handle,
     })) as UserRegistrationResponse;
     expect(user1Result.success).toBe(true);
 
@@ -570,11 +566,13 @@ describe("Admin API", () => {
     const user2Name = `Testing User Beta ${timestamp}`;
     const user2Email = `beta-${timestamp}@example.com`;
     const agent2Name = `Testing Agent Beta ${timestamp}`;
+    const agent2Handle = generateTestHandle();
     const user2Result = (await adminClient.registerUser({
       walletAddress: generateRandomEthAddress(),
       name: user2Name,
       email: user2Email,
       agentName: agent2Name,
+      agentHandle: agent2Handle,
     })) as UserRegistrationResponse;
     expect(user2Result.success).toBe(true);
 
@@ -582,11 +580,13 @@ describe("Admin API", () => {
     const user3Name = `Search User Inactive ${timestamp}`;
     const user3Email = `inactive-${timestamp}@test.com`;
     const agent3Name = `Search Agent Inactive ${timestamp}`;
+    const agent3Handle = generateTestHandle();
     const user3Result = (await adminClient.registerUser({
       walletAddress: generateRandomEthAddress(),
       name: user3Name,
       email: user3Email,
       agentName: agent3Name,
+      agentHandle: agent3Handle,
     })) as UserRegistrationResponse;
     expect(user3Result.success).toBe(true);
 
