@@ -4,7 +4,6 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { PriceResponse } from "@/e2e/utils/api-types.js";
 import { dbManager } from "@/e2e/utils/db-manager.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   createTestClient,
   getAdminApiKey,
