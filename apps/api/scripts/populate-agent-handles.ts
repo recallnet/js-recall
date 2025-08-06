@@ -37,7 +37,7 @@ interface AgentWithScore {
   createdAt?: Date;
 }
 
-const DEFAULT_BATCH_SIZE = 1000;
+const DEFAULT_BATCH_SIZE = 5000; // Increased batch size for bulk updates
 
 /**
  * Prompt user for confirmation
@@ -343,15 +343,27 @@ async function populateAgentHandles(batchSize: number, isDryRun: boolean) {
       const batch = entries.slice(i, i + batchSize);
 
       try {
-        // Use a transaction for each batch
-        await db.transaction(async (tx) => {
-          for (const [agentId, handle] of batch) {
-            await tx
-              .update(agents)
-              .set({ handle })
-              .where(eq(agents.id, agentId));
-          }
-        });
+        // Use a single bulk update query for the entire batch
+        if (batch.length > 0) {
+          // Build the UPDATE query using VALUES clause for better performance
+          // This approach sends all updates in a single query
+          const values = batch
+            .map(([agentId, handle]) => {
+              // Escape single quotes in handle to prevent SQL injection
+              const escapedHandle = handle.replace(/'/g, "''");
+              return `('${agentId}'::uuid, '${escapedHandle}'::text)`;
+            })
+            .join(", ");
+
+          // Use UPDATE ... FROM VALUES pattern which is much more efficient
+          // This executes as a single query instead of N queries
+          await db.execute(sql`
+            UPDATE agents
+            SET handle = v.handle
+            FROM (VALUES ${sql.raw(values)}) AS v(id, handle)
+            WHERE agents.id = v.id
+          `);
+        }
 
         updated += batch.length;
         const progress = Math.round((updated / entries.length) * 100);
