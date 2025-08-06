@@ -99,8 +99,9 @@ async function registerAgent() {
 
     // Get agent details from command line arguments or prompt for them
     let agentName = process.argv[2];
-    let walletAddress = process.argv[3];
-    let agentEmail = process.argv[4];
+    let agentHandle = process.argv[3];
+    let walletAddress = process.argv[4];
+    let agentEmail = process.argv[5];
 
     // Temporarily restore console.log for input
     console.log = originalConsoleLog;
@@ -110,6 +111,13 @@ async function registerAgent() {
       agentName = await prompt("Enter agent name: ");
       if (!agentName) {
         throw new Error("Agent name is required");
+      }
+    }
+
+    if (!agentHandle) {
+      agentHandle = await prompt("Enter agent handle: ");
+      if (!agentHandle) {
+        throw new Error("Agent handle is required");
       }
     }
 
@@ -138,6 +146,7 @@ async function registerAgent() {
       `\n${colors.yellow}Registering agent with the following details:${colors.reset}`,
     );
     safeLog(`- Agent Name: ${agentName}`);
+    safeLog(`- Agent Handle: ${agentHandle}`);
     safeLog(`- Owner's Wallet Address: ${walletAddress}`);
     safeLog(`- Agent Email: ${agentEmail || "Not provided"}`);
 
@@ -170,6 +179,7 @@ async function registerAgent() {
     const agent = await services.agentManager.createAgent({
       ownerId: owner.id,
       name: agentName,
+      handle: agentHandle,
       email: agentEmail || undefined,
     });
 

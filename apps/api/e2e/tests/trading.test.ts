@@ -23,7 +23,7 @@ import {
 import {
   createTestClient,
   getAdminApiKey,
-  looseConstraints,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -268,40 +268,30 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
     expect(initialUsdcBalance).toBeGreaterThan(0);
 
-    // The arbitrary token address to test with
-    const arbitraryTokenAddress =
-      "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
+    // The arbitrary token address to test with (Raydium)
+    const raydiumTokenAddress = "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
     // Initial balance of the arbitrary token (likely 0)
     const initialArbitraryTokenBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.tokenAddress === arbitraryTokenAddress)
+        .find((b) => b.tokenAddress === raydiumTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Initial arbitrary token balance: ${initialArbitraryTokenBalance}`,
     );
 
     // Execute a direct trade using the API's expected parameters
     // We'll use the executeTrade method but we need to correctly map the parameters
     const tradeAmount = 10; // 10 USDC
-    console.log(
-      `Trading ${tradeAmount} USDC for arbitrary token ${arbitraryTokenAddress}`,
-    );
-
     // Use the client's executeTrade which expects fromToken and toToken
     const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
-      toToken: arbitraryTokenAddress,
+      toToken: raydiumTokenAddress,
       amount: tradeAmount.toString(),
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
     });
 
-    console.log(`Buy trade response: ${JSON.stringify(buyTradeResponse)}`);
     expect(buyTradeResponse.success).toBe(true);
     if (buyTradeResponse.success) {
       const tradeResponse = buyTradeResponse as TradeResponse;
@@ -321,17 +311,13 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Updated USDC balance: ${updatedUsdcBalance}`);
     expect(updatedUsdcBalance).toBeLessThan(initialUsdcBalance);
     expect(initialUsdcBalance - updatedUsdcBalance).toBeCloseTo(tradeAmount, 1); // Allow for small rounding differences
     // The arbitrary token balance should have increased
     const updatedArbitraryTokenBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
-        .find((b) => b.tokenAddress === arbitraryTokenAddress)
+        .find((b) => b.tokenAddress === raydiumTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Updated arbitrary token balance: ${updatedArbitraryTokenBalance}`,
     );
     expect(updatedArbitraryTokenBalance).toBeGreaterThan(
       initialArbitraryTokenBalance,
@@ -350,7 +336,7 @@ describe("Trading API", () => {
     // Verify the last trade has the correct tokens
     const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
     expect(lastTrade?.fromToken).toBe(usdcTokenAddress);
-    expect(lastTrade?.toToken).toBe(arbitraryTokenAddress);
+    expect(lastTrade?.toToken).toBe(raydiumTokenAddress);
     expect((lastTrade as TradeTransaction)?.fromAmount).toBeCloseTo(
       tradeAmount,
       1,
@@ -638,7 +624,7 @@ describe("Trading API", () => {
       undefined,
       undefined,
       undefined,
-      looseConstraints,
+      looseTradingConstraints,
     );
 
     // Wait for balances to be properly initialized
@@ -656,50 +642,40 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
     expect(initialUsdcBalance).toBeGreaterThan(0);
 
-    // The arbitrary token address specified
-    const arbitraryTokenAddress =
-      "Grass7B4RdKfBCjTKgSqnXkqjwiGvQyFbuSCUJr3XXjs";
+    // WETH/SOL token address: https://dexscreener.com/solana/7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs
+    const wethTokenAddress = "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs";
+
     // Initial balance of the arbitrary token (likely 0)
     const initialArbitraryTokenBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
-        .find((b) => b.tokenAddress === arbitraryTokenAddress)
+        .find((b) => b.tokenAddress === wethTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Initial ${arbitraryTokenAddress} token balance: ${initialArbitraryTokenBalance}`,
     );
 
     // 1. Fetch the price for the arbitrary token
-    console.log(`Fetching price for token: ${arbitraryTokenAddress}`);
-    const priceResponse = await agentClient.getPrice(arbitraryTokenAddress);
+    const priceResponse = await agentClient.getPrice(wethTokenAddress);
     expect(priceResponse.success).toBe(true);
     expect((priceResponse as PriceResponse).price).toBeDefined();
 
     const tokenPrice = (priceResponse as PriceResponse).price;
-    console.log(`Token price: ${tokenPrice} USDC`);
     expect(tokenPrice).toBeGreaterThan(0);
 
     // 2. Calculate how much of the token can be bought with 10 USDC
     const usdcAmount = 10;
     const expectedTokenAmount = usdcAmount / (tokenPrice || 0); // Handle null case
-    console.log(
-      `With ${usdcAmount} USDC, expect to receive approximately ${expectedTokenAmount} tokens`,
-    );
 
     // 3. Execute the trade (buy the token with 10 USDC)
     const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
-      toToken: arbitraryTokenAddress,
+      toToken: wethTokenAddress,
       amount: usdcAmount.toString(),
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
     });
 
-    console.log(`Buy trade response: ${JSON.stringify(buyTradeResponse)}`);
     expect(buyTradeResponse.success).toBe(true);
     expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
     expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
@@ -717,15 +693,13 @@ describe("Trading API", () => {
         .find((b: TokenBalance) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Final USDC balance: ${finalUsdcBalance}`);
     expect(initialUsdcBalance - finalUsdcBalance).toBeCloseTo(usdcAmount, 1); // Allow for small rounding differences
     // The arbitrary token balance should have increased by the calculated amount
     const finalTokenBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
-        .find((b: TokenBalance) => b.tokenAddress === arbitraryTokenAddress)
+        .find((b: TokenBalance) => b.tokenAddress === wethTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Final token balance: ${finalTokenBalance}`);
     expect(finalTokenBalance - initialArbitraryTokenBalance).toBeCloseTo(
       expectedTokenAmount,
       1,
@@ -741,7 +715,7 @@ describe("Trading API", () => {
     // Verify the trade details in history
     const lastTrade = tradeHistory.trades[0];
     expect(lastTrade?.fromToken).toBe(usdcTokenAddress);
-    expect(lastTrade?.toToken).toBe(arbitraryTokenAddress);
+    expect(lastTrade?.toToken).toBe(wethTokenAddress);
     expect(lastTrade?.fromAmount).toBeCloseTo(usdcAmount, 1);
     expect(lastTrade?.toAmount).toBeCloseTo(expectedTokenAmount, 1);
   });
@@ -2361,5 +2335,90 @@ describe("Trading API", () => {
     }
 
     console.log("✅ All token burn tests passed!");
+  });
+
+  test("agent cannot execute trade on competition they are not registered for", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register two agents - one for the competition, one for testing
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Unregistered Agent",
+    });
+
+    // Register another agent that will be in the competition
+    const { agent: competitionAgent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Competition Agent",
+    });
+
+    // Start a competition with only the second agent
+    const competitionName = `Unregistered Agent Test ${Date.now()}`;
+    const competitionResponse = await adminClient.startCompetition({
+      name: competitionName,
+      agentIds: [competitionAgent.id], // Only the second agent is registered
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    await wait(500);
+
+    // Get tokens to trade
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+    const solTokenAddress = config.specificChainTokens.svm.sol;
+
+    // Attempt to execute a trade - this should fail because the agent is not registered
+    console.log(
+      "Attempting to trade with agent not registered for competition",
+    );
+    const tradeResponse = await agentClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: solTokenAddress,
+      amount: "100",
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Testing trade with unregistered agent",
+    });
+
+    // Verify the trade failed
+    expect(tradeResponse.success).toBe(false);
+    expect((tradeResponse as ErrorResponse).error).toContain("not registered");
+    console.log(
+      `Trade failed as expected: ${(tradeResponse as ErrorResponse).error}`,
+    );
+
+    // Verify that the agent can get balance but it should be empty since they're not in the competition
+    const balanceResponse = await agentClient.getBalance();
+    expect(balanceResponse.success).toBe(true);
+    expect((balanceResponse as BalancesResponse).balances).toBeDefined();
+    expect((balanceResponse as BalancesResponse).balances.length).toBe(0);
+    console.log(
+      `Balance check returned empty as expected: ${(balanceResponse as BalancesResponse).balances.length} balances`,
+    );
+
+    // Verify that the agent can get trade history but it should be empty since they're not in the competition
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    expect(tradeHistoryResponse.success).toBe(true);
+    expect((tradeHistoryResponse as TradeHistoryResponse).trades).toBeDefined();
+    expect((tradeHistoryResponse as TradeHistoryResponse).trades.length).toBe(
+      0,
+    );
+    console.log(
+      `Trade history returned empty as expected: ${(tradeHistoryResponse as TradeHistoryResponse).trades.length} trades`,
+    );
+
+    // Verify that the agent can get portfolio but it should be empty since they're not in the competition
+    const portfolioResponse = await agentClient.getPortfolio();
+    expect(portfolioResponse.success).toBe(true);
+    expect((portfolioResponse as PortfolioResponse).tokens).toBeDefined();
+    expect((portfolioResponse as PortfolioResponse).tokens.length).toBe(0);
+    expect((portfolioResponse as PortfolioResponse).totalValue).toBe(0);
+    console.log(
+      `Portfolio returned empty as expected: ${(portfolioResponse as PortfolioResponse).tokens.length} tokens, total value: $${(portfolioResponse as PortfolioResponse).totalValue}`,
+    );
+
+    console.log("✅ All unregistered agent tests passed!");
   });
 });

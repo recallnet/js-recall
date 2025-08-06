@@ -18,8 +18,8 @@ import {
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
 import {
-  VISION_TOKEN,
   createSiweAuthenticatedClient,
+  createTestAgent,
   createTestClient,
   createTestCompetition,
   generateTestCompetitions,
@@ -288,7 +288,8 @@ describe("User API", () => {
     );
 
     // Test: User can create an agent via SIWE session
-    const createAgentResponse = await siweClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      siweClient,
       "SIWE Created Agent",
       "Agent created via SIWE session",
     );
@@ -325,7 +326,8 @@ describe("User API", () => {
     });
 
     // Create an agent via SIWE session
-    const createAgentResponse = await siweClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      siweClient,
       "Original Agent Name",
       "Original agent description",
       "https://example.com/original-image.jpg",
@@ -456,7 +458,8 @@ describe("User API", () => {
     });
 
     // Create an agent via SIWE session
-    const createAgentResponse = await siweClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      siweClient,
       "Original Agent Name",
       "Original agent description",
       "https://example.com/original-image.jpg",
@@ -491,7 +494,8 @@ describe("User API", () => {
     });
 
     // Create an agent via SIWE session
-    const createAgentResponse = await siweClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      siweClient,
       "Original Agent Name",
       "Original agent description",
       "https://example.com/original-image.jpg",
@@ -531,7 +535,8 @@ describe("User API", () => {
     ];
 
     for (const name of agentNames) {
-      const response = await siweClient.createAgent(
+      const response = await createTestAgent(
+        siweClient,
         name,
         `Description for ${name}`,
       );
@@ -568,7 +573,8 @@ describe("User API", () => {
 
     // Create 6 agents
     for (let i = 1; i <= 6; i++) {
-      const response = await siweClient.createAgent(
+      const response = await createTestAgent(
+        siweClient,
         `Agent ${i.toString().padStart(2, "0")}`,
         `Description for Agent ${i}`,
       );
@@ -605,7 +611,8 @@ describe("User API", () => {
 
     // Create 6 agents
     for (let i = 1; i <= 6; i++) {
-      const response = await siweClient.createAgent(
+      const response = await createTestAgent(
+        siweClient,
         `Agent ${i.toString().padStart(2, "0")}`,
         `Description for Agent ${i}`,
       );
@@ -648,7 +655,8 @@ describe("User API", () => {
 
     // Create 8 agents
     for (let i = 1; i <= 8; i++) {
-      const response = await siweClient.createAgent(
+      const response = await createTestAgent(
+        siweClient,
         `Agent ${i.toString().padStart(2, "0")}`,
         `Description for Agent ${i}`,
       );
@@ -709,7 +717,8 @@ describe("User API", () => {
     ];
 
     for (const agent of agentData) {
-      const response = await siweClient.createAgent(
+      const response = await createTestAgent(
+        siweClient,
         agent.name,
         agent.description,
       );
@@ -773,7 +782,8 @@ describe("User API", () => {
     const names = ["Hotel", "Alpha", "India", "Bravo", "Juliet", "Charlie"];
 
     for (const name of names) {
-      const response = await siweClient.createAgent(
+      const response = await createTestAgent(
+        siweClient,
         `${name} Agent`,
         `Description for ${name}`,
       );
@@ -822,7 +832,8 @@ describe("User API", () => {
 
     // User 1 creates 3 agents
     for (let i = 1; i <= 3; i++) {
-      const response = await user1Client.createAgent(
+      const response = await createTestAgent(
+        user1Client,
         `User1 Agent ${i}`,
         `Description ${i}`,
       );
@@ -831,7 +842,8 @@ describe("User API", () => {
 
     // User 2 creates 2 agents
     for (let i = 1; i <= 2; i++) {
-      const response = await user2Client.createAgent(
+      const response = await createTestAgent(
+        user2Client,
         `User2 Agent ${i}`,
         `Description ${i}`,
       );
@@ -878,12 +890,14 @@ describe("User API", () => {
     });
 
     // Create a couple of agents
-    const response1 = await siweClient.createAgent(
+    const response1 = await createTestAgent(
+      siweClient,
       "Test Agent 1",
       "Description 1",
     );
     expect(response1.success).toBe(true);
-    const response2 = await siweClient.createAgent(
+    const response2 = await createTestAgent(
+      siweClient,
       "Test Agent 2",
       "Description 2",
     );
@@ -938,7 +952,8 @@ describe("User API", () => {
 
     // Create a few agents
     for (let i = 1; i <= 3; i++) {
-      const response = await siweClient.createAgent(
+      const response = await createTestAgent(
+        siweClient,
         `Agent ${i}`,
         `Description ${i}`,
       );
@@ -977,21 +992,23 @@ describe("User API", () => {
     const agentDescription = "Test agent for duplicate name testing";
 
     // Create the first agent successfully
-    const firstAgentResponse = await siweClient.createAgent(
+    const firstAgentResponse = await createTestAgent(
+      siweClient,
       agentName,
       agentDescription,
     );
     expect(firstAgentResponse.success).toBe(true);
 
     // Try to create a second agent with the same name - should fail with 409
-    const secondAgentResponse = await siweClient.createAgent(
+    const secondAgentResponse = await createTestAgent(
+      siweClient,
       agentName,
       agentDescription,
     );
     expect(secondAgentResponse.success).toBe(false);
     expect((secondAgentResponse as ErrorResponse).status).toBe(409);
     expect((secondAgentResponse as ErrorResponse).error).toContain(
-      "already exists for this user",
+      "You already have an agent with name",
     );
   });
 
@@ -1005,7 +1022,8 @@ describe("User API", () => {
       });
 
       // Create an agent for this user
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Test Agent for API Key",
         "Agent description for API key testing",
       );
@@ -1039,7 +1057,8 @@ describe("User API", () => {
       });
 
       // User 1 creates an agent
-      const agentResponse = await user1Client.createAgent(
+      const agentResponse = await createTestAgent(
+        user1Client,
         "User 1 Agent",
         "Agent owned by User 1",
       );
@@ -1063,7 +1082,8 @@ describe("User API", () => {
         userEmail: "agent-owner@example.com",
       });
 
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Test Agent",
         "Agent for unauthorized access test",
       );
@@ -1129,7 +1149,8 @@ describe("User API", () => {
       });
 
       // Create an agent
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Format Test Agent",
         "Agent for format consistency testing",
       );
@@ -1168,7 +1189,8 @@ describe("User API", () => {
       });
 
       // Create an agent
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Auth Test Agent",
         "Agent for authentication testing",
       );
@@ -1389,14 +1411,16 @@ describe("User API", () => {
       });
 
       // Create 2 agents for the same user
-      const agent1Response = await userClient.createAgent(
+      const agent1Response = await createTestAgent(
+        userClient,
         "Pagination Test Agent 1",
         "Agent 1 for pagination bug testing",
       );
       expect(agent1Response.success).toBe(true);
       const agent1 = (agent1Response as AgentProfileResponse).agent;
 
-      const agent2Response = await userClient.createAgent(
+      const agent2Response = await createTestAgent(
+        userClient,
         "Pagination Test Agent 2",
         "Agent 2 for pagination bug testing",
       );
@@ -1459,7 +1483,8 @@ describe("User API", () => {
         userEmail: "hasmore-test@example.com",
       });
 
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "HasMore Test Agent",
         "Agent for hasMore testing",
       );
@@ -1516,7 +1541,8 @@ describe("User API", () => {
         userEmail: "offset-edge-test@example.com",
       });
 
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Offset Edge Test Agent",
         "Agent for offset edge tests",
       );
@@ -1565,7 +1591,8 @@ describe("User API", () => {
         userEmail: "valid-sort-test@example.com",
       });
 
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Valid Sort Test Agent",
         "Agent for valid sort testing",
       );
@@ -1686,7 +1713,8 @@ describe("User API", () => {
         userEmail: "correct-format-test@example.com",
       });
 
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Correct Format Test Agent",
         "Agent for correct format testing",
       );
@@ -1774,7 +1802,8 @@ describe("User API", () => {
         userEmail: "multiple-sort-test@example.com",
       });
 
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Multiple Sort Test Agent",
         "Agent for multiple sort testing",
       );
@@ -1848,7 +1877,8 @@ describe("User API", () => {
       const agents = [];
 
       for (const name of agentNames) {
-        const agentResponse = await userClient.createAgent(
+        const agentResponse = await createTestAgent(
+          userClient,
           name,
           `Description for ${name}`,
         );
@@ -1919,21 +1949,24 @@ describe("User API", () => {
       });
 
       // Create agents with specific names to test primary agent selection
-      const agent1Response = await userClient.createAgent(
+      const agent1Response = await createTestAgent(
+        userClient,
         "Charlie Agent",
         "Third agent alphabetically",
       );
       expect(agent1Response.success).toBe(true);
       const agent1 = (agent1Response as AgentProfileResponse).agent;
 
-      const agent2Response = await userClient.createAgent(
+      const agent2Response = await createTestAgent(
+        userClient,
         "Alpha Agent",
         "First agent alphabetically",
       );
       expect(agent2Response.success).toBe(true);
       const agent2 = (agent2Response as AgentProfileResponse).agent;
 
-      const agent3Response = await userClient.createAgent(
+      const agent3Response = await createTestAgent(
+        userClient,
         "Beta Agent",
         "Second agent alphabetically",
       );
@@ -2010,7 +2043,8 @@ describe("User API", () => {
       // Create multiple agents for testing different performance levels
       const agents = [];
       for (let i = 1; i <= 3; i++) {
-        const agentResponse = await userClient.createAgent(
+        const agentResponse = await createTestAgent(
+          userClient,
           `Rank Test Agent ${i}`,
           `Agent ${i} for rank testing`,
         );
@@ -2139,7 +2173,8 @@ describe("User API", () => {
         userEmail: "undefined-rank-test@example.com",
       });
 
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Undefined Rank Test Agent",
         "Agent for testing undefined rank handling",
       );
@@ -2242,7 +2277,8 @@ describe("User API", () => {
         userEmail: "combined-sort-test@example.com",
       });
 
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "Combined Sort Test Agent",
         "Agent for combined sort testing",
       );
@@ -2302,7 +2338,8 @@ describe("User API", () => {
       const agents = [];
 
       for (const name of agentNames) {
-        const agentResponse = await userClient.createAgent(
+        const agentResponse = await createTestAgent(
+          userClient,
           name,
           `Description for ${name}`,
         );
@@ -2410,7 +2447,8 @@ describe("User API", () => {
       // Create multiple agents
       const agents = [];
       for (let i = 0; i < 4; i++) {
-        const agentResponse = await userClient.createAgent(
+        const agentResponse = await createTestAgent(
+          userClient,
           `Rank Test Agent ${i}`,
           `Agent ${i} for rank pagination testing`,
         );
@@ -2535,7 +2573,8 @@ describe("User API", () => {
       const agents = [];
 
       for (const name of agentNames) {
-        const agentResponse = await userClient.createAgent(
+        const agentResponse = await createTestAgent(
+          userClient,
           `${name} Agent`,
           `Agent named ${name}`,
         );
@@ -2659,7 +2698,8 @@ describe("User API", () => {
 
       const agents = [];
       for (const data of agentData) {
-        const agentResponse = await userClient.createAgent(
+        const agentResponse = await createTestAgent(
+          userClient,
           data.name,
           `Agent for ${data.comp}`,
         );
@@ -2747,7 +2787,8 @@ describe("User API", () => {
 
     const createdAgents: Agent[] = [];
     for (const name of agentNames) {
-      const response = await siweClient.createAgent(
+      const response = await createTestAgent(
+        siweClient,
         name,
         `Description for ${name}`,
       );
@@ -2804,33 +2845,33 @@ describe("User API", () => {
       agentClients.push(agentClient);
     }
 
-    // Alpha Agent: (3 big stable trades)
+    // Alpha Agent: (3 small bad trades)
     for (let i = 0; i < 3; i++) {
       await agentClients[0]?.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
-        amount: "1000",
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
         reason: `Alpha Agent smart trade ${i + 1} - buying ETH`,
       });
       await wait(50);
     }
 
-    // Bravo Agent: (2 small stable trades)
+    // Bravo Agent: (2 small bad trades)
     for (let i = 0; i < 2; i++) {
       await agentClients[1]?.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
         reason: `Bravo Agent good trade ${i + 1}`,
       });
       await wait(50);
     }
 
-    // Charlie Agent: (1 large volitile trade)
+    // Charlie Agent: (1 medium bad trade)
     await agentClients[2]?.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: VISION_TOKEN,
-      amount: "2000",
+      toToken: "0x000000000000000000000000000000000000dead",
+      amount: "1000",
       reason: "Charlie Agent trade",
     });
     await wait(50);
@@ -2949,14 +2990,16 @@ describe("User API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create 2 agents
-    const agent1Response = await siweClient.createAgent(
+    const agent1Response = await createTestAgent(
+      siweClient,
       "Agent Foxtrot",
       "The first Agent for this user",
     );
     expect(agent1Response.success).toBe(true);
     const agent1 = (agent1Response as { success: true; agent: Agent }).agent;
 
-    const agent2Response = await siweClient.createAgent(
+    const agent2Response = await createTestAgent(
+      siweClient,
       "Agent Hotel",
       "Agent that makes volatile trades",
     );

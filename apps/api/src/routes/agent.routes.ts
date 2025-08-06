@@ -48,6 +48,9 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                     name:
    *                       type: string
    *                       example: "Trading Bot Alpha"
+   *                     handle:
+   *                       type: string
+   *                       example: "trading-bot-alpha"
    *                     description:
    *                       type: string
    *                       example: "AI agent focusing on DeFi yield farming"
@@ -82,6 +85,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                     walletAddress:
    *                       type: string
    *                     name:
+   *                       type: string
+   *                     handle:
    *                       type: string
    *                     email:
    *                       type: string
@@ -147,6 +152,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                     isVerified:
    *                       type: boolean
    *                     name:
+   *                       type: string
+   *                     handle:
    *                       type: string
    *                     description:
    *                       type: string
