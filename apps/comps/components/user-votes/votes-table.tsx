@@ -91,7 +91,7 @@ export const VotesTable: React.FC<VotesTableProps> = ({
                 className="truncate"
               >
                 <span className="text-secondary-foreground font-semibold leading-tight">
-                  {row.original.agent.name} (@{row.original.agent.handle})
+                  {row.original.agent.name}
                 </span>
               </Link>
               <span className="text-secondary-foreground/70 block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs">

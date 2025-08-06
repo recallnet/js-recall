@@ -48,7 +48,6 @@ import {
   ResetApiKeyResponse,
   SpecificChain,
   StartCompetitionResponse,
-  TokenInfoResponse,
   TradeExecutionParams,
   TradeHistoryResponse,
   TradeResponse,
@@ -1139,34 +1138,6 @@ export class ApiClient {
       return response.data as PriceResponse;
     } catch (error) {
       return this.handleApiError(error, "get price");
-    }
-  }
-
-  /**
-   * Get detailed token information
-   *
-   * @param token The token address
-   * @param chain Optional blockchain type (auto-detected if not provided)
-   * @param specificChain Optional specific chain for EVM tokens
-   * @returns A promise that resolves to the token info response
-   */
-  async getTokenInfo(
-    token: string,
-    chain?: BlockchainType,
-    specificChain?: SpecificChain,
-  ): Promise<TokenInfoResponse | ErrorResponse> {
-    try {
-      let path = `/api/price/token-info?token=${encodeURIComponent(token)}`;
-      if (chain) {
-        path += `&chain=${encodeURIComponent(chain)}`;
-      }
-      if (specificChain) {
-        path += `&specificChain=${encodeURIComponent(specificChain)}`;
-      }
-      const response = await this.axiosInstance.get(path);
-      return response.data as TokenInfoResponse;
-    } catch (error) {
-      return this.handleApiError(error, "get token info");
     }
   }
 

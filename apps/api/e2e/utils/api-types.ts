@@ -587,21 +587,6 @@ export interface PriceResponse extends ApiResponse {
   timestamp?: string;
 }
 
-// Token info response
-export interface TokenInfoResponse extends ApiResponse {
-  token: string;
-  chain: BlockchainType;
-  specificChain: SpecificChain | null;
-  name?: string;
-  symbol?: string;
-  decimals?: number;
-  logoURI?: string;
-  price?: number;
-  priceChange24h?: number;
-  volume24h?: number;
-  marketCap?: number;
-}
-
 // Price history point
 export interface PriceHistoryPoint {
   timestamp: string;

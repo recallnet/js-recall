@@ -4,17 +4,6 @@ import { SiweMessage } from "siwe";
 import { z } from "zod/v4";
 
 /**
- * Token information interface
- */
-export interface TokenInfo {
-  address: string;
-  symbol: string;
-  decimals: number;
-  price?: number;
-  lastUpdated?: Date;
-}
-
-/**
  * Blockchain type enum
  */
 export enum BlockchainType {
@@ -22,20 +11,24 @@ export enum BlockchainType {
   EVM = "evm",
 }
 
-// type for specific chains
-export type SpecificChain =
-  | "eth" // Ethereum Mainnet
-  | "polygon" // Polygon
-  | "bsc" // Binance Smart Chain
-  | "arbitrum" // Arbitrum
-  | "optimism" // Optimism
-  | "avalanche" // Avalanche
-  | "base" // Base
-  | "linea" // Linea
-  | "zksync" // zkSync Era
-  | "scroll" // Scroll
-  | "mantle" // Mantle
-  | "svm"; // Solana (for consistency)
+// Zod schema for SpecificChain validation
+export const SpecificChainSchema = z.enum([
+  "eth",
+  "polygon",
+  "bsc",
+  "arbitrum",
+  "optimism",
+  "avalanche",
+  "base",
+  "linea",
+  "zksync",
+  "scroll",
+  "mantle",
+  "svm",
+]);
+
+// Type derived from the Zod schema
+export type SpecificChain = z.infer<typeof SpecificChainSchema>;
 
 // Mapping from SpecificChain to BlockchainType
 export const chainTypeMapping: Record<SpecificChain, BlockchainType> = {
