@@ -58,8 +58,8 @@ export const AgentImage = ({
         src={image}
         alt=""
         fill={!!agentImage}
-        width={agentImage ? undefined : 50}
-        height={agentImage ? undefined : 50}
+        width={agentImage ? undefined : 200}
+        height={agentImage ? undefined : 200}
         className={cn(agentImage ? "absolute z-0 object-cover" : "w-50 h-50")}
       />
 
