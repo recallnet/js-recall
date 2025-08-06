@@ -509,19 +509,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
                     tradingConstraintsRaw?.minimumLiquidityUsd,
                   minimumFdvUsd: tradingConstraintsRaw?.minimumFdvUsd,
                 };
-                const rewards =
-                  await services.competitionRewardService.getRewardsByCompetition(
-                    competition.id,
-                  );
 
                 return {
                   ...competition,
                   tradingConstraints,
-                  rewards: rewards.map((r: SelectCompetitionReward) => ({
-                    rank: r.rank,
-                    reward: r.reward,
-                    agentId: r.agentId,
-                  })),
                   votingEnabled:
                     votingState.canVote || votingState.info.hasVoted,
                   userVotingInfo: votingState,
