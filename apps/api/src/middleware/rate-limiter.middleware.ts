@@ -5,6 +5,7 @@ import {
   RateLimiterRes,
 } from "rate-limiter-flexible";
 
+import { middlewareLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 
 // Define rate limiter configurations
@@ -134,26 +135,16 @@ export const rateLimiterMiddleware = async (
         ) {
           agentId = token.substring(0, underscoreIndex);
         } else {
-          // Log a warning in development mode if the token format is invalid
-          const isDev = ["development", "test"].includes(
-            process.env.NODE_ENV || "",
+          middlewareLogger.warn(
+            `[RateLimiter] Invalid token format: "${token}". Expected format: agentId_apiKey.`,
           );
-          if (isDev) {
-            console.warn(
-              `[RateLimiter] Invalid token format: "${token}". Expected format: agentId_apiKey.`,
-            );
-          }
         }
       }
     }
 
-    // For debugging in development and testing
-    const isDev = ["development", "test"].includes(process.env.NODE_ENV || "");
-    if (isDev) {
-      console.log(
-        `[RateLimiter] Processing request for agent ${agentId} to ${req.originalUrl}`,
-      );
-    }
+    middlewareLogger.debug(
+      `[RateLimiter] Processing request for agent ${agentId} to ${req.originalUrl}`,
+    );
 
     // Apply global rate limit first - this is still per-agent but for all endpoints
     await getRateLimiter(agentId, "global").consume(`global:${agentId}`);
@@ -166,22 +157,19 @@ export const rateLimiterMiddleware = async (
     const path = req.originalUrl.toLowerCase();
 
     if (path.includes("/api/trade")) {
-      if (isDev)
-        console.log(
-          `[RateLimiter] Applying trade rate limit for agent ${agentId}`,
-        );
+      middlewareLogger.debug(
+        `[RateLimiter] Applying trade rate limit for agent ${agentId}`,
+      );
       await getRateLimiter(agentId, "trade").consume(`trade:${agentId}`);
     } else if (path.includes("/api/price")) {
-      if (isDev)
-        console.log(
-          `[RateLimiter] Applying price rate limit for agent ${agentId}`,
-        );
+      middlewareLogger.debug(
+        `[RateLimiter] Applying price rate limit for agent ${agentId}`,
+      );
       await getRateLimiter(agentId, "price").consume(`price:${agentId}`);
     } else if (path.includes("/api/agent")) {
-      if (isDev)
-        console.log(
-          `[RateLimiter] Applying account rate limit for agent ${agentId}`,
-        );
+      middlewareLogger.debug(
+        `[RateLimiter] Applying account rate limit for agent ${agentId}`,
+      );
       await getRateLimiter(agentId, "account").consume(`account:${agentId}`);
     }
 
@@ -219,5 +207,5 @@ export const rateLimiterMiddleware = async (
  */
 export const resetRateLimiters = (): void => {
   rateLimiters.clear();
-  console.log("[RateLimiter] All rate limiters have been reset");
+  middlewareLogger.debug("[RateLimiter] All rate limiters have been reset");
 };

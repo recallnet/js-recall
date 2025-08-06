@@ -1,19 +1,23 @@
 /**
- * Test setup file that runs before each test suite
+ * Test setupFile, this is run before each test file https://vitest.dev/config/#setupfiles
  *
- * This is used to set up global Jest configurations and hooks
+ * NOTE: The actual server under test is started inside a sub-process, hence in
+ *   memory things like caches, timeouts, and intervals cannot be interacted with.
+ *
+ * NOTE: that if you are running --isolate=false, this setup file will be run
+ *   in the same global scope multiple times. Meaning, that you are accessing the
+ *   same global object before each test, so make sure you are not doing the same
+ *   thing more than you need.
+ *
  */
 import fs from "fs";
 import path from "path";
 import client from "prom-client";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
-import { ServiceRegistry } from "@/services/index.js";
-
 import { dbManager } from "./db-manager.js";
 
-const services = new ServiceRegistry();
-
+// TODO: is this log file needed if we use Pino?
 // Path to log file
 const logFile = path.resolve(__dirname, "../e2e-server.log");
 
@@ -26,8 +30,6 @@ const log = (message: string) => {
 // Extend the timeout for all tests
 vi.setConfig({ testTimeout: 60_000 });
 
-// Global Jest setup for E2E tests
-
 // Set test mode environment variable
 process.env.TEST_MODE = "true";
 
@@ -36,176 +38,16 @@ if (!process.env.METRICS_PORT) {
   process.env.METRICS_PORT = "3003";
 }
 
-// Before all tests in every file
-beforeAll(async () => {
-  log("[Global Setup] Initializing test environment...");
+// Before all tests in every file, i.e. this is run once for each file
+beforeAll(async () => {});
 
-  // Ensure database is initialized
-  await dbManager.initialize();
-
-  // Ensure scheduler is reset at the start of tests
-  if (services.scheduler) {
-    log("[Global Setup] Resetting scheduler service...");
-    services.scheduler.reset();
-    // Start the scheduler after resetting it
-    services.startSchedulers();
-  }
-});
-
-// Before each test
-beforeEach(async () => {
-  // Reset scheduler to ensure a clean state for each test
-  if (services.scheduler) {
-    log("[Global Setup] Resetting scheduler service for new test...");
-    services.scheduler.reset();
-    // Start the scheduler after resetting it
-    services.startSchedulers();
-  }
-
-  // Reset caches to ensure a clean state for each test
-  log("[Global Setup] Resetting service caches...");
-
-  // Reset UserManager caches
-  if (services.userManager) {
-    // Reset userWalletCache if it exists
-    // @ts-expect-error known private class property
-    if (services.userManager.userWalletCache instanceof Map) {
-      //  @ts-expect-error known private class property
-      const count = services.userManager.userWalletCache.size;
-      if (count > 0) {
-        log(
-          `[Global Setup] Clearing ${count} entries from UserManager.userWalletCache`,
-        );
-        // @ts-expect-error known private class property
-        services.userManager.userWalletCache.clear();
-      }
-    }
-
-    // Reset userProfileCache if it exists
-    // @ts-expect-error known private class property
-    if (services.userManager.userProfileCache instanceof Map) {
-      //  @ts-expect-error known private class property
-      const count = services.userManager.userProfileCache.size;
-      if (count > 0) {
-        log(
-          `[Global Setup] Clearing ${count} entries from UserManager.userProfileCache`,
-        );
-        // @ts-expect-error known private class property
-        services.userManager.userProfileCache.clear();
-      }
-    }
-  }
-
-  // Reset AgentManager caches
-  if (services.agentManager) {
-    // Reset apiKeyCache cache if it exists
-    // @ts-expect-error known private class property
-    if (services.agentManager.apiKeyCache instanceof Map) {
-      //  @ts-expect-error known private class property
-      const count = services.agentManager.apiKeyCache.size;
-      if (count > 0) {
-        log(
-          `[Global Setup] Clearing ${count} entries from AgentManager.apiKeyCache`,
-        );
-        // @ts-expect-error known private class property
-        services.agentManager.apiKeyCache.clear();
-      }
-    }
-
-    // Reset inactiveAgentsCache if it exists
-    // @ts-expect-error known private class property
-    if (services.agentManager.inactiveAgentsCache instanceof Map) {
-      // @ts-expect-error known private class property
-      const count = services.agentManager.inactiveAgentsCache.size;
-      if (count > 0) {
-        log(
-          `[Global Setup] Clearing ${count} entries from AgentManager.inactiveAgentsCache`,
-        );
-        // @ts-expect-error known private class property
-        services.agentManager.inactiveAgentsCache.clear();
-      }
-    }
-  }
-
-  // Reset CompetitionManager cache
-  if (services.competitionManager) {
-    // @ts-expect-error known private class property
-    if (services.competitionManager.activeCompetitionCache !== null) {
-      log("[Global Setup] Resetting CompetitionManager.activeCompetitionCache");
-      // @ts-expect-error known private class property
-      services.competitionManager.activeCompetitionCache = null;
-    }
-  }
-
-  // Reset BalanceManager cache
-  if (services.balanceManager) {
-    // @ts-expect-error known private class property
-    if (services.balanceManager.balanceCache instanceof Map) {
-      // @ts-expect-error known private class property
-      const count = services.balanceManager.balanceCache.size;
-      if (count > 0) {
-        log(
-          `[Global Setup] Clearing ${count} entries from BalanceManager.balanceCache`,
-        );
-        // @ts-expect-error known private class property
-        services.balanceManager.balanceCache.clear();
-      }
-    }
-  }
-
-  // Reset TradeSimulator cache
-  if (services.tradeSimulator) {
-    // @ts-expect-error known private class property
-    if (services.tradeSimulator.tradeCache instanceof Map) {
-      // @ts-expect-error known private class property
-      const count = services.tradeSimulator.tradeCache.size;
-      if (count > 0) {
-        log(
-          `[Global Setup] Clearing ${count} entries from TradeSimulator.tradeCache`,
-        );
-        // @ts-expect-error known private class property
-        services.tradeSimulator.tradeCache.clear();
-      }
-    }
-  }
-
-  // Clear provider caches if they exist
-  // These are typically accessed through the priceTracker service
-  if (services.priceTracker) {
-    const providers = ["dexscreenerProvider", "multiChainProvider"];
-
-    providers.forEach((providerName) => {
-      // @ts-expect-error known private class property
-      const provider = services.priceTracker[providerName];
-      if (provider) {
-        if (provider.cache instanceof Map) {
-          const count = provider.cache.size;
-          if (count > 0) {
-            log(
-              `[Global Setup] Clearing ${count} entries from ${providerName}.cache`,
-            );
-            provider.cache.clear();
-          }
-        }
-      }
-    });
-  }
-});
-
-// After all tests in every file
+// After all tests finish for each file, i.e. this is run once for each file
 afterAll(async () => {
-  log("[Global Teardown] Cleaning up test environment...");
+  log("[File Teardown] Cleaning up test environment...");
 
   try {
-    // Stop the scheduler to prevent ongoing database connections
-    if (services.scheduler) {
-      log("[Global Teardown] Stopping scheduler service...");
-      services.scheduler.stopSnapshotScheduler();
-      log("[Global Teardown] Scheduler service stopped");
-    }
-
     // Clean up logging infrastructure resources
-    log("[Global Teardown] Cleaning up logging infrastructure...");
+    log("[File Teardown] Cleaning up logging infrastructure...");
 
     // Clear Prometheus metrics registry to prevent conflicts between test runs
     try {
@@ -220,6 +62,7 @@ afterAll(async () => {
       let removedCount = 0;
       for (const metricName of metricsToRemove) {
         try {
+          // TODO: I think this is interacting via http so this is ok.
           const existingMetric = client.register.getSingleMetric(metricName);
           if (existingMetric) {
             client.register.removeSingleMetric(metricName);
@@ -232,19 +75,21 @@ afterAll(async () => {
 
       if (removedCount > 0) {
         log(
-          `[Global Teardown] Removed ${removedCount} Prometheus metrics from registry`,
+          `[File Teardown] Removed ${removedCount} Prometheus metrics from registry`,
         );
       }
     } catch (error) {
       log(
-        `[Global Teardown] Warning: Error cleaning up Prometheus metrics: ${error}`,
+        `[File Teardown] Warning: Error cleaning up Prometheus metrics: ${error}`,
       );
     }
 
     // Force garbage collection if available (helps with AsyncLocalStorage cleanup)
     if (global.gc) {
+      // TODO: is this needed? maybe a hallucination? If we need this, we
+      //  should be using the `--expose-gc` flag for tests, which we are not afaict
       global.gc();
-      log("[Global Teardown] Forced garbage collection");
+      log("[File Teardown] Forced garbage collection");
     }
 
     // Clean up any generated ROOT_ENCRYPTION_KEY from .env.test to prevent git commits
@@ -261,14 +106,12 @@ afterAll(async () => {
 
         if (updatedContent !== envContent) {
           fs.writeFileSync(envTestPath, updatedContent);
-          log(
-            "[Global Teardown] ✅ Removed ROOT_ENCRYPTION_KEY from .env.test",
-          );
+          log("[File Teardown] ✅ Removed ROOT_ENCRYPTION_KEY from .env.test");
         }
       }
     } catch (envCleanupError) {
       log(
-        "[Global Teardown] Warning: Could not clean up .env.test encryption key: " +
+        "[File Teardown] Warning: Could not clean up .env.test encryption key: " +
           (envCleanupError instanceof Error
             ? envCleanupError.message
             : String(envCleanupError)),
@@ -278,19 +121,22 @@ afterAll(async () => {
     // Add a longer delay to allow logging infrastructure and database connections to clean up
     // This is especially important in CI environments where rapid test cycles can cause resource conflicts
     await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Clean up database state
-    await dbManager.cleanupTestState();
   } catch (error) {
     log(
-      "[Global Teardown] Error during cleanup: " +
+      "[File Teardown] Error during cleanup: " +
         (error instanceof Error ? error.message : String(error)),
     );
   }
 });
 
-// Log test lifecycle events are now handled by LogReporter
+// Before every test
+beforeEach(async function () {
+  // Ensure database is initialized
+  await dbManager.initialize();
+});
 
-afterEach(() => {
-  vi.resetAllMocks();
+// After every test
+afterEach(async function () {
+  // Clean up database state
+  await dbManager.resetDatabase();
 });

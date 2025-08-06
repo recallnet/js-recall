@@ -6,7 +6,9 @@ import { ChainName, getChain } from "@recallnet/chains";
 /**
  * Gets the chain configuration based on the NEXT_PUBLIC_CHAIN_NAME environment variable
  */
-const chain = getChain(process.env.NEXT_PUBLIC_CHAIN_NAME as ChainName);
+const chain = getChain(
+  (process.env.NEXT_PUBLIC_CHAIN_NAME || "testnet") as ChainName,
+);
 
 /**
  * Wagmi configuration for the Recall Portal
@@ -21,6 +23,8 @@ export const config = getDefaultConfig({
   transports: {
     [chain.id]: http(chain.rpcUrls.default.http[0]),
   },
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
+  projectId:
+    process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
+    "your_walletconnect_project_id",
   ssr: true,
 });

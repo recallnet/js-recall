@@ -51,8 +51,6 @@ describe("DexScreenerProvider", () => {
       expect(priceReport).not.toBeNull();
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
-
-      console.log(`Solana price: $${priceReport?.price}`);
     }, 15000);
 
     it("should fetch USDC price", async () => {
@@ -66,8 +64,6 @@ describe("DexScreenerProvider", () => {
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
-
-      console.log(`Solana USDC price: $${priceReport?.price}`);
     }, 15000);
   });
 
@@ -82,8 +78,6 @@ describe("DexScreenerProvider", () => {
       expect(priceReport).not.toBeNull();
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
-
-      console.log(`ETH price: $${priceReport?.price}`);
     });
 
     it("should fetch USDC price", async () => {
@@ -97,8 +91,6 @@ describe("DexScreenerProvider", () => {
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
-
-      console.log(`USDC price: $${priceReport?.price}`);
     });
 
     it("should fetch ETH price above $1000 on Ethereum mainnet", async () => {
@@ -111,8 +103,6 @@ describe("DexScreenerProvider", () => {
       expect(priceReport).not.toBeNull();
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(1000); // ETH should be above $1000
-
-      console.log(`ETH price on Ethereum mainnet: $${priceReport?.price}`);
     }, 15000);
 
     it("should fetch USDT price close to $1 on Ethereum mainnet", async () => {
@@ -126,8 +116,6 @@ describe("DexScreenerProvider", () => {
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDT should be close to $1
-
-      console.log(`USDT price on Ethereum mainnet: $${priceReport?.price}`);
     }, 15000);
   });
 
@@ -142,8 +130,6 @@ describe("DexScreenerProvider", () => {
       expect(priceReport).not.toBeNull();
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
-
-      console.log(`ETH on Base price: $${priceReport?.price}`);
     });
 
     it("should fetch USDC on Base", async () => {
@@ -157,8 +143,6 @@ describe("DexScreenerProvider", () => {
       expect(typeof priceReport?.price).toBe("number");
       expect(priceReport?.price).toBeGreaterThan(0);
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
-
-      console.log(`USDC on Base price: $${priceReport?.price}`);
     });
   });
 

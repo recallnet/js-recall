@@ -17,6 +17,7 @@ import {
   competitionsLeaderboard,
 } from "@/database/schema/core/defs.js";
 import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { transformToTrophy } from "@/lib/trophy-utils.js";
 import {
@@ -44,6 +45,7 @@ const agentOrderByFields: Record<string, AnyColumn> = {
   ownerId: agents.ownerId,
   walletAddress: agents.walletAddress,
   name: agents.name,
+  handle: agents.handle,
   description: agents.description,
   imageUrl: agents.imageUrl,
   status: agents.status,
@@ -69,6 +71,7 @@ export const COMPUTED_SORT_FIELDS = [
   "totalTrades",
   "rank",
   "agentName",
+  "agentHandle",
 ] as const;
 
 /**
@@ -93,7 +96,7 @@ async function createImpl(agent: InsertAgent): Promise<SelectAgent> {
 
     return result;
   } catch (error) {
-    console.error("[AgentRepository] Error in create:", error);
+    repositoryLogger.error("Error in create:", error);
     throw error;
   }
 }
@@ -119,7 +122,7 @@ async function findAllImpl(
 
     return query;
   } catch (error) {
-    console.error("[AgentRepository] Error in findAll:", error);
+    repositoryLogger.error("Error in findAll:", error);
     throw error;
   }
 }
@@ -144,8 +147,8 @@ async function findAgentCompetitionsImpl(
     }
 
     if (claimed) {
-      console.log(
-        "[AgentRepository] attempting to filter by claimed rewards, but NOT IMPLEMENTED",
+      repositoryLogger.warn(
+        "attempting to filter by claimed rewards, but NOT IMPLEMENTED",
       );
     }
 
@@ -194,7 +197,7 @@ async function findAgentCompetitionsImpl(
       isComputedSort, // Flag to indicate service layer needs to handle sorting
     };
   } catch (error) {
-    console.error("[AgentRepository] Error in findAgentCompetitions:", error);
+    repositoryLogger.error("Error in findAgentCompetitions:", error);
     throw error;
   }
 }
@@ -271,7 +274,7 @@ async function findByCompetitionImpl(
       total,
     };
   } catch (error) {
-    console.error("[AgentRepository] Error in findByCompetition:", error);
+    repositoryLogger.error("Error in findByCompetition:", error);
     throw error;
   }
 }
@@ -431,7 +434,7 @@ async function updateImpl(
 
     return result;
   } catch (error) {
-    console.error("[AgentRepository] Error in update:", error);
+    repositoryLogger.error("Error in update:", error);
     throw error;
   }
 }
@@ -450,7 +453,7 @@ async function deleteAgentImpl(id: string): Promise<boolean> {
 
     return !!result;
   } catch (error) {
-    console.error("[AgentRepository] Error in delete:", error);
+    repositoryLogger.error("Error in delete:", error);
     throw error;
   }
 }
@@ -478,7 +481,7 @@ async function isAgentInCompetitionImpl(
 
     return !!result?.count;
   } catch (error) {
-    console.error("[AgentRepository] Error in isAgentInCompetition:", error);
+    repositoryLogger.error("Error in isAgentInCompetition:", error);
     throw error;
   }
 }
@@ -511,7 +514,7 @@ async function deactivateAgentImpl(
 
     return result;
   } catch (error) {
-    console.error("[AgentRepository] Error in deactivateAgent:", error);
+    repositoryLogger.error("Error in deactivateAgent:", error);
     throw error;
   }
 }
@@ -538,7 +541,7 @@ async function reactivateAgentImpl(agentId: string): Promise<SelectAgent> {
 
     return result;
   } catch (error) {
-    console.error("[AgentRepository] Error in reactivateAgent:", error);
+    repositoryLogger.error("Error in reactivateAgent:", error);
     throw error;
   }
 }
@@ -557,6 +560,10 @@ async function searchAgentsImpl(
     // Add filters for each provided parameter
     if (searchParams.name) {
       conditions.push(ilike(agents.name, `%${searchParams.name}%`));
+    }
+
+    if (searchParams.handle) {
+      conditions.push(eq(agents.handle, searchParams.handle));
     }
 
     if (searchParams.ownerId) {
@@ -585,7 +592,7 @@ async function searchAgentsImpl(
       .from(agents)
       .where(and(...conditions));
   } catch (error) {
-    console.error("[AgentRepository] Error in searchAgents:", error);
+    repositoryLogger.error("Error in searchAgents:", error);
     throw error;
   }
 }
@@ -598,7 +605,7 @@ async function countImpl(): Promise<number> {
     const [result] = await db.select({ count: drizzleCount() }).from(agents);
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[AgentRepository] Error in count:", error);
+    repositoryLogger.error("Error in count:", error);
     throw error;
   }
 }
@@ -614,7 +621,7 @@ async function countByWalletImpl(walletAddress: string): Promise<number> {
       .where(eq(agents.walletAddress, walletAddress));
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[AgentRepository] Error in countByWallet:", error);
+    repositoryLogger.error("Error in countByWallet:", error);
     throw error;
   }
 }
@@ -630,7 +637,7 @@ async function countByNameImpl(name: string): Promise<number> {
       .where(ilike(agents.name, name));
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[AgentRepository] Error in countByName:", error);
+    repositoryLogger.error("Error in countByName:", error);
     throw error;
   }
 }
@@ -658,7 +665,7 @@ async function countAgentCompetitionsForStatusImpl(
       );
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[AgentRepository] Error in countAgentCompetitions:", error);
+    repositoryLogger.error("Error in countAgentCompetitions:", error);
     throw error;
   }
 }
@@ -670,7 +677,7 @@ async function findInactiveAgentsImpl(): Promise<SelectAgent[]> {
   try {
     return await db.select().from(agents).where(eq(agents.status, "suspended"));
   } catch (error) {
-    console.error("[AgentRepository] Error in findInactiveAgents:", error);
+    repositoryLogger.error("Error in findInactiveAgents:", error);
     throw error;
   }
 }
@@ -704,8 +711,8 @@ async function findUserAgentCompetitionsImpl(
     }
 
     if (claimed) {
-      console.log(
-        "[AgentRepository] attempting to filter by claimed rewards, but NOT IMPLEMENTED",
+      repositoryLogger.warn(
+        "attempting to filter by claimed rewards, but NOT IMPLEMENTED",
       );
     }
 
@@ -813,8 +820,8 @@ async function findUserAgentCompetitionsImpl(
       isComputedSort, // Flag to indicate service layer needs to handle sorting
     };
   } catch (error) {
-    console.error(
-      "[AgentRepository] Error in findUserAgentCompetitionsOptimized:",
+    repositoryLogger.error(
+      "Error in findUserAgentCompetitionsOptimized:",
       error,
     );
     throw error;
@@ -843,8 +850,8 @@ async function getBulkAgentTrophiesImpl(agentIds: string[]): Promise<
       return [];
     }
 
-    console.log(
-      `[AgentRepository] Getting bulk trophies for ${agentIds.length} agents`,
+    repositoryLogger.info(
+      `Getting bulk trophies for ${agentIds.length} agents`,
     );
 
     // Single optimized query to get trophy data for all agents
@@ -914,13 +921,13 @@ async function getBulkAgentTrophiesImpl(agentIds: string[]): Promise<
       trophies: trophiesByAgent.get(agentId) || [],
     }));
 
-    console.log(
-      `[AgentRepository] Bulk trophy query retrieved ${results.length} total trophy records for ${agentIds.length} agents`,
+    repositoryLogger.info(
+      `Bulk trophy query retrieved ${results.length} total trophy records for ${agentIds.length} agents`,
     );
 
     return bulkTrophies;
   } catch (error) {
-    console.error("[AgentRepository] Error in getBulkAgentTrophies:", error);
+    repositoryLogger.error("Error in getBulkAgentTrophies:", error);
     throw error;
   }
 }

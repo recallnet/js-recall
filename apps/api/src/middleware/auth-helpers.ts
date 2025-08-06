@@ -1,5 +1,7 @@
 import { Request } from "express";
 
+import { authLogger } from "@/lib/logger.js";
+
 /**
  * Extract API key from request's Authorization header
  * @param req Express request
@@ -16,7 +18,7 @@ export function extractApiKey(req: Request): string | undefined {
 
   // Log partial key for debugging (only first 8 chars)
   const partialKey = apiKey ? `${apiKey.substring(0, 8)}...` : "undefined";
-  console.log(`[AuthHelper] Using API Key: ${partialKey}`);
+  authLogger.debug(`Using API Key: ${partialKey}`);
 
   return apiKey;
 }

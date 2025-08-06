@@ -8,6 +8,7 @@ import {
   resetAgentBalances,
   saveBalance,
 } from "@/database/repositories/balance-repository.js";
+import { serviceLogger } from "@/lib/logger.js";
 import { SpecificChain } from "@/types/index.js";
 
 /**
@@ -27,7 +28,9 @@ export class BalanceManager {
    * @param agentId The agent ID
    */
   async initializeAgentBalances(agentId: string): Promise<void> {
-    console.log(`[BalanceManager] Initializing balances for agent ${agentId}`);
+    serviceLogger.debug(
+      `[BalanceManager] Initializing balances for agent ${agentId}`,
+    );
 
     try {
       const initialBalances = new Map<
@@ -48,7 +51,7 @@ export class BalanceManager {
       });
       this.balanceCache.set(agentId, balanceMap);
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[BalanceManager] Error initializing balances for agent ${agentId}:`,
         error,
       );
@@ -93,7 +96,7 @@ export class BalanceManager {
           const tokenAddress = chainTokens[symbol as keyof typeof chainTokens];
 
           if (tokenAddress && amount > 0) {
-            console.log(
+            serviceLogger.debug(
               `[BalanceManager] Setting initial balance for specific chain ${chain} ${symbol}: ${amount}`,
             );
             balances.set(tokenAddress, { amount, symbol });
@@ -135,7 +138,7 @@ export class BalanceManager {
 
       return 0;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[BalanceManager] Error getting balance for agent ${agentId}, token ${tokenAddress}:`,
         error,
       );
@@ -162,7 +165,7 @@ export class BalanceManager {
 
       return balances;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[BalanceManager] Error getting all balances for agent ${agentId}:`,
         error,
       );
@@ -181,7 +184,7 @@ export class BalanceManager {
         return [];
       }
 
-      console.log(
+      serviceLogger.debug(
         `[BalanceManager] Getting bulk balances for ${agentIds.length} agents`,
       );
 
@@ -209,13 +212,13 @@ export class BalanceManager {
         this.balanceCache.set(agentId, balanceMap);
       });
 
-      console.log(
+      serviceLogger.debug(
         `[BalanceManager] Successfully retrieved ${balances.length} balances for ${agentIds.length} agents`,
       );
 
       return balances;
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[BalanceManager] Error getting bulk balances for ${agentIds.length} agents:`,
         error,
       );
@@ -252,11 +255,11 @@ export class BalanceManager {
       }
       this.balanceCache.get(agentId)?.set(tokenAddress, amount);
 
-      console.log(
+      serviceLogger.debug(
         `[BalanceManager] Updated balance for agent ${agentId}, token ${tokenAddress} (${symbol}): ${amount}`,
       );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[BalanceManager] Error updating balance for agent ${agentId}, token ${tokenAddress}:`,
         error,
       );
@@ -290,7 +293,7 @@ export class BalanceManager {
         symbol,
       );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[BalanceManager] Error adding amount for agent ${agentId}, token ${tokenAddress}:`,
         error,
       );
@@ -331,7 +334,7 @@ export class BalanceManager {
         symbol,
       );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[BalanceManager] Error subtracting amount for agent ${agentId}, token ${tokenAddress}:`,
         error,
       );
@@ -345,7 +348,9 @@ export class BalanceManager {
    */
   async resetAgentBalances(agentId: string): Promise<void> {
     try {
-      console.log(`[BalanceManager] Resetting balances for agent ${agentId}`);
+      serviceLogger.debug(
+        `[BalanceManager] Resetting balances for agent ${agentId}`,
+      );
 
       const initialBalances = new Map<
         string,
@@ -365,11 +370,11 @@ export class BalanceManager {
       });
       this.balanceCache.set(agentId, balanceMap);
 
-      console.log(
+      serviceLogger.debug(
         `[BalanceManager] Successfully reset balances for agent ${agentId}`,
       );
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         `[BalanceManager] Error resetting balances for agent ${agentId}:`,
         error,
       );
@@ -403,7 +408,7 @@ export class BalanceManager {
       await count();
       return true;
     } catch (error) {
-      console.error("[BalanceManager] Health check failed:", error);
+      serviceLogger.error("[BalanceManager] Health check failed:", error);
       return false;
     }
   }

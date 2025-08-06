@@ -15,7 +15,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Testing:**
 - API: `pnpm --filter api test` - Unit tests
 - API: `pnpm --filter api test:e2e` - E2E tests
-- API: `pnpm --filter api test:e2e:runner` - Run E2E test suite
 
 **Database (API app only):**
 - `pnpm --filter api db:migrate` - Run database migrations
@@ -32,7 +31,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Monorepo Structure:**
 - `apps/api/` - Multi-chain trading simulator API (Node.js/Express + PostgreSQL)
 - `apps/comps/` - Competitions web app (Next.js)
-- `apps/portal/` - Main web application (Next.js) 
+- `apps/portal/` - Main web application (Next.js)
 - `apps/faucet/` - Token faucet app (Next.js)
 - `apps/registration/` - Registration site (Next.js)
 - `packages/` - Shared libraries, utilities, and toolkits
@@ -89,7 +88,7 @@ Use centralized error handling middleware. Services throw specific error types t
 **Quality Gates:**
 Code must pass all of these before merge:
 1. ESLint validation (`pnpm lint`)
-2. Prettier formatting (`pnpm format:check`) 
+2. Prettier formatting (`pnpm format:check`)
 3. TypeScript compilation (`pnpm build`)
 4. TSDoc coverage validation (`pnpm docs:check`)
 

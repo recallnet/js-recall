@@ -732,6 +732,9 @@ export function configureAdminRoutes(
    *                       agentName:
    *                         type: string
    *                         description: Agent name
+   *                       agentHandle:
+   *                         type: string
+   *                         description: Agent handle
    *                       portfolioValue:
    *                         type: number
    *                         description: Portfolio value
@@ -790,6 +793,10 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: Name for the user's first agent (optional)
    *                 example: Trading Bot Alpha
+   *               agentHandle:
+   *                 type: string
+   *                 description: Handle for the user's first agent (optional)
+   *                 example: trading_bot_alpha
    *               agentDescription:
    *                 type: string
    *                 description: Description of the agent (optional)
@@ -841,6 +848,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: User name
+   *                     handle:
+   *                       type: string
+   *                       description: User handle
    *                     email:
    *                       type: string
    *                       description: User email
@@ -882,6 +892,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     email:
    *                       type: string
    *                       description: Agent email
@@ -1028,6 +1041,9 @@ export function configureAdminRoutes(
    *                       name:
    *                         type: string
    *                         description: Agent name
+   *                       handle:
+   *                         type: string
+   *                         description: Agent handle
    *                       email:
    *                         type: string
    *                         description: Agent email
@@ -1104,6 +1120,10 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Agent name
    *                     example: My Agent
+   *                   handle:
+   *                     type: string
+   *                     description: Agent handle
+   *                     example: my_agent
    *                   walletAddress:
    *                     type: string
    *                     description: The agent wallet address. Must be provided if userWalletAddress is not provided.
@@ -1149,6 +1169,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     walletAddress:
    *                       type: string
    *                       description: Agent wallet address
@@ -1232,6 +1255,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     apiKey:
    *                       type: string
    *                       description: The agent's API key
@@ -1336,6 +1362,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     status:
    *                       type: string
    *                       description: Agent status (will be inactive)
@@ -1387,6 +1416,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     status:
    *                       type: string
    *                       description: Agent status (will be active)
@@ -1441,6 +1473,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     email:
    *                       type: string
    *                       description: Agent email
@@ -1546,6 +1581,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     email:
    *                       type: string
    *                       description: Agent email
@@ -1703,6 +1741,8 @@ export function configureAdminRoutes(
    *                             type: string
    *                           name:
    *                             type: string
+   *                           handle:
+   *                             type: string
    *                           description:
    *                             type: string
    *                             nullable: true
@@ -1729,161 +1769,6 @@ export function configureAdminRoutes(
    *         description: Server error
    */
   router.get("/search", controller.searchUsersAndAgents);
-
-  /**
-   * @openapi
-   * /api/admin/object-index/sync:
-   *   post:
-   *     tags:
-   *       - Admin
-   *     summary: Sync object index
-   *     description: Manually trigger population of object_index table with competition data
-   *     security:
-   *       - BearerAuth: []
-   *     requestBody:
-   *       required: false
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             properties:
-   *               competitionId:
-   *                 type: string
-   *                 description: ID of specific competition to sync (optional, syncs all if not provided)
-   *               dataTypes:
-   *                 type: array
-   *                 items:
-   *                   type: string
-   *                   enum: [trade, agent_score_history, competitions_leaderboard, portfolio_snapshot, agent_score]
-   *                 description: Types of data to sync (defaults to trade, agent_score_history, competitions_leaderboard)
-   *     responses:
-   *       200:
-   *         description: Sync initiated successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 message:
-   *                   type: string
-   *                   description: Success message
-   *                 dataTypes:
-   *                   type: array
-   *                   items:
-   *                     type: string
-   *                   description: Data types that were synced
-   *                 competitionId:
-   *                   type: string
-   *                   description: Competition ID that was synced (or 'all')
-   *       401:
-   *         description: Unauthorized - Admin authentication required
-   *       500:
-   *         description: Server error
-   */
-  router.post("/object-index/sync", controller.syncObjectIndex);
-
-  /**
-   * @openapi
-   * /api/admin/object-index:
-   *   get:
-   *     tags:
-   *       - Admin
-   *     summary: Get object index entries
-   *     description: Retrieve object index entries with optional filters
-   *     security:
-   *       - ApiKeyAuth: []
-   *     parameters:
-   *       - in: query
-   *         name: competitionId
-   *         schema:
-   *           type: string
-   *           format: uuid
-   *         description: Filter by competition ID
-   *       - in: query
-   *         name: agentId
-   *         schema:
-   *           type: string
-   *           format: uuid
-   *         description: Filter by agent ID
-   *       - in: query
-   *         name: dataType
-   *         schema:
-   *           type: string
-   *           enum: [trade, agent_score_history, agent_score, competitions_leaderboard, portfolio_snapshot]
-   *         description: Filter by data type
-   *       - in: query
-   *         name: limit
-   *         schema:
-   *           type: integer
-   *           minimum: 1
-   *           maximum: 1000
-   *           default: 100
-   *         description: Maximum number of entries to return
-   *       - in: query
-   *         name: offset
-   *         schema:
-   *           type: integer
-   *           minimum: 0
-   *           default: 0
-   *         description: Number of entries to skip
-   *     responses:
-   *       200:
-   *         description: Object index entries retrieved successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                 data:
-   *                   type: object
-   *                   properties:
-   *                     entries:
-   *                       type: array
-   *                       items:
-   *                         type: object
-   *                         properties:
-   *                           id:
-   *                             type: string
-   *                           competitionId:
-   *                             type: string
-   *                           agentId:
-   *                             type: string
-   *                           dataType:
-   *                             type: string
-   *                           data:
-   *                             type: string
-   *                           sizeBytes:
-   *                             type: integer
-   *                           metadata:
-   *                             type: object
-   *                           eventTimestamp:
-   *                             type: string
-   *                             format: date-time
-   *                           createdAt:
-   *                             type: string
-   *                             format: date-time
-   *                     pagination:
-   *                       type: object
-   *                       properties:
-   *                         total:
-   *                           type: integer
-   *                         limit:
-   *                           type: integer
-   *                         offset:
-   *                           type: integer
-   *       400:
-   *         description: Bad request - Invalid parameters
-   *       401:
-   *         description: Unauthorized - Admin authentication required
-   *       500:
-   *         description: Server error
-   */
-  router.get("/object-index", controller.getObjectIndex);
 
   /**
    * @openapi
@@ -1933,6 +1818,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     ownerId:
    *                       type: string
    *                       description: Agent owner ID
@@ -2021,6 +1909,9 @@ export function configureAdminRoutes(
    *                       type: string
    *                     name:
    *                       type: string
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                 competition:
    *                   type: object
    *                   properties:
@@ -2089,6 +1980,9 @@ export function configureAdminRoutes(
    *                       type: string
    *                     name:
    *                       type: string
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                 competition:
    *                   type: object
    *                   properties:

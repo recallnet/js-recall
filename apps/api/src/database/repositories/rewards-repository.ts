@@ -13,6 +13,7 @@ import {
   SelectRewardsRoot,
   SelectRewardsTree,
 } from "@/database/schema/voting/types.js";
+import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 /**
@@ -24,7 +25,7 @@ async function getRewardsByEpochImpl(epochId: string): Promise<SelectReward[]> {
   try {
     return await db.select().from(rewards).where(eq(rewards.epoch, epochId));
   } catch (error) {
-    console.error("[RewardsRepository] Error in getRewardsByEpoch:", error);
+    repositoryLogger.error("Error in getRewardsByEpoch:", error);
     throw error;
   }
 }
@@ -40,7 +41,7 @@ async function insertRewardsImpl(
   try {
     return await db.insert(rewards).values(rewardsToInsert).returning();
   } catch (error) {
-    console.error("[RewardsRepository] Error in insertRewards:", error);
+    repositoryLogger.error("Error in insertRewards:", error);
     throw error;
   }
 }
@@ -68,7 +69,7 @@ async function insertRewardsTreeImpl(
 
     return await db.insert(rewardsTree).values(entriesWithIds).returning();
   } catch (error) {
-    console.error("[RewardsRepository] Error in insertRewardsTree:", error);
+    repositoryLogger.error("Error in insertRewardsTree:", error);
     throw error;
   }
 }
@@ -93,7 +94,7 @@ async function insertRewardsRootImpl(
 
     return inserted;
   } catch (error) {
-    console.error("[RewardsRepository] Error in insertRewardsRoot:", error);
+    repositoryLogger.error("Error in insertRewardsRoot:", error);
     throw error;
   }
 }
@@ -112,7 +113,7 @@ async function getRewardsTreeByEpochImpl(
       .from(rewardsTree)
       .where(eq(rewardsTree.epoch, epochId));
   } catch (error) {
-    console.error("[RewardsRepository] Error in getRewardsTreeByEpoch:", error);
+    repositoryLogger.error("Error in getRewardsTreeByEpoch:", error);
     throw error;
   }
 }

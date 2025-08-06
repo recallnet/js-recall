@@ -5,16 +5,17 @@ import * as path from "path";
 
 import { config, reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
-import { objectIndexRepository } from "@/database/repositories/object-index.repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
+import { generateHandleFromName } from "@/lib/handle-utils.js";
+import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
+  ACTOR_STATUS,
   ActorStatus,
   AdminCreateAgentSchema,
   COMPETITION_STATUS,
   CROSS_CHAIN_TRADING_TYPE,
-  SYNC_DATA_TYPE,
 } from "@/types/index.js";
 
 import {
@@ -28,7 +29,6 @@ import {
   AdminGetAgentParamsSchema,
   AdminGetCompetitionSnapshotsParamsSchema,
   AdminGetCompetitionSnapshotsQuerySchema,
-  AdminGetObjectIndexQuerySchema,
   AdminGetPerformanceReportsQuerySchema,
   AdminReactivateAgentInCompetitionParamsSchema,
   AdminReactivateAgentParamsSchema,
@@ -37,7 +37,6 @@ import {
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
-  AdminSyncObjectIndexSchema,
   AdminUpdateAgentBodySchema,
   AdminUpdateAgentParamsSchema,
   AdminUpdateCompetitionParamsSchema,
@@ -56,6 +55,7 @@ interface Agent {
   ownerId: string;
   walletAddress: string | null;
   name: string;
+  handle: string;
   description: string | null;
   imageUrl: string | null;
   apiKey: string;
@@ -142,9 +142,7 @@ export function makeAdminController(services: ServiceRegistry) {
           const envFile =
             process.env.NODE_ENV === "test" ? ".env.test" : ".env";
           const envPath = path.resolve(process.cwd(), envFile);
-          console.log(
-            `[AdminController] Checking for ${envFile} file at: ${envPath}`,
-          );
+          adminLogger.info(`Checking for ${envFile} file at: ${envPath}`);
 
           if (fs.existsSync(envPath)) {
             const envContent = fs.readFileSync(envPath, "utf8");
@@ -166,9 +164,7 @@ export function makeAdminController(services: ServiceRegistry) {
                 !currentValue.includes("replace_in_production")
               ) {
                 // Key exists and seems to be a proper key already
-                console.log(
-                  "[AdminController] ROOT_ENCRYPTION_KEY already exists in .env",
-                );
+                adminLogger.info("ROOT_ENCRYPTION_KEY already exists in .env");
                 needsNewKey = false;
               }
             }
@@ -176,9 +172,7 @@ export function makeAdminController(services: ServiceRegistry) {
             if (needsNewKey) {
               // Generate a new secure encryption key
               const newEncryptionKey = crypto.randomBytes(32).toString("hex");
-              console.log(
-                "[AdminController] Generated new ROOT_ENCRYPTION_KEY",
-              );
+              adminLogger.info("Generated new ROOT_ENCRYPTION_KEY");
 
               // Update the .env file
               let updatedEnvContent = envContent;
@@ -197,8 +191,8 @@ export function makeAdminController(services: ServiceRegistry) {
               }
 
               fs.writeFileSync(envPath, updatedEnvContent);
-              console.log(
-                `[AdminController] Updated ROOT_ENCRYPTION_KEY in ${envFile} file`,
+              adminLogger.info(
+                `Updated ROOT_ENCRYPTION_KEY in ${envFile} file`,
               );
 
               // We need to update the process.env with the new key for it to be used immediately
@@ -207,20 +201,15 @@ export function makeAdminController(services: ServiceRegistry) {
               // Reload the configuration to pick up the new encryption key
               reloadSecurityConfig();
 
-              console.log(
-                "[AdminController] ✅ Configuration reloaded with new encryption key",
+              adminLogger.info(
+                "✅ Configuration reloaded with new encryption key",
               );
             }
           } else {
-            console.error(
-              `[AdminController] ${envFile} file not found at expected location`,
-            );
+            adminLogger.error(`${envFile} file not found at expected location`);
           }
         } catch (envError) {
-          console.error(
-            "[AdminController] Error updating ROOT_ENCRYPTION_KEY:",
-            envError,
-          );
+          adminLogger.error("Error updating ROOT_ENCRYPTION_KEY:", envError);
           // Continue with admin setup even if the env update fails
         }
 
@@ -272,6 +261,7 @@ export function makeAdminController(services: ServiceRegistry) {
           userImageUrl,
           userMetadata,
           agentName,
+          agentHandle,
           agentDescription,
           agentImageUrl,
           agentMetadata,
@@ -284,10 +274,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         if (existingUser) {
           const errorMessage = `A user with wallet address ${walletAddress} already exists`;
-          console.log(
-            "[AdminController] Duplicate wallet address error:",
-            errorMessage,
-          );
+          adminLogger.warn("Duplicate wallet address error:", errorMessage);
           return res.status(409).json({
             success: false,
             error: errorMessage,
@@ -312,16 +299,14 @@ export function makeAdminController(services: ServiceRegistry) {
               agent = await services.agentManager.createAgent({
                 ownerId: user.id,
                 name: agentName,
+                handle: agentHandle ?? generateHandleFromName(agentName), // Auto-generate from name
                 description: agentDescription,
                 imageUrl: agentImageUrl,
                 metadata: agentMetadata,
                 walletAddress: agentWalletAddress,
               });
             } catch (agentError) {
-              console.error(
-                "[AdminController] Error creating agent for user:",
-                agentError,
-              );
+              adminLogger.error("Error creating agent for user:", agentError);
               // If agent creation fails, we still return the user but note the agent error
               return res.status(201).json({
                 success: true,
@@ -366,6 +351,7 @@ export function makeAdminController(services: ServiceRegistry) {
               ownerId: agent.ownerId,
               walletAddress: agent.walletAddress,
               name: agent.name,
+              handle: agent.handle ?? generateHandleFromName(agent.name),
               description: agent.description,
               imageUrl: agent.imageUrl,
               apiKey: agent.apiKey,
@@ -379,7 +365,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
           return res.status(201).json(response);
         } catch (error) {
-          console.error("[AdminController] Error registering user:", error);
+          adminLogger.error("Error registering user:", error);
 
           // Check if this is a duplicate wallet address error that somehow got here
           if (
@@ -414,10 +400,7 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
       } catch (error) {
-        console.error(
-          "[AdminController] Uncaught error in registerUser:",
-          error,
-        );
+        adminLogger.error("Uncaught error in registerUser:", error);
         next(error);
       }
     },
@@ -438,6 +421,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const { id: userId, walletAddress: userWalletAddress } = user;
         const {
           name,
+          handle,
           email,
           walletAddress: agentWalletAddress,
           description,
@@ -454,7 +438,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         if (!existingUser) {
           const errorMessage = `User '${userWalletAddress ? userWalletAddress : userId}' does not exist`;
-          console.log("[AdminController] User not found error:", errorMessage);
+          adminLogger.warn("User not found error:", errorMessage);
           return res.status(404).json({
             success: false,
             error: errorMessage,
@@ -466,6 +450,7 @@ export function makeAdminController(services: ServiceRegistry) {
           const agent = await services.agentManager.createAgent({
             ownerId: existingUser.id,
             name,
+            handle: handle ?? generateHandleFromName(name),
             description,
             email,
             imageUrl,
@@ -475,12 +460,15 @@ export function makeAdminController(services: ServiceRegistry) {
 
           const response: AdminAgentRegistrationResponse = {
             success: true,
-            agent,
+            agent: {
+              ...agent,
+              handle: agent.handle,
+            },
           };
 
           return res.status(201).json(response);
         } catch (error) {
-          console.error("[AdminController] Error registering agent:", error);
+          adminLogger.error("Error registering agent:", error);
 
           // Check if this is a duplicate wallet address error that somehow got here
           if (
@@ -515,10 +503,7 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
       } catch (error) {
-        console.error(
-          "[AdminController] Uncaught error in registerUser:",
-          error,
-        );
+        adminLogger.error("Uncaught error in registerUser:", error);
         next(error);
       }
     },
@@ -607,7 +592,35 @@ export function makeAdminController(services: ServiceRegistry) {
           tradingConstraints,
         } = result.data;
 
-        let finalAgentIds = [...agentIds]; // Start with provided agent IDs
+        // Validate that all provided agent IDs exist in the database and are active
+        const invalidAgentIds: string[] = [];
+        const validAgentIds: string[] = [];
+
+        for (const agentId of agentIds) {
+          const agent = await services.agentManager.getAgent(agentId);
+
+          if (!agent) {
+            invalidAgentIds.push(agentId);
+            continue;
+          }
+
+          if (agent.status !== ACTOR_STATUS.ACTIVE) {
+            invalidAgentIds.push(agentId);
+            continue;
+          }
+
+          validAgentIds.push(agentId);
+        }
+
+        // If there are invalid agent IDs, return an error with the list
+        if (invalidAgentIds.length > 0) {
+          throw new ApiError(
+            400,
+            `Cannot start competition: the following agent IDs are invalid or inactive: ${invalidAgentIds.join(", ")}`,
+          );
+        }
+
+        let finalAgentIds = [...validAgentIds]; // Start with validated agent IDs
 
         // Get pre-registered agents from the database if we have a competitionId
         if (competitionId) {
@@ -634,7 +647,7 @@ export function makeAdminController(services: ServiceRegistry) {
         if (finalAgentIds.length === 0) {
           throw new ApiError(
             400,
-            "Cannot start competition: no agents provided in agentIds and no agents have joined the competition",
+            "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
           );
         }
 
@@ -720,161 +733,15 @@ export function makeAdminController(services: ServiceRegistry) {
         const leaderboard =
           await services.competitionManager.getLeaderboard(competitionId);
 
-        // Populate object_index with competition data
-        try {
-          await services.objectIndexService.populateTrades(competitionId);
-          await services.objectIndexService.populateAgentScoreHistory(
-            competitionId,
-          );
-          await services.objectIndexService.populateCompetitionsLeaderboard(
-            competitionId,
-          );
-          console.log(
-            `Successfully populated object_index for competition ${competitionId}`,
-          );
-        } catch (error) {
-          console.error(
-            `Failed to populate object_index for competition ${competitionId}:`,
-            error,
-          );
-          // Don't fail the request if object_index population fails
-        }
+        adminLogger.info(
+          `Successfully ended competition, id: ${competitionId}`,
+        );
 
         // Return the ended competition with leaderboard
         res.status(200).json({
           success: true,
           competition: endedCompetition,
           leaderboard,
-        });
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Manually trigger object index population
-     * @param req Express request
-     * @param res Express response
-     * @param next Express next function
-     */
-    async syncObjectIndex(req: Request, res: Response, next: NextFunction) {
-      try {
-        // Validate request body using flatParse
-        const result = flatParse(AdminSyncObjectIndexSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
-        const { competitionId, dataTypes } = result.data;
-
-        // No need for ensureUuid here, Zod already validated
-        const validatedCompetitionId = competitionId;
-
-        const defaultDataTypes = [
-          SYNC_DATA_TYPE.TRADE,
-          SYNC_DATA_TYPE.AGENT_SCORE_HISTORY,
-          SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD,
-        ];
-        let typesToSync: string[] = defaultDataTypes;
-
-        if (dataTypes) {
-          typesToSync = dataTypes;
-        }
-
-        console.log(
-          `Starting object index sync for types: ${typesToSync.join(", ")}`,
-        );
-
-        for (const dataType of typesToSync) {
-          try {
-            switch (dataType) {
-              case SYNC_DATA_TYPE.TRADE:
-                await services.objectIndexService.populateTrades(
-                  validatedCompetitionId,
-                );
-                break;
-              case SYNC_DATA_TYPE.AGENT_SCORE_HISTORY:
-                await services.objectIndexService.populateAgentScoreHistory(
-                  validatedCompetitionId,
-                );
-                break;
-              case SYNC_DATA_TYPE.COMPETITIONS_LEADERBOARD:
-                await services.objectIndexService.populateCompetitionsLeaderboard(
-                  validatedCompetitionId,
-                );
-                break;
-              case SYNC_DATA_TYPE.PORTFOLIO_SNAPSHOT:
-                await services.objectIndexService.populatePortfolioSnapshots(
-                  validatedCompetitionId,
-                );
-                break;
-              case SYNC_DATA_TYPE.AGENT_SCORE:
-                await services.objectIndexService.populateAgentScore();
-                break;
-              default:
-                console.warn(`Unknown data type: ${dataType}`);
-            }
-          } catch (error) {
-            console.error(`Error syncing ${dataType}:`, error);
-            throw error;
-          }
-        }
-
-        res.status(200).json({
-          success: true,
-          message: "Object index sync initiated",
-          dataTypes: typesToSync,
-          competitionId: validatedCompetitionId || "all",
-        });
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Get object index entries with filters
-     * @param req Express request
-     * @param res Express response
-     * @param next Express next function
-     */
-    async getObjectIndex(req: Request, res: Response, next: NextFunction) {
-      try {
-        // Validate query parameters using flatParse
-        const result = flatParse(AdminGetObjectIndexQuerySchema, req.query);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid query parameters: ${result.error}`);
-        }
-
-        const { competitionId, agentId, dataType, limit, offset } = result.data;
-
-        // Get entries and count
-        const [entries, totalCount] = await Promise.all([
-          objectIndexRepository.getAll(
-            {
-              competitionId,
-              agentId,
-              dataType,
-            },
-            limit,
-            offset,
-          ),
-          objectIndexRepository.count({
-            competitionId,
-            agentId,
-            dataType,
-          }),
-        ]);
-
-        res.status(200).json({
-          success: true,
-          data: {
-            entries,
-            pagination: {
-              total: totalCount,
-              limit,
-              offset,
-            },
-          },
         });
       } catch (error) {
         next(error);
@@ -972,6 +839,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agent.id,
             {
               name: agent.name,
+              handle: agent.handle,
               ownerName: userMap.get(agent.ownerId) || "Unknown Owner",
             },
           ]),
@@ -982,6 +850,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rank: index + 1,
           agentId: entry.agentId,
           agentName: agentMap.get(entry.agentId)?.name || "Unknown Agent",
+          agentHandle: agentMap.get(entry.agentId)?.handle || "unknown_agent",
           ownerName: agentMap.get(entry.agentId)?.ownerName || "Unknown Owner",
           portfolioValue: entry.value,
         }));
@@ -1174,6 +1043,7 @@ export function makeAdminController(services: ServiceRegistry) {
             ownerId: agent.ownerId,
             walletAddress: agent.walletAddress,
             name: agent.name,
+            handle: agent.handle,
             description: agent.description,
             status: agent.status,
             imageUrl: agent.imageUrl,
@@ -1226,6 +1096,7 @@ export function makeAdminController(services: ServiceRegistry) {
           ownerId: agent.ownerId,
           walletAddress: agent.walletAddress,
           name: agent.name,
+          handle: agent.handle,
           email: agent.email,
           description: agent.description,
           status: agent.status,
@@ -1292,7 +1163,7 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
       } catch (error) {
-        console.error("[AdminController] Error deleting agent:", error);
+        adminLogger.error("Error deleting agent:", error);
         next(error);
       }
     },
@@ -1347,6 +1218,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agent: {
               id: agent.id,
               name: agent.name,
+              handle: agent.handle,
               status: agent.status,
             },
           });
@@ -1421,6 +1293,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agent: {
               id: agent.id,
               name: agent.name,
+              handle: agent.handle,
               status: agent.status,
             },
           });
@@ -1486,6 +1359,7 @@ export function makeAdminController(services: ServiceRegistry) {
           ownerId: agent.ownerId,
           walletAddress: agent.walletAddress,
           name: agent.name,
+          handle: agent.handle,
           email: agent.email,
           description: agent.description,
           status: agent.status as ActorStatus,
@@ -1535,7 +1409,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         const { agentId } = paramsResult.data;
-        const { name, description, imageUrl, email, metadata } =
+        const { name, handle, description, imageUrl, email, metadata } =
           bodyResult.data;
 
         // Get the current agent
@@ -1551,6 +1425,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const updateData = {
           id: agentId,
           name: name ?? agent.name,
+          handle: handle ?? agent.handle,
           description: description ?? agent.description,
           imageUrl: imageUrl ?? agent.imageUrl,
           email: email ?? agent.email,
@@ -1678,6 +1553,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agent: {
             id: agent.id,
             name: agent.name,
+            handle: agent.handle,
           },
           competition: {
             id: competition.id,
@@ -1769,6 +1645,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agent: {
             id: agent.id,
             name: agent.name,
+            handle: agent.handle,
           },
           competition: {
             id: competition.id,
@@ -1837,7 +1714,7 @@ export function makeAdminController(services: ServiceRegistry) {
         // Auto-verify email (e.g. for development, test, or sandbox modes)
         if (!owner.isEmailVerified) {
           if (config.email.autoVerifyUserEmail) {
-            console.log(
+            adminLogger.info(
               `[DEV/TEST] Auto-verifying email for user ${agent.ownerId} in ${process.env.NODE_ENV} mode`,
             );
             await services.userManager.markEmailAsVerified(agent.ownerId);
@@ -1886,8 +1763,8 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Apply sandbox mode logic if the competition is in sandbox mode
         if (competition.sandboxMode) {
-          console.log(
-            `[AdminController] Applying sandbox mode logic for agent ${agentId} in competition ${competitionId}`,
+          adminLogger.info(
+            `Applying sandbox mode logic for agent ${agentId} in competition ${competitionId}`,
           );
 
           // Reset the agent's balances to starting values (consistent with startCompetition order)
@@ -1905,9 +1782,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agentId,
           );
 
-          console.log(
-            `[AdminController] Sandbox mode logic completed for agent ${agentId}`,
-          );
+          adminLogger.info(`Sandbox mode logic completed for agent ${agentId}`);
         }
 
         // Return success response
@@ -1917,6 +1792,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agent: {
             id: agent.id,
             name: agent.name,
+            handle: agent.handle,
             ownerId: agent.ownerId,
           },
           competition: {

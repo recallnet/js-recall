@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 import { config } from "@/config/index.js";
+import { userLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -130,7 +131,7 @@ export function makeUserController(services: ServiceRegistry) {
         }
         const {
           userId,
-          body: { name, description, imageUrl, email, metadata },
+          body: { name, handle, description, imageUrl, email, metadata },
         } = data;
 
         // Verify the user exists
@@ -143,6 +144,7 @@ export function makeUserController(services: ServiceRegistry) {
         const agent = await services.agentManager.createAgent({
           ownerId: userId,
           name,
+          handle,
           description,
           imageUrl,
           metadata,
@@ -293,7 +295,7 @@ export function makeUserController(services: ServiceRegistry) {
         // Auto-verify email (e.g. for development, test, or sandbox modes)
         if (!user.isEmailVerified) {
           if (config.email.autoVerifyUserEmail) {
-            console.log(
+            userLogger.info(
               `[DEV/TEST] Auto-verifying email for user ${userId} in ${config.server.nodeEnv} mode`,
             );
             await services.userManager.markEmailAsVerified(userId);
@@ -319,7 +321,7 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Audit log for security tracking
-        console.log(
+        userLogger.debug(
           `[AUDIT] User ${userId} accessed API key for agent ${agentId}`,
         );
 
@@ -327,6 +329,7 @@ export function makeUserController(services: ServiceRegistry) {
           success: true,
           agentId,
           agentName: agent.name,
+          agentHandle: agent.handle,
           apiKey: result.apiKey,
         });
       } catch (error) {
@@ -356,7 +359,7 @@ export function makeUserController(services: ServiceRegistry) {
         const {
           userId,
           agentId,
-          body: { name, description, imageUrl, email, metadata },
+          body: { name, handle, description, imageUrl, email, metadata },
         } = data;
 
         // Get the agent to verify ownership
@@ -375,6 +378,7 @@ export function makeUserController(services: ServiceRegistry) {
         const updateData = {
           id: agentId,
           name: name ?? agent.name,
+          handle: handle ?? agent.handle,
           description,
           imageUrl,
           email,

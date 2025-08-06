@@ -2,6 +2,7 @@ import {
   getGlobalStats,
   getOptimizedGlobalAgentMetrics,
 } from "@/database/repositories/leaderboard-repository.js";
+import { serviceLogger } from "@/lib/logger.js";
 import {
   AgentMetadata,
   CompetitionType,
@@ -61,7 +62,7 @@ export class LeaderboardService {
         },
       };
     } catch (error) {
-      console.error(
+      serviceLogger.error(
         "[LeaderboardService] Failed to get global leaderboard:",
         error,
       );
@@ -83,6 +84,7 @@ export class LeaderboardService {
       rank: 0, // Will be set during sorting
       id: agent.id,
       name: agent.name,
+      handle: agent.handle,
       description: agent.description,
       imageUrl: agent.imageUrl,
       metadata: agent.metadata as AgentMetadata,
@@ -213,7 +215,7 @@ export class LeaderboardService {
    * @returns Basic global stats
    */
   async getGlobalStats(type: CompetitionType) {
-    console.log("[LeaderboardService] getGlobalStats for type:", type);
+    serviceLogger.debug("[LeaderboardService] getGlobalStats for type:", type);
     return await getGlobalStats(type);
   }
 }

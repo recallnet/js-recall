@@ -1,5 +1,4 @@
-import axios from "axios";
-import { afterAll, beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import { features } from "@/config/index.js";
 import {
@@ -8,14 +7,10 @@ import {
   TradeHistoryResponse,
   TradeResponse,
 } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
-  looseConstraints,
+  getAdminApiKey,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -49,23 +44,9 @@ describe("Base Chain Trading", () => {
 
   // Clean up test state before each test
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
-  });
-
-  afterAll(async () => {
-    await cleanupTestState();
   });
 
   test("agent can trade Base tokens with explicit chain parameters", async () => {
@@ -93,7 +74,7 @@ describe("Base Chain Trading", () => {
       undefined, // externalUrl
       undefined, // imageUrl
       // loosen the trading constraints since these tokens aren't as common
-      looseConstraints,
+      looseTradingConstraints,
     );
 
     // Wait for balances to be properly initialized
@@ -489,7 +470,7 @@ describe("Base Chain Trading", () => {
       undefined, // externalUrl
       undefined, // imageUrl
       // loosen the trading constraints since these tokens aren't as common
-      looseConstraints,
+      looseTradingConstraints,
     );
 
     // Wait for balances to be properly initialized

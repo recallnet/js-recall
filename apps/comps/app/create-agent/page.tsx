@@ -25,8 +25,8 @@ function CreateAgentView() {
     // Create agent in the main API
     const result = await createAgent.mutateAsync({
       name: data.name,
+      handle: data.handle,
       imageUrl: data.imageUrl,
-      email: data.email,
       description: data.description,
       metadata: {
         skills: data.skills,
@@ -53,9 +53,9 @@ function CreateAgentView() {
       try {
         await createSandboxAgent.mutateAsync({
           name: data.name,
+          handle: data.handle,
           description: data.description,
           imageUrl: data.imageUrl,
-          email: data.email,
           metadata: {
             skills: data.skills,
             repositoryUrl: data.repositoryUrl,

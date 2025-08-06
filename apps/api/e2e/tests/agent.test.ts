@@ -16,6 +16,7 @@ import {
   Competition,
   CreateCompetitionResponse,
   EnhancedCompetition,
+  ErrorResponse,
   PriceResponse,
   PublicAgentResponse,
   ResetApiKeyResponse,
@@ -24,34 +25,22 @@ import {
 import { dbManager } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createAgentVerificationSignature,
+  createSiweAuthenticatedClient,
   createTestClient,
   generateRandomEthAddress,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
+import { generateHandleFromName, isValidHandle } from "@/lib/handle-utils.js";
 
 describe("Agent API", () => {
   // Clean up test state before each test
   let adminApiKey: string;
 
   beforeEach(async () => {
-    await cleanupTestState();
-
-    // Create admin account directly using the setup endpoint
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
+    adminApiKey = await getAdminApiKey();
   });
 
   test("admin can register a user and agent and agent can authenticate", async () => {
@@ -90,6 +79,7 @@ describe("Agent API", () => {
     expect(agent).toBeDefined();
     expect(agent.id).toBeDefined();
     expect(agent.name).toBe(agentName);
+    expect(agent.handle).toBeDefined();
     expect(agent.description).toBe(agentDescription);
     expect(agent.ownerId).toBe(user.id);
     expect(apiKey).toBeDefined();
@@ -2821,6 +2811,229 @@ Purpose: WALLET_VERIFICATION`;
           portfolio: c.portfolioValue,
         })),
       });
+    });
+  });
+
+  describe("Agent handles", () => {
+    test("should reject duplicate handles or invalid format", async () => {
+      // Create a SIWE-authenticated client
+      const { client: siweClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Handle Test User",
+        userEmail: "handle-test@example.com",
+      });
+
+      // Test 1: Custom handle
+      const response1 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Another Agent",
+          handle: "custom_handle",
+          description: "Test agent with custom handle",
+        },
+      );
+
+      expect(response1.success).toBe(true);
+      expect((response1 as AgentProfileResponse).agent.name).toBe(
+        "Another Agent",
+      );
+      expect((response1 as AgentProfileResponse).agent.handle).toBe(
+        "custom_handle",
+      );
+
+      // Test 2: Duplicate handle rejection
+      const response2 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Third Agent",
+          handle: "custom_handle", // Same as agent 2
+          description: "Should fail with duplicate handle",
+        },
+      );
+
+      expect(response2.success).toBe(false);
+      expect(response2.error).toContain(
+        "An agent with handle 'custom_handle' already exists",
+      );
+      expect(response2.status).toBe(409);
+
+      // Test 3: Handle with special characters
+      const response3 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Agent@123!",
+          handle: "agent@123!",
+          description: "Test handle generation from special chars",
+        },
+      );
+
+      expect(response3.success).toBe(false);
+      expect((response3 as ErrorResponse).error).toContain(
+        "Handle can only contain lowercase letters, numbers, and underscores",
+      );
+      expect((response3 as ErrorResponse).status).toBe(400);
+
+      // Test 4: Invalid handle format (uppercase)
+      const response4 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Test Agent",
+          handle: "UPPERCASE_HANDLE", // Should fail - must be lowercase
+          description: "Should fail with invalid handle format",
+        },
+      );
+
+      expect(response4.success).toBe(false);
+      expect((response4 as ErrorResponse).error).toContain(
+        "Handle can only contain lowercase letters, numbers, and underscores",
+      );
+
+      // Test 5: Invalid handle format (too long)
+      const response5 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Test Agent",
+          handle: "a".repeat(16), // Should fail - too long
+          description: "Should fail with invalid handle format",
+        },
+      );
+
+      expect(response5.success).toBe(false);
+      expect((response5 as ErrorResponse).error).toContain(
+        "Handle must be at most 15 characters",
+      );
+      expect(response5.status).toBe(400);
+
+      // Test 6: Invalid handle format (too short)
+      const response6 = await siweClient.request<ErrorResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Test Agent",
+          handle: "a", // Should fail - too short
+          description: "Should fail with invalid handle format",
+        },
+      );
+
+      expect(response6.success).toBe(false);
+      expect((response6 as ErrorResponse).error).toContain(
+        "Handle must be at least 3 characters",
+      );
+      expect(response6.status).toBe(400);
+    });
+
+    test("should update agent handle", async () => {
+      // Create a SIWE-authenticated client
+      const { client: siweClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Handle Update Test User",
+        userEmail: "handle-update@example.com",
+      });
+
+      // Create an agent
+      const createResponse = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Update Test Agent",
+          handle: "original_handle",
+          description: "Test agent for handle updates",
+        },
+      );
+
+      expect(createResponse.success).toBe(true);
+      let agentId = "";
+      agentId = (createResponse as AgentProfileResponse).agent.id;
+
+      // Update the handle
+      const updateResponse = await siweClient.updateUserAgentProfile(agentId, {
+        handle: "updated_handle",
+      });
+
+      expect(updateResponse.success).toBe(true);
+      if (updateResponse.success) {
+        expect((updateResponse as AgentProfileResponse).agent.handle).toBe(
+          "updated_handle",
+        );
+      }
+
+      // Create another agent
+      const createResponse2 = await siweClient.request<AgentProfileResponse>(
+        "post",
+        "/api/user/agents",
+        {
+          name: "Second Update Test Agent",
+          handle: "second_handle",
+          description: "Second test agent",
+        },
+      );
+
+      expect(createResponse2.success).toBe(true);
+      let agent2Id = "";
+      agent2Id = (createResponse2 as AgentProfileResponse).agent.id;
+
+      // Try to update agent2's handle to agent1's handle (should fail)
+      const updateResponse2 = await siweClient.updateUserAgentProfile(
+        agent2Id,
+        {
+          handle: "updated_handle", // Same as agent 1
+        },
+      );
+
+      expect(updateResponse2.success).toBe(false);
+      expect((updateResponse2 as ErrorResponse).error).toContain(
+        "An agent with handle 'updated_handle' already exists",
+      );
+      expect((updateResponse2 as ErrorResponse).status).toBe(409);
+    });
+  });
+
+  test("should properly parse handles with zod schema", async () => {
+    // Test generateHandleFromName
+    const nameTests = [
+      "John Doe",
+      "Agent@123!",
+      "My Cool Agent",
+      "_underscore",
+      "___triple",
+      "A",
+      "AB",
+      "Special!@#$%Characters",
+      "   Spaces   ",
+      "Very Long Name That Exceeds Maximum",
+    ];
+
+    nameTests.forEach((name) => {
+      const handle = generateHandleFromName(name);
+      const isValid = isValidHandle(handle);
+      expect(isValid).toBe(true);
+    });
+
+    // Test isValidHandle
+    const handleTests = [
+      { handle: "valid_handle", expected: true },
+      { handle: "_underscore", expected: true },
+      { handle: "__double", expected: true },
+      { handle: "123numeric", expected: true },
+      { handle: "abc", expected: true },
+      { handle: "ab", expected: false }, // too short
+      { handle: "a", expected: false }, // too short
+      { handle: "verylonghandlethatexceeds", expected: false }, // too long
+      { handle: "UPPERCASE", expected: false },
+      { handle: "with-dash", expected: false },
+      { handle: "with space", expected: false },
+      { handle: "", expected: false },
+      { handle: "___", expected: true },
+    ];
+
+    handleTests.forEach(({ handle, expected }) => {
+      const isValid = isValidHandle(handle);
+      expect(isValid).toBe(expected);
     });
   });
 });

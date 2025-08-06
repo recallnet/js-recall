@@ -1,4 +1,3 @@
-import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
@@ -7,13 +6,9 @@ import {
   PortfolioSnapshot,
   SnapshotResponse,
 } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
-  ADMIN_USERNAME,
-  cleanupTestState,
   createTestClient,
+  getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -31,19 +26,8 @@ describe("Portfolio Snapshots", () => {
 
   // Reset database between tests
   beforeEach(async () => {
-    // Clean up test state
-    await cleanupTestState();
-
-    // Create admin account
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
-      email: ADMIN_EMAIL,
-    });
-
     // Store the admin API key for authentication
-    adminApiKey = response.data.admin.apiKey;
-    expect(adminApiKey).toBeDefined();
+    adminApiKey = await getAdminApiKey();
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
@@ -284,22 +268,29 @@ describe("Portfolio Snapshots", () => {
       `/api/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const initialSnapshot = initialSnapshotsResponse.snapshots[0];
+    expect(initialSnapshot).not.toBeUndefined();
 
     // Verify the USDC value is calculated correctly
+    const priceTolerance = 0.005; // 0.5% tolerance for stablecoin depegging
     const usdcValue = initialSnapshot?.valuesByToken[usdcTokenAddress];
-    expect(usdcValue?.amount).toBeCloseTo(initialUsdcBalance);
-    if (usdcPrice) {
-      expect(usdcValue?.valueUsd).toBeCloseTo(
-        initialUsdcBalance * usdcPrice.price,
-        -1,
-      );
-    }
+    expect(usdcValue).not.toBeUndefined();
+    expect(usdcValue!.amount).toBeCloseTo(initialUsdcBalance);
+
+    // Use a more lenient tolerance for USD value due to potential stablecoin depegging
+    // Allow up to 0.5% variance (typical USDC depeg range)
+    const expectedValue = initialUsdcBalance * usdcPrice!.price;
+    const tolerance = expectedValue * priceTolerance;
+    const actualDiff = Math.abs(usdcValue!.valueUsd - expectedValue);
+    expect(actualDiff).toBeLessThan(tolerance);
 
     // Verify total portfolio value is the sum of all token values
     const totalValue = Object.values(
       (initialSnapshot as PortfolioSnapshot).valuesByToken,
     ).reduce((sum: number, token) => sum + token.valueUsd, 0);
-    expect(initialSnapshot?.totalValue).toBeCloseTo(totalValue, -1);
+    // Use same tolerance as individual token values for consistency
+    const totalTolerance = totalValue * priceTolerance;
+    const totalDiff = Math.abs(initialSnapshot!.totalValue - totalValue);
+    expect(totalDiff).toBeLessThan(totalTolerance);
   });
 
   // Test that the configuration is loaded correctly

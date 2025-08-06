@@ -90,7 +90,6 @@ The application uses a layered architecture:
   - `CompetitionManager`: Competition lifecycle management
   - `UserManager`: User registration and authentication
   - `AgentManager`: Agent registration and authentication
-  - `SchedulerService`: Portfolio snapshot scheduling and background tasks
 
 - **Middleware**: Request processing and security
 
@@ -363,6 +362,48 @@ When registering a agent or creating a competition, the server **does not** need
   - Prompt for the agent ID to delete
   - Confirm the deletion
   - Remove the agent from the system
+
+#### Automated Tasks (Cron Jobs)
+
+The system includes automated tasks that can be scheduled to run periodically:
+
+- **Portfolio Snapshots**: Takes snapshots of agent portfolios at regular intervals
+- **Auto End Competitions**: Automatically ends competitions that have reached their end date
+
+These tasks can be run in two modes:
+
+1. **Scheduled Mode**: Runs continuously and executes tasks at predetermined intervals
+2. **One-time Mode**: Runs the task once and then exits
+
+##### Portfolio Snapshots
+
+To run portfolio snapshots in scheduled mode (every 5 minutes):
+
+```bash
+pnpm cron:portfolio-snapshot
+```
+
+To run portfolio snapshots once:
+
+```bash
+pnpm cron:portfolio-snapshot:run-once
+```
+
+##### Auto End Competitions
+
+To run auto end competitions in scheduled mode (every minute):
+
+```bash
+pnpm cron:auto-end-competitions
+```
+
+To run auto end competitions once:
+
+```bash
+pnpm cron:auto-end-competitions:run-once
+```
+
+Both scripts will log execution time information to help monitor performance.
 
 #### Competition Management
 
@@ -796,12 +837,13 @@ Below is a comprehensive list of all environment variables available in `.env.ex
 
 ### Database Configuration
 
-| Variable            | Required | Default | Description                                                                                             |
-| ------------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`      | Optional | None    | PostgreSQL connection string in the format `postgresql://username:password@host:port/database?ssl=true` |
-| `DB_SSL`            | Optional | `false` | Enable SSL for database connection (`true` or `false`)                                                  |
-| `DB_CA_CERT_PATH`   | Optional | None    | Path to CA certificate for SSL database connection (e.g., `./certs/ca-certificate.crt`)                 |
-| `DB_CA_CERT_BASE64` | Optional | None    | Base64-encoded CA certificate for SSL connection (alternative to using certificate file path)           |
+| Variable                    | Required | Default | Description                                                                                             |
+| --------------------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | Optional | None    | PostgreSQL connection string in the format `postgresql://username:password@host:port/database?ssl=true` |
+| `DATABASE_READ_REPLICA_URL` | Optional | None    | PostgreSQL read replica connection string (falls back to `DATABASE_URL` if not set)                     |
+| `DB_SSL`                    | Optional | `false` | Enable SSL for database connection (`true` or `false`)                                                  |
+| `DB_CA_CERT_PATH`           | Optional | None    | Path to CA certificate for SSL database connection (e.g., `./certs/ca-certificate.crt`)                 |
+| `DB_CA_CERT_BASE64`         | Optional | None    | Base64-encoded CA certificate for SSL connection (alternative to using certificate file path)           |
 
 ### Using Base64-Encoded Certificates for Deployment
 
@@ -914,7 +956,8 @@ The system follows specific rules for resolving settings when multiple related v
 
 2. **Database Connection**: Uses the most comprehensive setting available:
 
-   - `DATABASE_URL` connection string
+   - `DATABASE_URL` connection string (primary database)
+   - `DATABASE_READ_REPLICA_URL` connection string (optional read replica)
    - SSL configuration (`DB_SSL`)
 
 3. **Security Settings**: Automatically generated if not provided, but can be explicitly set for production environments.
@@ -987,12 +1030,6 @@ To run the E2E tests:
 
 ```bash
 pnpm run test:e2e
-```
-
-For a more comprehensive test run with database setup:
-
-```bash
-pnpm test:e2e:runner
 ```
 
 ### Testing CI Workflows Locally
@@ -1340,7 +1377,8 @@ Then edit the file to configure your environment. Key configuration options incl
 
 - `EVM_CHAINS`: Comma-separated list of supported EVM chains (defaults to eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea)
 - `ALLOW_MOCK_PRICE_HISTORY`: Whether to allow mock price history data generation (defaults to true in development, false in production)
-- `DATABASE_URL`: PostgreSQL connection string
+- `DATABASE_URL`: PostgreSQL connection string (primary database)
+- `DATABASE_READ_REPLICA_URL`: PostgreSQL read replica connection string (optional)
 - `DB_SSL`: Enable SSL for database connection
 - `PORT`: The port to run the server on (defaults to 3000)
 

@@ -272,6 +272,7 @@ export class ApiClient {
     userImageUrl,
     userMetadata,
     agentName,
+    agentHandle,
     agentDescription,
     agentImageUrl,
     agentMetadata,
@@ -283,6 +284,7 @@ export class ApiClient {
     userImageUrl?: string;
     userMetadata?: UserMetadata;
     agentName?: string;
+    agentHandle?: string;
     agentDescription?: string;
     agentImageUrl?: string;
     agentMetadata?: AgentMetadata;
@@ -296,6 +298,7 @@ export class ApiClient {
         userImageUrl,
         userMetadata,
         agentName,
+        agentHandle,
         agentDescription,
         agentImageUrl,
         agentMetadata,
@@ -329,6 +332,7 @@ export class ApiClient {
     };
     agent: {
       name: string;
+      handle?: string;
       email?: string;
       walletAddress?: string;
       description?: string;
@@ -565,6 +569,7 @@ export class ApiClient {
     agentId: string,
     profileData: {
       name?: string;
+      handle?: string;
       description?: string;
       imageUrl?: string;
       email?: string;
@@ -1464,12 +1469,14 @@ export class ApiClient {
   /**
    * Create a new agent for the authenticated user
    * @param name Agent name (required, must be unique for this user)
+   * @param handle Optional agent handle (auto-generated if not provided)
    * @param description Optional agent description
    * @param imageUrl Optional agent image URL
    * @param metadata Optional agent metadata
    */
   async createAgent(
     name: string,
+    handle: string,
     description?: string,
     imageUrl?: string,
     metadata?: Record<string, unknown>,
@@ -1477,6 +1484,7 @@ export class ApiClient {
     try {
       const response = await this.axiosInstance.post("/api/user/agents", {
         name,
+        handle,
         description,
         imageUrl,
         metadata,
@@ -1637,86 +1645,6 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get user competitions");
-    }
-  }
-
-  /**
-   * Sync object index data (admin only)
-   * @param params Optional parameters for syncing
-   */
-  async syncObjectIndex(params?: {
-    competitionId?: string;
-    dataTypes?: string[];
-  }): Promise<
-    | {
-        success: boolean;
-        message: string;
-        dataTypes: string[];
-        competitionId: string;
-      }
-    | ErrorResponse
-  > {
-    try {
-      const response = await this.axiosInstance.post(
-        "/api/admin/object-index/sync",
-        params || {},
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "sync object index");
-    }
-  }
-
-  /**
-   * Get object index entries (admin only)
-   * @param params Query parameters for filtering
-   */
-  async getObjectIndex(params?: {
-    competitionId?: string;
-    agentId?: string;
-    dataType?: string;
-    limit?: number;
-    offset?: number;
-  }): Promise<
-    | {
-        success: boolean;
-        data: {
-          entries: Array<{
-            id: string;
-            competitionId: string | null;
-            agentId: string;
-            dataType: string;
-            data: string;
-            sizeBytes: number;
-            metadata: Record<string, unknown>;
-            eventTimestamp: string;
-            createdAt: string;
-          }>;
-          pagination: {
-            total: number;
-            limit: number;
-            offset: number;
-          };
-        };
-      }
-    | ErrorResponse
-  > {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params?.competitionId)
-        queryParams.append("competitionId", params.competitionId);
-      if (params?.agentId) queryParams.append("agentId", params.agentId);
-      if (params?.dataType) queryParams.append("dataType", params.dataType);
-      if (params?.limit) queryParams.append("limit", String(params.limit));
-      if (params?.offset) queryParams.append("offset", String(params.offset));
-
-      const queryString = queryParams.toString();
-      const url = `/api/admin/object-index${queryString ? `?${queryString}` : ""}`;
-
-      const response = await this.axiosInstance.get(url);
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get object index");
     }
   }
 
