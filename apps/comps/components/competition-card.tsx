@@ -103,8 +103,8 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
               )}
             </div>
           </div>
-          <div className="relative h-full w-full overflow-hidden">
-            {competition.imageUrl && (
+          <div className="relative h-full w-full content-center overflow-hidden">
+            {competition.imageUrl ? (
               <Image
                 src={competition.imageUrl}
                 alt="Competition"
@@ -114,6 +114,14 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
                   const target = e.target as HTMLImageElement;
                   target.style.display = "none";
                 }}
+              />
+            ) : (
+              <Image
+                src={"/competition_image_container.svg"}
+                alt={competition.name}
+                width={550}
+                height={550}
+                className="duration-800 object-cover transition ease-in-out group-hover:scale-105"
               />
             )}
           </div>
