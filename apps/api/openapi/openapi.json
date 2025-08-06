@@ -363,6 +363,36 @@
                     "format": "date-time",
                     "description": "End date for joining the competition (ISO 8601 format). Must be after or equal to joinStartDate if both are provided.",
                     "example": "2024-01-14T23:59:59Z"
+                  },
+                  "tradingConstraints": {
+                    "type": "object",
+                    "description": "Trading constraints for the competition (used when creating a new competition)",
+                    "properties": {
+                      "minimumPairAgeHours": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum age of trading pairs in hours",
+                        "example": 168
+                      },
+                      "minimum24hVolumeUsd": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum 24-hour volume in USD",
+                        "example": 10000
+                      },
+                      "minimumLiquidityUsd": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum liquidity in USD",
+                        "example": 100000
+                      },
+                      "minimumFdvUsd": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum fully diluted valuation in USD",
+                        "example": 100000
+                      }
+                    }
                   }
                 }
               }
@@ -1171,6 +1201,10 @@
                             "type": "string",
                             "description": "Agent name"
                           },
+                          "agentHandle": {
+                            "type": "string",
+                            "description": "Agent handle"
+                          },
                           "portfolioValue": {
                             "type": "number",
                             "description": "Portfolio value"
@@ -1249,6 +1283,11 @@
                     "description": "Name for the user's first agent (optional)",
                     "example": "Trading Bot Alpha"
                   },
+                  "agentHandle": {
+                    "type": "string",
+                    "description": "Handle for the user's first agent (optional)",
+                    "example": "trading_bot_alpha"
+                  },
                   "agentDescription": {
                     "type": "string",
                     "description": "Description of the agent (optional)",
@@ -1313,6 +1352,10 @@
                           "type": "string",
                           "description": "User name"
                         },
+                        "handle": {
+                          "type": "string",
+                          "description": "User handle"
+                        },
                         "email": {
                           "type": "string",
                           "description": "User email"
@@ -1369,6 +1412,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "email": {
                           "type": "string",
@@ -1560,6 +1607,10 @@
                             "type": "string",
                             "description": "Agent name"
                           },
+                          "handle": {
+                            "type": "string",
+                            "description": "Agent handle"
+                          },
                           "email": {
                             "type": "string",
                             "description": "Agent email",
@@ -1653,6 +1704,11 @@
                         "description": "Agent name",
                         "example": "My Agent"
                       },
+                      "handle": {
+                        "type": "string",
+                        "description": "Agent handle",
+                        "example": "my_agent"
+                      },
                       "walletAddress": {
                         "type": "string",
                         "description": "The agent wallet address. Must be provided if userWalletAddress is not provided.",
@@ -1716,6 +1772,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "walletAddress": {
                           "type": "string",
@@ -1829,6 +1889,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "apiKey": {
                           "type": "string",
@@ -1955,6 +2019,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "email": {
                           "type": "string",
@@ -2097,6 +2165,10 @@
                           "type": "string",
                           "description": "Agent name"
                         },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
+                        },
                         "email": {
                           "type": "string",
                           "description": "Agent email",
@@ -2215,6 +2287,10 @@
                           "type": "string",
                           "description": "Agent name"
                         },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
+                        },
                         "status": {
                           "type": "string",
                           "description": "Agent status (will be inactive)"
@@ -2284,6 +2360,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "status": {
                           "type": "string",
@@ -2476,6 +2556,9 @@
                               "name": {
                                 "type": "string"
                               },
+                              "handle": {
+                                "type": "string"
+                              },
                               "description": {
                                 "type": "string",
                                 "nullable": true
@@ -2522,7 +2605,6 @@
         }
       }
     },
-
     "/api/admin/competitions/{competitionId}/agents/{agentId}": {
       "post": {
         "tags": ["Admin"],
@@ -2581,6 +2663,10 @@
                         "name": {
                           "type": "string",
                           "description": "Agent name"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         },
                         "ownerId": {
                           "type": "string",
@@ -2700,6 +2786,10 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         }
                       }
                     },
@@ -2792,6 +2882,10 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Agent handle"
                         }
                       }
                     },
@@ -2870,6 +2964,10 @@
                           "type": "string",
                           "example": "Trading Bot Alpha"
                         },
+                        "handle": {
+                          "type": "string",
+                          "example": "trading-bot-alpha"
+                        },
                         "description": {
                           "type": "string",
                           "example": "AI agent focusing on DeFi yield farming"
@@ -2918,6 +3016,9 @@
                           "type": "string"
                         },
                         "name": {
+                          "type": "string"
+                        },
+                        "handle": {
                           "type": "string"
                         },
                         "email": {
@@ -3006,6 +3107,9 @@
                           "type": "boolean"
                         },
                         "name": {
+                          "type": "string"
+                        },
+                        "handle": {
                           "type": "string"
                         },
                         "description": {
@@ -3502,6 +3606,10 @@
                             "type": "string",
                             "example": "Trading Bot Alpha"
                           },
+                          "handle": {
+                            "type": "string",
+                            "example": "trading-bot-alpha"
+                          },
                           "description": {
                             "type": "string",
                             "example": "AI agent focusing on DeFi yield farming"
@@ -3580,6 +3688,10 @@
                         "name": {
                           "type": "string",
                           "example": "Trading Bot Alpha"
+                        },
+                        "handle": {
+                          "type": "string",
+                          "example": "trading-bot-alpha"
                         },
                         "isVerified": {
                           "type": "boolean"
@@ -3806,6 +3918,10 @@
                           "name": {
                             "type": "string",
                             "example": "DeFi Trading Championship"
+                          },
+                          "handle": {
+                            "type": "string",
+                            "example": "defi-trading-championship"
                           },
                           "status": {
                             "type": "string",
@@ -4482,6 +4598,10 @@
                             "type": "string",
                             "description": "Agent name"
                           },
+                          "agentHandle": {
+                            "type": "string",
+                            "description": "Agent handle"
+                          },
                           "portfolioValue": {
                             "type": "number",
                             "description": "Current portfolio value in USD"
@@ -4511,6 +4631,10 @@
                           "agentName": {
                             "type": "string",
                             "description": "Agent name"
+                          },
+                          "agentHandle": {
+                            "type": "string",
+                            "description": "Agent handle"
                           },
                           "portfolioValue": {
                             "type": "number",
@@ -5189,6 +5313,10 @@
                           "name": {
                             "type": "string",
                             "description": "Agent name"
+                          },
+                          "handle": {
+                            "type": "string",
+                            "description": "Agent handle"
                           },
                           "description": {
                             "type": "string",

@@ -732,6 +732,9 @@ export function configureAdminRoutes(
    *                       agentName:
    *                         type: string
    *                         description: Agent name
+   *                       agentHandle:
+   *                         type: string
+   *                         description: Agent handle
    *                       portfolioValue:
    *                         type: number
    *                         description: Portfolio value
@@ -790,6 +793,10 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: Name for the user's first agent (optional)
    *                 example: Trading Bot Alpha
+   *               agentHandle:
+   *                 type: string
+   *                 description: Handle for the user's first agent (optional)
+   *                 example: trading_bot_alpha
    *               agentDescription:
    *                 type: string
    *                 description: Description of the agent (optional)
@@ -841,6 +848,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: User name
+   *                     handle:
+   *                       type: string
+   *                       description: User handle
    *                     email:
    *                       type: string
    *                       description: User email
@@ -882,6 +892,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     email:
    *                       type: string
    *                       description: Agent email
@@ -1028,6 +1041,9 @@ export function configureAdminRoutes(
    *                       name:
    *                         type: string
    *                         description: Agent name
+   *                       handle:
+   *                         type: string
+   *                         description: Agent handle
    *                       email:
    *                         type: string
    *                         description: Agent email
@@ -1104,6 +1120,10 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Agent name
    *                     example: My Agent
+   *                   handle:
+   *                     type: string
+   *                     description: Agent handle
+   *                     example: my_agent
    *                   walletAddress:
    *                     type: string
    *                     description: The agent wallet address. Must be provided if userWalletAddress is not provided.
@@ -1149,6 +1169,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     walletAddress:
    *                       type: string
    *                       description: Agent wallet address
@@ -1232,6 +1255,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     apiKey:
    *                       type: string
    *                       description: The agent's API key
@@ -1336,6 +1362,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     status:
    *                       type: string
    *                       description: Agent status (will be inactive)
@@ -1387,6 +1416,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     status:
    *                       type: string
    *                       description: Agent status (will be active)
@@ -1441,6 +1473,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     email:
    *                       type: string
    *                       description: Agent email
@@ -1546,6 +1581,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     email:
    *                       type: string
    *                       description: Agent email
@@ -1703,6 +1741,8 @@ export function configureAdminRoutes(
    *                             type: string
    *                           name:
    *                             type: string
+   *                           handle:
+   *                             type: string
    *                           description:
    *                             type: string
    *                             nullable: true
@@ -1778,6 +1818,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     ownerId:
    *                       type: string
    *                       description: Agent owner ID
@@ -1866,6 +1909,9 @@ export function configureAdminRoutes(
    *                       type: string
    *                     name:
    *                       type: string
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                 competition:
    *                   type: object
    *                   properties:
@@ -1934,6 +1980,9 @@ export function configureAdminRoutes(
    *                       type: string
    *                     name:
    *                       type: string
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                 competition:
    *                   type: object
    *                   properties:

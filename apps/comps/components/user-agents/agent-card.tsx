@@ -60,7 +60,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
             : "N/A"}
         </span>
       </div>
-      <span
+      <div
         className="text-secondary-foreground w-full truncate text-center text-2xl font-bold"
         title={agent.name}
       >

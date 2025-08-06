@@ -94,7 +94,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
                 <div className="flex min-w-0 flex-1 flex-col">
                   <Link href={`/agents/${agent.id}`} className="truncate">
                     <span className="text-secondary-foreground font-semibold leading-tight">
-                      {agent.name}
+                      {agent.name} (@{agent.handle})
                     </span>
                   </Link>
                   <span className="text-secondary-foreground/70 block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs">

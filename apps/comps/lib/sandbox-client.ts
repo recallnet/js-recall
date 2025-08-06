@@ -102,6 +102,7 @@ export class SandboxClient {
     agentId: string,
     agentData: {
       name?: string;
+      handle?: string;
       description?: string;
       imageUrl?: string;
       email?: string;

@@ -45,6 +45,7 @@ const agentOrderByFields: Record<string, AnyColumn> = {
   ownerId: agents.ownerId,
   walletAddress: agents.walletAddress,
   name: agents.name,
+  handle: agents.handle,
   description: agents.description,
   imageUrl: agents.imageUrl,
   status: agents.status,
@@ -70,6 +71,7 @@ export const COMPUTED_SORT_FIELDS = [
   "totalTrades",
   "rank",
   "agentName",
+  "agentHandle",
 ] as const;
 
 /**
@@ -558,6 +560,10 @@ async function searchAgentsImpl(
     // Add filters for each provided parameter
     if (searchParams.name) {
       conditions.push(ilike(agents.name, `%${searchParams.name}%`));
+    }
+
+    if (searchParams.handle) {
+      conditions.push(eq(agents.handle, searchParams.handle));
     }
 
     if (searchParams.ownerId) {

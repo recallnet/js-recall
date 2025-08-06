@@ -1,0 +1,1 @@
+ALTER TABLE "agents" ALTER COLUMN "handle" SET NOT NULL;

@@ -25,12 +25,13 @@ import {
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  VISION_TOKEN,
+  VOLATILE_TOKEN,
   createSiweAuthenticatedClient,
+  createTestAgent,
   createTestClient,
   createTestCompetition,
   getAdminApiKey,
-  looseConstraints,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   startTestCompetition,
@@ -231,7 +232,7 @@ describe("Competition API", () => {
       undefined,
       undefined,
       {
-        ...looseConstraints,
+        ...looseTradingConstraints,
         // This 24 hour volume should block that trade below
         minimum24hVolumeUsd: 100000,
       },
@@ -248,7 +249,7 @@ describe("Competition API", () => {
     const buyTradeResponse = await agentClient.executeTrade({
       reason: "testing create comp with trading constraints",
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: VISION_TOKEN, // low 24h volume
+      toToken: VOLATILE_TOKEN, // low 24h volume
       amount: "100",
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
@@ -2371,7 +2372,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Competition Join Agent",
       "Agent for testing competition joining",
     );
@@ -2428,7 +2430,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Competition Leave Agent",
       "Agent for testing competition leaving",
     );
@@ -2512,7 +2515,8 @@ describe("Competition API", () => {
     });
 
     // User 2 creates an agent
-    const createAgentResponse = await user2Client.createAgent(
+    const createAgentResponse = await createTestAgent(
+      user2Client,
       "User 2 Agent",
       "Agent owned by user 2",
     );
@@ -2550,7 +2554,8 @@ describe("Competition API", () => {
       userEmail: "dummy-user@example.com",
     });
 
-    const dummyAgentResponse = await dummyUserClient.createAgent(
+    const dummyAgentResponse = await createTestAgent(
+      dummyUserClient,
       "Dummy Agent",
       "Agent to make competition startable",
     );
@@ -2565,7 +2570,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Non-Pending Test Agent",
       "Agent for testing non-pending competition join",
     );
@@ -2621,7 +2627,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Duplicate Join Agent",
       "Agent for testing duplicate join prevention",
     );
@@ -2671,7 +2678,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Deleted Agent",
       "Agent to be deleted for testing",
     );
@@ -2712,7 +2720,8 @@ describe("Competition API", () => {
       userEmail: "active-leave@example.com",
     });
 
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Active Leave Agent",
       "Agent for testing active competition leave",
     );
@@ -2776,7 +2785,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Ended Leave Agent",
       "Agent for testing ended competition leave",
     );
@@ -2822,7 +2832,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Non-Existent Competition Agent",
       "Agent for testing non-existent competition",
     );
@@ -2864,7 +2875,8 @@ describe("Competition API", () => {
     });
 
     // User creates an agent
-    const createAgentResponse = await userClient.createAgent(
+    const createAgentResponse = await createTestAgent(
+      userClient,
       "Not In Competition Agent",
       "Agent for testing leave without join",
     );
@@ -3026,7 +3038,8 @@ describe("Competition API", () => {
       });
 
       // User creates an agent
-      const createAgentResponse = await userClient.createAgent(
+      const createAgentResponse = await createTestAgent(
+        userClient,
         "Join Window Agent",
         "Agent for testing join window constraints",
       );
@@ -3082,7 +3095,8 @@ describe("Competition API", () => {
       });
 
       // User creates an agent
-      const createAgentResponse = await userClient.createAgent(
+      const createAgentResponse = await createTestAgent(
+        userClient,
         "Early Join Agent",
         "Agent for testing early join rejection",
       );
@@ -3135,7 +3149,8 @@ describe("Competition API", () => {
       });
 
       // User creates an agent
-      const createAgentResponse = await userClient.createAgent(
+      const createAgentResponse = await createTestAgent(
+        userClient,
         "Late Join Agent",
         "Agent for testing late join rejection",
       );
@@ -3188,7 +3203,8 @@ describe("Competition API", () => {
       });
 
       // User creates an agent
-      const createAgentResponse = await userClient.createAgent(
+      const createAgentResponse = await createTestAgent(
+        userClient,
         "Start Only Agent",
         "Agent for testing start-only join constraint",
       );
@@ -3243,7 +3259,8 @@ describe("Competition API", () => {
       });
 
       // User creates an agent
-      const createAgentResponse = await userClient.createAgent(
+      const createAgentResponse = await createTestAgent(
+        userClient,
         "End Only Agent",
         "Agent for testing end-only join constraint",
       );
@@ -3298,7 +3315,8 @@ describe("Competition API", () => {
       });
 
       // User creates an agent
-      const createAgentResponse = await userClient.createAgent(
+      const createAgentResponse = await createTestAgent(
+        userClient,
         "Backward Compat Agent",
         "Agent for testing backward compatibility",
       );
@@ -3354,7 +3372,8 @@ describe("Competition API", () => {
         userEmail: "start-competition@example.com",
       });
 
-      const createAgentResponse = await userClient.createAgent(
+      const createAgentResponse = await createTestAgent(
+        userClient,
         "Start Competition Agent 2",
         "Agent for testing start competition with join dates",
       );
@@ -3877,14 +3896,16 @@ describe("Competition API", () => {
       });
 
       // Create agents for each user
-      const agent1Response = await user1Client.createAgent(
+      const agent1Response = await createTestAgent(
+        user1Client,
         "User 1 Gold Agent",
         "Agent designed to win 1st place for User 1",
       );
       expect(agent1Response.success).toBe(true);
       const agent1 = (agent1Response as AgentProfileResponse).agent;
 
-      const agent2Response = await user2Client.createAgent(
+      const agent2Response = await createTestAgent(
+        user2Client,
         "User 2 Silver Agent",
         "Agent designed to get 2nd place for User 2",
       );
@@ -4030,7 +4051,8 @@ describe("Competition API", () => {
       });
 
       // Create agent but don't put them in any competitions
-      const agentResponse = await userClient.createAgent(
+      const agentResponse = await createTestAgent(
+        userClient,
         "No Competitions Agent",
         "Agent that won't participate in any competitions",
       );
@@ -4115,6 +4137,79 @@ describe("Competition API", () => {
         (t: AgentTrophy) => t.competitionId === competitionId,
       );
       expect(activeTrophy).toBeUndefined(); // No trophy for active competition
+    });
+
+    test("should validate agent IDs before combining with pre-registered agents", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create multiple agents
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent One",
+      });
+
+      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Two",
+      });
+
+      const { agent: agent3 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Three",
+      });
+
+      // Create a competition first
+      const competitionName = `Pre-registered Test Competition ${Date.now()}`;
+      const createResult = await adminClient.createCompetition(
+        competitionName,
+        "Test competition for pre-registered agent validation",
+      );
+      expect(createResult.success).toBe(true);
+      if (!createResult.success)
+        throw new Error("Failed to create competition");
+      const competitionId = createResult.competition.id;
+
+      // Add agent1 to the competition (pre-registered)
+      await adminClient.addAgentToCompetition(competitionId, agent1.id);
+
+      // Deactivate agent2
+      await adminClient.deactivateAgent(
+        agent2.id,
+        "Testing inactive agent validation",
+      );
+
+      // Test: Try to start competition with invalid agent2 and valid agent3
+      // Should fail because agent2 is inactive, even though agent1 is pre-registered
+      const startResponse = await adminClient.startExistingCompetition(
+        competitionId,
+        [agent2.id, agent3.id], // agent2 is inactive, agent3 is valid
+        CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      );
+
+      expect(startResponse.success).toBe(false);
+      if (startResponse.success) throw new Error("Expected failure");
+      expect(startResponse.error).toContain(
+        "Cannot start competition: the following agent IDs are invalid or inactive:",
+      );
+      expect(startResponse.error).toContain(agent2.id);
+      // Should NOT mention agent1 (pre-registered) or agent3 (valid) in the error
+      expect(startResponse.error).not.toContain(agent1.id);
+      expect(startResponse.error).not.toContain(agent3.id);
+
+      // Test: Try to start competition with only valid agents
+      // Should succeed because agent1 is pre-registered and agent3 is valid
+      const startResponse2 = await adminClient.startExistingCompetition(
+        competitionId,
+        [agent3.id], // Only valid agent
+        CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      );
+
+      expect(startResponse2.success).toBe(true);
+      if (!startResponse2.success) throw new Error("Expected success");
+      const competition = (startResponse2 as StartCompetitionResponse)
+        .competition;
+      expect(competition.status).toBe("active");
     });
   });
 });

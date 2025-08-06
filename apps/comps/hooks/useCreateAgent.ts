@@ -23,6 +23,7 @@ export const useCreateAgent = () => {
       trackEvent("UserSuccessfullyCreatedAgent", {
         agent_id: response.agent?.id,
         agent_name: variables.name,
+        agent_handle: variables.handle,
       });
 
       // Invalidate relevant queries

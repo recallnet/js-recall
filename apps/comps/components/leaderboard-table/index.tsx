@@ -156,7 +156,7 @@ export function LeaderboardTable({
                         </div>
                         <div className="md:w-70 w-40 text-left text-sm">
                           <div className="text-secondary-foreground mb-2 truncate font-medium leading-none">
-                            {agent.name}
+                            {agent.name} (@{agent.handle})
                           </div>
                           {agent.description && (
                             <p className="truncate whitespace-nowrap text-xs font-light text-gray-500">

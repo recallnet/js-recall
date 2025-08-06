@@ -12,6 +12,7 @@ export const AGENT_DB_FIELDS = [
   "ownerId",
   "walletAddress",
   "name",
+  "handle",
   "status",
   "createdAt",
   "updatedAt",
