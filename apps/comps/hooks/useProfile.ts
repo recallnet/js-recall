@@ -23,7 +23,7 @@ export const useProfile = () => {
     staleTime: 1000,
     queryFn: async (): Promise<ProfileResponse["user"]> => {
       try {
-        if (status === 'authenticated' && user)
+        if (user && user.name && status === 'authenticated')
           return user
 
         const res = await apiClient.getProfile();
@@ -62,9 +62,9 @@ export const useUpdateProfile = () => {
         updatedFields: updatedFields,
       });
 
-      setUser({user: data.user, status: 'authenticated' as AuthStatus})
       // Invalidate profile query to get updated data
       queryClient.invalidateQueries({queryKey: ["profile"]});
+      setUser({user: data.user, status: 'authenticated' as AuthStatus})
     },
   });
 };
