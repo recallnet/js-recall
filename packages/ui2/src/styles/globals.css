@@ -29,6 +29,9 @@
   --trophy-first: oklch(0.8799 0.1379 89.79);
   --trophy-second: oklch(0.7149 0.0368 252.35);
   --trophy-third: oklch(0.628 0.1378 54);
+  --trophy-first-bg: oklch(39.106% 0.08014 84.742);
+  --trophy-second-bg: oklch(24.283% 0.02314 277.171);
+  --trophy-third-bg: oklch(17.779% 0.02751 59.528);
 }
 
 @theme inline {
@@ -53,6 +56,9 @@
   --color-trophy-first: var(--trophy-first);
   --color-trophy-second: var(--trophy-second);
   --color-trophy-third: var(--trophy-third);
+  --color-trophy-first-bg: var(--trophy-first-bg);
+  --color-trophy-second-bg: var(--trophy-second-bg);
+  --color-trophy-third-bg: var(--trophy-third-bg);
 
   --breakpoint-*: initial;
   --breakpoint-xs: 42rem;
