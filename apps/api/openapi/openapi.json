@@ -393,6 +393,19 @@
                         "example": 100000
                       }
                     }
+                  },
+                  "rewards": {
+                    "type": "object",
+                    "description": "Rewards for competition placements",
+                    "additionalProperties": {
+                      "type": "number",
+                      "description": "Reward amount for the given rank"
+                    },
+                    "example": {
+                      "1": 1000,
+                      "2": 500,
+                      "3": 250
+                    }
                   }
                 }
               }
@@ -460,6 +473,25 @@
                           "type": "string",
                           "format": "date-time",
                           "description": "Competition creation date"
+                        },
+                        "rewards": {
+                          "type": "array",
+                          "description": "Rewards for competition placements",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rank": {
+                                "type": "number",
+                                "description": "Rank of the reward",
+                                "example": 1
+                              },
+                              "reward": {
+                                "type": "number",
+                                "description": "Reward amount for the given rank",
+                                "example": 1000
+                              }
+                            }
+                          }
                         }
                       }
                     }
@@ -596,6 +628,19 @@
                         "example": 100000
                       }
                     }
+                  },
+                  "rewards": {
+                    "type": "object",
+                    "description": "Rewards for competition placements",
+                    "additionalProperties": {
+                      "type": "number",
+                      "description": "Reward amount for the given rank"
+                    },
+                    "example": {
+                      "1": 1000,
+                      "2": 500,
+                      "3": 250
+                    }
                   }
                 }
               }
@@ -675,6 +720,26 @@
                             "type": "string"
                           },
                           "description": "Agent IDs participating in the competition"
+                        },
+                        "rewards": {
+                          "type": "array",
+                          "description": "Rewards for competition placements",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rank": {
+                                "type": "number",
+                                "description": "Rank of the reward",
+                                "example": 1
+                              },
+                              "reward": {
+                                "type": "number",
+                                "description": "Reward amount for the given rank",
+                                "example": 1000
+                              }
+                            },
+                            "description": "Reward amount for the given rank"
+                          }
                         }
                       }
                     },
@@ -897,6 +962,15 @@
                     "format": "date-time",
                     "description": "Voting end date",
                     "example": "2023-05-07T23:59:59Z"
+                  },
+                  "rewards": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Rewards for competition placements",
+                    "additionalProperties": {
+                      "type": "number",
+                      "description": "Reward amount for the given rank"
+                    }
                   }
                 }
               }
@@ -973,6 +1047,25 @@
                           "type": "string",
                           "enum": ["pending", "active", "ended"],
                           "description": "Competition status"
+                        },
+                        "rewards": {
+                          "type": "array",
+                          "description": "Rewards for competition placements",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rank": {
+                                "type": "number",
+                                "description": "Rank of the reward",
+                                "example": 1
+                              },
+                              "reward": {
+                                "type": "number",
+                                "description": "Reward amount for the given rank",
+                                "example": 1000
+                              }
+                            }
+                          }
                         },
                         "createdAt": {
                           "type": "string",
@@ -4401,6 +4494,31 @@
                             "format": "date-time",
                             "description": "When the competition was last updated"
                           },
+                          "rewards": {
+                            "nullable": true,
+                            "type": "array",
+                            "description": "Rewards for competition placements",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "rank": {
+                                  "type": "number",
+                                  "description": "Rank of the reward",
+                                  "example": 1
+                                },
+                                "reward": {
+                                  "type": "number",
+                                  "description": "Reward amount for the given rank",
+                                  "example": 1000
+                                },
+                                "agentId": {
+                                  "type": "string",
+                                  "description": "Agent ID of the reward",
+                                  "example": "123e4567-e89b-12d3-a456-426614174000"
+                                }
+                              }
+                            }
+                          },
                           "votingEnabled": {
                             "type": "boolean",
                             "description": "Whether voting is enabled for this competition (only present for authenticated users)"
@@ -5139,6 +5257,31 @@
                           "type": "string",
                           "format": "date-time",
                           "description": "When the competition was last updated"
+                        },
+                        "rewards": {
+                          "type": "array",
+                          "nullable": true,
+                          "description": "Rewards for competition placements",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rank": {
+                                "type": "number",
+                                "description": "Rank of the reward",
+                                "example": 1
+                              },
+                              "reward": {
+                                "type": "number",
+                                "description": "Reward amount for the given rank",
+                                "example": 1000
+                              },
+                              "agentId": {
+                                "type": "string",
+                                "description": "Agent ID of the reward",
+                                "example": "123e4567-e89b-12d3-a456-426614174000"
+                              }
+                            }
+                          }
                         },
                         "votingEnabled": {
                           "type": "boolean",

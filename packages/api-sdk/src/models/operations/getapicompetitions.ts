@@ -66,6 +66,21 @@ export type GetApiCompetitionsCrossChainTradingType = ClosedEnum<
   typeof GetApiCompetitionsCrossChainTradingType
 >;
 
+export type GetApiCompetitionsReward = {
+  /**
+   * Rank of the reward
+   */
+  rank?: number | undefined;
+  /**
+   * Reward amount for the given rank
+   */
+  reward?: number | undefined;
+  /**
+   * Agent ID of the reward
+   */
+  agentId?: string | undefined;
+};
+
 export type GetApiCompetitionsInfo = {
   /**
    * Whether the user has already voted in this competition
@@ -137,6 +152,10 @@ export type GetApiCompetitionsCompetition = {
    * When the competition was last updated
    */
   updatedAt?: Date | undefined;
+  /**
+   * Rewards for competition placements
+   */
+  rewards?: Array<GetApiCompetitionsReward> | null | undefined;
   /**
    * Whether voting is enabled for this competition (only present for authenticated users)
    */
@@ -317,6 +336,66 @@ export namespace GetApiCompetitionsCrossChainTradingType$ {
 }
 
 /** @internal */
+export const GetApiCompetitionsReward$inboundSchema: z.ZodType<
+  GetApiCompetitionsReward,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  rank: z.number().optional(),
+  reward: z.number().optional(),
+  agentId: z.string().optional(),
+});
+
+/** @internal */
+export type GetApiCompetitionsReward$Outbound = {
+  rank?: number | undefined;
+  reward?: number | undefined;
+  agentId?: string | undefined;
+};
+
+/** @internal */
+export const GetApiCompetitionsReward$outboundSchema: z.ZodType<
+  GetApiCompetitionsReward$Outbound,
+  z.ZodTypeDef,
+  GetApiCompetitionsReward
+> = z.object({
+  rank: z.number().optional(),
+  reward: z.number().optional(),
+  agentId: z.string().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsReward$ {
+  /** @deprecated use `GetApiCompetitionsReward$inboundSchema` instead. */
+  export const inboundSchema = GetApiCompetitionsReward$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsReward$outboundSchema` instead. */
+  export const outboundSchema = GetApiCompetitionsReward$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsReward$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsReward$Outbound;
+}
+
+export function getApiCompetitionsRewardToJSON(
+  getApiCompetitionsReward: GetApiCompetitionsReward,
+): string {
+  return JSON.stringify(
+    GetApiCompetitionsReward$outboundSchema.parse(getApiCompetitionsReward),
+  );
+}
+
+export function getApiCompetitionsRewardFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiCompetitionsReward, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiCompetitionsReward$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsReward' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiCompetitionsInfo$inboundSchema: z.ZodType<
   GetApiCompetitionsInfo,
   z.ZodTypeDef,
@@ -470,6 +549,9 @@ export const GetApiCompetitionsCompetition$inboundSchema: z.ZodType<
     .datetime({ offset: true })
     .transform((v) => new Date(v))
     .optional(),
+  rewards: z
+    .nullable(z.array(z.lazy(() => GetApiCompetitionsReward$inboundSchema)))
+    .optional(),
   votingEnabled: z.boolean().optional(),
   totalVotes: z.number().int().optional(),
   userVotingInfo: z
@@ -489,6 +571,7 @@ export type GetApiCompetitionsCompetition$Outbound = {
   crossChainTradingType?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
+  rewards?: Array<GetApiCompetitionsReward$Outbound> | null | undefined;
   votingEnabled?: boolean | undefined;
   totalVotes?: number | undefined;
   userVotingInfo?: GetApiCompetitionsUserVotingInfo$Outbound | null | undefined;
@@ -516,6 +599,9 @@ export const GetApiCompetitionsCompetition$outboundSchema: z.ZodType<
   updatedAt: z
     .date()
     .transform((v) => v.toISOString())
+    .optional(),
+  rewards: z
+    .nullable(z.array(z.lazy(() => GetApiCompetitionsReward$outboundSchema)))
     .optional(),
   votingEnabled: z.boolean().optional(),
   totalVotes: z.number().int().optional(),
