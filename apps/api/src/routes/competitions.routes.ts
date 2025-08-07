@@ -970,12 +970,12 @@ export function configureCompetitionsRoutes(
 
   /**
    * @openapi
-   * /api/competitions/{competitionId}/performance:
+   * /api/competitions/{competitionId}/timeline:
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get competition performance timeline
-   *     description: Get the performance timeline for all agents in a competition
+   *     summary: Get competition timeline
+   *     description: Get the timeline for all agents in a competition
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -984,10 +984,19 @@ export function configureCompetitionsRoutes(
    *         schema:
    *           type: string
    *         required: true
-   *         description: The ID of the competition to get performance data for
+   *         description: The ID of the competition to get timeline data for
+   *       - in: query
+   *         name: bucket
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 1440
+   *           default: 30
+   *         required: false
+   *         description: Time bucket interval in minutes
    *     responses:
    *       200:
-   *         description: Competition performance timeline retrieved successfully
+   *         description: Competition timeline retrieved successfully
    *         content:
    *           application/json:
    *             schema:
@@ -999,9 +1008,9 @@ export function configureCompetitionsRoutes(
    *                 competitionId:
    *                   type: string
    *                   description: The ID of the competition
-   *                 performance:
+   *                 timeline:
    *                   type: array
-   *                   description: List of agents with their performance timelines
+   *                   description: List of agents with their timelines
    *                   items:
    *                     type: object
    *                     properties:
@@ -1013,28 +1022,28 @@ export function configureCompetitionsRoutes(
    *                         description: Agent name
    *                       timeline:
    *                         type: array
-   *                         description: Timeline of performance data points
+   *                         description: Timeline of data points
    *                         items:
    *                           type: object
    *                           properties:
    *                             date:
    *                               type: string
    *                               format: date
-   *                               description: Date of the performance data point
+   *                               description: Date of the timeline data point
    *                             totalValue:
    *                               type: number
    *                               description: Total portfolio value on that date
    *       400:
-   *         description: Bad request - Invalid competition ID format
+   *         description: Bad request - Invalid competition ID format or invalid bucket parameter (must be between 1 and 1440 minutes, must be an integer)
    *       404:
    *         description: Competition not found
    *       500:
    *         description: Server error
    */
   router.get(
-    "/:competitionId/performance",
+    "/:competitionId/timeline",
     optionalAuthMiddleware,
-    controller.getCompetitionPerformance,
+    controller.getCompetitionTimeline,
   );
 
   return router;

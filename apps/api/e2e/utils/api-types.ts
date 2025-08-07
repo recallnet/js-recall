@@ -805,10 +805,10 @@ export interface GlobalLeaderboardResponse extends ApiResponse {
   };
 }
 
-// Competition performance response
-export interface CompetitionPerformanceResponse extends ApiResponse {
+// Competition timeline response
+export interface CompetitionTimelineResponse extends ApiResponse {
   competitionId: string;
-  performance: Array<{
+  timeline: Array<{
     agentId: string;
     agentName: string;
     timeline: Array<{

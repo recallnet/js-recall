@@ -6,6 +6,7 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
+  BucketParamSchema,
   COMPETITION_JOIN_ERROR_TYPES,
   COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
@@ -925,12 +926,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
     },
 
     /**
-     * Get competition performance timeline
+     * Get competition timeline
      * @param req Request
      * @param res Express response object
      * @param next Express next function
      */
-    async getCompetitionPerformance(
+    async getCompetitionTimeline(
       req: AuthenticatedRequest,
       res: Response,
       next: NextFunction,
@@ -939,6 +940,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Get competition ID from path parameter
         const competitionId = ensureUuid(req.params.competitionId);
 
+        // Get and validate bucket parameter using zod schema
+        const bucket = BucketParamSchema.parse(req.query.bucket);
+
         // Check if competition exists
         const competition =
           await services.competitionManager.getCompetition(competitionId);
@@ -946,10 +950,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Get performance timeline data
+        // Get timeline data
         const rawData =
           await services.portfolioSnapshotter.getAgentPortfolioTimeline(
             competitionId,
+            bucket,
           );
 
         // Transform into the required structure
@@ -958,7 +963,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           {
             agentId: string;
             agentName: string;
-            timeline: Array<{ date: string; totalValue: number }>;
+            timeline: Array<{ timestamp: string; totalValue: number }>;
           }
         >();
 
@@ -972,7 +977,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
 
           agentsMap.get(item.agentId)!.timeline.push({
-            date: item.date,
+            timestamp: item.timestamp,
             totalValue: item.totalValue,
           });
         }
@@ -980,11 +985,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const transformedData = {
           success: true,
           competitionId,
-          performance: Array.from(agentsMap.values()),
+          timeline: Array.from(agentsMap.values()),
         };
 
         res.status(200).json(transformedData);
       } catch (error) {
+        console.error("OIII", error);
         next(error);
       }
     },

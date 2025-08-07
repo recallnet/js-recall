@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { db, dbRead } from "@/database/db.js";
 import {
+  agents,
   competitionAgents,
   competitions,
   competitionsLeaderboard,
@@ -1758,39 +1759,49 @@ export const findActiveCompetitionsPastEndDate = createTimedRepositoryFunction(
 /**
  * Get portfolio timeline for agents in a competition
  * @param competitionId Competition ID
+ * @param bucket Time bucket interval in minutes (default: 30)
  * @returns Array of portfolio timelines per agent
  */
-async function getAgentPortfolioTimelineImpl(competitionId: string) {
+async function getAgentPortfolioTimelineImpl(
+  competitionId: string,
+  bucket: number = 30,
+) {
   try {
     const result = await dbRead.execute<{
-      date: string;
+      timestamp: string;
       agent_id: string;
       agent_name: string;
       competition_id: string;
       total_value: number;
     }>(sql`
-      SELECT DATE(timestamp) AS date, agent_id, name AS agent_name, competition_id, total_value FROM (
+      SELECT 
+        timestamp, 
+        agent_id, 
+        name AS agent_name, 
+        competition_id, 
+        total_value 
+      FROM (
         SELECT 
           ROW_NUMBER() OVER (
-            PARTITION BY agent_id, competition_id, DATE(timestamp)
+            PARTITION BY agent_id, competition_id,FLOOR(EXTRACT(EPOCH FROM (timestamp - competitions.start_date)) / 60 / ${bucket})
             ORDER BY timestamp DESC
           ) AS rn,
           timestamp,
           agent_id,
-          name,
+          agents.name,
           competition_id,
           total_value
         FROM trading_comps.portfolio_snapshots 
         JOIN agents on agents.id = agent_id
+        JOIN competitions ON competitions.id = trading_comps.portfolio_snapshots.competition_id
         WHERE competition_id = ${competitionId}
       ) AS ranked_snapshots
       WHERE rn = 1 
-      ORDER BY name, date
     `);
 
     // Convert snake_case to camelCase
     return result.rows.map((row) => ({
-      date: row.date,
+      timestamp: row.timestamp,
       agentId: row.agent_id,
       agentName: row.agent_name,
       competitionId: row.competition_id,

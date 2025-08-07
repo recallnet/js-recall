@@ -27,9 +27,9 @@ import {
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
-  CompetitionPerformanceResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
+  CompetitionTimelineResponse,
   CreateCompetitionResponse,
   CrossChainTradingType,
   DetailedHealthCheckResponse,
@@ -1069,17 +1069,27 @@ export class ApiClient {
   }
 
   /**
-   * Get performance timeline for a competition
+   * Get timeline for a competition
    * @param competitionId Competition ID
-   * @returns Competition performance response
+   * @param bucket Time bucket interval in minutes (default: 30)
+   * @returns Competition timeline response
    */
-  async getCompetitionPerformance(
+  async getCompetitionTimeline(
     competitionId: string,
-  ): Promise<CompetitionPerformanceResponse | ErrorResponse> {
-    return this.request(
-      "get",
-      `/api/competitions/${competitionId}/performance`,
-    );
+    bucket?: number,
+  ): Promise<CompetitionTimelineResponse | ErrorResponse> {
+    let path = `/api/competitions/${competitionId}/timeline`;
+    const params = new URLSearchParams();
+
+    if (bucket !== undefined) {
+      params.append("bucket", bucket.toString());
+    }
+
+    if (params.toString()) {
+      path += `?${params.toString()}`;
+    }
+
+    return this.request("get", path);
   }
 
   /**

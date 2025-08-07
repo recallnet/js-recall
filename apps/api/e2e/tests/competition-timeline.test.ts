@@ -2,7 +2,7 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
-  CompetitionPerformanceResponse,
+  CompetitionTimelineResponse,
   ErrorResponse,
   StartCompetitionResponse,
 } from "@/e2e/utils/api-types.js";
@@ -15,7 +15,7 @@ import {
 } from "@/e2e/utils/test-helpers.js";
 import ServiceRegistry from "@/services/index.js";
 
-describe("Competition Performance API", () => {
+describe("Competition Timeline API", () => {
   let adminApiKey: string;
 
   // Clean up test state before each test
@@ -25,7 +25,7 @@ describe("Competition Performance API", () => {
     console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
-  test("should get competition performance timeline", async () => {
+  test("should get competition timeline", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -34,17 +34,17 @@ describe("Competition Performance API", () => {
     const { client: agentClient1, agent: agent1 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
-        agentName: "Performance Test Agent 1",
+        agentName: "Timeline Test Agent 1",
       });
 
     const { client: agentClient2, agent: agent2 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
-        agentName: "Performance Test Agent 2",
+        agentName: "Timeline Test Agent 2",
       });
 
     // Start a competition
-    const competitionName = `Performance Test Competition ${Date.now()}`;
+    const competitionName = `Timeline Test Competition ${Date.now()}`;
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
@@ -62,34 +62,34 @@ describe("Competition Performance API", () => {
       fromToken: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
       toToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", // WETH
       amount: "100",
-      reason: "Performance test trade 1",
+      reason: "Timeline test trade 1",
     });
 
     await agentClient2.executeTrade({
       fromToken: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
       toToken: "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", // WBTC
       amount: "100",
-      reason: "Performance test trade 2",
+      reason: "Timeline test trade 2",
     });
 
     // Force a snapshot directly
     const services = new ServiceRegistry();
     await services.portfolioSnapshotter.takePortfolioSnapshots(competition.id);
 
-    // Get competition performance timeline
-    const performanceResponse = (await agentClient1.getCompetitionPerformance(
+    // Get competition timeline
+    const timelineResponse = (await agentClient1.getCompetitionTimeline(
       competition.id,
-    )) as CompetitionPerformanceResponse;
+    )) as CompetitionTimelineResponse;
 
-    console.log(performanceResponse);
+    console.log(timelineResponse);
 
     // Verify the response
-    expect(performanceResponse.success).toBe(true);
-    expect(Array.isArray(performanceResponse.performance)).toBe(true);
+    expect(timelineResponse.success).toBe(true);
+    expect(Array.isArray(timelineResponse.timeline)).toBe(true);
 
     // Each entry should have the expected fields
-    if (performanceResponse.performance.length > 0) {
-      const firstAgent = performanceResponse.performance[0];
+    if (timelineResponse.timeline.length > 0) {
+      const firstAgent = timelineResponse.timeline[0];
       if (firstAgent) {
         expect(firstAgent).toHaveProperty("agentId");
         expect(firstAgent).toHaveProperty("agentName");
@@ -99,7 +99,7 @@ describe("Competition Performance API", () => {
         if (firstAgent.timeline.length > 0) {
           const firstTimelineEntry = firstAgent.timeline[0];
           if (firstTimelineEntry) {
-            expect(firstTimelineEntry).toHaveProperty("date");
+            expect(firstTimelineEntry).toHaveProperty("timestamp");
             expect(firstTimelineEntry).toHaveProperty("totalValue");
           }
         }
@@ -107,7 +107,7 @@ describe("Competition Performance API", () => {
     }
   });
 
-  test("should return 404 for non-existent competition performance", async () => {
+  test("should return 404 for non-existent competition timeline", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -115,11 +115,11 @@ describe("Competition Performance API", () => {
     // Register an agent
     const { client: agentClient } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "404 Performance Test Agent",
+      agentName: "404 Timeline Test Agent",
     });
 
-    // Try to get performance for a non-existent competition
-    const response = await agentClient.getCompetitionPerformance(
+    // Try to get timeline for a non-existent competition
+    const response = await agentClient.getCompetitionTimeline(
       "00000000-0000-0000-0000-000000000000",
     );
 
@@ -128,7 +128,7 @@ describe("Competition Performance API", () => {
     expect((response as ErrorResponse).error).toContain("not found");
   });
 
-  test("should allow unauthenticated access to performance endpoint", async () => {
+  test("should allow unauthenticated access to timeline endpoint", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -136,16 +136,16 @@ describe("Competition Performance API", () => {
     // Register agents
     const { agent: agent1 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Public Performance Test Agent 1",
+      agentName: "Public Timeline Test Agent 1",
     });
 
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Public Performance Test Agent 2",
+      agentName: "Public Timeline Test Agent 2",
     });
 
     // Start a competition
-    const competitionName = `Public Performance Test Competition ${Date.now()}`;
+    const competitionName = `Public Timeline Test Competition ${Date.now()}`;
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
@@ -154,7 +154,7 @@ describe("Competition Performance API", () => {
 
     // Test: Direct axios call without authentication
     const response = await axios.get(
-      `${getBaseUrl()}/api/competitions/${competitionResponse.competition.id}/performance`,
+      `${getBaseUrl()}/api/competitions/${competitionResponse.competition.id}/timeline`,
     );
 
     expect(response.status).toBe(200);
@@ -168,11 +168,11 @@ describe("Competition Performance API", () => {
     // Register agents
     const { agent: agent1 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Empty Performance Test Agent",
+      agentName: "Empty Timeline Test Agent",
     });
 
     // Create and start a competition
-    const competitionName = `Empty Performance Test Competition ${Date.now()}`;
+    const competitionName = `Empty Timeline Test Competition ${Date.now()}`;
     const startResponse = await adminClient.startCompetition({
       name: competitionName,
       description: "Test competition with no trades",
@@ -183,19 +183,58 @@ describe("Competition Performance API", () => {
     expect(startResponse.success).toBe(true);
     const competition = (startResponse as StartCompetitionResponse).competition;
 
-    // Get competition performance timeline immediately (no trades executed)
+    // Get competition timeline immediately (no trades executed)
     const { client: agentClient } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Performance Viewer Agent",
+      agentName: "Timeline Viewer Agent",
     });
 
-    const performanceResponse = (await agentClient.getCompetitionPerformance(
+    const timelineResponse = (await agentClient.getCompetitionTimeline(
       competition.id,
-    )) as CompetitionPerformanceResponse;
+    )) as CompetitionTimelineResponse;
 
     // Should return empty array
-    expect(performanceResponse.success).toBe(true);
-    expect(Array.isArray(performanceResponse.performance)).toBe(true);
-    expect(performanceResponse.performance.length).toBe(1);
+    expect(timelineResponse.success).toBe(true);
+    expect(Array.isArray(timelineResponse.timeline)).toBe(true);
+    expect(timelineResponse.timeline.length).toBe(1);
+  });
+
+  test("should accept bucket query parameter", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Bucket Test Agent",
+    });
+
+    // Create and start a competition
+    const competitionName = `Bucket Test Competition ${Date.now()}`;
+    const startResponse = await adminClient.startCompetition({
+      name: competitionName,
+      description: "Test competition with bucket parameter",
+      agentIds: [agent1.id],
+      tradingType: "allow",
+    });
+
+    expect(startResponse.success).toBe(true);
+    const competition = (startResponse as StartCompetitionResponse).competition;
+
+    // Get competition timeline with custom bucket
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Bucket Viewer Agent",
+    });
+
+    const timelineResponse = (await agentClient.getCompetitionTimeline(
+      competition.id,
+      60, // 1 hour bucket
+    )) as CompetitionTimelineResponse;
+
+    // Should return success response
+    expect(timelineResponse.success).toBe(true);
+    expect(Array.isArray(timelineResponse.timeline)).toBe(true);
   });
 });
