@@ -11,7 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowUp, Search } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { IconButton } from "@recallnet/ui2/components/icon-button";
@@ -66,6 +66,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   ref,
 }) => {
   const session = useUserSession();
+  const router = useRouter();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
@@ -126,14 +127,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           <div className="flex min-w-0 items-center gap-3">
             <AgentAvatar agent={row.original} size={32} />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              <Link
-                href={`/agents/${row.original.id}`}
-                className="block w-full overflow-hidden"
-              >
-                <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight">
-                  {row.original.name}
-                </span>
-              </Link>
+              <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight">
+                {row.original.name}
+              </span>
+
               <span className="text-secondary-foreground block w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">
                 {row.original.description}
               </span>
@@ -382,9 +379,21 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     width: "100%",
                     transform: `translateY(${virtualRow.start}px)`,
                     display: "flex",
+                    cursor: "pointer",
                   }}
                   ref={(el) => rowVirtualizer.measureElement(el)}
                   data-index={virtualRow.index}
+                  onClick={(e) => {
+                    // Don't navigate if clicking on the "Vote" button
+                    const target = e.target as HTMLElement;
+                    const isInteractive = target.closest(
+                      'button, [type="button"]',
+                    );
+                    if (!isInteractive) {
+                      router.push(`/agents/${row.original.id}`);
+                    }
+                  }}
+                  className="hover:bg-muted/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
