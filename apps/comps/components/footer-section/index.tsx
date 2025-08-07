@@ -18,46 +18,34 @@ interface FooterSectionProps {
 export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
   const linkBlock1 = [
     {
-      text: "COMPETITIONS",
-      link: "https://docs.recall.network/competitions",
+      text: "DOCS",
+      link: "https://docs.recall.network/",
     },
     {
       text: "POINTS",
       link: "https://points.recall.network/",
     },
     {
-      text: "DOCS",
-      link: "https://docs.recall.network/",
-    },
-    {
-      text: "PORTAL",
-      link: "/",
-    },
-    {
-      text: "LITEPAPER",
-      link: "https://docs.recall.network/",
-    },
-  ];
-  const linkBlock2 = [
-    {
-      text: "CAREERS",
-      link: "https://job-boards.greenhouse.io/recall",
-    },
-    {
       text: "BLOG",
       link: "https://paragraph.com/@recall",
     },
     {
-      text: "MEDIA KIT",
-      link: "https://flat-agustinia-3f3.notion.site/Recall-Launch-Media-Kit-196dfc9427de80de9d96e1dd85a8b036",
+      text: "CAREERS",
+      link: "https://job-boards.greenhouse.io/recall",
     },
+  ];
+  const linkBlock2 = [
     {
       text: "PRIVACY POLICY",
       link: "https://recall.network/privacy",
     },
     {
-      text: "COOKIES",
-      link: "https://recall.network/privacy",
+      text: "TERMS OF SERVICE",
+      link: "https://recall.network/terms",
+    },
+    {
+      text: "MEDIA KIT",
+      link: "https://flat-agustinia-3f3.notion.site/Recall-Launch-Media-Kit-196dfc9427de80de9d96e1dd85a8b036",
     },
   ];
   const socialLinks = [
@@ -67,12 +55,11 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
       icon: FaYoutube,
       url: "https://www.youtube.com/channel/UCpFqp6DtxvXaP7LUjxT3KpA",
     },
-    //{icon: FaReddit, url: "/"},
   ];
 
   return (
     <footer className={cn("mt-10", className)}>
-      <div className="xs:grid-cols-5 grid grid-cols-3 content-center gap-8 border-y py-10">
+      <div className="xs:grid-cols-5 grid grid-cols-3 content-center gap-8 border-y py-10 font-bold">
         <Image
           src="/logo_white.svg"
           alt="recallnet"
@@ -80,7 +67,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
           width={63}
           className="h-[72px] w-[63px]"
         />
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col">
           {linkBlock1.map(({ text, link }, i) => (
             <a
               key={i}
@@ -94,7 +81,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
             </a>
           ))}
         </div>
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col">
           {linkBlock2.map(({ text, link }, i) => (
             <a
               key={i}
@@ -125,7 +112,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
         </div>
       </div>
       <span className="text-secondary-foreground block py-4 text-center text-xs">
-        Copyright 2025 / Textile / All rights reserved.
+        Copyright 2025 / Recall Labs / All rights reserved.
       </span>
     </footer>
   );

@@ -52,7 +52,7 @@ export const CompetitionVotingBanner: React.FC<
         // Full-width positioning using negative margins
         "ml-[calc(-50vw+50%)] w-screen",
         // Color variants
-        displayConfig.variant === "green" && "bg-green-600",
+        displayConfig.variant === "green" && "bg-green-500",
         displayConfig.variant === "blue" && "bg-blue-600",
         displayConfig.variant === "gray" && "bg-gray-600",
         className,

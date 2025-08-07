@@ -70,7 +70,7 @@ export const Rewards: React.FC<RewardsProps> = ({
             {total.toLocaleString(undefined, {
               minimumFractionDigits: 0,
               maximumFractionDigits: 2,
-            })}
+            })}{" "}
             in rewards!
           </>
         ) : (
