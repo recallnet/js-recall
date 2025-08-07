@@ -97,7 +97,7 @@ export interface CompetitionTimelineResponse {
     agentId: string;
     agentName: string;
     timeline: {
-      date: string;
+      timestamp: string;
       totalValue: number;
     }[];
   }[];
