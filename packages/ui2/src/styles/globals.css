@@ -29,9 +29,9 @@
   --trophy-first: oklch(0.8799 0.1379 89.79);
   --trophy-second: oklch(0.7149 0.0368 252.35);
   --trophy-third: oklch(0.628 0.1378 54);
-  --trophy-first-bg: oklch(39.106% 0.08014 84.742);
-  --trophy-second-bg: oklch(24.283% 0.02314 277.171);
-  --trophy-third-bg: oklch(17.779% 0.02751 59.528);
+  --trophy-first-bg: oklch(0.3911 0.080176 84.7396);
+  --trophy-second-bg: oklch(0.2428 0.0231 277.17);
+  --trophy-third-bg: oklch(0.1778 0.0275 59.55);
 }
 
 @theme inline {
