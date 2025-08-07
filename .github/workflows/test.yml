@@ -16,10 +16,12 @@ jobs:
           echo "image=textile/js-recall:sha-868c97a" >> $GITHUB_OUTPUT
   trigger-deployment:
     needs: dummy1
-    if: ${{ success() }}
-    uses: ./.github/workflows/trigger-deployment.yml
-    secrets: inherit
-    with:
-      stage: staging
-      version: v0
-      image: ${{ needs.dummy1.outputs.image }}
+    if: ${{ success() && github.repository_owner == 'recallnet' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/trigger-deployment
+        with:
+          stage: staging
+          version: v0
+          image: ${{ needs.dummy1.outputs.image }}

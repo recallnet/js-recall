@@ -1,4 +1,4 @@
-name: Trigger Deployment A
+name: Trigger Deployment
 
 on:
   workflow_call:
@@ -30,7 +30,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: competition-app-deployments
 
-      - name: Trigger deployment C
+      - name: Trigger deployment
         uses: actions/github-script@v7
         with:
           github-token: ${{ steps.generate-token.outputs.token }}
