@@ -364,6 +364,17 @@ export interface Competition {
   // Join date constraint fields
   joinStartDate: string | null;
   joinEndDate: string | null;
+  tradingConstraints?: {
+    minimumPairAgeHours?: number;
+    minimum24hVolumeUsd?: number;
+    minimumLiquidityUsd?: number;
+    minimumFdvUsd?: number;
+  };
+  rewards?: {
+    rank: number;
+    reward: number;
+    agentId?: string;
+  }[];
 }
 
 // Leaderboard entry (per-competition leaderboard)

@@ -16,6 +16,7 @@ import {
 import {
   agents,
   competitionAgents,
+  competitionRewards,
   competitions,
   competitionsLeaderboard,
   users,
@@ -93,6 +94,20 @@ export const competitionsLeaderboardRelations = relations(
     competition: one(competitions, {
       fields: [competitionsLeaderboard.competitionId],
       references: [competitions.id],
+    }),
+  }),
+);
+
+export const competitionRewardsRelations = relations(
+  competitionRewards,
+  ({ one }) => ({
+    competition: one(competitions, {
+      fields: [competitionRewards.competitionId],
+      references: [competitions.id],
+    }),
+    agent: one(agents, {
+      fields: [competitionRewards.agentId],
+      references: [agents.id],
     }),
   }),
 );

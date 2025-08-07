@@ -98,6 +98,25 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: When the competition was last updated
+   *                       rewards:
+   *                         nullable: true
+   *                         type: array
+   *                         description: Rewards for competition placements
+   *                         items:
+   *                           type: object
+   *                           properties:
+   *                             rank:
+   *                               type: number
+   *                               description: Rank of the reward
+   *                               example: 1
+   *                             reward:
+   *                               type: number
+   *                               description: Reward amount for the given rank
+   *                               example: 1000
+   *                             agentId:
+   *                               type: string
+   *                               description: Agent ID of the reward
+   *                               example: "123e4567-e89b-12d3-a456-426614174000"
    *                       votingEnabled:
    *                         type: boolean
    *                         description: Whether voting is enabled for this competition (only present for authenticated users)
@@ -660,6 +679,25 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: When the competition was last updated
+   *                     rewards:
+   *                       type: array
+   *                       nullable: true
+   *                       description: Rewards for competition placements
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           rank:
+   *                             type: number
+   *                             description: Rank of the reward
+   *                             example: 1
+   *                           reward:
+   *                             type: number
+   *                             description: Reward amount for the given rank
+   *                             example: 1000
+   *                           agentId:
+   *                             type: string
+   *                             description: Agent ID of the reward
+   *                             example: "123e4567-e89b-12d3-a456-426614174000"
    *                     votingEnabled:
    *                       type: boolean
    *                       description: Whether voting is enabled for this competition (only present for authenticated users)

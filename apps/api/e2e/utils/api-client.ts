@@ -431,6 +431,7 @@ export class ApiClient {
     joinStartDate?: string,
     joinEndDate?: string,
     tradingConstraints?: TradingConstraints,
+    rewards?: Record<number, number>,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -449,6 +450,7 @@ export class ApiClient {
           joinStartDate,
           joinEndDate,
           tradingConstraints,
+          rewards,
         },
       );
 

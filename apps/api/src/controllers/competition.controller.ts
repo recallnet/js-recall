@@ -1,6 +1,7 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
+import { SelectCompetitionReward } from "@/database/schema/core/types.js";
 import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -494,8 +495,24 @@ export function makeCompetitionController(services: ServiceRegistry) {
                   0,
                 );
 
+                // Get trading constraints and rewards for this competition
+                const tradingConstraintsRaw =
+                  await services.tradingConstraintsService.getConstraints(
+                    competition.id,
+                  );
+                const tradingConstraints = {
+                  minimumPairAgeHours:
+                    tradingConstraintsRaw?.minimumPairAgeHours,
+                  minimum24hVolumeUsd:
+                    tradingConstraintsRaw?.minimum24hVolumeUsd,
+                  minimumLiquidityUsd:
+                    tradingConstraintsRaw?.minimumLiquidityUsd,
+                  minimumFdvUsd: tradingConstraintsRaw?.minimumFdvUsd,
+                };
+
                 return {
                   ...competition,
+                  tradingConstraints,
                   votingEnabled:
                     votingState.canVote || votingState.info.hasVoted,
                   userVotingInfo: votingState,
@@ -607,6 +624,22 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ]).size,
         };
 
+        // Get trading constraints and rewards for this competition
+        const tradingConstraintsRaw =
+          await services.tradingConstraintsService.getConstraints(
+            competitionId,
+          );
+        const tradingConstraints = {
+          minimumPairAgeHours: tradingConstraintsRaw?.minimumPairAgeHours,
+          minimum24hVolumeUsd: tradingConstraintsRaw?.minimum24hVolumeUsd,
+          minimumLiquidityUsd: tradingConstraintsRaw?.minimumLiquidityUsd,
+          minimumFdvUsd: tradingConstraintsRaw?.minimumFdvUsd,
+        };
+        const rewards =
+          await services.competitionRewardService.getRewardsByCompetition(
+            competitionId,
+          );
+
         // If user is authenticated, get their voting state
         let userVotingInfo = undefined;
         let votingEnabled = false;
@@ -633,6 +666,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
           competition: {
             ...competition,
             stats,
+            tradingConstraints,
+            rewards: rewards.map((r: SelectCompetitionReward) => {
+              return {
+                rank: r.rank,
+                reward: r.reward,
+                agentId: r.agentId,
+              };
+            }),
             votingEnabled,
             userVotingInfo,
           },
