@@ -1,6 +1,6 @@
-import { Agent } from "./agent";
-import { PaginationResponse } from "./api";
-import { CompetitionStatus, CrossChainTradingType } from "./enums";
+import {Agent} from "./agent";
+import {PaginationResponse} from "./api";
+import {CompetitionStatus, CrossChainTradingType} from "./enums";
 
 export interface Reward {
   name: string;
@@ -90,10 +90,10 @@ export interface CompetitionResponse {
   competition: Competition;
 }
 
-export interface CompetitionPerformanceResponse {
+export interface CompetitionTimelineResponse {
   success: boolean;
   competitionId: string;
-  performance: {
+  timeline: {
     agentId: string;
     agentName: string;
     timeline: {
