@@ -46,11 +46,11 @@ export function LeaderboardTable({
 
   return (
     <div className="w-full overflow-x-auto">
-      <div className="min-w-[900px]">
+      <div className="min-[940px]:min-w-[900px]">
         <div className="flex flex-col items-end">
           <Table className="w-full">
             <TableHeader className="bg-card">
-              <TableRow className="grid w-full grid-cols-[1fr_1fr_3fr_1fr_1fr]">
+              <TableRow className="grid w-full grid-cols-[1fr_1fr_2fr] min-[940px]:grid-cols-[1fr_1fr_3fr_1fr_1fr]">
                 <SortableTableHeader
                   className="pl-6 text-white"
                   onToggleSort={() => handleSortChange("rank")}
@@ -72,14 +72,14 @@ export function LeaderboardTable({
                   Agent
                 </SortableTableHeader>
                 <SortableTableHeader
-                  className="flex justify-end text-white"
+                  className="hidden justify-end text-white min-[940px]:flex"
                   onToggleSort={() => handleSortChange("competitions")}
                   sortState={sortState["competitions"]}
                 >
                   Competitions
                 </SortableTableHeader>
                 <SortableTableHeader
-                  className="flex justify-end pr-6 text-white"
+                  className="hidden justify-end pr-6 text-white min-[940px]:flex"
                   onToggleSort={() => handleSortChange("votes")}
                   sortState={sortState["votes"]}
                 >
@@ -96,7 +96,7 @@ export function LeaderboardTable({
                 return (
                   <TableRow
                     key={agent.id}
-                    className="grid cursor-pointer grid-cols-[1fr_1fr_3fr_1fr_1fr]"
+                    className="grid cursor-pointer grid-cols-[1fr_1fr_2fr] min-[940px]:grid-cols-[1fr_1fr_3fr_1fr_1fr]"
                     onClick={(e) => {
                       // Don't navigate if clicking on some arbitrary inline button
                       const target = e.target as HTMLElement;
@@ -175,11 +175,11 @@ export function LeaderboardTable({
                       </div>
                     </TableCell>
 
-                    <TableCell className="text-secondary-foreground flex items-center justify-end">
+                    <TableCell className="text-secondary-foreground hidden items-center justify-end min-[940px]:flex">
                       {agent.numCompetitions}
                     </TableCell>
 
-                    <TableCell className="text-secondary-foreground flex items-center justify-end pr-6">
+                    <TableCell className="text-secondary-foreground hidden items-center justify-end pr-6 min-[940px]:flex">
                       {agent.voteCount || 0}
                     </TableCell>
                   </TableRow>
