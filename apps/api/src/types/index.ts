@@ -595,6 +595,18 @@ export const AgentPublicSchema = AgentSchema.omit({
 export type AgentPublic = z.infer<typeof AgentPublicSchema>;
 
 /**
+ * Trading Constraint Schema
+ */
+export const TradingConstraintsSchema = z
+  .object({
+    minimumPairAgeHours: z.number().min(0),
+    minimum24hVolumeUsd: z.number().min(0),
+    minimumLiquidityUsd: z.number().min(0),
+    minimumFdvUsd: z.number().min(0),
+  })
+  .optional();
+
+/**
  * Competition status values for zod or database enum.
  */
 export const COMPETITION_STATUS_VALUES = [
@@ -682,8 +694,14 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   type: CompetitionTypeSchema.optional(),
   externalUrl: z.string().optional(),
   imageUrl: z.string().optional(),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
   votingStartDate: z.date().optional(),
   votingEndDate: z.date().optional(),
+  joinStartDate: z.date().optional(),
+  joinEndDate: z.date().optional(),
+  rewards: z.record(z.number(), z.number()).optional(),
+  tradingConstraints: TradingConstraintsSchema.optional(),
 });
 
 export type CompetitionAllowedUpdate = z.infer<
