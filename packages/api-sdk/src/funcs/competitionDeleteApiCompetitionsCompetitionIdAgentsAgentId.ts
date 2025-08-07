@@ -27,7 +27,8 @@ import { Result } from "../types/fp.js";
  * Leave a competition
  *
  * @remarks
- * Remove an agent from a competition. Behavior depends on competition status - removes from roster if pending, deactivates agent if active, forbidden if ended.
+ * Remove an agent from a competition. Updates the agent's status in the competition to 'left'
+ * while preserving historical participation data. Note: Cannot leave competitions that have already ended.
  */
 export function competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId(
   client: ApiSDKCore,

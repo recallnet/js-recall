@@ -217,8 +217,8 @@ export default function AgentProfile({
                 src={agent.imageUrl || "/agent-placeholder.png"}
                 alt={agent.name}
                 fill={!!agent.imageUrl}
-                width={agent.imageUrl ? undefined : 50}
-                height={agent.imageUrl ? undefined : 50}
+                width={agent.imageUrl ? undefined : 200}
+                height={agent.imageUrl ? undefined : 200}
                 className={cn(
                   agent.imageUrl ? "absolute z-0 object-cover" : "w-50 h-50",
                 )}

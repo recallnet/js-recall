@@ -70,10 +70,10 @@ importers:
         version: 16.5.0
       drizzle-orm:
         specifier: ^0.43.1
-        version: 0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.13)(pg@8.16.0)(sql.js@1.13.0)
+        version: 0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0)
       drizzle-zod:
         specifier: ^0.8.2
-        version: 0.8.2(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.13)(pg@8.16.0)(sql.js@1.13.0))(zod@3.25.23)
+        version: 0.8.2(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0))(zod@3.25.23)
       express:
         specifier: ^4.18.2
         version: 4.21.2
@@ -176,7 +176,7 @@ importers:
         version: 0.31.1
       drizzle-seed:
         specifier: ^0.3.1
-        version: 0.3.1(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.13)(pg@8.16.0)(sql.js@1.13.0))
+        version: 0.3.1(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0))
       openapi-markdown:
         specifier: ^1.2.3
         version: 1.2.3
@@ -740,6 +740,10 @@ importers:
         version: 5.8.3
 
   packages/api-sdk:
+    dependencies:
+      zod:
+        specifier: ^3.20.0
+        version: 3.25.23
     devDependencies:
       '@eslint/js':
         specifier: ^9.19.0
@@ -754,11 +758,11 @@ importers:
         specifier: ^4.17.21
         version: 4.17.22
       bun:
-        specifier: ^1.2.2
-        version: 1.2.13
+        specifier: 1.2.17
+        version: 1.2.17
       bun-types:
-        specifier: ^1.2.2
-        version: 1.2.13
+        specifier: 1.2.17
+        version: 1.2.17
       eslint:
         specifier: ^9.19.0
         version: 9.27.0(jiti@2.4.2)
@@ -772,14 +776,11 @@ importers:
         specifier: ^2.0.0
         version: 2.0.1
       typescript:
-        specifier: ^5.4.5
+        specifier: ~5.8.3
         version: 5.8.3
       typescript-eslint:
-        specifier: ^8.22.0
+        specifier: ^8.26.0
         version: 8.32.1(eslint@9.27.0(jiti@2.4.2))(typescript@5.8.3)
-      zod:
-        specifier: ^3.25.17
-        version: 3.25.23
 
   packages/chains:
     dependencies:
@@ -2701,58 +2702,58 @@ packages:
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
     engines: {node: '>=8.0.0'}
 
-  '@oven/bun-darwin-aarch64@1.2.13':
-    resolution: {integrity: sha512-AOU4O9jxRp2TXeqoEfOjEaUNZb3+SUPBN8TIEnUjpnyLWPoYJGCeNdQuCDcUkmF3MJEmEuJdyF1IeOITozpC6A==}
+  '@oven/bun-darwin-aarch64@1.2.17':
+    resolution: {integrity: sha512-66Xjz3NZXUUWKZJPvWKuwEkaqMZpir1Gm4SbhbB2iiRSSTW8jqwdkSb9RhgTCDt5OnSPd3+Cq0WsP/T5ExJbhA==}
     cpu: [arm64]
     os: [darwin]
 
-  '@oven/bun-darwin-x64-baseline@1.2.13':
-    resolution: {integrity: sha512-bZpIUOvx9np07AmH5MVXGYHWZ40m2vCpNV74fma6sCzBlssJclS2V3BZgO+lLvtUKSqnW3HAyJBGsRF34wPbNw==}
+  '@oven/bun-darwin-x64-baseline@1.2.17':
+    resolution: {integrity: sha512-VSIctl90tV8yg1LRMvPg/8LgUzl55Q7Jcxe+u6PfuvLQIJOTIPbNn7HtRpJg7MGc3+qyztB5KDd70xC7qI2yEg==}
     cpu: [x64]
     os: [darwin]
 
-  '@oven/bun-darwin-x64@1.2.13':
-    resolution: {integrity: sha512-kJ2iOvxY8uz5/nu+8zIjKf4LmRIHBH9pJJM2q+tA47U04Tod6k6rtntDOI8SdmRe2M5c87RfbadWdxhpYHFIWQ==}
+  '@oven/bun-darwin-x64@1.2.17':
+    resolution: {integrity: sha512-OMJMHpcpBlWcVnWfSQ6x+8fF7HpkQLqBfoIvzxgUjIZZvj2d8K46XX4N/h62RglDEinRC9VDGxt24vwvlk5tTw==}
     cpu: [x64]
     os: [darwin]
 
-  '@oven/bun-linux-aarch64-musl@1.2.13':
-    resolution: {integrity: sha512-P56m718KXeyu4Vq5fsESFktfu+0Us1jhu/ZzgHYFRYJcm/hjs6AUA/RJtUAifFy5PNAM5IJdrYl3xPsE8Wa+pg==}
+  '@oven/bun-linux-aarch64-musl@1.2.17':
+    resolution: {integrity: sha512-PH+hUV+I6DGD1VRHdAIAKEAOed+GSdvn6S1b3qqX27/VuHBU781V+hzt+6DBlcWBHYLw8PIg9sfIdNp485gQmw==}
     cpu: [aarch64]
     os: [linux]
 
-  '@oven/bun-linux-aarch64@1.2.13':
-    resolution: {integrity: sha512-hocSJmblX4CCjP1HpaM64I65erB+CONUCCwKzGGOfLGLobVi+vn/G56UaYWsje1y/Z7WlVaUSgKYVWl7EJ6T9g==}
+  '@oven/bun-linux-aarch64@1.2.17':
+    resolution: {integrity: sha512-KPoMqaibCXcSv+VZ3uMqKUNZqMxE6Hho1be6+laolYGOIJxJTMnZPfmKfIlQmnnW3vLlm3g2Rm8pPPC7doSHWg==}
     cpu: [arm64]
     os: [linux]
 
-  '@oven/bun-linux-x64-baseline@1.2.13':
-    resolution: {integrity: sha512-9n1ai2ejEpxEMqpbHQMWFyvacq3MYsB7gh5mxRlFwhNFPCWu/Sv6gyrO+q2vkOYgcEIGhJb6dqJ6L9vBNaL61A==}
+  '@oven/bun-linux-x64-baseline@1.2.17':
+    resolution: {integrity: sha512-IrnFMUwYWxoKICQgK8ZlJ6rI/HU2gITFNEW0MIOPIcuT0s3j0/33631M9EzYDoL4NuLQPks6569JDvSHEVqdeA==}
     cpu: [x64]
     os: [linux]
 
-  '@oven/bun-linux-x64-musl-baseline@1.2.13':
-    resolution: {integrity: sha512-VI8hVdfqk0QmbAbyrsIdo2O95n3fkbt72E0h3Wu69cHD1iKJqRXG28R8QoHdehoLSJnKVzRTwsUzHp764nefWQ==}
+  '@oven/bun-linux-x64-musl-baseline@1.2.17':
+    resolution: {integrity: sha512-YE5wQ/YA79BykMLhuwgdoF8Yjj5dRipD8dwmXs8n7gzR+/L9tL7Q69NQgskW2KkAalmWPoGAv3TV0IwbU+1dFw==}
     cpu: [x64]
     os: [linux]
 
-  '@oven/bun-linux-x64-musl@1.2.13':
-    resolution: {integrity: sha512-w5Ob+GM3Ww4yRA6f1N845o6wEvuwHSmipFUGaRaVp4UELrFnIV9G3pmrlBbYHFnWhk13o8Q7H1/4ZphOkCRJmQ==}
+  '@oven/bun-linux-x64-musl@1.2.17':
+    resolution: {integrity: sha512-fW9qn/WqO131/qSIkIPW8zN+thQnYUWa/k98EWubLG87htKSPh1v023E5ikKb7WlUv4Yb6UlE/z4NmMYKffmAg==}
     cpu: [x64]
     os: [linux]
 
-  '@oven/bun-linux-x64@1.2.13':
-    resolution: {integrity: sha512-pf8+Kn2GLrFKLcb8JSLM6Z147Af6L9GQODpnOHM4gvXQv6E/GwQg47/o+7f1XCfzib3fdzOTJlDPvvO1rnXOTA==}
+  '@oven/bun-linux-x64@1.2.17':
+    resolution: {integrity: sha512-BfySnrTxp7D9hVUi9JEpviJl8ndsuESiRiQKTzgmdTLrMjUxP4SwrwMtYt6R9X20n9rREG6a47C0IyQMhbwG/g==}
     cpu: [x64]
     os: [linux]
 
-  '@oven/bun-windows-x64-baseline@1.2.13':
-    resolution: {integrity: sha512-Aiezu99fOUJJpzGuylOJryd6w9Syg2TBigHeXV2+RJsouBzvAnIEYIBA94ZspRq1ulD26Wmkk8Ae+jZ4edk9GA==}
+  '@oven/bun-windows-x64-baseline@1.2.17':
+    resolution: {integrity: sha512-aVkq4l1yZ9VKfBOtZ2HEj0OCU5kUe3Fx6LbAG6oY6OglWVYj051i3RGaE2OdR4L4F2jDyxzfGYRTM/qs8nU5qA==}
     cpu: [x64]
     os: [win32]
 
-  '@oven/bun-windows-x64@1.2.13':
-    resolution: {integrity: sha512-sArgbRmT7V3mUdNFaAdUcuJsuS+oeMDZLPWFSg0gtQZpRrURs9nPzEnZMmVCFo4+kPF9Tb5ujQT9uDySh6/qVg==}
+  '@oven/bun-windows-x64@1.2.17':
+    resolution: {integrity: sha512-GJUg1oA59DWH6eyV8uccpgfTEVxjmgfTWQCOl2ySMXR3IfRoFwS4aQfpjcVzNmEZrv8eYt+yMuw1K7aNcWTTIg==}
     cpu: [x64]
     os: [win32]
 
@@ -4821,11 +4822,12 @@ packages:
     resolution: {integrity: sha512-WDtdLmJvAuNNPzByAYpRo2rF1Mmradw6gvWsQKf63476DDXmomT9zUiGypLcG4ibIM67vhAj8jJRdbmEws2Aqw==}
     engines: {node: '>=6.14.2'}
 
-  bun-types@1.2.13:
-    resolution: {integrity: sha512-rRjA1T6n7wto4gxhAO/ErZEtOXyEZEmnIHQfl0Dt1QQSB4QV0iP6BZ9/YB5fZaHFQ2dwHFrmPaRQ9GGMX01k9Q==}
+  bun-types@1.2.17:
+    resolution: {integrity: sha512-ElC7ItwT3SCQwYZDYoAH+q6KT4Fxjl8DtZ6qDulUFBmXA8YB4xo+l54J9ZJN+k2pphfn9vk7kfubeSd5QfTVJQ==}
 
-  bun@1.2.13:
-    resolution: {integrity: sha512-EhP1MhFbicqtaRSFCbEZdkcFco8Ov47cNJcB9QmKS8U4cojKHfLU+dQR14lCvLYmtBvGgwv/Lp+9SSver2OPzQ==}
+  bun@1.2.17:
+    resolution: {integrity: sha512-lrUZTWS24eVy6v+Eph8VTwqFPcG7/XQ0rLBQEMNoQs2Vd7ctVdMGAzJKKGZRUQH+rgkD8rBeHGIVoWxX4vJLCA==}
+    cpu: [arm64, x64, aarch64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -11400,37 +11402,37 @@ snapshots:
 
   '@opentelemetry/api@1.9.0': {}
 
-  '@oven/bun-darwin-aarch64@1.2.13':
+  '@oven/bun-darwin-aarch64@1.2.17':
     optional: true
 
-  '@oven/bun-darwin-x64-baseline@1.2.13':
+  '@oven/bun-darwin-x64-baseline@1.2.17':
     optional: true
 
-  '@oven/bun-darwin-x64@1.2.13':
+  '@oven/bun-darwin-x64@1.2.17':
     optional: true
 
-  '@oven/bun-linux-aarch64-musl@1.2.13':
+  '@oven/bun-linux-aarch64-musl@1.2.17':
     optional: true
 
-  '@oven/bun-linux-aarch64@1.2.13':
+  '@oven/bun-linux-aarch64@1.2.17':
     optional: true
 
-  '@oven/bun-linux-x64-baseline@1.2.13':
+  '@oven/bun-linux-x64-baseline@1.2.17':
     optional: true
 
-  '@oven/bun-linux-x64-musl-baseline@1.2.13':
+  '@oven/bun-linux-x64-musl-baseline@1.2.17':
     optional: true
 
-  '@oven/bun-linux-x64-musl@1.2.13':
+  '@oven/bun-linux-x64-musl@1.2.17':
     optional: true
 
-  '@oven/bun-linux-x64@1.2.13':
+  '@oven/bun-linux-x64@1.2.17':
     optional: true
 
-  '@oven/bun-windows-x64-baseline@1.2.13':
+  '@oven/bun-windows-x64-baseline@1.2.17':
     optional: true
 
-  '@oven/bun-windows-x64@1.2.13':
+  '@oven/bun-windows-x64@1.2.17':
     optional: true
 
   '@panva/hkdf@1.2.1': {}
@@ -14453,23 +14455,23 @@ snapshots:
     dependencies:
       node-gyp-build: 4.8.4
 
-  bun-types@1.2.13:
+  bun-types@1.2.17:
     dependencies:
-      '@types/node': 18.19.101
+      '@types/node': 22.15.19
 
-  bun@1.2.13:
+  bun@1.2.17:
     optionalDependencies:
-      '@oven/bun-darwin-aarch64': 1.2.13
-      '@oven/bun-darwin-x64': 1.2.13
-      '@oven/bun-darwin-x64-baseline': 1.2.13
-      '@oven/bun-linux-aarch64': 1.2.13
-      '@oven/bun-linux-aarch64-musl': 1.2.13
-      '@oven/bun-linux-x64': 1.2.13
-      '@oven/bun-linux-x64-baseline': 1.2.13
-      '@oven/bun-linux-x64-musl': 1.2.13
-      '@oven/bun-linux-x64-musl-baseline': 1.2.13
-      '@oven/bun-windows-x64': 1.2.13
-      '@oven/bun-windows-x64-baseline': 1.2.13
+      '@oven/bun-darwin-aarch64': 1.2.17
+      '@oven/bun-darwin-x64': 1.2.17
+      '@oven/bun-darwin-x64-baseline': 1.2.17
+      '@oven/bun-linux-aarch64': 1.2.17
+      '@oven/bun-linux-aarch64-musl': 1.2.17
+      '@oven/bun-linux-x64': 1.2.17
+      '@oven/bun-linux-x64-baseline': 1.2.17
+      '@oven/bun-linux-x64-musl': 1.2.17
+      '@oven/bun-linux-x64-musl-baseline': 1.2.17
+      '@oven/bun-windows-x64': 1.2.17
+      '@oven/bun-windows-x64-baseline': 1.2.17
 
   bundle-require@5.1.0(esbuild@0.25.4):
     dependencies:
@@ -15028,25 +15030,25 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.13)(pg@8.16.0)(sql.js@1.13.0):
+  drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0):
     optionalDependencies:
       '@electric-sql/pglite': 0.2.17
       '@opentelemetry/api': 1.9.0
       '@types/pg': 8.15.2
       better-sqlite3: 11.8.1
-      bun-types: 1.2.13
+      bun-types: 1.2.17
       pg: 8.16.0
       sql.js: 1.13.0
 
-  drizzle-seed@0.3.1(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.13)(pg@8.16.0)(sql.js@1.13.0)):
+  drizzle-seed@0.3.1(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0)):
     dependencies:
       pure-rand: 6.1.0
     optionalDependencies:
-      drizzle-orm: 0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.13)(pg@8.16.0)(sql.js@1.13.0)
+      drizzle-orm: 0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0)
 
-  drizzle-zod@0.8.2(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.13)(pg@8.16.0)(sql.js@1.13.0))(zod@3.25.23):
+  drizzle-zod@0.8.2(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0))(zod@3.25.23):
     dependencies:
-      drizzle-orm: 0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.13)(pg@8.16.0)(sql.js@1.13.0)
+      drizzle-orm: 0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0)
       zod: 3.25.23
 
   dunder-proto@1.0.1:

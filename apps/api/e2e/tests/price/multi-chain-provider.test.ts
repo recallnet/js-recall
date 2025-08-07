@@ -276,13 +276,11 @@ describe("Multi-Chain Provider Tests", () => {
           console.log(`Found price for unknown token: $${priceReport.price}`);
           expect(priceReport.chain).toBe(BlockchainType.EVM);
 
-          // Get detailed token info to see which chain it was found on
-          const tokenInfo = await multiChainProvider.getTokenInfo(
-            unknownToken,
-            BlockchainType.EVM,
-          );
-          if (tokenInfo && tokenInfo.specificChain) {
-            console.log(`Token was found on chain: ${tokenInfo.specificChain}`);
+          // The price report already contains chain information
+          if (priceReport && priceReport.specificChain) {
+            console.log(
+              `Token was found on chain: ${priceReport.specificChain}`,
+            );
           }
         } else {
           console.log(`Token not found on any of the tested chains`);
@@ -342,21 +340,10 @@ describe("Multi-Chain Provider Tests", () => {
         expect(priceReport.chain).toBe(BlockchainType.EVM);
         expect(priceReport.specificChain).toBe("base");
 
-        // Also test the token info
-        const tokenInfo = await multiChainProvider.getTokenInfo(
-          baseToken,
-          BlockchainType.EVM,
-          "base",
+        // Log confirmation using the existing price report data
+        console.log(
+          `Token ${baseToken} confirmed on chain: ${priceReport.specificChain} with price: $${priceReport.price}`,
         );
-
-        if (tokenInfo && tokenInfo.specificChain) {
-          console.log(
-            `Token ${baseToken} confirmed on chain: ${tokenInfo.specificChain} with price: $${tokenInfo.price}`,
-          );
-
-          // Based on the previous tests, we expect this token to be on Base
-          expect(tokenInfo.specificChain).toBe("base");
-        }
       }
     }, 60000); // Increase timeout for API calls
 
@@ -388,13 +375,9 @@ describe("Multi-Chain Provider Tests", () => {
         console.log(`No price found for ETH token`);
       }
 
-      // Get detailed info to see which chain was detected
-      const tokenInfo = await multiChainProvider.getTokenInfo(
-        ethToken,
-        BlockchainType.EVM,
-      );
+      // Log detailed info from the price result
       console.log(
-        `MultiChainProvider token info: ${JSON.stringify(tokenInfo)}`,
+        `MultiChainProvider price info: ${JSON.stringify(multiChainResult)}`,
       );
 
       // Check PriceTracker
@@ -411,19 +394,17 @@ describe("Multi-Chain Provider Tests", () => {
       );
       expect(hasMultiChain).toBe(true);
 
-      // Get token info through PriceTracker
-      const trackerTokenInfo = await priceTracker.getTokenInfo(ethToken);
+      // Get price through PriceTracker
+      const trackerPriceReport = await priceTracker.getPrice(ethToken);
       console.log(
-        `PriceTracker.getTokenInfo result: ${JSON.stringify(trackerTokenInfo)}`,
+        `PriceTracker.getPrice result: ${JSON.stringify(trackerPriceReport)}`,
       );
 
-      // The token info should have info regardless of the price
-      expect(trackerTokenInfo).not.toBeNull();
-      if (trackerTokenInfo) {
-        expect(trackerTokenInfo.chain).toBe(BlockchainType.EVM);
-        if (trackerTokenInfo.price !== null) {
-          expect(trackerTokenInfo.price).toBeGreaterThan(0);
-        }
+      // The price report should have info regardless of the price
+      expect(trackerPriceReport).not.toBeNull();
+      expect(trackerPriceReport!.chain).toBe(BlockchainType.EVM);
+      if (trackerPriceReport!.price !== null) {
+        expect(trackerPriceReport!.price).toBeGreaterThan(0);
       }
     });
 
@@ -468,46 +449,36 @@ describe("Multi-Chain Provider Tests", () => {
         );
         console.log(`Price result for ${token.name}:`, priceReport);
 
-        // Get detailed token info
-        const tokenInfo = await multiChainProvider.getTokenInfo(
-          token.address,
-          BlockchainType.EVM,
-          token.expectedChain as SpecificChain,
-        );
-        console.log(`Token info for ${token.name}:`, tokenInfo);
+        // Verify we got a result (using existing priceReport)
+        expect(priceReport).not.toBeNull();
 
-        // Verify we got a result
-        expect(tokenInfo).not.toBeNull();
+        // Chain type should always be correctly identified
+        expect(priceReport!.chain).toBe(BlockchainType.EVM);
 
-        if (tokenInfo) {
-          // Chain type should always be correctly identified
-          expect(tokenInfo.chain).toBe(BlockchainType.EVM);
+        // If we got a price, verify it looks reasonable
+        if (priceReport!.price !== null) {
+          expect(typeof priceReport!.price).toBe("number");
+          expect(priceReport!.price).toBeGreaterThan(0);
+          console.log(
+            `✅ Verified price for ${token.name}: $${priceReport!.price}`,
+          );
+        }
 
-          // If we got a price, verify it looks reasonable
-          if (tokenInfo.price !== null) {
-            expect(typeof tokenInfo.price).toBe("number");
-            expect(tokenInfo.price).toBeGreaterThan(0);
+        // If we got a specific chain, verify it matches our expectation
+        if (priceReport!.specificChain) {
+          console.log(
+            `Token ${token.name} detected on chain: ${priceReport!.specificChain}`,
+          );
+
+          // The chain should match our expected chain
+          if (priceReport!.specificChain !== token.expectedChain) {
             console.log(
-              `✅ Verified price for ${token.name}: $${tokenInfo.price}`,
+              `⚠️ Note: ${token.name} was found on ${priceReport!.specificChain} (expected ${token.expectedChain})`,
             );
-          }
-
-          // If we got a specific chain, verify it matches our expectation
-          if (tokenInfo.specificChain) {
+          } else {
             console.log(
-              `Token ${token.name} detected on chain: ${tokenInfo.specificChain}`,
+              `✅ Confirmed ${token.name} on expected chain: ${token.expectedChain}`,
             );
-
-            // The chain should match our expected chain
-            if (tokenInfo.specificChain !== token.expectedChain) {
-              console.log(
-                `⚠️ Note: ${token.name} was found on ${tokenInfo.specificChain} (expected ${token.expectedChain})`,
-              );
-            } else {
-              console.log(
-                `✅ Confirmed ${token.name} on expected chain: ${token.expectedChain}`,
-              );
-            }
           }
         }
 
@@ -515,10 +486,10 @@ describe("Multi-Chain Provider Tests", () => {
         try {
           const baseUrl = getBaseUrl();
           const apiResponse = await axios.get(
-            `${baseUrl}/api/price/token-info?token=${token.address}`,
+            `${baseUrl}/api/price?token=${token.address}`,
           );
           console.log(
-            `API token-info response for ${token.name}:`,
+            `API price response for ${token.name}:`,
             apiResponse.data,
           );
 
@@ -654,17 +625,12 @@ describe("Multi-Chain Provider Tests", () => {
       console.log(`Token ${token} chain detection result: ${chain}`);
       expect(chain).toBe(BlockchainType.EVM);
 
-      // If we need to check specific chain, use getTokenInfo method
-      const tokenInfo = await priceTracker.getTokenInfo(token);
-      console.log(`Token info for ${token}:`, tokenInfo);
-      expect(tokenInfo).not.toBeNull();
-
-      if (tokenInfo) {
-        expect(tokenInfo.chain).toBe(BlockchainType.EVM);
-        if (tokenInfo.specificChain) {
-          expect(typeof tokenInfo.specificChain).toBe("string");
-          console.log(`Token specific chain: ${tokenInfo.specificChain}`);
-        }
+      // The priceReport should already be verified as not null, and we can check chain info
+      expect(priceReport).not.toBeNull();
+      expect(priceReport!.chain).toBe(BlockchainType.EVM);
+      if (priceReport!.specificChain) {
+        expect(typeof priceReport!.specificChain).toBe("string");
+        console.log(`Token specific chain: ${priceReport!.specificChain}`);
       }
     });
 

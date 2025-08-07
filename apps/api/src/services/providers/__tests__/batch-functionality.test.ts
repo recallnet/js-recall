@@ -80,7 +80,7 @@ describe("Batch Functionality Tests", () => {
   });
 
   describe("MultiChainProvider batch methods", () => {
-    it("should fetch batch token info for multiple tokens", async () => {
+    it("should fetch batch prices for multiple tokens with comprehensive data", async () => {
       const provider = new MultiChainProvider();
 
       // Test with a few well-known Ethereum tokens
@@ -89,7 +89,7 @@ describe("Batch Functionality Tests", () => {
         "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
       ];
 
-      const results = await provider.getBatchTokenInfo(
+      const results = await provider.getBatchPrices(
         testTokens,
         BlockchainType.EVM,
         "eth",
@@ -107,6 +107,8 @@ describe("Batch Functionality Tests", () => {
           expect(result.symbol).toBeDefined();
           expect(result.chain).toBe(BlockchainType.EVM);
           expect(result.specificChain).toBe("eth");
+          expect(result.token).toBe(token);
+          expect(result.timestamp).toBeInstanceOf(Date);
         }
       });
     });
@@ -147,7 +149,7 @@ describe("Batch Functionality Tests", () => {
     it("should handle empty token array", async () => {
       const provider = new MultiChainProvider();
 
-      const results = await provider.getBatchTokenInfo(
+      const results = await provider.getBatchPrices(
         [],
         BlockchainType.EVM,
         "eth",
@@ -166,7 +168,7 @@ describe("Batch Functionality Tests", () => {
         "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
       ];
 
-      const results = await provider.getBatchTokenInfo(
+      const results = await provider.getBatchPrices(
         testTokens,
         BlockchainType.SVM,
         "svm",
@@ -184,6 +186,8 @@ describe("Batch Functionality Tests", () => {
           expect(result.symbol).toBeDefined();
           expect(result.chain).toBe(BlockchainType.SVM);
           expect(result.specificChain).toBe("svm");
+          expect(result.token).toBe(token);
+          expect(result.timestamp).toBeInstanceOf(Date);
         }
       });
     });
@@ -196,14 +200,14 @@ describe("Batch Functionality Tests", () => {
       ];
 
       // First batch request
-      const firstResults = await provider.getBatchTokenInfo(
+      const firstResults = await provider.getBatchPrices(
         testTokens,
         BlockchainType.EVM,
         "eth",
       );
 
       // Second batch request (should use cache)
-      const secondResults = await provider.getBatchTokenInfo(
+      const secondResults = await provider.getBatchPrices(
         testTokens,
         BlockchainType.EVM,
         "eth",
@@ -238,7 +242,7 @@ describe("Batch Functionality Tests", () => {
       // Clear any existing cache by using a fresh provider
       const freshProvider = new MultiChainProvider();
 
-      const batchResults = await freshProvider.getBatchTokenInfo(
+      const batchResults = await freshProvider.getBatchPrices(
         testTokens,
         BlockchainType.EVM,
         "eth",
@@ -247,7 +251,7 @@ describe("Batch Functionality Tests", () => {
       // Time individual requests
       const individualResults = new Map();
       for (const token of testTokens) {
-        const result = await freshProvider.getTokenInfo(
+        const result = await freshProvider.getPrice(
           token,
           BlockchainType.EVM,
           "eth",

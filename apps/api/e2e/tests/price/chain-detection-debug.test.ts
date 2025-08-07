@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { ApiClient } from "@/e2e/utils/api-client.js";
-import { TokenInfoResponse } from "@/e2e/utils/api-types.js";
+import { PriceResponse } from "@/e2e/utils/api-types.js";
 import {
   createTestClient,
   getAdminApiKey,
@@ -70,13 +70,12 @@ describe("Chain Detection Debug", () => {
 
   describe("API Tests", () => {
     it("should detect Ethereum token as EVM chain", async () => {
-      const response = (await client.getTokenInfo(
-        ethereumTokens.ETH,
-      )) as TokenInfoResponse;
+      const response = await client.getPrice(ethereumTokens.ETH);
       console.log(
-        `API response for Ethereum token info: ${JSON.stringify(response)}`,
+        `API response for Ethereum price: ${JSON.stringify(response)}`,
       );
-      expect(response.chain).toBe(BlockchainType.EVM);
+      expect(response.success).toBe(true); // Type guard to narrow the type
+      expect((response as PriceResponse).chain).toBe(BlockchainType.EVM);
     });
   });
 
@@ -97,17 +96,15 @@ describe("Chain Detection Debug", () => {
 
   describe("Token Info Tests", () => {
     it("should get token info for Ethereum tokens", async () => {
-      // Test the getTokenInfo method directly since it's used for EVM tokens
+      // Test the getPrice method directly since it's used for EVM tokens
       console.log(
-        `Getting token info via PriceTracker for token: ${ethereumTokens.ETH}`,
+        `Getting price info via PriceTracker for token: ${ethereumTokens.ETH}`,
       );
-      const tokenInfo = await priceTracker.getTokenInfo(ethereumTokens.ETH);
-      console.log(`Token info response: ${JSON.stringify(tokenInfo)}`);
-      expect(tokenInfo).not.toBeNull();
-      if (tokenInfo) {
-        expect(tokenInfo.price).toBeGreaterThan(0);
-        expect(tokenInfo.chain).toBe(BlockchainType.EVM);
-      }
+      const priceReport = await priceTracker.getPrice(ethereumTokens.ETH);
+      console.log(`Price report response: ${JSON.stringify(priceReport)}`);
+      expect(priceReport).not.toBeNull();
+      expect(priceReport!.price).toBeGreaterThan(0);
+      expect(priceReport!.chain).toBe(BlockchainType.EVM);
     });
   });
 });

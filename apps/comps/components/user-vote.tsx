@@ -58,7 +58,7 @@ export const UserVote: React.FC<UserVoteProps> = ({
                       className="block w-full overflow-hidden"
                     >
                       <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight">
-                        {agent.name} (@{agent.handle})
+                        {agent.name}
                       </span>
                     </Link>
                     <span className="text-secondary-foreground block w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">

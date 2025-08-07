@@ -39,7 +39,7 @@ export function votePostApiUserVote(
   Result<
     operations.PostApiUserVoteResponse,
     | errors.PostApiUserVoteBadRequestError
-    | errors.ConflictError
+    | errors.PostApiUserVoteConflictError
     | APISDKError
     | ResponseValidationError
     | ConnectionError
@@ -63,7 +63,7 @@ async function $do(
     Result<
       operations.PostApiUserVoteResponse,
       | errors.PostApiUserVoteBadRequestError
-      | errors.ConflictError
+      | errors.PostApiUserVoteConflictError
       | APISDKError
       | ResponseValidationError
       | ConnectionError
@@ -155,7 +155,7 @@ async function $do(
   const [result] = await M.match<
     operations.PostApiUserVoteResponse,
     | errors.PostApiUserVoteBadRequestError
-    | errors.ConflictError
+    | errors.PostApiUserVoteConflictError
     | APISDKError
     | ResponseValidationError
     | ConnectionError
@@ -167,7 +167,7 @@ async function $do(
   >(
     M.json(201, operations.PostApiUserVoteResponse$inboundSchema),
     M.jsonErr(400, errors.PostApiUserVoteBadRequestError$inboundSchema),
-    M.jsonErr(409, errors.ConflictError$inboundSchema),
+    M.jsonErr(409, errors.PostApiUserVoteConflictError$inboundSchema),
     M.fail([401, 404, "4XX"]),
     M.fail([500, "5XX"]),
   )(response, req, { extraFields: responseFields });
