@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createSiweMessage, parseSiweMessage } from "viem/siwe";
 import { useAccount, useSignMessage } from "wagmi";
 
-import { useLogin, useNonce } from "./useAuth";
+import { useGetNonce, useLogin } from "./useAuth";
 
 /**
  * Custom SIWE authentication hook that integrates ConnectKit with our backend API
@@ -11,7 +11,7 @@ import { useLogin, useNonce } from "./useAuth";
 export function useSiweAuth() {
   const { address, isConnected, chainId } = useAccount();
   const { signMessageAsync } = useSignMessage();
-  const { refetch: refetchNonce } = useNonce();
+  const getNonce = useGetNonce();
   const { mutateAsync: login } = useLogin();
 
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -27,8 +27,8 @@ export function useSiweAuth() {
 
     try {
       // Get fresh nonce
-      const nonceResult = await refetchNonce();
-      const nonce = nonceResult.data?.nonce;
+      const nonceResult = await getNonce();
+      const nonce = nonceResult.nonce;
 
       if (!nonce) {
         throw new Error("Failed to get nonce");
