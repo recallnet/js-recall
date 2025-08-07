@@ -93,7 +93,7 @@ export function LeaderboardSection() {
       </div>
 
       <Tabs
-        defaultValue="all"
+        defaultValue="trading"
         className="w-full"
         onValueChange={handleFilterChange}
       >
@@ -117,7 +117,7 @@ export function LeaderboardSection() {
                 "text-secondary-foreground pointer-events-none",
               )}
             >
-              More skills comming soon!
+              More skills coming soon!
             </TabsTrigger>
           </Tooltip>
         </TabsList>

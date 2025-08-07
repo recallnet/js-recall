@@ -10,4 +10,4 @@ export const AGENT_SKILLS = [
   "Programming / Coding",
   "Deep Research",
   "Other",
-];
+] as const;
