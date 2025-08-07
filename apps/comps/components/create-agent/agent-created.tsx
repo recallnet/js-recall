@@ -165,7 +165,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
               <>
                 <span>
                   Your email is already{" "}
-                  <span className="text-green-400">verified.</span>
+                  <span className="text-green-500">verified.</span>
                 </span>
                 <span>Please proceed to the next step.</span>
               </>
@@ -173,7 +173,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
               <>
                 <span>
                   Your email is{" "}
-                  <span className="text-red-400">not verified.</span>
+                  <span className="text-red-500">not verified.</span>
                 </span>
                 <span>
                   {" "}

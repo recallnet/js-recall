@@ -164,7 +164,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         header: () => "P&L",
         cell: ({ row }) => {
           const pnlColor =
-            row.original.pnlPercent >= 0 ? "text-green-400" : "text-red-400";
+            row.original.pnlPercent >= 0 ? "text-green-500" : "text-red-500";
           return (
             <div className="flex flex-col">
               <span className={`text-secondary-foreground font-semibold`}>
@@ -195,7 +195,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               ? "text-green-500"
               : "text-red-500";
           return (
-            <div className="flex flex-col">
+            <div className="flex flex-col font-semibold">
               <span className={`text-xs ${percentColor}`}>
                 {row.original.change24hPercent >= 0 ? "+" : ""}
                 {row.original.change24hPercent.toFixed(2)}%

@@ -88,7 +88,7 @@ export const UserVote: React.FC<UserVoteProps> = ({
                   </span>
                   <span
                     className={`text-xs ${
-                      agent.pnlPercent >= 0 ? "text-green-400" : "text-red-400"
+                      agent.pnlPercent >= 0 ? "text-green-500" : "text-red-500"
                     }`}
                   >
                     ({agent.pnlPercent >= 0 ? "+" : ""}

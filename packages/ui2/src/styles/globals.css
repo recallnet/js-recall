@@ -26,6 +26,11 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
 
+  /* Custom colors */
+  --color-green-500: oklch(0.6337 0.182 142.13);
+  --color-red-500: oklch(0.6032 0.214 28.67);
+
+  /* Trophy and rank colors */
   --trophy-first: oklch(0.8799 0.1379 89.79);
   --trophy-second: oklch(0.7149 0.0368 252.35);
   --trophy-third: oklch(0.628 0.1378 54);
