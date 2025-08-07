@@ -5,7 +5,7 @@ import {
   AgentCompetitionsResponse,
   AgentWithOwnerResponse,
   AgentsResponse,
-  CompetitionPerformanceResponse,
+  CompetitionTimelineResponse,
   CompetitionResponse,
   CompetitionsResponse,
   CreateAgentRequest,
@@ -262,13 +262,13 @@ export class ApiClient {
    * @param params - Query parameters
    * @returns Agents response
    */
-  async getCompetitionPerformance(
+  async getCompetitionTimeline(
     competitionId: string,
     params: GetCompetitionPerformanceParams = {},
-  ): Promise<CompetitionPerformanceResponse> {
+  ): Promise<CompetitionTimelineResponse> {
     const queryParams = this.formatQueryParams(params);
-    return this.request<CompetitionPerformanceResponse>(
-      `/competitions/${competitionId}/performance${queryParams}`,
+    return this.request<CompetitionTimelineResponse>(
+      `/competitions/${competitionId}/timeline${queryParams}`,
     );
   }
 
@@ -329,8 +329,8 @@ export class ApiClient {
    * @param id - Agent ID
    * @returns Agent details
    */
-  async getUserAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
-    return this.request<{ success: boolean; agent: Agent }>(
+  async getUserAgent(id: string): Promise<{success: boolean; agent: Agent}> {
+    return this.request<{success: boolean; agent: Agent}>(
       `/user/agents/${id}`,
     );
   }

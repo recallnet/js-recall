@@ -1,8 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {ChevronLeft, ChevronRight, Search} from "lucide-react";
 import Image from "next/image";
-import React, { useMemo, useState } from "react";
+import React, {useMemo, useState} from "react";
 import {
   CartesianGrid,
   Line,
@@ -13,15 +13,15 @@ import {
   YAxis,
 } from "recharts";
 
-import { Button } from "@recallnet/ui2/components/button";
-import { Input } from "@recallnet/ui2/components/input";
-import { cn } from "@recallnet/ui2/lib/utils";
+import {Button} from "@recallnet/ui2/components/button";
+import {Input} from "@recallnet/ui2/components/input";
+import {cn} from "@recallnet/ui2/lib/utils";
 
-import { useCompetitionPerformance } from "@/hooks/useCompetitionPerformance";
-import { Agent, AgentCompetition } from "@/types";
-import { formatDate } from "@/utils/format";
+import {useCompetitionTimeline} from "@/hooks/useCompetitionTimeline";
+import {Agent, AgentCompetition} from "@/types";
+import {formatDate} from "@/utils/format";
 
-import { ShareModal } from "../share-modal";
+import {ShareModal} from "../share-modal";
 
 const colors = [
   "#FF6B35", // Orange
@@ -40,7 +40,7 @@ const CustomTooltip = ({
   label,
 }: {
   active: boolean;
-  payload: { color: string; dataKey: string; value: Date }[];
+  payload: {color: string; dataKey: string; value: Date}[];
   label?: string | number | undefined;
 }) => {
   if (active && payload && payload.length) {
@@ -53,7 +53,7 @@ const CustomTooltip = ({
         {payload.map((entry, index: number) => (
           <div
             key={index}
-            style={{ color: entry.color }}
+            style={{color: entry.color}}
             className="grid grid-cols-2 gap-3 text-sm"
           >
             <span className="w-20 truncate">{entry.dataKey}</span>{" "}
@@ -75,7 +75,7 @@ const CustomLegend = ({
   searchQuery,
   onSearchChange,
 }: {
-  agents: { name: string; imageUrl: string }[];
+  agents: {name: string; imageUrl: string}[];
   colors: string[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -100,7 +100,7 @@ const CustomLegend = ({
           >
             <div
               className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border-2"
-              style={{ borderColor: colors[index % colors.length] }}
+              style={{borderColor: colors[index % colors.length]}}
             >
               <Image
                 src={key.imageUrl || `/default_agent_2.png`}
@@ -120,10 +120,10 @@ const CustomLegend = ({
   );
 };
 
-type DateArr = { date: string }[];
+type DateArr = {timestamp: string}[];
 
-const copyDateWithoutTimezone = (date: string) => {
-  const [year, month, day] = date.split("-").map(Number) as [
+const copyDateWithoutTimezone = (timestamp: string) => {
+  const [year, month, day] = timestamp.split("-").map(Number) as [
     number,
     number,
     number,
@@ -136,12 +136,12 @@ const fillMissingDays = (week: DateArr) => {
 
   let prev = 0;
   for (const cur of week) {
-    const cpy = copyDateWithoutTimezone(cur.date);
+    const cpy = copyDateWithoutTimezone(cur.timestamp);
     const day = new Date(cpy);
 
     cpy.setDate(cpy.getDate() - (cpy.getDay() - prev));
     while (day.getDay() > cpy.getDay()) {
-      res.push({ date: new Date(cpy) });
+      res.push({timestamp: new Date(cpy)});
       cpy.setDate(cpy.getDate() + 1);
     }
 
@@ -149,10 +149,10 @@ const fillMissingDays = (week: DateArr) => {
     prev = day.getDay() + 1;
   }
 
-  const cur = copyDateWithoutTimezone(res[res.length - 1]?.date as string);
+  const cur = copyDateWithoutTimezone(res[res.length - 1]?.timestamp as string);
   while (cur.getDay() < 6) {
     cur.setDate(cur.getDate() + 1);
-    res.push({ date: new Date(cur) });
+    res.push({timestamp: new Date(cur)});
   }
 
   return res;
@@ -163,8 +163,8 @@ const datesByWeek = (dates: DateArr) => {
 
   const weekMap = new Map<string, DateArr>();
 
-  dates.forEach((date) => {
-    const currentDate = new Date(date.date);
+  dates.forEach((timestamp) => {
+    const currentDate = new Date(timestamp.timestamp);
 
     // Get the start of the week (Sunday)
     const startOfWeek = new Date(currentDate);
@@ -178,7 +178,7 @@ const datesByWeek = (dates: DateArr) => {
       weekMap.set(weekKey, []);
     }
 
-    weekMap.get(weekKey)!.push(date);
+    weekMap.get(weekKey)!.push(timestamp);
   });
 
   const final = Array.from(weekMap.entries()).map(([, weekDates]) =>
@@ -194,32 +194,32 @@ interface PortfolioChartProps {
   className?: string;
 }
 
-type PerformanceViewRecord = Record<
+type TimelineViewRecord = Record<
   string,
-  { agent: string; amount: number }[]
+  {agent: string; amount: number}[]
 >;
 
-export const PerformanceChart: React.FC<PortfolioChartProps> = ({
+export const TimelineChart: React.FC<PortfolioChartProps> = ({
   competitionId,
   agents,
   className,
 }) => {
-  const { data: performanceRaw, isLoading } =
-    useCompetitionPerformance(competitionId);
+  const {data: timelineRaw, isLoading} =
+    useCompetitionTimeline(competitionId);
   const [dateRangeIndex, setDateRangeIndex] = useState(0); // Default to May-22 to May-24
   const [searchQuery, setSearchQuery] = useState("");
 
   const parsedData = useMemo(() => {
-    if (!performanceRaw) return [];
+    if (!timelineRaw) return [];
 
-    const dateMap: PerformanceViewRecord = performanceRaw.reduce((acc, cur) => {
-      const curMap: PerformanceViewRecord = cur.timeline.reduce(
+    const dateMap: TimelineViewRecord = timelineRaw.reduce((acc, cur) => {
+      const curMap: TimelineViewRecord = cur.timeline.reduce(
         (cacc, ccur) => {
-          const nxt = { agent: cur.agentName, amount: ccur.totalValue };
-          const current = cacc[ccur.date as keyof typeof cacc];
+          const nxt = {agent: cur.agentName, amount: ccur.totalValue};
+          const current = cacc[ccur.timestamp as keyof typeof cacc];
           return {
             ...cacc,
-            [ccur.date]: current ? [...current, nxt] : [nxt],
+            [ccur.timestamp]: current ? [...current, nxt] : [nxt],
           };
         },
         {},
@@ -227,8 +227,8 @@ export const PerformanceChart: React.FC<PortfolioChartProps> = ({
 
       for (const dateEntry of Object.keys(curMap)) {
         if (acc[dateEntry]) {
-          const a = acc[dateEntry] as { agent: string; amount: number }[];
-          const b = curMap[dateEntry] as { agent: string; amount: number }[];
+          const a = acc[dateEntry] as {agent: string; amount: number}[];
+          const b = curMap[dateEntry] as {agent: string; amount: number}[];
           acc[dateEntry] = [...a, ...b];
         } else {
           acc[dateEntry] = curMap[dateEntry] as {
@@ -239,7 +239,7 @@ export const PerformanceChart: React.FC<PortfolioChartProps> = ({
       }
 
       return acc;
-    }, {} as PerformanceViewRecord);
+    }, {} as TimelineViewRecord);
 
     const dateArr = Object.entries(dateMap);
     const sortedAndTransformed = dateArr
@@ -253,16 +253,16 @@ export const PerformanceChart: React.FC<PortfolioChartProps> = ({
           {},
         );
 
-        return { date: entry[0], ...points };
+        return {timestamp: entry[0], ...points};
       });
 
     return datesByWeek(sortedAndTransformed);
-  }, [performanceRaw]);
+  }, [timelineRaw]);
 
   const filteredData = useMemo(() => {
     return (parsedData[dateRangeIndex] || []).map((data) => ({
       ...data,
-      date: formatDate(data.date),
+      timestamp: formatDate(data.timestamp),
     }));
   }, [parsedData, dateRangeIndex]);
 
@@ -275,7 +275,7 @@ export const PerformanceChart: React.FC<PortfolioChartProps> = ({
       {},
     );
 
-    if (res.date) delete res?.date;
+    if (res.timestamp) delete res?.timestamp;
 
     return Object.keys(res).filter((agent) => agent.startsWith(searchQuery));
   }, [filteredData, searchQuery]);
@@ -301,22 +301,22 @@ export const PerformanceChart: React.FC<PortfolioChartProps> = ({
       <div className="bg-card flex items-center justify-between p-5">
         <div className="w-full">
           <h2
-            id="portfolio-performance"
+            id="portfolio-timeline"
             className="mb-2 text-2xl font-bold text-white"
           >
-            Portfolio Performance
+            Portfolio Timeline
           </h2>
           <p className="text-gray-400">
-            Real-time trading performance of AI competitors
+            Real-time trading timeline of AI competitors
           </p>
         </div>
         <ShareModal
-          title="Share portfolio performance"
-          url={`https://app.recall.network/competitions/${competitionId}#portfolio-performance`}
+          title="Share portfolio timeline"
+          url={`https://app.recall.network/competitions/${competitionId}#portfolio-timeline`}
           size={20}
         />
       </div>
-      {(performanceRaw && performanceRaw?.length <= 0) || isLoading ? (
+      {(timelineRaw && timelineRaw?.length <= 0) || isLoading ? (
         <div className="h-30 flex w-full flex-col items-center justify-center p-10">
           <span className="text-primary-foreground">
             No agents competing yet
@@ -337,10 +337,10 @@ export const PerformanceChart: React.FC<PortfolioChartProps> = ({
               >
                 <ChevronLeft strokeWidth={1.5} />
               </Button>
-              <span className="w-22">{filteredData[0]?.date as string}</span>
+              <span className="w-22">{filteredData[0]?.timestamp as string}</span>
               <div className="rigin-center rotate-30 mx-2 h-4 w-[1px] bg-gray-200"></div>
               <span className="w-22">
-                {filteredData[filteredData.length - 1]?.date as string}
+                {filteredData[filteredData.length - 1]?.timestamp as string}
               </span>
               <Button
                 onClick={handleNextRange}
@@ -366,11 +366,11 @@ export const PerformanceChart: React.FC<PortfolioChartProps> = ({
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis
-                  dataKey="date"
+                  dataKey="timestamp"
                   stroke="#9CA3AF"
                   fontSize={12}
                   type="category"
-                  ticks={filteredData.map(({ date }) => date)} // Array of all dates you want to show
+                  ticks={filteredData.map(({timestamp}) => timestamp)} // Array of all dates you want to show
                   interval={0} // Show all ticks
                 />
                 <YAxis
@@ -405,7 +405,7 @@ export const PerformanceChart: React.FC<PortfolioChartProps> = ({
           </div>
           <div className="border-t-1 my-2 w-full"></div>
           <CustomLegend
-            agents={agentsWithData as { name: string; imageUrl: string }[]}
+            agents={agentsWithData as {name: string; imageUrl: string}[]}
             colors={colors}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
