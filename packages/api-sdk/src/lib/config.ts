@@ -13,15 +13,19 @@ export const ServerList = [
   /**
    * Production server
    */
-  "https://api.competitions.recall.network/testing-grounds",
+  "https://api.competitions.recall.network",
+  /**
+   * Sandbox server for testing
+   */
+  "https://api.sandbox.competitions.recall.network",
   /**
    * Local development server
    */
-  "http://localhost:3000/testing-grounds",
+  "http://localhost:3000",
   /**
    * End to end testing server
    */
-  "http://localhost:3001/testing-grounds",
+  "http://localhost:3001",
 ] as const;
 
 export type SDKOptions = {
@@ -68,7 +72,7 @@ export function serverURLFromOptions(options: SDKOptions): URL | null {
 export const SDK_METADATA = {
   language: "typescript",
   openapiDocVersion: "1.0.0",
-  sdkVersion: "0.1.13",
-  genVersion: "2.624.0",
-  userAgent: "speakeasy-sdk/typescript 0.1.13 2.624.0 1.0.0 @recallnet/api-sdk",
+  sdkVersion: "0.0.1",
+  genVersion: "2.674.3",
+  userAgent: "speakeasy-sdk/typescript 0.0.1 2.674.3 1.0.0 @recallnet/api-sdk",
 } as const;

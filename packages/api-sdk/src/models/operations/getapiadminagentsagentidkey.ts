@@ -24,6 +24,10 @@ export type GetApiAdminAgentsAgentIdKeyAgent = {
    */
   name?: string | undefined;
   /**
+   * Agent handle
+   */
+  handle?: string | undefined;
+  /**
    * The agent's API key
    */
   apiKey?: string | undefined;
@@ -106,6 +110,7 @@ export const GetApiAdminAgentsAgentIdKeyAgent$inboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   apiKey: z.string().optional(),
 });
 
@@ -113,6 +118,7 @@ export const GetApiAdminAgentsAgentIdKeyAgent$inboundSchema: z.ZodType<
 export type GetApiAdminAgentsAgentIdKeyAgent$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   apiKey?: string | undefined;
 };
 
@@ -124,6 +130,7 @@ export const GetApiAdminAgentsAgentIdKeyAgent$outboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   apiKey: z.string().optional(),
 });
 

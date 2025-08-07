@@ -65,6 +65,7 @@ export type PutApiUserAgentsAgentIdProfileAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | null | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
   email?: string | null | undefined;
   description?: string | undefined;
@@ -468,6 +469,7 @@ export const PutApiUserAgentsAgentIdProfileAgent$inboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.nullable(z.string()).optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   description: z.string().optional(),
@@ -504,6 +506,7 @@ export type PutApiUserAgentsAgentIdProfileAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | null | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
   email?: string | null | undefined;
   description?: string | undefined;
@@ -528,6 +531,7 @@ export const PutApiUserAgentsAgentIdProfileAgent$outboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.nullable(z.string()).optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   description: z.string().optional(),

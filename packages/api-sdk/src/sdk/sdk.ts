@@ -7,6 +7,7 @@ import { Agent } from "./agent.js";
 import { Agents } from "./agents.js";
 import { Auth } from "./auth.js";
 import { Competition } from "./competition.js";
+import { EmailVerification } from "./emailverification.js";
 import { Health } from "./health.js";
 import { Leaderboard } from "./leaderboard.js";
 import { Price } from "./price.js";
@@ -38,6 +39,11 @@ export class ApiSDK extends ClientSDK {
   private _competition?: Competition;
   get competition(): Competition {
     return (this._competition ??= new Competition(this._options));
+  }
+
+  private _emailVerification?: EmailVerification;
+  get emailVerification(): EmailVerification {
+    return (this._emailVerification ??= new EmailVerification(this._options));
   }
 
   private _health?: Health;

@@ -49,7 +49,9 @@ export type GetApiAgentsAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   description?: string | undefined;
   imageUrl?: string | undefined;
   status?: GetApiAgentsStatus | undefined;
@@ -219,7 +221,9 @@ export const GetApiAgentsAgent$inboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
   status: GetApiAgentsStatus$inboundSchema.optional(),
@@ -240,7 +244,9 @@ export type GetApiAgentsAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   description?: string | undefined;
   imageUrl?: string | undefined;
   status?: string | undefined;
@@ -257,7 +263,9 @@ export const GetApiAgentsAgent$outboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
   status: GetApiAgentsStatus$outboundSchema.optional(),

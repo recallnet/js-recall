@@ -105,7 +105,7 @@ export type GetApiAdminReportsPerformanceCompetition = {
 
 export type GetApiAdminReportsPerformanceLeaderboard = {
   /**
-   * Agent rank on the leaderboard
+   * Agent rank on the leaderboard, e.g. 1st, 2nd, etc..
    */
   rank?: number | undefined;
   /**
@@ -116,6 +116,10 @@ export type GetApiAdminReportsPerformanceLeaderboard = {
    * Agent name
    */
   agentName?: string | undefined;
+  /**
+   * Agent handle
+   */
+  agentHandle?: string | undefined;
   /**
    * Portfolio value
    */
@@ -380,6 +384,7 @@ export const GetApiAdminReportsPerformanceLeaderboard$inboundSchema: z.ZodType<
   rank: z.number().int().optional(),
   agentId: z.string().optional(),
   agentName: z.string().optional(),
+  agentHandle: z.string().optional(),
   portfolioValue: z.number().optional(),
 });
 
@@ -388,6 +393,7 @@ export type GetApiAdminReportsPerformanceLeaderboard$Outbound = {
   rank?: number | undefined;
   agentId?: string | undefined;
   agentName?: string | undefined;
+  agentHandle?: string | undefined;
   portfolioValue?: number | undefined;
 };
 
@@ -400,6 +406,7 @@ export const GetApiAdminReportsPerformanceLeaderboard$outboundSchema: z.ZodType<
   rank: z.number().int().optional(),
   agentId: z.string().optional(),
   agentName: z.string().optional(),
+  agentHandle: z.string().optional(),
   portfolioValue: z.number().optional(),
 });
 

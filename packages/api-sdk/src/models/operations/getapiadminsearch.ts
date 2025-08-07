@@ -3,60 +3,77 @@
  */
 import * as z from "zod";
 
+import { remap as remap$ } from "../../lib/primitives.js";
 import { safeParse } from "../../lib/schemas.js";
 import { ClosedEnum } from "../../types/enums.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 /**
- * Filter by status
+ * Filter by user status
  */
-export const GetApiAdminSearchStatus = {
+export const UserStatus = {
   Active: "active",
   Suspended: "suspended",
+  Inactive: "inactive",
   Deleted: "deleted",
 } as const;
 /**
- * Filter by status
+ * Filter by user status
  */
-export type GetApiAdminSearchStatus = ClosedEnum<
-  typeof GetApiAdminSearchStatus
->;
+export type UserStatus = ClosedEnum<typeof UserStatus>;
 
 /**
- * Type of entities to search
+ * Filter by agent status
  */
-export const SearchType = {
-  Users: "users",
-  Agents: "agents",
-  Both: "both",
+export const AgentStatus = {
+  Active: "active",
+  Suspended: "suspended",
+  Inactive: "inactive",
+  Deleted: "deleted",
 } as const;
 /**
- * Type of entities to search
+ * Filter by agent status
  */
-export type SearchType = ClosedEnum<typeof SearchType>;
+export type AgentStatus = ClosedEnum<typeof AgentStatus>;
 
 export type GetApiAdminSearchRequest = {
   /**
-   * Partial match for email address (users only)
+   * Partial match for user email
    */
-  email?: string | undefined;
+  userEmail?: string | undefined;
   /**
-   * Partial match for name
+   * Partial match for user name
    */
-  name?: string | undefined;
+  userName?: string | undefined;
   /**
-   * Partial match for wallet address (users only)
+   * Partial match for user wallet address
    */
-  walletAddress?: string | undefined;
+  userWalletAddress?: string | undefined;
   /**
-   * Filter by status
+   * Filter by user status
    */
-  status?: GetApiAdminSearchStatus | undefined;
+  userStatus?: UserStatus | undefined;
   /**
-   * Type of entities to search
+   * Partial match for agent name
    */
-  searchType?: SearchType | undefined;
+  agentName?: string | undefined;
+  /**
+   * Filter by agent owner ID
+   */
+  agentOwnerId?: string | undefined;
+  /**
+   * Partial match for agent wallet address
+   */
+  agentWalletAddress?: string | undefined;
+  /**
+   * Filter by agent status
+   */
+  agentStatus?: AgentStatus | undefined;
+  /**
+   * Whether to "join" the results with a left join on the users table, or return all independent results
+   */
+  join?: boolean | undefined;
 };
 
 export type GetApiAdminSearchUser = {
@@ -78,6 +95,7 @@ export type GetApiAdminSearchAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   description?: string | null | undefined;
   email?: string | null | undefined;
   metadata?: GetApiAdminSearchMetadata | null | undefined;
@@ -101,50 +119,48 @@ export type GetApiAdminSearchResponse = {
    */
   success?: boolean | undefined;
   /**
-   * Type of search performed
+   * Whether to "join" the results with a left join on the users table
    */
-  searchType?: string | undefined;
+  join?: boolean | undefined;
   results?: Results | undefined;
 };
 
 /** @internal */
-export const GetApiAdminSearchStatus$inboundSchema: z.ZodNativeEnum<
-  typeof GetApiAdminSearchStatus
-> = z.nativeEnum(GetApiAdminSearchStatus);
+export const UserStatus$inboundSchema: z.ZodNativeEnum<typeof UserStatus> =
+  z.nativeEnum(UserStatus);
 
 /** @internal */
-export const GetApiAdminSearchStatus$outboundSchema: z.ZodNativeEnum<
-  typeof GetApiAdminSearchStatus
-> = GetApiAdminSearchStatus$inboundSchema;
+export const UserStatus$outboundSchema: z.ZodNativeEnum<typeof UserStatus> =
+  UserStatus$inboundSchema;
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiAdminSearchStatus$ {
-  /** @deprecated use `GetApiAdminSearchStatus$inboundSchema` instead. */
-  export const inboundSchema = GetApiAdminSearchStatus$inboundSchema;
-  /** @deprecated use `GetApiAdminSearchStatus$outboundSchema` instead. */
-  export const outboundSchema = GetApiAdminSearchStatus$outboundSchema;
+export namespace UserStatus$ {
+  /** @deprecated use `UserStatus$inboundSchema` instead. */
+  export const inboundSchema = UserStatus$inboundSchema;
+  /** @deprecated use `UserStatus$outboundSchema` instead. */
+  export const outboundSchema = UserStatus$outboundSchema;
 }
 
 /** @internal */
-export const SearchType$inboundSchema: z.ZodNativeEnum<typeof SearchType> =
-  z.nativeEnum(SearchType);
+export const AgentStatus$inboundSchema: z.ZodNativeEnum<typeof AgentStatus> =
+  z.nativeEnum(AgentStatus);
 
 /** @internal */
-export const SearchType$outboundSchema: z.ZodNativeEnum<typeof SearchType> =
-  SearchType$inboundSchema;
+export const AgentStatus$outboundSchema: z.ZodNativeEnum<typeof AgentStatus> =
+  AgentStatus$inboundSchema;
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace SearchType$ {
-  /** @deprecated use `SearchType$inboundSchema` instead. */
-  export const inboundSchema = SearchType$inboundSchema;
-  /** @deprecated use `SearchType$outboundSchema` instead. */
-  export const outboundSchema = SearchType$outboundSchema;
+export namespace AgentStatus$ {
+  /** @deprecated use `AgentStatus$inboundSchema` instead. */
+  export const inboundSchema = AgentStatus$inboundSchema;
+  /** @deprecated use `AgentStatus$outboundSchema` instead. */
+  export const outboundSchema = AgentStatus$outboundSchema;
 }
 
 /** @internal */
@@ -152,21 +168,42 @@ export const GetApiAdminSearchRequest$inboundSchema: z.ZodType<
   GetApiAdminSearchRequest,
   z.ZodTypeDef,
   unknown
-> = z.object({
-  email: z.string().optional(),
-  name: z.string().optional(),
-  walletAddress: z.string().optional(),
-  status: GetApiAdminSearchStatus$inboundSchema.optional(),
-  searchType: SearchType$inboundSchema.default("both"),
-});
+> = z
+  .object({
+    "user.email": z.string().optional(),
+    "user.name": z.string().optional(),
+    "user.walletAddress": z.string().optional(),
+    "user.status": UserStatus$inboundSchema.optional(),
+    "agent.name": z.string().optional(),
+    "agent.ownerId": z.string().optional(),
+    "agent.walletAddress": z.string().optional(),
+    "agent.status": AgentStatus$inboundSchema.optional(),
+    join: z.boolean().default(false),
+  })
+  .transform((v) => {
+    return remap$(v, {
+      "user.email": "userEmail",
+      "user.name": "userName",
+      "user.walletAddress": "userWalletAddress",
+      "user.status": "userStatus",
+      "agent.name": "agentName",
+      "agent.ownerId": "agentOwnerId",
+      "agent.walletAddress": "agentWalletAddress",
+      "agent.status": "agentStatus",
+    });
+  });
 
 /** @internal */
 export type GetApiAdminSearchRequest$Outbound = {
-  email?: string | undefined;
-  name?: string | undefined;
-  walletAddress?: string | undefined;
-  status?: string | undefined;
-  searchType: string;
+  "user.email"?: string | undefined;
+  "user.name"?: string | undefined;
+  "user.walletAddress"?: string | undefined;
+  "user.status"?: string | undefined;
+  "agent.name"?: string | undefined;
+  "agent.ownerId"?: string | undefined;
+  "agent.walletAddress"?: string | undefined;
+  "agent.status"?: string | undefined;
+  join: boolean;
 };
 
 /** @internal */
@@ -174,13 +211,30 @@ export const GetApiAdminSearchRequest$outboundSchema: z.ZodType<
   GetApiAdminSearchRequest$Outbound,
   z.ZodTypeDef,
   GetApiAdminSearchRequest
-> = z.object({
-  email: z.string().optional(),
-  name: z.string().optional(),
-  walletAddress: z.string().optional(),
-  status: GetApiAdminSearchStatus$outboundSchema.optional(),
-  searchType: SearchType$outboundSchema.default("both"),
-});
+> = z
+  .object({
+    userEmail: z.string().optional(),
+    userName: z.string().optional(),
+    userWalletAddress: z.string().optional(),
+    userStatus: UserStatus$outboundSchema.optional(),
+    agentName: z.string().optional(),
+    agentOwnerId: z.string().optional(),
+    agentWalletAddress: z.string().optional(),
+    agentStatus: AgentStatus$outboundSchema.optional(),
+    join: z.boolean().default(false),
+  })
+  .transform((v) => {
+    return remap$(v, {
+      userEmail: "user.email",
+      userName: "user.name",
+      userWalletAddress: "user.walletAddress",
+      userStatus: "user.status",
+      agentName: "agent.name",
+      agentOwnerId: "agent.ownerId",
+      agentWalletAddress: "agent.walletAddress",
+      agentStatus: "agent.status",
+    });
+  });
 
 /**
  * @internal
@@ -363,6 +417,7 @@ export const GetApiAdminSearchAgent$inboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.nullable(z.string()).optional(),
   email: z.nullable(z.string()).optional(),
   metadata: z
@@ -388,6 +443,7 @@ export type GetApiAdminSearchAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   description?: string | null | undefined;
   email?: string | null | undefined;
   metadata?: GetApiAdminSearchMetadata$Outbound | null | undefined;
@@ -407,6 +463,7 @@ export const GetApiAdminSearchAgent$outboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.nullable(z.string()).optional(),
   email: z.nullable(z.string()).optional(),
   metadata: z
@@ -518,14 +575,14 @@ export const GetApiAdminSearchResponse$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   success: z.boolean().optional(),
-  searchType: z.string().optional(),
+  join: z.boolean().optional(),
   results: z.lazy(() => Results$inboundSchema).optional(),
 });
 
 /** @internal */
 export type GetApiAdminSearchResponse$Outbound = {
   success?: boolean | undefined;
-  searchType?: string | undefined;
+  join?: boolean | undefined;
   results?: Results$Outbound | undefined;
 };
 
@@ -536,7 +593,7 @@ export const GetApiAdminSearchResponse$outboundSchema: z.ZodType<
   GetApiAdminSearchResponse
 > = z.object({
   success: z.boolean().optional(),
-  searchType: z.string().optional(),
+  join: z.boolean().optional(),
   results: z.lazy(() => Results$outboundSchema).optional(),
 });
 
