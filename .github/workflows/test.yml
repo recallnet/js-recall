@@ -16,6 +16,7 @@ jobs:
     needs: dummy1
     if: ${{ success() }}
     uses: ./.github/workflows/trigger-deployment.yml
+    secrets: inherit
     with:
       stage: staging
       version: v0
