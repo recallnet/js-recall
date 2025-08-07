@@ -11,21 +11,19 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 /**
  * Blockchain type of the token
  */
-export const GetApiPriceQueryParamChain = {
+export const QueryParamChain = {
   Evm: "evm",
   Svm: "svm",
 } as const;
 /**
  * Blockchain type of the token
  */
-export type GetApiPriceQueryParamChain = ClosedEnum<
-  typeof GetApiPriceQueryParamChain
->;
+export type QueryParamChain = ClosedEnum<typeof QueryParamChain>;
 
 /**
  * Specific chain for EVM tokens
  */
-export const GetApiPriceSpecificChain = {
+export const SpecificChain = {
   Eth: "eth",
   Polygon: "polygon",
   Bsc: "bsc",
@@ -42,9 +40,7 @@ export const GetApiPriceSpecificChain = {
 /**
  * Specific chain for EVM tokens
  */
-export type GetApiPriceSpecificChain = ClosedEnum<
-  typeof GetApiPriceSpecificChain
->;
+export type SpecificChain = ClosedEnum<typeof SpecificChain>;
 
 export type GetApiPriceRequest = {
   /**
@@ -54,11 +50,11 @@ export type GetApiPriceRequest = {
   /**
    * Blockchain type of the token
    */
-  chain?: GetApiPriceQueryParamChain | undefined;
+  chain?: QueryParamChain | undefined;
   /**
    * Specific chain for EVM tokens
    */
-  specificChain?: GetApiPriceSpecificChain | undefined;
+  specificChain?: SpecificChain | undefined;
 };
 
 /**
@@ -110,45 +106,45 @@ export type GetApiPriceResponse = {
 };
 
 /** @internal */
-export const GetApiPriceQueryParamChain$inboundSchema: z.ZodNativeEnum<
-  typeof GetApiPriceQueryParamChain
-> = z.nativeEnum(GetApiPriceQueryParamChain);
+export const QueryParamChain$inboundSchema: z.ZodNativeEnum<
+  typeof QueryParamChain
+> = z.nativeEnum(QueryParamChain);
 
 /** @internal */
-export const GetApiPriceQueryParamChain$outboundSchema: z.ZodNativeEnum<
-  typeof GetApiPriceQueryParamChain
-> = GetApiPriceQueryParamChain$inboundSchema;
+export const QueryParamChain$outboundSchema: z.ZodNativeEnum<
+  typeof QueryParamChain
+> = QueryParamChain$inboundSchema;
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiPriceQueryParamChain$ {
-  /** @deprecated use `GetApiPriceQueryParamChain$inboundSchema` instead. */
-  export const inboundSchema = GetApiPriceQueryParamChain$inboundSchema;
-  /** @deprecated use `GetApiPriceQueryParamChain$outboundSchema` instead. */
-  export const outboundSchema = GetApiPriceQueryParamChain$outboundSchema;
+export namespace QueryParamChain$ {
+  /** @deprecated use `QueryParamChain$inboundSchema` instead. */
+  export const inboundSchema = QueryParamChain$inboundSchema;
+  /** @deprecated use `QueryParamChain$outboundSchema` instead. */
+  export const outboundSchema = QueryParamChain$outboundSchema;
 }
 
 /** @internal */
-export const GetApiPriceSpecificChain$inboundSchema: z.ZodNativeEnum<
-  typeof GetApiPriceSpecificChain
-> = z.nativeEnum(GetApiPriceSpecificChain);
+export const SpecificChain$inboundSchema: z.ZodNativeEnum<
+  typeof SpecificChain
+> = z.nativeEnum(SpecificChain);
 
 /** @internal */
-export const GetApiPriceSpecificChain$outboundSchema: z.ZodNativeEnum<
-  typeof GetApiPriceSpecificChain
-> = GetApiPriceSpecificChain$inboundSchema;
+export const SpecificChain$outboundSchema: z.ZodNativeEnum<
+  typeof SpecificChain
+> = SpecificChain$inboundSchema;
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace GetApiPriceSpecificChain$ {
-  /** @deprecated use `GetApiPriceSpecificChain$inboundSchema` instead. */
-  export const inboundSchema = GetApiPriceSpecificChain$inboundSchema;
-  /** @deprecated use `GetApiPriceSpecificChain$outboundSchema` instead. */
-  export const outboundSchema = GetApiPriceSpecificChain$outboundSchema;
+export namespace SpecificChain$ {
+  /** @deprecated use `SpecificChain$inboundSchema` instead. */
+  export const inboundSchema = SpecificChain$inboundSchema;
+  /** @deprecated use `SpecificChain$outboundSchema` instead. */
+  export const outboundSchema = SpecificChain$outboundSchema;
 }
 
 /** @internal */
@@ -158,8 +154,8 @@ export const GetApiPriceRequest$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   token: z.string(),
-  chain: GetApiPriceQueryParamChain$inboundSchema.optional(),
-  specificChain: GetApiPriceSpecificChain$inboundSchema.optional(),
+  chain: QueryParamChain$inboundSchema.optional(),
+  specificChain: SpecificChain$inboundSchema.optional(),
 });
 
 /** @internal */
@@ -176,8 +172,8 @@ export const GetApiPriceRequest$outboundSchema: z.ZodType<
   GetApiPriceRequest
 > = z.object({
   token: z.string(),
-  chain: GetApiPriceQueryParamChain$outboundSchema.optional(),
-  specificChain: GetApiPriceSpecificChain$outboundSchema.optional(),
+  chain: QueryParamChain$outboundSchema.optional(),
+  specificChain: SpecificChain$outboundSchema.optional(),
 });
 
 /**

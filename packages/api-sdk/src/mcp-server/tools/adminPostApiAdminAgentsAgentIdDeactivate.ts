@@ -15,7 +15,7 @@ export const tool$adminPostApiAdminAgentsAgentIdDeactivate: ToolDefinition<
   name: "admin-post-api-admin-agents-agent-id-deactivate",
   description: `Deactivate an agent
 
-Deactivate an agent from the system. The agent will no longer be able to perform any actions.`,
+Globally deactivate an agent. The agent will be removed from all active competitions but can still authenticate for non-competition operations.`,
   args,
   tool: async (client, args, ctx) => {
     const [result, apiCall] = await adminPostApiAdminAgentsAgentIdDeactivate(

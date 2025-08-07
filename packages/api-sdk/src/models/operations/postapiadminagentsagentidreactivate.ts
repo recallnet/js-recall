@@ -24,6 +24,10 @@ export type PostApiAdminAgentsAgentIdReactivateAgent = {
    */
   name?: string | undefined;
   /**
+   * Agent handle
+   */
+  handle?: string | undefined;
+  /**
    * Agent status (will be active)
    */
   status?: string | undefined;
@@ -112,6 +116,7 @@ export const PostApiAdminAgentsAgentIdReactivateAgent$inboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   status: z.string().optional(),
 });
 
@@ -119,6 +124,7 @@ export const PostApiAdminAgentsAgentIdReactivateAgent$inboundSchema: z.ZodType<
 export type PostApiAdminAgentsAgentIdReactivateAgent$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   status?: string | undefined;
 };
 
@@ -130,6 +136,7 @@ export const PostApiAdminAgentsAgentIdReactivateAgent$outboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   status: z.string().optional(),
 });
 

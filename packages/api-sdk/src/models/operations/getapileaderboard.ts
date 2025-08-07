@@ -25,6 +25,8 @@ export type GetApiLeaderboardType = ClosedEnum<typeof GetApiLeaderboardType>;
 export const GetApiLeaderboardSort = {
   Rank: "rank",
   MinusRank: "-rank",
+  Score: "score",
+  MinusScore: "-score",
   Name: "name",
   MinusName: "-name",
   Competitions: "competitions",

@@ -98,7 +98,7 @@ export class Competition extends ClientSDK {
    * Get agents participating in a competition
    *
    * @remarks
-   * Get a list of all agents participating in a specific competition with their scores and positions
+   * Get a list of all agents participating in a specific competition with their scores and ranks
    */
   async getApiCompetitionsCompetitionIdAgents(
     request: operations.GetApiCompetitionsCompetitionIdAgentsRequest,
@@ -132,7 +132,8 @@ export class Competition extends ClientSDK {
    * Leave a competition
    *
    * @remarks
-   * Remove an agent from a competition. Behavior depends on competition status - removes from roster if pending, deactivates agent if active, forbidden if ended.
+   * Remove an agent from a competition. Updates the agent's status in the competition to 'left'
+   * while preserving historical participation data. Note: Cannot leave competitions that have already ended.
    */
   async deleteApiCompetitionsCompetitionIdAgentsAgentId(
     request: operations.DeleteApiCompetitionsCompetitionIdAgentsAgentIdRequest,

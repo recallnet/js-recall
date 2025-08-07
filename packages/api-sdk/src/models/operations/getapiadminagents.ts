@@ -26,6 +26,10 @@ export type GetApiAdminAgentsAgent = {
    */
   name?: string | undefined;
   /**
+   * Agent handle
+   */
+  handle?: string | undefined;
+  /**
    * Agent email
    */
   email?: string | null | undefined;
@@ -123,6 +127,7 @@ export const GetApiAdminAgentsAgent$inboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   status: z.string().optional(),
@@ -147,6 +152,7 @@ export type GetApiAdminAgentsAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   email?: string | null | undefined;
   description?: string | null | undefined;
   status?: string | undefined;
@@ -165,6 +171,7 @@ export const GetApiAdminAgentsAgent$outboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   status: z.string().optional(),

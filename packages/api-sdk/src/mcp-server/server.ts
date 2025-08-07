@@ -21,13 +21,19 @@ import { tool$adminGetApiAdminCompetitionCompetitionIdSnapshots } from "./tools/
 import { tool$adminGetApiAdminReportsPerformance } from "./tools/adminGetApiAdminReportsPerformance.js";
 import { tool$adminGetApiAdminSearch } from "./tools/adminGetApiAdminSearch.js";
 import { tool$adminGetApiAdminUsers } from "./tools/adminGetApiAdminUsers.js";
+import { tool$adminPostApiAdminAgents } from "./tools/adminPostApiAdminAgents.js";
 import { tool$adminPostApiAdminAgentsAgentIdDeactivate } from "./tools/adminPostApiAdminAgentsAgentIdDeactivate.js";
 import { tool$adminPostApiAdminAgentsAgentIdReactivate } from "./tools/adminPostApiAdminAgentsAgentIdReactivate.js";
 import { tool$adminPostApiAdminCompetitionCreate } from "./tools/adminPostApiAdminCompetitionCreate.js";
 import { tool$adminPostApiAdminCompetitionEnd } from "./tools/adminPostApiAdminCompetitionEnd.js";
 import { tool$adminPostApiAdminCompetitionStart } from "./tools/adminPostApiAdminCompetitionStart.js";
+import { tool$adminPostApiAdminCompetitionsCompetitionIdAgentsAgentId } from "./tools/adminPostApiAdminCompetitionsCompetitionIdAgentsAgentId.js";
+import { tool$adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivate } from "./tools/adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivate.js";
+import { tool$adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdRemove } from "./tools/adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdRemove.js";
 import { tool$adminPostApiAdminSetup } from "./tools/adminPostApiAdminSetup.js";
 import { tool$adminPostApiAdminUsers } from "./tools/adminPostApiAdminUsers.js";
+import { tool$adminPutApiAdminAgentsAgentId } from "./tools/adminPutApiAdminAgentsAgentId.js";
+import { tool$adminPutApiAdminCompetitionCompetitionId } from "./tools/adminPutApiAdminCompetitionCompetitionId.js";
 import { tool$agentGetApiAgentBalances } from "./tools/agentGetApiAgentBalances.js";
 import { tool$agentGetApiAgentPortfolio } from "./tools/agentGetApiAgentPortfolio.js";
 import { tool$agentGetApiAgentProfile } from "./tools/agentGetApiAgentProfile.js";
@@ -49,11 +55,11 @@ import { tool$competitionGetApiCompetitionsRules } from "./tools/competitionGetA
 import { tool$competitionGetApiCompetitionsStatus } from "./tools/competitionGetApiCompetitionsStatus.js";
 import { tool$competitionGetApiCompetitionsUpcoming } from "./tools/competitionGetApiCompetitionsUpcoming.js";
 import { tool$competitionPostApiCompetitionsCompetitionIdAgentsAgentId } from "./tools/competitionPostApiCompetitionsCompetitionIdAgentsAgentId.js";
+import { tool$emailVerificationGetApiVerifyEmail } from "./tools/emailVerificationGetApiVerifyEmail.js";
 import { tool$healthGetApiHealth } from "./tools/healthGetApiHealth.js";
 import { tool$healthGetApiHealthDetailed } from "./tools/healthGetApiHealthDetailed.js";
 import { tool$leaderboardGetApiLeaderboard } from "./tools/leaderboardGetApiLeaderboard.js";
 import { tool$priceGetApiPrice } from "./tools/priceGetApiPrice.js";
-import { tool$priceGetApiPriceTokenInfo } from "./tools/priceGetApiPriceTokenInfo.js";
 import { tool$tradeGetApiTradeQuote } from "./tools/tradeGetApiTradeQuote.js";
 import { tool$tradePostApiTradeExecute } from "./tools/tradePostApiTradeExecute.js";
 
@@ -67,7 +73,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "ApiSDK",
-    version: "0.1.13",
+    version: "0.0.1",
   });
 
   const client = new ApiSDKCore({
@@ -101,17 +107,23 @@ export function createMCPServer(deps: {
   tool(tool$adminPostApiAdminCompetitionCreate);
   tool(tool$adminPostApiAdminCompetitionStart);
   tool(tool$adminPostApiAdminCompetitionEnd);
+  tool(tool$adminPutApiAdminCompetitionCompetitionId);
   tool(tool$adminGetApiAdminCompetitionCompetitionIdSnapshots);
   tool(tool$adminGetApiAdminReportsPerformance);
   tool(tool$adminPostApiAdminUsers);
   tool(tool$adminGetApiAdminUsers);
   tool(tool$adminGetApiAdminAgents);
+  tool(tool$adminPostApiAdminAgents);
   tool(tool$adminGetApiAdminAgentsAgentIdKey);
   tool(tool$adminDeleteApiAdminAgentsAgentId);
   tool(tool$adminGetApiAdminAgentsAgentId);
+  tool(tool$adminPutApiAdminAgentsAgentId);
   tool(tool$adminPostApiAdminAgentsAgentIdDeactivate);
   tool(tool$adminPostApiAdminAgentsAgentIdReactivate);
   tool(tool$adminGetApiAdminSearch);
+  tool(tool$adminPostApiAdminCompetitionsCompetitionIdAgentsAgentId);
+  tool(tool$adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdRemove);
+  tool(tool$adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivate);
   tool(tool$agentGetApiAgentProfile);
   tool(tool$agentPutApiAgentProfile);
   tool(tool$agentGetApiAgentBalances);
@@ -133,11 +145,11 @@ export function createMCPServer(deps: {
   tool(tool$competitionGetApiCompetitionsCompetitionIdAgents);
   tool(tool$competitionPostApiCompetitionsCompetitionIdAgentsAgentId);
   tool(tool$competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId);
+  tool(tool$emailVerificationGetApiVerifyEmail);
   tool(tool$healthGetApiHealth);
   tool(tool$healthGetApiHealthDetailed);
   tool(tool$leaderboardGetApiLeaderboard);
   tool(tool$priceGetApiPrice);
-  tool(tool$priceGetApiPriceTokenInfo);
   tool(tool$tradePostApiTradeExecute);
   tool(tool$tradeGetApiTradeQuote);
 

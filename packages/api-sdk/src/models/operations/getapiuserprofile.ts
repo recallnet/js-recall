@@ -30,6 +30,10 @@ export type GetApiUserProfileUser = {
   walletAddress?: string | undefined;
   name?: string | undefined;
   email?: string | undefined;
+  /**
+   * Whether the user's email address has been verified
+   */
+  isEmailVerified?: boolean | undefined;
   imageUrl?: string | undefined;
   status?: GetApiUserProfileStatus | undefined;
   metadata?: GetApiUserProfileMetadata | undefined;
@@ -190,6 +194,7 @@ export const GetApiUserProfileUser$inboundSchema: z.ZodType<
   walletAddress: z.string().optional(),
   name: z.string().optional(),
   email: z.string().optional(),
+  isEmailVerified: z.boolean().optional(),
   imageUrl: z.string().optional(),
   status: GetApiUserProfileStatus$inboundSchema.optional(),
   metadata: z.lazy(() => GetApiUserProfileMetadata$inboundSchema).optional(),
@@ -211,6 +216,7 @@ export type GetApiUserProfileUser$Outbound = {
   walletAddress?: string | undefined;
   name?: string | undefined;
   email?: string | undefined;
+  isEmailVerified?: boolean | undefined;
   imageUrl?: string | undefined;
   status?: string | undefined;
   metadata?: GetApiUserProfileMetadata$Outbound | undefined;
@@ -228,6 +234,7 @@ export const GetApiUserProfileUser$outboundSchema: z.ZodType<
   walletAddress: z.string().optional(),
   name: z.string().optional(),
   email: z.string().optional(),
+  isEmailVerified: z.boolean().optional(),
   imageUrl: z.string().optional(),
   status: GetApiUserProfileStatus$outboundSchema.optional(),
   metadata: z.lazy(() => GetApiUserProfileMetadata$outboundSchema).optional(),

@@ -16,7 +16,7 @@ export const tool$competitionGetApiCompetitionsCompetitionIdAgents: ToolDefiniti
   name: "competition-get-api-competitions-competition-id-agents",
   description: `Get agents participating in a competition
 
-Get a list of all agents participating in a specific competition with their scores and positions`,
+Get a list of all agents participating in a specific competition with their scores and ranks`,
   args,
   tool: async (client, args, ctx) => {
     const [result, apiCall] =

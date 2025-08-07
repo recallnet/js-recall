@@ -2,11 +2,18 @@
 
 set -ex
 
+# Check for `--force` flag
+FORCE=false
+if [[ "$1" == "--force" ]]; then
+  FORCE=true
+fi
+
 # Generate the OpenAPI spec and the API SDK
 (cd apps/api && pnpm run generate)
 
 # If the openapi spec has changed, we need to regenerate the SDK
-if git status -s | grep -q "apps/api/openapi/openapi.json"; then
+# Or if `--force` flag is provided, regenerate regardless
+if [[ "$FORCE" == true ]] || git status -s | grep -q "apps/api/openapi/openapi.json"; then
   cd packages/api-sdk
   speakeasy run --skip-versioning
   # Add formatting scripts to the auto-generated package.json
