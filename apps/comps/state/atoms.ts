@@ -1,7 +1,7 @@
-import { useAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
+import {useAtom} from "jotai";
+import {atomWithStorage} from "jotai/utils";
 
-import { User } from "@/types/profile";
+import {User} from "@/types/profile";
 
 export type AuthStatus = "unauthenticated" | "authenticated";
 
@@ -23,18 +23,18 @@ export const userAtom = atomWithStorage<UserStorage>(
     getItem: (key: string) => {
       if (typeof window === "undefined") {
         // Return default value for SSR
-        return { user: null, status: "unauthenticated" };
+        return {user: null, status: "unauthenticated"};
       }
       const item = localStorage.getItem(key);
       if (!item) {
         // Return default value if no item exists
-        return { user: null, status: "unauthenticated" };
+        return {user: null, status: "unauthenticated"};
       }
       try {
         return JSON.parse(item);
       } catch {
         // Return default value if parsing fails
-        return { user: null, status: "unauthenticated" };
+        return {user: null, status: "unauthenticated"};
       }
     },
     setItem: (key: string, value: UserStorage) => {
