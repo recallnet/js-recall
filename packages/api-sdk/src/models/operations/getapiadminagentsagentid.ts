@@ -28,6 +28,14 @@ export type GetApiAdminAgentsAgentIdAgent = {
    */
   name?: string | undefined;
   /**
+   * Agent handle
+   */
+  handle?: string | undefined;
+  /**
+   * Agent email
+   */
+  email?: string | null | undefined;
+  /**
    * Agent description
    */
   description?: string | null | undefined;
@@ -125,6 +133,8 @@ export const GetApiAdminAgentsAgentIdAgent$inboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
@@ -145,6 +155,8 @@ export type GetApiAdminAgentsAgentIdAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
+  email?: string | null | undefined;
   description?: string | null | undefined;
   status?: string | undefined;
   imageUrl?: string | null | undefined;
@@ -161,6 +173,8 @@ export const GetApiAdminAgentsAgentIdAgent$outboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
+  email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   status: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),

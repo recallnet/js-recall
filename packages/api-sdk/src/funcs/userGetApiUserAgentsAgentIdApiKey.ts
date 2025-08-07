@@ -28,7 +28,7 @@ import { Result } from "../types/fp.js";
  * Get agent API key
  *
  * @remarks
- * Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly.
+ * Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly. Requires email verification for security.
  */
 export function userGetApiUserAgentsAgentIdApiKey(
   client: ApiSDKCore,

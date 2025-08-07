@@ -19,11 +19,12 @@ generation:
   auth:
     oAuth2ClientCredentialsEnabled: false
     oAuth2PasswordEnabled: false
+  tests:
+    generateTests: true
+    generateNewTests: false
+    skipResponseBodyAssertions: false
 typescript:
-  compileCommand:
-    - pnpm
-    - install
-  version: 0.1.13
+  version: 0.0.1
   additionalDependencies:
     dependencies: {}
     devDependencies: {}
@@ -33,6 +34,10 @@ typescript:
   author: Recall Contributors
   baseErrorName: APISDKError
   clientServerStatusCodesAsErrors: true
+  compileCommand:
+    - pnpm
+    - install
+  constFieldsAlwaysOptional: true
   defaultErrorName: APIError
   enableCustomCodeRegions: false
   enableMCPServer: true
@@ -41,6 +46,7 @@ typescript:
   envVarPrefix: APISDK
   flattenGlobalSecurity: true
   flatteningOrder: parameters-first
+  generateExamples: true
   imports:
     option: openapi
     paths:

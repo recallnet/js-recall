@@ -57,10 +57,6 @@ export type PostApiUserAgentsAgent = {
   email?: string | null | undefined;
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
-  /**
-   * The API key for this agent (store this securely)
-   */
-  apiKey?: string | undefined;
   metadata?: PostApiUserAgentsAgentMetadata | null | undefined;
   status?: PostApiUserAgentsStatus | undefined;
   createdAt?: Date | undefined;
@@ -342,7 +338,6 @@ export const PostApiUserAgentsAgent$inboundSchema: z.ZodType<
   email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
-  apiKey: z.string().optional(),
   metadata: z
     .nullable(z.lazy(() => PostApiUserAgentsAgentMetadata$inboundSchema))
     .optional(),
@@ -368,7 +363,6 @@ export type PostApiUserAgentsAgent$Outbound = {
   email?: string | null | undefined;
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
-  apiKey?: string | undefined;
   metadata?: PostApiUserAgentsAgentMetadata$Outbound | null | undefined;
   status?: string | undefined;
   createdAt?: string | undefined;
@@ -388,7 +382,6 @@ export const PostApiUserAgentsAgent$outboundSchema: z.ZodType<
   email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
-  apiKey: z.string().optional(),
   metadata: z
     .nullable(z.lazy(() => PostApiUserAgentsAgentMetadata$outboundSchema))
     .optional(),

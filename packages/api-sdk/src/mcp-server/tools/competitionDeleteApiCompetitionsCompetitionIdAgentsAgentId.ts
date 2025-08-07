@@ -16,7 +16,9 @@ export const tool$competitionDeleteApiCompetitionsCompetitionIdAgentsAgentId: To
   name: "competition-delete-api-competitions-competition-id-agents-agent-id",
   description: `Leave a competition
 
-Remove an agent from a competition. Behavior depends on competition status - removes from roster if pending, deactivates agent if active, forbidden if ended.`,
+Remove an agent from a competition. Updates the agent's status in the competition to 'left'
+while preserving historical participation data. Note: Cannot leave competitions that have already ended.
+`,
   args,
   tool: async (client, args, ctx) => {
     const [result, apiCall] =

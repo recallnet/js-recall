@@ -26,10 +26,7 @@ export class GetApiUserAgentsAgentIdApiKeyInternalServerError extends APISDKErro
     err: GetApiUserAgentsAgentIdApiKeyInternalServerErrorData,
     httpMeta: { response: Response; request: Request; body: string },
   ) {
-    const message =
-      "message" in err && typeof err.message === "string"
-        ? err.message
-        : `API error occurred: ${JSON.stringify(err)}`;
+    const message = err.message || `API error occurred: ${JSON.stringify(err)}`;
     super(message, httpMeta);
     this.data$ = err;
     if (err.success != null) this.success = err.success;
@@ -59,10 +56,7 @@ export class NotFoundError extends APISDKError {
     err: NotFoundErrorData,
     httpMeta: { response: Response; request: Request; body: string },
   ) {
-    const message =
-      "message" in err && typeof err.message === "string"
-        ? err.message
-        : `API error occurred: ${JSON.stringify(err)}`;
+    const message = err.message || `API error occurred: ${JSON.stringify(err)}`;
     super(message, httpMeta);
     this.data$ = err;
     if (err.success != null) this.success = err.success;
@@ -72,7 +66,7 @@ export class NotFoundError extends APISDKError {
 }
 
 /**
- * Access denied (user doesn't own this agent)
+ * Access denied (user doesn't own this agent or email verification required)
  */
 export type ForbiddenErrorData = {
   success?: boolean | undefined;
@@ -80,7 +74,7 @@ export type ForbiddenErrorData = {
 };
 
 /**
- * Access denied (user doesn't own this agent)
+ * Access denied (user doesn't own this agent or email verification required)
  */
 export class ForbiddenError extends APISDKError {
   success?: boolean | undefined;
@@ -92,10 +86,7 @@ export class ForbiddenError extends APISDKError {
     err: ForbiddenErrorData,
     httpMeta: { response: Response; request: Request; body: string },
   ) {
-    const message =
-      "message" in err && typeof err.message === "string"
-        ? err.message
-        : `API error occurred: ${JSON.stringify(err)}`;
+    const message = err.message || `API error occurred: ${JSON.stringify(err)}`;
     super(message, httpMeta);
     this.data$ = err;
     if (err.success != null) this.success = err.success;
@@ -125,10 +116,7 @@ export class GetApiUserAgentsAgentIdApiKeyUnauthorizedError extends APISDKError 
     err: GetApiUserAgentsAgentIdApiKeyUnauthorizedErrorData,
     httpMeta: { response: Response; request: Request; body: string },
   ) {
-    const message =
-      "message" in err && typeof err.message === "string"
-        ? err.message
-        : `API error occurred: ${JSON.stringify(err)}`;
+    const message = err.message || `API error occurred: ${JSON.stringify(err)}`;
     super(message, httpMeta);
     this.data$ = err;
     if (err.success != null) this.success = err.success;
@@ -158,10 +146,7 @@ export class GetApiUserAgentsAgentIdApiKeyBadRequestError extends APISDKError {
     err: GetApiUserAgentsAgentIdApiKeyBadRequestErrorData,
     httpMeta: { response: Response; request: Request; body: string },
   ) {
-    const message =
-      "message" in err && typeof err.message === "string"
-        ? err.message
-        : `API error occurred: ${JSON.stringify(err)}`;
+    const message = err.message || `API error occurred: ${JSON.stringify(err)}`;
     super(message, httpMeta);
     this.data$ = err;
     if (err.success != null) this.success = err.success;

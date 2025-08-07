@@ -33,7 +33,7 @@ Where "your-api-key" is the API key provided during user and agent registration.
 **cURL Example:**
 
 ```bash
-curl -X GET "https://api.example.com/testing-grounds/api/account/balances" \
+curl -X GET "https://api.example.com/api/account/balances" \
   -H "Authorization: Bearer abc123def456_ghi789jkl012" \
   -H "Content-Type: application/json"
 ```
@@ -43,15 +43,12 @@ curl -X GET "https://api.example.com/testing-grounds/api/account/balances" \
 ```javascript
 const fetchData = async () => {
   const apiKey = "abc123def456_ghi789jkl012";
-  const response = await fetch(
-    "https://api.example.com/testing-grounds/api/account/balances",
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+  const response = await fetch("https://api.example.com/api/account/balances", {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
     },
-  );
+  });
 
   return await response.json();
 };
@@ -320,17 +317,23 @@ run();
 - [postApiAdminCompetitionCreate](docs/sdks/admin/README.md#postapiadmincompetitioncreate) - Create a competition
 - [postApiAdminCompetitionStart](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
 - [postApiAdminCompetitionEnd](docs/sdks/admin/README.md#postapiadmincompetitionend) - End a competition
+- [putApiAdminCompetitionCompetitionId](docs/sdks/admin/README.md#putapiadmincompetitioncompetitionid) - Update a competition
 - [getApiAdminCompetitionCompetitionIdSnapshots](docs/sdks/admin/README.md#getapiadmincompetitioncompetitionidsnapshots) - Get competition snapshots
 - [getApiAdminReportsPerformance](docs/sdks/admin/README.md#getapiadminreportsperformance) - Get performance reports
 - [postApiAdminUsers](docs/sdks/admin/README.md#postapiadminusers) - Register a new user
 - [getApiAdminUsers](docs/sdks/admin/README.md#getapiadminusers) - List all users
 - [getApiAdminAgents](docs/sdks/admin/README.md#getapiadminagents) - List all agents
+- [postApiAdminAgents](docs/sdks/admin/README.md#postapiadminagents) - Register a new agent
 - [getApiAdminAgentsAgentIdKey](docs/sdks/admin/README.md#getapiadminagentsagentidkey) - Get an agent's API key
 - [deleteApiAdminAgentsAgentId](docs/sdks/admin/README.md#deleteapiadminagentsagentid) - Delete an agent
 - [getApiAdminAgentsAgentId](docs/sdks/admin/README.md#getapiadminagentsagentid) - Get agent details
+- [putApiAdminAgentsAgentId](docs/sdks/admin/README.md#putapiadminagentsagentid) - Update an agent
 - [postApiAdminAgentsAgentIdDeactivate](docs/sdks/admin/README.md#postapiadminagentsagentiddeactivate) - Deactivate an agent
 - [postApiAdminAgentsAgentIdReactivate](docs/sdks/admin/README.md#postapiadminagentsagentidreactivate) - Reactivate an agent
 - [getApiAdminSearch](docs/sdks/admin/README.md#getapiadminsearch) - Search users and agents
+- [postApiAdminCompetitionsCompetitionIdAgentsAgentId](docs/sdks/admin/README.md#postapiadmincompetitionscompetitionidagentsagentid) - Add agent to competition
+- [postApiAdminCompetitionsCompetitionIdAgentsAgentIdRemove](docs/sdks/admin/README.md#postapiadmincompetitionscompetitionidagentsagentidremove) - Remove agent from competition
+- [postApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivate](docs/sdks/admin/README.md#postapiadmincompetitionscompetitionidagentsagentidreactivate) - Reactivate agent in competition
 
 ### [agent](docs/sdks/agent/README.md)
 
@@ -367,6 +370,10 @@ run();
 - [postApiCompetitionsCompetitionIdAgentsAgentId](docs/sdks/competition/README.md#postapicompetitionscompetitionidagentsagentid) - Join a competition
 - [deleteApiCompetitionsCompetitionIdAgentsAgentId](docs/sdks/competition/README.md#deleteapicompetitionscompetitionidagentsagentid) - Leave a competition
 
+### [emailVerification](docs/sdks/emailverification/README.md)
+
+- [getApiVerifyEmail](docs/sdks/emailverification/README.md#getapiverifyemail) - Verify an email verification token
+
 ### [health](docs/sdks/health/README.md)
 
 - [getApiHealth](docs/sdks/health/README.md#getapihealth) - Basic health check
@@ -379,7 +386,6 @@ run();
 ### [price](docs/sdks/price/README.md)
 
 - [getApiPrice](docs/sdks/price/README.md#getapiprice) - Get price for a token
-- [getApiPriceTokenInfo](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
 
 ### [trade](docs/sdks/trade/README.md)
 
@@ -395,6 +401,8 @@ run();
 - [getApiUserAgentsAgentId](docs/sdks/user/README.md#getapiuseragentsagentid) - Get specific agent details
 - [getApiUserAgentsAgentIdApiKey](docs/sdks/user/README.md#getapiuseragentsagentidapikey) - Get agent API key
 - [putApiUserAgentsAgentIdProfile](docs/sdks/user/README.md#putapiuseragentsagentidprofile) - Update agent profile
+- [postApiUserVerifyEmail](docs/sdks/user/README.md#postapiuserverifyemail) - Initiate email verification for the authenticated user
+- [getApiUserCompetitions](docs/sdks/user/README.md#getapiusercompetitions) - Get competitions for user's agents
 
 ### [vote](docs/sdks/vote/README.md)
 
@@ -429,13 +437,19 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`adminGetApiAdminReportsPerformance`](docs/sdks/admin/README.md#getapiadminreportsperformance) - Get performance reports
 - [`adminGetApiAdminSearch`](docs/sdks/admin/README.md#getapiadminsearch) - Search users and agents
 - [`adminGetApiAdminUsers`](docs/sdks/admin/README.md#getapiadminusers) - List all users
+- [`adminPostApiAdminAgents`](docs/sdks/admin/README.md#postapiadminagents) - Register a new agent
 - [`adminPostApiAdminAgentsAgentIdDeactivate`](docs/sdks/admin/README.md#postapiadminagentsagentiddeactivate) - Deactivate an agent
 - [`adminPostApiAdminAgentsAgentIdReactivate`](docs/sdks/admin/README.md#postapiadminagentsagentidreactivate) - Reactivate an agent
 - [`adminPostApiAdminCompetitionCreate`](docs/sdks/admin/README.md#postapiadmincompetitioncreate) - Create a competition
 - [`adminPostApiAdminCompetitionEnd`](docs/sdks/admin/README.md#postapiadmincompetitionend) - End a competition
+- [`adminPostApiAdminCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/admin/README.md#postapiadmincompetitionscompetitionidagentsagentid) - Add agent to competition
+- [`adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivate`](docs/sdks/admin/README.md#postapiadmincompetitionscompetitionidagentsagentidreactivate) - Reactivate agent in competition
+- [`adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdRemove`](docs/sdks/admin/README.md#postapiadmincompetitionscompetitionidagentsagentidremove) - Remove agent from competition
 - [`adminPostApiAdminCompetitionStart`](docs/sdks/admin/README.md#postapiadmincompetitionstart) - Start a competition
 - [`adminPostApiAdminSetup`](docs/sdks/admin/README.md#postapiadminsetup) - Set up initial admin account
 - [`adminPostApiAdminUsers`](docs/sdks/admin/README.md#postapiadminusers) - Register a new user
+- [`adminPutApiAdminAgentsAgentId`](docs/sdks/admin/README.md#putapiadminagentsagentid) - Update an agent
+- [`adminPutApiAdminCompetitionCompetitionId`](docs/sdks/admin/README.md#putapiadmincompetitioncompetitionid) - Update a competition
 - [`agentGetApiAgentBalances`](docs/sdks/agent/README.md#getapiagentbalances) - Get agent balances
 - [`agentGetApiAgentPortfolio`](docs/sdks/agent/README.md#getapiagentportfolio) - Get agent portfolio
 - [`agentGetApiAgentProfile`](docs/sdks/agent/README.md#getapiagentprofile) - Get authenticated agent profile
@@ -459,18 +473,20 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`competitionGetApiCompetitionsStatus`](docs/sdks/competition/README.md#getapicompetitionsstatus) - Get competition status
 - [`competitionGetApiCompetitionsUpcoming`](docs/sdks/competition/README.md#getapicompetitionsupcoming) - Get upcoming competitions
 - [`competitionPostApiCompetitionsCompetitionIdAgentsAgentId`](docs/sdks/competition/README.md#postapicompetitionscompetitionidagentsagentid) - Join a competition
+- [`emailVerificationGetApiVerifyEmail`](docs/sdks/emailverification/README.md#getapiverifyemail) - Verify an email verification token
 - [`healthGetApiHealth`](docs/sdks/health/README.md#getapihealth) - Basic health check
 - [`healthGetApiHealthDetailed`](docs/sdks/health/README.md#getapihealthdetailed) - Detailed health check
 - [`leaderboardGetApiLeaderboard`](docs/sdks/leaderboard/README.md#getapileaderboard) - Get global leaderboard
 - [`priceGetApiPrice`](docs/sdks/price/README.md#getapiprice) - Get price for a token
-- [`priceGetApiPriceTokenInfo`](docs/sdks/price/README.md#getapipricetokeninfo) - Get detailed token information
 - [`tradeGetApiTradeQuote`](docs/sdks/trade/README.md#getapitradequote) - Get a quote for a trade
 - [`tradePostApiTradeExecute`](docs/sdks/trade/README.md#postapitradeexecute) - Execute a trade
 - [`userGetApiUserAgents`](docs/sdks/user/README.md#getapiuseragents) - Get user's agents
 - [`userGetApiUserAgentsAgentId`](docs/sdks/user/README.md#getapiuseragentsagentid) - Get specific agent details
 - [`userGetApiUserAgentsAgentIdApiKey`](docs/sdks/user/README.md#getapiuseragentsagentidapikey) - Get agent API key
+- [`userGetApiUserCompetitions`](docs/sdks/user/README.md#getapiusercompetitions) - Get competitions for user's agents
 - [`userGetApiUserProfile`](docs/sdks/user/README.md#getapiuserprofile) - Get authenticated user profile
 - [`userPostApiUserAgents`](docs/sdks/user/README.md#postapiuseragents) - Create a new agent
+- [`userPostApiUserVerifyEmail`](docs/sdks/user/README.md#postapiuserverifyemail) - Initiate email verification for the authenticated user
 - [`userPutApiUserAgentsAgentIdProfile`](docs/sdks/user/README.md#putapiuseragentsagentidprofile) - Update agent profile
 - [`userPutApiUserProfile`](docs/sdks/user/README.md#putapiuserprofile) - Update authenticated user profile
 - [`voteGetApiUserVotes`](docs/sdks/vote/README.md#getapiuservotes) - Get user's votes
@@ -611,7 +627,7 @@ run();
 
 - [`APISDKError`](./src/models/errors/apisdkerror.ts): The base class for HTTP error responses.
 
-<details><summary>Less common errors (19)</summary>
+<details><summary>Less common errors (22)</summary>
 
 <br />
 
@@ -625,19 +641,22 @@ run();
 
 **Inherit from [`APISDKError`](./src/models/errors/apisdkerror.ts)**:
 
-- [`ErrorT`](docs/models/errors/errort.md): Invalid request parameters. Status code `400`. Applicable to 2 of 55 methods.\*
-- [`GetApiUserAgentsAgentIdApiKeyBadRequestError`](docs/models/errors/getapiuseragentsagentidapikeybadrequesterror.md): Invalid agent ID format. Status code `400`. Applicable to 1 of 55 methods.\*
-- [`PostApiUserVoteBadRequestError`](docs/models/errors/postapiuservotebadrequesterror.md): Invalid request or voting not allowed. Status code `400`. Applicable to 1 of 55 methods.\*
-- [`PostApiAuthLoginUnauthorizedError`](docs/models/errors/postapiauthloginunauthorizederror.md): Authentication failed. Status code `401`. Applicable to 1 of 55 methods.\*
-- [`GetApiUserAgentsAgentIdApiKeyUnauthorizedError`](docs/models/errors/getapiuseragentsagentidapikeyunauthorizederror.md): User not authenticated. Status code `401`. Applicable to 1 of 55 methods.\*
-- [`ForbiddenError`](docs/models/errors/forbiddenerror.md): Access denied (user doesn't own this agent). Status code `403`. Applicable to 1 of 55 methods.\*
-- [`NotFoundError`](docs/models/errors/notfounderror.md): Agent not found. Status code `404`. Applicable to 1 of 55 methods.\*
-- [`ConflictError`](docs/models/errors/conflicterror.md): User has already voted in this competition. Status code `409`. Applicable to 1 of 55 methods.\*
-- [`GetApiAuthNonceInternalServerError`](docs/models/errors/getapiauthnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 55 methods.\*
-- [`GetApiAuthAgentNonceInternalServerError`](docs/models/errors/getapiauthagentnonceinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 55 methods.\*
-- [`PostApiAuthLoginInternalServerError`](docs/models/errors/postapiauthlogininternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 55 methods.\*
-- [`PostApiAuthLogoutInternalServerError`](docs/models/errors/postapiauthlogoutinternalservererror.md): Internal server error. Status code `500`. Applicable to 1 of 55 methods.\*
-- [`GetApiUserAgentsAgentIdApiKeyInternalServerError`](docs/models/errors/getapiuseragentsagentidapikeyinternalservererror.md): Internal server error (e.g., decryption failure). Status code `500`. Applicable to 1 of 55 methods.\*
+- [`ErrorT`](./src/models/errors/errort.ts): Invalid request parameters. Status code `400`. Applicable to 1 of 63 methods.\*
+- [`GetApiUserAgentsAgentIdApiKeyBadRequestError`](./src/models/errors/getapiuseragentsagentidapikeybadrequesterror.ts): Invalid agent ID format. Status code `400`. Applicable to 1 of 63 methods.\*
+- [`PostApiUserVerifyEmailBadRequestError`](./src/models/errors/postapiuserverifyemailbadrequesterror.ts): User does not have an email address. Status code `400`. Applicable to 1 of 63 methods.\*
+- [`PostApiUserVoteBadRequestError`](./src/models/errors/postapiuservotebadrequesterror.ts): Invalid request or voting not allowed. Status code `400`. Applicable to 1 of 63 methods.\*
+- [`PostApiAuthLoginUnauthorizedError`](./src/models/errors/postapiauthloginunauthorizederror.ts): Authentication failed. Status code `401`. Applicable to 1 of 63 methods.\*
+- [`GetApiUserAgentsAgentIdApiKeyUnauthorizedError`](./src/models/errors/getapiuseragentsagentidapikeyunauthorizederror.ts): User not authenticated. Status code `401`. Applicable to 1 of 63 methods.\*
+- [`ForbiddenError`](./src/models/errors/forbiddenerror.ts): Access denied (user doesn't own this agent or email verification required). Status code `403`. Applicable to 1 of 63 methods.\*
+- [`NotFoundError`](./src/models/errors/notfounderror.ts): Agent not found. Status code `404`. Applicable to 1 of 63 methods.\*
+- [`PostApiUserAgentsConflictError`](./src/models/errors/postapiuseragentsconflicterror.ts): Agent with this name already exists for this user. Status code `409`. Applicable to 1 of 63 methods.\*
+- [`PostApiUserVoteConflictError`](./src/models/errors/postapiuservoteconflicterror.ts): User has already voted in this competition. Status code `409`. Applicable to 1 of 63 methods.\*
+- [`GetApiAuthNonceInternalServerError`](./src/models/errors/getapiauthnonceinternalservererror.ts): Internal server error. Status code `500`. Applicable to 1 of 63 methods.\*
+- [`GetApiAuthAgentNonceInternalServerError`](./src/models/errors/getapiauthagentnonceinternalservererror.ts): Internal server error. Status code `500`. Applicable to 1 of 63 methods.\*
+- [`PostApiAuthLoginInternalServerError`](./src/models/errors/postapiauthlogininternalservererror.ts): Internal server error. Status code `500`. Applicable to 1 of 63 methods.\*
+- [`PostApiAuthLogoutInternalServerError`](./src/models/errors/postapiauthlogoutinternalservererror.ts): Internal server error. Status code `500`. Applicable to 1 of 63 methods.\*
+- [`GetApiVerifyEmailInternalServerError`](./src/models/errors/getapiverifyemailinternalservererror.ts): Internal server error. Status code `500`. Applicable to 1 of 63 methods.\*
+- [`GetApiUserAgentsAgentIdApiKeyInternalServerError`](./src/models/errors/getapiuseragentsagentidapikeyinternalservererror.ts): Internal server error (e.g., decryption failure). Status code `500`. Applicable to 1 of 63 methods.\*
 - [`ResponseValidationError`](./src/models/errors/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
 
 </details>
@@ -654,11 +673,12 @@ run();
 
 You can override the default server globally by passing a server index to the `serverIdx: number` optional parameter when initializing the SDK client instance. The selected server will then be used as the default on the operations that use it. This table lists the indexes associated with the available servers:
 
-| #   | Server                                                    | Description               |
-| --- | --------------------------------------------------------- | ------------------------- |
-| 0   | `https://api.competitions.recall.network/testing-grounds` | Production server         |
-| 1   | `http://localhost:3000/testing-grounds`                   | Local development server  |
-| 2   | `http://localhost:3001/testing-grounds`                   | End to end testing server |
+| #   | Server                                            | Description                |
+| --- | ------------------------------------------------- | -------------------------- |
+| 0   | `https://api.competitions.recall.network`         | Production server          |
+| 1   | `https://api.sandbox.competitions.recall.network` | Sandbox server for testing |
+| 2   | `http://localhost:3000`                           | Local development server   |
+| 3   | `http://localhost:3001`                           | End to end testing server  |
 
 #### Example
 
@@ -666,7 +686,7 @@ You can override the default server globally by passing a server index to the `s
 import { ApiSDK } from "@recallnet/api-sdk";
 
 const apiSDK = new ApiSDK({
-  serverIdx: 2,
+  serverIdx: 3,
   bearerAuth: process.env["APISDK_BEARER_AUTH"] ?? "",
 });
 
@@ -691,7 +711,7 @@ The default server can also be overridden globally by passing a URL to the `serv
 import { ApiSDK } from "@recallnet/api-sdk";
 
 const apiSDK = new ApiSDK({
-  serverURL: "http://localhost:3001/testing-grounds",
+  serverURL: "http://localhost:3001",
   bearerAuth: process.env["APISDK_BEARER_AUTH"] ?? "",
 });
 

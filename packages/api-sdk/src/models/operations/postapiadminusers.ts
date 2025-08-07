@@ -8,6 +8,11 @@ import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 /**
+ * Optional metadata about the user
+ */
+export type UserMetadata = {};
+
+/**
  * Optional metadata about the agent
  */
 export type AgentMetadata = {};
@@ -30,9 +35,17 @@ export type PostApiAdminUsersRequest = {
    */
   userImageUrl?: string | undefined;
   /**
+   * Optional metadata about the user
+   */
+  userMetadata?: UserMetadata | undefined;
+  /**
    * Name for the user's first agent (optional)
    */
   agentName?: string | undefined;
+  /**
+   * Handle for the user's first agent (optional)
+   */
+  agentHandle?: string | undefined;
   /**
    * Description of the agent (optional)
    */
@@ -69,6 +82,10 @@ export type PostApiAdminUsersUser = {
    * User name
    */
   name?: string | undefined;
+  /**
+   * User handle
+   */
+  handle?: string | undefined;
   /**
    * User email
    */
@@ -121,6 +138,10 @@ export type PostApiAdminUsersAgent = {
    */
   name?: string | undefined;
   /**
+   * Agent handle
+   */
+  handle?: string | undefined;
+  /**
    * Agent email
    */
   email?: string | null | undefined;
@@ -172,6 +193,50 @@ export type PostApiAdminUsersResponse = {
    */
   agentError?: string | null | undefined;
 };
+
+/** @internal */
+export const UserMetadata$inboundSchema: z.ZodType<
+  UserMetadata,
+  z.ZodTypeDef,
+  unknown
+> = z.object({});
+
+/** @internal */
+export type UserMetadata$Outbound = {};
+
+/** @internal */
+export const UserMetadata$outboundSchema: z.ZodType<
+  UserMetadata$Outbound,
+  z.ZodTypeDef,
+  UserMetadata
+> = z.object({});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace UserMetadata$ {
+  /** @deprecated use `UserMetadata$inboundSchema` instead. */
+  export const inboundSchema = UserMetadata$inboundSchema;
+  /** @deprecated use `UserMetadata$outboundSchema` instead. */
+  export const outboundSchema = UserMetadata$outboundSchema;
+  /** @deprecated use `UserMetadata$Outbound` instead. */
+  export type Outbound = UserMetadata$Outbound;
+}
+
+export function userMetadataToJSON(userMetadata: UserMetadata): string {
+  return JSON.stringify(UserMetadata$outboundSchema.parse(userMetadata));
+}
+
+export function userMetadataFromJSON(
+  jsonString: string,
+): SafeParseResult<UserMetadata, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => UserMetadata$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'UserMetadata' from JSON`,
+  );
+}
 
 /** @internal */
 export const AgentMetadata$inboundSchema: z.ZodType<
@@ -227,7 +292,9 @@ export const PostApiAdminUsersRequest$inboundSchema: z.ZodType<
   name: z.string().optional(),
   email: z.string().optional(),
   userImageUrl: z.string().optional(),
+  userMetadata: z.lazy(() => UserMetadata$inboundSchema).optional(),
   agentName: z.string().optional(),
+  agentHandle: z.string().optional(),
   agentDescription: z.string().optional(),
   agentImageUrl: z.string().optional(),
   agentMetadata: z.lazy(() => AgentMetadata$inboundSchema).optional(),
@@ -240,7 +307,9 @@ export type PostApiAdminUsersRequest$Outbound = {
   name?: string | undefined;
   email?: string | undefined;
   userImageUrl?: string | undefined;
+  userMetadata?: UserMetadata$Outbound | undefined;
   agentName?: string | undefined;
+  agentHandle?: string | undefined;
   agentDescription?: string | undefined;
   agentImageUrl?: string | undefined;
   agentMetadata?: AgentMetadata$Outbound | undefined;
@@ -257,7 +326,9 @@ export const PostApiAdminUsersRequest$outboundSchema: z.ZodType<
   name: z.string().optional(),
   email: z.string().optional(),
   userImageUrl: z.string().optional(),
+  userMetadata: z.lazy(() => UserMetadata$outboundSchema).optional(),
   agentName: z.string().optional(),
+  agentHandle: z.string().optional(),
   agentDescription: z.string().optional(),
   agentImageUrl: z.string().optional(),
   agentMetadata: z.lazy(() => AgentMetadata$outboundSchema).optional(),
@@ -354,6 +425,7 @@ export const PostApiAdminUsersUser$inboundSchema: z.ZodType<
   id: z.string().optional(),
   walletAddress: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   email: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z
@@ -377,6 +449,7 @@ export type PostApiAdminUsersUser$Outbound = {
   id?: string | undefined;
   walletAddress?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   email?: string | undefined;
   imageUrl?: string | null | undefined;
   metadata?: PostApiAdminUsersUserMetadata$Outbound | null | undefined;
@@ -394,6 +467,7 @@ export const PostApiAdminUsersUser$outboundSchema: z.ZodType<
   id: z.string().optional(),
   walletAddress: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   email: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z
@@ -501,6 +575,7 @@ export const PostApiAdminUsersAgent$inboundSchema: z.ZodType<
   ownerId: z.string().optional(),
   walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
@@ -527,6 +602,7 @@ export type PostApiAdminUsersAgent$Outbound = {
   ownerId?: string | undefined;
   walletAddress?: string | null | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   email?: string | null | undefined;
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
@@ -547,6 +623,7 @@ export const PostApiAdminUsersAgent$outboundSchema: z.ZodType<
   ownerId: z.string().optional(),
   walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),

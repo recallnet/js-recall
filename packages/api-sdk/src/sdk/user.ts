@@ -4,8 +4,10 @@
 import { userGetApiUserAgents } from "../funcs/userGetApiUserAgents.js";
 import { userGetApiUserAgentsAgentId } from "../funcs/userGetApiUserAgentsAgentId.js";
 import { userGetApiUserAgentsAgentIdApiKey } from "../funcs/userGetApiUserAgentsAgentIdApiKey.js";
+import { userGetApiUserCompetitions } from "../funcs/userGetApiUserCompetitions.js";
 import { userGetApiUserProfile } from "../funcs/userGetApiUserProfile.js";
 import { userPostApiUserAgents } from "../funcs/userPostApiUserAgents.js";
+import { userPostApiUserVerifyEmail } from "../funcs/userPostApiUserVerifyEmail.js";
 import { userPutApiUserAgentsAgentIdProfile } from "../funcs/userPutApiUserAgentsAgentIdProfile.js";
 import { userPutApiUserProfile } from "../funcs/userPutApiUserProfile.js";
 import { ClientSDK, RequestOptions } from "../lib/sdks.js";
@@ -87,7 +89,7 @@ export class User extends ClientSDK {
    * Get agent API key
    *
    * @remarks
-   * Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly.
+   * Retrieve the API key for a specific agent owned by the authenticated user. This endpoint provides access to sensitive credentials and should be used sparingly. Requires email verification for security.
    */
   async getApiUserAgentsAgentIdApiKey(
     security: operations.GetApiUserAgentsAgentIdApiKeySecurity,
@@ -112,6 +114,35 @@ export class User extends ClientSDK {
   ): Promise<operations.PutApiUserAgentsAgentIdProfileResponse> {
     return unwrapAsync(
       userPutApiUserAgentsAgentIdProfile(this, security, request, options),
+    );
+  }
+
+  /**
+   * Initiate email verification for the authenticated user
+   *
+   * @remarks
+   * Creates a new email verification token and sends a verification email to the user's email address
+   */
+  async postApiUserVerifyEmail(
+    security: operations.PostApiUserVerifyEmailSecurity,
+    options?: RequestOptions,
+  ): Promise<operations.PostApiUserVerifyEmailResponse> {
+    return unwrapAsync(userPostApiUserVerifyEmail(this, security, options));
+  }
+
+  /**
+   * Get competitions for user's agents
+   *
+   * @remarks
+   * Retrieve all competitions that the authenticated user's agents have ever been registered for, regardless of current participation status
+   */
+  async getApiUserCompetitions(
+    security: operations.GetApiUserCompetitionsSecurity,
+    request: operations.GetApiUserCompetitionsRequest,
+    options?: RequestOptions,
+  ): Promise<operations.GetApiUserCompetitionsResponse> {
+    return unwrapAsync(
+      userGetApiUserCompetitions(this, security, request, options),
     );
   }
 }

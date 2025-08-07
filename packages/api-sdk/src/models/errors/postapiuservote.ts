@@ -8,7 +8,7 @@ import { APISDKError } from "./apisdkerror.js";
 /**
  * User has already voted in this competition
  */
-export type ConflictErrorData = {
+export type PostApiUserVoteConflictErrorData = {
   success?: boolean | undefined;
   error?: string | undefined;
 };
@@ -16,15 +16,15 @@ export type ConflictErrorData = {
 /**
  * User has already voted in this competition
  */
-export class ConflictError extends APISDKError {
+export class PostApiUserVoteConflictError extends APISDKError {
   success?: boolean | undefined;
   error?: string | undefined;
 
   /** The original data that was passed to this error instance. */
-  data$: ConflictErrorData;
+  data$: PostApiUserVoteConflictErrorData;
 
   constructor(
-    err: ConflictErrorData,
+    err: PostApiUserVoteConflictErrorData,
     httpMeta: { response: Response; request: Request; body: string },
   ) {
     const message =
@@ -36,7 +36,7 @@ export class ConflictError extends APISDKError {
     if (err.success != null) this.success = err.success;
     if (err.error != null) this.error = err.error;
 
-    this.name = "ConflictError";
+    this.name = "PostApiUserVoteConflictError";
   }
 }
 
@@ -76,8 +76,8 @@ export class PostApiUserVoteBadRequestError extends APISDKError {
 }
 
 /** @internal */
-export const ConflictError$inboundSchema: z.ZodType<
-  ConflictError,
+export const PostApiUserVoteConflictError$inboundSchema: z.ZodType<
+  PostApiUserVoteConflictError,
   z.ZodTypeDef,
   unknown
 > = z
@@ -89,7 +89,7 @@ export const ConflictError$inboundSchema: z.ZodType<
     body$: z.string(),
   })
   .transform((v) => {
-    return new ConflictError(v, {
+    return new PostApiUserVoteConflictError(v, {
       request: v.request$,
       response: v.response$,
       body: v.body$,
@@ -97,18 +97,18 @@ export const ConflictError$inboundSchema: z.ZodType<
   });
 
 /** @internal */
-export type ConflictError$Outbound = {
+export type PostApiUserVoteConflictError$Outbound = {
   success?: boolean | undefined;
   error?: string | undefined;
 };
 
 /** @internal */
-export const ConflictError$outboundSchema: z.ZodType<
-  ConflictError$Outbound,
+export const PostApiUserVoteConflictError$outboundSchema: z.ZodType<
+  PostApiUserVoteConflictError$Outbound,
   z.ZodTypeDef,
-  ConflictError
+  PostApiUserVoteConflictError
 > = z
-  .instanceof(ConflictError)
+  .instanceof(PostApiUserVoteConflictError)
   .transform((v) => v.data$)
   .pipe(
     z.object({
@@ -121,13 +121,13 @@ export const ConflictError$outboundSchema: z.ZodType<
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace ConflictError$ {
-  /** @deprecated use `ConflictError$inboundSchema` instead. */
-  export const inboundSchema = ConflictError$inboundSchema;
-  /** @deprecated use `ConflictError$outboundSchema` instead. */
-  export const outboundSchema = ConflictError$outboundSchema;
-  /** @deprecated use `ConflictError$Outbound` instead. */
-  export type Outbound = ConflictError$Outbound;
+export namespace PostApiUserVoteConflictError$ {
+  /** @deprecated use `PostApiUserVoteConflictError$inboundSchema` instead. */
+  export const inboundSchema = PostApiUserVoteConflictError$inboundSchema;
+  /** @deprecated use `PostApiUserVoteConflictError$outboundSchema` instead. */
+  export const outboundSchema = PostApiUserVoteConflictError$outboundSchema;
+  /** @deprecated use `PostApiUserVoteConflictError$Outbound` instead. */
+  export type Outbound = PostApiUserVoteConflictError$Outbound;
 }
 
 /** @internal */

@@ -24,7 +24,6 @@ import { tool$healthGetApiHealth } from "@recallnet/api-sdk/mcp-server/tools/hea
 import { tool$healthGetApiHealthDetailed } from "@recallnet/api-sdk/mcp-server/tools/healthGetApiHealthDetailed.js";
 import { tool$leaderboardGetApiLeaderboard } from "@recallnet/api-sdk/mcp-server/tools/leaderboardGetApiLeaderboard.js";
 import { tool$priceGetApiPrice } from "@recallnet/api-sdk/mcp-server/tools/priceGetApiPrice.js";
-import { tool$priceGetApiPriceTokenInfo } from "@recallnet/api-sdk/mcp-server/tools/priceGetApiPriceTokenInfo.js";
 import { tool$tradeGetApiTradeQuote } from "@recallnet/api-sdk/mcp-server/tools/tradeGetApiTradeQuote.js";
 import { tool$tradePostApiTradeExecute } from "@recallnet/api-sdk/mcp-server/tools/tradePostApiTradeExecute.js";
 
@@ -74,7 +73,6 @@ const USER_TOOLS = [
 
   // Price tools
   tool$priceGetApiPrice,
-  tool$priceGetApiPriceTokenInfo,
 
   // Trade tools
   tool$tradePostApiTradeExecute,
