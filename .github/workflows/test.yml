@@ -8,6 +8,8 @@ on:
 jobs:
   dummy1:
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.image-id.outputs.image }}
     steps:
       - id: image-id
         run: |
