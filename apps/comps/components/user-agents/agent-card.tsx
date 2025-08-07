@@ -69,7 +69,7 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
         ) : (
           <span>{agent.name}</span>
         )}
-      </span>
+      </div>
       <div className="flex justify-center gap-3">
         <div className="text-secondary-foreground text-nowrap rounded border p-2">
           ROI{" "}

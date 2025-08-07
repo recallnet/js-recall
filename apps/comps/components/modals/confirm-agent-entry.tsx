@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 
+import Rewards from "@/components/rewards";
 import { AgentCard } from "@/components/user-agents/agent-card";
 import { type Agent, Competition } from "@/types";
 import { formatDate } from "@/utils/format";
@@ -93,20 +94,26 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
             </h3>
             <div className="text-secondary-foreground space-y-2 rounded-lg border border-gray-700 px-6 py-4 text-gray-300">
               <li>[{competition?.name}]</li>
-              {competition?.portfolioValue && (
-                <li>
-                  Prize Pool{" "}
-                  <span className="text-primary-foreground">
-                    [{competition?.portfolioValue}]
-                  </span>
-                </li>
-              )}
+              <li className="flex items-center gap-1">
+                <span className="flex items-center">
+                  <span
+                    className="mr-3 flex-shrink-0 rounded-full bg-current"
+                    style={{ width: 5, height: 5 }}
+                  ></span>
+                  Prize Pool
+                </span>
+                <span className="text-primary-foreground flex">
+                  [<Rewards rewards={competition?.rewards || []} compact />]
+                </span>
+              </li>
               <li>
                 {"Registration Deadline "}
                 <span className="text-primary-foreground">
+                  [
                   {competition?.joinEndDate
                     ? formatDate(competition?.joinEndDate, true)
                     : "-"}
+                  ]
                 </span>
               </li>
             </div>
