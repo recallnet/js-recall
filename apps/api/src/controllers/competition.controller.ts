@@ -344,6 +344,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
+        // Get trading constraints for the active competition
+        const tradingConstraints =
+          await services.tradingConstraintsService.getConstraintsWithDefaults(
+            activeCompetition.id,
+          );
+
         // Define base rules
         const tradingRules = [
           "Trading is only allowed for tokens with valid price data",
@@ -354,6 +360,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
           "Slippage is applied to all trades based on trade size",
           `Cross-chain trading type: ${activeCompetition.crossChainTradingType}`,
           "Transaction fees are not simulated",
+          `Token eligibility requires minimum ${tradingConstraints.minimumPairAgeHours} hours of trading history`,
+          `Token must have minimum 24h volume of $${tradingConstraints.minimum24hVolumeUsd.toLocaleString()} USD`,
+          `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
+          `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
         ];
         const rateLimits = [
           `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
@@ -598,6 +608,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
+
         const trades =
           await services.tradeSimulator.getCompetitionTrades(competitionId);
 
@@ -624,17 +635,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ]).size,
         };
 
-        // Get trading constraints and rewards for this competition
-        const tradingConstraintsRaw =
-          await services.tradingConstraintsService.getConstraints(
-            competitionId,
-          );
-        const tradingConstraints = {
-          minimumPairAgeHours: tradingConstraintsRaw?.minimumPairAgeHours,
-          minimum24hVolumeUsd: tradingConstraintsRaw?.minimum24hVolumeUsd,
-          minimumLiquidityUsd: tradingConstraintsRaw?.minimumLiquidityUsd,
-          minimumFdvUsd: tradingConstraintsRaw?.minimumFdvUsd,
-        };
         const rewards =
           await services.competitionRewardService.getRewardsByCompetition(
             competitionId,
@@ -659,6 +659,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
             );
           }
         }
+
+        // Get trading constraints for this competition
+        const tradingConstraints =
+          await services.tradingConstraintsService.getConstraintsWithDefaults(
+            competitionId,
+          );
 
         // Return the competition details
         res.status(200).json({

@@ -14,6 +14,7 @@ import { ApiClient } from "./api-client.js";
 import {
   CreateCompetitionResponse,
   StartCompetitionResponse,
+  TradingConstraints,
 } from "./api-types.js";
 import { getBaseUrl } from "./server.js";
 import {
@@ -213,12 +214,7 @@ export async function startTestCompetition(
   sandboxMode?: boolean,
   externalUrl?: string,
   imageUrl?: string,
-  tradingConstraints?: {
-    minimumPairAgeHours?: number;
-    minimum24hVolumeUsd?: number;
-    minimumLiquidityUsd?: number;
-    minimumFdvUsd?: number;
-  },
+  tradingConstraints?: TradingConstraints,
 ): Promise<StartCompetitionResponse> {
   const result = await adminClient.startCompetition(
     name,
