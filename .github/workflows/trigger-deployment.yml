@@ -1,4 +1,4 @@
-name: Trigger Deployment
+name: Trigger Deployment A
 
 on:
   workflow_call:
@@ -19,7 +19,6 @@ on:
 jobs:
   trigger-deployment:
     if: ${{ github.repository_owner == 'recallnet' }}
-    name: Trigger deployment
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub App Token
@@ -31,7 +30,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: competition-app-deployments
 
-      - name: Trigger deployment
+      - name: Trigger deployment C
         uses: actions/github-script@v7
         with:
           github-token: ${{ steps.generate-token.outputs.token }}
