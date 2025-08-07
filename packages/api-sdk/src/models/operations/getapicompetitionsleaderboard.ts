@@ -104,6 +104,10 @@ export type GetApiCompetitionsLeaderboardLeaderboard = {
    */
   agentName?: string | undefined;
   /**
+   * Agent handle
+   */
+  agentHandle?: string | undefined;
+  /**
    * Current portfolio value in USD
    */
   portfolioValue?: number | undefined;
@@ -127,6 +131,10 @@ export type InactiveAgent = {
    */
   agentName?: string | undefined;
   /**
+   * Agent handle
+   */
+  agentHandle?: string | undefined;
+  /**
    * Current portfolio value in USD
    */
   portfolioValue?: number | undefined;
@@ -135,7 +143,7 @@ export type InactiveAgent = {
    */
   active?: boolean | undefined;
   /**
-   * Reason for agent deactivation
+   * Reason for removal from this specific competition
    */
   deactivationReason?: string | undefined;
 };
@@ -154,11 +162,11 @@ export type GetApiCompetitionsLeaderboardResponse = {
    */
   leaderboard?: Array<GetApiCompetitionsLeaderboardLeaderboard> | undefined;
   /**
-   * List of deactivated agents (excluded from ranking)
+   * List of agents not actively participating in this competition (excluded from ranking)
    */
   inactiveAgents?: Array<InactiveAgent> | undefined;
   /**
-   * Indicates if any agents are inactive
+   * Indicates if any agents are not actively participating in this competition
    */
   hasInactiveAgents?: boolean | undefined;
 };
@@ -398,6 +406,7 @@ export const GetApiCompetitionsLeaderboardLeaderboard$inboundSchema: z.ZodType<
   rank: z.number().int().optional(),
   agentId: z.string().optional(),
   agentName: z.string().optional(),
+  agentHandle: z.string().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
@@ -408,6 +417,7 @@ export type GetApiCompetitionsLeaderboardLeaderboard$Outbound = {
   rank?: number | undefined;
   agentId?: string | undefined;
   agentName?: string | undefined;
+  agentHandle?: string | undefined;
   portfolioValue?: number | undefined;
   active?: boolean | undefined;
   deactivationReason?: string | null | undefined;
@@ -422,6 +432,7 @@ export const GetApiCompetitionsLeaderboardLeaderboard$outboundSchema: z.ZodType<
   rank: z.number().int().optional(),
   agentId: z.string().optional(),
   agentName: z.string().optional(),
+  agentHandle: z.string().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
@@ -476,6 +487,7 @@ export const InactiveAgent$inboundSchema: z.ZodType<
 > = z.object({
   agentId: z.string().optional(),
   agentName: z.string().optional(),
+  agentHandle: z.string().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.string().optional(),
@@ -485,6 +497,7 @@ export const InactiveAgent$inboundSchema: z.ZodType<
 export type InactiveAgent$Outbound = {
   agentId?: string | undefined;
   agentName?: string | undefined;
+  agentHandle?: string | undefined;
   portfolioValue?: number | undefined;
   active?: boolean | undefined;
   deactivationReason?: string | undefined;
@@ -498,6 +511,7 @@ export const InactiveAgent$outboundSchema: z.ZodType<
 > = z.object({
   agentId: z.string().optional(),
   agentName: z.string().optional(),
+  agentHandle: z.string().optional(),
   portfolioValue: z.number().optional(),
   active: z.boolean().optional(),
   deactivationReason: z.string().optional(),

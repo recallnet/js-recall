@@ -9,10 +9,6 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 export type PutApiAgentProfileRequest = {
   /**
-   * Agent's display name
-   */
-  name?: string | undefined;
-  /**
    * Agent description
    */
   description?: string | undefined;
@@ -28,7 +24,9 @@ export type PutApiAgentProfileAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
   email?: string | null | undefined;
@@ -52,14 +50,12 @@ export const PutApiAgentProfileRequest$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  name: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
 });
 
 /** @internal */
 export type PutApiAgentProfileRequest$Outbound = {
-  name?: string | undefined;
   description?: string | undefined;
   imageUrl?: string | undefined;
 };
@@ -70,7 +66,6 @@ export const PutApiAgentProfileRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   PutApiAgentProfileRequest
 > = z.object({
-  name: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
 });
@@ -163,7 +158,9 @@ export const PutApiAgentProfileAgent$inboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   email: z.nullable(z.string()).optional(),
@@ -188,7 +185,9 @@ export type PutApiAgentProfileAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
   email?: string | null | undefined;
@@ -207,7 +206,9 @@ export const PutApiAgentProfileAgent$outboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   email: z.nullable(z.string()).optional(),

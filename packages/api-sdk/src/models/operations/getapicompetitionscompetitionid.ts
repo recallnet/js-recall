@@ -72,6 +72,10 @@ export type GetApiCompetitionsCompetitionIdStats = {
    */
   totalVolume?: number | undefined;
   /**
+   * Total number of votes cast in this competition
+   */
+  totalVotes?: number | undefined;
+  /**
    * Total number of unique tokens traded
    */
   uniqueTokens?: number | undefined;
@@ -159,10 +163,6 @@ export type GetApiCompetitionsCompetitionIdCompetition = {
    * When the competition was last updated
    */
   updatedAt?: Date | undefined;
-  /**
-   * Total number of votes cast in this competition
-   */
-  totalVotes?: number | undefined;
   /**
    * Whether voting is enabled for this competition (only present for authenticated users)
    */
@@ -324,6 +324,7 @@ export const GetApiCompetitionsCompetitionIdStats$inboundSchema: z.ZodType<
   totalTrades: z.number().optional(),
   totalAgents: z.number().optional(),
   totalVolume: z.number().optional(),
+  totalVotes: z.number().int().optional(),
   uniqueTokens: z.number().optional(),
 });
 
@@ -332,6 +333,7 @@ export type GetApiCompetitionsCompetitionIdStats$Outbound = {
   totalTrades?: number | undefined;
   totalAgents?: number | undefined;
   totalVolume?: number | undefined;
+  totalVotes?: number | undefined;
   uniqueTokens?: number | undefined;
 };
 
@@ -344,6 +346,7 @@ export const GetApiCompetitionsCompetitionIdStats$outboundSchema: z.ZodType<
   totalTrades: z.number().optional(),
   totalAgents: z.number().optional(),
   totalVolume: z.number().optional(),
+  totalVotes: z.number().int().optional(),
   uniqueTokens: z.number().optional(),
 });
 
@@ -573,7 +576,6 @@ export const GetApiCompetitionsCompetitionIdCompetition$inboundSchema: z.ZodType
     .datetime({ offset: true })
     .transform((v) => new Date(v))
     .optional(),
-  totalVotes: z.number().int().optional(),
   votingEnabled: z.boolean().optional(),
   userVotingInfo: z
     .nullable(
@@ -597,7 +599,6 @@ export type GetApiCompetitionsCompetitionIdCompetition$Outbound = {
   stats?: GetApiCompetitionsCompetitionIdStats$Outbound | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
-  totalVotes?: number | undefined;
   votingEnabled?: boolean | undefined;
   userVotingInfo?:
     | GetApiCompetitionsCompetitionIdUserVotingInfo$Outbound
@@ -633,7 +634,6 @@ export const GetApiCompetitionsCompetitionIdCompetition$outboundSchema: z.ZodTyp
     .date()
     .transform((v) => v.toISOString())
     .optional(),
-  totalVotes: z.number().int().optional(),
   votingEnabled: z.boolean().optional(),
   userVotingInfo: z
     .nullable(

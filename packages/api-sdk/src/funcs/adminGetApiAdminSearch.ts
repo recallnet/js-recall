@@ -83,11 +83,15 @@ async function $do(
   const path = pathToFunc("/api/admin/search")();
 
   const query = encodeFormQuery({
-    email: payload.email,
-    name: payload.name,
-    searchType: payload.searchType,
-    status: payload.status,
-    walletAddress: payload.walletAddress,
+    "agent.name": payload["agent.name"],
+    "agent.ownerId": payload["agent.ownerId"],
+    "agent.status": payload["agent.status"],
+    "agent.walletAddress": payload["agent.walletAddress"],
+    join: payload.join,
+    "user.email": payload["user.email"],
+    "user.name": payload["user.name"],
+    "user.status": payload["user.status"],
+    "user.walletAddress": payload["user.walletAddress"],
   });
 
   const headers = new Headers(

@@ -36,6 +36,28 @@ export type PostApiAdminCompetitionStartTypeRequest = ClosedEnum<
   typeof PostApiAdminCompetitionStartTypeRequest
 >;
 
+/**
+ * Trading constraints for the competition (used when creating a new competition)
+ */
+export type PostApiAdminCompetitionStartTradingConstraints = {
+  /**
+   * Minimum age of trading pairs in hours
+   */
+  minimumPairAgeHours?: number | undefined;
+  /**
+   * Minimum 24-hour volume in USD
+   */
+  minimum24hVolumeUsd?: number | undefined;
+  /**
+   * Minimum liquidity in USD
+   */
+  minimumLiquidityUsd?: number | undefined;
+  /**
+   * Minimum fully diluted valuation in USD
+   */
+  minimumFdvUsd?: number | undefined;
+};
+
 export type PostApiAdminCompetitionStartRequest = {
   /**
    * ID of an existing competition to start. If not provided, a new competition will be created.
@@ -58,6 +80,18 @@ export type PostApiAdminCompetitionStartRequest = {
    */
   imageUrl?: string | undefined;
   /**
+   * End date for the competition (ISO 8601 format)
+   */
+  endDate?: Date | undefined;
+  /**
+   * Start date for voting (ISO 8601 format, used when creating a new competition)
+   */
+  votingStartDate?: Date | undefined;
+  /**
+   * End date for voting (ISO 8601 format, used when creating a new competition)
+   */
+  votingEndDate?: Date | undefined;
+  /**
    * Array of agent IDs to include in the competition
    */
   agentIds: Array<string>;
@@ -66,9 +100,19 @@ export type PostApiAdminCompetitionStartRequest = {
    */
   tradingType?: PostApiAdminCompetitionStartTradingType | undefined;
   /**
+   * Enable sandbox mode to automatically join newly registered agents to this competition (used when creating a new competition)
+   */
+  sandboxMode?: boolean | undefined;
+  /**
    * The type of competition
    */
   type?: PostApiAdminCompetitionStartTypeRequest | undefined;
+  /**
+   * Trading constraints for the competition (used when creating a new competition)
+   */
+  tradingConstraints?:
+    | PostApiAdminCompetitionStartTradingConstraints
+    | undefined;
 };
 
 /**
@@ -154,6 +198,10 @@ export type PostApiAdminCompetitionStartCompetition = {
     | PostApiAdminCompetitionStartCrossChainTradingType
     | undefined;
   /**
+   * Whether sandbox mode is enabled for this competition
+   */
+  sandboxMode?: boolean | undefined;
+  /**
    * The type of competition
    */
   type?: PostApiAdminCompetitionStartTypeResponse | undefined;
@@ -225,6 +273,80 @@ export namespace PostApiAdminCompetitionStartTypeRequest$ {
 }
 
 /** @internal */
+export const PostApiAdminCompetitionStartTradingConstraints$inboundSchema: z.ZodType<
+  PostApiAdminCompetitionStartTradingConstraints,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  minimumPairAgeHours: z.number().optional(),
+  minimum24hVolumeUsd: z.number().optional(),
+  minimumLiquidityUsd: z.number().optional(),
+  minimumFdvUsd: z.number().optional(),
+});
+
+/** @internal */
+export type PostApiAdminCompetitionStartTradingConstraints$Outbound = {
+  minimumPairAgeHours?: number | undefined;
+  minimum24hVolumeUsd?: number | undefined;
+  minimumLiquidityUsd?: number | undefined;
+  minimumFdvUsd?: number | undefined;
+};
+
+/** @internal */
+export const PostApiAdminCompetitionStartTradingConstraints$outboundSchema: z.ZodType<
+  PostApiAdminCompetitionStartTradingConstraints$Outbound,
+  z.ZodTypeDef,
+  PostApiAdminCompetitionStartTradingConstraints
+> = z.object({
+  minimumPairAgeHours: z.number().optional(),
+  minimum24hVolumeUsd: z.number().optional(),
+  minimumLiquidityUsd: z.number().optional(),
+  minimumFdvUsd: z.number().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PostApiAdminCompetitionStartTradingConstraints$ {
+  /** @deprecated use `PostApiAdminCompetitionStartTradingConstraints$inboundSchema` instead. */
+  export const inboundSchema =
+    PostApiAdminCompetitionStartTradingConstraints$inboundSchema;
+  /** @deprecated use `PostApiAdminCompetitionStartTradingConstraints$outboundSchema` instead. */
+  export const outboundSchema =
+    PostApiAdminCompetitionStartTradingConstraints$outboundSchema;
+  /** @deprecated use `PostApiAdminCompetitionStartTradingConstraints$Outbound` instead. */
+  export type Outbound =
+    PostApiAdminCompetitionStartTradingConstraints$Outbound;
+}
+
+export function postApiAdminCompetitionStartTradingConstraintsToJSON(
+  postApiAdminCompetitionStartTradingConstraints: PostApiAdminCompetitionStartTradingConstraints,
+): string {
+  return JSON.stringify(
+    PostApiAdminCompetitionStartTradingConstraints$outboundSchema.parse(
+      postApiAdminCompetitionStartTradingConstraints,
+    ),
+  );
+}
+
+export function postApiAdminCompetitionStartTradingConstraintsFromJSON(
+  jsonString: string,
+): SafeParseResult<
+  PostApiAdminCompetitionStartTradingConstraints,
+  SDKValidationError
+> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      PostApiAdminCompetitionStartTradingConstraints$inboundSchema.parse(
+        JSON.parse(x),
+      ),
+    `Failed to parse 'PostApiAdminCompetitionStartTradingConstraints' from JSON`,
+  );
+}
+
+/** @internal */
 export const PostApiAdminCompetitionStartRequest$inboundSchema: z.ZodType<
   PostApiAdminCompetitionStartRequest,
   z.ZodTypeDef,
@@ -235,14 +357,33 @@ export const PostApiAdminCompetitionStartRequest$inboundSchema: z.ZodType<
   description: z.string().optional(),
   externalUrl: z.string().optional(),
   imageUrl: z.string().optional(),
+  endDate: z
+    .string()
+    .datetime({ offset: true })
+    .transform((v) => new Date(v))
+    .optional(),
+  votingStartDate: z
+    .string()
+    .datetime({ offset: true })
+    .transform((v) => new Date(v))
+    .optional(),
+  votingEndDate: z
+    .string()
+    .datetime({ offset: true })
+    .transform((v) => new Date(v))
+    .optional(),
   agentIds: z.array(z.string()),
   tradingType:
     PostApiAdminCompetitionStartTradingType$inboundSchema.default(
       "disallowAll",
     ),
+  sandboxMode: z.boolean().default(false),
   type: PostApiAdminCompetitionStartTypeRequest$inboundSchema.default(
     "trading",
   ),
+  tradingConstraints: z
+    .lazy(() => PostApiAdminCompetitionStartTradingConstraints$inboundSchema)
+    .optional(),
 });
 
 /** @internal */
@@ -252,9 +393,16 @@ export type PostApiAdminCompetitionStartRequest$Outbound = {
   description?: string | undefined;
   externalUrl?: string | undefined;
   imageUrl?: string | undefined;
+  endDate?: string | undefined;
+  votingStartDate?: string | undefined;
+  votingEndDate?: string | undefined;
   agentIds: Array<string>;
   tradingType: string;
+  sandboxMode: boolean;
   type: string;
+  tradingConstraints?:
+    | PostApiAdminCompetitionStartTradingConstraints$Outbound
+    | undefined;
 };
 
 /** @internal */
@@ -268,14 +416,30 @@ export const PostApiAdminCompetitionStartRequest$outboundSchema: z.ZodType<
   description: z.string().optional(),
   externalUrl: z.string().optional(),
   imageUrl: z.string().optional(),
+  endDate: z
+    .date()
+    .transform((v) => v.toISOString())
+    .optional(),
+  votingStartDate: z
+    .date()
+    .transform((v) => v.toISOString())
+    .optional(),
+  votingEndDate: z
+    .date()
+    .transform((v) => v.toISOString())
+    .optional(),
   agentIds: z.array(z.string()),
   tradingType:
     PostApiAdminCompetitionStartTradingType$outboundSchema.default(
       "disallowAll",
     ),
+  sandboxMode: z.boolean().default(false),
   type: PostApiAdminCompetitionStartTypeRequest$outboundSchema.default(
     "trading",
   ),
+  tradingConstraints: z
+    .lazy(() => PostApiAdminCompetitionStartTradingConstraints$outboundSchema)
+    .optional(),
 });
 
 /**
@@ -409,6 +573,7 @@ export const PostApiAdminCompetitionStartCompetition$inboundSchema: z.ZodType<
   status: PostApiAdminCompetitionStartStatus$inboundSchema.optional(),
   crossChainTradingType:
     PostApiAdminCompetitionStartCrossChainTradingType$inboundSchema.optional(),
+  sandboxMode: z.boolean().optional(),
   type: PostApiAdminCompetitionStartTypeResponse$inboundSchema.optional(),
   agentIds: z.array(z.string()).optional(),
 });
@@ -424,6 +589,7 @@ export type PostApiAdminCompetitionStartCompetition$Outbound = {
   imageUrl?: string | null | undefined;
   status?: string | undefined;
   crossChainTradingType?: string | undefined;
+  sandboxMode?: boolean | undefined;
   type?: string | undefined;
   agentIds?: Array<string> | undefined;
 };
@@ -447,6 +613,7 @@ export const PostApiAdminCompetitionStartCompetition$outboundSchema: z.ZodType<
   status: PostApiAdminCompetitionStartStatus$outboundSchema.optional(),
   crossChainTradingType:
     PostApiAdminCompetitionStartCrossChainTradingType$outboundSchema.optional(),
+  sandboxMode: z.boolean().optional(),
   type: PostApiAdminCompetitionStartTypeResponse$outboundSchema.optional(),
   agentIds: z.array(z.string()).optional(),
 });
