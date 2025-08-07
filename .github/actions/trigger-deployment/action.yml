@@ -10,6 +10,12 @@ inputs:
   image:
     description: 'Docker image to deploy'
     required: false
+  app-id:
+    description: 'GitHub App ID'
+    required: true
+  private-key:
+    description: 'GitHub App private key'
+    required: true
 
 runs:
   using: 'composite'
@@ -18,8 +24,8 @@ runs:
       id: generate-token
       uses: actions/create-github-app-token@v1
       with:
-        app-id: ${{ secrets.RECALL_WORKFLOW_TRIGGER_APP_ID }}
-        private-key: ${{ secrets.RECALL_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
         owner: ${{ github.repository_owner }}
         repositories: competition-app-deployments
 
