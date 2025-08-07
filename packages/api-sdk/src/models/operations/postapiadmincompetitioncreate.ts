@@ -113,6 +113,10 @@ export type PostApiAdminCompetitionCreateRequest = {
   tradingConstraints?:
     | PostApiAdminCompetitionCreateTradingConstraints
     | undefined;
+  /**
+   * Rewards for competition placements
+   */
+  rewards?: { [k: string]: number } | undefined;
 };
 
 /**
@@ -158,6 +162,17 @@ export type PostApiAdminCompetitionCreateTypeResponse = ClosedEnum<
   typeof PostApiAdminCompetitionCreateTypeResponse
 >;
 
+export type PostApiAdminCompetitionCreateReward = {
+  /**
+   * Rank of the reward
+   */
+  rank?: number | undefined;
+  /**
+   * Reward amount for the given rank
+   */
+  reward?: number | undefined;
+};
+
 export type PostApiAdminCompetitionCreateCompetition = {
   /**
    * Competition ID
@@ -201,6 +216,10 @@ export type PostApiAdminCompetitionCreateCompetition = {
    * Competition creation date
    */
   createdAt?: Date | undefined;
+  /**
+   * Rewards for competition placements
+   */
+  rewards?: Array<PostApiAdminCompetitionCreateReward> | undefined;
 };
 
 /**
@@ -380,6 +399,7 @@ export const PostApiAdminCompetitionCreateRequest$inboundSchema: z.ZodType<
   tradingConstraints: z
     .lazy(() => PostApiAdminCompetitionCreateTradingConstraints$inboundSchema)
     .optional(),
+  rewards: z.record(z.number()).optional(),
 });
 
 /** @internal */
@@ -399,6 +419,7 @@ export type PostApiAdminCompetitionCreateRequest$Outbound = {
   tradingConstraints?:
     | PostApiAdminCompetitionCreateTradingConstraints$Outbound
     | undefined;
+  rewards?: { [k: string]: number } | undefined;
 };
 
 /** @internal */
@@ -442,6 +463,7 @@ export const PostApiAdminCompetitionCreateRequest$outboundSchema: z.ZodType<
   tradingConstraints: z
     .lazy(() => PostApiAdminCompetitionCreateTradingConstraints$outboundSchema)
     .optional(),
+  rewards: z.record(z.number()).optional(),
 });
 
 /**
@@ -550,6 +572,68 @@ export namespace PostApiAdminCompetitionCreateTypeResponse$ {
 }
 
 /** @internal */
+export const PostApiAdminCompetitionCreateReward$inboundSchema: z.ZodType<
+  PostApiAdminCompetitionCreateReward,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  rank: z.number().optional(),
+  reward: z.number().optional(),
+});
+
+/** @internal */
+export type PostApiAdminCompetitionCreateReward$Outbound = {
+  rank?: number | undefined;
+  reward?: number | undefined;
+};
+
+/** @internal */
+export const PostApiAdminCompetitionCreateReward$outboundSchema: z.ZodType<
+  PostApiAdminCompetitionCreateReward$Outbound,
+  z.ZodTypeDef,
+  PostApiAdminCompetitionCreateReward
+> = z.object({
+  rank: z.number().optional(),
+  reward: z.number().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PostApiAdminCompetitionCreateReward$ {
+  /** @deprecated use `PostApiAdminCompetitionCreateReward$inboundSchema` instead. */
+  export const inboundSchema =
+    PostApiAdminCompetitionCreateReward$inboundSchema;
+  /** @deprecated use `PostApiAdminCompetitionCreateReward$outboundSchema` instead. */
+  export const outboundSchema =
+    PostApiAdminCompetitionCreateReward$outboundSchema;
+  /** @deprecated use `PostApiAdminCompetitionCreateReward$Outbound` instead. */
+  export type Outbound = PostApiAdminCompetitionCreateReward$Outbound;
+}
+
+export function postApiAdminCompetitionCreateRewardToJSON(
+  postApiAdminCompetitionCreateReward: PostApiAdminCompetitionCreateReward,
+): string {
+  return JSON.stringify(
+    PostApiAdminCompetitionCreateReward$outboundSchema.parse(
+      postApiAdminCompetitionCreateReward,
+    ),
+  );
+}
+
+export function postApiAdminCompetitionCreateRewardFromJSON(
+  jsonString: string,
+): SafeParseResult<PostApiAdminCompetitionCreateReward, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      PostApiAdminCompetitionCreateReward$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'PostApiAdminCompetitionCreateReward' from JSON`,
+  );
+}
+
+/** @internal */
 export const PostApiAdminCompetitionCreateCompetition$inboundSchema: z.ZodType<
   PostApiAdminCompetitionCreateCompetition,
   z.ZodTypeDef,
@@ -572,6 +656,9 @@ export const PostApiAdminCompetitionCreateCompetition$inboundSchema: z.ZodType<
     .datetime({ offset: true })
     .transform((v) => new Date(v))
     .optional(),
+  rewards: z
+    .array(z.lazy(() => PostApiAdminCompetitionCreateReward$inboundSchema))
+    .optional(),
 });
 
 /** @internal */
@@ -586,6 +673,7 @@ export type PostApiAdminCompetitionCreateCompetition$Outbound = {
   sandboxMode?: boolean | undefined;
   type: string;
   createdAt?: string | undefined;
+  rewards?: Array<PostApiAdminCompetitionCreateReward$Outbound> | undefined;
 };
 
 /** @internal */
@@ -609,6 +697,9 @@ export const PostApiAdminCompetitionCreateCompetition$outboundSchema: z.ZodType<
   createdAt: z
     .date()
     .transform((v) => v.toISOString())
+    .optional(),
+  rewards: z
+    .array(z.lazy(() => PostApiAdminCompetitionCreateReward$outboundSchema))
     .optional(),
 });
 

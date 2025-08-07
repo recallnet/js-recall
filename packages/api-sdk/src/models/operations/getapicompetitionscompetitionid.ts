@@ -81,6 +81,21 @@ export type GetApiCompetitionsCompetitionIdStats = {
   uniqueTokens?: number | undefined;
 };
 
+export type GetApiCompetitionsCompetitionIdReward = {
+  /**
+   * Rank of the reward
+   */
+  rank?: number | undefined;
+  /**
+   * Reward amount for the given rank
+   */
+  reward?: number | undefined;
+  /**
+   * Agent ID of the reward
+   */
+  agentId?: string | undefined;
+};
+
 export type GetApiCompetitionsCompetitionIdInfo = {
   /**
    * Whether the user has already voted in this competition
@@ -163,6 +178,10 @@ export type GetApiCompetitionsCompetitionIdCompetition = {
    * When the competition was last updated
    */
   updatedAt?: Date | undefined;
+  /**
+   * Rewards for competition placements
+   */
+  rewards?: Array<GetApiCompetitionsCompetitionIdReward> | null | undefined;
   /**
    * Whether voting is enabled for this competition (only present for authenticated users)
    */
@@ -387,6 +406,71 @@ export function getApiCompetitionsCompetitionIdStatsFromJSON(
 }
 
 /** @internal */
+export const GetApiCompetitionsCompetitionIdReward$inboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdReward,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  rank: z.number().optional(),
+  reward: z.number().optional(),
+  agentId: z.string().optional(),
+});
+
+/** @internal */
+export type GetApiCompetitionsCompetitionIdReward$Outbound = {
+  rank?: number | undefined;
+  reward?: number | undefined;
+  agentId?: string | undefined;
+};
+
+/** @internal */
+export const GetApiCompetitionsCompetitionIdReward$outboundSchema: z.ZodType<
+  GetApiCompetitionsCompetitionIdReward$Outbound,
+  z.ZodTypeDef,
+  GetApiCompetitionsCompetitionIdReward
+> = z.object({
+  rank: z.number().optional(),
+  reward: z.number().optional(),
+  agentId: z.string().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiCompetitionsCompetitionIdReward$ {
+  /** @deprecated use `GetApiCompetitionsCompetitionIdReward$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiCompetitionsCompetitionIdReward$inboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdReward$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiCompetitionsCompetitionIdReward$outboundSchema;
+  /** @deprecated use `GetApiCompetitionsCompetitionIdReward$Outbound` instead. */
+  export type Outbound = GetApiCompetitionsCompetitionIdReward$Outbound;
+}
+
+export function getApiCompetitionsCompetitionIdRewardToJSON(
+  getApiCompetitionsCompetitionIdReward: GetApiCompetitionsCompetitionIdReward,
+): string {
+  return JSON.stringify(
+    GetApiCompetitionsCompetitionIdReward$outboundSchema.parse(
+      getApiCompetitionsCompetitionIdReward,
+    ),
+  );
+}
+
+export function getApiCompetitionsCompetitionIdRewardFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiCompetitionsCompetitionIdReward, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      GetApiCompetitionsCompetitionIdReward$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiCompetitionsCompetitionIdReward' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiCompetitionsCompetitionIdInfo$inboundSchema: z.ZodType<
   GetApiCompetitionsCompetitionIdInfo,
   z.ZodTypeDef,
@@ -576,6 +660,13 @@ export const GetApiCompetitionsCompetitionIdCompetition$inboundSchema: z.ZodType
     .datetime({ offset: true })
     .transform((v) => new Date(v))
     .optional(),
+  rewards: z
+    .nullable(
+      z.array(
+        z.lazy(() => GetApiCompetitionsCompetitionIdReward$inboundSchema),
+      ),
+    )
+    .optional(),
   votingEnabled: z.boolean().optional(),
   userVotingInfo: z
     .nullable(
@@ -599,6 +690,10 @@ export type GetApiCompetitionsCompetitionIdCompetition$Outbound = {
   stats?: GetApiCompetitionsCompetitionIdStats$Outbound | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
+  rewards?:
+    | Array<GetApiCompetitionsCompetitionIdReward$Outbound>
+    | null
+    | undefined;
   votingEnabled?: boolean | undefined;
   userVotingInfo?:
     | GetApiCompetitionsCompetitionIdUserVotingInfo$Outbound
@@ -633,6 +728,13 @@ export const GetApiCompetitionsCompetitionIdCompetition$outboundSchema: z.ZodTyp
   updatedAt: z
     .date()
     .transform((v) => v.toISOString())
+    .optional(),
+  rewards: z
+    .nullable(
+      z.array(
+        z.lazy(() => GetApiCompetitionsCompetitionIdReward$outboundSchema),
+      ),
+    )
     .optional(),
   votingEnabled: z.boolean().optional(),
   userVotingInfo: z
