@@ -179,7 +179,7 @@ export class CompetitionManager {
     }
 
     // Always create trading constraints (with defaults if not provided)
-    await this.tradingConstraintsService.createConstraints({
+    const constraints = await this.tradingConstraintsService.createConstraints({
       competitionId: id,
       ...tradingConstraints,
     });
@@ -196,6 +196,12 @@ export class CompetitionManager {
         rank: reward.rank,
         reward: reward.reward,
       })),
+      tradingConstraints: {
+        minimumPairAgeHours: constraints?.minimumPairAgeHours,
+        minimum24hVolumeUsd: constraints?.minimum24hVolumeUsd,
+        minimumLiquidityUsd: constraints?.minimumLiquidityUsd,
+        minimumFdvUsd: constraints?.minimumFdvUsd,
+      },
     };
   }
 
@@ -284,9 +290,10 @@ export class CompetitionManager {
 
     const existingConstraints =
       await this.tradingConstraintsService.getConstraints(competitionId);
+    let newConstraints = existingConstraints;
     if (tradingConstraints && existingConstraints) {
       // If the caller provided constraints and the already exist, we update
-      await this.tradingConstraintsService.updateConstraints(
+      newConstraints = await this.tradingConstraintsService.updateConstraints(
         competitionId,
         tradingConstraints,
       );
@@ -296,10 +303,11 @@ export class CompetitionManager {
     } else if (!existingConstraints) {
       // if the constraints don't exist, we create them with defaults and
       // (optionally) caller provided values.
-      await this.tradingConstraintsService.createConstraints({
-        competitionId,
-        ...tradingConstraints,
-      });
+      newConstraints =
+        (await this.tradingConstraintsService.createConstraints({
+          competitionId,
+          ...tradingConstraints,
+        })) || null;
     }
 
     // Take initial portfolio snapshots
@@ -309,7 +317,15 @@ export class CompetitionManager {
     await this.configurationService.loadCompetitionSettings();
     serviceLogger.debug(`[CompetitionManager] Reloaded configuration settings`);
 
-    return competition;
+    return {
+      ...competition,
+      tradingConstraints: {
+        minimumPairAgeHours: newConstraints?.minimumPairAgeHours,
+        minimum24hVolumeUsd: newConstraints?.minimum24hVolumeUsd,
+        minimumLiquidityUsd: newConstraints?.minimumLiquidityUsd,
+        minimumFdvUsd: newConstraints?.minimumFdvUsd,
+      },
+    };
   }
 
   /**
