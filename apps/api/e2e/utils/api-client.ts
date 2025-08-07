@@ -53,6 +53,8 @@ import {
   TradeResponse,
   TradingConstraints,
   UpcomingCompetitionsResponse,
+  UpdateCompetitionResponse,
+  UpdateTradingConstraintsResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
   UserMetadata,
@@ -802,6 +804,59 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "add agent to competition");
+    }
+  }
+
+  /**
+   * Update a competition (admin only)
+   * @param competitionId ID of the competition to update
+   * @param updates Competition fields to update
+   */
+  async updateCompetition(
+    competitionId: string,
+    updates: {
+      name?: string;
+      description?: string;
+      type?: string;
+      externalUrl?: string;
+      imageUrl?: string;
+      votingStartDate?: string;
+      votingEndDate?: string;
+    },
+  ): Promise<UpdateCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competition/${competitionId}`,
+        updates,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update competition");
+    }
+  }
+
+  /**
+   * Update trading constraints for a competition (admin only)
+   * @param competitionId ID of the competition
+   * @param constraints Trading constraints to update
+   */
+  async updateTradingConstraints(
+    competitionId: string,
+    constraints: {
+      minimumPairAgeHours?: number;
+      minimum24hVolumeUsd?: number;
+      minimumLiquidityUsd?: number;
+      minimumFdvUsd?: number;
+    },
+  ): Promise<UpdateTradingConstraintsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competition/${competitionId}/trading-constraints`,
+        constraints,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update trading constraints");
     }
   }
 

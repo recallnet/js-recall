@@ -426,6 +426,20 @@ export interface EndCompetitionResponse extends ApiResponse {
   }[];
 }
 
+export interface UpdateCompetitionResponse extends ApiResponse {
+  success: true;
+  competition: Competition;
+}
+
+export interface UpdateTradingConstraintsResponse extends ApiResponse {
+  success: true;
+  tradingConstraints: TradingConstraints & {
+    competitionId: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
 // Upcoming competitions response
 export interface UpcomingCompetitionsResponse extends ApiResponse {
   success: true;

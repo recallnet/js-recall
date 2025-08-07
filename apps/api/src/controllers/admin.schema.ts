@@ -42,14 +42,12 @@ export const AdminRegisterUserSchema = z.object({
 /**
  * Trading Constraint Schema
  */
-const TradingConstraintsSchema = z
-  .object({
-    minimumPairAgeHours: z.number().min(0),
-    minimum24hVolumeUsd: z.number().min(0),
-    minimumLiquidityUsd: z.number().min(0),
-    minimumFdvUsd: z.number().min(0),
-  })
-  .optional();
+const TradingConstraintsSchema = z.object({
+  minimumPairAgeHours: z.number().min(0),
+  minimum24hVolumeUsd: z.number().min(0),
+  minimumLiquidityUsd: z.number().min(0),
+  minimumFdvUsd: z.number().min(0),
+});
 
 /**
  * Admin create competition schema
@@ -68,7 +66,7 @@ export const AdminCreateCompetitionSchema = z
     votingEndDate: z.iso.datetime().optional(),
     joinStartDate: z.iso.datetime().optional(),
     joinEndDate: z.iso.datetime().optional(),
-    tradingConstraints: TradingConstraintsSchema,
+    tradingConstraints: TradingConstraintsSchema.optional(),
   })
   .refine(
     (data) => {
@@ -99,7 +97,7 @@ export const AdminStartCompetitionSchema = z
     endDate: z.iso.datetime().optional(),
     votingStartDate: z.iso.datetime().optional(),
     votingEndDate: z.iso.datetime().optional(),
-    tradingConstraints: TradingConstraintsSchema,
+    tradingConstraints: TradingConstraintsSchema.optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
@@ -188,6 +186,14 @@ export const AdminGetAgentApiKeyParamsSchema = z.object({
 export const AdminUpdateCompetitionParamsSchema = z.object({
   competitionId: UuidSchema,
 });
+
+/**
+ * Admin update trading constraints body schema
+ */
+export const AdminUpdateTradingConstraintsBodySchema =
+  TradingConstraintsSchema.refine((data) => Object.keys(data).length > 0, {
+    message: "At least one trading constraint field must be provided",
+  });
 
 /**
  * Admin delete agent params schema

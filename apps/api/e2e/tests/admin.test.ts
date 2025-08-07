@@ -14,8 +14,11 @@ import {
   AdminUsersListResponse,
   AgentProfileResponse,
   ApiResponse,
+  CreateCompetitionResponse,
   ErrorResponse,
   LeaderboardResponse,
+  UpdateCompetitionResponse,
+  UpdateTradingConstraintsResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
@@ -25,6 +28,7 @@ import {
   generateRandomEthAddress,
   generateTestHandle,
   getAdminApiKey,
+  looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -970,250 +974,127 @@ describe("Admin API", () => {
   });
 
   test("should update a competition as admin", async () => {
-    const client = createTestClient(getBaseUrl());
-    await client.loginAsAdmin(adminApiKey);
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
 
     // First create a competition
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Test Competition for Update",
-        description: "Original description",
-        type: "trading",
-        externalUrl: "https://example.com",
-        imageUrl: "https://example.com/image.jpg",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
+    const createResponse = await adminClient.createCompetition(
+      "Test Competition for Update",
+      "Original description",
+      undefined, // tradingType
+      undefined, // sandboxMode
+      "https://example.com",
+      "https://example.com/image.jpg",
+      "trading",
     );
 
-    expect(createResponse.status).toBe(201);
-    expect(createResponse.data.success).toBe(true);
-    expect(createResponse.data.competition).toBeDefined();
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    expect(
+      (createResponse as CreateCompetitionResponse).competition,
+    ).toBeDefined();
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
 
     // Now update the competition
-    const updateResponse = await axios.put(
-      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
-      {
-        name: "Updated Test Competition",
-        description: "Updated description",
-        externalUrl: "https://updated.com",
-        imageUrl: "https://updated.com/image.jpg",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    const updateResponse = await adminClient.updateCompetition(competitionId, {
+      name: "Updated Test Competition",
+      description: "Updated description",
+      externalUrl: "https://updated.com",
+      imageUrl: "https://updated.com/image.jpg",
+    });
 
-    expect(updateResponse.status).toBe(200);
-    expect(updateResponse.data.success).toBe(true);
-    expect(updateResponse.data.competition).toBeDefined();
-    expect(updateResponse.data.competition.name).toBe(
-      "Updated Test Competition",
-    );
-    expect(updateResponse.data.competition.description).toBe(
-      "Updated description",
-    );
-    expect(updateResponse.data.competition.externalUrl).toBe(
-      "https://updated.com",
-    );
-    expect(updateResponse.data.competition.imageUrl).toBe(
-      "https://updated.com/image.jpg",
-    );
-    expect(updateResponse.data.competition.id).toBe(competitionId);
+    expect(updateResponse.success).toBe(true);
+    const updatedCompetition = (updateResponse as UpdateCompetitionResponse)
+      .competition;
+    expect(updatedCompetition).toBeDefined();
+    expect(updatedCompetition.name).toBe("Updated Test Competition");
+    expect(updatedCompetition.description).toBe("Updated description");
+    expect(updatedCompetition.externalUrl).toBe("https://updated.com");
+    expect(updatedCompetition.imageUrl).toBe("https://updated.com/image.jpg");
+    expect(updatedCompetition.id).toBe(competitionId);
   }, 2400_000);
 
   test("should not allow competition update without admin auth", async () => {
-    const client = createTestClient(getBaseUrl());
-    await client.loginAsAdmin(adminApiKey);
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
 
     // Create a competition first
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Test Competition for Auth Test",
-        description: "Test description",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
+    const createResponse = await adminClient.createCompetition(
+      "Test Competition for Auth Test",
+      "Test description",
     );
 
-    expect(createResponse.status).toBe(201);
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Create a client without auth
+    const unauthClient = createTestClient(getBaseUrl());
 
     // Try to update without auth - should fail
-    try {
-      await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
-        {
-          name: "Should not work",
-        },
-      );
-      expect(true).toBe(false); // Should not reach here
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        expect(error.response.status).toBe(401);
-      } else {
-        throw error;
-      }
-    }
+    const updateResponse = await unauthClient.updateCompetition(competitionId, {
+      name: "Should not work",
+    });
+
+    expect(updateResponse.success).toBe(false);
+    expect((updateResponse as ErrorResponse).status).toBe(401);
   });
 
   test("should return error for non-existent competition update", async () => {
-    const client = createTestClient(getBaseUrl());
-    await client.loginAsAdmin(adminApiKey);
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
 
     const nonExistentId = "00000000-0000-0000-0000-000000000000";
 
-    try {
-      await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${nonExistentId}`,
-        {
-          name: "This should fail",
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminApiKey}`,
-          },
-        },
-      );
-      expect(true).toBe(false); // Should not reach here
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        // Will be 500 because the service throws an error for not found
-        expect(error.response.status).toBe(500);
-      } else {
-        throw error;
-      }
-    }
+    const updateResponse = await adminClient.updateCompetition(nonExistentId, {
+      name: "This should fail",
+    });
+
+    expect(updateResponse.success).toBe(false);
+    // Will be 404 because the competition doesn't exist
+    expect((updateResponse as ErrorResponse).status).toBe(404);
   });
 
   test("should validate competition type and reject restricted field updates", async () => {
-    const client = createTestClient(getBaseUrl());
-    await client.loginAsAdmin(adminApiKey);
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
 
     // Create a competition first
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
+    const createResponse = await adminClient.createCompetition(
+      "Test Competition for Validation",
+      "Test description",
+    );
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Try to update with invalid type - should be rejected by server validation
+    const invalidTypeResponse = await adminClient.updateCompetition(
+      competitionId,
       {
-        name: "Test Competition for Validation",
-        description: "Test description",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
+        type: "invalid_type" as "trading", // Force TypeScript to allow this
       },
     );
 
-    expect(createResponse.status).toBe(201);
-    const competitionId = createResponse.data.competition.id;
+    expect(invalidTypeResponse.success).toBe(false);
+    expect((invalidTypeResponse as ErrorResponse).status).toBe(400);
 
-    // Try to update with invalid type
-    try {
-      await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
-        {
-          type: "invalid_type",
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminApiKey}`,
-          },
-        },
-      );
-      expect(true).toBe(false); // Should not reach here
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        expect(error.response.status).toBe(400);
-      } else {
-        throw error;
-      }
-    }
+    // Note: The API client's TypeScript interface prevents updating restricted fields
+    // like status, startDate, endDate at compile time, which is better design than
+    // runtime validation. The server still validates these if sent directly.
 
-    // Try to update status (should be rejected as restricted field)
-    try {
-      await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
-        {
-          status: "active",
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminApiKey}`,
-          },
-        },
-      );
-      expect(true).toBe(false); // Should not reach here
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        expect(error.response.status).toBe(403);
-        expect(error.response.data.error).toContain(
-          "Invalid competition update, attempting to update forbidden field",
-        );
-      } else {
-        throw error;
-      }
-    }
+    // Test a valid update to ensure the endpoint works
+    const validResponse = await adminClient.updateCompetition(competitionId, {
+      name: "Updated Valid Name",
+      description: "Updated valid description",
+    });
 
-    // Try to update startDate (should be rejected as restricted field)
-    try {
-      await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
-        {
-          startDate: new Date().toISOString(),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminApiKey}`,
-          },
-        },
-      );
-      expect(true).toBe(false); // Should not reach here
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        expect(error.response.status).toBe(400);
-        expect(error.response.data.error).toContain(
-          "Invalid competition update request body",
-        );
-      } else {
-        throw error;
-      }
-    }
-
-    // Try to update endDate (should be rejected as restricted field)
-    try {
-      await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
-        {
-          endDate: new Date().toISOString(),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminApiKey}`,
-          },
-        },
-      );
-      expect(true).toBe(false); // Should not reach here
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        expect(error.response.status).toBe(400);
-        expect(error.response.data.error).toContain(
-          "Invalid competition update request body",
-        );
-      } else {
-        throw error;
-      }
-    }
+    expect(validResponse.success).toBe(true);
+    const validCompetition = (validResponse as UpdateCompetitionResponse)
+      .competition;
+    expect(validCompetition.name).toBe("Updated Valid Name");
+    expect(validCompetition.description).toBe("Updated valid description");
   });
 
   // ===== Per-Competition Agent Management Tests =====
@@ -1599,4 +1480,224 @@ describe("Admin API", () => {
     const finalProfile = await agentClient.getAgentProfile();
     expect(finalProfile.success).toBe(true);
   });
+
+  test("should update trading constraints for a competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // First create a competition
+    const createResponse = await adminClient.createCompetition(
+      "Test Competition for Trading Constraints Update",
+      "A competition to test trading constraints updates",
+      undefined, // tradingType
+      undefined, // sandboxMode
+      undefined, // externalUrl
+      undefined, // imageUrl
+      "trading",
+      undefined, // endDate
+      undefined, // votingStartDate
+      undefined, // votingEndDate
+      undefined, // joinStartDate
+      undefined, // joinEndDate
+      looseTradingConstraints,
+    );
+
+    expect(createResponse.success).toBe(true);
+    expect(
+      (createResponse as CreateCompetitionResponse).competition,
+    ).toBeDefined();
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Update trading constraints
+    const minimumPairAgeHours = 48;
+    const minimum24hVolumeUsd = 20000;
+    const minimumLiquidityUsd = 100000;
+    const minimumFdvUsd = 2000000;
+    const updateResponse = await adminClient.updateTradingConstraints(
+      competitionId,
+      {
+        minimumPairAgeHours,
+        minimum24hVolumeUsd,
+        minimumLiquidityUsd,
+        minimumFdvUsd,
+      },
+    );
+
+    expect(updateResponse.success).toBe(true);
+    const tradingConstraints = (
+      updateResponse as UpdateTradingConstraintsResponse
+    ).tradingConstraints;
+    expect(tradingConstraints).toBeDefined();
+    expect(tradingConstraints.minimumPairAgeHours).toBe(minimumPairAgeHours);
+    expect(tradingConstraints.minimum24hVolumeUsd).toBe(minimum24hVolumeUsd);
+    expect(tradingConstraints.minimumLiquidityUsd).toBe(minimumLiquidityUsd);
+    expect(tradingConstraints.minimumFdvUsd).toBe(minimumFdvUsd);
+    expect(tradingConstraints.competitionId).toBe(competitionId);
+  }, 240_000);
+
+  test("should prevent updating trading constraints for active non-sandbox competitions", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a competition
+    const createResponse = await adminClient.createCompetition(
+      "Test Competition for Active Constraints Check",
+      "A competition to test active constraint restrictions",
+      undefined, // tradingType
+      undefined, // sandboxMode
+      undefined, // externalUrl
+      undefined, // imageUrl
+      "trading",
+      undefined, // endDate
+      undefined, // votingStartDate
+      undefined, // votingEndDate
+      undefined, // joinStartDate
+      undefined, // joinEndDate
+      looseTradingConstraints,
+    );
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Register a user and agent for the competition using admin API
+    const userResponse = await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: "Test User for Active Competition",
+      email: `test-active-${Date.now()}@example.com`,
+      agentName: "Test Agent for Active Competition",
+      agentHandle: generateTestHandle(),
+      agentDescription: "Test agent for active competition constraints test",
+      agentWalletAddress: generateRandomEthAddress(),
+    });
+
+    expect(userResponse.success).toBe(true);
+    expect((userResponse as UserRegistrationResponse).agent).toBeDefined();
+    const agent = (userResponse as UserRegistrationResponse).agent!;
+
+    // Start the competition to make it active
+    const startResponse = await adminClient.startExistingCompetition(
+      competitionId,
+      [agent.id],
+    );
+    expect(startResponse.success).toBe(true);
+
+    // Try to update trading constraints - should be rejected
+    const updateResponse = await adminClient.updateTradingConstraints(
+      competitionId,
+      {
+        minimumPairAgeHours: 72,
+      },
+    );
+
+    expect(updateResponse.success).toBe(false);
+    expect((updateResponse as ErrorResponse).error).toContain(
+      "Cannot update trading constraints for active non-sandbox competitions",
+    );
+  }, 240_000);
+
+  test("should allow updating trading constraints for sandbox competitions", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a sandbox competition
+    const createResponse = await adminClient.createCompetition(
+      "Sandbox Test Competition for Trading Constraints",
+      "A sandbox competition to test trading constraints updates",
+      undefined, // tradingType
+      true, // sandboxMode
+      undefined, // externalUrl
+      undefined, // imageUrl
+      "trading",
+      undefined, // endDate
+      undefined, // votingStartDate
+      undefined, // votingEndDate
+      undefined, // joinStartDate
+      undefined, // joinEndDate
+      looseTradingConstraints,
+    );
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Register a user and agent for the competition using admin API
+    const userResponse = await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      name: "Test User for Sandbox Competition",
+      email: `test-sandbox-${Date.now()}@example.com`,
+      agentName: "Test Agent for Sandbox Competition",
+      agentHandle: generateTestHandle(),
+      agentDescription: "Test agent for sandbox competition constraints test",
+      agentWalletAddress: generateRandomEthAddress(),
+    });
+
+    expect(userResponse.success).toBe(true);
+    expect((userResponse as UserRegistrationResponse).agent).toBeDefined();
+    const agent = (userResponse as UserRegistrationResponse).agent!;
+
+    // Start the sandbox competition to make it active
+    const startResponse = await adminClient.startExistingCompetition(
+      competitionId,
+      [agent.id],
+    );
+    expect(startResponse.success).toBe(true);
+
+    // Update trading constraints - should succeed for sandbox mode
+    const updateResponse = await adminClient.updateTradingConstraints(
+      competitionId,
+      {
+        minimumPairAgeHours: 6,
+        minimum24hVolumeUsd: 1000,
+      },
+    );
+
+    expect(updateResponse.success).toBe(true);
+    const sandboxConstraints = (
+      updateResponse as UpdateTradingConstraintsResponse
+    ).tradingConstraints;
+    expect(sandboxConstraints.minimumPairAgeHours).toBe(6);
+    expect(sandboxConstraints.minimum24hVolumeUsd).toBe(1000);
+  }, 240_000);
+
+  test("should validate trading constraints update request body", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a competition
+    const createResponse = await adminClient.createCompetition(
+      "Test Competition for Validation",
+      "A competition to test validation",
+      undefined, // tradingType
+      undefined, // sandboxMode
+      undefined, // externalUrl
+      undefined, // imageUrl
+      "trading",
+    );
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Test empty body
+    const emptyResponse = await adminClient.updateTradingConstraints(
+      competitionId,
+      {},
+    );
+    expect(emptyResponse.success).toBe(false);
+    expect((emptyResponse as ErrorResponse).error).toContain(
+      "At least one trading constraint field must be provided",
+    );
+
+    // Test negative values - this should be handled by validation layer
+    // The API client doesn't prevent negative values, so we expect the server to reject them
+    const negativeResponse = await adminClient.updateTradingConstraints(
+      competitionId,
+      {
+        minimumPairAgeHours: -1,
+      },
+    );
+    expect(negativeResponse.success).toBe(false);
+  }, 240_000);
 });

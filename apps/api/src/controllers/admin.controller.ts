@@ -40,6 +40,7 @@ import {
   AdminUpdateAgentBodySchema,
   AdminUpdateAgentParamsSchema,
   AdminUpdateCompetitionParamsSchema,
+  AdminUpdateTradingConstraintsBodySchema,
 } from "./admin.schema.js";
 import {
   ensureCompetitionUpdate,
@@ -783,6 +784,74 @@ export function makeAdminController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           competition: updatedCompetition,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update trading constraints for a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updateTradingConstraints(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Validate params using flatParse
+        const paramsResult = flatParse(
+          AdminUpdateCompetitionParamsSchema,
+          req.params,
+        );
+        if (!paramsResult.success) {
+          throw new ApiError(400, `Invalid parameters: ${paramsResult.error}`);
+        }
+
+        // Validate body using flatParse
+        const bodyResult = flatParse(
+          AdminUpdateTradingConstraintsBodySchema,
+          req.body,
+        );
+        if (!bodyResult.success) {
+          throw new ApiError(400, `Invalid request body: ${bodyResult.error}`);
+        }
+
+        const { competitionId } = paramsResult.data;
+        const tradingConstraintsUpdates = bodyResult.data;
+
+        // Get the existing competition
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Validate that the competition can be updated (not active OR is sandbox)
+        if (
+          competition.status !== COMPETITION_STATUS.PENDING &&
+          !competition.sandboxMode
+        ) {
+          throw new ApiError(
+            403,
+            "Cannot update trading constraints for active non-sandbox competitions",
+          );
+        }
+
+        // Update the trading constraints
+        const updatedConstraints =
+          await services.tradingConstraintsService.updateConstraints(
+            competitionId,
+            tradingConstraintsUpdates,
+          );
+
+        // Return the updated trading constraints
+        res.status(200).json({
+          success: true,
+          tradingConstraints: updatedConstraints,
         });
       } catch (error) {
         next(error);

@@ -581,6 +581,104 @@ export function configureAdminRoutes(
 
   /**
    * @openapi
+   * /api/admin/competition/{competitionId}/trading-constraints:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Update trading constraints for a competition
+   *     description: Update trading constraints for a competition. Only allowed for non-active competitions or sandbox competitions.
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the competition to update trading constraints for
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               minimumPairAgeHours:
+   *                 type: number
+   *                 minimum: 0
+   *                 description: Minimum age of trading pair in hours
+   *                 example: 24
+   *               minimum24hVolumeUsd:
+   *                 type: number
+   *                 minimum: 0
+   *                 description: Minimum 24-hour trading volume in USD
+   *                 example: 10000
+   *               minimumLiquidityUsd:
+   *                 type: number
+   *                 minimum: 0
+   *                 description: Minimum liquidity in USD
+   *                 example: 50000
+   *               minimumFdvUsd:
+   *                 type: number
+   *                 minimum: 0
+   *                 description: Minimum fully diluted valuation in USD
+   *                 example: 1000000
+   *             minProperties: 1
+   *     responses:
+   *       200:
+   *         description: Trading constraints updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 tradingConstraints:
+   *                   type: object
+   *                   properties:
+   *                     competitionId:
+   *                       type: string
+   *                       description: Competition ID
+   *                     minimumPairAgeHours:
+   *                       type: integer
+   *                       description: Minimum age of trading pair in hours
+   *                     minimum24hVolumeUsd:
+   *                       type: number
+   *                       description: Minimum 24-hour trading volume in USD
+   *                     minimumLiquidityUsd:
+   *                       type: number
+   *                       description: Minimum liquidity in USD
+   *                     minimumFdvUsd:
+   *                       type: number
+   *                       description: Minimum fully diluted valuation in USD
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Creation timestamp
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: Last update timestamp
+   *       400:
+   *         description: Bad request - Invalid parameters or no fields provided
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       403:
+   *         description: Forbidden - Cannot update constraints for active non-sandbox competitions
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competition/:competitionId/trading-constraints",
+    controller.updateTradingConstraints,
+  );
+
+  /**
+   * @openapi
    * /api/admin/competition/{competitionId}/snapshots:
    *   get:
    *     tags:
