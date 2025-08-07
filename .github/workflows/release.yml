@@ -86,6 +86,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
       - name: Build Image
+        id: build
         run: |
           set -eux
 
@@ -98,3 +99,13 @@ jobs:
           docker tag $image $image_latest
           docker push $image
           docker push $image_latest
+
+          echo "image=$image" >> $GITHUB_OUTPUT
+
+      - uses: ./.github/actions/trigger-deployment
+        with:
+          app-id: ${{ secrets.RECALL_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.RECALL_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          stage: staging
+          version: v0
+          image: ${{ steps.build.outputs.image }}
