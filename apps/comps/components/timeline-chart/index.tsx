@@ -977,7 +977,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
         <div className="h-30 flex w-full flex-col items-center justify-center p-10">
           <span className="text-primary-foreground">
             {competition.status === CompetitionStatus.Pending
-              ? "Competition hasn&apos;t started yet"
+              ? "Competition hasn't started yet"
               : "No agents competing yet"}
           </span>
           <span className="text-secondary-foreground text-sm">
