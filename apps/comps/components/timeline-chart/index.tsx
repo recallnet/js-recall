@@ -4,8 +4,10 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Image from "next/image";
 import React, {
+  createContext,
   memo,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -44,6 +46,15 @@ const colors = [
 ];
 
 const LIMIT_AGENTS_PER_PAGE = 10;
+
+// Context for hover state to avoid prop drilling and chart re-renders
+const HoverContext = createContext<{
+  hoveredAgent: string | null;
+  setHoveredAgent: (agent: string | null) => void;
+}>({
+  hoveredAgent: null,
+  setHoveredAgent: () => {},
+});
 
 interface TooltipProps {
   active?: boolean;
@@ -110,6 +121,7 @@ interface CustomLegendProps {
   currentOrder?: string[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onAgentHover?: (agentName: string | null) => void;
 }
 
 // Custom Legend Component
@@ -120,6 +132,7 @@ const CustomLegend = ({
   currentOrder,
   searchQuery,
   onSearchChange,
+  onAgentHover,
 }: CustomLegendProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   // Sort agents by the exact order from the current hover payload, if available.
@@ -184,7 +197,9 @@ const CustomLegend = ({
           return (
             <div
               key={agent.name}
-              className="w-50 flex items-center gap-2 rounded-lg p-2"
+              className="w-50 flex cursor-default items-center gap-2 rounded-lg p-2 transition-all duration-200 hover:scale-105 hover:bg-gray-800/50"
+              onMouseEnter={() => onAgentHover?.(agent.name)}
+              onMouseLeave={() => onAgentHover?.(null)}
             >
               <div
                 className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border-2"
@@ -392,6 +407,18 @@ const ChartWrapper = memo(
       </ResponsiveContainer>
     );
   },
+  (prevProps, nextProps) => {
+    // Prevent chart structure re-render - hover is handled via context
+    // Notably, this prevents the x-axis from flickering when hovering over the legend
+    return (
+      prevProps.filteredData === nextProps.filteredData &&
+      prevProps.filteredDataKeys === nextProps.filteredDataKeys &&
+      prevProps.agentColorMap === nextProps.agentColorMap &&
+      prevProps.shouldAnimate === nextProps.shouldAnimate &&
+      prevProps.isFullRange === nextProps.isFullRange &&
+      prevProps.onHoverChange === nextProps.onHoverChange
+    );
+  },
 );
 ChartWrapper.displayName = "ChartWrapper";
 
@@ -406,30 +433,40 @@ const ChartLines = memo(
     colorMap: Record<string, string>;
     isAnimationActive: boolean;
   }) => {
+    const { hoveredAgent } = useContext(HoverContext);
     return (
       <>
-        {dataKeys.map((key) => (
-          <Line
-            key={key}
-            type="linear"
-            dataKey={key}
-            connectNulls={true}
-            stroke={colorMap[key]}
-            strokeWidth={2}
-            isAnimationActive={isAnimationActive}
-            animationDuration={1000}
-            dot={{
-              fill: colorMap[key],
-              strokeWidth: 2,
-              r: 4,
-            }}
-            activeDot={{
-              r: 6,
-              stroke: colorMap[key],
-              strokeWidth: 2,
-            }}
-          />
-        ))}
+        {dataKeys.map((key) => {
+          const isHovered = hoveredAgent === key;
+          const isOtherHovered = hoveredAgent && hoveredAgent !== key;
+
+          return (
+            <Line
+              key={key}
+              type="linear"
+              dataKey={key}
+              connectNulls={true}
+              stroke={colorMap[key]}
+              strokeWidth={isHovered ? 3 : 2}
+              strokeOpacity={isOtherHovered ? 0.3 : 1}
+              isAnimationActive={isAnimationActive}
+              animationDuration={1000}
+              dot={{
+                fill: colorMap[key],
+                strokeWidth: 2,
+                r: isHovered ? 5 : 4,
+                fillOpacity: isOtherHovered ? 0.3 : 1,
+              }}
+              activeDot={{
+                r: isHovered ? 7 : 6,
+                stroke: colorMap[key],
+                strokeWidth: 2,
+                strokeOpacity: isOtherHovered ? 0.3 : 1,
+                fillOpacity: isOtherHovered ? 0.3 : 1,
+              }}
+            />
+          );
+        })}
       </>
     );
   },
@@ -468,6 +505,15 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     },
     [],
   );
+
+  // Use state to track legend hover for line highlighting
+  const [legendHoveredAgent, setLegendHoveredAgent] = useState<string | null>(
+    null,
+  );
+
+  const handleLegendHover = useCallback((agentName: string | null) => {
+    setLegendHoveredAgent(agentName);
+  }, []);
 
   const parsedData = useMemo(() => {
     if (!timelineRaw) return [];
@@ -768,14 +814,21 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
           )}
 
           <div className="h-120 relative">
-            <ChartWrapper
-              filteredData={filteredData}
-              filteredDataKeys={filteredDataKeys}
-              agentColorMap={agentColorMap}
-              shouldAnimate={shouldAnimate}
-              isFullRange={competition.status === CompetitionStatus.Ended}
-              onHoverChange={handleHoverChange}
-            />
+            <HoverContext.Provider
+              value={{
+                hoveredAgent: legendHoveredAgent,
+                setHoveredAgent: setLegendHoveredAgent,
+              }}
+            >
+              <ChartWrapper
+                filteredData={filteredData}
+                filteredDataKeys={filteredDataKeys}
+                agentColorMap={agentColorMap}
+                shouldAnimate={shouldAnimate}
+                isFullRange={competition.status === CompetitionStatus.Ended}
+                onHoverChange={handleHoverChange}
+              />
+            </HoverContext.Provider>
           </div>
           <div className="border-t-1 my-2 w-full"></div>
           <CustomLegend
@@ -787,6 +840,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             currentOrder={hoveredOrder}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            onAgentHover={handleLegendHover}
           />
         </>
       )}
