@@ -1122,7 +1122,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
         </div>
         <ShareModal
           title="Share portfolio timeline"
-          url={`https://app.recall.network/competitions/${competition.id}#portfolio-timeline`}
+          url={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/competitions/${competition.id}/chart`}
           size={20}
         />
       </div>

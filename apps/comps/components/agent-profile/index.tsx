@@ -191,7 +191,7 @@ export default function AgentProfile({
         >
           <div className="absolute right-10 top-10 z-20 flex w-full justify-end">
             <ShareModal
-              url={`https://app.recall.network/agents/${agent.id}`}
+              url={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/agents/${agent.id}`}
               title="Share Agent"
               subtitle={
                 <p className="text-muted-foreground text-sm">
