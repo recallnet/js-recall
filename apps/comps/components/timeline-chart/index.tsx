@@ -1,8 +1,9 @@
 "use client";
 
+import { useDebounce } from "@uidotdev/usehooks";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Image from "next/image";
-import React, { useMemo, useState } from "react";
+import React, { memo, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -196,6 +197,37 @@ interface PortfolioChartProps {
 
 type TimelineViewRecord = Record<string, { agent: string; amount: number }[]>;
 
+// Memoized chart lines component to prevent unnecessary re-renders
+const ChartLines = memo(
+  ({ dataKeys, colors }: { dataKeys: string[]; colors: string[] }) => {
+    return (
+      <>
+        {dataKeys.map((key, index: number) => (
+          <Line
+            key={key}
+            type="linear"
+            dataKey={key}
+            connectNulls={true}
+            stroke={colors[index % colors.length]}
+            strokeWidth={2}
+            dot={{
+              fill: colors[index % colors.length],
+              strokeWidth: 2,
+              r: 4,
+            }}
+            activeDot={{
+              r: 6,
+              stroke: colors[index % colors.length],
+              strokeWidth: 2,
+            }}
+          />
+        ))}
+      </>
+    );
+  },
+);
+ChartLines.displayName = "ChartLines";
+
 export const TimelineChart: React.FC<PortfolioChartProps> = ({
   competitionId,
   agents,
@@ -205,6 +237,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     useCompetitionTimeline(competitionId);
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const parsedData = useMemo(() => {
     if (!timelineRaw) return [];
@@ -271,8 +304,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
 
     if (res.timestamp) delete res?.timestamp;
 
-    return Object.keys(res).filter((agent) => agent.startsWith(searchQuery));
-  }, [filteredData, searchQuery]);
+    return Object.keys(res).filter((agent) =>
+      agent.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
+    );
+  }, [filteredData, debouncedSearchQuery]);
 
   const agentsWithData = useMemo(() => {
     return (
@@ -375,26 +410,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
                 />
                 <Tooltip content={CustomTooltip} />
-                {filteredDataKeys.map((key, index: number) => (
-                  <Line
-                    key={key}
-                    type="linear"
-                    dataKey={key}
-                    connectNulls={true}
-                    stroke={colors[index % colors.length]}
-                    strokeWidth={2}
-                    dot={{
-                      fill: colors[index % colors.length],
-                      strokeWidth: 2,
-                      r: 4,
-                    }}
-                    activeDot={{
-                      r: 6,
-                      stroke: colors[index % colors.length],
-                      strokeWidth: 2,
-                    }}
-                  />
-                ))}
+                <ChartLines dataKeys={filteredDataKeys} colors={colors} />
               </LineChart>
             </ResponsiveContainer>
           </div>
