@@ -19,20 +19,18 @@ export const activeCompMiddleware = function () {
     try {
       const activeCompetition = await getActiveComp();
       if (!activeCompetition) {
-        middlewareLogger.debug("No active competition found");
+        middlewareLogger.debug(
+          "Active comp middleware: No active competition found",
+        );
         throw new ApiError(403, "No active competition");
       }
 
-      middlewareLogger.debug(
-        `Active competition found: ${activeCompetition.id}`,
-      );
-
-      // Set competition ID in request for downstream use
-      req.competitionId = activeCompetition.id;
-
       next();
     } catch (error) {
-      middlewareLogger.error(`Error checking active competition:`, error);
+      middlewareLogger.error(
+        `Active comp middleware: Error checking active competition:`,
+        error,
+      );
       next(error);
     }
   };
@@ -48,11 +46,11 @@ async function getActiveComp() {
   const now = Date.now();
 
   if (now - lastQueryTime < CACHE_ACTIVE_COMP_TTL_MS) {
-    middlewareLogger.debug("Using cached result");
+    middlewareLogger.debug("Active comp middleware: Using cached result");
     return cachedActiveCompetition;
   }
   // Check for active competition with efficient exists query
-  middlewareLogger.debug("Querying database");
+  middlewareLogger.debug("Active comp middleware: Querying database");
   const [activeComp] = await db
     .select({ id: competitions.id })
     .from(competitions)
