@@ -64,6 +64,7 @@ const colors = [
 ];
 
 const LIMIT_AGENTS_PER_PAGE = 10;
+// Removed MAX_CHART_AGENTS since we now use parent pagination
 
 // Context for hover state to avoid prop drilling and chart re-renders
 const HoverContext = createContext<{
@@ -160,6 +161,10 @@ interface CustomLegendProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onAgentHover?: (agentName: string | null) => void;
+  totalAgents?: number;
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
+  onSearchPageChange?: (page: number) => void;
 }
 
 // Custom Legend Component
@@ -171,11 +176,39 @@ const CustomLegend = ({
   searchQuery,
   onSearchChange,
   onAgentHover,
+  totalAgents = 0,
+  currentPage = 1,
+  onPageChange,
+  onSearchPageChange,
 }: CustomLegendProps) => {
-  const [currentPage, setCurrentPage] = useState(1);
+  // Internal pagination state for search results
+  const [searchPage, setSearchPage] = useState(1);
+
+  // Reset search page when search query changes
+  useEffect(() => {
+    setSearchPage(1);
+    onSearchPageChange?.(1);
+  }, [searchQuery, onSearchPageChange]);
+
+  // Create a wrapper for search page changes that notifies parent
+  const handleSearchPageChange = useCallback(
+    (page: number) => {
+      setSearchPage(page);
+      onSearchPageChange?.(page);
+    },
+    [onSearchPageChange],
+  );
   // Sort agents by the exact order from the current hover payload, if available.
   // Fallback to sorting by value desc, then by name for stability.
   const sortedAgents = useMemo(() => {
+    // Early return for no sorting needed
+    if (
+      !currentOrder &&
+      (!currentValues || Object.keys(currentValues).length === 0)
+    ) {
+      return agents;
+    }
+
     if (currentOrder && currentOrder.length > 0) {
       const orderIndex: Record<string, number> = {};
       currentOrder.forEach((name, idx) => {
@@ -193,29 +226,50 @@ const CustomLegend = ({
       });
     }
 
-    if (currentValues && Object.keys(currentValues).length > 0) {
-      return [...agents].sort((a, b) => {
-        const va = currentValues[a.name] ?? -Infinity;
-        const vb = currentValues[b.name] ?? -Infinity;
-        if (va !== vb) return vb - va;
-        return a.name.localeCompare(b.name);
-      });
-    }
-
-    return agents;
+    return [...agents].sort((a, b) => {
+      const va = currentValues?.[a.name] ?? -Infinity;
+      const vb = currentValues?.[b.name] ?? -Infinity;
+      if (va !== vb) return vb - va;
+      return a.name.localeCompare(b.name);
+    });
   }, [agents, currentOrder, currentValues]);
 
-  // Calculate paginated agents
-  const paginatedAgents = useMemo(() => {
-    const startIndex = (currentPage - 1) * LIMIT_AGENTS_PER_PAGE;
-    const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
-    return sortedAgents.slice(startIndex, endIndex);
-  }, [sortedAgents, currentPage]);
+  // Handle pagination for search vs normal mode
+  const { displayAgents, paginationProps } = useMemo(() => {
+    if (searchQuery) {
+      // When searching, paginate the sorted search results
+      const startIndex = (searchPage - 1) * LIMIT_AGENTS_PER_PAGE;
+      const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
+      const paginatedSearchResults = sortedAgents.slice(startIndex, endIndex);
 
-  // Reset to page 1 when search query changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+      return {
+        displayAgents: paginatedSearchResults,
+        paginationProps: {
+          totalItems: sortedAgents.length,
+          currentPage: searchPage,
+          onPageChange: handleSearchPageChange,
+        },
+      };
+    } else {
+      // When not searching, use parent pagination (agents already paginated)
+      return {
+        displayAgents: sortedAgents,
+        paginationProps: {
+          totalItems: totalAgents,
+          currentPage: currentPage,
+          onPageChange: onPageChange,
+        },
+      };
+    }
+  }, [
+    sortedAgents,
+    searchQuery,
+    searchPage,
+    totalAgents,
+    currentPage,
+    onPageChange,
+    handleSearchPageChange,
+  ]);
 
   return (
     <div className="p-5">
@@ -231,11 +285,11 @@ const CustomLegend = ({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        {paginatedAgents.map((agent) => {
+        {displayAgents.map((agent) => {
           return (
             <div
               key={agent.name}
-              className="w-50 flex cursor-default items-center gap-2 rounded-lg p-2 transition-all duration-200 hover:scale-105 hover:bg-gray-800/50"
+              className="w-50 flex cursor-default items-center gap-2 rounded-lg p-2 transition-all duration-200 hover:scale-105"
               onMouseEnter={() => onAgentHover?.(agent.name)}
               onMouseLeave={() => onAgentHover?.(null)}
             >
@@ -262,12 +316,15 @@ const CustomLegend = ({
         })}
       </div>
 
-      <Pagination
-        totalItems={agents.length}
-        currentPage={currentPage}
-        itemsPerPage={LIMIT_AGENTS_PER_PAGE}
-        onPageChange={setCurrentPage}
-      />
+      {paginationProps.onPageChange &&
+        paginationProps.totalItems > LIMIT_AGENTS_PER_PAGE && (
+          <Pagination
+            totalItems={paginationProps.totalItems}
+            currentPage={paginationProps.currentPage}
+            itemsPerPage={LIMIT_AGENTS_PER_PAGE}
+            onPageChange={paginationProps.onPageChange}
+          />
+        )}
     </div>
   );
 };
@@ -342,8 +399,11 @@ const datesByWeek = (dates: DateArr) => {
 
 interface PortfolioChartProps {
   competition: Competition;
-  agents?: AgentCompetition[]; // Only used as fallback, real agent data comes from timelineRaw
+  agents?: AgentCompetition[]; // Current page agents from parent pagination
   className?: string;
+  totalAgents?: number; // Total number of agents for pagination
+  currentPage?: number; // Current page from parent
+  onPageChange?: (page: number) => void; // Page change handler
 }
 
 type TimelineViewRecord = Record<string, { agent: string; amount: number }[]>;
@@ -555,6 +615,9 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   competition,
   agents,
   className,
+  totalAgents = 0,
+  currentPage = 1,
+  onPageChange,
 }) => {
   const { data: timelineRaw, isLoading } = useCompetitionTimeline(
     competition.id,
@@ -563,7 +626,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  const [shouldAnimate, setShouldAnimate] = useState(true);
+  const [shouldAnimate] = useState(false); // Disable animation for better performance
   const [hoveredDataPoint, setHoveredDataPoint] = useState<Record<
     string,
     number
@@ -640,14 +703,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     return datesByWeek(sortedAndTransformed);
   }, [timelineRaw]);
 
-  // Disable animation after initial render
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShouldAnimate(false);
-    }, 1500); // Allow animation to complete on initial render
-
-    return () => clearTimeout(timer);
-  }, []);
+  // Animation disabled for performance - removed timer
 
   // Intelligent date range selection based on competition status and dates
   useEffect(() => {
@@ -866,68 +922,114 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     return Object.keys(res);
   }, [filteredData]);
 
-  // Filter data keys based on search
-  const filteredDataKeys = useMemo(() => {
-    return allDataKeys.filter((agent) =>
-      agent.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
-    );
-  }, [allDataKeys, debouncedSearchQuery]);
+  // Removed allAgentsFromTimeline since we now use agents prop directly for pagination
 
-  // Extract all agents from timeline data with proper image URLs
-  const allAgentsFromTimeline = useMemo(() => {
+  // All agents that have timeline data (for search functionality)
+  const allTimelineAgents = useMemo(() => {
     if (!timelineRaw) return [];
 
-    const agentMap = new Map<string, { name: string; imageUrl: string }>();
-
-    timelineRaw.forEach((agentData) => {
-      // Try to find the agent in the agents prop to get the actual image URL
-      const agentWithImage = agents?.find(
-        (agent) => agent.name === agentData.agentName,
-      );
-
-      agentMap.set(agentData.agentName, {
-        name: agentData.agentName,
-        imageUrl: agentWithImage?.imageUrl || `/default_agent_2.png`,
-      });
+    // Extract all unique agent names from timeline data
+    const agentNames = new Set<string>();
+    timelineRaw.forEach((agentTimeline) => {
+      agentNames.add(agentTimeline.agentName);
     });
 
-    return Array.from(agentMap.values());
+    // Map timeline agents to our format, trying to get imageUrl from agents prop when possible
+    return Array.from(agentNames).map((agentName) => {
+      const agentWithImage = agents?.find((agent) => agent.name === agentName);
+      return {
+        name: agentName,
+        imageUrl: agentWithImage?.imageUrl || `/default_agent_2.png`,
+      };
+    });
   }, [timelineRaw, agents]);
 
-  // All agents with data (for color mapping - unfiltered)
-  // Prefer agents from timeline data, fallback to agents prop
+  // Current page agents with data - only show agents from the current pagination page when NOT searching
   const allAgentsWithData = useMemo(() => {
-    const timelineAgents = allAgentsFromTimeline.filter((agent) =>
-      allDataKeys.some((agentName) => agentName === agent.name),
-    );
-
-    if (timelineAgents.length > 0) {
-      return timelineAgents;
+    // If searching, use all timeline agents for filtering
+    if (debouncedSearchQuery) {
+      return allTimelineAgents.filter((agent) =>
+        allDataKeys.some((agentName) => agentName === agent.name),
+      );
     }
 
-    // Fallback to agents prop if timeline data doesn't have agent info
-    return (
-      agents?.filter((agent) =>
+    // If not searching, use current page agents
+    if (!agents || agents.length === 0) return [];
+    return agents
+      .filter((agent) =>
         allDataKeys.some((agentName) => agentName === agent.name),
-      ) || []
-    );
-  }, [allAgentsFromTimeline, allDataKeys, agents]);
+      )
+      .map((agent) => ({
+        name: agent.name,
+        imageUrl: agent.imageUrl || `/default_agent_2.png`,
+      }));
+  }, [agents, allDataKeys, allTimelineAgents, debouncedSearchQuery]);
 
   // Filtered agents for the legend (based on search query)
   const filteredAgentsForLegend = useMemo(() => {
+    if (!debouncedSearchQuery) return allAgentsWithData;
+    const lowercaseQuery = debouncedSearchQuery.toLowerCase();
     return allAgentsWithData.filter((agent) =>
-      filteredDataKeys.includes(agent.name),
+      agent.name.toLowerCase().includes(lowercaseQuery),
     );
-  }, [allAgentsWithData, filteredDataKeys]);
+  }, [allAgentsWithData, debouncedSearchQuery]);
 
-  // Create a consistent color mapping for all agents
+  // Current legend page state for search pagination tracking
+  const [currentLegendPage, setCurrentLegendPage] = useState(1);
+
+  // Handle search page changes from CustomLegend
+  const handleSearchPageChange = useCallback((page: number) => {
+    setCurrentLegendPage(page);
+  }, []);
+
+  // Reset legend page when search query changes
+  useEffect(() => {
+    setCurrentLegendPage(1);
+  }, [debouncedSearchQuery]);
+
+  // Chart display agents - should match what's shown in the legend's current page
+  const chartDisplayAgents = useMemo(() => {
+    if (!debouncedSearchQuery) {
+      // When not searching, use current page agents
+      return allAgentsWithData;
+    } else {
+      // When searching, show agents from current search page
+      const startIndex = (currentLegendPage - 1) * LIMIT_AGENTS_PER_PAGE;
+      const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
+      return filteredAgentsForLegend.slice(startIndex, endIndex);
+    }
+  }, [
+    allAgentsWithData,
+    filteredAgentsForLegend,
+    debouncedSearchQuery,
+    currentLegendPage,
+  ]);
+
+  // Get chart-visible agent keys (limited for performance)
+  const chartVisibleAgentKeys = useMemo(() => {
+    const agentNamesSet = new Set(
+      chartDisplayAgents.map((agent) => agent.name),
+    );
+    return allDataKeys.filter((agentName) => agentNamesSet.has(agentName));
+  }, [allDataKeys, chartDisplayAgents]);
+
+  // Filter data keys based on search (limited to chart-visible agents)
+  const filteredDataKeys = useMemo(() => {
+    if (!debouncedSearchQuery) return chartVisibleAgentKeys;
+    const lowercaseQuery = debouncedSearchQuery.toLowerCase();
+    return chartVisibleAgentKeys.filter((agent) =>
+      agent.toLowerCase().includes(lowercaseQuery),
+    );
+  }, [chartVisibleAgentKeys, debouncedSearchQuery]);
+
+  // Create a consistent color mapping for chart-visible agents
   const agentColorMap = useMemo(() => {
     const map: Record<string, string> = {};
-    allDataKeys.forEach((agentName, index) => {
+    chartVisibleAgentKeys.forEach((agentName, index) => {
       map[agentName] = colors[index % colors.length]!;
     });
     return map;
-  }, [allDataKeys]);
+  }, [chartVisibleAgentKeys]);
 
   // Get the latest data point values
   const latestValues = useMemo(() => {
@@ -962,7 +1064,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             Portfolio Timeline
           </h2>
           <p className="text-gray-400">
-            Real-time trading timeline of AI competitors
+            Real-time trading performance of AI competitors
           </p>
         </div>
         <ShareModal
@@ -1056,6 +1158,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onAgentHover={handleLegendHover}
+            totalAgents={totalAgents}
+            currentPage={currentPage}
+            onPageChange={onPageChange}
+            onSearchPageChange={handleSearchPageChange}
           />
         </>
       )}

@@ -212,6 +212,14 @@ export default function CompetitionPage({
             className="mt-5"
             competition={competition}
             agents={agentsData?.agents || []}
+            totalAgents={agentsData?.pagination?.total || 0}
+            currentPage={
+              Math.floor(
+                (agentsData?.pagination?.offset || 0) /
+                  (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
+              ) + 1
+            }
+            onPageChange={handlePageChange}
           />
         </>
       )}
