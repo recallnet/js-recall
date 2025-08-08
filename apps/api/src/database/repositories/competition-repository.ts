@@ -16,7 +16,6 @@ import { v4 as uuidv4 } from "uuid";
 
 import { db, dbRead } from "@/database/db.js";
 import {
-  agents,
   competitionAgents,
   competitionRewards,
   competitions,
@@ -1815,18 +1814,22 @@ async function getAgentPortfolioTimelineImpl(
       FROM (
         SELECT 
           ROW_NUMBER() OVER (
-            PARTITION BY agent_id, competition_id,FLOOR(EXTRACT(EPOCH FROM (timestamp - competitions.start_date)) / 60 / ${bucket})
-            ORDER BY timestamp DESC
+            PARTITION BY ps.agent_id, ps.competition_id,FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
+            ORDER BY ps.timestamp DESC
           ) AS rn,
-          timestamp,
-          agent_id,
-          agents.name,
-          competition_id,
-          total_value
-        FROM trading_comps.portfolio_snapshots 
-        JOIN agents on agents.id = agent_id
-        JOIN competitions ON competitions.id = trading_comps.portfolio_snapshots.competition_id
-        WHERE competition_id = ${competitionId}
+          ps.timestamp,
+          ps.agent_id,
+          a.name,
+          ps.competition_id,
+          ps.total_value
+        FROM competition_agents ca
+        JOIN trading_comps.portfolio_snapshots ps 
+          ON ps.agent_id = ca.agent_id 
+          AND ps.competition_id = ca.competition_id
+        JOIN agents a ON a.id = ca.agent_id
+        JOIN competitions c ON c.id = ca.competition_id
+        WHERE ca.competition_id = ${competitionId}
+          AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
       ) AS ranked_snapshots
       WHERE rn = 1 
     `);

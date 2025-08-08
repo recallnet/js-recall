@@ -2,6 +2,7 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
+  CompetitionAgentsResponse,
   CompetitionTimelineResponse,
   ErrorResponse,
   StartCompetitionResponse,
@@ -236,5 +237,83 @@ describe("Competition Timeline API", () => {
     // Should return success response
     expect(timelineResponse.success).toBe(true);
     expect(Array.isArray(timelineResponse.timeline)).toBe(true);
+  });
+
+  test("should not include non-active competition agents in the timeline", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents
+    const { client: agentClient1, agent: agent1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Timeline Test Agent 1",
+      });
+
+    const { client: agentClient2, agent: agent2 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Timeline Test Agent 2",
+      });
+
+    // Start a competition
+    const competitionName = `Timeline Test Competition ${Date.now()}`;
+    const competitionResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent1.id, agent2.id],
+    );
+
+    // Verify competition was started
+    const competition = competitionResponse.competition;
+    expect(competition).toBeDefined();
+    expect(competition.name).toBe(competitionName);
+    expect(competition.status).toBe("active");
+
+    // Execute some trades to create portfolio snapshots
+    await agentClient1.executeTrade({
+      fromToken: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
+      toToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", // WETH
+      amount: "100",
+      reason: "Timeline test trade 1",
+    });
+
+    await agentClient2.executeTrade({
+      fromToken: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
+      toToken: "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", // WBTC
+      amount: "100",
+      reason: "Timeline test trade 2",
+    });
+
+    // Force a snapshot directly
+    const services = new ServiceRegistry();
+    await services.portfolioSnapshotter.takePortfolioSnapshots(competition.id);
+
+    // Disqualify agent 2
+    await adminClient.removeAgentFromCompetition(
+      competition.id,
+      agent2.id,
+      "Agent dq'd from competition",
+    );
+    // Validate the agent 2 status is disqualified
+    const agent2Status = (await adminClient.getCompetitionAgents(
+      competition.id,
+    )) as CompetitionAgentsResponse;
+    expect(agent2Status.success).toBe(true);
+    expect(agent2Status.agents.length).toBe(1);
+    expect(agent2Status.agents[0]?.id).toBe(agent1.id);
+
+    // Get competition timeline
+    const timelineResponse = (await agentClient1.getCompetitionTimeline(
+      competition.id,
+    )) as CompetitionTimelineResponse;
+
+    // Should return only 1 agent ID since agent 2 is disqualified
+    const agentIds = new Set(
+      timelineResponse.timeline.map((agent) => agent.agentId),
+    );
+    expect(agentIds.size).toBe(1);
+    expect(agentIds.has(agent1.id)).toBe(true);
   });
 });
