@@ -401,7 +401,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   stroke="#9CA3AF"
                   fontSize={12}
                   type="category"
-                  interval={0}
+                  interval={5}
                 />
                 <YAxis
                   stroke="#9CA3AF"
