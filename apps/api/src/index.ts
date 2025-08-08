@@ -38,6 +38,7 @@ import { configureUserRoutes } from "@/routes/user.routes.js";
 import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
+import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
 // Create Express app
@@ -210,11 +211,12 @@ const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
 
+const activeCompFilter = activeCompMiddleware();
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
 apiRouter.use("/verify-email", emailVerificationRoutes);
-apiRouter.use("/trade", tradeRoutes);
-apiRouter.use("/price", priceRoutes);
+apiRouter.use("/trade", activeCompFilter, tradeRoutes);
+apiRouter.use("/price", activeCompFilter, priceRoutes);
 apiRouter.use("/competitions", competitionsRoutes);
 apiRouter.use("/admin/setup", adminSetupRoutes);
 apiRouter.use("/admin", adminRoutes);

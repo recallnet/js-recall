@@ -334,6 +334,15 @@ export const config = {
     httpSampleRate: parseFloat(process.env.HTTP_LOG_SAMPLE_RATE || "0.1"),
     level: process.env.LOG_LEVEL || "info",
   },
+
+  // Cache configuration
+  cache: {
+    // Active competition cache TTL in milliseconds (default: 3 seconds)
+    activeCompetitionTtlMs: parseInt(
+      process.env.CACHE_ACTIVE_COMP_TTL_MS || "3000",
+      10,
+    ),
+  },
 };
 
 /**
