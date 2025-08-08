@@ -3,7 +3,7 @@
 import { useDebounce } from "@uidotdev/usehooks";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Image from "next/image";
-import React, { memo, useMemo, useState } from "react";
+import React, { memo, useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -35,23 +35,27 @@ const colors = [
   "#F7DC6F", // Light Yellow
 ];
 
-const CustomTooltip = ({
-  active,
-  payload,
-  label,
-}: {
-  active: boolean;
-  payload: { color: string; dataKey: string; value: Date }[];
-  label?: string | number | undefined;
-}) => {
-  if (active && payload && payload.length) {
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    color: string;
+    dataKey: string;
+    value: number;
+    [key: string]: unknown;
+  }>;
+  label?: string | number;
+}
+
+// Inner component that renders the tooltip content
+const TooltipContent = memo(
+  ({ active, payload, label }: TooltipProps) => {
+    if (!active || !payload || !payload.length) return null;
+
     return (
       <div className="bg-card rounded-[15px] border-gray-600 p-3 shadow-lg">
-        <span className="text-secondary-foreground text-sm">
-          {formatDate(label as string)}
-        </span>
+        <span className="text-secondary-foreground text-sm">{label}</span>
         <div className="my-2 w-full border-t"></div>
-        {payload.map((entry, index: number) => (
+        {payload.map((entry, index) => (
           <div
             key={`${entry.dataKey}-${index}`}
             style={{ color: entry.color }}
@@ -65,8 +69,21 @@ const CustomTooltip = ({
         ))}
       </div>
     );
-  }
-  return null;
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison function for memo
+    return (
+      prevProps.active === nextProps.active &&
+      prevProps.label === nextProps.label &&
+      JSON.stringify(prevProps.payload) === JSON.stringify(nextProps.payload)
+    );
+  },
+);
+TooltipContent.displayName = "TooltipContent";
+
+// Wrapper component that Recharts can properly instantiate
+const CustomTooltip = (props: TooltipProps) => {
+  return <TooltipContent {...props} />;
 };
 
 // Custom Legend Component
@@ -197,9 +214,75 @@ interface PortfolioChartProps {
 
 type TimelineViewRecord = Record<string, { agent: string; amount: number }[]>;
 
+// Memoized chart wrapper to prevent axis flickering
+const ChartWrapper = memo(
+  ({
+    filteredData,
+    filteredDataKeys,
+    colors,
+    shouldAnimate,
+  }: {
+    filteredData: Array<Record<string, string | number>>;
+    filteredDataKeys: string[];
+    colors: string[];
+    shouldAnimate: boolean;
+  }) => {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={filteredData}
+          margin={{
+            top: 5,
+            right: 30,
+            left: 20,
+            bottom: 5,
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <XAxis
+            dataKey="timestamp"
+            stroke="#9CA3AF"
+            fontSize={12}
+            type="category"
+            interval={5}
+          />
+          <YAxis
+            stroke="#9CA3AF"
+            fontSize={12}
+            domain={["dataMin - 100", "dataMax + 100"]}
+            tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
+          />
+          <Tooltip
+            content={CustomTooltip}
+            cursor={{
+              stroke: "#9CA3AF",
+              strokeWidth: 1,
+              strokeDasharray: "5 5",
+            }}
+          />
+          <ChartLines
+            dataKeys={filteredDataKeys}
+            colors={colors}
+            isAnimationActive={shouldAnimate}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  },
+);
+ChartWrapper.displayName = "ChartWrapper";
+
 // Memoized chart lines component to prevent unnecessary re-renders
 const ChartLines = memo(
-  ({ dataKeys, colors }: { dataKeys: string[]; colors: string[] }) => {
+  ({
+    dataKeys,
+    colors,
+    isAnimationActive,
+  }: {
+    dataKeys: string[];
+    colors: string[];
+    isAnimationActive: boolean;
+  }) => {
     return (
       <>
         {dataKeys.map((key, index: number) => (
@@ -210,6 +293,8 @@ const ChartLines = memo(
             connectNulls={true}
             stroke={colors[index % colors.length]}
             strokeWidth={2}
+            isAnimationActive={isAnimationActive}
+            animationDuration={1000}
             dot={{
               fill: colors[index % colors.length],
               strokeWidth: 2,
@@ -238,6 +323,16 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const [shouldAnimate, setShouldAnimate] = useState(true);
+
+  // Disable animation after initial render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldAnimate(false);
+    }, 1500); // Allow animation to complete on initial render
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const parsedData = useMemo(() => {
     if (!timelineRaw) return [];
@@ -385,34 +480,12 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
           </div>
 
           <div className="h-120">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={filteredData}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis
-                  dataKey="timestamp"
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                  type="category"
-                  interval={5}
-                />
-                <YAxis
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                  domain={["dataMin - 100", "dataMax + 100"]}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
-                />
-                <Tooltip content={CustomTooltip} />
-                <ChartLines dataKeys={filteredDataKeys} colors={colors} />
-              </LineChart>
-            </ResponsiveContainer>
+            <ChartWrapper
+              filteredData={filteredData}
+              filteredDataKeys={filteredDataKeys}
+              colors={colors}
+              shouldAnimate={shouldAnimate}
+            />
           </div>
           <div className="border-t-1 my-2 w-full"></div>
           <CustomLegend
