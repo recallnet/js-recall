@@ -4,6 +4,7 @@ import { NextFunction, Request, Response } from "express";
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { competitions } from "@/database/schema/core/defs.js";
+import { middlewareLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { COMPETITION_STATUS } from "@/types/index.js";
 
@@ -16,35 +17,22 @@ import { COMPETITION_STATUS } from "@/types/index.js";
 export const activeCompMiddleware = function () {
   return async function (req: Request, res: Response, next: NextFunction) {
     try {
-      console.log("\n\n\n\n\n");
-      console.log(
-        `[ActiveCompFilterMiddleware] Received request to ${req.method} ${req.originalUrl}`,
-      );
-      console.log("\n\n\n\n\n");
-
       const activeCompetition = await getActiveComp();
       if (!activeCompetition) {
-        console.log("[ActiveCompFilterMiddleware] No active competition found");
+        middlewareLogger.debug("No active competition found");
         throw new ApiError(403, "No active competition");
       }
 
-      console.log(
-        `[ActiveCompFilterMiddleware] Active competition found: ${activeCompetition.id}`,
+      middlewareLogger.debug(
+        `Active competition found: ${activeCompetition.id}`,
       );
 
       // Set competition ID in request for downstream use
       req.competitionId = activeCompetition.id;
 
-      console.log(
-        `[ActiveCompFilterMiddleware] ========== END ACTIVE COMPETITION CHECK ==========\n`,
-      );
-
       next();
     } catch (error) {
-      console.error(
-        `[ActiveCompFilterMiddleware] Error checking active competition:`,
-        error,
-      );
+      middlewareLogger.error(`Error checking active competition:`, error);
       next(error);
     }
   };
@@ -60,11 +48,11 @@ async function getActiveComp() {
   const now = Date.now();
 
   if (now - lastQueryTime < CACHE_ACTIVE_COMP_TTL_MS) {
-    console.log("[ActiveCompFilterMiddleware] Using cached result");
+    middlewareLogger.debug("Using cached result");
     return cachedActiveCompetition;
   }
   // Check for active competition with efficient exists query
-  console.log("[ActiveCompFilterMiddleware] Querying database");
+  middlewareLogger.debug("Querying database");
   const [activeComp] = await db
     .select({ id: competitions.id })
     .from(competitions)
