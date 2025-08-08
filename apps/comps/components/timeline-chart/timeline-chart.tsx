@@ -18,6 +18,7 @@ import { CompetitionStatus } from "@/types";
 import { formatDate } from "@/utils/format";
 
 import { ShareModal } from "../share-modal";
+import { ChartSkeleton } from "./chart-skeleton";
 import { ChartWrapper } from "./chart-wrapper";
 import { HoverContext, LIMIT_AGENTS_PER_PAGE, colors } from "./constants";
 import { CustomLegend } from "./custom-legend";
@@ -34,6 +35,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   totalAgents = 0,
   currentPage = 1,
   onPageChange,
+  suppressInternalLoading = false,
 }) => {
   const { data: timelineRaw, isLoading } = useCompetitionTimeline(
     competition.id,
@@ -485,9 +487,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
           size={20}
         />
       </div>
-      {(timelineRaw && timelineRaw?.length <= 0) ||
-      isLoading ||
-      competition.status === CompetitionStatus.Pending ? (
+      {isLoading && !suppressInternalLoading ? (
+        <ChartSkeleton />
+      ) : (timelineRaw && timelineRaw?.length <= 0) ||
+        competition.status === CompetitionStatus.Pending ? (
         <div className="h-30 flex w-full flex-col items-center justify-center p-10">
           <span className="text-primary-foreground">
             {competition.status === CompetitionStatus.Pending

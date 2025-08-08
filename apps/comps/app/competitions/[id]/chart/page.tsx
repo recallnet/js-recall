@@ -6,8 +6,9 @@ import { notFound } from "next/navigation";
 import { use } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
-import { TimelineChart } from "@/components/timeline-chart";
+import { ChartSkeleton, TimelineChart } from "@/components/timeline-chart";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 
@@ -39,8 +40,29 @@ export default function CompetitionChartPage({
 
   if (competitionLoading || agentsLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-primary-foreground">Loading chart...</div>
+      <div className="bg-background min-h-screen p-4">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-4 text-center">
+            <Skeleton className="mx-auto mb-1 mt-1 h-9 w-64" />
+            <Skeleton className="mx-auto h-5 w-40" />
+          </div>
+
+          <ChartSkeleton />
+
+          <div className="my-8 text-center">
+            <Button
+              variant="ghost"
+              size="lg"
+              className="w-100 uppercase"
+              disabled
+            >
+              <span className="flex items-center gap-2">
+                View Full Competition Details
+                <ArrowRightIcon className="size-4" />
+              </span>
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -69,6 +91,7 @@ export default function CompetitionChartPage({
           currentPage={1}
           onPageChange={handlePageChange}
           className="shadow-2xl"
+          suppressInternalLoading={true}
         />
 
         <div className="my-8 text-center">

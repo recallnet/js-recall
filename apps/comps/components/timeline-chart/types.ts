@@ -36,6 +36,7 @@ export interface PortfolioChartProps {
   totalAgents?: number; // Total number of agents for pagination
   currentPage?: number; // Current page from parent
   onPageChange?: (page: number) => void; // Page change handler
+  suppressInternalLoading?: boolean; // Skip internal loading skeleton when parent handles loading
 }
 
 export interface ChartWrapperProps {
