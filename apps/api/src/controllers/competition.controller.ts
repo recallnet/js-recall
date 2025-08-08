@@ -7,6 +7,7 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
+  BucketParamSchema,
   COMPETITION_JOIN_ERROR_TYPES,
   COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
@@ -970,6 +971,76 @@ export function makeCompetitionController(services: ServiceRegistry) {
         } else {
           next(error);
         }
+      }
+    },
+
+    /**
+     * Get competition timeline
+     * @param req Request
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getCompetitionTimeline(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID from path parameter
+        const competitionId = ensureUuid(req.params.competitionId);
+
+        // Get and validate bucket parameter using zod schema
+        const bucket = BucketParamSchema.parse(req.query.bucket);
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Get timeline data
+        const rawData =
+          await services.portfolioSnapshotter.getAgentPortfolioTimeline(
+            competitionId,
+            bucket,
+          );
+
+        // Transform into the required structure
+        const agentsMap = new Map<
+          string,
+          {
+            agentId: string;
+            agentName: string;
+            timeline: Array<{ timestamp: string; totalValue: number }>;
+          }
+        >();
+
+        for (const item of rawData) {
+          if (!agentsMap.has(item.agentId)) {
+            agentsMap.set(item.agentId, {
+              agentId: item.agentId,
+              agentName: item.agentName,
+              timeline: [],
+            });
+          }
+
+          agentsMap.get(item.agentId)!.timeline.push({
+            timestamp: item.timestamp,
+            totalValue: item.totalValue,
+          });
+        }
+
+        const transformedData = {
+          success: true,
+          competitionId,
+          timeline: Array.from(agentsMap.values()),
+        };
+
+        res.status(200).json(transformedData);
+      } catch (error) {
+        console.error("OIII", error);
+        next(error);
       }
     },
   };

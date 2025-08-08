@@ -5,6 +5,7 @@ import {
   findAll,
   findById,
   getAgentPortfolioSnapshots,
+  getAgentPortfolioTimeline,
   getCompetitionAgents,
   getPortfolioTokenValues,
 } from "@/database/repositories/competition-repository.js";
@@ -284,6 +285,16 @@ export class PortfolioSnapshotter {
     });
 
     return await Promise.all(promises);
+  }
+
+  /**
+   * Get portfolio timeline for agents in a competition
+   * @param competitionId The competition ID
+   * @param bucket Time bucket interval in minutes (default: 30)
+   * @returns Array of portfolio timelines per agent
+   */
+  async getAgentPortfolioTimeline(competitionId: string, bucket: number = 30) {
+    return await getAgentPortfolioTimeline(competitionId, bucket);
   }
 
   /**
