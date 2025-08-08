@@ -1,6 +1,10 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
+import {
+  getBatchVoteCounts,
+  getEnrichedCompetitions,
+} from "@/database/repositories/competition-repository.js";
 import { SelectCompetitionReward } from "@/database/schema/core/types.js";
 import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -480,69 +484,66 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const { competitions, total } =
           await services.competitionManager.getCompetitions(
             status,
+            // Default limit 10, max 100. It's important we don't call this without a limit
             pagingParams,
           );
 
         // If user is authenticated, enrich competitions with voting information
         let enrichedCompetitions = competitions;
         if (userId) {
-          enrichedCompetitions = await Promise.all(
-            competitions.map(async (competition) => {
-              try {
-                // Get voting state for this user and competition
-                const votingState =
-                  await services.voteManager.getCompetitionVotingState(
-                    userId,
-                    competition.id,
-                  );
+          const competitionIds = competitions.map((c) => c.id);
 
-                // Get total vote counts for this competition (for display purposes)
-                const voteCountsMap =
-                  await services.voteManager.getVoteCountsByCompetition(
-                    competition.id,
-                  );
-                const totalVotes = Array.from(voteCountsMap.values()).reduce(
-                  (sum, count) => sum + count,
-                  0,
-                );
+          // Fetch all data in parallel with batch queries
+          const [enrichmentData, voteCountsMap] = await Promise.all([
+            getEnrichedCompetitions(userId, competitionIds),
+            getBatchVoteCounts(competitionIds),
+          ]);
 
-                // Get trading constraints and rewards for this competition
-                const tradingConstraintsRaw =
-                  await services.tradingConstraintsService.getConstraints(
-                    competition.id,
-                  );
-                const tradingConstraints = {
-                  minimumPairAgeHours:
-                    tradingConstraintsRaw?.minimumPairAgeHours,
-                  minimum24hVolumeUsd:
-                    tradingConstraintsRaw?.minimum24hVolumeUsd,
-                  minimumLiquidityUsd:
-                    tradingConstraintsRaw?.minimumLiquidityUsd,
-                  minimumFdvUsd: tradingConstraintsRaw?.minimumFdvUsd,
-                };
-
-                return {
-                  ...competition,
-                  tradingConstraints,
-                  votingEnabled:
-                    votingState.canVote || votingState.info.hasVoted,
-                  userVotingInfo: votingState,
-                  totalVotes,
-                };
-              } catch (error) {
-                // If there's an error getting vote data, just return the competition without vote info
-                competitionLogger.warn(
-                  `Failed to get vote data for competition ${competition.id}:`,
-                  error,
-                );
-                return {
-                  ...competition,
-                  votingEnabled: false,
-                  totalVotes: 0,
-                };
-              }
-            }),
+          // Create lookup maps for efficient access
+          const enrichmentMap = new Map(
+            enrichmentData.map((data) => [data.competitionId, data]),
           );
+
+          enrichedCompetitions = competitions.map((competition) => {
+            const enrichment = enrichmentMap.get(competition.id);
+            if (!enrichment) {
+              throw new ApiError(500, "invalid competition state");
+            }
+
+            const hasVoted = !!enrichment.userVoteAgentId;
+            const compVotingStatus =
+              services.voteManager.checkCompetitionVotingEligibility(
+                competition,
+              );
+
+            const votingState = {
+              canVote: compVotingStatus.canVote,
+              reason: compVotingStatus.reason,
+              info: {
+                hasVoted,
+                agentId: enrichment.userVoteAgentId || undefined,
+                votedAt: enrichment.userVoteCreatedAt || undefined,
+              },
+            };
+
+            const totalVotes =
+              voteCountsMap.get(competition.id)?.totalVotes || 0;
+
+            const tradingConstraints = {
+              minimumPairAgeHours: enrichment.minimumPairAgeHours,
+              minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
+              minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
+              minimumFdvUsd: enrichment.minimumFdvUsd,
+            };
+
+            return {
+              ...competition,
+              tradingConstraints,
+              votingEnabled: votingState.canVote || votingState.info.hasVoted,
+              userVotingInfo: votingState,
+              totalVotes,
+            };
+          });
         }
 
         // Calculate hasMore based on total and current page
