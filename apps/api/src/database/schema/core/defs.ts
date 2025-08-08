@@ -21,6 +21,7 @@ import {
   COMPETITION_AGENT_STATUS_VALUES,
   COMPETITION_STATUS_VALUES,
   COMPETITION_TYPE_VALUES,
+  MAX_HANDLE_LENGTH,
 } from "@/types/index.js";
 
 /**
@@ -94,6 +95,7 @@ export const agents = pgTable(
     ownerId: uuid("owner_id").notNull(),
     walletAddress: varchar("wallet_address", { length: 42 }).unique(),
     name: varchar({ length: 100 }).notNull(),
+    handle: varchar({ length: MAX_HANDLE_LENGTH }).notNull(),
     email: varchar({ length: 100 }).unique(),
     description: text(),
     imageUrl: text("image_url"),
@@ -120,6 +122,7 @@ export const agents = pgTable(
     index("idx_agents_owner_id").on(table.ownerId),
     index("idx_agents_status").on(table.status),
     index("idx_agents_wallet_address").on(table.walletAddress),
+    index("idx_agents_handle").on(table.handle),
     index("idx_agents_api_key").on(table.apiKey),
     foreignKey({
       columns: [table.ownerId],
@@ -127,6 +130,7 @@ export const agents = pgTable(
       name: "agents_owner_id_fkey",
     }).onDelete("cascade"),
     unique("agents_owner_id_name_key").on(table.ownerId, table.name),
+    unique("agents_handle_key").on(table.handle),
     unique("agents_api_key_key").on(table.apiKey),
     unique("agents_wallet_address_key").on(table.walletAddress),
   ],
@@ -398,5 +402,37 @@ export const emailVerificationTokens = pgTable(
 
     // Unique constraint on token
     unique("email_verification_tokens_token_key").on(table.token),
+  ],
+);
+
+/**
+ * Rewards for top agents in a competition
+ */
+export const competitionRewards = pgTable(
+  "competition_rewards",
+  {
+    id: uuid().primaryKey().notNull(),
+    competitionId: uuid("competition_id").notNull(),
+    rank: integer("rank").notNull(),
+    reward: integer("reward").notNull(),
+    agentId: uuid("agent_id"), // Note: nullable since upon creation, the agent ranking is unknown
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "competition_rewards_competition_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.agentId],
+      foreignColumns: [agents.id],
+      name: "competition_rewards_agent_id_fkey",
+    }).onDelete("set null"),
+    unique("competition_rewards_competition_id_rank_key").on(
+      table.competitionId,
+      table.rank,
+    ),
+    index("idx_competition_rewards_competition_id").on(table.competitionId),
+    index("idx_competition_rewards_agent_id").on(table.agentId),
   ],
 );

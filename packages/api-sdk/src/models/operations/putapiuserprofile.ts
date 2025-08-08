@@ -43,6 +43,10 @@ export type PutApiUserProfileUser = {
   walletAddress?: string | null | undefined;
   name?: string | undefined;
   email?: string | null | undefined;
+  /**
+   * Whether the user's email address has been verified
+   */
+  isEmailVerified?: boolean | undefined;
   imageUrl?: string | null | undefined;
   metadata?: PutApiUserProfileMetadataResponse | null | undefined;
   status?: string | undefined;
@@ -302,6 +306,7 @@ export const PutApiUserProfileUser$inboundSchema: z.ZodType<
   walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
   email: z.nullable(z.string()).optional(),
+  isEmailVerified: z.boolean().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z
     .nullable(z.lazy(() => PutApiUserProfileMetadataResponse$inboundSchema))
@@ -325,6 +330,7 @@ export type PutApiUserProfileUser$Outbound = {
   walletAddress?: string | null | undefined;
   name?: string | undefined;
   email?: string | null | undefined;
+  isEmailVerified?: boolean | undefined;
   imageUrl?: string | null | undefined;
   metadata?: PutApiUserProfileMetadataResponse$Outbound | null | undefined;
   status?: string | undefined;
@@ -342,6 +348,7 @@ export const PutApiUserProfileUser$outboundSchema: z.ZodType<
   walletAddress: z.nullable(z.string()).optional(),
   name: z.string().optional(),
   email: z.nullable(z.string()).optional(),
+  isEmailVerified: z.boolean().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z
     .nullable(z.lazy(() => PutApiUserProfileMetadataResponse$outboundSchema))

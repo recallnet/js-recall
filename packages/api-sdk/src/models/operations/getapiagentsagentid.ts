@@ -19,24 +19,59 @@ export type GetApiAgentsAgentIdRequest = {
  */
 export type GetApiAgentsAgentIdMetadata = {};
 
-export type BestPlacement = {
+/**
+ * Best placement across all competitions (null if no ranking data available)
+ */
+export type GetApiAgentsAgentIdBestPlacement = {
   competitionId?: string | undefined;
-  postition?: number | undefined;
-  participants?: number | undefined;
+  rank?: number | undefined;
+  score?: number | undefined;
+  totalAgents?: number | undefined;
 };
 
 /**
  * stats on this agent's past performance
  */
 export type GetApiAgentsAgentIdStats = {
-  competitionsCompleted?: number | undefined;
-  provenSkills?: Array<string> | undefined;
-  bestPlacement?: BestPlacement | undefined;
+  completedCompetitions?: number | undefined;
+  totalTrades?: number | undefined;
+  totalVotes?: number | undefined;
+  /**
+   * Best placement across all competitions (null if no ranking data available)
+   */
+  bestPlacement?: GetApiAgentsAgentIdBestPlacement | null | undefined;
+  rank?: number | undefined;
+  score?: number | undefined;
+};
+
+export type GetApiAgentsAgentIdTrophy = {
+  /**
+   * Competition ID
+   */
+  competitionId?: string | undefined;
+  /**
+   * Competition name
+   */
+  name?: string | undefined;
+  /**
+   * Agent's final rank in the competition
+   */
+  rank?: number | undefined;
+  /**
+   * Competition image URL
+   */
+  imageUrl?: string | undefined;
+  /**
+   * When the trophy was awarded (competition end date)
+   */
+  createdAt?: Date | undefined;
 };
 
 export type GetApiAgentsAgentIdAgent = {
   id?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
+  isVerified?: boolean | undefined;
   imageUrl?: string | null | undefined;
   /**
    * Optional metadata for the agent
@@ -46,7 +81,14 @@ export type GetApiAgentsAgentIdAgent = {
    * stats on this agent's past performance
    */
   stats?: GetApiAgentsAgentIdStats | undefined;
-  trophies?: Array<string> | undefined;
+  /**
+   * Trophies earned from ended competitions
+   */
+  trophies?: Array<GetApiAgentsAgentIdTrophy> | undefined;
+  /**
+   * Skills the agent has proven
+   */
+  skills?: Array<string> | undefined;
   hasUnclaimedRewards?: boolean | undefined;
 };
 
@@ -185,58 +227,67 @@ export function getApiAgentsAgentIdMetadataFromJSON(
 }
 
 /** @internal */
-export const BestPlacement$inboundSchema: z.ZodType<
-  BestPlacement,
+export const GetApiAgentsAgentIdBestPlacement$inboundSchema: z.ZodType<
+  GetApiAgentsAgentIdBestPlacement,
   z.ZodTypeDef,
   unknown
 > = z.object({
   competitionId: z.string().optional(),
-  postition: z.number().int().optional(),
-  participants: z.number().int().optional(),
+  rank: z.number().int().optional(),
+  score: z.number().int().optional(),
+  totalAgents: z.number().int().optional(),
 });
 
 /** @internal */
-export type BestPlacement$Outbound = {
+export type GetApiAgentsAgentIdBestPlacement$Outbound = {
   competitionId?: string | undefined;
-  postition?: number | undefined;
-  participants?: number | undefined;
+  rank?: number | undefined;
+  score?: number | undefined;
+  totalAgents?: number | undefined;
 };
 
 /** @internal */
-export const BestPlacement$outboundSchema: z.ZodType<
-  BestPlacement$Outbound,
+export const GetApiAgentsAgentIdBestPlacement$outboundSchema: z.ZodType<
+  GetApiAgentsAgentIdBestPlacement$Outbound,
   z.ZodTypeDef,
-  BestPlacement
+  GetApiAgentsAgentIdBestPlacement
 > = z.object({
   competitionId: z.string().optional(),
-  postition: z.number().int().optional(),
-  participants: z.number().int().optional(),
+  rank: z.number().int().optional(),
+  score: z.number().int().optional(),
+  totalAgents: z.number().int().optional(),
 });
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace BestPlacement$ {
-  /** @deprecated use `BestPlacement$inboundSchema` instead. */
-  export const inboundSchema = BestPlacement$inboundSchema;
-  /** @deprecated use `BestPlacement$outboundSchema` instead. */
-  export const outboundSchema = BestPlacement$outboundSchema;
-  /** @deprecated use `BestPlacement$Outbound` instead. */
-  export type Outbound = BestPlacement$Outbound;
+export namespace GetApiAgentsAgentIdBestPlacement$ {
+  /** @deprecated use `GetApiAgentsAgentIdBestPlacement$inboundSchema` instead. */
+  export const inboundSchema = GetApiAgentsAgentIdBestPlacement$inboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdBestPlacement$outboundSchema` instead. */
+  export const outboundSchema = GetApiAgentsAgentIdBestPlacement$outboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdBestPlacement$Outbound` instead. */
+  export type Outbound = GetApiAgentsAgentIdBestPlacement$Outbound;
 }
 
-export function bestPlacementToJSON(bestPlacement: BestPlacement): string {
-  return JSON.stringify(BestPlacement$outboundSchema.parse(bestPlacement));
+export function getApiAgentsAgentIdBestPlacementToJSON(
+  getApiAgentsAgentIdBestPlacement: GetApiAgentsAgentIdBestPlacement,
+): string {
+  return JSON.stringify(
+    GetApiAgentsAgentIdBestPlacement$outboundSchema.parse(
+      getApiAgentsAgentIdBestPlacement,
+    ),
+  );
 }
 
-export function bestPlacementFromJSON(
+export function getApiAgentsAgentIdBestPlacementFromJSON(
   jsonString: string,
-): SafeParseResult<BestPlacement, SDKValidationError> {
+): SafeParseResult<GetApiAgentsAgentIdBestPlacement, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => BestPlacement$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'BestPlacement' from JSON`,
+    (x) => GetApiAgentsAgentIdBestPlacement$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiAgentsAgentIdBestPlacement' from JSON`,
   );
 }
 
@@ -246,16 +297,24 @@ export const GetApiAgentsAgentIdStats$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  competitionsCompleted: z.number().int().optional(),
-  provenSkills: z.array(z.string()).optional(),
-  bestPlacement: z.lazy(() => BestPlacement$inboundSchema).optional(),
+  completedCompetitions: z.number().int().optional(),
+  totalTrades: z.number().int().optional(),
+  totalVotes: z.number().int().optional(),
+  bestPlacement: z
+    .nullable(z.lazy(() => GetApiAgentsAgentIdBestPlacement$inboundSchema))
+    .optional(),
+  rank: z.number().int().optional(),
+  score: z.number().optional(),
 });
 
 /** @internal */
 export type GetApiAgentsAgentIdStats$Outbound = {
-  competitionsCompleted?: number | undefined;
-  provenSkills?: Array<string> | undefined;
-  bestPlacement?: BestPlacement$Outbound | undefined;
+  completedCompetitions?: number | undefined;
+  totalTrades?: number | undefined;
+  totalVotes?: number | undefined;
+  bestPlacement?: GetApiAgentsAgentIdBestPlacement$Outbound | null | undefined;
+  rank?: number | undefined;
+  score?: number | undefined;
 };
 
 /** @internal */
@@ -264,9 +323,14 @@ export const GetApiAgentsAgentIdStats$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   GetApiAgentsAgentIdStats
 > = z.object({
-  competitionsCompleted: z.number().int().optional(),
-  provenSkills: z.array(z.string()).optional(),
-  bestPlacement: z.lazy(() => BestPlacement$outboundSchema).optional(),
+  completedCompetitions: z.number().int().optional(),
+  totalTrades: z.number().int().optional(),
+  totalVotes: z.number().int().optional(),
+  bestPlacement: z
+    .nullable(z.lazy(() => GetApiAgentsAgentIdBestPlacement$outboundSchema))
+    .optional(),
+  rank: z.number().int().optional(),
+  score: z.number().optional(),
 });
 
 /**
@@ -301,6 +365,79 @@ export function getApiAgentsAgentIdStatsFromJSON(
 }
 
 /** @internal */
+export const GetApiAgentsAgentIdTrophy$inboundSchema: z.ZodType<
+  GetApiAgentsAgentIdTrophy,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  competitionId: z.string().optional(),
+  name: z.string().optional(),
+  rank: z.number().optional(),
+  imageUrl: z.string().optional(),
+  createdAt: z
+    .string()
+    .datetime({ offset: true })
+    .transform((v) => new Date(v))
+    .optional(),
+});
+
+/** @internal */
+export type GetApiAgentsAgentIdTrophy$Outbound = {
+  competitionId?: string | undefined;
+  name?: string | undefined;
+  rank?: number | undefined;
+  imageUrl?: string | undefined;
+  createdAt?: string | undefined;
+};
+
+/** @internal */
+export const GetApiAgentsAgentIdTrophy$outboundSchema: z.ZodType<
+  GetApiAgentsAgentIdTrophy$Outbound,
+  z.ZodTypeDef,
+  GetApiAgentsAgentIdTrophy
+> = z.object({
+  competitionId: z.string().optional(),
+  name: z.string().optional(),
+  rank: z.number().optional(),
+  imageUrl: z.string().optional(),
+  createdAt: z
+    .date()
+    .transform((v) => v.toISOString())
+    .optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiAgentsAgentIdTrophy$ {
+  /** @deprecated use `GetApiAgentsAgentIdTrophy$inboundSchema` instead. */
+  export const inboundSchema = GetApiAgentsAgentIdTrophy$inboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdTrophy$outboundSchema` instead. */
+  export const outboundSchema = GetApiAgentsAgentIdTrophy$outboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdTrophy$Outbound` instead. */
+  export type Outbound = GetApiAgentsAgentIdTrophy$Outbound;
+}
+
+export function getApiAgentsAgentIdTrophyToJSON(
+  getApiAgentsAgentIdTrophy: GetApiAgentsAgentIdTrophy,
+): string {
+  return JSON.stringify(
+    GetApiAgentsAgentIdTrophy$outboundSchema.parse(getApiAgentsAgentIdTrophy),
+  );
+}
+
+export function getApiAgentsAgentIdTrophyFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiAgentsAgentIdTrophy, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiAgentsAgentIdTrophy$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiAgentsAgentIdTrophy' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiAgentsAgentIdAgent$inboundSchema: z.ZodType<
   GetApiAgentsAgentIdAgent,
   z.ZodTypeDef,
@@ -308,12 +445,17 @@ export const GetApiAgentsAgentIdAgent$inboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
+  isVerified: z.boolean().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z
     .nullable(z.lazy(() => GetApiAgentsAgentIdMetadata$inboundSchema))
     .optional(),
   stats: z.lazy(() => GetApiAgentsAgentIdStats$inboundSchema).optional(),
-  trophies: z.array(z.string()).optional(),
+  trophies: z
+    .array(z.lazy(() => GetApiAgentsAgentIdTrophy$inboundSchema))
+    .optional(),
+  skills: z.array(z.string()).optional(),
   hasUnclaimedRewards: z.boolean().optional(),
 });
 
@@ -321,10 +463,13 @@ export const GetApiAgentsAgentIdAgent$inboundSchema: z.ZodType<
 export type GetApiAgentsAgentIdAgent$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
+  isVerified?: boolean | undefined;
   imageUrl?: string | null | undefined;
   metadata?: GetApiAgentsAgentIdMetadata$Outbound | null | undefined;
   stats?: GetApiAgentsAgentIdStats$Outbound | undefined;
-  trophies?: Array<string> | undefined;
+  trophies?: Array<GetApiAgentsAgentIdTrophy$Outbound> | undefined;
+  skills?: Array<string> | undefined;
   hasUnclaimedRewards?: boolean | undefined;
 };
 
@@ -336,12 +481,17 @@ export const GetApiAgentsAgentIdAgent$outboundSchema: z.ZodType<
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
+  isVerified: z.boolean().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   metadata: z
     .nullable(z.lazy(() => GetApiAgentsAgentIdMetadata$outboundSchema))
     .optional(),
   stats: z.lazy(() => GetApiAgentsAgentIdStats$outboundSchema).optional(),
-  trophies: z.array(z.string()).optional(),
+  trophies: z
+    .array(z.lazy(() => GetApiAgentsAgentIdTrophy$outboundSchema))
+    .optional(),
+  skills: z.array(z.string()).optional(),
   hasUnclaimedRewards: z.boolean().optional(),
 });
 

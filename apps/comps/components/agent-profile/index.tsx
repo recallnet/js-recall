@@ -25,6 +25,7 @@ import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
 import BigNumberDisplay from "../bignumber";
 import { BreadcrumbNav } from "../breadcrumb-nav";
 import { Clipboard } from "../clipboard";
+import { AgentHandleSchema } from "../create-agent";
 import { ShareModal } from "../share-modal/index";
 import { AgentImage } from "./agent-image";
 import AgentBestPlacement from "./best-placement";
@@ -84,33 +85,25 @@ export default function AgentProfile({
   }, [sortState]);
 
   const handleSaveChange =
-    (field: "imageUrl" | "description" | "name" | "skills") =>
+    (field: "imageUrl" | "description" | "name" | "handle" | "skills") =>
     async (value: unknown) => {
       if (!agent) return;
 
-      try {
-        // Special handling for name changes since we *must* need the names to match across environments
-        if (field === "name" && ENABLE_SANDBOX && sandboxAgentData?.agent?.id) {
-          // Update in sandbox first
-          try {
-            await updateSandboxAgent.mutateAsync({
-              agentId: sandboxAgentData.agent.id,
-              name: value as string,
-            });
-          } catch (sandboxError) {
-            console.error(
-              "Failed to update agent name in sandbox:",
-              sandboxError,
-            );
-
-            toast.error("Failed to update agent name in sandbox environment", {
-              description: "The name was not updated. Please try again.",
-            });
-            return;
-          }
+      if (field === "handle") {
+        const handle = value as string;
+        const result = AgentHandleSchema.safeParse(handle);
+        if (!result.success) {
+          const errorMessage =
+            result.error.errors[0]?.message ||
+            "Handle can only contain lowercase letters, numbers, and underscores";
+          toast.error(errorMessage);
+          // Throw error to prevent field from updating
+          throw new Error(errorMessage);
         }
+      }
 
-        // Update in main environment
+      // Update in main environment
+      try {
         await updateAgent.mutateAsync({
           agentId: agent.id,
           params:
@@ -120,6 +113,37 @@ export default function AgentProfile({
                   [field]: value,
                 },
         });
+      } catch (error) {
+        console.error("Failed to update agent:", error);
+        toast.error("Failed to update agent", {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+        throw error;
+      }
+
+      try {
+        // Special handling for name changes since we *must* need the names to match across environments
+        if (
+          (field === "name" || field === "handle") &&
+          ENABLE_SANDBOX &&
+          sandboxAgentData?.agent?.id
+        ) {
+          // Update in sandbox first
+          try {
+            await updateSandboxAgent.mutateAsync({
+              agentId: sandboxAgentData.agent.id,
+              name: field === "name" ? (value as string) : agent.name,
+              handle: field === "handle" ? (value as string) : agent.handle,
+            });
+          } catch (sandboxError) {
+            console.error(
+              "Failed to update agent name in sandbox:",
+              sandboxError,
+            );
+
+            throw sandboxError;
+          }
+        }
 
         toast.success("Agent updated successfully");
       } catch (error) {
@@ -193,8 +217,8 @@ export default function AgentProfile({
                 src={agent.imageUrl || "/agent-placeholder.png"}
                 alt={agent.name}
                 fill={!!agent.imageUrl}
-                width={agent.imageUrl ? undefined : 50}
-                height={agent.imageUrl ? undefined : 50}
+                width={agent.imageUrl ? undefined : 200}
+                height={agent.imageUrl ? undefined : 200}
                 className={cn(
                   agent.imageUrl ? "absolute z-0 object-cover" : "w-50 h-50",
                 )}
@@ -232,23 +256,41 @@ export default function AgentProfile({
               )}
             </div>
             {isUserAgent ? (
-              <EditAgentField
-                title="Agent Name"
-                value={agent.name || ""}
-                onSave={handleSaveChange("name")}
-              >
-                <>
-                  <h1 className="text-primary-foreground max-w-[90%] truncate text-4xl font-bold">
-                    {agent.name}
-                  </h1>
-                  <AgentVerifiedBadge verified={Boolean(agent.walletAddress)} />
-                </>
-              </EditAgentField>
+              <div>
+                <EditAgentField
+                  title="Agent Name"
+                  value={agent.name || ""}
+                  onSave={handleSaveChange("name")}
+                >
+                  <>
+                    <h1 className="text-primary-foreground max-w-[90%] truncate text-4xl font-bold">
+                      {agent.name}
+                    </h1>
+                    <AgentVerifiedBadge
+                      verified={Boolean(agent.walletAddress)}
+                    />
+                  </>
+                </EditAgentField>
+                <EditAgentField
+                  title="Agent Handle"
+                  value={agent.handle || ""}
+                  onSave={handleSaveChange("handle")}
+                >
+                  <span className="text-secondary-foreground max-w-[90%] truncate text-2xl font-semibold">
+                    @{agent.handle}
+                  </span>
+                </EditAgentField>
+              </div>
             ) : (
-              <h1 className="text-primary-foreground flex w-full items-center gap-2 text-4xl font-bold">
-                <span className="truncate">{agent.name}</span>
-                <AgentVerifiedBadge verified={Boolean(agent.walletAddress)} />
-              </h1>
+              <div>
+                <h1 className="text-primary-foreground flex w-full items-center gap-2 text-4xl font-bold">
+                  <span className="truncate">{agent.name}</span>
+                  <AgentVerifiedBadge verified={Boolean(agent.walletAddress)} />
+                </h1>
+                <span className="text-secondary-foreground max-w-[90%] truncate text-2xl font-semibold">
+                  @{agent.handle}
+                </span>
+              </div>
             )}
             {!isUserAgent && (
               <div className="mt-5 flex w-full gap-1 text-nowrap">
@@ -282,7 +324,7 @@ export default function AgentProfile({
             </div>
           </div>
           <div className="flex h-[99px] w-full border-b">
-            <div className="flex flex-1 flex-col items-start gap-2 border-r px-6 py-6 text-xs">
+            <div className="flex flex-1 flex-col items-start gap-2 px-6 py-6 text-xs">
               <span className="text-secondary-foreground w-full text-nowrap text-left font-semibold uppercase">
                 Best Placement
               </span>

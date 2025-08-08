@@ -113,6 +113,16 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: Minimum fully diluted valuation in USD
    *                     example: 100000
+   *               rewards:
+   *                 type: object
+   *                 description: Rewards for competition placements
+   *                 additionalProperties:
+   *                   type: number
+   *                   description: Reward amount for the given rank
+   *                 example:
+   *                   "1": 1000
+   *                   "2": 500
+   *                   "3": 250
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -164,6 +174,36 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Competition creation date
+   *                     rewards:
+   *                       type: array
+   *                       description: Rewards for competition placements
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           rank:
+   *                             type: number
+   *                             description: Rank of the reward
+   *                             example: 1
+   *                           reward:
+   *                             type: number
+   *                             description: Reward amount for the given rank
+   *                             example: 1000
+   *                     tradingConstraints:
+   *                       type: object
+   *                       description: Trading constraints for the competition
+   *                       properties:
+   *                         minimumPairAgeHours:
+   *                           type: number
+   *                           description: Minimum age of trading pairs in hours
+   *                         minimum24hVolumeUsd:
+   *                           type: number
+   *                           description: Minimum 24-hour volume in USD
+   *                         minimumLiquidityUsd:
+   *                           type: number
+   *                           description: Minimum liquidity in USD
+   *                         minimumFdvUsd:
+   *                           type: number
+   *                           description: Minimum fully diluted valuation in USD
    *       400:
    *         description: |-
    *           Bad Request - Various validation errors:
@@ -275,6 +315,16 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: Minimum fully diluted valuation in USD
    *                     example: 100000
+   *               rewards:
+   *                 type: object
+   *                 description: Rewards for competition placements
+   *                 additionalProperties:
+   *                   type: number
+   *                   description: Reward amount for the given rank
+   *                 example:
+   *                   "1": 1000
+   *                   "2": 500
+   *                   "3": 250
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -335,6 +385,37 @@ export function configureAdminRoutes(
    *                       items:
    *                         type: string
    *                       description: Agent IDs participating in the competition
+   *                     rewards:
+   *                       type: array
+   *                       description: Rewards for competition placements
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           rank:
+   *                             type: number
+   *                             description: Rank of the reward
+   *                             example: 1
+   *                           reward:
+   *                             type: number
+   *                             description: Reward amount for the given rank
+   *                             example: 1000
+   *                         description: Reward amount for the given rank
+   *                     tradingConstraints:
+   *                       type: object
+   *                       description: Trading constraints for the competition
+   *                       properties:
+   *                         minimumPairAgeHours:
+   *                           type: number
+   *                           description: Minimum age of trading pairs in hours
+   *                         minimum24hVolumeUsd:
+   *                           type: number
+   *                           description: Minimum 24-hour volume in USD
+   *                         minimumLiquidityUsd:
+   *                           type: number
+   *                           description: Minimum liquidity in USD
+   *                         minimumFdvUsd:
+   *                           type: number
+   *                           description: Minimum fully diluted valuation in USD
    *                 initializedAgents:
    *                   type: array
    *                   items:
@@ -501,6 +582,13 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: Voting end date
    *                 example: 2023-05-07T23:59:59Z
+   *               rewards:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Rewards for competition placements
+   *                 additionalProperties:
+   *                   type: number
+   *                   description: Reward amount for the given rank
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -560,6 +648,20 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [pending, active, ended]
    *                       description: Competition status
+   *                     rewards:
+   *                       type: array
+   *                       description: Rewards for competition placements
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           rank:
+   *                             type: number
+   *                             description: Rank of the reward
+   *                             example: 1
+   *                           reward:
+   *                             type: number
+   *                             description: Reward amount for the given rank
+   *                             example: 1000
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -732,6 +834,9 @@ export function configureAdminRoutes(
    *                       agentName:
    *                         type: string
    *                         description: Agent name
+   *                       agentHandle:
+   *                         type: string
+   *                         description: Agent handle
    *                       portfolioValue:
    *                         type: number
    *                         description: Portfolio value
@@ -790,6 +895,10 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: Name for the user's first agent (optional)
    *                 example: Trading Bot Alpha
+   *               agentHandle:
+   *                 type: string
+   *                 description: Handle for the user's first agent (optional)
+   *                 example: trading_bot_alpha
    *               agentDescription:
    *                 type: string
    *                 description: Description of the agent (optional)
@@ -841,6 +950,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: User name
+   *                     handle:
+   *                       type: string
+   *                       description: User handle
    *                     email:
    *                       type: string
    *                       description: User email
@@ -882,6 +994,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     email:
    *                       type: string
    *                       description: Agent email
@@ -1028,6 +1143,9 @@ export function configureAdminRoutes(
    *                       name:
    *                         type: string
    *                         description: Agent name
+   *                       handle:
+   *                         type: string
+   *                         description: Agent handle
    *                       email:
    *                         type: string
    *                         description: Agent email
@@ -1104,6 +1222,10 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Agent name
    *                     example: My Agent
+   *                   handle:
+   *                     type: string
+   *                     description: Agent handle
+   *                     example: my_agent
    *                   walletAddress:
    *                     type: string
    *                     description: The agent wallet address. Must be provided if userWalletAddress is not provided.
@@ -1149,6 +1271,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     walletAddress:
    *                       type: string
    *                       description: Agent wallet address
@@ -1232,6 +1357,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     apiKey:
    *                       type: string
    *                       description: The agent's API key
@@ -1336,6 +1464,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     status:
    *                       type: string
    *                       description: Agent status (will be inactive)
@@ -1387,6 +1518,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     status:
    *                       type: string
    *                       description: Agent status (will be active)
@@ -1441,6 +1575,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     email:
    *                       type: string
    *                       description: Agent email
@@ -1546,6 +1683,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     email:
    *                       type: string
    *                       description: Agent email
@@ -1703,6 +1843,8 @@ export function configureAdminRoutes(
    *                             type: string
    *                           name:
    *                             type: string
+   *                           handle:
+   *                             type: string
    *                           description:
    *                             type: string
    *                             nullable: true
@@ -1778,6 +1920,9 @@ export function configureAdminRoutes(
    *                     name:
    *                       type: string
    *                       description: Agent name
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                     ownerId:
    *                       type: string
    *                       description: Agent owner ID
@@ -1866,6 +2011,9 @@ export function configureAdminRoutes(
    *                       type: string
    *                     name:
    *                       type: string
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                 competition:
    *                   type: object
    *                   properties:
@@ -1934,6 +2082,9 @@ export function configureAdminRoutes(
    *                       type: string
    *                     name:
    *                       type: string
+   *                     handle:
+   *                       type: string
+   *                       description: Agent handle
    *                 competition:
    *                   type: object
    *                   properties:

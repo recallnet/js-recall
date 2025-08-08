@@ -27,7 +27,7 @@ import { Result } from "../types/fp.js";
  * Deactivate an agent
  *
  * @remarks
- * Deactivate an agent from the system. The agent will no longer be able to perform any actions.
+ * Globally deactivate an agent. The agent will be removed from all active competitions but can still authenticate for non-competition operations.
  */
 export function adminPostApiAdminAgentsAgentIdDeactivate(
   client: ApiSDKCore,

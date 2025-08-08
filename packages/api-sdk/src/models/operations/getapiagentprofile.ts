@@ -27,7 +27,9 @@ export type GetApiAgentProfileAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   description?: string | undefined;
   imageUrl?: string | null | undefined;
   email?: string | null | undefined;
@@ -44,6 +46,7 @@ export type GetApiAgentProfileOwner = {
   id?: string | undefined;
   walletAddress?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   email?: string | undefined;
   imageUrl?: string | undefined;
 };
@@ -135,7 +138,9 @@ export const GetApiAgentProfileAgent$inboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   email: z.nullable(z.string()).optional(),
@@ -160,7 +165,9 @@ export type GetApiAgentProfileAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   description?: string | undefined;
   imageUrl?: string | null | undefined;
   email?: string | null | undefined;
@@ -179,7 +186,9 @@ export const GetApiAgentProfileAgent$outboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.nullable(z.string()).optional(),
   email: z.nullable(z.string()).optional(),
@@ -237,6 +246,7 @@ export const GetApiAgentProfileOwner$inboundSchema: z.ZodType<
   id: z.string().optional(),
   walletAddress: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   email: z.string().optional(),
   imageUrl: z.string().optional(),
 });
@@ -246,6 +256,7 @@ export type GetApiAgentProfileOwner$Outbound = {
   id?: string | undefined;
   walletAddress?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   email?: string | undefined;
   imageUrl?: string | undefined;
 };
@@ -259,6 +270,7 @@ export const GetApiAgentProfileOwner$outboundSchema: z.ZodType<
   id: z.string().optional(),
   walletAddress: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   email: z.string().optional(),
   imageUrl: z.string().optional(),
 });

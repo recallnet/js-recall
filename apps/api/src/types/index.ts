@@ -4,17 +4,6 @@ import { SiweMessage } from "siwe";
 import { z } from "zod/v4";
 
 /**
- * Token information interface
- */
-export interface TokenInfo {
-  address: string;
-  symbol: string;
-  decimals: number;
-  price?: number;
-  lastUpdated?: Date;
-}
-
-/**
  * Blockchain type enum
  */
 export enum BlockchainType {
@@ -22,20 +11,24 @@ export enum BlockchainType {
   EVM = "evm",
 }
 
-// type for specific chains
-export type SpecificChain =
-  | "eth" // Ethereum Mainnet
-  | "polygon" // Polygon
-  | "bsc" // Binance Smart Chain
-  | "arbitrum" // Arbitrum
-  | "optimism" // Optimism
-  | "avalanche" // Avalanche
-  | "base" // Base
-  | "linea" // Linea
-  | "zksync" // zkSync Era
-  | "scroll" // Scroll
-  | "mantle" // Mantle
-  | "svm"; // Solana (for consistency)
+// Zod schema for SpecificChain validation
+export const SpecificChainSchema = z.enum([
+  "eth",
+  "polygon",
+  "bsc",
+  "arbitrum",
+  "optimism",
+  "avalanche",
+  "base",
+  "linea",
+  "zksync",
+  "scroll",
+  "mantle",
+  "svm",
+]);
+
+// Type derived from the Zod schema
+export type SpecificChain = z.infer<typeof SpecificChainSchema>;
 
 // Mapping from SpecificChain to BlockchainType
 export const chainTypeMapping: Record<SpecificChain, BlockchainType> = {
@@ -561,12 +554,23 @@ export const ActorStatusSchema = z.enum(ACTOR_STATUS_VALUES);
 export type ActorStatus = z.infer<typeof ActorStatusSchema>;
 
 /**
+ * Minimum length of a handle.
+ */
+export const MIN_HANDLE_LENGTH = 3;
+
+/**
+ * Maximum length of a handle.
+ */
+export const MAX_HANDLE_LENGTH = 15;
+
+/**
  * Agent information Object
  */
 export const AgentSchema = z.object({
   id: z.string(),
   ownerId: z.string(),
   name: z.string(),
+  handle: z.string(),
   walletAddress: z.nullish(z.string()),
   email: z.nullish(z.email()),
   description: z.nullish(z.string()),
@@ -589,6 +593,18 @@ export const AgentPublicSchema = AgentSchema.omit({
   isVerified: z.boolean(),
 });
 export type AgentPublic = z.infer<typeof AgentPublicSchema>;
+
+/**
+ * Trading Constraint Schema
+ */
+export const TradingConstraintsSchema = z
+  .object({
+    minimumPairAgeHours: z.number().min(0),
+    minimum24hVolumeUsd: z.number().min(0),
+    minimumLiquidityUsd: z.number().min(0),
+    minimumFdvUsd: z.number().min(0),
+  })
+  .optional();
 
 /**
  * Competition status values for zod or database enum.
@@ -678,8 +694,14 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   type: CompetitionTypeSchema.optional(),
   externalUrl: z.string().optional(),
   imageUrl: z.string().optional(),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
   votingStartDate: z.date().optional(),
   votingEndDate: z.date().optional(),
+  joinStartDate: z.date().optional(),
+  joinEndDate: z.date().optional(),
+  rewards: z.record(z.number(), z.number()).optional(),
+  tradingConstraints: TradingConstraintsSchema.optional(),
 });
 
 export type CompetitionAllowedUpdate = z.infer<
@@ -766,6 +788,23 @@ export const UpdateUserProfileSchema = z
   .strict();
 
 /**
+ * Agent handle validation schema
+ */
+export const AgentHandleSchema = z
+  .string()
+  .trim()
+  .min(MIN_HANDLE_LENGTH, {
+    message: `Handle must be at least ${MIN_HANDLE_LENGTH} characters`,
+  })
+  .max(MAX_HANDLE_LENGTH, {
+    message: `Handle must be at most ${MAX_HANDLE_LENGTH} characters`,
+  })
+  .regex(new RegExp(`^[a-z0-9_]+$`), {
+    message:
+      "Handle can only contain lowercase letters, numbers, and underscores",
+  });
+
+/**
  * Create agent parameters schema
  */
 export const CreateAgentBodySchema = z
@@ -773,7 +812,9 @@ export const CreateAgentBodySchema = z
     name: z
       .string("Invalid name format")
       .trim()
-      .min(1, { message: "Name is required" }),
+      .min(1, { message: "Name is required" })
+      .max(100, { message: "Name must be 100 characters or less" }),
+    handle: AgentHandleSchema,
     description: z
       .string("Invalid description format")
       .trim()
@@ -804,7 +845,9 @@ export const UpdateUserAgentProfileBodySchema = z
       .string("Invalid name format")
       .trim()
       .min(1, { message: "Name must be at least 1 character" })
+      .max(100, { message: "Name must be 100 characters or less" })
       .optional(),
+    handle: AgentHandleSchema.optional(),
     description: z
       .string("Invalid description format")
       .trim()
@@ -896,7 +939,10 @@ export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;
  * Structure for an agent entry in the global leaderboard
  */
 export interface LeaderboardAgent
-  extends Pick<Agent, "id" | "name" | "description" | "imageUrl" | "metadata"> {
+  extends Pick<
+    Agent,
+    "id" | "name" | "handle" | "description" | "imageUrl" | "metadata"
+  > {
   rank: number;
   score: number;
   numCompetitions: number;
@@ -1055,7 +1101,10 @@ export const AdminCreateAgentSchema = z.object({
       message: "Must provide either user ID or user wallet address",
     }),
   agent: z.object({
-    name: z.string(),
+    name: z
+      .string()
+      .max(100, { message: "Name must be 100 characters or less" }),
+    handle: AgentHandleSchema.optional(),
     email: z.string().optional(),
     walletAddress: z.string().optional(),
     description: z.string().optional(),
@@ -1083,6 +1132,7 @@ export type UserSearchParams = z.infer<typeof UserSearchParamsSchema>;
  */
 export const AgentSearchParamsSchema = z.object({
   name: z.string().optional(),
+  handle: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.string().optional(),
   status: ActorStatusSchema.optional(),

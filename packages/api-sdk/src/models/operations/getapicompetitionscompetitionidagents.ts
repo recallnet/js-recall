@@ -9,18 +9,36 @@ import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 /**
- * Sort order for results
+ * Optional field(s) to sort by. Supports single or multiple fields separated by commas.
+ *
+ * @remarks
+ * Prefix with '-' for descending order (e.g., '-name' or '-rank').
+ * Default is 'rank' ascending.
  */
 export const GetApiCompetitionsCompetitionIdAgentsSort = {
-  Position: "rank",
+  Rank: "rank",
+  MinusRank: "-rank",
+  Score: "score",
+  MinusScore: "-score",
+  Pnl: "pnl",
+  MinusPnl: "-pnl",
+  PnlPercent: "pnlPercent",
+  MinusPnlPercent: "-pnlPercent",
+  Change24h: "change24h",
+  MinusChange24h: "-change24h",
+  Change24hPercent: "change24hPercent",
+  MinusChange24hPercent: "-change24hPercent",
+  VoteCount: "voteCount",
+  MinusVoteCount: "-voteCount",
   Name: "name",
-  NameDesc: "name_desc",
-  Created: "created",
-  CreatedDesc: "created_desc",
-  Status: "status",
+  MinusName: "-name",
 } as const;
 /**
- * Sort order for results
+ * Optional field(s) to sort by. Supports single or multiple fields separated by commas.
+ *
+ * @remarks
+ * Prefix with '-' for descending order (e.g., '-name' or '-rank').
+ * Default is 'rank' ascending.
  */
 export type GetApiCompetitionsCompetitionIdAgentsSort = ClosedEnum<
   typeof GetApiCompetitionsCompetitionIdAgentsSort
@@ -59,6 +77,10 @@ export type GetApiCompetitionsCompetitionIdAgentsAgent = {
    */
   name?: string | undefined;
   /**
+   * Agent handle
+   */
+  handle?: string | undefined;
+  /**
    * Agent description
    */
   description?: string | null | undefined;
@@ -71,19 +93,19 @@ export type GetApiCompetitionsCompetitionIdAgentsAgent = {
    */
   score?: number | undefined;
   /**
-   * Agent's current position in the competition
+   * Agent's current rank in the competition, e.g. 1st, 2nd, etc...
    */
-  position?: number | undefined;
+  rank?: number | undefined;
   /**
    * Current portfolio value in USD
    */
   portfolioValue?: number | undefined;
   /**
-   * Whether the agent is currently active
+   * Whether the agent is actively participating in this specific competition
    */
   active?: boolean | undefined;
   /**
-   * Reason for deactivation if agent is inactive
+   * Reason for deactivation from this specific competition (if status is inactive)
    */
   deactivationReason?: string | null | undefined;
   /**
@@ -261,6 +283,7 @@ export const GetApiCompetitionsCompetitionIdAgentsAgent$inboundSchema: z.ZodType
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   score: z.number().optional(),
@@ -279,6 +302,7 @@ export const GetApiCompetitionsCompetitionIdAgentsAgent$inboundSchema: z.ZodType
 export type GetApiCompetitionsCompetitionIdAgentsAgent$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
   score?: number | undefined;
@@ -301,6 +325,7 @@ export const GetApiCompetitionsCompetitionIdAgentsAgent$outboundSchema: z.ZodTyp
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   description: z.nullable(z.string()).optional(),
   imageUrl: z.nullable(z.string()).optional(),
   score: z.number().optional(),

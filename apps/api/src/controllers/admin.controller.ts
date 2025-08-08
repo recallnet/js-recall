@@ -5,7 +5,12 @@ import * as path from "path";
 
 import { config, reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
+import {
+  SelectCompetitionReward,
+  UpdateCompetition,
+} from "@/database/schema/core/types.js";
 import { flatParse } from "@/lib/flat-parse.js";
+import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -39,11 +44,9 @@ import {
   AdminUpdateAgentBodySchema,
   AdminUpdateAgentParamsSchema,
   AdminUpdateCompetitionParamsSchema,
+  AdminUpdateCompetitionSchema,
 } from "./admin.schema.js";
-import {
-  ensureCompetitionUpdate,
-  parseAdminSearchQuery,
-} from "./request-helpers.js";
+import { parseAdminSearchQuery } from "./request-helpers.js";
 
 // TODO: need user deactivation logic
 
@@ -54,6 +57,7 @@ interface Agent {
   ownerId: string;
   walletAddress: string | null;
   name: string;
+  handle: string;
   description: string | null;
   imageUrl: string | null;
   apiKey: string;
@@ -259,6 +263,7 @@ export function makeAdminController(services: ServiceRegistry) {
           userImageUrl,
           userMetadata,
           agentName,
+          agentHandle,
           agentDescription,
           agentImageUrl,
           agentMetadata,
@@ -296,6 +301,7 @@ export function makeAdminController(services: ServiceRegistry) {
               agent = await services.agentManager.createAgent({
                 ownerId: user.id,
                 name: agentName,
+                handle: agentHandle ?? generateHandleFromName(agentName), // Auto-generate from name
                 description: agentDescription,
                 imageUrl: agentImageUrl,
                 metadata: agentMetadata,
@@ -347,6 +353,7 @@ export function makeAdminController(services: ServiceRegistry) {
               ownerId: agent.ownerId,
               walletAddress: agent.walletAddress,
               name: agent.name,
+              handle: agent.handle ?? generateHandleFromName(agent.name),
               description: agent.description,
               imageUrl: agent.imageUrl,
               apiKey: agent.apiKey,
@@ -416,6 +423,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const { id: userId, walletAddress: userWalletAddress } = user;
         const {
           name,
+          handle,
           email,
           walletAddress: agentWalletAddress,
           description,
@@ -444,6 +452,7 @@ export function makeAdminController(services: ServiceRegistry) {
           const agent = await services.agentManager.createAgent({
             ownerId: existingUser.id,
             name,
+            handle: handle ?? generateHandleFromName(name),
             description,
             email,
             imageUrl,
@@ -453,7 +462,10 @@ export function makeAdminController(services: ServiceRegistry) {
 
           const response: AdminAgentRegistrationResponse = {
             success: true,
-            agent,
+            agent: {
+              ...agent,
+              handle: agent.handle,
+            },
           };
 
           return res.status(201).json(response);
@@ -525,6 +537,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinStartDate,
           joinEndDate,
           tradingConstraints,
+          rewards,
         } = result.data;
 
         // Create a new competition
@@ -542,6 +555,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinStartDate ? new Date(joinStartDate) : undefined,
           joinEndDate ? new Date(joinEndDate) : undefined,
           tradingConstraints,
+          rewards,
         );
 
         // Return the created competition
@@ -579,7 +593,10 @@ export function makeAdminController(services: ServiceRegistry) {
           endDate,
           votingStartDate,
           votingEndDate,
+          joinStartDate,
+          joinEndDate,
           tradingConstraints,
+          rewards,
         } = result.data;
 
         // Validate that all provided agent IDs exist in the database and are active
@@ -676,6 +693,10 @@ export function makeAdminController(services: ServiceRegistry) {
             endDate ? new Date(endDate) : undefined,
             votingStartDate ? new Date(votingStartDate) : undefined,
             votingEndDate ? new Date(votingEndDate) : undefined,
+            joinStartDate ? new Date(joinStartDate) : undefined,
+            joinEndDate ? new Date(joinEndDate) : undefined,
+            tradingConstraints,
+            rewards,
           );
         }
 
@@ -723,6 +744,12 @@ export function makeAdminController(services: ServiceRegistry) {
         const leaderboard =
           await services.competitionManager.getLeaderboard(competitionId);
 
+        // Assign winners to the rewards
+        await services.competitionRewardService.assignWinnersToRewards(
+          competitionId,
+          leaderboard,
+        );
+
         adminLogger.info(
           `Successfully ended competition, id: ${competitionId}`,
         );
@@ -755,10 +782,25 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         const { competitionId } = paramsResult.data;
-        const updates = ensureCompetitionUpdate(req);
+        const bodyResult = flatParse(AdminUpdateCompetitionSchema, req.body);
+        if (!bodyResult.success) {
+          throw new ApiError(
+            400,
+            `Invalid request format: ${bodyResult.error}`,
+          );
+        }
+
+        // Extract rewards and tradingConstraints from the validated data
+        const { rewards, tradingConstraints, ...competitionUpdates } =
+          bodyResult.data;
+        const updates = competitionUpdates as UpdateCompetition;
 
         // Check if there are any updates to apply
-        if (Object.keys(updates).length === 0) {
+        if (
+          Object.keys(updates).length === 0 &&
+          !rewards &&
+          !tradingConstraints
+        ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
 
@@ -769,10 +811,34 @@ export function makeAdminController(services: ServiceRegistry) {
             updates,
           );
 
+        // Update the trading constraints
+        if (tradingConstraints) {
+          await services.tradingConstraintsService.updateConstraints(
+            competitionId,
+            tradingConstraints,
+          );
+        }
+
+        // Update the rewards
+        let updatedRewards: SelectCompetitionReward[] = [];
+        if (rewards) {
+          updatedRewards =
+            await services.competitionRewardService.replaceRewards(
+              competitionId,
+              rewards,
+            );
+        }
+
         // Return the updated competition
         res.status(200).json({
           success: true,
-          competition: updatedCompetition,
+          competition: {
+            ...updatedCompetition,
+            rewards: updatedRewards.map((reward) => ({
+              rank: reward.rank,
+              reward: reward.reward,
+            })),
+          },
         });
       } catch (error) {
         next(error);
@@ -829,6 +895,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agent.id,
             {
               name: agent.name,
+              handle: agent.handle,
               ownerName: userMap.get(agent.ownerId) || "Unknown Owner",
             },
           ]),
@@ -839,6 +906,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rank: index + 1,
           agentId: entry.agentId,
           agentName: agentMap.get(entry.agentId)?.name || "Unknown Agent",
+          agentHandle: agentMap.get(entry.agentId)?.handle || "unknown_agent",
           ownerName: agentMap.get(entry.agentId)?.ownerName || "Unknown Owner",
           portfolioValue: entry.value,
         }));
@@ -1031,6 +1099,7 @@ export function makeAdminController(services: ServiceRegistry) {
             ownerId: agent.ownerId,
             walletAddress: agent.walletAddress,
             name: agent.name,
+            handle: agent.handle,
             description: agent.description,
             status: agent.status,
             imageUrl: agent.imageUrl,
@@ -1083,6 +1152,7 @@ export function makeAdminController(services: ServiceRegistry) {
           ownerId: agent.ownerId,
           walletAddress: agent.walletAddress,
           name: agent.name,
+          handle: agent.handle,
           email: agent.email,
           description: agent.description,
           status: agent.status,
@@ -1204,6 +1274,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agent: {
               id: agent.id,
               name: agent.name,
+              handle: agent.handle,
               status: agent.status,
             },
           });
@@ -1278,6 +1349,7 @@ export function makeAdminController(services: ServiceRegistry) {
             agent: {
               id: agent.id,
               name: agent.name,
+              handle: agent.handle,
               status: agent.status,
             },
           });
@@ -1343,6 +1415,7 @@ export function makeAdminController(services: ServiceRegistry) {
           ownerId: agent.ownerId,
           walletAddress: agent.walletAddress,
           name: agent.name,
+          handle: agent.handle,
           email: agent.email,
           description: agent.description,
           status: agent.status as ActorStatus,
@@ -1392,7 +1465,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         const { agentId } = paramsResult.data;
-        const { name, description, imageUrl, email, metadata } =
+        const { name, handle, description, imageUrl, email, metadata } =
           bodyResult.data;
 
         // Get the current agent
@@ -1408,6 +1481,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const updateData = {
           id: agentId,
           name: name ?? agent.name,
+          handle: handle ?? agent.handle,
           description: description ?? agent.description,
           imageUrl: imageUrl ?? agent.imageUrl,
           email: email ?? agent.email,
@@ -1535,6 +1609,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agent: {
             id: agent.id,
             name: agent.name,
+            handle: agent.handle,
           },
           competition: {
             id: competition.id,
@@ -1626,6 +1701,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agent: {
             id: agent.id,
             name: agent.name,
+            handle: agent.handle,
           },
           competition: {
             id: competition.id,
@@ -1772,6 +1848,7 @@ export function makeAdminController(services: ServiceRegistry) {
           agent: {
             id: agent.id,
             name: agent.name,
+            handle: agent.handle,
             ownerId: agent.ownerId,
           },
           competition: {

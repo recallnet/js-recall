@@ -49,7 +49,6 @@ import {
   ResetApiKeyResponse,
   SpecificChain,
   StartCompetitionResponse,
-  TokenInfoResponse,
   TradeExecutionParams,
   TradeHistoryResponse,
   TradeResponse,
@@ -273,6 +272,7 @@ export class ApiClient {
     userImageUrl,
     userMetadata,
     agentName,
+    agentHandle,
     agentDescription,
     agentImageUrl,
     agentMetadata,
@@ -284,6 +284,7 @@ export class ApiClient {
     userImageUrl?: string;
     userMetadata?: UserMetadata;
     agentName?: string;
+    agentHandle?: string;
     agentDescription?: string;
     agentImageUrl?: string;
     agentMetadata?: AgentMetadata;
@@ -297,6 +298,7 @@ export class ApiClient {
         userImageUrl,
         userMetadata,
         agentName,
+        agentHandle,
         agentDescription,
         agentImageUrl,
         agentMetadata,
@@ -330,6 +332,7 @@ export class ApiClient {
     };
     agent: {
       name: string;
+      handle?: string;
       email?: string;
       walletAddress?: string;
       description?: string;
@@ -429,6 +432,7 @@ export class ApiClient {
     joinStartDate?: string,
     joinEndDate?: string,
     tradingConstraints?: TradingConstraints,
+    rewards?: Record<number, number>,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -447,6 +451,7 @@ export class ApiClient {
           joinStartDate,
           joinEndDate,
           tradingConstraints,
+          rewards,
         },
       );
 
@@ -566,6 +571,7 @@ export class ApiClient {
     agentId: string,
     profileData: {
       name?: string;
+      handle?: string;
       description?: string;
       imageUrl?: string;
       email?: string;
@@ -1161,34 +1167,6 @@ export class ApiClient {
   }
 
   /**
-   * Get detailed token information
-   *
-   * @param token The token address
-   * @param chain Optional blockchain type (auto-detected if not provided)
-   * @param specificChain Optional specific chain for EVM tokens
-   * @returns A promise that resolves to the token info response
-   */
-  async getTokenInfo(
-    token: string,
-    chain?: BlockchainType,
-    specificChain?: SpecificChain,
-  ): Promise<TokenInfoResponse | ErrorResponse> {
-    try {
-      let path = `/api/price/token-info?token=${encodeURIComponent(token)}`;
-      if (chain) {
-        path += `&chain=${encodeURIComponent(chain)}`;
-      }
-      if (specificChain) {
-        path += `&specificChain=${encodeURIComponent(specificChain)}`;
-      }
-      const response = await this.axiosInstance.get(path);
-      return response.data as TokenInfoResponse;
-    } catch (error) {
-      return this.handleApiError(error, "get token info");
-    }
-  }
-
-  /**
    * Get price history for a token
    *
    * @param token The token address
@@ -1489,12 +1467,14 @@ export class ApiClient {
   /**
    * Create a new agent for the authenticated user
    * @param name Agent name (required, must be unique for this user)
+   * @param handle Optional agent handle (auto-generated if not provided)
    * @param description Optional agent description
    * @param imageUrl Optional agent image URL
    * @param metadata Optional agent metadata
    */
   async createAgent(
     name: string,
+    handle: string,
     description?: string,
     imageUrl?: string,
     metadata?: Record<string, unknown>,
@@ -1502,6 +1482,7 @@ export class ApiClient {
     try {
       const response = await this.axiosInstance.post("/api/user/agents", {
         name,
+        handle,
         description,
         imageUrl,
         metadata,

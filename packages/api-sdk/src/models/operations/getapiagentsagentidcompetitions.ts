@@ -13,6 +13,30 @@ export type GetApiAgentsAgentIdCompetitionsRequest = {
    * The UUID of the agent
    */
   agentId: string;
+  /**
+   * Optional field(s) to sort by. Supports single or multiple fields separated by commas.
+   *
+   * @remarks
+   * Prefix with '-' for descending order (e.g., '-name' or 'name,-createdAt').
+   * Available fields: id, name, description, startDate, endDate, createdAt, updatedAt, portfolioValue, pnl, totalTrades, rank.
+   */
+  sort?: string | undefined;
+  /**
+   * Optional field to choose max size of result set (default value is `10`)
+   */
+  limit?: string | undefined;
+  /**
+   * Optional field to choose offset of result set (default value is `0`)
+   */
+  offset?: string | undefined;
+  /**
+   * Optional field to filter results to only include competitions with given status.
+   */
+  status?: string | undefined;
+  /**
+   * Optional field to filter results to only include competitions with rewards that have been claimed if value is true, or unclaimed if value is false.
+   */
+  claimed?: boolean | undefined;
 };
 
 export const GetApiAgentsAgentIdCompetitionsStatus = {
@@ -24,13 +48,51 @@ export type GetApiAgentsAgentIdCompetitionsStatus = ClosedEnum<
   typeof GetApiAgentsAgentIdCompetitionsStatus
 >;
 
+/**
+ * Agent's ranking in this competition (null if no ranking data available)
+ */
+export type GetApiAgentsAgentIdCompetitionsBestPlacement = {
+  /**
+   * Agent's rank in the competition (1-based)
+   */
+  rank?: number | undefined;
+  /**
+   * Total number of agents in the competition
+   */
+  totalAgents?: number | undefined;
+};
+
 export type GetApiAgentsAgentIdCompetitionsCompetition = {
   id?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   status?: GetApiAgentsAgentIdCompetitionsStatus | undefined;
   startDate?: Date | undefined;
   endDate?: Date | undefined;
   description?: string | undefined;
+  /**
+   * Agent's current portfolio value in this competition
+   */
+  portfolioValue?: number | undefined;
+  /**
+   * Agent's profit/loss amount in this competition
+   */
+  pnl?: number | undefined;
+  /**
+   * Agent's profit/loss percentage in this competition
+   */
+  pnlPercent?: number | undefined;
+  /**
+   * Total number of trades made by agent in this competition
+   */
+  totalTrades?: number | undefined;
+  /**
+   * Agent's ranking in this competition (null if no ranking data available)
+   */
+  bestPlacement?:
+    | GetApiAgentsAgentIdCompetitionsBestPlacement
+    | null
+    | undefined;
 };
 
 /**
@@ -48,11 +110,21 @@ export const GetApiAgentsAgentIdCompetitionsRequest$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   agentId: z.string(),
+  sort: z.string().optional(),
+  limit: z.string().optional(),
+  offset: z.string().optional(),
+  status: z.string().optional(),
+  claimed: z.boolean().optional(),
 });
 
 /** @internal */
 export type GetApiAgentsAgentIdCompetitionsRequest$Outbound = {
   agentId: string;
+  sort?: string | undefined;
+  limit?: string | undefined;
+  offset?: string | undefined;
+  status?: string | undefined;
+  claimed?: boolean | undefined;
 };
 
 /** @internal */
@@ -62,6 +134,11 @@ export const GetApiAgentsAgentIdCompetitionsRequest$outboundSchema: z.ZodType<
   GetApiAgentsAgentIdCompetitionsRequest
 > = z.object({
   agentId: z.string(),
+  sort: z.string().optional(),
+  limit: z.string().optional(),
+  offset: z.string().optional(),
+  status: z.string().optional(),
+  claimed: z.boolean().optional(),
 });
 
 /**
@@ -124,6 +201,73 @@ export namespace GetApiAgentsAgentIdCompetitionsStatus$ {
 }
 
 /** @internal */
+export const GetApiAgentsAgentIdCompetitionsBestPlacement$inboundSchema: z.ZodType<
+  GetApiAgentsAgentIdCompetitionsBestPlacement,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  rank: z.number().int().optional(),
+  totalAgents: z.number().int().optional(),
+});
+
+/** @internal */
+export type GetApiAgentsAgentIdCompetitionsBestPlacement$Outbound = {
+  rank?: number | undefined;
+  totalAgents?: number | undefined;
+};
+
+/** @internal */
+export const GetApiAgentsAgentIdCompetitionsBestPlacement$outboundSchema: z.ZodType<
+  GetApiAgentsAgentIdCompetitionsBestPlacement$Outbound,
+  z.ZodTypeDef,
+  GetApiAgentsAgentIdCompetitionsBestPlacement
+> = z.object({
+  rank: z.number().int().optional(),
+  totalAgents: z.number().int().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiAgentsAgentIdCompetitionsBestPlacement$ {
+  /** @deprecated use `GetApiAgentsAgentIdCompetitionsBestPlacement$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiAgentsAgentIdCompetitionsBestPlacement$inboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdCompetitionsBestPlacement$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiAgentsAgentIdCompetitionsBestPlacement$outboundSchema;
+  /** @deprecated use `GetApiAgentsAgentIdCompetitionsBestPlacement$Outbound` instead. */
+  export type Outbound = GetApiAgentsAgentIdCompetitionsBestPlacement$Outbound;
+}
+
+export function getApiAgentsAgentIdCompetitionsBestPlacementToJSON(
+  getApiAgentsAgentIdCompetitionsBestPlacement: GetApiAgentsAgentIdCompetitionsBestPlacement,
+): string {
+  return JSON.stringify(
+    GetApiAgentsAgentIdCompetitionsBestPlacement$outboundSchema.parse(
+      getApiAgentsAgentIdCompetitionsBestPlacement,
+    ),
+  );
+}
+
+export function getApiAgentsAgentIdCompetitionsBestPlacementFromJSON(
+  jsonString: string,
+): SafeParseResult<
+  GetApiAgentsAgentIdCompetitionsBestPlacement,
+  SDKValidationError
+> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      GetApiAgentsAgentIdCompetitionsBestPlacement$inboundSchema.parse(
+        JSON.parse(x),
+      ),
+    `Failed to parse 'GetApiAgentsAgentIdCompetitionsBestPlacement' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiAgentsAgentIdCompetitionsCompetition$inboundSchema: z.ZodType<
   GetApiAgentsAgentIdCompetitionsCompetition,
   z.ZodTypeDef,
@@ -131,6 +275,7 @@ export const GetApiAgentsAgentIdCompetitionsCompetition$inboundSchema: z.ZodType
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   status: GetApiAgentsAgentIdCompetitionsStatus$inboundSchema.optional(),
   startDate: z
     .string()
@@ -143,16 +288,34 @@ export const GetApiAgentsAgentIdCompetitionsCompetition$inboundSchema: z.ZodType
     .transform((v) => new Date(v))
     .optional(),
   description: z.string().optional(),
+  portfolioValue: z.number().optional(),
+  pnl: z.number().optional(),
+  pnlPercent: z.number().optional(),
+  totalTrades: z.number().int().optional(),
+  bestPlacement: z
+    .nullable(
+      z.lazy(() => GetApiAgentsAgentIdCompetitionsBestPlacement$inboundSchema),
+    )
+    .optional(),
 });
 
 /** @internal */
 export type GetApiAgentsAgentIdCompetitionsCompetition$Outbound = {
   id?: string | undefined;
   name?: string | undefined;
+  handle?: string | undefined;
   status?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
   description?: string | undefined;
+  portfolioValue?: number | undefined;
+  pnl?: number | undefined;
+  pnlPercent?: number | undefined;
+  totalTrades?: number | undefined;
+  bestPlacement?:
+    | GetApiAgentsAgentIdCompetitionsBestPlacement$Outbound
+    | null
+    | undefined;
 };
 
 /** @internal */
@@ -163,6 +326,7 @@ export const GetApiAgentsAgentIdCompetitionsCompetition$outboundSchema: z.ZodTyp
 > = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
+  handle: z.string().optional(),
   status: GetApiAgentsAgentIdCompetitionsStatus$outboundSchema.optional(),
   startDate: z
     .date()
@@ -173,6 +337,15 @@ export const GetApiAgentsAgentIdCompetitionsCompetition$outboundSchema: z.ZodTyp
     .transform((v) => v.toISOString())
     .optional(),
   description: z.string().optional(),
+  portfolioValue: z.number().optional(),
+  pnl: z.number().optional(),
+  pnlPercent: z.number().optional(),
+  totalTrades: z.number().int().optional(),
+  bestPlacement: z
+    .nullable(
+      z.lazy(() => GetApiAgentsAgentIdCompetitionsBestPlacement$outboundSchema),
+    )
+    .optional(),
 });
 
 /**

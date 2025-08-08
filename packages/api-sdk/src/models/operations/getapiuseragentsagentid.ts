@@ -32,16 +32,69 @@ export type GetApiUserAgentsAgentIdStatus = ClosedEnum<
   typeof GetApiUserAgentsAgentIdStatus
 >;
 
+/**
+ * Best placement across all competitions (null if no ranking data available)
+ */
+export type GetApiUserAgentsAgentIdBestPlacement = {
+  competitionId?: string | undefined;
+  rank?: number | undefined;
+  score?: number | undefined;
+  totalAgents?: number | undefined;
+};
+
+export type GetApiUserAgentsAgentIdStats = {
+  completedCompetitions?: number | undefined;
+  totalTrades?: number | undefined;
+  totalVotes?: number | undefined;
+  /**
+   * Best placement across all competitions (null if no ranking data available)
+   */
+  bestPlacement?: GetApiUserAgentsAgentIdBestPlacement | null | undefined;
+  rank?: number | undefined;
+  score?: number | undefined;
+};
+
+export type GetApiUserAgentsAgentIdTrophy = {
+  /**
+   * Competition ID
+   */
+  competitionId?: string | undefined;
+  /**
+   * Competition name
+   */
+  name?: string | undefined;
+  /**
+   * Agent's final rank in the competition
+   */
+  rank?: number | undefined;
+  /**
+   * Competition image URL
+   */
+  imageUrl?: string | undefined;
+  /**
+   * When the trophy was awarded (competition end date)
+   */
+  createdAt?: Date | undefined;
+};
+
 export type GetApiUserAgentsAgentIdAgent = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | null | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
   email?: string | null | undefined;
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
   metadata?: GetApiUserAgentsAgentIdMetadata | null | undefined;
   status?: GetApiUserAgentsAgentIdStatus | undefined;
+  stats?: GetApiUserAgentsAgentIdStats | undefined;
+  /**
+   * Trophies earned from ended competitions
+   */
+  trophies?: Array<GetApiUserAgentsAgentIdTrophy> | undefined;
+  skills?: Array<string> | undefined;
+  hasUnclaimedRewards?: boolean | undefined;
   /**
    * Reason for deactivation (if status is inactive)
    */
@@ -258,6 +311,227 @@ export namespace GetApiUserAgentsAgentIdStatus$ {
 }
 
 /** @internal */
+export const GetApiUserAgentsAgentIdBestPlacement$inboundSchema: z.ZodType<
+  GetApiUserAgentsAgentIdBestPlacement,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  competitionId: z.string().optional(),
+  rank: z.number().int().optional(),
+  score: z.number().int().optional(),
+  totalAgents: z.number().int().optional(),
+});
+
+/** @internal */
+export type GetApiUserAgentsAgentIdBestPlacement$Outbound = {
+  competitionId?: string | undefined;
+  rank?: number | undefined;
+  score?: number | undefined;
+  totalAgents?: number | undefined;
+};
+
+/** @internal */
+export const GetApiUserAgentsAgentIdBestPlacement$outboundSchema: z.ZodType<
+  GetApiUserAgentsAgentIdBestPlacement$Outbound,
+  z.ZodTypeDef,
+  GetApiUserAgentsAgentIdBestPlacement
+> = z.object({
+  competitionId: z.string().optional(),
+  rank: z.number().int().optional(),
+  score: z.number().int().optional(),
+  totalAgents: z.number().int().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiUserAgentsAgentIdBestPlacement$ {
+  /** @deprecated use `GetApiUserAgentsAgentIdBestPlacement$inboundSchema` instead. */
+  export const inboundSchema =
+    GetApiUserAgentsAgentIdBestPlacement$inboundSchema;
+  /** @deprecated use `GetApiUserAgentsAgentIdBestPlacement$outboundSchema` instead. */
+  export const outboundSchema =
+    GetApiUserAgentsAgentIdBestPlacement$outboundSchema;
+  /** @deprecated use `GetApiUserAgentsAgentIdBestPlacement$Outbound` instead. */
+  export type Outbound = GetApiUserAgentsAgentIdBestPlacement$Outbound;
+}
+
+export function getApiUserAgentsAgentIdBestPlacementToJSON(
+  getApiUserAgentsAgentIdBestPlacement: GetApiUserAgentsAgentIdBestPlacement,
+): string {
+  return JSON.stringify(
+    GetApiUserAgentsAgentIdBestPlacement$outboundSchema.parse(
+      getApiUserAgentsAgentIdBestPlacement,
+    ),
+  );
+}
+
+export function getApiUserAgentsAgentIdBestPlacementFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiUserAgentsAgentIdBestPlacement, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      GetApiUserAgentsAgentIdBestPlacement$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiUserAgentsAgentIdBestPlacement' from JSON`,
+  );
+}
+
+/** @internal */
+export const GetApiUserAgentsAgentIdStats$inboundSchema: z.ZodType<
+  GetApiUserAgentsAgentIdStats,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  completedCompetitions: z.number().int().optional(),
+  totalTrades: z.number().int().optional(),
+  totalVotes: z.number().int().optional(),
+  bestPlacement: z
+    .nullable(z.lazy(() => GetApiUserAgentsAgentIdBestPlacement$inboundSchema))
+    .optional(),
+  rank: z.number().int().optional(),
+  score: z.number().optional(),
+});
+
+/** @internal */
+export type GetApiUserAgentsAgentIdStats$Outbound = {
+  completedCompetitions?: number | undefined;
+  totalTrades?: number | undefined;
+  totalVotes?: number | undefined;
+  bestPlacement?:
+    | GetApiUserAgentsAgentIdBestPlacement$Outbound
+    | null
+    | undefined;
+  rank?: number | undefined;
+  score?: number | undefined;
+};
+
+/** @internal */
+export const GetApiUserAgentsAgentIdStats$outboundSchema: z.ZodType<
+  GetApiUserAgentsAgentIdStats$Outbound,
+  z.ZodTypeDef,
+  GetApiUserAgentsAgentIdStats
+> = z.object({
+  completedCompetitions: z.number().int().optional(),
+  totalTrades: z.number().int().optional(),
+  totalVotes: z.number().int().optional(),
+  bestPlacement: z
+    .nullable(z.lazy(() => GetApiUserAgentsAgentIdBestPlacement$outboundSchema))
+    .optional(),
+  rank: z.number().int().optional(),
+  score: z.number().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiUserAgentsAgentIdStats$ {
+  /** @deprecated use `GetApiUserAgentsAgentIdStats$inboundSchema` instead. */
+  export const inboundSchema = GetApiUserAgentsAgentIdStats$inboundSchema;
+  /** @deprecated use `GetApiUserAgentsAgentIdStats$outboundSchema` instead. */
+  export const outboundSchema = GetApiUserAgentsAgentIdStats$outboundSchema;
+  /** @deprecated use `GetApiUserAgentsAgentIdStats$Outbound` instead. */
+  export type Outbound = GetApiUserAgentsAgentIdStats$Outbound;
+}
+
+export function getApiUserAgentsAgentIdStatsToJSON(
+  getApiUserAgentsAgentIdStats: GetApiUserAgentsAgentIdStats,
+): string {
+  return JSON.stringify(
+    GetApiUserAgentsAgentIdStats$outboundSchema.parse(
+      getApiUserAgentsAgentIdStats,
+    ),
+  );
+}
+
+export function getApiUserAgentsAgentIdStatsFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiUserAgentsAgentIdStats, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiUserAgentsAgentIdStats$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiUserAgentsAgentIdStats' from JSON`,
+  );
+}
+
+/** @internal */
+export const GetApiUserAgentsAgentIdTrophy$inboundSchema: z.ZodType<
+  GetApiUserAgentsAgentIdTrophy,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  competitionId: z.string().optional(),
+  name: z.string().optional(),
+  rank: z.number().optional(),
+  imageUrl: z.string().optional(),
+  createdAt: z
+    .string()
+    .datetime({ offset: true })
+    .transform((v) => new Date(v))
+    .optional(),
+});
+
+/** @internal */
+export type GetApiUserAgentsAgentIdTrophy$Outbound = {
+  competitionId?: string | undefined;
+  name?: string | undefined;
+  rank?: number | undefined;
+  imageUrl?: string | undefined;
+  createdAt?: string | undefined;
+};
+
+/** @internal */
+export const GetApiUserAgentsAgentIdTrophy$outboundSchema: z.ZodType<
+  GetApiUserAgentsAgentIdTrophy$Outbound,
+  z.ZodTypeDef,
+  GetApiUserAgentsAgentIdTrophy
+> = z.object({
+  competitionId: z.string().optional(),
+  name: z.string().optional(),
+  rank: z.number().optional(),
+  imageUrl: z.string().optional(),
+  createdAt: z
+    .date()
+    .transform((v) => v.toISOString())
+    .optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetApiUserAgentsAgentIdTrophy$ {
+  /** @deprecated use `GetApiUserAgentsAgentIdTrophy$inboundSchema` instead. */
+  export const inboundSchema = GetApiUserAgentsAgentIdTrophy$inboundSchema;
+  /** @deprecated use `GetApiUserAgentsAgentIdTrophy$outboundSchema` instead. */
+  export const outboundSchema = GetApiUserAgentsAgentIdTrophy$outboundSchema;
+  /** @deprecated use `GetApiUserAgentsAgentIdTrophy$Outbound` instead. */
+  export type Outbound = GetApiUserAgentsAgentIdTrophy$Outbound;
+}
+
+export function getApiUserAgentsAgentIdTrophyToJSON(
+  getApiUserAgentsAgentIdTrophy: GetApiUserAgentsAgentIdTrophy,
+): string {
+  return JSON.stringify(
+    GetApiUserAgentsAgentIdTrophy$outboundSchema.parse(
+      getApiUserAgentsAgentIdTrophy,
+    ),
+  );
+}
+
+export function getApiUserAgentsAgentIdTrophyFromJSON(
+  jsonString: string,
+): SafeParseResult<GetApiUserAgentsAgentIdTrophy, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetApiUserAgentsAgentIdTrophy$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetApiUserAgentsAgentIdTrophy' from JSON`,
+  );
+}
+
+/** @internal */
 export const GetApiUserAgentsAgentIdAgent$inboundSchema: z.ZodType<
   GetApiUserAgentsAgentIdAgent,
   z.ZodTypeDef,
@@ -266,6 +540,7 @@ export const GetApiUserAgentsAgentIdAgent$inboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.nullable(z.string()).optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
@@ -274,6 +549,12 @@ export const GetApiUserAgentsAgentIdAgent$inboundSchema: z.ZodType<
     .nullable(z.lazy(() => GetApiUserAgentsAgentIdMetadata$inboundSchema))
     .optional(),
   status: GetApiUserAgentsAgentIdStatus$inboundSchema.optional(),
+  stats: z.lazy(() => GetApiUserAgentsAgentIdStats$inboundSchema).optional(),
+  trophies: z
+    .array(z.lazy(() => GetApiUserAgentsAgentIdTrophy$inboundSchema))
+    .optional(),
+  skills: z.array(z.string()).optional(),
+  hasUnclaimedRewards: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
   deactivationDate: z
     .nullable(
@@ -300,12 +581,17 @@ export type GetApiUserAgentsAgentIdAgent$Outbound = {
   id?: string | undefined;
   ownerId?: string | undefined;
   walletAddress?: string | null | undefined;
+  isVerified?: boolean | undefined;
   name?: string | undefined;
   email?: string | null | undefined;
   description?: string | null | undefined;
   imageUrl?: string | null | undefined;
   metadata?: GetApiUserAgentsAgentIdMetadata$Outbound | null | undefined;
   status?: string | undefined;
+  stats?: GetApiUserAgentsAgentIdStats$Outbound | undefined;
+  trophies?: Array<GetApiUserAgentsAgentIdTrophy$Outbound> | undefined;
+  skills?: Array<string> | undefined;
+  hasUnclaimedRewards?: boolean | undefined;
   deactivationReason?: string | null | undefined;
   deactivationDate?: string | null | undefined;
   createdAt?: string | undefined;
@@ -321,6 +607,7 @@ export const GetApiUserAgentsAgentIdAgent$outboundSchema: z.ZodType<
   id: z.string().optional(),
   ownerId: z.string().optional(),
   walletAddress: z.nullable(z.string()).optional(),
+  isVerified: z.boolean().optional(),
   name: z.string().optional(),
   email: z.nullable(z.string()).optional(),
   description: z.nullable(z.string()).optional(),
@@ -329,6 +616,12 @@ export const GetApiUserAgentsAgentIdAgent$outboundSchema: z.ZodType<
     .nullable(z.lazy(() => GetApiUserAgentsAgentIdMetadata$outboundSchema))
     .optional(),
   status: GetApiUserAgentsAgentIdStatus$outboundSchema.optional(),
+  stats: z.lazy(() => GetApiUserAgentsAgentIdStats$outboundSchema).optional(),
+  trophies: z
+    .array(z.lazy(() => GetApiUserAgentsAgentIdTrophy$outboundSchema))
+    .optional(),
+  skills: z.array(z.string()).optional(),
+  hasUnclaimedRewards: z.boolean().optional(),
   deactivationReason: z.nullable(z.string()).optional(),
   deactivationDate: z
     .nullable(z.date().transform((v) => v.toISOString()))

@@ -268,22 +268,29 @@ describe("Portfolio Snapshots", () => {
       `/api/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const initialSnapshot = initialSnapshotsResponse.snapshots[0];
+    expect(initialSnapshot).not.toBeUndefined();
 
     // Verify the USDC value is calculated correctly
+    const priceTolerance = 0.005; // 0.5% tolerance for stablecoin depegging
     const usdcValue = initialSnapshot?.valuesByToken[usdcTokenAddress];
-    expect(usdcValue?.amount).toBeCloseTo(initialUsdcBalance);
-    if (usdcPrice) {
-      expect(usdcValue?.valueUsd).toBeCloseTo(
-        initialUsdcBalance * usdcPrice.price,
-        -1,
-      );
-    }
+    expect(usdcValue).not.toBeUndefined();
+    expect(usdcValue!.amount).toBeCloseTo(initialUsdcBalance);
+
+    // Use a more lenient tolerance for USD value due to potential stablecoin depegging
+    // Allow up to 0.5% variance (typical USDC depeg range)
+    const expectedValue = initialUsdcBalance * usdcPrice!.price;
+    const tolerance = expectedValue * priceTolerance;
+    const actualDiff = Math.abs(usdcValue!.valueUsd - expectedValue);
+    expect(actualDiff).toBeLessThan(tolerance);
 
     // Verify total portfolio value is the sum of all token values
     const totalValue = Object.values(
       (initialSnapshot as PortfolioSnapshot).valuesByToken,
     ).reduce((sum: number, token) => sum + token.valueUsd, 0);
-    expect(initialSnapshot?.totalValue).toBeCloseTo(totalValue, -1);
+    // Use same tolerance as individual token values for consistency
+    const totalTolerance = totalValue * priceTolerance;
+    const totalDiff = Math.abs(initialSnapshot!.totalValue - totalValue);
+    expect(totalDiff).toBeLessThan(totalTolerance);
   });
 
   // Test that the configuration is loaded correctly

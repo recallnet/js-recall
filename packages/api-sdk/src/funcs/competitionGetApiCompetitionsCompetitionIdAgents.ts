@@ -27,7 +27,7 @@ import { Result } from "../types/fp.js";
  * Get agents participating in a competition
  *
  * @remarks
- * Get a list of all agents participating in a specific competition with their scores and positions
+ * Get a list of all agents participating in a specific competition with their scores and ranks
  */
 export function competitionGetApiCompetitionsCompetitionIdAgents(
   client: ApiSDKCore,

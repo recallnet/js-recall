@@ -1,6 +1,7 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
+import { SelectCompetitionReward } from "@/database/schema/core/types.js";
 import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -110,6 +111,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
               rank: index + 1,
               agentId: entry.agentId,
               agentName: agent ? agent.name : "Unknown Agent",
+              agentHandle: agent ? agent.handle : "unknown_agent",
               portfolioValue: entry.value,
               active: true,
               deactivationReason: null,
@@ -123,6 +125,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           return {
             agentId: entry.agentId,
             agentName: agent ? agent.name : "Unknown Agent",
+            agentHandle: agent ? agent.handle : "unknown_agent",
             portfolioValue: entry.value,
             active: false,
             deactivationReason: entry.deactivationReason,
@@ -342,6 +345,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
+        // Get trading constraints for the active competition
+        const tradingConstraints =
+          await services.tradingConstraintsService.getConstraintsWithDefaults(
+            activeCompetition.id,
+          );
+
         // Define base rules
         const tradingRules = [
           "Trading is only allowed for tokens with valid price data",
@@ -352,6 +361,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
           "Slippage is applied to all trades based on trade size",
           `Cross-chain trading type: ${activeCompetition.crossChainTradingType}`,
           "Transaction fees are not simulated",
+          `Token eligibility requires minimum ${tradingConstraints.minimumPairAgeHours} hours of trading history`,
+          `Token must have minimum 24h volume of $${tradingConstraints.minimum24hVolumeUsd.toLocaleString()} USD`,
+          `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
+          `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
         ];
         const rateLimits = [
           `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
@@ -493,8 +506,24 @@ export function makeCompetitionController(services: ServiceRegistry) {
                   0,
                 );
 
+                // Get trading constraints and rewards for this competition
+                const tradingConstraintsRaw =
+                  await services.tradingConstraintsService.getConstraints(
+                    competition.id,
+                  );
+                const tradingConstraints = {
+                  minimumPairAgeHours:
+                    tradingConstraintsRaw?.minimumPairAgeHours,
+                  minimum24hVolumeUsd:
+                    tradingConstraintsRaw?.minimum24hVolumeUsd,
+                  minimumLiquidityUsd:
+                    tradingConstraintsRaw?.minimumLiquidityUsd,
+                  minimumFdvUsd: tradingConstraintsRaw?.minimumFdvUsd,
+                };
+
                 return {
                   ...competition,
+                  tradingConstraints,
                   votingEnabled:
                     votingState.canVote || votingState.info.hasVoted,
                   userVotingInfo: votingState,
@@ -580,6 +609,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
+
         const trades =
           await services.tradeSimulator.getCompetitionTrades(competitionId);
 
@@ -606,6 +636,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ]).size,
         };
 
+        const rewards =
+          await services.competitionRewardService.getRewardsByCompetition(
+            competitionId,
+          );
+
         // If user is authenticated, get their voting state
         let userVotingInfo = undefined;
         let votingEnabled = false;
@@ -626,12 +661,26 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
+        // Get trading constraints for this competition
+        const tradingConstraints =
+          await services.tradingConstraintsService.getConstraintsWithDefaults(
+            competitionId,
+          );
+
         // Return the competition details
         res.status(200).json({
           success: true,
           competition: {
             ...competition,
             stats,
+            tradingConstraints,
+            rewards: rewards.map((r: SelectCompetitionReward) => {
+              return {
+                rank: r.rank,
+                reward: r.reward,
+                agentId: r.agentId,
+              };
+            }),
             votingEnabled,
             userVotingInfo,
           },

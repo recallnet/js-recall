@@ -18,6 +18,7 @@ import { db, dbRead } from "@/database/db.js";
 import {
   agents,
   competitionAgents,
+  competitionRewards,
   competitions,
   competitionsLeaderboard,
 } from "@/database/schema/core/defs.js";
@@ -54,6 +55,47 @@ import { PartialExcept } from "./types.js";
  * Competition Repository
  * Handles database operations for competitions
  */
+
+/**
+ * Builds the base competition query with rewards included
+ * @returns A query builder for competitions with rewards
+ */
+function buildCompetitionWithRewardsQuery() {
+  return db
+    .select({
+      crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      rewards: sql<
+        | Array<{ rank: number; reward: number; agentId: string | null }>
+        | undefined
+      >`
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'rank', ${competitionRewards.rank},
+              'reward', ${competitionRewards.reward},
+              'agentId', ${competitionRewards.agentId}
+            ) ORDER BY ${competitionRewards.rank}
+          ) FILTER (WHERE ${competitionRewards.id} IS NOT NULL),
+          NULL
+        )
+      `.as("rewards"),
+      ...getTableColumns(competitions),
+    })
+    .from(tradingCompetitions)
+    .innerJoin(
+      competitions,
+      eq(tradingCompetitions.competitionId, competitions.id),
+    )
+    .leftJoin(
+      competitionRewards,
+      eq(competitions.id, competitionRewards.competitionId),
+    )
+    .groupBy(
+      tradingCompetitions.competitionId,
+      competitions.id,
+      tradingCompetitions.crossChainTradingType,
+    );
+}
 
 /**
  * allowable order by database columns
@@ -1169,17 +1211,7 @@ async function findByStatusImpl({
     const total = countResult[0]?.count ?? 0;
 
     // Data query with dynamic building
-    let dataQuery = db
-      .select({
-        crossChainTradingType: tradingCompetitions.crossChainTradingType,
-        ...getTableColumns(competitions),
-      })
-      .from(tradingCompetitions)
-      .innerJoin(
-        competitions,
-        eq(tradingCompetitions.competitionId, competitions.id),
-      )
-      .$dynamic();
+    let dataQuery = buildCompetitionWithRewardsQuery().$dynamic();
 
     if (status) {
       dataQuery = dataQuery.where(eq(competitions.status, status));

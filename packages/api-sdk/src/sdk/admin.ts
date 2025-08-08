@@ -9,13 +9,19 @@ import { adminGetApiAdminCompetitionCompetitionIdSnapshots } from "../funcs/admi
 import { adminGetApiAdminReportsPerformance } from "../funcs/adminGetApiAdminReportsPerformance.js";
 import { adminGetApiAdminSearch } from "../funcs/adminGetApiAdminSearch.js";
 import { adminGetApiAdminUsers } from "../funcs/adminGetApiAdminUsers.js";
+import { adminPostApiAdminAgents } from "../funcs/adminPostApiAdminAgents.js";
 import { adminPostApiAdminAgentsAgentIdDeactivate } from "../funcs/adminPostApiAdminAgentsAgentIdDeactivate.js";
 import { adminPostApiAdminAgentsAgentIdReactivate } from "../funcs/adminPostApiAdminAgentsAgentIdReactivate.js";
 import { adminPostApiAdminCompetitionCreate } from "../funcs/adminPostApiAdminCompetitionCreate.js";
 import { adminPostApiAdminCompetitionEnd } from "../funcs/adminPostApiAdminCompetitionEnd.js";
 import { adminPostApiAdminCompetitionStart } from "../funcs/adminPostApiAdminCompetitionStart.js";
+import { adminPostApiAdminCompetitionsCompetitionIdAgentsAgentId } from "../funcs/adminPostApiAdminCompetitionsCompetitionIdAgentsAgentId.js";
+import { adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivate } from "../funcs/adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivate.js";
+import { adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdRemove } from "../funcs/adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdRemove.js";
 import { adminPostApiAdminSetup } from "../funcs/adminPostApiAdminSetup.js";
 import { adminPostApiAdminUsers } from "../funcs/adminPostApiAdminUsers.js";
+import { adminPutApiAdminAgentsAgentId } from "../funcs/adminPutApiAdminAgentsAgentId.js";
+import { adminPutApiAdminCompetitionCompetitionId } from "../funcs/adminPutApiAdminCompetitionCompetitionId.js";
 import { ClientSDK, RequestOptions } from "../lib/sdks.js";
 import * as operations from "../models/operations/index.js";
 import { unwrapAsync } from "../types/fp.js";
@@ -75,6 +81,21 @@ export class Admin extends ClientSDK {
     options?: RequestOptions,
   ): Promise<operations.PostApiAdminCompetitionEndResponse> {
     return unwrapAsync(adminPostApiAdminCompetitionEnd(this, request, options));
+  }
+
+  /**
+   * Update a competition
+   *
+   * @remarks
+   * Update competition fields (excludes startDate, endDate, status)
+   */
+  async putApiAdminCompetitionCompetitionId(
+    request: operations.PutApiAdminCompetitionCompetitionIdRequest,
+    options?: RequestOptions,
+  ): Promise<operations.PutApiAdminCompetitionCompetitionIdResponse> {
+    return unwrapAsync(
+      adminPutApiAdminCompetitionCompetitionId(this, request, options),
+    );
   }
 
   /**
@@ -145,6 +166,19 @@ export class Admin extends ClientSDK {
   }
 
   /**
+   * Register a new agent
+   *
+   * @remarks
+   * Admin-only endpoint to register a new agent. Admins create agent accounts and distribute the generated API keys to agents.
+   */
+  async postApiAdminAgents(
+    request: operations.PostApiAdminAgentsRequest,
+    options?: RequestOptions,
+  ): Promise<operations.PostApiAdminAgentsResponse> {
+    return unwrapAsync(adminPostApiAdminAgents(this, request, options));
+  }
+
+  /**
    * Get an agent's API key
    *
    * @remarks
@@ -188,10 +222,23 @@ export class Admin extends ClientSDK {
   }
 
   /**
+   * Update an agent
+   *
+   * @remarks
+   * Update an agent's information including name, description, email, and metadata
+   */
+  async putApiAdminAgentsAgentId(
+    request: operations.PutApiAdminAgentsAgentIdRequest,
+    options?: RequestOptions,
+  ): Promise<operations.PutApiAdminAgentsAgentIdResponse> {
+    return unwrapAsync(adminPutApiAdminAgentsAgentId(this, request, options));
+  }
+
+  /**
    * Deactivate an agent
    *
    * @remarks
-   * Deactivate an agent from the system. The agent will no longer be able to perform any actions.
+   * Globally deactivate an agent. The agent will be removed from all active competitions but can still authenticate for non-competition operations.
    */
   async postApiAdminAgentsAgentIdDeactivate(
     request: operations.PostApiAdminAgentsAgentIdDeactivateRequest,
@@ -228,5 +275,62 @@ export class Admin extends ClientSDK {
     options?: RequestOptions,
   ): Promise<operations.GetApiAdminSearchResponse> {
     return unwrapAsync(adminGetApiAdminSearch(this, request, options));
+  }
+
+  /**
+   * Add agent to competition
+   *
+   * @remarks
+   * Add an agent to a specific competition (admin operation). Requires agent owner's email to be verified for security. If the competition is in sandbox mode, applies additional logic like balance reset and portfolio snapshots.
+   */
+  async postApiAdminCompetitionsCompetitionIdAgentsAgentId(
+    request: operations.PostApiAdminCompetitionsCompetitionIdAgentsAgentIdRequest,
+    options?: RequestOptions,
+  ): Promise<operations.PostApiAdminCompetitionsCompetitionIdAgentsAgentIdResponse> {
+    return unwrapAsync(
+      adminPostApiAdminCompetitionsCompetitionIdAgentsAgentId(
+        this,
+        request,
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Remove agent from competition
+   *
+   * @remarks
+   * Remove an agent from a specific competition (admin operation)
+   */
+  async postApiAdminCompetitionsCompetitionIdAgentsAgentIdRemove(
+    request: operations.PostApiAdminCompetitionsCompetitionIdAgentsAgentIdRemoveRequest,
+    options?: RequestOptions,
+  ): Promise<operations.PostApiAdminCompetitionsCompetitionIdAgentsAgentIdRemoveResponse> {
+    return unwrapAsync(
+      adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdRemove(
+        this,
+        request,
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Reactivate agent in competition
+   *
+   * @remarks
+   * Reactivate an agent in a specific competition (admin operation)
+   */
+  async postApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivate(
+    request: operations.PostApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivateRequest,
+    options?: RequestOptions,
+  ): Promise<operations.PostApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivateResponse> {
+    return unwrapAsync(
+      adminPostApiAdminCompetitionsCompetitionIdAgentsAgentIdReactivate(
+        this,
+        request,
+        options,
+      ),
+    );
   }
 }

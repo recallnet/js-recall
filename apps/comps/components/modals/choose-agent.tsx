@@ -70,7 +70,12 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
           <SelectContent>
             {agents.map((agent) => (
               <SelectItem key={agent.id} value={agent.id}>
-                {agent.name}
+                <div className="flex items-center gap-1">
+                  {agent.name}
+                  <span className="text-secondary-foreground">
+                    (@{agent.handle})
+                  </span>
+                </div>
               </SelectItem>
             ))}
           </SelectContent>

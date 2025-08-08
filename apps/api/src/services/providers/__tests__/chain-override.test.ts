@@ -51,6 +51,7 @@ describe("Chain Override Tests", () => {
       }
 
       // Track if at least one token worked correctly
+      // TODO(stbrody): Why do we only need one token to be successful?  Shouldn't they all succeed?
       let atLeastOneSuccess = false;
 
       for (const token of testTokens) {
@@ -66,23 +67,11 @@ describe("Chain Override Tests", () => {
           // If we got a price, this token worked correctly with chain override
           atLeastOneSuccess = true;
 
-          // Verify price format
+          // Verify price format and chain information
           expect(typeof price?.price).toBe("number");
           expect(price?.price).toBeGreaterThan(0);
-
-          // Also get detailed token info with chain override
-          const tokenInfo = await multiChainProvider.getTokenInfo(
-            token.address,
-            BlockchainType.EVM,
-            token.expectedChain,
-          );
-
-          // Verify token info
-          expect(tokenInfo).not.toBeNull();
-          if (tokenInfo) {
-            expect(tokenInfo.chain).toBe(BlockchainType.EVM);
-            expect(tokenInfo.specificChain).toBe(token.expectedChain);
-          }
+          expect(price.chain).toBe(BlockchainType.EVM);
+          expect(price.specificChain).toBe(token.expectedChain);
         }
       }
 

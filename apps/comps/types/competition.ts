@@ -78,6 +78,11 @@ export interface Competition {
     rank?: number;
     totalAgents?: number;
   };
+  rewards?: {
+    rank: number;
+    reward: number;
+    agentId?: string;
+  }[];
 }
 
 export interface CompetitionResponse {

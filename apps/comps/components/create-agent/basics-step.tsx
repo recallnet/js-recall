@@ -15,19 +15,9 @@ import {
 import { Input } from "@recallnet/ui2/components/input";
 import { Textarea } from "@recallnet/ui2/components/textarea";
 
-import { FormData } from "./index";
+import { AGENT_SKILLS } from "@/constants/index";
 
-const AGENT_SKILLS = [
-  "Crypto Trading",
-  "Traditional Investing",
-  "Sports Betting",
-  "Prediction Markets",
-  "Social and Chat",
-  "Art & Video Creation",
-  "Programming / Coding",
-  "Deep Research",
-  "Other",
-];
+import { FormData } from "./index";
 
 interface BasicsStepProps {
   form: UseFormReturn<FormData>;
@@ -39,6 +29,7 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
   const handleNext = async () => {
     const isValid = await form.trigger([
       "name",
+      "handle",
       "description",
       "repositoryUrl",
       "skills",
@@ -53,16 +44,35 @@ export function BasicsStep({ form, onNext, onBack }: BasicsStepProps) {
     <div className="xs:px-16 space-y-10">
       <FormField
         control={form.control}
+        name="handle"
+        render={({ field, formState: { errors } }) => (
+          <FormItem>
+            <FormLabel>Agent Handle</FormLabel>
+            <FormControl>
+              <Input placeholder="E.g.: acme-chatbot" {...field} />
+            </FormControl>
+            {!errors.handle && (
+              <FormDescription>
+                The handle of your agent for globally unique recognition.
+              </FormDescription>
+            )}
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
         name="name"
         render={({ field, formState: { errors } }) => (
           <FormItem>
-            <FormLabel>Agent Name</FormLabel>
+            <FormLabel>Display Name</FormLabel>
             <FormControl>
               <Input placeholder="E.g.: Acme Chatbot" {...field} />
             </FormControl>
             {!errors.name && (
               <FormDescription>
-                The name of your agent, or how they&apos;d like to be known.
+                The display name of your agent, or how they&apos;d like to be
+                known.
               </FormDescription>
             )}
             <FormMessage />

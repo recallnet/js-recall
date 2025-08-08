@@ -121,6 +121,7 @@ export interface Agent {
   walletAddress?: string;
   isVerified: boolean;
   name: string;
+  handle: string;
   description?: string;
   imageUrl?: string;
   email?: string;
@@ -363,6 +364,12 @@ export interface Competition {
   // Join date constraint fields
   joinStartDate: string | null;
   joinEndDate: string | null;
+  tradingConstraints?: TradingConstraints;
+  rewards?: {
+    rank: number;
+    reward: number;
+    agentId?: string;
+  }[];
 }
 
 // Leaderboard entry (per-competition leaderboard)
@@ -573,21 +580,6 @@ export interface PriceResponse extends ApiResponse {
   specificChain: SpecificChain | null;
   symbol: string;
   timestamp?: string;
-}
-
-// Token info response
-export interface TokenInfoResponse extends ApiResponse {
-  token: string;
-  chain: BlockchainType;
-  specificChain: SpecificChain | null;
-  name?: string;
-  symbol?: string;
-  decimals?: number;
-  logoURI?: string;
-  price?: number;
-  priceChange24h?: number;
-  volume24h?: number;
-  marketCap?: number;
 }
 
 // Price history point
@@ -819,8 +811,9 @@ export interface CompetitionTimelineResponse extends ApiResponse {
 }
 
 // ===========================
+// ---------------------------
 // Vote-related types
-// ===========================
+// ---------------------------
 
 /**
  * Response type for casting a vote
@@ -954,5 +947,3 @@ export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
     status: string;
   };
 }
-
-// ===========================

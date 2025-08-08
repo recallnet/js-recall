@@ -29,6 +29,7 @@ import {
 } from "@/types/index.js";
 import { AgentQueryParams } from "@/types/sort/agent.js";
 
+import { findRewardsByCompetitions } from "./competition-rewards-repository.js";
 import { getSort } from "./helpers.js";
 import { PartialExcept } from "./types.js";
 
@@ -45,6 +46,7 @@ const agentOrderByFields: Record<string, AnyColumn> = {
   ownerId: agents.ownerId,
   walletAddress: agents.walletAddress,
   name: agents.name,
+  handle: agents.handle,
   description: agents.description,
   imageUrl: agents.imageUrl,
   status: agents.status,
@@ -70,6 +72,7 @@ export const COMPUTED_SORT_FIELDS = [
   "totalTrades",
   "rank",
   "agentName",
+  "agentHandle",
 ] as const;
 
 /**
@@ -560,6 +563,10 @@ async function searchAgentsImpl(
       conditions.push(ilike(agents.name, `%${searchParams.name}%`));
     }
 
+    if (searchParams.handle) {
+      conditions.push(eq(agents.handle, searchParams.handle));
+    }
+
     if (searchParams.ownerId) {
       conditions.push(eq(agents.ownerId, searchParams.ownerId));
     }
@@ -798,7 +805,34 @@ async function findUserAgentCompetitionsImpl(
 
     const fullResults = await fullResultsQuery;
 
-    // Step 3: Count total unique competitions (for pagination metadata)
+    // Step 3: Fetch rewards for all unique competitions in a single query
+    const allCompetitionIds = uniqueCompetitionIds
+      .map((c) => c.id)
+      .filter(Boolean) as string[];
+    const allRewards = await findRewardsByCompetitions(allCompetitionIds);
+
+    // Step 4: Group rewards by competition ID for efficient lookup
+    const rewardsByCompetitionId = allRewards.reduce(
+      (acc, reward) => {
+        if (!acc[reward.competitionId]) {
+          acc[reward.competitionId] = [];
+        }
+        acc[reward.competitionId]!.push(reward);
+        return acc;
+      },
+      {} as Record<string, typeof allRewards>,
+    );
+
+    // Step 5: Merge rewards into the final results
+    const competitionsWithRewards = fullResults.map((result) => ({
+      ...result,
+      competitions: {
+        ...result.competitions,
+        rewards: rewardsByCompetitionId[result.competitions!.id] || [],
+      },
+    }));
+
+    // Step 6: Count total unique competitions (for pagination metadata)
     const totalCountResult = await db
       .selectDistinct({ id: competitions.id })
       .from(competitionAgents)
@@ -809,7 +843,7 @@ async function findUserAgentCompetitionsImpl(
       .where(and(...whereConditions));
 
     return {
-      competitions: fullResults,
+      competitions: competitionsWithRewards,
       total: totalCountResult.length,
       isComputedSort, // Flag to indicate service layer needs to handle sorting
     };

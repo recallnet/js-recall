@@ -18,6 +18,7 @@ import {
 import { CompetitionActions } from "./competition-actions";
 import { CompetitionStatusBanner } from "./competition-status-banner";
 import { ParticipantsAvatars } from "./participants-avatars";
+import { Rewards } from "./rewards";
 
 interface CompetitionCardProps {
   competition: UserCompetition;
@@ -86,20 +87,24 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
         <div className="flex w-full flex-col">
           <div className="flex w-full">
             <div className="w-full border-r p-6">
-              <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+              <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
                 Duration
               </h3>
-              <p className="text-xl font-semibold">{duration}</p>
+              <p className="font-semibold">{duration}</p>
             </div>
             <div className="w-full p-6">
-              <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
+              <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
                 Reward
               </h3>
-              <p className="text-xl font-semibold">TBA</p>
+              {competition.rewards ? (
+                <Rewards rewards={competition.rewards} compact />
+              ) : (
+                <p className="font-semibold">TBA</p>
+              )}
             </div>
           </div>
-          <div className="relative h-full w-full overflow-hidden">
-            {competition.imageUrl && (
+          <div className="relative h-full w-full content-center overflow-hidden">
+            {competition.imageUrl ? (
               <Image
                 src={competition.imageUrl}
                 alt="Competition"
@@ -109,6 +114,14 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
                   const target = e.target as HTMLImageElement;
                   target.style.display = "none";
                 }}
+              />
+            ) : (
+              <Image
+                src={"/competition_image_container.svg"}
+                alt={competition.name}
+                width={550}
+                height={550}
+                className="duration-800 object-cover transition ease-in-out group-hover:scale-105"
               />
             )}
           </div>

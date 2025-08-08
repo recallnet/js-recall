@@ -23,9 +23,27 @@ import { HttpErrorMapping, mapHttpError } from "./http-error-mapping";
 import { SocialsStep } from "./socials-step";
 import { Steps } from "./steps";
 
+const MIN_HANDLE_LENGTH = 3;
+const MAX_HANDLE_LENGTH = 15;
+
+export const AgentHandleSchema = z
+  .string()
+  .trim()
+  .min(MIN_HANDLE_LENGTH, {
+    message: `Handle must be at least ${MIN_HANDLE_LENGTH} characters`,
+  })
+  .max(MAX_HANDLE_LENGTH, {
+    message: `Handle must be at most ${MAX_HANDLE_LENGTH} characters`,
+  })
+  .regex(new RegExp(`^[a-z0-9_]+$`), {
+    message:
+      "Handle can only contain lowercase letters, numbers, and underscores",
+  });
+
 const formSchema = z
   .object({
     name: z.string().min(1, "Agent name is required"),
+    handle: AgentHandleSchema,
     imageUrl: asOptionalStringWithoutEmpty(
       z.string().url({ message: "Must be a valid URL" }),
     ),
@@ -79,6 +97,7 @@ export function CreateAgent({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      handle: "",
       imageUrl: "",
       repositoryUrl: "",
       skills: [],
@@ -224,7 +243,10 @@ export function CreateAgent({
               </AgentCard>
               <p className="text-secondary-foreground text-center italic">
                 Welcome to Recall,{" "}
-                <span className="text-primary-foreground">{agent.name}</span>!
+                <span className="text-primary-foreground">
+                  {agent.name} (@{agent.handle})
+                </span>
+                !
               </p>
             </div>
           )}

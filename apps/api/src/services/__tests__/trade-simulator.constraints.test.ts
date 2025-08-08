@@ -102,15 +102,14 @@ describe("TradeSimulator - Trading Constraints", () => {
         };
 
         // Access private method using type assertion
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          validPriceData,
-          "VALID_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(true);
-        expect(result.error).toBeUndefined();
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            validPriceData,
+            "VALID_TOKEN",
+            mockConstraints,
+          ),
+        ).not.toThrow();
       });
 
       it("should fail validation for token with young pair (< 168 hours)", () => {
@@ -127,19 +126,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: 2000000,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          youngPairData,
-          "YOUNG_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(false);
-        expect(result.error).toContain("Token pair is too young");
-        expect(result.error).toContain("100.00 hours old");
-        expect(result.error).toContain(
-          `minimum: ${MINIMUM_PAIR_AGE_HOURS} hours`,
-        );
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            youngPairData,
+            "YOUNG_TOKEN",
+            mockConstraints,
+          ),
+        ).toThrow("Token pair is too young");
       });
 
       it("should fail validation for token with missing pairCreatedAt", () => {
@@ -156,18 +150,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: 2000000,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          noPairTimeData,
-          "NOTIME_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(false);
-        expect(result.error).toContain("Cannot get token pair creation time");
-        expect(result.error).toContain(
-          `minimum age is: ${MINIMUM_PAIR_AGE_HOURS} hours`,
-        );
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            noPairTimeData,
+            "NOTIME_TOKEN",
+            mockConstraints,
+          ),
+        ).toThrow("Cannot get token pair creation time");
       });
 
       it("should fail validation for token with low 24h volume", () => {
@@ -184,19 +174,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: 2000000,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          lowVolumeData,
-          "LOWVOL_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(false);
-        expect(result.error).toContain("Token has insufficient 24h volume");
-        expect(result.error).toContain("$50,000");
-        expect(result.error).toContain(
-          `minimum: $${MINIMUM_24H_VOLUME_USD.toLocaleString()}`,
-        );
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            lowVolumeData,
+            "LOWVOL_TOKEN",
+            mockConstraints,
+          ),
+        ).toThrow("Token has insufficient 24h volume");
       });
 
       it("should fail validation for token with missing volume data", () => {
@@ -213,15 +198,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: 2000000,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          noVolumeData,
-          "NOVOL_TOKEN",
-          DEFAULT_CONSTRAINTS,
-        );
-
-        expect(result.success).toBe(false);
-        expect(result.error).toBe("Cannot get token 24h volume data");
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            noVolumeData,
+            "NOVOL_TOKEN",
+            DEFAULT_CONSTRAINTS,
+          ),
+        ).toThrow("Cannot get token 24h volume data");
       });
 
       it("should fail validation for token with low liquidity", () => {
@@ -238,19 +222,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: 2000000,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          lowLiquidityData,
-          "NOLIQ_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(false);
-        expect(result.error).toContain("Token has insufficient liquidity");
-        expect(result.error).toContain("$50,000");
-        expect(result.error).toContain(
-          `minimum: $${MINIMUM_LIQUIDITY_USD.toLocaleString()}`,
-        );
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            lowLiquidityData,
+            "NOLIQ_TOKEN",
+            mockConstraints,
+          ),
+        ).toThrow("Token has insufficient liquidity");
       });
 
       it("should fail validation for token with missing liquidity data", () => {
@@ -275,15 +254,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           minimumFdvUsd: MINIMUM_FDV_USD,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          noLiquidityData,
-          "LOWLIQ_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(false);
-        expect(result.error).toBe("Cannot get token liquidity");
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            noLiquidityData,
+            "LOWLIQ_TOKEN",
+            mockConstraints,
+          ),
+        ).toThrow("Cannot get token liquidity");
       });
 
       it("should fail validation for token with low FDV", () => {
@@ -300,19 +278,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: 500000, // Below minimum
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          lowFdvData,
-          "LOWFDV_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(false);
-        expect(result.error).toContain("Token has insufficient FDV");
-        expect(result.error).toContain("$500,000");
-        expect(result.error).toContain(
-          `minimum: $${MINIMUM_FDV_USD.toLocaleString()}`,
-        );
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            lowFdvData,
+            "LOWFDV_TOKEN",
+            mockConstraints,
+          ),
+        ).toThrow("Token has insufficient FDV");
       });
 
       it("should fail validation for token with missing FDV data", () => {
@@ -329,15 +302,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: undefined,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          noFdvData,
-          "NOFDV_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(false);
-        expect(result.error).toBe("Cannot get token FDV");
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            noFdvData,
+            "NOFDV_TOKEN",
+            mockConstraints,
+          ),
+        ).toThrow("Cannot get token FDV");
       });
 
       it("should validate boundary conditions correctly", () => {
@@ -355,15 +327,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: MINIMUM_FDV_USD, // Exactly minimum FDV
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          boundaryData,
-          "BOUNDARY_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(true);
-        expect(result.error).toBeUndefined();
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            boundaryData,
+            "BOUNDARY_TOKEN",
+            mockConstraints,
+          ),
+        ).not.toThrow();
       });
 
       it("should handle edge case with zero values", () => {
@@ -380,16 +351,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: 0,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          zeroData,
-          "ZERO_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(false);
-        // Should fail on the first zero value encountered (volume)
-        expect(result.error).toContain("insufficient 24h volume");
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            zeroData,
+            "ZERO_TOKEN",
+            mockConstraints,
+          ),
+        ).toThrow("insufficient 24h volume");
       });
 
       it("should handle edge case with null volume", () => {
@@ -407,16 +376,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: 2000000,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          nullVolumeData,
-          "NULLVOL_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(false);
-        // Should fail on missing volume data check first
-        expect(result.error).toContain("Cannot get token 24h volume data");
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            nullVolumeData,
+            "NULLVOL_TOKEN",
+            mockConstraints,
+          ),
+        ).toThrow("Cannot get token 24h volume data");
       });
 
       it("should pass validation for FDV-exempt token (SOL) without FDV data", () => {
@@ -433,15 +400,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: undefined, // No FDV data - but should pass due to exemption
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          solTokenData,
-          "SOL_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(true);
-        expect(result.error).toBeUndefined();
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            solTokenData,
+            "SOL_TOKEN",
+            mockConstraints,
+          ),
+        ).not.toThrow();
       });
 
       it("should pass validation for FDV-exempt token (USDC) without FDV data", () => {
@@ -458,15 +424,14 @@ describe("TradeSimulator - Trading Constraints", () => {
           fdv: undefined, // No FDV data - but should pass due to exemption
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (tradeSimulator as any).validateTradingConstraints(
-          usdcTokenData,
-          "USDC_TOKEN",
-          mockConstraints,
-        );
-
-        expect(result.success).toBe(true);
-        expect(result.error).toBeUndefined();
+        expect(() =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (tradeSimulator as any).validateTradingConstraints(
+            usdcTokenData,
+            "USDC_TOKEN",
+            mockConstraints,
+          ),
+        ).not.toThrow();
       });
     });
 
@@ -506,18 +471,16 @@ describe("TradeSimulator - Trading Constraints", () => {
           .mockResolvedValueOnce(validFromPrice)
           .mockResolvedValueOnce(invalidToPrice);
 
-        const result = await tradeSimulator.executeTrade(
-          uuidv4(),
-          uuidv4(),
-          "0x1111111111111111111111111111111111111111",
-          "0x2222222222222222222222222222222222222222",
-          100,
-          "Test trade",
-        );
-
-        expect(result.success).toBe(false);
-        expect(result.error).toContain("Token pair is too young");
-        expect(result.trade).toBeUndefined();
+        await expect(
+          tradeSimulator.executeTrade(
+            uuidv4(),
+            uuidv4(),
+            "0x1111111111111111111111111111111111111111",
+            "0x2222222222222222222222222222222222222222",
+            100,
+            "Test trade",
+          ),
+        ).rejects.toThrow("Token pair is too young");
       });
 
       it("should skip constraints for burn tokens (price = 0)", async () => {
@@ -555,20 +518,28 @@ describe("TradeSimulator - Trading Constraints", () => {
           .mockResolvedValueOnce(validFromPrice)
           .mockResolvedValueOnce(burnTokenPrice);
 
-        const result = await tradeSimulator.executeTrade(
-          uuidv4(),
-          uuidv4(),
-          "0x1111111111111111111111111111111111111111",
-          "0x0000000000000000000000000000000000000000",
-          100,
-          "Burn trade",
-        );
-
-        // Should pass constraints validation but may fail later due to mocking limitations
+        // For burn tokens, constraints should be skipped, but the trade may still fail due to mocking limitations
         // The important thing is that constraints are skipped for burn tokens
-        expect(result.success).toBe(false);
-        expect(result.error).not.toContain("Token pair is too young");
-        expect(result.error).not.toContain("insufficient");
+        try {
+          await tradeSimulator.executeTrade(
+            uuidv4(),
+            uuidv4(),
+            "0x1111111111111111111111111111111111111111",
+            "0x0000000000000000000000000000000000000000",
+            100,
+            "Burn trade",
+          );
+          throw Error("trade should fail");
+        } catch (error) {
+          // The error should not be related to constraints validation
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          expect(errorMessage).not.toContain("Token pair is too young");
+          expect(errorMessage).not.toContain("insufficient");
+          expect(errorMessage).not.toContain("trade should fail");
+          // If we get here, the trade failed for a reason other than constraints
+          // which is expected due to mocking limitations
+        }
       });
     });
   });
