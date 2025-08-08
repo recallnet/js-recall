@@ -3,7 +3,14 @@
 import { useDebounce } from "@uidotdev/usehooks";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Image from "next/image";
-import React, { memo, useEffect, useMemo, useState } from "react";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   CartesianGrid,
   Line,
@@ -56,11 +63,14 @@ const TooltipContent = memo(
   ({ active, payload, label }: TooltipProps) => {
     if (!active || !payload || !payload.length) return null;
 
+    // Sort entries by value desc so ordering matches highest -> lowest
+    const sorted = [...payload].sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+
     return (
       <div className="bg-card z-50 rounded-[15px] border-gray-600 p-3 shadow-lg">
         <span className="text-secondary-foreground text-sm">{label}</span>
         <div className="my-2 w-full border-t"></div>
-        {payload.map((entry, index) => (
+        {sorted.map((entry, index) => (
           <div
             key={`${entry.dataKey}-${index}`}
             style={{ color: entry.color }}
@@ -98,15 +108,51 @@ const CustomTooltip = (props: TooltipProps) => {
 // Custom Legend Component
 const CustomLegend = ({
   agents,
-  colors,
+  colorMap,
+  currentValues,
+  currentOrder,
   searchQuery,
   onSearchChange,
 }: {
   agents: { name: string; imageUrl: string }[];
-  colors: string[];
+  colorMap: Record<string, string>;
+  currentValues?: Record<string, number>;
+  currentOrder?: string[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
 }) => {
+  // Sort agents by the exact order from the current hover payload, if available.
+  // Fallback to sorting by value desc, then by name for stability.
+  const sortedAgents = useMemo(() => {
+    if (currentOrder && currentOrder.length > 0) {
+      const orderIndex: Record<string, number> = {};
+      currentOrder.forEach((name, idx) => {
+        orderIndex[name] = idx;
+      });
+      return [...agents].sort((a, b) => {
+        const ai = orderIndex[a.name] ?? Number.MAX_SAFE_INTEGER;
+        const bi = orderIndex[b.name] ?? Number.MAX_SAFE_INTEGER;
+        if (ai !== bi) return ai - bi;
+        // tie-breaker using value desc if available, otherwise alpha
+        const va = currentValues?.[a.name] ?? -Infinity;
+        const vb = currentValues?.[b.name] ?? -Infinity;
+        if (va !== vb) return vb - va;
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    if (currentValues && Object.keys(currentValues).length > 0) {
+      return [...agents].sort((a, b) => {
+        const va = currentValues[a.name] ?? -Infinity;
+        const vb = currentValues[b.name] ?? -Infinity;
+        if (va !== vb) return vb - va;
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    return agents;
+  }, [agents, currentOrder, currentValues]);
+
   return (
     <div className="p-5">
       <div className="text-secondary-foreground relative mb-4 max-w-[500px]">
@@ -120,28 +166,30 @@ const CustomLegend = ({
         <Search className="absolute bottom-3 right-5" size={16} />
       </div>
       <div className="flex flex-wrap gap-3">
-        {agents.map((agent, index) => (
-          <div
-            key={agent.name}
-            className="w-50 flex items-center gap-2 rounded-lg p-2"
-          >
+        {sortedAgents.map((agent) => {
+          return (
             <div
-              className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border-2"
-              style={{ borderColor: colors[index % colors.length] }}
+              key={agent.name}
+              className="w-50 flex items-center gap-2 rounded-lg p-2"
             >
-              <Image
-                src={agent.imageUrl || `/default_agent_2.png`}
-                alt={agent.name}
-                width={15}
-                height={15}
-                className="h-full w-full"
-              />
+              <div
+                className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border-2"
+                style={{ borderColor: colorMap[agent.name] || colors[0] }}
+              >
+                <Image
+                  src={agent.imageUrl || `/default_agent_2.png`}
+                  alt={agent.name}
+                  width={15}
+                  height={15}
+                  className="h-full w-full"
+                />
+              </div>
+              <span className="text-primary-foreground truncate text-sm">
+                {agent.name}
+              </span>
             </div>
-            <span className="text-primary-foreground truncate text-sm">
-              {agent.name}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -228,15 +276,20 @@ const ChartWrapper = memo(
   ({
     filteredData,
     filteredDataKeys,
-    colors,
+    agentColorMap,
     shouldAnimate,
     isFullRange,
+    onHoverChange,
   }: {
     filteredData: Array<Record<string, string | number>>;
     filteredDataKeys: string[];
-    colors: string[];
+    agentColorMap: Record<string, string>;
     shouldAnimate: boolean;
     isFullRange?: boolean;
+    onHoverChange?: (
+      data: Record<string, number> | null,
+      order?: string[],
+    ) => void;
   }) => {
     return (
       <ResponsiveContainer width="100%" height="100%">
@@ -248,6 +301,7 @@ const ChartWrapper = memo(
             left: 20,
             bottom: 5,
           }}
+          onMouseLeave={() => onHoverChange && onHoverChange(null, [])}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis
@@ -258,6 +312,16 @@ const ChartWrapper = memo(
             interval={isFullRange ? "preserveEnd" : 0}
             tick={{ fontSize: 12 }}
             tickFormatter={(value, index) => {
+              // For active competitions, format the original timestamp
+              if (!isFullRange) {
+                const dataPoint = filteredData[index];
+                if (dataPoint && dataPoint.displayTimestamp) {
+                  return dataPoint.displayTimestamp;
+                }
+                return formatDate(value);
+              }
+
+              // For ended competitions (full range), use the existing logic
               // For duplicate dates, only show the first occurrence
               const firstOccurrence = filteredData.findIndex(
                 (d) => d.timestamp === value,
@@ -267,24 +331,20 @@ const ChartWrapper = memo(
               }
 
               // For full range, limit the number of ticks shown
-              if (isFullRange) {
-                const uniqueValues = [
-                  ...new Set(filteredData.map((d) => d.timestamp)),
-                ];
-                const uniqueIndex = uniqueValues.indexOf(value);
-                // Show first, last, and evenly distributed dates
-                const step = Math.ceil(uniqueValues.length / 8);
-                if (
-                  uniqueIndex === 0 ||
-                  uniqueIndex === uniqueValues.length - 1 ||
-                  uniqueIndex % step === 0
-                ) {
-                  return value;
-                }
-                return "";
+              const uniqueValues = [
+                ...new Set(filteredData.map((d) => d.timestamp)),
+              ];
+              const uniqueIndex = uniqueValues.indexOf(value);
+              // Show first, last, and evenly distributed dates
+              const step = Math.ceil(uniqueValues.length / 8);
+              if (
+                uniqueIndex === 0 ||
+                uniqueIndex === uniqueValues.length - 1 ||
+                uniqueIndex % step === 0
+              ) {
+                return value;
               }
-
-              return value;
+              return "";
             }}
           />
           <YAxis
@@ -304,7 +364,7 @@ const ChartWrapper = memo(
           />
           <ChartLines
             dataKeys={filteredDataKeys}
-            colors={colors}
+            colorMap={agentColorMap}
             isAnimationActive={shouldAnimate}
           />
         </LineChart>
@@ -318,33 +378,33 @@ ChartWrapper.displayName = "ChartWrapper";
 const ChartLines = memo(
   ({
     dataKeys,
-    colors,
+    colorMap,
     isAnimationActive,
   }: {
     dataKeys: string[];
-    colors: string[];
+    colorMap: Record<string, string>;
     isAnimationActive: boolean;
   }) => {
     return (
       <>
-        {dataKeys.map((key, index: number) => (
+        {dataKeys.map((key) => (
           <Line
             key={key}
             type="linear"
             dataKey={key}
             connectNulls={true}
-            stroke={colors[index % colors.length]}
+            stroke={colorMap[key]}
             strokeWidth={2}
             isAnimationActive={isAnimationActive}
             animationDuration={1000}
             dot={{
-              fill: colors[index % colors.length],
+              fill: colorMap[key],
               strokeWidth: 2,
               r: 4,
             }}
             activeDot={{
               r: 6,
-              stroke: colors[index % colors.length],
+              stroke: colorMap[key],
               strokeWidth: 2,
             }}
           />
@@ -368,6 +428,25 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [shouldAnimate, setShouldAnimate] = useState(true);
+  const [hoveredDataPoint, setHoveredDataPoint] = useState<Record<
+    string,
+    number
+  > | null>(null);
+  const [hoveredOrder, setHoveredOrder] = useState<string[]>([]);
+
+  // Use a ref to track the last hover data to prevent unnecessary updates
+  const lastHoverDataRef = useRef<string>("");
+  const handleHoverChange = useCallback(
+    (data: Record<string, number> | null, order?: string[]) => {
+      const dataKey = data ? JSON.stringify(data) : "";
+      if (dataKey !== lastHoverDataRef.current) {
+        lastHoverDataRef.current = dataKey;
+        setHoveredDataPoint(data);
+        setHoveredOrder(order || []);
+      }
+    },
+    [],
+  );
 
   const parsedData = useMemo(() => {
     if (!timelineRaw) return [];
@@ -470,27 +549,40 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   ]);
 
   const filteredData = useMemo(() => {
-    // For ended competitions, show all data in a single view
+    // For ended competitions, show all data in a single view with day-level granularity
     if (
       competition.status === CompetitionStatus.Ended &&
       parsedData.length > 0
     ) {
       // Flatten all weeks into a single array
       const allData = parsedData.flat();
-      return allData.map((data) => ({
-        ...data,
-        timestamp: formatDate(data.timestamp),
-      }));
+
+      // Group by formatted date to consolidate intraday data points
+      const uniqueDates = new Map();
+      allData.forEach((data) => {
+        const dateKey = formatDate(data.timestamp);
+        // Keep the last data point for each date
+        uniqueDates.set(dateKey, {
+          ...data,
+          timestamp: dateKey,
+        });
+      });
+
+      return Array.from(uniqueDates.values());
     }
 
-    // For other statuses, show week by week
+    // For other statuses (active/pending), preserve full granularity
     return (parsedData[dateRangeIndex] || []).map((data) => ({
       ...data,
-      timestamp: formatDate(data.timestamp),
+      // Keep original timestamp for hover precision, but add formatted version for display
+      originalTimestamp: data.timestamp,
+      timestamp: data.timestamp, // Keep original for hover granularity
+      displayTimestamp: formatDate(data.timestamp), // For axis labels
     }));
   }, [parsedData, dateRangeIndex, competition.status]);
 
-  const filteredDataKeys = useMemo(() => {
+  // Get all agent keys from the data (unfiltered)
+  const allDataKeys = useMemo(() => {
     const res: Record<string, number> = filteredData.reduce(
       (acc, cur) => ({
         ...acc,
@@ -501,18 +593,54 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
 
     if (res.timestamp) delete res?.timestamp;
 
-    return Object.keys(res).filter((agent) =>
+    return Object.keys(res);
+  }, [filteredData]);
+
+  // Filter data keys based on search
+  const filteredDataKeys = useMemo(() => {
+    return allDataKeys.filter((agent) =>
       agent.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
     );
-  }, [filteredData, debouncedSearchQuery]);
+  }, [allDataKeys, debouncedSearchQuery]);
 
-  const agentsWithData = useMemo(() => {
+  // All agents with data (for color mapping - unfiltered)
+  const allAgentsWithData = useMemo(() => {
     return (
       agents?.filter((agent) =>
-        filteredDataKeys.some((agentName) => agentName == agent.name),
+        allDataKeys.some((agentName) => agentName === agent.name),
       ) || []
     );
-  }, [agents, filteredDataKeys]);
+  }, [agents, allDataKeys]);
+
+  // Filtered agents for the legend (based on search query)
+  const filteredAgentsForLegend = useMemo(() => {
+    return allAgentsWithData.filter((agent) =>
+      filteredDataKeys.includes(agent.name),
+    );
+  }, [allAgentsWithData, filteredDataKeys]);
+
+  // Create a consistent color mapping for all agents
+  const agentColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    allDataKeys.forEach((agentName, index) => {
+      map[agentName] = colors[index % colors.length]!;
+    });
+    return map;
+  }, [allDataKeys]);
+
+  // Get the latest data point values
+  const latestValues = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return {};
+    const lastDataPoint = filteredData[filteredData.length - 1];
+    if (!lastDataPoint) return {};
+    const values: Record<string, number> = {};
+    Object.entries(lastDataPoint).forEach(([key, value]) => {
+      if (key !== "timestamp" && typeof value === "number") {
+        values[key] = value;
+      }
+    });
+    return values;
+  }, [filteredData]);
 
   const handlePrevRange = () => {
     setDateRangeIndex((prev) => Math.max(0, prev - 1));
@@ -596,15 +724,20 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             <ChartWrapper
               filteredData={filteredData}
               filteredDataKeys={filteredDataKeys}
-              colors={colors}
+              agentColorMap={agentColorMap}
               shouldAnimate={shouldAnimate}
               isFullRange={competition.status === CompetitionStatus.Ended}
+              onHoverChange={handleHoverChange}
             />
           </div>
           <div className="border-t-1 my-2 w-full"></div>
           <CustomLegend
-            agents={agentsWithData as { name: string; imageUrl: string }[]}
-            colors={colors}
+            agents={
+              filteredAgentsForLegend as { name: string; imageUrl: string }[]
+            }
+            colorMap={agentColorMap}
+            currentValues={hoveredDataPoint || latestValues}
+            currentOrder={hoveredOrder}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
           />
