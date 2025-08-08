@@ -26,14 +26,10 @@ import { Input } from "@recallnet/ui2/components/input";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
-import {
-  Agent,
-  AgentCompetition,
-  Competition,
-  CompetitionStatus,
-} from "@/types";
+import { AgentCompetition, Competition, CompetitionStatus } from "@/types";
 import { formatDate } from "@/utils/format";
 
+import { Pagination } from "../pagination";
 import { ShareModal } from "../share-modal";
 
 const colors = [
@@ -46,6 +42,8 @@ const colors = [
   "#98D8C8", // Mint
   "#F7DC6F", // Light Yellow
 ];
+
+const LIMIT_AGENTS_PER_PAGE = 10;
 
 interface TooltipProps {
   active?: boolean;
@@ -105,6 +103,15 @@ const CustomTooltip = (props: TooltipProps) => {
   return <TooltipContent {...props} />;
 };
 
+interface CustomLegendProps {
+  agents: { name: string; imageUrl: string }[];
+  colorMap: Record<string, string>;
+  currentValues?: Record<string, number>;
+  currentOrder?: string[];
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+}
+
 // Custom Legend Component
 const CustomLegend = ({
   agents,
@@ -113,14 +120,8 @@ const CustomLegend = ({
   currentOrder,
   searchQuery,
   onSearchChange,
-}: {
-  agents: { name: string; imageUrl: string }[];
-  colorMap: Record<string, string>;
-  currentValues?: Record<string, number>;
-  currentOrder?: string[];
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-}) => {
+}: CustomLegendProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
   // Sort agents by the exact order from the current hover payload, if available.
   // Fallback to sorting by value desc, then by name for stability.
   const sortedAgents = useMemo(() => {
@@ -153,6 +154,18 @@ const CustomLegend = ({
     return agents;
   }, [agents, currentOrder, currentValues]);
 
+  // Calculate paginated agents
+  const paginatedAgents = useMemo(() => {
+    const startIndex = (currentPage - 1) * LIMIT_AGENTS_PER_PAGE;
+    const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
+    return sortedAgents.slice(startIndex, endIndex);
+  }, [sortedAgents, currentPage]);
+
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   return (
     <div className="p-5">
       <div className="text-secondary-foreground relative mb-4 max-w-[500px]">
@@ -165,8 +178,9 @@ const CustomLegend = ({
         />
         <Search className="absolute bottom-3 right-5" size={16} />
       </div>
+
       <div className="flex flex-wrap gap-3">
-        {sortedAgents.map((agent) => {
+        {paginatedAgents.map((agent) => {
           return (
             <div
               key={agent.name}
@@ -191,6 +205,13 @@ const CustomLegend = ({
           );
         })}
       </div>
+
+      <Pagination
+        totalItems={agents.length}
+        currentPage={currentPage}
+        itemsPerPage={LIMIT_AGENTS_PER_PAGE}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };
@@ -265,7 +286,7 @@ const datesByWeek = (dates: DateArr) => {
 
 interface PortfolioChartProps {
   competition: Competition;
-  agents?: (Agent | AgentCompetition)[];
+  agents?: AgentCompetition[]; // Only used as fallback, real agent data comes from timelineRaw
   className?: string;
 }
 
@@ -603,14 +624,40 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     );
   }, [allDataKeys, debouncedSearchQuery]);
 
+  // Extract all agents from timeline data
+  const allAgentsFromTimeline = useMemo(() => {
+    if (!timelineRaw) return [];
+
+    const agentMap = new Map<string, { name: string; imageUrl: string }>();
+
+    timelineRaw.forEach((agentData) => {
+      agentMap.set(agentData.agentName, {
+        name: agentData.agentName,
+        imageUrl: `/default_agent_2.png`, // Timeline data doesn't include imageUrl
+      });
+    });
+
+    return Array.from(agentMap.values());
+  }, [timelineRaw]);
+
   // All agents with data (for color mapping - unfiltered)
+  // Prefer agents from timeline data, fallback to agents prop
   const allAgentsWithData = useMemo(() => {
+    const timelineAgents = allAgentsFromTimeline.filter((agent) =>
+      allDataKeys.some((agentName) => agentName === agent.name),
+    );
+
+    if (timelineAgents.length > 0) {
+      return timelineAgents;
+    }
+
+    // Fallback to agents prop if timeline data doesn't have agent info
     return (
       agents?.filter((agent) =>
         allDataKeys.some((agentName) => agentName === agent.name),
       ) || []
     );
-  }, [agents, allDataKeys]);
+  }, [allAgentsFromTimeline, allDataKeys, agents]);
 
   // Filtered agents for the legend (based on search query)
   const filteredAgentsForLegend = useMemo(() => {
