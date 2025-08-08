@@ -211,7 +211,7 @@ export default function CompetitionPage({
 
       <TimelineChart
         className="mt-5"
-        competitionId={competition.id}
+        competition={competition}
         agents={agentsData?.agents}
       />
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />

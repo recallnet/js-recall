@@ -19,7 +19,12 @@ import { Input } from "@recallnet/ui2/components/input";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
-import { Agent, AgentCompetition } from "@/types";
+import {
+  Agent,
+  AgentCompetition,
+  Competition,
+  CompetitionStatus,
+} from "@/types";
 import { formatDate } from "@/utils/format";
 
 import { ShareModal } from "../share-modal";
@@ -211,7 +216,7 @@ const datesByWeek = (dates: DateArr) => {
 };
 
 interface PortfolioChartProps {
-  competitionId?: string;
+  competition: Competition;
   agents?: (Agent | AgentCompetition)[];
   className?: string;
 }
@@ -225,11 +230,13 @@ const ChartWrapper = memo(
     filteredDataKeys,
     colors,
     shouldAnimate,
+    isFullRange,
   }: {
     filteredData: Array<Record<string, string | number>>;
     filteredDataKeys: string[];
     colors: string[];
     shouldAnimate: boolean;
+    isFullRange?: boolean;
   }) => {
     return (
       <ResponsiveContainer width="100%" height="100%">
@@ -248,7 +255,37 @@ const ChartWrapper = memo(
             stroke="#9CA3AF"
             fontSize={12}
             type="category"
-            interval={5}
+            interval={isFullRange ? "preserveEnd" : 0}
+            tick={{ fontSize: 12 }}
+            tickFormatter={(value, index) => {
+              // For duplicate dates, only show the first occurrence
+              const firstOccurrence = filteredData.findIndex(
+                (d) => d.timestamp === value,
+              );
+              if (firstOccurrence !== index) {
+                return "";
+              }
+
+              // For full range, limit the number of ticks shown
+              if (isFullRange) {
+                const uniqueValues = [
+                  ...new Set(filteredData.map((d) => d.timestamp)),
+                ];
+                const uniqueIndex = uniqueValues.indexOf(value);
+                // Show first, last, and evenly distributed dates
+                const step = Math.ceil(uniqueValues.length / 8);
+                if (
+                  uniqueIndex === 0 ||
+                  uniqueIndex === uniqueValues.length - 1 ||
+                  uniqueIndex % step === 0
+                ) {
+                  return value;
+                }
+                return "";
+              }
+
+              return value;
+            }}
           />
           <YAxis
             stroke="#9CA3AF"
@@ -319,25 +356,18 @@ const ChartLines = memo(
 ChartLines.displayName = "ChartLines";
 
 export const TimelineChart: React.FC<PortfolioChartProps> = ({
-  competitionId,
+  competition,
   agents,
   className,
 }) => {
-  const { data: timelineRaw, isLoading } =
-    useCompetitionTimeline(competitionId);
+  const { data: timelineRaw, isLoading } = useCompetitionTimeline(
+    competition.id,
+    competition.status,
+  );
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [shouldAnimate, setShouldAnimate] = useState(true);
-
-  // Disable animation after initial render
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShouldAnimate(false);
-    }, 1500); // Allow animation to complete on initial render
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const parsedData = useMemo(() => {
     if (!timelineRaw) return [];
@@ -386,12 +416,79 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     return datesByWeek(sortedAndTransformed);
   }, [timelineRaw]);
 
+  // Disable animation after initial render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldAnimate(false);
+    }, 1500); // Allow animation to complete on initial render
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Intelligent date range selection based on competition status and dates
+  useEffect(() => {
+    if (!parsedData.length) return;
+
+    const now = new Date();
+    const endDate = competition.endDate ? new Date(competition.endDate) : null;
+
+    let targetIndex = parsedData.length - 1; // Default to most recent week
+
+    if (competition.status === CompetitionStatus.Active) {
+      // For active competitions, show the current week or the most recent week with data
+      const currentWeekData = parsedData.findIndex((weekData) => {
+        if (!weekData || !weekData.length) return false;
+        const weekStart = new Date(weekData[0]!.timestamp);
+        const weekEnd = new Date(weekData[weekData.length - 1]!.timestamp);
+        return weekStart <= now && weekEnd >= now;
+      });
+
+      if (currentWeekData !== -1) {
+        targetIndex = currentWeekData;
+      }
+    } else if (competition.status === CompetitionStatus.Ended) {
+      // For ended competitions, show the last week of the competition
+      if (endDate) {
+        const endWeekData = parsedData.findIndex((weekData) => {
+          if (!weekData || !weekData.length) return false;
+          const weekEnd = new Date(weekData[weekData.length - 1]!.timestamp);
+          return weekEnd >= endDate;
+        });
+
+        if (endWeekData !== -1) {
+          targetIndex = endWeekData;
+        }
+      }
+    }
+
+    setDateRangeIndex(targetIndex);
+  }, [
+    parsedData,
+    competition.status,
+    competition.startDate,
+    competition.endDate,
+  ]);
+
   const filteredData = useMemo(() => {
+    // For ended competitions, show all data in a single view
+    if (
+      competition.status === CompetitionStatus.Ended &&
+      parsedData.length > 0
+    ) {
+      // Flatten all weeks into a single array
+      const allData = parsedData.flat();
+      return allData.map((data) => ({
+        ...data,
+        timestamp: formatDate(data.timestamp),
+      }));
+    }
+
+    // For other statuses, show week by week
     return (parsedData[dateRangeIndex] || []).map((data) => ({
       ...data,
       timestamp: formatDate(data.timestamp),
     }));
-  }, [parsedData, dateRangeIndex]);
+  }, [parsedData, dateRangeIndex, competition.status]);
 
   const filteredDataKeys = useMemo(() => {
     const res: Record<string, number> = filteredData.reduce(
@@ -441,48 +538,59 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
         </div>
         <ShareModal
           title="Share portfolio timeline"
-          url={`https://app.recall.network/competitions/${competitionId}#portfolio-timeline`}
+          url={`https://app.recall.network/competitions/${competition.id}#portfolio-timeline`}
           size={20}
         />
       </div>
-      {(timelineRaw && timelineRaw?.length <= 0) || isLoading ? (
+      {(timelineRaw && timelineRaw?.length <= 0) ||
+      isLoading ||
+      competition.status === CompetitionStatus.Pending ? (
         <div className="h-30 flex w-full flex-col items-center justify-center p-10">
           <span className="text-primary-foreground">
-            No agents competing yet
+            {competition.status === CompetitionStatus.Pending
+              ? "Competition hasn&apos;t started yet"
+              : "No agents competing yet"}
           </span>
           <span className="text-secondary-foreground text-sm">
-            Agents will appear here as soon as one joins the competition.
+            {competition.status === CompetitionStatus.Pending &&
+            competition.startDate
+              ? `The competition will start on ${formatDate(
+                  competition.startDate,
+                )}.`
+              : "Agents will appear here as soon as the competition starts."}
           </span>
         </div>
       ) : (
         <>
-          <div className="flex w-full items-center justify-end px-6 py-4">
-            <div className="text-secondary-foreground flex items-center gap-1 text-sm">
-              <Button
-                onClick={handlePrevRange}
-                disabled={dateRangeIndex <= 0}
-                variant="outline"
-                className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-              >
-                <ChevronLeft strokeWidth={1.5} />
-              </Button>
-              <span className="w-22">
-                {filteredData[0]?.timestamp as string}
-              </span>
-              <div className="rigin-center rotate-30 mx-2 h-4 w-[1px] bg-gray-200"></div>
-              <span className="w-22">
-                {filteredData[filteredData.length - 1]?.timestamp as string}
-              </span>
-              <Button
-                onClick={handleNextRange}
-                disabled={dateRangeIndex >= parsedData.length - 1}
-                variant="outline"
-                className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-              >
-                <ChevronRight strokeWidth={1.5} />
-              </Button>
+          {competition.status !== CompetitionStatus.Ended && (
+            <div className="flex w-full items-center justify-end px-6 py-4">
+              <div className="text-secondary-foreground flex items-center gap-1 text-sm">
+                <Button
+                  onClick={handlePrevRange}
+                  disabled={dateRangeIndex <= 0}
+                  variant="outline"
+                  className="hover:text-primary-foreground border-none p-0 hover:bg-black"
+                >
+                  <ChevronLeft strokeWidth={1.5} />
+                </Button>
+                <span className="w-22">
+                  {filteredData[0]?.timestamp as string}
+                </span>
+                <div className="rigin-center rotate-30 mx-2 h-4 w-[1px] bg-gray-200"></div>
+                <span className="w-22">
+                  {filteredData[filteredData.length - 1]?.timestamp as string}
+                </span>
+                <Button
+                  onClick={handleNextRange}
+                  disabled={dateRangeIndex >= parsedData.length - 1}
+                  variant="outline"
+                  className="hover:text-primary-foreground border-none p-0 hover:bg-black"
+                >
+                  <ChevronRight strokeWidth={1.5} />
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="h-120 relative">
             <ChartWrapper
@@ -490,6 +598,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               filteredDataKeys={filteredDataKeys}
               colors={colors}
               shouldAnimate={shouldAnimate}
+              isFullRange={competition.status === CompetitionStatus.Ended}
             />
           </div>
           <div className="border-t-1 my-2 w-full"></div>
