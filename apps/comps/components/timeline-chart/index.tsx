@@ -251,7 +251,10 @@ const CustomLegend = ({
                   className="h-full w-full"
                 />
               </div>
-              <span className="text-primary-foreground truncate text-sm">
+              <span
+                className="truncate text-sm font-medium"
+                style={{ color: colorMap[agent.name] || colors[0] }}
+              >
                 {agent.name}
               </span>
             </div>
@@ -870,21 +873,26 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     );
   }, [allDataKeys, debouncedSearchQuery]);
 
-  // Extract all agents from timeline data
+  // Extract all agents from timeline data with proper image URLs
   const allAgentsFromTimeline = useMemo(() => {
     if (!timelineRaw) return [];
 
     const agentMap = new Map<string, { name: string; imageUrl: string }>();
 
     timelineRaw.forEach((agentData) => {
+      // Try to find the agent in the agents prop to get the actual image URL
+      const agentWithImage = agents?.find(
+        (agent) => agent.name === agentData.agentName,
+      );
+
       agentMap.set(agentData.agentName, {
         name: agentData.agentName,
-        imageUrl: `/default_agent_2.png`, // Timeline data doesn't include imageUrl
+        imageUrl: agentWithImage?.imageUrl || `/default_agent_2.png`,
       });
     });
 
     return Array.from(agentMap.values());
-  }, [timelineRaw]);
+  }, [timelineRaw, agents]);
 
   // All agents with data (for color mapping - unfiltered)
   // Prefer agents from timeline data, fallback to agents prop
