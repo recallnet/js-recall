@@ -10,10 +10,13 @@ import {
 import {
   InsertAgentScore,
   InsertAgentScoreHistory,
+  SelectAgentScore,
 } from "@/database/schema/ranking/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { AgentMetadata } from "@/types/index.js";
+
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Agent Rank Repository
@@ -175,32 +178,8 @@ async function batchUpdateAgentRanksImpl(
         }),
       );
 
-      // Batch update agent ranks
-      const results = await Promise.all(
-        rankDataArray.map(async (rankData) => {
-          const [result] = await tx
-            .insert(agentScore)
-            .values(rankData)
-            .onConflictDoUpdate({
-              target: agentScore.agentId,
-              set: {
-                mu: rankData.mu,
-                sigma: rankData.sigma,
-                ordinal: rankData.ordinal,
-                updatedAt: new Date(),
-              },
-            })
-            .returning();
-
-          if (!result) {
-            throw new Error(
-              `Failed to update agent rank for agent ${rankData.agentId}`,
-            );
-          }
-
-          return result;
-        }),
-      );
+      // Batch update agent ranks using a single query
+      const results = await batchUpsertAgentScores(tx, rankDataArray);
 
       // Batch insert history entries
       const historyResults = await tx
@@ -242,6 +221,57 @@ async function getAllAgentRankHistoryImpl(competitionId?: string) {
     repositoryLogger.error("Error in getAllAgentRankHistory:", error);
     throw error;
   }
+}
+
+/**
+ * Batch upsert agent scores using raw SQL for better performance
+ */
+async function batchUpsertAgentScores(
+  tx: DatabaseTransaction,
+  rankDataArray: InsertAgentScore[],
+): Promise<SelectAgentScore[]> {
+  if (rankDataArray.length === 0) {
+    return [];
+  }
+
+  // Build the VALUES part dynamically
+  const sqlChunks: ReturnType<typeof sql>[] = [];
+
+  sqlChunks.push(sql`
+    INSERT INTO agent_score (id, agent_id, mu, sigma, ordinal)
+    VALUES
+  `);
+
+  rankDataArray.forEach((data, index) => {
+    if (index > 0) {
+      sqlChunks.push(sql`, `);
+    }
+    sqlChunks.push(
+      sql`(${data.id}, ${data.agentId}, ${data.mu}, ${data.sigma}, ${data.ordinal})`,
+    );
+  });
+
+  sqlChunks.push(sql`
+    ON CONFLICT (agent_id) DO UPDATE SET
+      mu = EXCLUDED.mu,
+      sigma = EXCLUDED.sigma,
+      ordinal = EXCLUDED.ordinal,
+      updated_at = NOW()
+    RETURNING *
+  `);
+
+  // Combine all SQL chunks
+  const query = sql.join(sqlChunks, sql``);
+
+  const result = await tx.execute<SelectAgentScore>(query);
+
+  if (result.rows.length !== rankDataArray.length) {
+    throw new Error(
+      `Failed to update all agent ranks. Expected ${rankDataArray.length}, got ${result.rows.length}`,
+    );
+  }
+
+  return result.rows as SelectAgentScore[];
 }
 
 /**
