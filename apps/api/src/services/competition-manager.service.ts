@@ -600,7 +600,7 @@ export class CompetitionManager {
       // Fallback to calculating current values
       const agents = await getCompetitionAgents(competitionId);
 
-      // Use bulk portfolio value calculation to avoid N+1 queries
+      // Use bulk portfolio value calculation
       const portfolioValues =
         await this.tradeSimulator.calculateBulkPortfolioValues(agents);
 
@@ -658,7 +658,7 @@ export class CompetitionManager {
         deactivationReason: string;
       }> = [];
       if (inactiveAgentIds.length > 0) {
-        // 🚀 BULK OPERATIONS: Fetch all inactive agent data efficiently
+        // 🚀 BULK OPERATIONS: Fetch all inactive agent data
         const [competitionRecords, portfolioSnapshots] = await Promise.all([
           getBulkAgentCompetitionRecords(competitionId, inactiveAgentIds),
           getBulkAgentPortfolioSnapshots(competitionId, inactiveAgentIds),

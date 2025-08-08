@@ -74,7 +74,6 @@ export class LeaderboardService {
 
   /**
    * Get optimized global metrics for all agents using a single query
-   * This replaces the N+1 query problem from the old calculateGlobalMetrics method
    * @returns Array of agent metrics with all required data
    */
   private async getOptimizedGlobalMetrics(): Promise<LeaderboardAgent[]> {
