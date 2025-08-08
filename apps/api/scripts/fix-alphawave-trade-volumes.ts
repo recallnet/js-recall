@@ -47,7 +47,7 @@ const ALPHAWAVE_COMPETITION_ID = "624b96af-be44-4274-a5ef-76a27397c9c6";
 /**
  * USD token symbols for identifying stablecoin trades
  */
-const USD_TOKENS = ["USDC", "USDT", "DAI"];
+const USD_TOKENS = ["USDC", "USDT", "DAI", "USDbC"];
 
 /**
  * Analysis of current state showing the three trade categories
@@ -183,7 +183,7 @@ async function analyzeCurrentState(): Promise<{
 
     // Sample from USD→token trades
     for (const trade of usdToTokenTrades.slice(0, 2)) {
-      if (Math.abs(trade.tradeAmountUsd - trade.fromAmount) > 1000) {
+      if (Math.abs(trade.tradeAmountUsd - trade.fromAmount) > 0.001) {
         sampleProblematicTrades.push({
           id: trade.id,
           category: "USD→token",
@@ -209,7 +209,7 @@ async function analyzeCurrentState(): Promise<{
 
       if (priceData.length > 0 && priceData[0]?.price) {
         const correctVolume = trade.fromAmount * priceData[0].price;
-        if (Math.abs(trade.tradeAmountUsd - correctVolume) > 1000) {
+        if (Math.abs(trade.tradeAmountUsd - correctVolume) > 0.001) {
           sampleProblematicTrades.push({
             id: trade.id,
             category: "token→token",
@@ -279,7 +279,7 @@ async function fixTradeAmounts(isDryRun: boolean = true): Promise<{
       for (const trade of allTrades) {
         if (USD_TOKENS.includes(trade.fromTokenSymbol)) {
           // USD→token trade: should use from_amount
-          if (Math.abs(trade.tradeAmountUsd - trade.fromAmount) > 1000) {
+          if (Math.abs(trade.tradeAmountUsd - trade.fromAmount) > 0.001) {
             usdToTokenUpdated++;
             volumeBefore += trade.tradeAmountUsd;
             volumeAfter += trade.fromAmount;
@@ -297,7 +297,7 @@ async function fixTradeAmounts(isDryRun: boolean = true): Promise<{
 
           if (priceData.length > 0 && priceData[0]?.price) {
             const correctVolume = trade.fromAmount * priceData[0].price;
-            if (Math.abs(trade.tradeAmountUsd - correctVolume) > 1000) {
+            if (Math.abs(trade.tradeAmountUsd - correctVolume) > 0.001) {
               tokenToTokenUpdated++;
               volumeBefore += trade.tradeAmountUsd;
               volumeAfter += correctVolume;
@@ -341,7 +341,7 @@ async function fixTradeAmounts(isDryRun: boolean = true): Promise<{
         for (const trade of allTrades) {
           if (USD_TOKENS.includes(trade.fromTokenSymbol)) {
             // USD→token trade: set trade_amount_usd = from_amount
-            if (Math.abs(trade.tradeAmountUsd - trade.fromAmount) > 1000) {
+            if (Math.abs(trade.tradeAmountUsd - trade.fromAmount) > 0.001) {
               await tx
                 .update(trades)
                 .set({ tradeAmountUsd: trade.fromAmount })
@@ -368,7 +368,7 @@ async function fixTradeAmounts(isDryRun: boolean = true): Promise<{
 
             if (priceData.length > 0 && priceData[0]?.price) {
               const correctVolume = trade.fromAmount * priceData[0].price;
-              if (Math.abs(trade.tradeAmountUsd - correctVolume) > 1000) {
+              if (Math.abs(trade.tradeAmountUsd - correctVolume) > 0.001) {
                 await tx
                   .update(trades)
                   .set({ tradeAmountUsd: correctVolume })
@@ -442,7 +442,7 @@ async function verifyFix(): Promise<{
       if (USD_TOKENS.includes(trade.fromTokenSymbol)) {
         usdToTokenVolume += trade.tradeAmountUsd;
         // Check if USD→token trades are correctly using from_amount
-        if (Math.abs(trade.tradeAmountUsd - trade.fromAmount) > 1000) {
+        if (Math.abs(trade.tradeAmountUsd - trade.fromAmount) > 0.001) {
           remainingLargeDiscrepancies++;
         }
       } else if (USD_TOKENS.includes(trade.toTokenSymbol)) {
@@ -461,7 +461,7 @@ async function verifyFix(): Promise<{
 
         if (priceData.length > 0 && priceData[0]?.price) {
           const expectedVolume = trade.fromAmount * priceData[0].price;
-          if (Math.abs(trade.tradeAmountUsd - expectedVolume) > 1000) {
+          if (Math.abs(trade.tradeAmountUsd - expectedVolume) > 0.001) {
             remainingLargeDiscrepancies++;
           }
         }
