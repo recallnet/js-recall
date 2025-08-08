@@ -72,21 +72,36 @@ const TooltipContent = memo(
   ({ active, payload, label }: TooltipProps) => {
     if (!active || !payload || !payload.length) return null;
 
-    // Sort entries by value desc so ordering matches highest -> lowest
-    const sorted = [...payload].sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+    // Filter out timestamp-related entries and sort by value desc
+    const timestampKeys = [
+      "timestamp",
+      "originalTimestamp",
+      "displayTimestamp",
+    ];
+    const filteredPayload = payload.filter(
+      (entry) => !timestampKeys.includes(entry.dataKey as string),
+    );
+    const sorted = [...filteredPayload].sort(
+      (a, b) => (b.value ?? 0) - (a.value ?? 0),
+    );
+
+    // Limit to 25 agents maximum
+    const MAX_TOOLTIP_AGENTS = 25;
+    const visibleEntries = sorted.slice(0, MAX_TOOLTIP_AGENTS);
+    const hiddenCount = sorted.length - MAX_TOOLTIP_AGENTS;
 
     return (
-      <div className="bg-card z-50 rounded-[15px] border-gray-600 p-3 shadow-lg">
+      <div className="bg-card z-50 max-w-[320px] rounded-[15px] border-gray-600 p-3 shadow-lg">
         <span className="text-secondary-foreground text-sm">{label}</span>
         <div className="my-2 w-full border-t"></div>
-        {sorted.map((entry, index) => (
+        {visibleEntries.map((entry, index) => (
           <div
             key={`${entry.dataKey}-${index}`}
             style={{ color: entry.color }}
             className="flex items-center gap-2 text-sm"
           >
-            <span className="min-w-[160px] truncate">{entry.dataKey}</span>
-            <span className="text-primary-foreground whitespace-nowrap">
+            <span className="min-w-0 flex-1 truncate">{entry.dataKey}</span>
+            <span className="text-primary-foreground ml-auto whitespace-nowrap pl-2">
               $
               {entry.value.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -95,6 +110,11 @@ const TooltipContent = memo(
             </span>
           </div>
         ))}
+        {hiddenCount > 0 && (
+          <div className="text-secondary-foreground mt-2 border-t border-gray-600 pt-2 text-xs">
+            ...plus {hiddenCount} more agent{hiddenCount !== 1 ? "s" : ""}
+          </div>
+        )}
       </div>
     );
   },
@@ -357,8 +377,32 @@ const ChartWrapper = memo(
                 return formatDate(value);
               }
 
-              // For ended competitions (full range), use the existing logic
-              // For duplicate dates, only show the first occurrence
+              // For ended competitions (full range), handle different granularities
+              const dataPoint = filteredData[index];
+
+              // If we have originalTimestamp, this is a high-granularity short competition
+              if (dataPoint && dataPoint.originalTimestamp) {
+                const date = new Date(dataPoint.originalTimestamp);
+                // For high granularity, show time more frequently
+                const totalPoints = filteredData.length;
+                const step = Math.max(1, Math.ceil(totalPoints / 10)); // Show ~10 labels max
+
+                if (
+                  index % step === 0 ||
+                  index === 0 ||
+                  index === totalPoints - 1
+                ) {
+                  return date.toLocaleTimeString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  });
+                }
+                return "";
+              }
+
+              // For daily granularity competitions, use existing logic
               const firstOccurrence = filteredData.findIndex(
                 (d) => d.timestamp === value,
               );
@@ -366,12 +410,10 @@ const ChartWrapper = memo(
                 return "";
               }
 
-              // For full range, limit the number of ticks shown
               const uniqueValues = [
                 ...new Set(filteredData.map((d) => d.timestamp)),
               ];
               const uniqueIndex = uniqueValues.indexOf(value);
-              // Show first, last, and evenly distributed dates
               const step = Math.ceil(uniqueValues.length / 8);
               if (
                 uniqueIndex === 0 ||
@@ -616,7 +658,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   ]);
 
   const filteredData = useMemo(() => {
-    // For ended competitions, show all data in a single view with day-level granularity
+    // For ended competitions, show all data in a single view
     if (
       competition.status === CompetitionStatus.Ended &&
       parsedData.length > 0
@@ -624,18 +666,129 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
       // Flatten all weeks into a single array
       const allData = parsedData.flat();
 
-      // Group by formatted date to consolidate intraday data points
-      const uniqueDates = new Map();
-      allData.forEach((data) => {
-        const dateKey = formatDate(data.timestamp);
-        // Keep the last data point for each date
-        uniqueDates.set(dateKey, {
-          ...data,
-          timestamp: dateKey,
-        });
-      });
+      // Calculate competition duration to determine granularity
+      const startDate = competition.startDate
+        ? new Date(competition.startDate)
+        : null;
+      const endDate = competition.endDate
+        ? new Date(competition.endDate)
+        : null;
+      const durationInDays =
+        startDate && endDate
+          ? Math.ceil(
+              (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+            )
+          : 0;
 
-      return Array.from(uniqueDates.values());
+      // For short competitions (1-2 days), preserve high granularity
+      // For longer competitions (3+ days), use daily grouping
+      if (durationInDays <= 2) {
+        // Sort all data by timestamp
+        const sortedData = allData.sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+        );
+
+        // Group data by timestamp to ensure consistency across agents
+        const timestampGroups = new Map();
+        sortedData.forEach((data) => {
+          if (!timestampGroups.has(data.timestamp)) {
+            timestampGroups.set(data.timestamp, []);
+          }
+          timestampGroups.get(data.timestamp).push(data);
+        });
+
+        // Get all unique timestamps and decide which ones to include
+        const allTimestamps = Array.from(timestampGroups.keys()).sort();
+        let selectedTimestamps: string[];
+
+        if (allTimestamps.length > 100) {
+          // For too many timestamps, sample evenly but always include first and last
+          const step = Math.ceil(allTimestamps.length / 98); // 98 + first + last = 100
+          selectedTimestamps = allTimestamps.filter(
+            (_, index) =>
+              index === 0 ||
+              index === allTimestamps.length - 1 ||
+              index % step === 0,
+          );
+        } else {
+          // Keep all timestamps if reasonable number
+          selectedTimestamps = allTimestamps;
+        }
+
+        // Get all unique agent names
+        const allAgents = new Set<string>();
+        sortedData.forEach((data) => {
+          Object.keys(data).forEach((key) => {
+            if (
+              key !== "timestamp" &&
+              typeof (data as Record<string, unknown>)[key] === "number"
+            ) {
+              allAgents.add(key);
+            }
+          });
+        });
+
+        // Initialize all agents with their first known values
+        const agentFirstValues: Record<string, number> = {};
+        allAgents.forEach((agentName) => {
+          // Find the first data point for this agent
+          for (const data of sortedData) {
+            const value = (data as Record<string, unknown>)[agentName];
+            if (typeof value === "number") {
+              agentFirstValues[agentName] = value;
+              break;
+            }
+          }
+        });
+
+        // Build the final dataset with consistent timestamps and forward-fill missing values
+        const result: Array<Record<string, string | number>> = [];
+        const lastValues: Record<string, number> = { ...agentFirstValues }; // Initialize with first values
+
+        selectedTimestamps.forEach((timestamp) => {
+          const groupData = timestampGroups.get(timestamp);
+          const combinedData: Record<string, string | number> = {
+            timestamp,
+            originalTimestamp: timestamp,
+            displayTimestamp: formatDate(timestamp),
+          };
+
+          // Update last known values with any new data at this timestamp
+          if (groupData) {
+            groupData.forEach((item: Record<string, string | number>) => {
+              Object.keys(item).forEach((key) => {
+                if (key !== "timestamp" && typeof item[key] === "number") {
+                  lastValues[key] = item[key] as number;
+                }
+              });
+            });
+          }
+
+          // Apply current values (forward-filled) for all agents
+          allAgents.forEach((agentName) => {
+            if (lastValues[agentName] !== undefined) {
+              combinedData[agentName] = lastValues[agentName];
+            }
+          });
+
+          result.push(combinedData);
+        });
+
+        return result;
+      } else {
+        // For longer competitions, group by day as before
+        const uniqueDates = new Map();
+        allData.forEach((data) => {
+          const dateKey = formatDate(data.timestamp);
+          // Keep the last data point for each date
+          uniqueDates.set(dateKey, {
+            ...data,
+            timestamp: dateKey,
+          });
+        });
+        return Array.from(uniqueDates.values());
+      }
     }
 
     // For other statuses (active/pending), preserve full granularity
@@ -646,7 +799,13 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
       timestamp: data.timestamp, // Keep original for hover granularity
       displayTimestamp: formatDate(data.timestamp), // For axis labels
     }));
-  }, [parsedData, dateRangeIndex, competition.status]);
+  }, [
+    parsedData,
+    dateRangeIndex,
+    competition.status,
+    competition.startDate,
+    competition.endDate,
+  ]);
 
   // Get all agent keys from the data (unfiltered)
   const allDataKeys = useMemo(() => {
@@ -658,7 +817,15 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
       {},
     );
 
-    if (res.timestamp) delete res?.timestamp;
+    // Filter out all timestamp-related keys
+    const timestampKeys = [
+      "timestamp",
+      "originalTimestamp",
+      "displayTimestamp",
+    ];
+    timestampKeys.forEach((key) => {
+      if (res[key]) delete res[key];
+    });
 
     return Object.keys(res);
   }, [filteredData]);
