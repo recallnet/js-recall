@@ -89,6 +89,22 @@ interface TooltipProps {
 // Inner component that renders the tooltip content
 const TooltipContent = memo(
   ({ active, payload, label }: TooltipProps) => {
+    // Format the label to use pretty date format
+    const formattedLabel = useMemo(() => {
+      if (!label) return label;
+      // Try to format as pretty date, fallback to original if it's already formatted
+      try {
+        const date = new Date(label as string);
+        if (isNaN(date.getTime())) {
+          // If it's not a valid date, return as-is (might already be formatted)
+          return label;
+        }
+        return formatDateShort(date);
+      } catch {
+        return label;
+      }
+    }, [label]);
+
     if (!active || !payload || !payload.length) return null;
 
     // Filter out timestamp-related entries and sort by value desc
@@ -111,7 +127,9 @@ const TooltipContent = memo(
 
     return (
       <div className="bg-card z-50 max-w-[320px] rounded-[15px] border-gray-600 p-3 shadow-lg">
-        <span className="text-secondary-foreground text-sm">{label}</span>
+        <span className="text-secondary-foreground text-sm">
+          {formattedLabel}
+        </span>
         <div className="my-2 w-full border-t"></div>
         {visibleEntries.map((entry, index) => (
           <div
@@ -284,12 +302,12 @@ const CustomLegend = ({
         <Search className="absolute bottom-3 right-5" size={16} />
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {displayAgents.map((agent) => {
           return (
             <div
               key={agent.name}
-              className="w-50 flex cursor-default items-center gap-2 rounded-lg p-2 transition-all duration-200 hover:scale-105"
+              className="flex min-w-0 cursor-default items-center gap-2 rounded-lg p-2 transition-all duration-200 hover:scale-105"
               onMouseEnter={() => onAgentHover?.(agent.name)}
               onMouseLeave={() => onAgentHover?.(null)}
             >
@@ -306,7 +324,7 @@ const CustomLegend = ({
                 />
               </div>
               <span
-                className="truncate text-sm font-medium"
+                className="min-w-0 flex-1 truncate text-sm font-medium"
                 style={{ color: colorMap[agent.name] || colors[0] }}
               >
                 {agent.name}
@@ -463,12 +481,47 @@ const ChartWrapper = memo(
                   index % step === 0
                 ) {
                   const dataPoint = filteredData[index];
+                  let formattedLabel: string;
+
                   if (dataPoint && dataPoint.originalTimestamp) {
-                    return formatDateShort(
+                    formattedLabel = formatDateShort(
                       dataPoint.originalTimestamp as string,
                     );
+                  } else {
+                    formattedLabel = formatDateShort(value as string);
                   }
-                  return formatDateShort(value as string);
+
+                  // Check if this formatted label already appeared recently to prevent duplicates
+                  // Look at previous labels within a small window
+                  const checkWindow = Math.min(5, index);
+                  for (
+                    let i = Math.max(0, index - checkWindow);
+                    i < index;
+                    i++
+                  ) {
+                    const prevDataPoint = filteredData[i];
+                    let prevLabel: string;
+
+                    if (prevDataPoint && prevDataPoint.originalTimestamp) {
+                      prevLabel = formatDateShort(
+                        prevDataPoint.originalTimestamp as string,
+                      );
+                    } else {
+                      prevLabel = formatDateShort(
+                        filteredData[i]?.timestamp as string,
+                      );
+                    }
+
+                    if (
+                      prevLabel === formattedLabel &&
+                      (i % step === 0 || i === 0 || i === totalPoints - 1)
+                    ) {
+                      // This label already appeared, skip it
+                      return "";
+                    }
+                  }
+
+                  return formattedLabel;
                 }
                 return "";
               }
@@ -1095,7 +1148,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
         <>
           {competition.status !== CompetitionStatus.Ended && (
             <div className="flex w-full items-center justify-end px-6 py-4">
-              <div className="text-secondary-foreground flex items-center gap-1 text-sm">
+              <div className="text-secondary-foreground flex items-center gap-3 text-sm">
                 <Button
                   onClick={handlePrevRange}
                   disabled={dateRangeIndex <= 0}
@@ -1104,20 +1157,22 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                 >
                   <ChevronLeft strokeWidth={1.5} />
                 </Button>
-                <span className="w-22">
-                  {filteredData[0]?.originalTimestamp
-                    ? formatDateShort(filteredData[0].originalTimestamp)
-                    : formatDateShort(filteredData[0]?.timestamp as string)}
-                </span>
-                <div className="rigin-center rotate-30 mx-2 h-4 w-[1px] bg-gray-200"></div>
-                <span className="w-22">
-                  {(() => {
-                    const lastItem = filteredData[filteredData.length - 1];
-                    return lastItem?.originalTimestamp
-                      ? formatDateShort(lastItem.originalTimestamp)
-                      : formatDateShort(lastItem?.timestamp as string);
-                  })()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span>
+                    {filteredData[0]?.originalTimestamp
+                      ? formatDateShort(filteredData[0].originalTimestamp)
+                      : formatDateShort(filteredData[0]?.timestamp as string)}
+                  </span>
+                  <span className="text-secondary-foreground">/</span>
+                  <span>
+                    {(() => {
+                      const lastItem = filteredData[filteredData.length - 1];
+                      return lastItem?.originalTimestamp
+                        ? formatDateShort(lastItem.originalTimestamp)
+                        : formatDateShort(lastItem?.timestamp as string);
+                    })()}
+                  </span>
+                </div>
                 <Button
                   onClick={handleNextRange}
                   disabled={dateRangeIndex >= parsedData.length - 1}
