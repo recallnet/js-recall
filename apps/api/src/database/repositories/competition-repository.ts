@@ -1787,6 +1787,73 @@ export const findActiveCompetitionsPastEndDate = createTimedRepositoryFunction(
   "findActiveCompetitionsPastEndDate",
 );
 
+/**
+ * Get portfolio timeline for agents in a competition
+ * @param competitionId Competition ID
+ * @param bucket Time bucket interval in minutes (default: 30)
+ * @returns Array of portfolio timelines per agent
+ */
+async function getAgentPortfolioTimelineImpl(
+  competitionId: string,
+  bucket: number = 30,
+) {
+  try {
+    const result = await dbRead.execute<{
+      timestamp: string;
+      agent_id: string;
+      agent_name: string;
+      competition_id: string;
+      total_value: number;
+    }>(sql`
+      SELECT 
+        timestamp, 
+        agent_id, 
+        name AS agent_name, 
+        competition_id, 
+        total_value 
+      FROM (
+        SELECT 
+          ROW_NUMBER() OVER (
+            PARTITION BY ps.agent_id, ps.competition_id,FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
+            ORDER BY ps.timestamp DESC
+          ) AS rn,
+          ps.timestamp,
+          ps.agent_id,
+          a.name,
+          ps.competition_id,
+          ps.total_value
+        FROM competition_agents ca
+        JOIN trading_comps.portfolio_snapshots ps 
+          ON ps.agent_id = ca.agent_id 
+          AND ps.competition_id = ca.competition_id
+        JOIN agents a ON a.id = ca.agent_id
+        JOIN competitions c ON c.id = ca.competition_id
+        WHERE ca.competition_id = ${competitionId}
+          AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
+      ) AS ranked_snapshots
+      WHERE rn = 1 
+    `);
+
+    // Convert snake_case to camelCase
+    return result.rows.map((row) => ({
+      timestamp: row.timestamp,
+      agentId: row.agent_id,
+      agentName: row.agent_name,
+      competitionId: row.competition_id,
+      totalValue: Number(row.total_value),
+    }));
+  } catch (error) {
+    repositoryLogger.error("Error in getAgentPortfolioTimelineImpl:", error);
+    throw error;
+  }
+}
+
+export const getAgentPortfolioTimeline = createTimedRepositoryFunction(
+  getAgentPortfolioTimelineImpl,
+  "CompetitionRepository",
+  "getAgentPortfolioTimeline",
+);
+
 export const get24hSnapshots = createTimedRepositoryFunction(
   get24hSnapshotsImpl,
   "CompetitionRepository",

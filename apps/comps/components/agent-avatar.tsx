@@ -9,6 +9,7 @@ import { UserAgentCompetition } from "@/types/competition";
 interface AgentAvatarProps {
   agent: Agent | UserAgentCompetition | AgentCompetition;
   showRank?: boolean;
+  showBorder?: boolean;
   rank?: number;
   className?: string;
   size?: number;
@@ -17,18 +18,20 @@ interface AgentAvatarProps {
 export function AgentAvatar({
   agent,
   showRank = false,
+  showBorder = true,
   rank,
   className,
   size = 32,
 }: AgentAvatarProps) {
   const commonClasses = cn(
     "group relative h-8 w-8 transition-transform duration-200 hover:z-10 hover:scale-110",
-    showRank && "h-9 w-9 rounded-full border-2 bg-gray-700",
+    (showRank || showBorder) && "border-1 h-9 w-9 rounded-full bg-gray-700",
     showRank &&
       rank && {
-        "border-yellow-800": rank === 1,
-        "border-gray-700": rank === 2 || rank > 3,
-        "border-[#1A0E05]": rank === 3,
+        "border-trophy-first": rank === 1,
+        "border-trophy-second": rank === 2,
+        "border-trophy-third": rank === 3,
+        "border-gray-700": rank > 3,
       },
     className,
   );
@@ -56,7 +59,35 @@ export function AgentAvatar({
     );
   }
 
-  const identicon = (
+  const hasBorder = showRank || showBorder;
+
+  if (hasBorder) {
+    // When there's a border, wrap the identicon to handle padding
+    return (
+      <div
+        className={cn(
+          "relative flex items-center justify-center overflow-hidden",
+          commonClasses,
+        )}
+        style={{
+          width: size,
+          height: size,
+          minWidth: size,
+          minHeight: size,
+        }}
+      >
+        <Identicon
+          address={agent.id}
+          className="rounded-full"
+          size={size - 6} // Reduce size to account for border and padding
+          title={agent.name}
+        />
+      </div>
+    );
+  }
+
+  // No border, render identicon directly
+  return (
     <Identicon
       address={agent.id}
       className={cn("", commonClasses)}
@@ -64,6 +95,4 @@ export function AgentAvatar({
       title={agent.name}
     />
   );
-
-  return identicon;
 }

@@ -188,6 +188,22 @@ export function configureAdminRoutes(
    *                             type: number
    *                             description: Reward amount for the given rank
    *                             example: 1000
+   *                     tradingConstraints:
+   *                       type: object
+   *                       description: Trading constraints for the competition
+   *                       properties:
+   *                         minimumPairAgeHours:
+   *                           type: number
+   *                           description: Minimum age of trading pairs in hours
+   *                         minimum24hVolumeUsd:
+   *                           type: number
+   *                           description: Minimum 24-hour volume in USD
+   *                         minimumLiquidityUsd:
+   *                           type: number
+   *                           description: Minimum liquidity in USD
+   *                         minimumFdvUsd:
+   *                           type: number
+   *                           description: Minimum fully diluted valuation in USD
    *       400:
    *         description: |-
    *           Bad Request - Various validation errors:
@@ -384,6 +400,22 @@ export function configureAdminRoutes(
    *                             description: Reward amount for the given rank
    *                             example: 1000
    *                         description: Reward amount for the given rank
+   *                     tradingConstraints:
+   *                       type: object
+   *                       description: Trading constraints for the competition
+   *                       properties:
+   *                         minimumPairAgeHours:
+   *                           type: number
+   *                           description: Minimum age of trading pairs in hours
+   *                         minimum24hVolumeUsd:
+   *                           type: number
+   *                           description: Minimum 24-hour volume in USD
+   *                         minimumLiquidityUsd:
+   *                           type: number
+   *                           description: Minimum liquidity in USD
+   *                         minimumFdvUsd:
+   *                           type: number
+   *                           description: Minimum fully diluted valuation in USD
    *                 initializedAgents:
    *                   type: array
    *                   items:

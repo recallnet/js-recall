@@ -51,6 +51,10 @@ export type PutApiAdminCompetitionCompetitionIdRequestBody = {
    * Voting end date
    */
   votingEndDate?: Date | undefined;
+  /**
+   * Rewards for competition placements
+   */
+  rewards?: { [k: string]: number } | null | undefined;
 };
 
 export type PutApiAdminCompetitionCompetitionIdRequest = {
@@ -88,6 +92,17 @@ export const PutApiAdminCompetitionCompetitionIdStatus = {
 export type PutApiAdminCompetitionCompetitionIdStatus = ClosedEnum<
   typeof PutApiAdminCompetitionCompetitionIdStatus
 >;
+
+export type PutApiAdminCompetitionCompetitionIdReward = {
+  /**
+   * Rank of the reward
+   */
+  rank?: number | undefined;
+  /**
+   * Reward amount for the given rank
+   */
+  reward?: number | undefined;
+};
 
 export type PutApiAdminCompetitionCompetitionIdCompetition = {
   /**
@@ -134,6 +149,10 @@ export type PutApiAdminCompetitionCompetitionIdCompetition = {
    * Competition status
    */
   status?: PutApiAdminCompetitionCompetitionIdStatus | undefined;
+  /**
+   * Rewards for competition placements
+   */
+  rewards?: Array<PutApiAdminCompetitionCompetitionIdReward> | undefined;
   /**
    * Competition creation date
    */
@@ -199,6 +218,7 @@ export const PutApiAdminCompetitionCompetitionIdRequestBody$inboundSchema: z.Zod
     .datetime({ offset: true })
     .transform((v) => new Date(v))
     .optional(),
+  rewards: z.nullable(z.record(z.number())).optional(),
 });
 
 /** @internal */
@@ -210,6 +230,7 @@ export type PutApiAdminCompetitionCompetitionIdRequestBody$Outbound = {
   imageUrl?: string | undefined;
   votingStartDate?: string | undefined;
   votingEndDate?: string | undefined;
+  rewards?: { [k: string]: number } | null | undefined;
 };
 
 /** @internal */
@@ -231,6 +252,7 @@ export const PutApiAdminCompetitionCompetitionIdRequestBody$outboundSchema: z.Zo
     .date()
     .transform((v) => v.toISOString())
     .optional(),
+  rewards: z.nullable(z.record(z.number())).optional(),
 });
 
 /**
@@ -405,6 +427,73 @@ export namespace PutApiAdminCompetitionCompetitionIdStatus$ {
 }
 
 /** @internal */
+export const PutApiAdminCompetitionCompetitionIdReward$inboundSchema: z.ZodType<
+  PutApiAdminCompetitionCompetitionIdReward,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  rank: z.number().optional(),
+  reward: z.number().optional(),
+});
+
+/** @internal */
+export type PutApiAdminCompetitionCompetitionIdReward$Outbound = {
+  rank?: number | undefined;
+  reward?: number | undefined;
+};
+
+/** @internal */
+export const PutApiAdminCompetitionCompetitionIdReward$outboundSchema: z.ZodType<
+  PutApiAdminCompetitionCompetitionIdReward$Outbound,
+  z.ZodTypeDef,
+  PutApiAdminCompetitionCompetitionIdReward
+> = z.object({
+  rank: z.number().optional(),
+  reward: z.number().optional(),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace PutApiAdminCompetitionCompetitionIdReward$ {
+  /** @deprecated use `PutApiAdminCompetitionCompetitionIdReward$inboundSchema` instead. */
+  export const inboundSchema =
+    PutApiAdminCompetitionCompetitionIdReward$inboundSchema;
+  /** @deprecated use `PutApiAdminCompetitionCompetitionIdReward$outboundSchema` instead. */
+  export const outboundSchema =
+    PutApiAdminCompetitionCompetitionIdReward$outboundSchema;
+  /** @deprecated use `PutApiAdminCompetitionCompetitionIdReward$Outbound` instead. */
+  export type Outbound = PutApiAdminCompetitionCompetitionIdReward$Outbound;
+}
+
+export function putApiAdminCompetitionCompetitionIdRewardToJSON(
+  putApiAdminCompetitionCompetitionIdReward: PutApiAdminCompetitionCompetitionIdReward,
+): string {
+  return JSON.stringify(
+    PutApiAdminCompetitionCompetitionIdReward$outboundSchema.parse(
+      putApiAdminCompetitionCompetitionIdReward,
+    ),
+  );
+}
+
+export function putApiAdminCompetitionCompetitionIdRewardFromJSON(
+  jsonString: string,
+): SafeParseResult<
+  PutApiAdminCompetitionCompetitionIdReward,
+  SDKValidationError
+> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      PutApiAdminCompetitionCompetitionIdReward$inboundSchema.parse(
+        JSON.parse(x),
+      ),
+    `Failed to parse 'PutApiAdminCompetitionCompetitionIdReward' from JSON`,
+  );
+}
+
+/** @internal */
 export const PutApiAdminCompetitionCompetitionIdCompetition$inboundSchema: z.ZodType<
   PutApiAdminCompetitionCompetitionIdCompetition,
   z.ZodTypeDef,
@@ -449,6 +538,11 @@ export const PutApiAdminCompetitionCompetitionIdCompetition$inboundSchema: z.Zod
     )
     .optional(),
   status: PutApiAdminCompetitionCompetitionIdStatus$inboundSchema.optional(),
+  rewards: z
+    .array(
+      z.lazy(() => PutApiAdminCompetitionCompetitionIdReward$inboundSchema),
+    )
+    .optional(),
   createdAt: z
     .string()
     .datetime({ offset: true })
@@ -474,6 +568,9 @@ export type PutApiAdminCompetitionCompetitionIdCompetition$Outbound = {
   votingStartDate?: string | null | undefined;
   votingEndDate?: string | null | undefined;
   status?: string | undefined;
+  rewards?:
+    | Array<PutApiAdminCompetitionCompetitionIdReward$Outbound>
+    | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
 };
@@ -499,6 +596,11 @@ export const PutApiAdminCompetitionCompetitionIdCompetition$outboundSchema: z.Zo
     .nullable(z.date().transform((v) => v.toISOString()))
     .optional(),
   status: PutApiAdminCompetitionCompetitionIdStatus$outboundSchema.optional(),
+  rewards: z
+    .array(
+      z.lazy(() => PutApiAdminCompetitionCompetitionIdReward$outboundSchema),
+    )
+    .optional(),
   createdAt: z
     .date()
     .transform((v) => v.toISOString())

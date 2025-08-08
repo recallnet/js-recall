@@ -1183,3 +1183,16 @@ export interface CompetitionJoinError extends Error {
   type: CompetitionJoinErrorType;
   code: number;
 }
+
+/**
+ * Bucket parameter schema for competition timeline queries
+ * Validates that bucket is between 1 and 1440 minutes (24 hours)
+ */
+export const BucketParamSchema = z.coerce
+  .number()
+  .int("Bucket must be an integer")
+  .min(1, "Bucket must be at least 1 minute")
+  .max(1440, "Bucket must not exceed 1440 minutes (24 hours)")
+  .default(30);
+
+export type BucketParam = z.infer<typeof BucketParamSchema>;

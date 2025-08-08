@@ -26,9 +26,18 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
 
+  /* Custom colors */
+  --color-green-500: oklch(0.6337 0.182 142.13);
+  --color-red-500: oklch(0.6032 0.214 28.67);
+  --color-yellow-500: oklch(0.8188 0.1686 82.31);
+
+  /* Trophy and rank colors */
   --trophy-first: oklch(0.8799 0.1379 89.79);
   --trophy-second: oklch(0.7149 0.0368 252.35);
   --trophy-third: oklch(0.628 0.1378 54);
+  --trophy-first-bg: oklch(0.3911 0.080176 84.7396);
+  --trophy-second-bg: oklch(0.2428 0.0231 277.17);
+  --trophy-third-bg: oklch(0.1778 0.0275 59.55);
 }
 
 @theme inline {
@@ -53,6 +62,9 @@
   --color-trophy-first: var(--trophy-first);
   --color-trophy-second: var(--trophy-second);
   --color-trophy-third: var(--trophy-third);
+  --color-trophy-first-bg: var(--trophy-first-bg);
+  --color-trophy-second-bg: var(--trophy-second-bg);
+  --color-trophy-third-bg: var(--trophy-third-bg);
 
   --breakpoint-*: initial;
   --breakpoint-xs: 42rem;

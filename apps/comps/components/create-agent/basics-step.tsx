@@ -15,19 +15,9 @@ import {
 import { Input } from "@recallnet/ui2/components/input";
 import { Textarea } from "@recallnet/ui2/components/textarea";
 
-import { FormData } from "./index";
+import { AGENT_SKILLS } from "@/constants/index";
 
-const AGENT_SKILLS = [
-  "Crypto Trading",
-  "Traditional Investing",
-  "Sports Betting",
-  "Prediction Markets",
-  "Social and Chat",
-  "Art & Video Creation",
-  "Programming / Coding",
-  "Deep Research",
-  "Other",
-];
+import { FormData } from "./index";
 
 interface BasicsStepProps {
   form: UseFormReturn<FormData>;

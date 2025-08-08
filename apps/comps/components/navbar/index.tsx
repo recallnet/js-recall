@@ -12,8 +12,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { SIWEButton } from "@/components/siwe";
 
-const ACTIVE_BORDER_STYLE = "border-b-2 border-b-yellow-500";
-
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
   const navItems = [
@@ -47,8 +45,8 @@ export const Navbar: React.FunctionComponent = () => {
                   href={item.href}
                   key={item.href}
                   className={cn(
-                    "px-15 flex h-14 items-center justify-center border-r",
-                    isActive ? ACTIVE_BORDER_STYLE : "",
+                    "px-15 flex h-14 items-center justify-center border-b-2 border-r",
+                    isActive ? "border-b-yellow-500" : "border-b-transparent",
                   )}
                 >
                   <span
@@ -95,9 +93,12 @@ export const Navbar: React.FunctionComponent = () => {
         </div>
 
         <div
-          className={cn("flex h-full items-center", {
-            [ACTIVE_BORDER_STYLE]: pathname === "/profile",
-          })}
+          className={cn(
+            "flex h-full items-center border-b-2",
+            pathname === "/profile"
+              ? "border-b-yellow-500"
+              : "border-b-transparent",
+          )}
         >
           <SIWEButton />
         </div>
