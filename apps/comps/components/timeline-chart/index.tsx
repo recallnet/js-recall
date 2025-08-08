@@ -52,18 +52,22 @@ const TooltipContent = memo(
     if (!active || !payload || !payload.length) return null;
 
     return (
-      <div className="bg-card rounded-[15px] border-gray-600 p-3 shadow-lg">
+      <div className="bg-card z-50 rounded-[15px] border-gray-600 p-3 shadow-lg">
         <span className="text-secondary-foreground text-sm">{label}</span>
         <div className="my-2 w-full border-t"></div>
         {payload.map((entry, index) => (
           <div
             key={`${entry.dataKey}-${index}`}
             style={{ color: entry.color }}
-            className="grid grid-cols-2 gap-3 text-sm"
+            className="flex items-center gap-2 text-sm"
           >
-            <span className="w-20 truncate">{entry.dataKey}</span>{" "}
-            <span className="text-primary-foreground">
-              ${entry.value.toLocaleString()}
+            <span className="min-w-[160px] truncate">{entry.dataKey}</span>
+            <span className="text-primary-foreground whitespace-nowrap">
+              $
+              {entry.value.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
         ))}
@@ -259,6 +263,7 @@ const ChartWrapper = memo(
               strokeWidth: 1,
               strokeDasharray: "5 5",
             }}
+            wrapperStyle={{ zIndex: 10000 }}
           />
           <ChartLines
             dataKeys={filteredDataKeys}
@@ -479,7 +484,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             </div>
           </div>
 
-          <div className="h-120">
+          <div className="h-120 relative">
             <ChartWrapper
               filteredData={filteredData}
               filteredDataKeys={filteredDataKeys}
