@@ -34,6 +34,24 @@ import { formatDate } from "@/utils/format";
 import { Pagination } from "../pagination";
 import { ShareModal } from "../share-modal";
 
+/**
+ * Format date to "Month dayth" style (e.g., "Jun 1st", "May 23rd")
+ */
+const formatDateShort = (dateStr: string | Date) => {
+  const date = new Date(dateStr);
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const day = date.getDate();
+
+  // Add ordinal suffix (st, nd, rd, th)
+  const getOrdinalSuffix = (n: number) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+  };
+
+  return `${month} ${day}${getOrdinalSuffix(day)}`;
+};
+
 const colors = [
   "#FF6B35", // Orange
   "#4ECDC4", // Teal
@@ -370,11 +388,26 @@ const ChartWrapper = memo(
             tickFormatter={(value, index) => {
               // For active competitions, format the original timestamp
               if (!isFullRange) {
-                const dataPoint = filteredData[index];
-                if (dataPoint && dataPoint.displayTimestamp) {
-                  return dataPoint.displayTimestamp;
+                // Only show labels at reasonable intervals to prevent overcrowding
+                const totalPoints = filteredData.length;
+                const maxLabels = 8; // Maximum number of labels to show
+                const step = Math.max(1, Math.ceil(totalPoints / maxLabels));
+
+                // Always show first and last, plus evenly spaced labels
+                if (
+                  index === 0 ||
+                  index === totalPoints - 1 ||
+                  index % step === 0
+                ) {
+                  const dataPoint = filteredData[index];
+                  if (dataPoint && dataPoint.originalTimestamp) {
+                    return formatDateShort(
+                      dataPoint.originalTimestamp as string,
+                    );
+                  }
+                  return formatDateShort(value as string);
                 }
-                return formatDate(value);
+                return "";
               }
 
               // For ended competitions (full range), handle different granularities
@@ -962,11 +995,18 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   <ChevronLeft strokeWidth={1.5} />
                 </Button>
                 <span className="w-22">
-                  {filteredData[0]?.timestamp as string}
+                  {filteredData[0]?.originalTimestamp
+                    ? formatDateShort(filteredData[0].originalTimestamp)
+                    : formatDateShort(filteredData[0]?.timestamp as string)}
                 </span>
                 <div className="rigin-center rotate-30 mx-2 h-4 w-[1px] bg-gray-200"></div>
                 <span className="w-22">
-                  {filteredData[filteredData.length - 1]?.timestamp as string}
+                  {(() => {
+                    const lastItem = filteredData[filteredData.length - 1];
+                    return lastItem?.originalTimestamp
+                      ? formatDateShort(lastItem.originalTimestamp)
+                      : formatDateShort(lastItem?.timestamp as string);
+                  })()}
                 </span>
                 <Button
                   onClick={handleNextRange}
