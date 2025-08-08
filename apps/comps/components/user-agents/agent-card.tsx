@@ -16,11 +16,13 @@ import { VerificationBadge } from "../verification-badge";
 
 type AgentCardProps = {
   agent: Agent;
+  nameComponent?: "link" | "text";
 };
 
 export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
   className,
   agent,
+  nameComponent,
   children,
   ...props
 }) => {
@@ -62,12 +64,11 @@ export const AgentCard: React.FunctionComponent<AgentCardProps & CardProps> = ({
         className="text-secondary-foreground w-full truncate text-center text-2xl font-bold"
         title={agent.name}
       >
-        <Link href={`/agents/${agent.id}`}>
-          <div>{agent.name}</div>
-          <div className="text-secondary-foreground/70 text-xl">
-            @{agent.handle}
-          </div>
-        </Link>
+        {!nameComponent || nameComponent === "link" ? (
+          <Link href={`/agents/${agent.id}`}>{agent.name}</Link>
+        ) : (
+          <span>{agent.name}</span>
+        )}
       </div>
       <div className="flex justify-center gap-3">
         <div className="text-secondary-foreground text-nowrap rounded border p-2">
