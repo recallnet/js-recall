@@ -264,7 +264,9 @@ export class ApiClient {
    */
   async getCompetitionTimeline(
     competitionId: string,
-    params: GetCompetitionPerformanceParams = {},
+    params: GetCompetitionPerformanceParams = {
+      bucket: 720,
+    },
   ): Promise<CompetitionTimelineResponse> {
     const queryParams = this.formatQueryParams(params);
     return this.request<CompetitionTimelineResponse>(

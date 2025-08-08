@@ -52,7 +52,7 @@ const CustomTooltip = ({
         <div className="my-2 w-full border-t"></div>
         {payload.map((entry, index: number) => (
           <div
-            key={index}
+            key={`${entry.dataKey}-${index}`}
             style={{ color: entry.color }}
             className="grid grid-cols-2 gap-3 text-sm"
           >
@@ -93,9 +93,9 @@ const CustomLegend = ({
         <Search className="absolute bottom-3 right-5" size={16} />
       </div>
       <div className="flex flex-wrap gap-3">
-        {agents.map((key, index) => (
+        {agents.map((agent, index) => (
           <div
-            key={index}
+            key={agent.name}
             className="w-50 flex items-center gap-2 rounded-lg p-2"
           >
             <div
@@ -103,15 +103,15 @@ const CustomLegend = ({
               style={{ borderColor: colors[index % colors.length] }}
             >
               <Image
-                src={key.imageUrl || `/default_agent_2.png`}
-                alt={key.name}
+                src={agent.imageUrl || `/default_agent_2.png`}
+                alt={agent.name}
                 width={15}
                 height={15}
                 className="h-full w-full"
               />
             </div>
             <span className="text-primary-foreground truncate text-sm">
-              {key.name}
+              {agent.name}
             </span>
           </div>
         ))}
@@ -203,7 +203,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
 }) => {
   const { data: timelineRaw, isLoading } =
     useCompetitionTimeline(competitionId);
-  const [dateRangeIndex, setDateRangeIndex] = useState(0); // Default to May-22 to May-24
+  const [dateRangeIndex, setDateRangeIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
   const parsedData = useMemo(() => {
@@ -366,8 +366,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   stroke="#9CA3AF"
                   fontSize={12}
                   type="category"
-                  ticks={filteredData.map(({ timestamp }) => timestamp)} // Array of all dates you want to show
-                  interval={0} // Show all ticks
+                  interval={0}
                 />
                 <YAxis
                   stroke="#9CA3AF"
