@@ -2,17 +2,21 @@ FROM node:22 AS builder
 
 WORKDIR /workdir
 
-COPY apps/api apps/api
-COPY packages/api-sdk packages/api-sdk
-COPY packages/eslint-config packages/eslint-config
-COPY packages/typescript-config packages/typescript-config
-COPY .npmrc .prettie* *.js *.json *.yaml ./
+RUN npm install -g pnpm typescript turbo bun
 
-# # Build the application
-RUN npm -g install pnpm typescript turbo
-RUN cd apps/api; pnpm install
-RUN cd packages/api-sdk; pnpm build
-RUN cd apps/api; pnpm build
+COPY package.json pnpm-*.yaml .npmrc ./
+COPY packages/eslint-config/package.json packages/eslint-config/
+COPY packages/typescript-config/package.json packages/typescript-config/
+COPY packages/api-sdk/package.json packages/api-sdk/
+COPY apps/api/package.json apps/api/
+
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+# Build the application
+RUN pnpm --filter=@recallnet/api-sdk build && \
+    pnpm --filter=api build
 
 FROM node:22-alpine
 
@@ -30,10 +34,11 @@ ENV METRICS_PORT=3003
 # Expose both application and metrics ports
 EXPOSE $PORT $METRICS_PORT
 
+WORKDIR /workdir/apps/api
+
 # Create startup script
-COPY apps/api/trade-simulator-docker/startup.sh /workdir/apps/api/startup.sh
-RUN chmod +x /workdir/apps/api/startup.sh
+COPY apps/api/trade-simulator-docker/startup.sh ./startup.sh
+RUN chmod +x ./startup.sh
 
 # Start the application
-WORKDIR /workdir/apps/api
 CMD ["./startup.sh"]

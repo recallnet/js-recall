@@ -797,6 +797,20 @@ export interface GlobalLeaderboardResponse extends ApiResponse {
   };
 }
 
+// Competition timeline response
+export interface CompetitionTimelineResponse extends ApiResponse {
+  competitionId: string;
+  timeline: Array<{
+    agentId: string;
+    agentName: string;
+    timeline: Array<{
+      date: string;
+      totalValue: number;
+    }>;
+  }>;
+}
+
+// ===========================
 // ---------------------------
 // Vote-related types
 // ---------------------------

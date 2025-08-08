@@ -1,0 +1,74 @@
+# This is a test docker-compose file that is not intended for production use!
+name: recall
+
+networks:
+  recall-network:
+    driver: bridge
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: recall-db
+    restart: always
+    networks:
+      - recall-network
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - "postgres-data:/var/lib/postgresql/data"
+
+  redis:
+    image: redis:alpine
+    container_name: recall-redis
+    restart: always
+    networks:
+      - recall-network
+    volumes:
+      - "redis-data:/data"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/trade-simulator-docker/Dockerfile
+    image: recall-api
+    container_name: recall-api
+    restart: always
+    networks:
+      - recall-network
+    ports:
+      - "${API_PORT:-3000}:${API_PORT:-3000}"
+      - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db/postgres
+      REDIS_URL: redis://redis:6379
+      API_PREFIX: ${API_PREFIX:-}
+      PORT: ${API_PORT:-3000}
+      METRICS_PORT: ${METRICS_PORT:-3003}
+    depends_on:
+      - db
+      - redis
+
+  comps:
+    build:
+      context: .
+      dockerfile: apps/comps/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "http://api:${API_PORT:-3000}${API_PREFIX:+/${API_PREFIX}}/api"
+        NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:-}
+    image: recall-comps
+    container_name: recall-comps
+    restart: always
+    networks:
+      - recall-network
+    ports:
+      - "${COMPS_PORT:-3001}:${COMPS_PORT:-3001}"
+    environment:
+      PORT: ${COMPS_PORT:-3001}
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  redis-data:
