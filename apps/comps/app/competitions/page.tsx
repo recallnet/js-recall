@@ -1,8 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import React, {useEffect} from "react";
-
+import React, {useEffect, useCallback, useState} from "react";
+import useEmblaCarousel from 'embla-carousel-react'
+import AutoScroll from 'embla-carousel-auto-scroll';
+import {Star} from 'lucide-react';
 import {cn} from "@recallnet/ui2/lib/utils";
 
 import {CompetitionsCollapsible} from "@/components/competitions-collapsible";
@@ -18,6 +19,7 @@ import {mergeCompetitionsWithUserData} from "@/utils/competition-utils";
 import {Button} from "@/../../packages/ui2/src/components/button";
 
 export default function CompetitionsPage() {
+  const [emblaRef] = useEmblaCarousel()
   const {trackEvent} = useAnalytics();
 
   // Track landing page view
@@ -44,6 +46,9 @@ export default function CompetitionsPage() {
 
   const {data: userCompetitions, isLoading: isLoadingUserCompetitions} =
     useUserCompetitions();
+  const carouselText = upcomingCompetitions?.competitions.map((comp, i) => (
+    <span key={i}>{comp.name} starts on {comp.startDate}</span>
+  )) || []
 
   if (
     isLoadingActiveCompetitions ||
@@ -58,11 +63,11 @@ export default function CompetitionsPage() {
     <div >
       <div className="w-full h-100 absolute left-1/2 transform -translate-x-1/2 relative ">
 
+        <HeroCarousel texts={[...carouselText, ...carouselText]} />
+
         <div className="flex items-center justify-center w-full h-full">
 
-          {
-            <RainbowStripes className="w-180 absolute left-0 translate-x-[-400px]" />
-          }
+          <RainbowStripes className="w-180 absolute left-0 translate-x-[-400px]" />
 
           <div className="flex flex-col items-center text-center translate-y-[-50px]">
             <h1 className="text-[83px] font-bold text-primary-foreground mb-1">
@@ -82,9 +87,7 @@ export default function CompetitionsPage() {
             </div>
           </div>
 
-          {
-            <RainbowStripes className="w-180 absolute right-0 translate-x-[400px]" direction='left' />
-          }
+          <RainbowStripes className="w-180 absolute right-0 translate-x-[400px]" direction='left' />
 
         </div>
       </div>
@@ -125,6 +128,92 @@ export default function CompetitionsPage() {
 }
 
 
+interface HeroCarouselProps {
+  texts: React.ReactNode[];
+  className?: string;
+}
+
+export const HeroCarousel: React.FC<HeroCarouselProps> = ({
+  texts,
+  className = ''
+}) => {
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+  }, [
+    AutoScroll({
+      playOnInit: true,
+      speed: 1,
+      stopOnInteraction: false,
+      stopOnMouseEnter: true,
+    })
+  ]);
+
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  // Monitor autoScroll state
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const autoScroll = emblaApi.plugins()?.autoScroll;
+    if (!autoScroll) return;
+
+    setIsPlaying(autoScroll.isPlaying());
+
+    emblaApi
+      .on('autoScroll:play', () => setIsPlaying(true))
+      .on('autoScroll:stop', () => setIsPlaying(false))
+      .on('reInit', () => setIsPlaying(autoScroll.isPlaying()));
+
+    return () => {
+      emblaApi.off('autoScroll:play');
+      emblaApi.off('autoScroll:stop');
+      emblaApi.off('reInit');
+    };
+  }, [emblaApi]);
+
+  // Function to render React components
+  const renderComponent = (component: React.ReactNode, index: number) => (
+    <div key={index} className="text-gray-800 text-lg">
+      {component}
+    </div>
+  );
+
+  return (
+    <div className={`bg-white py-6 ${className}`}>
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex">
+          {texts.map((component, index) => (
+            <div key={index} className="flex-[0_0_auto] min-w-0 px-4 flex items-center">
+              <div className="flex-[0_0_auto] min-w-0 px-8 flex items-center">
+                {renderComponent(component, index)}
+              </div>
+
+              <Star
+                className="text-yellow-400 fill-yellow-400"
+                size={20}
+              />
+            </div>
+          ))}
+
+          {/* Duplicate first few items for seamless loop */}
+          {texts.slice(0, 3).map((component, index) => (
+            <React.Fragment key={`duplicate-${index}`}>
+              <div className="flex-[0_0_auto] min-w-0 px-8 flex items-center">
+                {renderComponent(component, `duplicate-${index}`)}
+              </div>
+              <div className="flex-[0_0_auto] min-w-0 px-4 flex items-center">
+                <Star
+                  className="text-yellow-400 fill-yellow-400"
+                  size={20}
+                />
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface RainbowStripesProps {
   direction?: 'left' | 'right';
