@@ -8,8 +8,10 @@ import { UserAgentCompetition } from "@/types/competition";
 
 interface AgentAvatarProps {
   agent: Agent | UserAgentCompetition | AgentCompetition;
+  imageUrl?: string;
   showRank?: boolean;
   showBorder?: boolean;
+  showHover?: boolean;
   rank?: number;
   className?: string;
   style?: React.CSSProperties;
@@ -18,15 +20,18 @@ interface AgentAvatarProps {
 
 export function AgentAvatar({
   agent,
+  imageUrl,
   showRank = false,
   showBorder = true,
+  showHover = true,
   rank,
   className,
   style,
   size = 32,
 }: AgentAvatarProps) {
   const commonClasses = cn(
-    "group relative h-8 w-8 transition-transform duration-200 hover:z-10 hover:scale-110",
+    "group relative h-8 w-8 transition-transform duration-200",
+    showHover && "hover:z-10 hover:scale-110",
     (showRank || showBorder) && "h-9 w-9 rounded-full border-2 bg-gray-700",
     showRank &&
       rank && {
@@ -38,7 +43,7 @@ export function AgentAvatar({
     className,
   );
 
-  if (agent.imageUrl) {
+  if (imageUrl || agent.imageUrl) {
     return (
       <div
         className={cn("relative", commonClasses)}
@@ -51,7 +56,7 @@ export function AgentAvatar({
         }}
       >
         <Image
-          src={agent.imageUrl || "/default_agent.png"}
+          src={imageUrl || agent.imageUrl || "/default_agent.png"}
           alt={agent.name}
           fill
           sizes={`${size}px`}
