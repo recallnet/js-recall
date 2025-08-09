@@ -3,6 +3,7 @@ import { useIsClient } from "@uidotdev/usehooks";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
+import { useCallback } from "react";
 import { useEffect, useMemo } from "react";
 import { useDisconnect } from "wagmi";
 
@@ -16,19 +17,22 @@ import { LoginRequest, ProfileResponse } from "@/types";
 const apiClient = new ApiClient();
 
 /**
- * Hook to get a nonce for signature
- * @returns Query result with nonce data
+ * Hook that returns a function to get nonce
+ * @returns Function to fetch nonce
  */
-export const useNonce = () => {
-  return useQuery({
-    queryKey: ["nonce"],
-    queryFn: async () => {
-      return apiClient.getNonce();
-    },
-    // Don't cache nonces for too long - they should be fresh for each auth attempt
-    staleTime: 0, // Always consider stale
-    gcTime: 1000 * 60, // Keep in cache for 1 minute but mark as stale immediately
-  });
+export const useGetNonce = () => {
+  const queryClient = useQueryClient();
+
+  return useCallback(async () => {
+    return queryClient.fetchQuery({
+      queryKey: ["nonce"],
+      queryFn: async () => {
+        return apiClient.getNonce();
+      },
+      staleTime: 0,
+      gcTime: 1000 * 60,
+    });
+  }, [queryClient]);
 };
 
 /**
