@@ -11,6 +11,7 @@
  * - custom-legend.tsx: Legend component with search and pagination
  * - chart-wrapper.tsx: Chart rendering and line components
  * - timeline-chart.tsx: Main component logic and state management
+ * - chart-skeleton.tsx: Skeleton component for loading state
  */
 
 export { TimelineChart } from "./timeline-chart";
@@ -24,5 +25,5 @@ export type {
   ChartLinesProps,
 } from "./types";
 
-export { colors, LIMIT_AGENTS_PER_PAGE, HoverContext } from "./constants";
+export { CHART_COLORS, LIMIT_AGENTS_PER_PAGE, HoverContext } from "./constants";
 export { formatDateShort, datesByWeek } from "./utils";

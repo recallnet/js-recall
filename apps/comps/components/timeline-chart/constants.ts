@@ -4,15 +4,15 @@ import { createContext } from "react";
  * Constants for TimelineChart components
  */
 
-export const colors = [
-  "#FF6B35", // Orange
-  "#4ECDC4", // Teal
-  "#45B7D1", // Blue
-  "#96CEB4", // Light Green
-  "#FFEAA7", // Yellow
-  "#DDA0DD", // Plum
-  "#98D8C8", // Mint
-  "#F7DC6F", // Light Yellow
+export const CHART_COLORS = [
+  "#cc66ff", // Purple
+  "#14f195", // Green
+  "#ff4d4d", // Red
+  "#ffcc00", // Yellow
+  "#b3ff66", // Light Green
+  "#6366f1", // Indigo
+  "#ff9933", // Orange
+  "#00ffff", // Cyan
 ];
 
 export const LIMIT_AGENTS_PER_PAGE = 10;
