@@ -20,7 +20,7 @@ import { formatDate } from "@/utils/format";
 import { ShareModal } from "../share-modal";
 import { ChartSkeleton } from "./chart-skeleton";
 import { ChartWrapper } from "./chart-wrapper";
-import { HoverContext, LIMIT_AGENTS_PER_PAGE, colors } from "./constants";
+import { CHART_COLORS, HoverContext, LIMIT_AGENTS_PER_PAGE } from "./constants";
 import { CustomLegend } from "./custom-legend";
 import { PortfolioChartProps, TimelineViewRecord } from "./types";
 import { datesByWeek, formatDateShort } from "./utils";
@@ -440,7 +440,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   const agentColorMap = useMemo(() => {
     const map: Record<string, string> = {};
     chartVisibleAgentKeys.forEach((agentName, index) => {
-      map[agentName] = colors[index % colors.length]!;
+      map[agentName] = CHART_COLORS[index % CHART_COLORS.length]!;
     });
     return map;
   }, [chartVisibleAgentKeys]);

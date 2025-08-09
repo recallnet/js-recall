@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Input } from "@recallnet/ui2/components/input";
 
 import { Pagination } from "../pagination";
-import { LIMIT_AGENTS_PER_PAGE, colors } from "./constants";
+import { CHART_COLORS, LIMIT_AGENTS_PER_PAGE } from "./constants";
 import { CustomLegendProps } from "./types";
 
 /**
@@ -141,7 +141,7 @@ export const CustomLegend = ({
             >
               <div
                 className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border-2"
-                style={{ borderColor: colorMap[agent.name] || colors[0] }}
+                style={{ borderColor: colorMap[agent.name] || CHART_COLORS[0] }}
               >
                 <Image
                   src={agent.imageUrl || `/default_agent_2.png`}
@@ -153,7 +153,7 @@ export const CustomLegend = ({
               </div>
               <span
                 className="min-w-0 flex-1 truncate text-sm font-medium"
-                style={{ color: colorMap[agent.name] || colors[0] }}
+                style={{ color: colorMap[agent.name] || CHART_COLORS[0] }}
               >
                 {agent.name}
               </span>
