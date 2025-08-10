@@ -1,13 +1,13 @@
 import "@recallnet/ui2/globals.css";
 
-import { Metadata } from "next";
+import {Metadata} from "next";
 
-import { fontMono, fontSans } from "@recallnet/fonts";
-import { Toaster } from "@recallnet/ui2/components/toast";
+import {fontMono, fontSans} from "@recallnet/fonts";
+import {Toaster} from "@recallnet/ui2/components/toast";
 
-import { Navbar } from "@/components/navbar";
-import { Providers } from "@/components/providers";
-import { Tracking } from "@/components/tracking";
+import {Navbar} from "@/components/navbar";
+import {Providers} from "@/components/providers";
+import {Tracking} from "@/components/tracking";
 
 export const metadata: Metadata = {
   title: "Recall Competitions",

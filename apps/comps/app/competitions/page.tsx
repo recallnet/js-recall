@@ -1,13 +1,13 @@
 "use client";
 
-import React, {useEffect, useCallback, useState} from "react";
+import React, {useEffect} from "react";
 import useEmblaCarousel from 'embla-carousel-react'
 import AutoScroll from 'embla-carousel-auto-scroll';
 import {cn} from "@recallnet/ui2/lib/utils";
+import {Tabs, TabsList, TabsTrigger, TabsContent} from "@recallnet/ui2/components/tabs";
 
 import {CompetitionsCollapsible} from "@/components/competitions-collapsible";
 import CompetitionsSkeleton from "@/components/competitions-skeleton";
-import {FeaturedCompetition} from "@/components/featured-competition";
 import {FooterSection} from "@/components/footer-section";
 import {JoinSwarmSection} from "@/components/join-swarm-section";
 import {getSocialLinksArray} from "@/data/social";
@@ -16,6 +16,7 @@ import {useAnalytics} from "@/hooks/usePostHog";
 import {CompetitionStatus} from "@/types";
 import {mergeCompetitionsWithUserData} from "@/utils/competition-utils";
 import {Button} from "@/../../packages/ui2/src/components/button";
+import {CompetitionCard} from "@/components/competition-card";
 
 function getTimeUntilDate(targetDate: string | Date): string {
   const now = new Date();
@@ -117,6 +118,27 @@ export default function CompetitionsPage() {
     return carouselContent
   }, [upcomingCompetitions?.competitions])
 
+  const [activeComps, upcomingComps, endedComps] = [
+    mergeCompetitionsWithUserData(
+      activeCompetitions?.competitions || [],
+      userCompetitions?.competitions ?? []
+    ).map((competition) => (
+      <CompetitionCard key={competition.id} competition={competition} />
+    )),
+    mergeCompetitionsWithUserData(
+      upcomingCompetitions?.competitions || [],
+      userCompetitions?.competitions ?? []
+    ).map((competition) => (
+      <CompetitionCard key={competition.id} competition={competition} />
+    )),
+    mergeCompetitionsWithUserData(
+      endedCompetitions?.competitions || [],
+      userCompetitions?.competitions ?? []
+    ).map((competition) => (
+      <CompetitionCard key={competition.id} competition={competition} />
+    ))
+  ]
+
   if (
     isLoadingActiveCompetitions ||
     isLoadingUpcomingCompetitions ||
@@ -132,7 +154,7 @@ export default function CompetitionsPage() {
 
         {
           carouselContent.length > 0 &&
-          <HeroCarousel className="absolute top-0 left-[-200px] right-[-200px]" texts={carouselContent} />
+          <HeroCarousel className="absolute top-0 left-[-350px] right-[-350px]" texts={carouselContent} />
         }
 
         <div className="flex items-center justify-center w-full h-full">
@@ -162,34 +184,68 @@ export default function CompetitionsPage() {
         </div>
       </div>
 
-      {userCompetitions?.competitions && (
-        <CompetitionsCollapsible
-          title="Your Competitions"
-          competitions={userCompetitions.competitions}
-          emptyMessage="No competitions"
-        />
-      )}
+      <Tabs defaultValue="All" className="w-full text-secondary-foreground pt-20 mb-10">
+        <TabsList className="mb-4 flex flex-wrap gap-2">
+          <TabsTrigger
+            value="All"
+            className={cn(
+              "rounded border p-2",
+              "data-[state=active]:bg-white data-[state=active]:text-black",
+              "data-[state=inactive]:text-secondary-foreground"
+            )}
+          >
+            All
+          </TabsTrigger>
+          <TabsTrigger
+            value="On-going"
+            className={cn(
+              "rounded border p-2",
+              "data-[state=active]:bg-white data-[state=active]:text-black",
+              "data-[state=inactive]:text-secondary-foreground"
+            )}
+          >
+            On-going
+          </TabsTrigger>
+          <TabsTrigger
+            value="Upcoming"
+            className={cn(
+              "rounded border p-2",
+              "data-[state=active]:bg-white data-[state=active]:text-black",
+              "data-[state=inactive]:text-secondary-foreground"
+            )}
+          >
+            Upcoming
+          </TabsTrigger>
+          <TabsTrigger
+            value="Complete"
+            className={cn(
+              "rounded border p-2",
+              "data-[state=active]:bg-white data-[state=active]:text-black",
+              "data-[state=inactive]:text-secondary-foreground"
+            )}
+          >
+            Complete
+          </TabsTrigger>
+        </TabsList>
 
-      {upcomingCompetitions?.competitions && (
-        <CompetitionsCollapsible
-          title="Upcoming Competitions"
-          competitions={mergeCompetitionsWithUserData(
-            upcomingCompetitions.competitions,
-            userCompetitions?.competitions ?? [],
-          )}
-          emptyMessage="No upcoming competitions"
-        />
-      )}
-      {endedCompetitions?.competitions && (
-        <CompetitionsCollapsible
-          title="Completed Competitions"
-          competitions={mergeCompetitionsWithUserData(
-            endedCompetitions.competitions,
-            userCompetitions?.competitions ?? [],
-          )}
-          emptyMessage="No completed competitions"
-        />
-      )}
+        <TabsContent className="flex flex-col gap-x-4 gap-y-10 md:grid md:grid-cols-2" value='All'>
+          {activeComps}
+          {upcomingComps}
+          {endedComps}
+        </TabsContent>
+
+        <TabsContent className="flex flex-col gap-x-4 gap-y-10 md:grid md:grid-cols-2" value="On-going">
+          {activeComps}
+        </TabsContent>
+
+        <TabsContent className="flex flex-col gap-x-4 gap-y-10 md:grid md:grid-cols-2" value="Upcoming">
+          {upcomingComps}
+        </TabsContent>
+
+        <TabsContent className="flex flex-col gap-x-4 gap-y-10 md:grid md:grid-cols-2" value="Complete">
+          {endedComps}
+        </TabsContent>
+      </Tabs>
 
       <JoinSwarmSection socialLinks={getSocialLinksArray()} />
       <FooterSection />
