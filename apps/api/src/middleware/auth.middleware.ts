@@ -5,7 +5,6 @@ import { extractApiKey } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AdminManager } from "@/services/admin-manager.service.js";
 import { AgentManager } from "@/services/agent-manager.service.js";
-import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { UserManager } from "@/services/user-manager.service.js";
 
 /**
@@ -25,11 +24,9 @@ export const authMiddleware = (
   agentManager: AgentManager,
   userManager: UserManager,
   adminManager: AdminManager,
-  competitionManager: CompetitionManager,
 ) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      authLogger.debug(`========== AUTH REQUEST ==========`);
       authLogger.debug(`Received request to ${req.method} ${req.originalUrl}`);
 
       /**
@@ -75,9 +72,6 @@ export const authMiddleware = (
             );
           }
 
-          authLogger.debug(
-            `[AuthMiddleware] Session auth completed. Wallet: ${req.wallet}, User ID: ${req.userId}`,
-          );
           return next();
         }
       } else {
@@ -126,21 +120,6 @@ export const authMiddleware = (
           authLogger.debug(
             `[AuthMiddleware] Full route path: ${fullRoutePath}`,
           );
-          if (
-            fullRoutePath.includes("/api/trade/execute") &&
-            req.method === "POST"
-          ) {
-            const activeCompetition =
-              await competitionManager.getActiveCompetition();
-            if (!activeCompetition) {
-              throw new ApiError(403, "No active competition");
-            }
-            // Set competition ID in request
-            req.competitionId = activeCompetition.id;
-            authLogger.debug(
-              `[AuthMiddleware] Set competition ID: ${req.competitionId}`,
-            );
-          }
 
           authLogger.debug(
             `[AuthMiddleware] Agent API key authentication successful. Agent ID: ${req.agentId}, Owner ID: ${req.userId}`,

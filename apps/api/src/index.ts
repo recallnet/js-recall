@@ -129,28 +129,19 @@ const agentApiKeyRoutes = [
 ];
 
 const userSessionRoutes = [`${apiBasePath}/api/user`];
-
-// Apply agent API key authentication to agent routes
-app.use(
-  agentApiKeyRoutes,
-  authMiddleware(
-    services.agentManager,
-    services.userManager,
-    services.adminManager,
-    services.competitionManager,
-  ),
+const authMiddlewareInstance = authMiddleware(
+  services.agentManager,
+  services.userManager,
+  services.adminManager,
 );
+// Apply agent API key authentication to agent routes
+app.use(agentApiKeyRoutes, authMiddlewareInstance);
 
 // Apply SIWE session authentication to user routes
 app.use(
   userSessionRoutes,
   siweSessionMiddleware, // Apply SIWE session middleware first to populate req.session
-  authMiddleware(
-    services.agentManager,
-    services.userManager,
-    services.adminManager,
-    services.competitionManager,
-  ),
+  authMiddlewareInstance,
 );
 
 // Apply rate limiting middleware AFTER authentication
@@ -181,23 +172,13 @@ const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(
   authController,
   siweSessionMiddleware,
-  authMiddleware(
-    services.agentManager,
-    services.userManager,
-    services.adminManager,
-    services.competitionManager,
-  ),
+  authMiddlewareInstance,
 );
 const competitionsRoutes = configureCompetitionsRoutes(
   competitionController,
   optionalAuth,
   siweSessionMiddleware,
-  authMiddleware(
-    services.agentManager,
-    services.userManager,
-    services.adminManager,
-    services.competitionManager,
-  ),
+  authMiddlewareInstance,
 );
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
