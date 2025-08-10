@@ -1,22 +1,22 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import {Menu} from "lucide-react";
+import { Menu } from "lucide-react";
 import Link from "next/link";
-import {usePathname} from "next/navigation";
-import {useState} from "react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
-import {Avatar, AvatarImage} from "@recallnet/ui2/components/avatar";
-import {Button} from "@recallnet/ui2/components/button";
-import {cn} from "@recallnet/ui2/lib/utils";
+import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
+import { Button } from "@recallnet/ui2/components/button";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import {SIWEButton} from "@/components/siwe";
+import { SIWEButton } from "@/components/siwe";
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
   const navItems = [
-    {label: "COMPETITIONS", href: "/competitions"},
-    {label: "LEADERBOARDS", href: "/leaderboards"},
+    { label: "COMPETITIONS", href: "/competitions" },
+    { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
 
   const [open, setOpen] = useState(false);
