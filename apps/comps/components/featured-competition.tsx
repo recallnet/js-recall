@@ -18,6 +18,7 @@ import { CompetitionActions } from "./competition-actions";
 import { CompetitionStatusBanner } from "./competition-status-banner";
 import { TopLeadersList } from "./featured-competition/top-leaders-list";
 import { ParticipantsAvatars } from "./participants-avatars";
+import { Rewards } from "./rewards";
 
 interface FeaturedCompetitionProps {
   competition: UserCompetition;
@@ -28,9 +29,6 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
 }) => {
   const session = useUserSession();
   const { data: topLeaders, isLoading } = useCompetitionAgents(competition.id, {
-    // TODO: we have to make sure all agents are included in the results
-    //  because rank is calculated "on-the-fly".
-    limit: 50,
     sort: "rank",
   });
 
@@ -60,7 +58,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
           {formatCompetitionType(competition.type)}
         </Badge>
 
-        <p className="text-secondary-foreground mb-8 max-w-3xl">
+        <p className="text-secondary-foreground mb-4 max-w-3xl">
           {competition.description}
         </p>
       </div>
@@ -70,13 +68,17 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             Duration
           </h3>
-          <p className="text-xl font-semibold">{duration}</p>
+          <p className="font-semibold">{duration}</p>
         </div>
         <div className="w-full px-6 py-4">
           <h3 className="text-secondary-foreground mb-1 text-sm font-semibold uppercase">
             Reward
           </h3>
-          <p className="text-xl font-semibold">TBA</p>
+          {competition.rewards ? (
+            <Rewards rewards={competition.rewards} />
+          ) : (
+            <p className="font-semibold">TBA</p>
+          )}
         </div>
       </div>
 
@@ -109,7 +111,9 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
                   agents={competition.agents}
                 />
               ) : (
-                <span className="text-sm">-</span>
+                <div className="flex justify-center">
+                  <span className="text-sm">-</span>
+                </div>
               )}
             </>
           )}

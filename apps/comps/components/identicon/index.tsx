@@ -29,7 +29,11 @@ export function Identicon({
   return (
     <div
       dangerouslySetInnerHTML={{ __html: svg }}
-      className={cn("h-10 w-10 rounded-full bg-gray-700", className)}
+      className={cn("rounded-full bg-gray-700", className)}
+      style={{
+        width: size,
+        height: size,
+      }}
       title={title}
     />
   );

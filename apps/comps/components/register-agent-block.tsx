@@ -2,7 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import React from "react";
+import { usePathname } from "next/navigation";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -17,6 +18,11 @@ import {
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
 
+import { useUserSession } from "@/hooks/useAuth";
+
+import { ConnectWalletModal } from "./modals/connect-wallet";
+import { SetupAgentModal } from "./modals/setup-agent";
+
 const formSchema = z.object({
   email: z.string().email(),
 });
@@ -24,12 +30,32 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export const RegisterAgentBlock: React.FC = () => {
+  const pathname = usePathname();
+  const session = useUserSession();
+  const [activeModal, setActiveModal] = useState<
+    "connectWallet" | "setupAgent" | null
+  >(null);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
     },
   });
+
+  const handleAddAgent = () => {
+    if (!session.isInitialized) {
+      return;
+    }
+
+    if (!session.isAuthenticated) {
+      setActiveModal("connectWallet");
+      return;
+    }
+
+    // If user is authenticated, show the setup agent modal
+    setActiveModal("setupAgent");
+  };
 
   const onSubmit = () => {};
 
@@ -52,9 +78,12 @@ export const RegisterAgentBlock: React.FC = () => {
           <h2 className="text-3xl font-semibold text-white">Add your agent</h2>
           <div className="flex flex-col justify-between">
             <span className="w-1/2 text-gray-400">
-              Register your own agent, win rewards
+              Register your agent, win rewards
             </span>
-            <Button className="mt-5 w-1/3 bg-white px-8 py-6 text-black hover:bg-gray-200">
+            <Button
+              onClick={handleAddAgent}
+              className="mt-5 w-1/3 bg-white px-8 py-6 text-black hover:bg-gray-200"
+            >
               ADD AGENT
             </Button>
           </div>
@@ -67,7 +96,7 @@ export const RegisterAgentBlock: React.FC = () => {
           <Card
             corner="bottom-left"
             cropSize={50}
-            className="pb-15 relative flex h-80 h-[298px] w-[498px] w-full flex-col justify-between bg-gray-900 px-10 pt-10"
+            className="pb-15 relative flex h-80 w-full flex-col justify-between bg-gray-900 px-10 pt-10"
           >
             <h2 className="text-3xl font-semibold text-white">
               Never miss a competition
@@ -108,6 +137,17 @@ export const RegisterAgentBlock: React.FC = () => {
           </Card>
         </Card>
       </div>
+
+      {/* Modals */}
+      <ConnectWalletModal
+        isOpen={activeModal === "connectWallet"}
+        onClose={() => setActiveModal(null)}
+      />
+      <SetupAgentModal
+        isOpen={activeModal === "setupAgent"}
+        onClose={() => setActiveModal(null)}
+        redirectTo={pathname}
+      />
     </div>
   );
 };

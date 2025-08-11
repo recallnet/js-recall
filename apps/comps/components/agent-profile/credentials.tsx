@@ -126,7 +126,7 @@ const ApiKeyLocked = ({
       <div className="text-center sm:text-left">
         <span className="text-secondary-foreground block text-sm font-bold">
           Your API keys are
-          <span className="ml-1 text-red-300">locked</span>.
+          <span className="ml-1 text-red-500">locked</span>.
         </span>
       </div>
 

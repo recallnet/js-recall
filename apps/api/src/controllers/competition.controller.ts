@@ -1,11 +1,17 @@
 import { NextFunction, Response } from "express";
 
 import { config } from "@/config/index.js";
+import {
+  getBatchVoteCounts,
+  getEnrichedCompetitions,
+} from "@/database/repositories/competition-repository.js";
+import { SelectCompetitionReward } from "@/database/schema/core/types.js";
 import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
+  BucketParamSchema,
   COMPETITION_JOIN_ERROR_TYPES,
   COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
@@ -343,6 +349,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
+        // Get trading constraints for the active competition
+        const tradingConstraints =
+          await services.tradingConstraintsService.getConstraintsWithDefaults(
+            activeCompetition.id,
+          );
+
         // Define base rules
         const tradingRules = [
           "Trading is only allowed for tokens with valid price data",
@@ -353,6 +365,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
           "Slippage is applied to all trades based on trade size",
           `Cross-chain trading type: ${activeCompetition.crossChainTradingType}`,
           "Transaction fees are not simulated",
+          `Token eligibility requires minimum ${tradingConstraints.minimumPairAgeHours} hours of trading history`,
+          `Token must have minimum 24h volume of $${tradingConstraints.minimum24hVolumeUsd.toLocaleString()} USD`,
+          `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
+          `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
         ];
         const rateLimits = [
           `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
@@ -468,53 +484,66 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const { competitions, total } =
           await services.competitionManager.getCompetitions(
             status,
+            // Default limit 10, max 100. It's important we don't call this without a limit
             pagingParams,
           );
 
         // If user is authenticated, enrich competitions with voting information
         let enrichedCompetitions = competitions;
         if (userId) {
-          enrichedCompetitions = await Promise.all(
-            competitions.map(async (competition) => {
-              try {
-                // Get voting state for this user and competition
-                const votingState =
-                  await services.voteManager.getCompetitionVotingState(
-                    userId,
-                    competition.id,
-                  );
+          const competitionIds = competitions.map((c) => c.id);
 
-                // Get total vote counts for this competition (for display purposes)
-                const voteCountsMap =
-                  await services.voteManager.getVoteCountsByCompetition(
-                    competition.id,
-                  );
-                const totalVotes = Array.from(voteCountsMap.values()).reduce(
-                  (sum, count) => sum + count,
-                  0,
-                );
+          // Fetch all data in parallel with batch queries
+          const [enrichmentData, voteCountsMap] = await Promise.all([
+            getEnrichedCompetitions(userId, competitionIds),
+            getBatchVoteCounts(competitionIds),
+          ]);
 
-                return {
-                  ...competition,
-                  votingEnabled:
-                    votingState.canVote || votingState.info.hasVoted,
-                  userVotingInfo: votingState,
-                  totalVotes,
-                };
-              } catch (error) {
-                // If there's an error getting vote data, just return the competition without vote info
-                competitionLogger.warn(
-                  `Failed to get vote data for competition ${competition.id}:`,
-                  error,
-                );
-                return {
-                  ...competition,
-                  votingEnabled: false,
-                  totalVotes: 0,
-                };
-              }
-            }),
+          // Create lookup maps for efficient access
+          const enrichmentMap = new Map(
+            enrichmentData.map((data) => [data.competitionId, data]),
           );
+
+          enrichedCompetitions = competitions.map((competition) => {
+            const enrichment = enrichmentMap.get(competition.id);
+            if (!enrichment) {
+              throw new ApiError(500, "invalid competition state");
+            }
+
+            const hasVoted = !!enrichment.userVoteAgentId;
+            const compVotingStatus =
+              services.voteManager.checkCompetitionVotingEligibility(
+                competition,
+              );
+
+            const votingState = {
+              canVote: compVotingStatus.canVote,
+              reason: compVotingStatus.reason,
+              info: {
+                hasVoted,
+                agentId: enrichment.userVoteAgentId || undefined,
+                votedAt: enrichment.userVoteCreatedAt || undefined,
+              },
+            };
+
+            const totalVotes =
+              voteCountsMap.get(competition.id)?.totalVotes || 0;
+
+            const tradingConstraints = {
+              minimumPairAgeHours: enrichment.minimumPairAgeHours,
+              minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
+              minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
+              minimumFdvUsd: enrichment.minimumFdvUsd,
+            };
+
+            return {
+              ...competition,
+              tradingConstraints,
+              votingEnabled: votingState.canVote || votingState.info.hasVoted,
+              userVotingInfo: votingState,
+              totalVotes,
+            };
+          });
         }
 
         // Calculate hasMore based on total and current page
@@ -581,6 +610,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
+
         const trades =
           await services.tradeSimulator.getCompetitionTrades(competitionId);
 
@@ -607,6 +637,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ]).size,
         };
 
+        const rewards =
+          await services.competitionRewardService.getRewardsByCompetition(
+            competitionId,
+          );
+
         // If user is authenticated, get their voting state
         let userVotingInfo = undefined;
         let votingEnabled = false;
@@ -627,12 +662,26 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
+        // Get trading constraints for this competition
+        const tradingConstraints =
+          await services.tradingConstraintsService.getConstraintsWithDefaults(
+            competitionId,
+          );
+
         // Return the competition details
         res.status(200).json({
           success: true,
           competition: {
             ...competition,
             stats,
+            tradingConstraints,
+            rewards: rewards.map((r: SelectCompetitionReward) => {
+              return {
+                rank: r.rank,
+                reward: r.reward,
+                agentId: r.agentId,
+              };
+            }),
             votingEnabled,
             userVotingInfo,
           },
@@ -923,6 +972,76 @@ export function makeCompetitionController(services: ServiceRegistry) {
         } else {
           next(error);
         }
+      }
+    },
+
+    /**
+     * Get competition timeline
+     * @param req Request
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getCompetitionTimeline(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID from path parameter
+        const competitionId = ensureUuid(req.params.competitionId);
+
+        // Get and validate bucket parameter using zod schema
+        const bucket = BucketParamSchema.parse(req.query.bucket);
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Get timeline data
+        const rawData =
+          await services.portfolioSnapshotter.getAgentPortfolioTimeline(
+            competitionId,
+            bucket,
+          );
+
+        // Transform into the required structure
+        const agentsMap = new Map<
+          string,
+          {
+            agentId: string;
+            agentName: string;
+            timeline: Array<{ timestamp: string; totalValue: number }>;
+          }
+        >();
+
+        for (const item of rawData) {
+          if (!agentsMap.has(item.agentId)) {
+            agentsMap.set(item.agentId, {
+              agentId: item.agentId,
+              agentName: item.agentName,
+              timeline: [],
+            });
+          }
+
+          agentsMap.get(item.agentId)!.timeline.push({
+            timestamp: item.timestamp,
+            totalValue: item.totalValue,
+          });
+        }
+
+        const transformedData = {
+          success: true,
+          competitionId,
+          timeline: Array.from(agentsMap.values()),
+        };
+
+        res.status(200).json(transformedData);
+      } catch (error) {
+        console.error("OIII", error);
+        next(error);
       }
     },
   };

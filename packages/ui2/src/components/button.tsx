@@ -3,24 +3,24 @@ import { type VariantProps, cva } from "class-variance-authority";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-// This is just an example of a component that uses the cva utility and Tailwind CSS classes.
-
 const buttonVariants = cva(
-  "inline-flex items-center justify-center text-sm font-medium transition-all duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center text-sm font-medium transition-all duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "bg-blue-600 font-semibold uppercase text-white hover:bg-[#003D7A]",
+          "bg-blue-600 font-semibold uppercase text-white hover:bg-[#003D7A] disabled:hover:bg-blue-600",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:hover:bg-destructive",
         outline:
-          "bg-background text-secondary-foreground border border-gray-400 hover:bg-blue-700 hover:text-white",
+          "bg-background text-secondary-foreground disabled:hover:bg-background disabled:hover:text-secondary-foreground border border-gray-400 hover:bg-blue-700 hover:text-white",
         secondary:
-          "bg-secondary hover:bg-secondary/90 font-semibold uppercase text-[#e9edf1]",
-        ghost: "bg-white text-black hover:bg-blue-700 hover:text-white",
-        link: "text-primary underline-offset-4 hover:underline",
-        modal: "border bg-white text-black hover:bg-gray-300",
+          "bg-secondary hover:bg-secondary/90 disabled:hover:bg-secondary font-semibold uppercase text-[#e9edf1]",
+        ghost:
+          "bg-white text-black hover:bg-blue-700 hover:text-white disabled:hover:bg-white disabled:hover:text-black",
+        link: "text-primary underline-offset-4 hover:underline disabled:hover:no-underline",
+        modal:
+          "border bg-white text-black hover:bg-gray-300 disabled:hover:bg-white",
       },
       size: {
         default: "h-10 px-4 py-2 text-sm",

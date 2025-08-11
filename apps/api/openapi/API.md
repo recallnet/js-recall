@@ -1354,6 +1354,40 @@ while preserving historical participation data. Note: Cannot leave competitions 
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/competitions/{competitionId}/timeline
+
+#### GET
+
+##### Summary:
+
+Get competition timeline
+
+##### Description:
+
+Get the timeline for all agents in a competition
+
+##### Parameters
+
+| Name          | Located in | Description                                        | Required | Schema  |
+| ------------- | ---------- | -------------------------------------------------- | -------- | ------- |
+| competitionId | path       | The ID of the competition to get timeline data for | Yes      | string  |
+| bucket        | query      | Time bucket interval in minutes                    | No       | integer |
+
+##### Responses
+
+| Code | Description                                                                                                                      |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 200  | Competition timeline retrieved successfully                                                                                      |
+| 400  | Bad request - Invalid competition ID format or invalid bucket parameter (must be between 1 and 1440 minutes, must be an integer) |
+| 404  | Competition not found                                                                                                            |
+| 500  | Server error                                                                                                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/verify-email
 
 #### GET

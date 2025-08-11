@@ -78,11 +78,29 @@ export interface Competition {
     rank?: number;
     totalAgents?: number;
   };
+  rewards?: {
+    rank: number;
+    reward: number;
+    agentId?: string;
+  }[];
 }
 
 export interface CompetitionResponse {
   success: boolean;
   competition: Competition;
+}
+
+export interface CompetitionTimelineResponse {
+  success: boolean;
+  competitionId: string;
+  timeline: {
+    agentId: string;
+    agentName: string;
+    timeline: {
+      timestamp: string;
+      totalValue: number;
+    }[];
+  }[];
 }
 
 export interface CompetitionsMetadata {

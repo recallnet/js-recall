@@ -27,10 +27,14 @@ import {
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
-import { UpdateCompetition } from "@/database/schema/core/types.js";
+import {
+  SelectCompetitionReward,
+  UpdateCompetition,
+} from "@/database/schema/core/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import {
   AgentManager,
   AgentRankService,
@@ -82,6 +86,7 @@ export class CompetitionManager {
   private agentRankService: AgentRankService;
   private voteManager: VoteManager;
   private tradingConstraintsService: TradingConstraintsService;
+  private competitionRewardService: CompetitionRewardService;
 
   constructor(
     balanceManager: BalanceManager,
@@ -92,6 +97,7 @@ export class CompetitionManager {
     agentRankService: AgentRankService,
     voteManager: VoteManager,
     tradingConstraintsService: TradingConstraintsService,
+    competitionRewardService: CompetitionRewardService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -101,6 +107,7 @@ export class CompetitionManager {
     this.agentRankService = agentRankService;
     this.voteManager = voteManager;
     this.tradingConstraintsService = tradingConstraintsService;
+    this.competitionRewardService = competitionRewardService;
   }
 
   /**
@@ -133,6 +140,7 @@ export class CompetitionManager {
     joinStartDate?: Date,
     joinEndDate?: Date,
     tradingConstraints?: TradingConstraintsInput,
+    rewards?: Record<number, number>,
   ) {
     const id = uuidv4();
     const competition = {
@@ -157,21 +165,44 @@ export class CompetitionManager {
 
     await createCompetition(competition);
 
-    // Create trading constraints if provided
-    if (tradingConstraints) {
-      await this.tradingConstraintsService.createConstraints({
-        competitionId: id,
-        ...tradingConstraints,
-      });
+    let createdRewards: SelectCompetitionReward[] = [];
+    if (rewards) {
+      createdRewards = await this.competitionRewardService.createRewards(
+        id,
+        rewards,
+      );
       serviceLogger.debug(
-        `[CompetitionManager] Created trading constraints for competition ${id}`,
+        `[CompetitionManager] Created rewards for competition ${id}: ${JSON.stringify(
+          createdRewards,
+        )}`,
       );
     }
 
+    // Always create trading constraints (with defaults if not provided)
+    const constraints = await this.tradingConstraintsService.createConstraints({
+      competitionId: id,
+      ...tradingConstraints,
+    });
     serviceLogger.debug(
-      `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}`,
+      `[CompetitionManager] Created trading constraints for competition ${id}`,
     );
-    return competition;
+
+    serviceLogger.debug(
+      `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}, type: ${type}}`,
+    );
+    return {
+      ...competition,
+      rewards: createdRewards.map((reward) => ({
+        rank: reward.rank,
+        reward: reward.reward,
+      })),
+      tradingConstraints: {
+        minimumPairAgeHours: constraints?.minimumPairAgeHours,
+        minimum24hVolumeUsd: constraints?.minimum24hVolumeUsd,
+        minimumLiquidityUsd: constraints?.minimumLiquidityUsd,
+        minimumFdvUsd: constraints?.minimumFdvUsd,
+      },
+    };
   }
 
   /**
@@ -257,15 +288,26 @@ export class CompetitionManager {
       `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
     );
 
-    // Create trading constraints if provided
-    if (tradingConstraints) {
-      await this.tradingConstraintsService.createConstraints({
+    const existingConstraints =
+      await this.tradingConstraintsService.getConstraints(competitionId);
+    let newConstraints = existingConstraints;
+    if (tradingConstraints && existingConstraints) {
+      // If the caller provided constraints and the already exist, we update
+      newConstraints = await this.tradingConstraintsService.updateConstraints(
         competitionId,
-        ...tradingConstraints,
-      });
-      serviceLogger.debug(
-        `[CompetitionManager] Created trading constraints for competition ${competitionId}`,
+        tradingConstraints,
       );
+      serviceLogger.debug(
+        `[CompetitionManager] Updating trading constraints for competition ${competitionId}`,
+      );
+    } else if (!existingConstraints) {
+      // if the constraints don't exist, we create them with defaults and
+      // (optionally) caller provided values.
+      newConstraints =
+        (await this.tradingConstraintsService.createConstraints({
+          competitionId,
+          ...tradingConstraints,
+        })) || null;
     }
 
     // Take initial portfolio snapshots
@@ -275,7 +317,15 @@ export class CompetitionManager {
     await this.configurationService.loadCompetitionSettings();
     serviceLogger.debug(`[CompetitionManager] Reloaded configuration settings`);
 
-    return competition;
+    return {
+      ...competition,
+      tradingConstraints: {
+        minimumPairAgeHours: newConstraints?.minimumPairAgeHours,
+        minimum24hVolumeUsd: newConstraints?.minimum24hVolumeUsd,
+        minimumLiquidityUsd: newConstraints?.minimumLiquidityUsd,
+        minimumFdvUsd: newConstraints?.minimumFdvUsd,
+      },
+    };
   }
 
   /**

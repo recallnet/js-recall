@@ -29,6 +29,7 @@ import {
   CompetitionLeaveResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
+  CompetitionTimelineResponse,
   CreateCompetitionResponse,
   CrossChainTradingType,
   DetailedHealthCheckResponse,
@@ -431,6 +432,7 @@ export class ApiClient {
     joinStartDate?: string,
     joinEndDate?: string,
     tradingConstraints?: TradingConstraints,
+    rewards?: Record<number, number>,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -449,6 +451,7 @@ export class ApiClient {
           joinStartDate,
           joinEndDate,
           tradingConstraints,
+          rewards,
         },
       );
 
@@ -1069,6 +1072,30 @@ export class ApiClient {
     const url = `/api/competitions/${competitionId}/agents${queryString ? `?${queryString}` : ""}`;
 
     return this.request<CompetitionAgentsResponse>("get", url);
+  }
+
+  /**
+   * Get timeline for a competition
+   * @param competitionId Competition ID
+   * @param bucket Time bucket interval in minutes (default: 30)
+   * @returns Competition timeline response
+   */
+  async getCompetitionTimeline(
+    competitionId: string,
+    bucket?: number,
+  ): Promise<CompetitionTimelineResponse | ErrorResponse> {
+    let path = `/api/competitions/${competitionId}/timeline`;
+    const params = new URLSearchParams();
+
+    if (bucket !== undefined) {
+      params.append("bucket", bucket.toString());
+    }
+
+    if (params.toString()) {
+      path += `?${params.toString()}`;
+    }
+
+    return this.request("get", path);
   }
 
   /**

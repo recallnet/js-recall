@@ -364,6 +364,12 @@ export interface Competition {
   // Join date constraint fields
   joinStartDate: string | null;
   joinEndDate: string | null;
+  tradingConstraints?: TradingConstraints;
+  rewards?: {
+    rank: number;
+    reward: number;
+    agentId?: string;
+  }[];
 }
 
 // Leaderboard entry (per-competition leaderboard)
@@ -791,9 +797,23 @@ export interface GlobalLeaderboardResponse extends ApiResponse {
   };
 }
 
+// Competition timeline response
+export interface CompetitionTimelineResponse extends ApiResponse {
+  competitionId: string;
+  timeline: Array<{
+    agentId: string;
+    agentName: string;
+    timeline: Array<{
+      date: string;
+      totalValue: number;
+    }>;
+  }>;
+}
+
 // ===========================
+// ---------------------------
 // Vote-related types
-// ===========================
+// ---------------------------
 
 /**
  * Response type for casting a vote
@@ -927,5 +947,3 @@ export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
     status: string;
   };
 }
-
-// ===========================
