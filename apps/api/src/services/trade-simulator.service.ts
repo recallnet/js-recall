@@ -168,6 +168,12 @@ export class TradeSimulator {
 
       // Log trade summary
       serviceLogger.debug(`[TradeSimulator] Trade executed successfully:
+                Agent: ${agentId}
+                Competition: ${competitionId}
+                From Token: ${fromToken} (${fromPrice.symbol}) @ $${fromPrice.price.toFixed(6)}
+                To Token: ${toToken} (${toPrice.symbol}) @ $${toPrice.price.toFixed(6)}
+                Trade Amount: ${fromAmount} ${fromPrice.symbol} → ${toAmount} ${toPrice.symbol}
+                Exchange Rate: 1 ${fromPrice.symbol} = ${exchangeRate.toFixed(6)} ${toPrice.symbol}
                 Initial ${fromToken} Balance: ${currentBalance}
                 New ${fromToken} Balance: ${result.updatedBalances.fromTokenBalance}
                 New ${toToken} Balance: ${result.updatedBalances.toTokenBalance ?? "N/A (burn)"}
