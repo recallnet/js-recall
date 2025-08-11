@@ -165,16 +165,6 @@ export class CompetitionManager {
 
     await createCompetition(competition);
 
-    // Create trading constraints if provided
-    if (tradingConstraints) {
-      await this.tradingConstraintsService.createConstraints({
-        competitionId: id,
-        ...tradingConstraints,
-      });
-      serviceLogger.debug(
-        `[CompetitionManager] Created trading constraints for competition ${id}`,
-      );
-    }
     let createdRewards: SelectCompetitionReward[] = [];
     if (rewards) {
       createdRewards = await this.competitionRewardService.createRewards(
@@ -188,6 +178,15 @@ export class CompetitionManager {
       );
     }
 
+    // Always create trading constraints (with defaults if not provided)
+    const constraints = await this.tradingConstraintsService.createConstraints({
+      competitionId: id,
+      ...tradingConstraints,
+    });
+    serviceLogger.debug(
+      `[CompetitionManager] Created trading constraints for competition ${id}`,
+    );
+
     serviceLogger.debug(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}, type: ${type}}`,
     );
@@ -197,6 +196,12 @@ export class CompetitionManager {
         rank: reward.rank,
         reward: reward.reward,
       })),
+      tradingConstraints: {
+        minimumPairAgeHours: constraints?.minimumPairAgeHours,
+        minimum24hVolumeUsd: constraints?.minimum24hVolumeUsd,
+        minimumLiquidityUsd: constraints?.minimumLiquidityUsd,
+        minimumFdvUsd: constraints?.minimumFdvUsd,
+      },
     };
   }
 
@@ -283,15 +288,26 @@ export class CompetitionManager {
       `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
     );
 
-    // Create trading constraints if provided
-    if (tradingConstraints) {
-      await this.tradingConstraintsService.upsertConstraints({
+    const existingConstraints =
+      await this.tradingConstraintsService.getConstraints(competitionId);
+    let newConstraints = existingConstraints;
+    if (tradingConstraints && existingConstraints) {
+      // If the caller provided constraints and the already exist, we update
+      newConstraints = await this.tradingConstraintsService.updateConstraints(
         competitionId,
-        ...tradingConstraints,
-      });
-      serviceLogger.debug(
-        `[CompetitionManager] Upserted trading constraints for competition ${competitionId}`,
+        tradingConstraints,
       );
+      serviceLogger.debug(
+        `[CompetitionManager] Updating trading constraints for competition ${competitionId}`,
+      );
+    } else if (!existingConstraints) {
+      // if the constraints don't exist, we create them with defaults and
+      // (optionally) caller provided values.
+      newConstraints =
+        (await this.tradingConstraintsService.createConstraints({
+          competitionId,
+          ...tradingConstraints,
+        })) || null;
     }
 
     // Take initial portfolio snapshots
@@ -301,7 +317,15 @@ export class CompetitionManager {
     await this.configurationService.loadCompetitionSettings();
     serviceLogger.debug(`[CompetitionManager] Reloaded configuration settings`);
 
-    return competition;
+    return {
+      ...competition,
+      tradingConstraints: {
+        minimumPairAgeHours: newConstraints?.minimumPairAgeHours,
+        minimum24hVolumeUsd: newConstraints?.minimum24hVolumeUsd,
+        minimumLiquidityUsd: newConstraints?.minimumLiquidityUsd,
+        minimumFdvUsd: newConstraints?.minimumFdvUsd,
+      },
+    };
   }
 
   /**

@@ -15,12 +15,6 @@ jobs:
     name: Check lint, format, and build
     runs-on: ubuntu-latest
     steps:
-      # TMP: disable SSH & submodules since it causes problems with Vercel
-      # - name: Set up SSH key
-      #   uses: webfactory/ssh-agent@v0.9.0
-      #   with:
-      #     ssh-private-key: ${{ secrets.CONTRACTS_DEPLOY_KEY }}
-
       - name: Checkout Repository
         uses: actions/checkout@v4
         # with:
@@ -58,17 +52,15 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      # TODO: figure out correct flow to not make this problematic
-      - name: Check API-SDK
-        uses: ./.github/actions/api-sdk-check
-        env:
-          SPEAKEASY_API_KEY: "${{ secrets.SPEAKEASY_API_KEY }}"
-
       - name: Run Lint Check
         run: pnpm lint
 
       - name: Run Format Check
         run: pnpm format:check
+
+      - name: Check for incorrect, missing, or duplicate database migrations
+        shell: bash
+        run: bash scripts/check-migrations.sh
 
       - name: Run Build
         run: pnpm build

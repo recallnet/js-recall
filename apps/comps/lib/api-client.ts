@@ -6,6 +6,7 @@ import {
   AgentWithOwnerResponse,
   AgentsResponse,
   CompetitionResponse,
+  CompetitionTimelineResponse,
   CompetitionsResponse,
   CreateAgentRequest,
   CreateAgentResponse,
@@ -14,6 +15,7 @@ import {
   GetAgentCompetitionsParams,
   GetAgentsParams,
   GetCompetitionAgentsParams,
+  GetCompetitionPerformanceParams,
   GetCompetitionsParams,
   GetLeaderboardParams,
   GetVotesParams,
@@ -251,6 +253,24 @@ export class ApiClient {
     const queryParams = this.formatQueryParams(params);
     return this.request<AgentCompetitionResponse>(
       `/competitions/${competitionId}/agents${queryParams}`,
+    );
+  }
+
+  /**
+   * Get competition performance
+   * @param competitionId - Competition ID
+   * @param params - Query parameters
+   * @returns Agents response
+   */
+  async getCompetitionTimeline(
+    competitionId: string,
+    params: GetCompetitionPerformanceParams = {
+      bucket: 3 * 60,
+    },
+  ): Promise<CompetitionTimelineResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<CompetitionTimelineResponse>(
+      `/competitions/${competitionId}/timeline${queryParams}`,
     );
   }
 

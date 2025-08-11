@@ -369,4 +369,33 @@ export class VoteManager {
 
     return { canVote: true, reason: "voting is open" };
   }
+
+  /**
+   * Check overall competition voting eligibility combining status and date checks
+   * @param competition The competition record
+   * @returns Object with canVote boolean and reason string
+   */
+  checkCompetitionVotingEligibility(competition: SelectCompetition): {
+    canVote: boolean;
+    reason?: string;
+  } {
+    // First check if competition status allows voting
+    if (!this.checkCompetitionVotingStatus(competition)) {
+      return {
+        canVote: false,
+        reason: `Competition status does not allow voting (${competition.status})`,
+      };
+    }
+
+    // Then check voting dates
+    const dateCheck = this.checkCompetitionVotingDates(competition);
+    if (!dateCheck.canVote) {
+      return {
+        canVote: false,
+        reason: dateCheck.reason,
+      };
+    }
+
+    return { canVote: true };
+  }
 }

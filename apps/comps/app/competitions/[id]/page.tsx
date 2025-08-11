@@ -19,12 +19,13 @@ import { CompetitionVotingBanner } from "@/components/competition-voting-banner"
 import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
+import { TimelineChart } from "@/components/timeline-chart/index";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 
-const limit = 10;
+const LIMIT_AGENTS_PER_PAGE = 10; // Show 10 agents per page
 
 export default function CompetitionPage({
   params,
@@ -52,11 +53,11 @@ export default function CompetitionPage({
     filter: debouncedFilterTerm,
     sort: agentsSort,
     offset: offset,
-    limit,
+    limit: LIMIT_AGENTS_PER_PAGE,
   });
 
   const handlePageChange = (page: number) => {
-    setOffset(limit * (page - 1));
+    setOffset(LIMIT_AGENTS_PER_PAGE * (page - 1));
   };
 
   const isLoading = isLoadingCompetition || isLoadingAgents;
@@ -196,16 +197,31 @@ export default function CompetitionPage({
           </p>
         </div>
       ) : (
-        <AgentsTable
-          ref={agentsTableRef}
-          competition={competition}
-          agents={agentsData.agents}
-          onFilterChange={setAgentsFilter}
-          onSortChange={setAgentsSort}
-          pagination={agentsData.pagination}
-          totalVotes={competition.stats.totalVotes}
-          onPageChange={handlePageChange}
-        />
+        <>
+          <AgentsTable
+            ref={agentsTableRef}
+            competition={competition}
+            agents={agentsData.agents}
+            onFilterChange={setAgentsFilter}
+            onSortChange={setAgentsSort}
+            pagination={agentsData.pagination}
+            totalVotes={competition.stats.totalVotes}
+            onPageChange={handlePageChange}
+          />
+          <TimelineChart
+            className="mt-5"
+            competition={competition}
+            agents={agentsData?.agents || []}
+            totalAgents={agentsData?.pagination?.total || 0}
+            currentPage={
+              Math.floor(
+                (agentsData?.pagination?.offset || 0) /
+                  (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
+              ) + 1
+            }
+            onPageChange={handlePageChange}
+          />
+        </>
       )}
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />

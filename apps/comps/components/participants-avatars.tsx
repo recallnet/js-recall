@@ -12,6 +12,7 @@ interface ParticipantsAvatarsProps {
   maxDisplay?: number;
   className?: string;
   showRank?: boolean;
+  showBorder?: boolean;
 }
 
 export function ParticipantsAvatars({
@@ -20,6 +21,7 @@ export function ParticipantsAvatars({
   className,
   compId,
   showRank = false,
+  showBorder = true,
 }: ParticipantsAvatarsProps) {
   const displayAgents = agents.slice(0, maxDisplay);
   const remainingCount = Math.max(0, agents.length - maxDisplay);
@@ -39,6 +41,7 @@ export function ParticipantsAvatars({
             key={agent.id}
             agent={agent}
             showRank={showRank}
+            showBorder={showBorder}
             rank={showRank ? getRank(agent, index) : undefined}
             size={32}
           />

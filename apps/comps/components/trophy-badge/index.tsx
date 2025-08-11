@@ -23,9 +23,9 @@ interface TrophyBadgeProps {
 }
 
 const rankColors: Record<number, string> = {
-  1: "bg-[#FBD362]",
-  2: "bg-[#93A5BA]",
-  3: "bg-[#C76E29]",
+  1: "bg-trophy-first",
+  2: "bg-trophy-second",
+  3: "bg-trophy-third",
 };
 
 export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy, size }) => {

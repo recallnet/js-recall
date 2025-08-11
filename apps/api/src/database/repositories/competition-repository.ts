@@ -21,6 +21,8 @@ import {
   competitions,
   competitionsLeaderboard,
 } from "@/database/schema/core/defs.js";
+// Import for enrichment functionality
+import { votes } from "@/database/schema/core/defs.js";
 import {
   InsertCompetition,
   InsertCompetitionsLeaderboard,
@@ -32,6 +34,7 @@ import {
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
 } from "@/database/schema/trading/defs.js";
+import { tradingConstraints } from "@/database/schema/trading/defs.js";
 import { InsertTradingCompetition } from "@/database/schema/trading/types.js";
 import {
   InsertPortfolioSnapshot,
@@ -752,9 +755,9 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
       CROSS JOIN LATERAL (
         SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
         FROM trading_comps.portfolio_snapshots ps
-        WHERE ps.agent_id = ca.agent_id 
+        WHERE ps.agent_id = ca.agent_id
           AND ps.competition_id = ca.competition_id
-        ORDER BY ps.timestamp DESC 
+        ORDER BY ps.timestamp DESC
         LIMIT 1
       ) ps
       WHERE ca.competition_id = ${competitionId}
@@ -1787,8 +1790,212 @@ export const findActiveCompetitionsPastEndDate = createTimedRepositoryFunction(
   "findActiveCompetitionsPastEndDate",
 );
 
+/**
+ * Get portfolio timeline for agents in a competition
+ * @param competitionId Competition ID
+ * @param bucket Time bucket interval in minutes (default: 30)
+ * @returns Array of portfolio timelines per agent
+ */
+async function getAgentPortfolioTimelineImpl(
+  competitionId: string,
+  bucket: number = 30,
+) {
+  try {
+    const result = await dbRead.execute<{
+      timestamp: string;
+      agent_id: string;
+      agent_name: string;
+      competition_id: string;
+      total_value: number;
+    }>(sql`
+      SELECT 
+        timestamp, 
+        agent_id, 
+        name AS agent_name, 
+        competition_id, 
+        total_value 
+      FROM (
+        SELECT 
+          ROW_NUMBER() OVER (
+            PARTITION BY ps.agent_id, ps.competition_id,FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
+            ORDER BY ps.timestamp DESC
+          ) AS rn,
+          ps.timestamp,
+          ps.agent_id,
+          a.name,
+          ps.competition_id,
+          ps.total_value
+        FROM competition_agents ca
+        JOIN trading_comps.portfolio_snapshots ps 
+          ON ps.agent_id = ca.agent_id 
+          AND ps.competition_id = ca.competition_id
+        JOIN agents a ON a.id = ca.agent_id
+        JOIN competitions c ON c.id = ca.competition_id
+        WHERE ca.competition_id = ${competitionId}
+          AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
+      ) AS ranked_snapshots
+      WHERE rn = 1 
+    `);
+
+    // Convert snake_case to camelCase
+    return result.rows.map((row) => ({
+      timestamp: row.timestamp,
+      agentId: row.agent_id,
+      agentName: row.agent_name,
+      competitionId: row.competition_id,
+      totalValue: Number(row.total_value),
+    }));
+  } catch (error) {
+    repositoryLogger.error("Error in getAgentPortfolioTimelineImpl:", error);
+    throw error;
+  }
+}
+
+export const getAgentPortfolioTimeline = createTimedRepositoryFunction(
+  getAgentPortfolioTimelineImpl,
+  "CompetitionRepository",
+  "getAgentPortfolioTimeline",
+);
+
 export const get24hSnapshots = createTimedRepositoryFunction(
   get24hSnapshotsImpl,
   "CompetitionRepository",
   "get24hSnapshots",
+);
+
+/**
+ * Get enriched competition data with votes and trading constraints in a single query
+ * @param userId The user ID to get voting state for
+ * @param competitionIds Array of competition IDs to enrich
+ * @returns Enriched competition data with voting and constraint information
+ */
+async function getEnrichedCompetitionsImpl(
+  userId: string,
+  competitionIds: string[],
+): Promise<
+  {
+    competitionId: string;
+    competitionStatus: string;
+    competitionVotingStartsAt: Date | null;
+    competitionVotingEndsAt: Date | null;
+    userVoteAgentId: string | null;
+    userVoteCreatedAt: Date | null;
+    minimumPairAgeHours: number | null;
+    minimum24hVolumeUsd: number | null;
+    minimumLiquidityUsd: number | null;
+    minimumFdvUsd: number | null;
+  }[]
+> {
+  if (competitionIds.length === 0) {
+    return [];
+  }
+
+  try {
+    const result = await db
+      .select({
+        // Competition fields
+        competitionId: competitions.id,
+        competitionStatus: competitions.status,
+        competitionVotingStartsAt: competitions.votingStartDate,
+        competitionVotingEndsAt: competitions.votingEndDate,
+
+        // User vote info
+        userVoteAgentId: votes.agentId,
+        userVoteCreatedAt: votes.createdAt,
+
+        // Trading constraints
+        minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
+        minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
+        minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
+        minimumFdvUsd: tradingConstraints.minimumFdvUsd,
+      })
+      .from(competitions)
+      .leftJoin(
+        votes,
+        and(eq(votes.competitionId, competitions.id), eq(votes.userId, userId)),
+      )
+      .leftJoin(
+        tradingConstraints,
+        eq(tradingConstraints.competitionId, competitions.id),
+      )
+      .where(inArray(competitions.id, competitionIds));
+
+    return result.map((row) => ({
+      competitionId: row.competitionId,
+      competitionStatus: row.competitionStatus,
+      competitionVotingStartsAt: row.competitionVotingStartsAt,
+      competitionVotingEndsAt: row.competitionVotingEndsAt,
+      userVoteAgentId: row.userVoteAgentId,
+      userVoteCreatedAt: row.userVoteCreatedAt,
+      minimumPairAgeHours: row.minimumPairAgeHours,
+      minimum24hVolumeUsd: row.minimum24hVolumeUsd,
+      minimumLiquidityUsd: row.minimumLiquidityUsd,
+      minimumFdvUsd: row.minimumFdvUsd,
+    }));
+  } catch (error) {
+    repositoryLogger.error("Error in getEnrichedCompetitionsImpl:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get vote counts for multiple competitions in a single query
+ * @param competitionIds Array of competition IDs
+ * @returns Map of competition ID to Map of agent ID to vote count
+ */
+async function getBatchVoteCountsImpl(
+  competitionIds: string[],
+): Promise<
+  Map<string, { agentVotes: Map<string, number>; totalVotes: number }>
+> {
+  if (competitionIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    const voteCounts = await db
+      .select({
+        competitionId: votes.competitionId,
+        agentId: votes.agentId,
+        voteCount: drizzleCount(),
+      })
+      .from(votes)
+      .where(inArray(votes.competitionId, competitionIds))
+      .groupBy(votes.competitionId, votes.agentId)
+      .orderBy(votes.competitionId, desc(drizzleCount()));
+
+    const competitionVoteMap = new Map<
+      string, // competitionId
+      { agentVotes: Map<string, number>; totalVotes: number }
+    >();
+
+    for (const { competitionId, agentId, voteCount } of voteCounts) {
+      if (!competitionVoteMap.has(competitionId)) {
+        competitionVoteMap.set(competitionId, {
+          agentVotes: new Map(),
+          totalVotes: 0,
+        });
+      }
+      const competition = competitionVoteMap.get(competitionId)!;
+      competition.agentVotes.set(agentId, voteCount);
+      competition.totalVotes += voteCount;
+    }
+
+    return competitionVoteMap;
+  } catch (error) {
+    repositoryLogger.error("Error in getBatchVoteCountsImpl:", error);
+    throw error;
+  }
+}
+
+export const getEnrichedCompetitions = createTimedRepositoryFunction(
+  getEnrichedCompetitionsImpl,
+  "CompetitionRepository",
+  "getEnrichedCompetitions",
+);
+
+export const getBatchVoteCounts = createTimedRepositoryFunction(
+  getBatchVoteCountsImpl,
+  "CompetitionRepository",
+  "getBatchVoteCounts",
 );
