@@ -5,7 +5,6 @@ import {
   getAgentPortfolioSnapshots,
   getPortfolioTokenValues,
 } from "@/database/repositories/competition-repository.js";
-import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { agentLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -13,7 +12,6 @@ import {
   AgentFilterSchema,
   AuthenticatedRequest,
   PagingParamsSchema,
-  SpecificChain,
   UpdateAgentProfileSchema,
   UuidSchema,
 } from "@/types/index.js";
@@ -233,74 +231,39 @@ export function makeAgentController(services: ServiceRegistry) {
       try {
         const agentId = req.agentId as string;
 
-        // Get the balances
+        // Get the balances, this could be hundereds
         const balances = await services.balanceManager.getAllBalances(agentId);
 
-        // Enhance balances with chain information
-        const enhancedBalances = await Promise.all(
-          balances.map(async (balance) => {
-            // First check if we have chain information in our database
-            const latestPriceRecord = await getLatestPrice(
-              balance.tokenAddress,
-              balance.specificChain as SpecificChain,
-            );
+        // Extract all unique token addresses
+        const tokenAddresses = balances.map((b) => b.tokenAddress);
 
-            // If we have complete chain info in our database, use that
-            if (latestPriceRecord && latestPriceRecord.chain) {
-              // For SVM tokens, specificChain is always 'svm'
-              if (latestPriceRecord.chain === "svm") {
-                return {
-                  ...balance,
-                  chain: latestPriceRecord.chain,
-                  specificChain: "svm",
-                  symbol: latestPriceRecord.symbol || balance.symbol,
-                };
-              }
+        // Get all prices in bulk
+        const priceMap =
+          await services.priceTracker.getBulkPrices(tokenAddresses);
 
-              // For EVM tokens, if we have a specificChain, use it
-              if (
-                latestPriceRecord.chain === "evm" &&
-                latestPriceRecord.specificChain
-              ) {
-                return {
-                  ...balance,
-                  chain: latestPriceRecord.chain,
-                  specificChain: latestPriceRecord.specificChain,
-                  symbol: latestPriceRecord.symbol || balance.symbol,
-                };
-              }
-            }
+        // Enhance balances with the price data
+        const enhancedBalances = balances.map((balance) => {
+          const priceReport = priceMap.get(balance.tokenAddress);
 
-            // If we don't have complete chain info, use getPrice (which will update our database)
-            // TODO(stbrody): We don't actually need price information, just the basic chain info.
-            // Consider if there's a simpler way to get this information.
-            const priceReport = await services.priceTracker.getPrice(
-              balance.tokenAddress,
-            );
-
-            if (priceReport) {
-              return {
-                ...balance,
-                chain: priceReport.chain,
-                specificChain: priceReport.specificChain,
-                symbol: priceReport.symbol || balance.symbol,
-              };
-            }
-
-            // As a last resort, determine chain type locally
-            const chain = services.priceTracker.determineChain(
-              balance.tokenAddress,
-            );
-            const specificChain = chain === "svm" ? "svm" : null;
-
+          if (priceReport) {
             return {
               ...balance,
-              chain,
-              specificChain,
-              symbol: balance.symbol, // Use the symbol from the database
+              chain: priceReport.chain,
+              specificChain: priceReport.specificChain || balance.specificChain,
+              symbol: priceReport.symbol || balance.symbol,
             };
-          }),
-        );
+          }
+
+          // Fallback for tokens without price data
+          // Determine chain from specificChain since balance doesn't have a chain property
+          const chain = balance.specificChain === "svm" ? "svm" : "evm";
+          return {
+            ...balance,
+            chain,
+            specificChain: balance.specificChain,
+            symbol: balance.symbol,
+          };
+        });
 
         // Return the balances
         res.status(200).json({
