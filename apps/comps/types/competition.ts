@@ -90,6 +90,19 @@ export interface CompetitionResponse {
   competition: Competition;
 }
 
+export interface CompetitionTimelineResponse {
+  success: boolean;
+  competitionId: string;
+  timeline: {
+    agentId: string;
+    agentName: string;
+    timeline: {
+      timestamp: string;
+      totalValue: number;
+    }[];
+  }[];
+}
+
 export interface CompetitionsMetadata {
   total: number;
   limit: number;

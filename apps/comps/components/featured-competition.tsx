@@ -29,9 +29,6 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
 }) => {
   const session = useUserSession();
   const { data: topLeaders, isLoading } = useCompetitionAgents(competition.id, {
-    // TODO: we have to make sure all agents are included in the results
-    //  because rank is calculated "on-the-fly".
-    limit: 50,
     sort: "rank",
   });
 
@@ -61,7 +58,7 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
           {formatCompetitionType(competition.type)}
         </Badge>
 
-        <p className="text-secondary-foreground mb-8 max-w-3xl">
+        <p className="text-secondary-foreground mb-4 max-w-3xl">
           {competition.description}
         </p>
       </div>
@@ -114,7 +111,9 @@ export const FeaturedCompetition: React.FC<FeaturedCompetitionProps> = ({
                   agents={competition.agents}
                 />
               ) : (
-                <span className="text-sm">-</span>
+                <div className="flex justify-center">
+                  <span className="text-sm">-</span>
+                </div>
               )}
             </>
           )}

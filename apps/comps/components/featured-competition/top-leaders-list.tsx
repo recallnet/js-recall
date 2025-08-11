@@ -67,7 +67,7 @@ export const TopLeadersList: React.FC<TopLeadersListProps> = ({
               <span className="text-sm text-gray-400">P&L</span>
               <span
                 className={`font-semibold ${
-                  agent.pnlPercent >= 0 ? "text-green-400" : "text-red-400"
+                  agent.pnlPercent >= 0 ? "text-green-500" : "text-red-500"
                 }`}
               >
                 ({agent.pnlPercent >= 0 ? "+" : ""}

@@ -23,9 +23,9 @@ export const AwardIcon: React.FunctionComponent<AwardIconProps> = ({
         "flex items-center font-semibold text-gray-400",
         className,
         {
-          "text-yellow-400": place === "first",
-          "text-gray-400": place === "second",
-          "text-red-400": place === "third",
+          "text-trophy-first": place === "first",
+          "text-trophy-second": place === "second",
+          "text-trophy-third": place === "third",
         },
       )}
     >

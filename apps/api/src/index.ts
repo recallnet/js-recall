@@ -63,10 +63,8 @@ if (process.env.NODE_ENV !== "production") {
     apiLogger.info("Database connection and schema verification completed");
     databaseInitialized = true;
   } catch (error) {
-    apiLogger.error("Database initialization error:", error);
-    apiLogger.error(
-      "Failed to start server due to database initialization error. Exiting...",
-    );
+    apiLogger.error(`Database initialization error: ${error}`);
+    apiLogger.error("Exiting...");
     process.exit(1);
   }
 } else {

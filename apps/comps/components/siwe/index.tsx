@@ -181,7 +181,7 @@ export const SIWEButton: React.FunctionComponent = () => {
 
             {/* Error message - only show when connected and there's an error */}
             {(isConnected || ckIsConnected) && address && authError && (
-              <p className="text-center text-sm text-red-400">{authError}</p>
+              <p className="text-center text-sm text-red-500">{authError}</p>
             )}
           </div>
         );

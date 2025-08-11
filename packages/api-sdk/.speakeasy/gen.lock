@@ -1,10 +1,10 @@
 lockVersion: 2.0.0
 id: e923f7a3-3252-4ef0-9997-307b6bd8549a
 management:
-  docChecksum: 12da4940b1b114f3f25cbb03bb9abcc3
+  docChecksum: 740178eff125d846712953c47efa015c
   docVersion: 1.0.0
-  speakeasyVersion: 1.598.3
-  generationVersion: 2.674.3
+  speakeasyVersion: 1.599.0
+  generationVersion: 2.675.0
   releaseVersion: 0.0.1
   configChecksum: 5499aab57fdf01c011a516ab3d59ba12
 features:
@@ -132,6 +132,7 @@ generatedFiles:
   - docs/models/operations/getapicompetitionscompetitionidinfo.md
   - docs/models/operations/getapicompetitionscompetitionidrequest.md
   - docs/models/operations/getapicompetitionscompetitionidresponse.md
+  - docs/models/operations/getapicompetitionscompetitionidreward.md
   - docs/models/operations/getapicompetitionscompetitionidstats.md
   - docs/models/operations/getapicompetitionscompetitionidstatus.md
   - docs/models/operations/getapicompetitionscompetitionidtype.md
@@ -147,6 +148,7 @@ generatedFiles:
   - docs/models/operations/getapicompetitionspagination.md
   - docs/models/operations/getapicompetitionsrequest.md
   - docs/models/operations/getapicompetitionsresponse.md
+  - docs/models/operations/getapicompetitionsreward.md
   - docs/models/operations/getapicompetitionsrulesresponse.md
   - docs/models/operations/getapicompetitionsstatus.md
   - docs/models/operations/getapicompetitionsstatuscompetition.md
@@ -242,6 +244,7 @@ generatedFiles:
   - docs/models/operations/postapiadmincompetitioncreatecrosschaintradingtype.md
   - docs/models/operations/postapiadmincompetitioncreaterequest.md
   - docs/models/operations/postapiadmincompetitioncreateresponse.md
+  - docs/models/operations/postapiadmincompetitioncreatereward.md
   - docs/models/operations/postapiadmincompetitioncreatestatus.md
   - docs/models/operations/postapiadmincompetitioncreatetradingconstraints.md
   - docs/models/operations/postapiadmincompetitioncreatetradingtype.md
@@ -271,6 +274,7 @@ generatedFiles:
   - docs/models/operations/postapiadmincompetitionstartcrosschaintradingtype.md
   - docs/models/operations/postapiadmincompetitionstartrequest.md
   - docs/models/operations/postapiadmincompetitionstartresponse.md
+  - docs/models/operations/postapiadmincompetitionstartreward.md
   - docs/models/operations/postapiadmincompetitionstartstatus.md
   - docs/models/operations/postapiadmincompetitionstarttradingconstraints.md
   - docs/models/operations/postapiadmincompetitionstarttradingtype.md
@@ -319,6 +323,7 @@ generatedFiles:
   - docs/models/operations/putapiadmincompetitioncompetitionidrequest.md
   - docs/models/operations/putapiadmincompetitioncompetitionidrequestbody.md
   - docs/models/operations/putapiadmincompetitioncompetitionidresponse.md
+  - docs/models/operations/putapiadmincompetitioncompetitionidreward.md
   - docs/models/operations/putapiadmincompetitioncompetitionidstatus.md
   - docs/models/operations/putapiadmincompetitioncompetitionidtyperequest.md
   - docs/models/operations/putapiadmincompetitioncompetitionidtyperesponse.md
@@ -697,17 +702,17 @@ examples:
   post_/api/admin/competition/create:
     speakeasy-default-post-/api/admin/competition/create:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "tradingType": "disallowAll", "sandboxMode": false, "type": "trading", "externalUrl": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "endDate": "2024-02-15T23:59:59Z", "votingStartDate": "2024-01-15T00:00:00Z", "votingEndDate": "2024-01-30T23:59:59Z", "joinStartDate": "2024-01-01T00:00:00Z", "joinEndDate": "2024-01-14T23:59:59Z", "tradingConstraints": {"minimumPairAgeHours": 168, "minimum24hVolumeUsd": 10000, "minimumLiquidityUsd": 100000, "minimumFdvUsd": 100000}}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "tradingType": "disallowAll", "sandboxMode": false, "type": "trading", "externalUrl": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "endDate": "2024-02-15T23:59:59Z", "votingStartDate": "2024-01-15T00:00:00Z", "votingEndDate": "2024-01-30T23:59:59Z", "joinStartDate": "2024-01-01T00:00:00Z", "joinEndDate": "2024-01-14T23:59:59Z", "tradingConstraints": {"minimumPairAgeHours": 168, "minimum24hVolumeUsd": 10000, "minimumLiquidityUsd": 100000, "minimumFdvUsd": 100000}, "rewards": {"1": 1000, "2": 500, "3": 250}}
       responses:
         "201":
-          application/json: {}
+          application/json: {"competition": {"type": "trading", "rewards": [{"rank": 1, "reward": 1000}]}}
   post_/api/admin/competition/start:
     speakeasy-default-post-/api/admin/competition/start:
       requestBody:
-        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalUrl": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "endDate": "2024-02-15T23:59:59Z", "votingStartDate": "2024-01-15T00:00:00Z", "votingEndDate": "2024-01-30T23:59:59Z", "agentIds": ["<value 1>", "<value 2>"], "tradingType": "disallowAll", "sandboxMode": false, "type": "trading", "tradingConstraints": {"minimumPairAgeHours": 168, "minimum24hVolumeUsd": 10000, "minimumLiquidityUsd": 100000, "minimumFdvUsd": 100000}}
+        application/json: {"name": "Spring 2023 Trading Competition", "description": "A trading competition for the spring semester", "externalUrl": "https://example.com/competition-details", "imageUrl": "https://example.com/competition-image.jpg", "endDate": "2024-02-15T23:59:59Z", "votingStartDate": "2024-01-15T00:00:00Z", "votingEndDate": "2024-01-30T23:59:59Z", "agentIds": ["<value 1>", "<value 2>"], "tradingType": "disallowAll", "sandboxMode": false, "type": "trading", "tradingConstraints": {"minimumPairAgeHours": 168, "minimum24hVolumeUsd": 10000, "minimumLiquidityUsd": 100000, "minimumFdvUsd": 100000}, "rewards": {"1": 1000, "2": 500, "3": 250}}
       responses:
         "200":
-          application/json: {}
+          application/json: {"competition": {"rewards": [{"rank": 1, "reward": 1000}]}}
   post_/api/admin/competition/end:
     speakeasy-default-post-/api/admin/competition/end:
       requestBody:
@@ -883,7 +888,7 @@ examples:
     speakeasy-default-get-/api/competitions:
       responses:
         "200":
-          application/json: {"pagination": {"total": 25, "limit": 10, "offset": 0, "hasMore": true}}
+          application/json: {"competitions": [{"rewards": [{"rank": 1, "reward": 1000, "agentId": "123e4567-e89b-12d3-a456-426614174000"}]}], "pagination": {"total": 25, "limit": 10, "offset": 0, "hasMore": true}}
   get_/api/competitions/leaderboard:
     speakeasy-default-get-/api/competitions/leaderboard:
       responses:
@@ -1081,7 +1086,7 @@ examples:
           competitionId: "<id>"
       responses:
         "200":
-          application/json: {}
+          application/json: {"competition": {"rewards": [{"rank": 1, "reward": 1000, "agentId": "123e4567-e89b-12d3-a456-426614174000"}]}}
   get_/api/competitions/{competitionId}/agents:
     speakeasy-default-get-/api/competitions/{competition-id}/agents:
       parameters:
@@ -1240,7 +1245,7 @@ examples:
         application/json: {"name": "Updated Spring 2023 Trading Competition", "description": "An updated trading competition for the spring semester", "type": "trading", "externalUrl": "https://example.com/competition", "imageUrl": "https://example.com/image.jpg", "votingStartDate": "2023-05-01T00:00:00Z", "votingEndDate": "2023-05-07T23:59:59Z"}
       responses:
         "200":
-          application/json: {}
+          application/json: {"competition": {"rewards": [{"rank": 1, "reward": 1000}]}}
   post_/api/admin/agents:
     speakeasy-default-post-/api/admin/agents:
       requestBody:

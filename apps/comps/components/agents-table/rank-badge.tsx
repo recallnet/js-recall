@@ -14,9 +14,10 @@ export const RankBadge: React.FC<RankBadgeProps> = ({ rank }) => {
       className={cn(
         "min-w-19 flex items-center justify-center rounded py-2 font-semibold",
         {
-          "bg-yellow-800": rank === 1,
-          "bg-gray-700": rank === 2 || rank > 3,
-          "bg-[#1A0E05]": rank === 3,
+          "bg-trophy-first-bg": rank === 1,
+          "bg-trophy-second-bg": rank === 2,
+          "bg-trophy-third-bg": rank === 3,
+          "bg-gray-700": rank > 3,
         },
       )}
     >
