@@ -43,7 +43,10 @@ export const formatCompactNumber = (value: number): string => {
   return formatter.format(value);
 };
 
-export const formatDate = (date: Date | string): string => {
+export const formatDate = (
+  date: Date | string,
+  year: boolean = false,
+): string => {
   let parsedDate: Date;
 
   if (date instanceof Date) {
@@ -58,5 +61,5 @@ export const formatDate = (date: Date | string): string => {
     return "Invalid Date";
   }
 
-  return format(parsedDate, "MMMM do");
+  return format(parsedDate, `MMMM do${year ? " yyyy" : ""}`);
 };
