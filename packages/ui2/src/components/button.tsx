@@ -36,7 +36,7 @@ const buttonVariants = cva(
   },
 );
 
-interface ButtonProps {
+export interface ButtonProps {
   variant?: VariantProps<typeof buttonVariants>["variant"];
   size?: VariantProps<typeof buttonVariants>["size"];
   className?: string;

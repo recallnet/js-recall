@@ -9,7 +9,9 @@ import { useUserSession } from "@/hooks/useAuth";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useJoinCompetition } from "@/hooks/useJoinCompetition";
 
+import AgentRegisteredModal from "./modals/agent-registered";
 import { ChooseAgentModal } from "./modals/choose-agent";
+import ConfirmAgentEntryModal from "./modals/confirm-agent-entry";
 import { ConnectWalletModal } from "./modals/connect-wallet";
 import { CreateAccountModal } from "./modals/create-account";
 import { SetupAgentModal } from "./modals/setup-agent";
@@ -21,6 +23,16 @@ interface JoinCompetitionButtonProps
   children?: ReactNode;
 }
 
+type ModalTypes =
+  | "connectWallet"
+  | "chooseAgent"
+  | "setupAgent"
+  | "createAccount"
+  | "confirmAgentEntry"
+  | "loadingJoin"
+  | "registered"
+  | null;
+
 export function JoinCompetitionButton({
   competitionId,
   variant = "ghost",
@@ -30,9 +42,13 @@ export function JoinCompetitionButton({
   const session = useUserSession();
   const { data: userAgents } = useUserAgents();
   const { data: competition } = useCompetition(competitionId);
-  const [activeModal, setActiveModal] = useState<
-    "connectWallet" | "chooseAgent" | "setupAgent" | "createAccount" | null
-  >(null);
+  const [activeModal, setActiveModal] = useState<ModalTypes>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>("");
+
+  const selectedAgent = userAgents?.agents.find(
+    (agent) => agent.id === selectedAgentId,
+  );
+
   const pathname = usePathname();
   const { mutate: joinCompetition, isPending: isJoining } =
     useJoinCompetition();
@@ -120,22 +136,34 @@ export function JoinCompetitionButton({
     }
   };
 
-  const handleContinue = (agentId: string) => {
-    setActiveModal(null);
+  const handleSelectAgent = (agentId: string) => {
+    setSelectedAgentId(agentId);
+    setActiveModal("confirmAgentEntry");
+  };
+
+  const handleJoin = () => {
+    setActiveModal("loadingJoin");
     joinCompetition(
-      { agentId, competitionId },
+      { agentId: selectedAgentId, competitionId },
       {
-        onSuccess: (data) => {
-          if (data.success) {
-            toast.success("Your agent has entered the competition.");
-          } else {
-            toast.error(data.message);
-          }
+        onSuccess: (data: { message: string; success: boolean }) => {
+          //small timeout to show loading
+          setTimeout(() => {
+            if (data.success) {
+              setActiveModal("registered");
+              toast.success(
+                `[${selectedAgent?.name as string}] has joined [${competition?.name as string}]`,
+              );
+            } else {
+              toast.error(data.message);
+            }
+          }, 1000);
         },
         onError: (error) => {
           toast.error("Failed to join competition", {
             description: error.message,
           });
+          setActiveModal(null);
         },
       },
     );
@@ -158,8 +186,26 @@ export function JoinCompetitionButton({
       <ChooseAgentModal
         isOpen={activeModal === "chooseAgent"}
         onClose={() => setActiveModal(null)}
+        onContinue={handleSelectAgent}
+        competition={competition}
         agents={userAgents?.agents || []}
-        onContinue={handleContinue}
+      />
+      <ConfirmAgentEntryModal
+        isOpen={activeModal === "confirmAgentEntry" && !!selectedAgent}
+        onClose={() => setActiveModal(null)}
+        onBack={() => setActiveModal("chooseAgent")}
+        onContinue={handleJoin}
+        competition={competition}
+        agent={selectedAgent}
+      />
+      <AgentRegisteredModal
+        onClose={() => setActiveModal(null)}
+        isOpen={(["loadingJoin", "registered"] as ModalTypes[]).includes(
+          activeModal,
+        )}
+        loaded={activeModal === "registered"}
+        agent={selectedAgent}
+        competition={competition}
       />
       <SetupAgentModal
         isOpen={activeModal === "setupAgent"}

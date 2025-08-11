@@ -1,4 +1,4 @@
-import { Bot } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bot } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
@@ -13,21 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@recallnet/ui2/components/select";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import { type Agent } from "@/types";
+import Tooltip from "@/../../packages/ui2/src/components/tooltip";
+import { AgentCard } from "@/components/user-agents/agent-card";
+import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { type Agent, Competition } from "@/types";
 
 interface ChooseAgentModalProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
   agents: Agent[];
   onContinue: (agentId: string) => void;
+  competition?: Competition;
 }
 
 export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
@@ -35,95 +33,150 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
   onClose,
   agents,
   onContinue,
+  competition,
 }) => {
-  const [selectedAgentId, setSelectedAgentId] = useState<string>();
+  const { data: compAgents } = useCompetitionAgents(competition?.id);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const pathname = usePathname();
 
-  //const selectedAgent = agents.find((agent) => agent.id === selectedAgentId);
-  const isVerified = true; // !!selectedAgent?.walletAddress;
+  const registered = React.useMemo(
+    () =>
+      compAgents?.agents.reduce(
+        (acc, cur) => {
+          return {
+            ...acc,
+            [cur.id]: true,
+          };
+        },
+        {} as Record<string, boolean>,
+      ) || {},
+    [compAgents],
+  );
 
-  const handleContinue = () => {
-    if (selectedAgentId && isVerified) {
-      onContinue(selectedAgentId);
-    }
-  };
+  const agentsGrouped = Array.from(
+    { length: Math.ceil(agents.length / 3) },
+    (_, i) => agents.slice(i * 3, i * 3 + 3),
+  );
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[600px]">
-        <DialogHeader className="text-start">
-          <DialogTitle className="flex items-center justify-start gap-2 text-xl font-bold text-white">
-            <Bot className="size-6 text-gray-700" />
-            Choose Your Agent
-          </DialogTitle>
-          <DialogDescription className="pl-8 text-gray-400">
-            Choose an agent to join the competition.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="w-[850px]">
+          <DialogHeader className="mb text-start">
+            <DialogTitle className="flex items-center justify-start gap-2 text-xl font-bold text-white">
+              <Bot className="size-6 text-gray-700" />
+              Choose Your Agent
+            </DialogTitle>
+            <DialogDescription className="pl-8 text-gray-400">
+              Choose an agent to join{" "}
+              <span className="text-primary-foreground">
+                [{competition?.name || ""}]
+              </span>
+              .
+            </DialogDescription>
+          </DialogHeader>
 
-        <Select onValueChange={setSelectedAgentId} value={selectedAgentId}>
-          <SelectTrigger
-            className={selectedAgentId && !isVerified ? "border-red-500" : ""}
-          >
-            <SelectValue placeholder="Select an agent" />
-          </SelectTrigger>
-          <SelectContent>
-            {agents.map((agent) => (
-              <SelectItem key={agent.id} value={agent.id}>
-                <div className="flex items-center gap-1">
-                  {agent.name}
-                  <span className="text-secondary-foreground">
-                    (@{agent.handle})
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <div className={cn(`flex w-full flex-col justify-around`)}>
+            <div className="flex items-center">
+              <Button
+                onClick={() => setSelectedIndex(Math.max(0, selectedIndex - 1))}
+                disabled={selectedIndex === 0}
+                variant="outline"
+                className="z-10 h-10 w-10 translate-x-[20px] rounded-full p-0 hover:bg-white hover:text-black"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
 
-        {selectedAgentId && !isVerified && (
-          <p className="text-sm text-gray-400">
-            {"Your Agent still hasn't been verified. Check our "}
-            <a
-              href="https://docs.recall.network/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              documentation
-            </a>
-            {" for instructions on how to make an API call and get verified."}
-          </p>
-        )}
+              <div className="relative flex h-80 flex-1 overflow-hidden">
+                {agentsGrouped.map((agentGroup, i) => {
+                  const currentIndex = i - selectedIndex;
 
-        <Link href={`/create-agent?redirectTo=${pathname}`}>
-          <Button variant="outline">{"+ Register New Agent"}</Button>
-        </Link>
+                  return (
+                    <div
+                      key={i}
+                      className="duration-600 absolute left-0 top-0 flex w-full -space-x-8 transition-transform ease-in-out"
+                      style={{
+                        transform: `translateX(${currentIndex * 100}%)`,
+                      }}
+                    >
+                      {agentGroup.map((agent, j) => {
+                        const isRegistered = registered[agent.id];
 
-        <div className="border-t-1 border-gray-500"></div>
+                        if (isRegistered)
+                          return (
+                            <Tooltip
+                              content="Agent already registered"
+                              className="translate-y-10"
+                              key={j}
+                            >
+                              <AgentCard
+                                agent={agent}
+                                nameComponent="text"
+                                className="h-85 w-65 pointer-events-none relative flex-shrink-0 translate-y-[-40px] scale-75 transition-all duration-200 hover:shadow-lg"
+                                onClick={() => onContinue(agent.id)}
+                              >
+                                <div className="absolute z-20 h-full w-full bg-black/30"></div>
+                              </AgentCard>
+                            </Tooltip>
+                          );
 
-        <DialogFooter className="flex justify-end">
-          <DialogClose asChild>
-            <Button
-              variant="outline"
-              className="rounded-lg border-gray-700 bg-transparent text-gray-500 hover:bg-gray-900"
-              onClick={() => onClose(false)}
-            >
-              Cancel
-            </Button>
-          </DialogClose>
-          <div className="flex items-center">
-            <Button
-              onClick={handleContinue}
-              disabled={!selectedAgentId || !isVerified}
-              className="rounded-lg bg-white text-black hover:bg-gray-300"
-            >
-              Continue
-            </Button>
+                        return (
+                          <AgentCard
+                            key={j}
+                            agent={agent}
+                            nameComponent="text"
+                            className="h-85 w-65 hover:scale-80 flex-shrink-0 scale-75 transition-all duration-200 hover:shadow-lg"
+                            onClick={() => onContinue(agent.id)}
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <Button
+                onClick={() =>
+                  setSelectedIndex(
+                    Math.min(agentsGrouped.length, selectedIndex + 1),
+                  )
+                }
+                disabled={selectedIndex == agentsGrouped.length - 1}
+                variant="outline"
+                className="z-10 h-10 w-10 translate-x-[-20px] rounded-full p-0 hover:bg-white hover:text-black"
+              >
+                <ArrowRight className="h-6 w-6" />
+              </Button>
+            </div>
           </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+          <div className="flex w-full justify-center">
+            <Link href={`/create-agent?redirectTo=${pathname}`}>
+              <Button
+                variant="outline"
+                className="text-primary-foreground text-md border-0"
+              >
+                {"+ Register New Agent"}
+              </Button>
+            </Link>
+          </div>
+
+          <div className="border-t-1 border-gray-500"></div>
+
+          <DialogFooter className="flex justify-end">
+            <DialogClose asChild>
+              <Button
+                variant="outline"
+                className="rounded-lg border-gray-700 bg-transparent text-gray-500 hover:bg-gray-900"
+                onClick={() => onClose(false)}
+              >
+                Cancel
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
