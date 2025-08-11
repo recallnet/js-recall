@@ -28,6 +28,7 @@ import {
   startExistingTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 describe("User API", () => {
   // Clean up test state before each test
@@ -1334,8 +1335,9 @@ describe("User API", () => {
     // usdc -> usdt trade is positive or negative as of the latest snapshot
     const twoMoreThanThree = tradeResult2.transaction.price > 1;
 
-    // Wait to ensure snapshots are taken
-    await wait(1500);
+    // Trigger portfolio snapshots
+    const services = new ServiceRegistry();
+    await services.portfolioSnapshotter.takePortfolioSnapshots(competition.id);
 
     // Get agent competitions for each user
     const response1 =
