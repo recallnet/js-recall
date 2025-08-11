@@ -2,7 +2,8 @@
 
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useAccount } from "wagmi";
 
 import {
   Tabs,
@@ -17,6 +18,7 @@ import { CompetitionCard } from "@/components/competition-card";
 import CompetitionsSkeleton from "@/components/competitions-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
+import ConnectWalletModal from "@/components/modals/connect-wallet";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
 import { useAnalytics } from "@/hooks/usePostHog";
@@ -76,6 +78,8 @@ function getTimeUntilDate(targetDate: string | Date): string {
 
 export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
+  const [isJoining, setIsJoining] = useState(false);
+  const { isConnected } = useAccount();
 
   // Track landing page view
   useEffect(() => {
@@ -204,9 +208,20 @@ export default function CompetitionsPage() {
               <Button className="border border-white bg-white p-6 text-black transition-colors duration-200 hover:bg-black hover:text-white">
                 BROWSE COMPETITIONS
               </Button>
-              <Button className="border border-white bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black">
-                JOIN
-              </Button>
+              {!isConnected && (
+                <>
+                  <Button
+                    className="border border-white bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
+                    onClick={() => setIsJoining(true)}
+                  >
+                    JOIN
+                  </Button>
+                  <ConnectWalletModal
+                    isOpen={isJoining}
+                    onClose={() => setIsJoining(false)}
+                  />
+                </>
+              )}
             </div>
           </div>
 
@@ -306,7 +321,7 @@ interface HeroCarouselProps {
   className?: string;
 }
 
-export const HeroCarousel: React.FC<HeroCarouselProps> = ({
+const HeroCarousel: React.FC<HeroCarouselProps> = ({
   texts,
   className = "",
 }) => {
@@ -373,7 +388,7 @@ interface RainbowStripesProps {
   className?: string;
 }
 
-export const RainbowStripes: React.FC<RainbowStripesProps> = ({
+const RainbowStripes: React.FC<RainbowStripesProps> = ({
   direction = "right",
   className = "",
 }) => {
