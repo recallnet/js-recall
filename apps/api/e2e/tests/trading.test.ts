@@ -9,6 +9,7 @@ import {
   BalancesResponse,
   BlockchainType,
   CROSS_CHAIN_TRADING_TYPE,
+  CompetitionRulesResponse,
   ErrorResponse,
   PriceResponse,
   QuoteResponse,
@@ -25,7 +26,6 @@ import {
   looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
-  wait,
 } from "@/e2e/utils/test-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
 
@@ -39,7 +39,6 @@ describe("Trading API", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("agent can execute a trade and verify balance updates", async () => {
@@ -62,9 +61,6 @@ describe("Trading API", () => {
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
 
-    // Wait for balances to be properly initialized
-    await wait(500);
-
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
     expect((initialBalanceResponse as BalancesResponse).success).toBe(true);
@@ -72,16 +68,11 @@ describe("Trading API", () => {
 
     // Initial USDC balance should be the starting amount (e.g., 10000)
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-    console.log(
-      JSON.stringify(initialBalanceResponse),
-      "initialBalanceResponse test",
-    );
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
     expect(initialUsdcBalance).toBeGreaterThan(0);
 
     // Use SOL token for trading (since we know it has a price in the test environment)
@@ -92,13 +83,9 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial SOL balance: ${initialSolBalance}`);
 
     // Use a small fixed amount that should be less than the initial balance
     const tradeAmount = 100; // Use a small amount that should be available
-    console.log(
-      `Trade amount: ${tradeAmount} (should be less than ${initialUsdcBalance})`,
-    );
 
     // Execute a buy trade (buying SOL with USDC)
     const buyTradeResponse = await agentClient.executeTrade({
@@ -110,7 +97,6 @@ describe("Trading API", () => {
       reason,
     });
 
-    console.log(`Buy trade response: ${JSON.stringify(buyTradeResponse)}`);
     expect(buyTradeResponse.success).toBe(true);
     expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
     expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
@@ -122,27 +108,13 @@ describe("Trading API", () => {
     expect(
       (buyTradeResponse as TradeResponse).transaction.toTokenSymbol,
     ).toBeDefined();
-    console.log(
-      `Buy trade fromTokenSymbol: "${(buyTradeResponse as TradeResponse).transaction.fromTokenSymbol}"`,
-    );
-    console.log(
-      `Buy trade toTokenSymbol: "${(buyTradeResponse as TradeResponse).transaction.toTokenSymbol}"`,
-    );
 
     // Verify chain field is included in transaction response
-    if ((buyTradeResponse as TradeResponse).transaction.fromChain) {
-      expect((buyTradeResponse as TradeResponse).transaction.fromChain).toBe(
-        BlockchainType.SVM,
-      );
-    }
-    if ((buyTradeResponse as TradeResponse).transaction.toChain) {
-      expect((buyTradeResponse as TradeResponse).transaction.toChain).toBe(
-        BlockchainType.SVM,
-      );
-    }
-
-    // Wait a bit longer for the trade to process
-    await wait(500);
+    const buyTransaction = (buyTradeResponse as TradeResponse).transaction;
+    expect(buyTransaction.fromChain).toBeDefined();
+    expect(buyTransaction.fromChain).toBe(BlockchainType.SVM);
+    expect(buyTransaction.toChain).toBeDefined();
+    expect(buyTransaction.toChain).toBe(BlockchainType.SVM);
 
     // Check updated balance
     const updatedBalanceResponse = await agentClient.getBalance();
@@ -154,18 +126,12 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(
-      `Updated USDC balance: ${updatedUsdcBalance} (should be less than ${initialUsdcBalance})`,
-    );
     expect(updatedUsdcBalance).toBeLessThan(initialUsdcBalance);
     // SOL balance should have increased
     const updatedSolBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Updated SOL balance: ${updatedSolBalance} (should be greater than ${initialSolBalance})`,
     );
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
@@ -180,20 +146,17 @@ describe("Trading API", () => {
     ).toBeGreaterThan(0);
 
     // Verify chain fields in trades if they exist
-    const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
-    if (lastTrade?.fromChain) {
-      expect(lastTrade.fromChain).toBe(BlockchainType.SVM);
-    }
-    if (lastTrade?.toChain) {
-      expect(lastTrade.toChain).toBe(BlockchainType.SVM);
-    }
+    const lastTradeItem = (tradeHistoryResponse as TradeHistoryResponse)
+      .trades[0];
+    expect(lastTradeItem).toBeDefined();
+    expect(lastTradeItem!.fromChain).toBeDefined();
+    expect(lastTradeItem!.fromChain).toBe(BlockchainType.SVM);
+    expect(lastTradeItem!.toChain).toBeDefined();
+    expect(lastTradeItem!.toChain).toBe(BlockchainType.SVM);
 
     // Execute a sell trade (selling SOL for USDC)
     // Sell 50% of what we have to ensure we never try to sell more than we have
     const tokenToSell = updatedSolBalance * 0.5;
-    console.log(
-      `Token to sell: ${tokenToSell} (should be less than ${updatedSolBalance})`,
-    );
 
     const sellTradeResponse = await agentClient.executeTrade({
       fromToken: solTokenAddress,
@@ -204,12 +167,8 @@ describe("Trading API", () => {
       reason,
     });
 
-    console.log(`Sell trade response: ${JSON.stringify(sellTradeResponse)}`);
     expect(sellTradeResponse.success).toBe(true);
     expect((sellTradeResponse as TradeResponse).transaction).toBeDefined();
-
-    // Wait a bit longer for the trade to process
-    await wait(500);
 
     // Check final balance
     const finalBalanceResponse = await agentClient.getBalance();
@@ -220,18 +179,12 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(
-      `Final USDC balance: ${finalUsdcBalance} (should be greater than ${updatedUsdcBalance})`,
-    );
     expect(finalUsdcBalance).toBeGreaterThan(updatedUsdcBalance);
     // SOL balance should have decreased compared to after buying
     const finalSolBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Final SOL balance: ${finalSolBalance} (should be less than ${updatedSolBalance})`,
     );
     expect(finalSolBalance).toBeLessThan(updatedSolBalance);
   });
@@ -251,9 +204,6 @@ describe("Trading API", () => {
     // Start a competition with our agent
     const competitionName = `Arbitrary Token Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
-
-    // Wait for balances to be properly initialized
-    await wait(500);
 
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
@@ -292,14 +242,9 @@ describe("Trading API", () => {
     });
 
     expect(buyTradeResponse.success).toBe(true);
-    if (buyTradeResponse.success) {
-      const tradeResponse = buyTradeResponse as TradeResponse;
-      expect(tradeResponse.transaction).toBeDefined();
-      expect(tradeResponse.transaction.id).toBeDefined();
-    }
-
-    // Wait for the trade to process
-    await wait(500);
+    const tradeResponse = buyTradeResponse as TradeResponse;
+    expect(tradeResponse.transaction).toBeDefined();
+    expect(tradeResponse.transaction.id).toBeDefined();
 
     // Check updated balance
     const updatedBalanceResponse = await agentClient.getBalance();
@@ -431,12 +376,6 @@ describe("Trading API", () => {
     );
 
     // Check if this amount is actually greater than our balance but less than max trade percentage
-    console.log(
-      `Testing insufficient balance with amount: ${insufficientBalanceAmount}`,
-    );
-    console.log(
-      `USDC Balance: ${initialUsdcBalance}, 25% of Portfolio: ${portfolioValue * 0.25}`,
-    );
     // Add a test for truly excessive amounts after fixing the token address
     // The test should now execute a transaction where from != to
     const solanaPriceResponse = await agentClient.executeTrade({
@@ -488,9 +427,6 @@ describe("Trading API", () => {
       [agent.id],
     );
 
-    // Wait for balances to be properly initialized
-    await wait(500);
-
     // Check initial balance
     const initialBalanceResponse =
       (await agentClient.getBalance()) as BalancesResponse;
@@ -499,9 +435,6 @@ describe("Trading API", () => {
 
     // First, check if we have any SOL or other tokens and sell them to consolidate into USDC
     const tokenAddressesBefore = Object.keys(initialBalanceResponse.balances);
-    console.log(
-      `Agent initial balances: ${JSON.stringify(initialBalanceResponse.balances)}`,
-    );
 
     // Consolidate all non-USDC SVM tokens into USDC
     for (const tokenAddress of tokenAddressesBefore) {
@@ -511,9 +444,6 @@ describe("Trading API", () => {
       // Only consolidate Solana (SVM) tokens - we want to avoid cross-chain trades
       const tokenChain = services.priceTracker.determineChain(tokenAddress);
       if (tokenChain !== BlockchainType.SVM) {
-        console.log(
-          `Skipping ${tokenAddress} - not a Solana token (${tokenChain})`,
-        );
         continue;
       }
 
@@ -525,9 +455,6 @@ describe("Trading API", () => {
 
       // If we have a balance, sell it for USDC
       if (balance > 0) {
-        console.log(
-          `Converting ${balance} of ${tokenAddress} to USDC (SVM token)`,
-        );
         const consolidateResponse = await agentClient.executeTrade({
           fromToken: tokenAddress,
           toToken: usdcTokenAddress,
@@ -537,56 +464,22 @@ describe("Trading API", () => {
           reason,
         });
 
-        console.log(
-          `Consolidation result: ${consolidateResponse.success ? "success" : "failure"}`,
-        );
-        if (!consolidateResponse.success) {
-          console.log(
-            `Failed to consolidate ${tokenAddress}: ${(consolidateResponse as ErrorResponse).error}`,
-          );
-        }
+        expect(consolidateResponse.success).toBe(true);
       }
     }
 
-    // Wait for trades to process
-    await wait(500);
-
     // // Verify we now have a consolidated USDC balance
     const balanceAfterConsolidation = await agentClient.getBalance();
-    console.log(
-      JSON.stringify(balanceAfterConsolidation),
-      "balanceAfterConsolidation",
-    );
     const consolidatedUsdcBalance = parseFloat(
       (balanceAfterConsolidation as BalancesResponse).balances
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Consolidated USDC balance: ${consolidatedUsdcBalance}`);
     expect(consolidatedUsdcBalance).toBeGreaterThan(0);
-
-    // Calculate portfolio value from existing balance data after consolidation
-    const balances = (balanceAfterConsolidation as BalancesResponse).balances;
-    const portfolioValue = balances.reduce(
-      (sum, balance) => sum + balance.value,
-      0,
-    );
-    console.log(`Portfolio value: $${portfolioValue}`);
 
     // Try to trade almost all of our USDC balance for SOL
     // This should be over the MAX_TRADE_PERCENTAGE limit (5% in .env.test)
     const tradeAmount = consolidatedUsdcBalance * 0.95; // Use 95% of our USDC
-    console.log(
-      `Attempting to trade ${tradeAmount} USDC (95% of our consolidated balance)`,
-    );
-
-    // Calculate what percentage of portfolio this represents
-    const tradePercentage = (tradeAmount / portfolioValue) * 100;
-    console.log(`Trade amount: ${tradeAmount} USDC`);
-    console.log(`Portfolio value: $${portfolioValue}`);
-    console.log(
-      `Trade percentage: ${tradePercentage}% (Max allowed: ${config.maxTradePercentage}%)`,
-    );
 
     const maxPercentageResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
@@ -597,9 +490,6 @@ describe("Trading API", () => {
       reason,
     });
 
-    console.log(
-      `Max percentage trade response: ${JSON.stringify(maxPercentageResponse)}`,
-    );
     expect(maxPercentageResponse.success).toBe(false);
     expect((maxPercentageResponse as ErrorResponse).error).toContain(
       "exceeds maximum size",
@@ -629,9 +519,6 @@ describe("Trading API", () => {
       undefined,
       { ...looseTradingConstraints, minimumLiquidityUsd: 500 },
     );
-
-    // Wait for balances to be properly initialized
-    await wait(500);
 
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
@@ -682,9 +569,6 @@ describe("Trading API", () => {
     expect(buyTradeResponse.success).toBe(true);
     expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
     expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
-
-    // Wait for the trade to process
-    await wait(500);
 
     // 4. Check final balance and validate it reflects the calculation
     const finalBalanceResponse = await agentClient.getBalance();
@@ -743,9 +627,6 @@ describe("Trading API", () => {
       tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
     })) as StartCompetitionResponse;
 
-    // Wait for balances to be properly initialized
-    await wait(500);
-
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
@@ -754,36 +635,17 @@ describe("Trading API", () => {
 
     // Get Ethereum USDC token address from blockchain tokens config
     const ethUsdcTokenAddress = config.specificChainTokens.eth.usdc;
-    if (!ethUsdcTokenAddress) {
-      console.log("Skipping test: Ethereum USDC token address not configured");
-      return;
-    }
+    expect(ethUsdcTokenAddress).toBeTruthy();
 
     // Get Ethereum ETH token address
     const ethTokenAddress = config.specificChainTokens.eth.eth;
-    if (!ethTokenAddress) {
-      console.log("Skipping test: Ethereum ETH token address not configured");
-      return;
-    }
+    expect(ethTokenAddress).toBeTruthy();
 
     // First check price to verify EVM tokens are working
-    try {
-      const priceResponse = await agentClient.getPrice(ethTokenAddress);
+    const priceResponse = await agentClient.getPrice(ethTokenAddress);
 
-      // If we get a successful response, verify the token is recognized as EVM
-      if ((priceResponse as PriceResponse).chain) {
-        expect((priceResponse as PriceResponse).chain).toBe(BlockchainType.EVM);
-        console.log(
-          `Confirmed ETH token is on ${(priceResponse as PriceResponse).chain} chain with price ${(priceResponse as PriceResponse).price}`,
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Error getting ETH price, EVM tokens may not be supported:",
-        error,
-      );
-      return; // Skip the rest of the test
-    }
+    // If we get a successful response, verify the token is recognized as EVM
+    expect((priceResponse as PriceResponse).chain).toBe(BlockchainType.EVM);
 
     // Check if we have any ETH balance already
     const initialEthBalance = parseFloat(
@@ -791,7 +653,6 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === ethTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial ETH balance: ${initialEthBalance}`);
 
     // If we have SVM USDC, we can try to trade it for ETH
     const svmUsdcAddress = config.specificChainTokens.svm.usdc;
@@ -801,62 +662,48 @@ describe("Trading API", () => {
         ?.amount.toString() || "0",
     );
 
-    if (svmUsdcBalance > 0) {
-      console.log(`Trading SVM USDC for ETH...`);
-      // Use a small amount for the test
-      const tradeAmount = Math.min(100, svmUsdcBalance * 0.1);
+    // Ensure we have sufficient balance for trading
+    expect(svmUsdcBalance).toBeGreaterThan(0);
 
-      // Execute a buy trade (buying ETH with USDC)
-      const buyTradeResponse = (await agentClient.executeTrade({
-        fromToken: svmUsdcAddress,
-        toToken: ethTokenAddress,
-        amount: tradeAmount.toString(),
-        fromChain: BlockchainType.SVM,
-        toChain: BlockchainType.EVM,
-        reason,
-      })) as TradeResponse;
+    // Use a small amount for the test
+    const tradeAmount = Math.min(100, svmUsdcBalance * 0.1);
 
-      console.log(
-        `Buy ETH trade response: ${JSON.stringify(buyTradeResponse)}`,
-      );
-      expect(buyTradeResponse.success).toBe(true);
+    // Execute a buy trade (buying ETH with USDC)
+    const buyTradeResponse = (await agentClient.executeTrade({
+      fromToken: svmUsdcAddress,
+      toToken: ethTokenAddress,
+      amount: tradeAmount.toString(),
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.EVM,
+      reason,
+    })) as TradeResponse;
 
-      // Wait for the trade to process
-      await wait(500);
+    expect(buyTradeResponse.success).toBe(true);
 
-      // Check updated balance
-      const updatedBalanceResponse = await agentClient.getBalance();
-      // ETH balance should have increased
-      const updatedEthBalance = parseFloat(
-        (updatedBalanceResponse as BalancesResponse).balances
-          .find((b) => b.tokenAddress === ethTokenAddress)
-          ?.amount.toString() || "0",
-      );
-      console.log(`Updated ETH balance: ${updatedEthBalance}`);
-      expect(updatedEthBalance).toBeGreaterThan(initialEthBalance);
+    // Check updated balance
+    const updatedBalanceResponse = await agentClient.getBalance();
+    // ETH balance should have increased
+    const updatedEthBalance = parseFloat(
+      (updatedBalanceResponse as BalancesResponse).balances
+        .find((b) => b.tokenAddress === ethTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    expect(updatedEthBalance).toBeGreaterThan(initialEthBalance);
 
-      // Get trade history and verify the Ethereum trade
-      const tradeHistoryResponse = await agentClient.getTradeHistory();
-      expect(tradeHistoryResponse.success).toBe(true);
-      expect(
-        (tradeHistoryResponse as TradeHistoryResponse).trades.length,
-      ).toBeGreaterThan(0);
+    // Get trade history and verify the Ethereum trade
+    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    expect(tradeHistoryResponse.success).toBe(true);
+    expect(
+      (tradeHistoryResponse as TradeHistoryResponse).trades.length,
+    ).toBeGreaterThan(0);
 
-      // Verify the last trade details
-      const lastTrade = (tradeHistoryResponse as TradeHistoryResponse)
-        .trades[0];
-      expect(lastTrade?.toToken).toBe(ethTokenAddress);
+    // Verify the last trade details
+    const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
+    expect(lastTrade?.toToken).toBe(ethTokenAddress);
 
-      // Verify chain fields if they exist
-      if (lastTrade?.toChain) {
-        expect(lastTrade.toChain).toBe(BlockchainType.EVM);
-        console.log(`Confirmed trade to chain is ${lastTrade.toChain}`);
-      }
-    } else {
-      console.log(
-        "No SVM USDC available for trading to ETH, skipping trade execution",
-      );
-    }
+    // Verify chain fields if they exist
+    expect(lastTrade?.toChain).toBeDefined();
+    expect(lastTrade!.toChain).toBe(BlockchainType.EVM);
   });
 
   test("agent can execute trades with explicit chain parameters", async () => {
@@ -875,9 +722,6 @@ describe("Trading API", () => {
     const competitionName = `Chain-Specific Trading Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Wait for balances to be properly initialized
-    await wait(500);
-
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
@@ -889,7 +733,6 @@ describe("Trading API", () => {
         .find((b: TokenBalance) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
     expect(initialUsdcBalance).toBeGreaterThan(0);
 
     // Use SOL token for trading (since we know it has a price in the test environment)
@@ -900,13 +743,11 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial SOL balance: ${initialSolBalance}`);
 
     // The amount to trade
     const tradeAmount = 50;
 
     // Execute a buy trade with explicit Solana chain parameters
-    console.log("Executing trade with explicit Solana chain parameters");
     const buyTradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
@@ -916,7 +757,6 @@ describe("Trading API", () => {
       reason,
     });
 
-    console.log(`Buy trade response: ${JSON.stringify(buyTradeResponse)}`);
     expect(buyTradeResponse.success).toBe(true);
     expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
 
@@ -928,9 +768,6 @@ describe("Trading API", () => {
       BlockchainType.SVM,
     );
 
-    // Wait for the trade to process
-    await wait(500);
-
     // Check updated balance
     const updatedBalanceResponse = await agentClient.getBalance();
     expect(updatedBalanceResponse.success).toBe(true);
@@ -940,7 +777,6 @@ describe("Trading API", () => {
         .find((b: TokenBalance) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Updated USDC balance: ${updatedUsdcBalance}`);
     expect(updatedUsdcBalance).toBeLessThan(initialUsdcBalance);
     // SOL balance should have increased
     const updatedSolBalance = parseFloat(
@@ -948,7 +784,6 @@ describe("Trading API", () => {
         .find((b: TokenBalance) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Updated SOL balance: ${updatedSolBalance}`);
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
     // Get trade history and verify chain info is preserved
@@ -962,42 +797,27 @@ describe("Trading API", () => {
     expect(lastTrade?.toChain).toBe(BlockchainType.SVM);
 
     // Test cross-chain trading validation when disabled
-    // First, we need to check if cross-chain trading is disabled
-    try {
-      // Get Ethereum ETH token address
-      const ethTokenAddress = config.specificChainTokens.eth.eth;
-      if (!ethTokenAddress) {
-        console.log(
-          "Skipping cross-chain test: Ethereum ETH token address not configured",
-        );
-        return;
-      }
+    // Get Ethereum ETH token address
+    const ethTokenAddress = config.specificChainTokens.eth.eth;
+    expect(ethTokenAddress).toBeTruthy();
 
-      // Attempt to execute a cross-chain trade with explicit chain parameters
-      // This should succeed if cross-chain trading is enabled, or fail if disabled
-      console.log("Attempting cross-chain trade (Solana USDC to Ethereum ETH)");
-      const crossChainTradeResponse = await agentClient.executeTrade({
-        fromToken: usdcTokenAddress,
-        toToken: ethTokenAddress,
-        amount: tradeAmount.toString(),
-        fromChain: BlockchainType.SVM,
-        toChain: BlockchainType.EVM,
-        fromSpecificChain: SpecificChain.SVM,
-        toSpecificChain: SpecificChain.ETH,
-        reason,
-      });
+    // Attempt to execute a cross-chain trade with explicit chain parameters
+    // This should fail because cross-chain trading is disabled
+    const crossChainTradeResponse = await agentClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: ethTokenAddress,
+      amount: tradeAmount.toString(),
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.EVM,
+      fromSpecificChain: SpecificChain.SVM,
+      toSpecificChain: SpecificChain.ETH,
+      reason,
+    });
 
-      console.log(
-        `Cross-chain trade response: ${JSON.stringify(crossChainTradeResponse)}`,
-      );
-
-      expect(crossChainTradeResponse.success).toBe(false);
-      expect((crossChainTradeResponse as ErrorResponse).error).toContain(
-        "Cross-chain trading is disabled",
-      );
-    } catch (error) {
-      console.error("Error testing cross-chain trading:", error);
-    }
+    expect(crossChainTradeResponse.success).toBe(false);
+    expect((crossChainTradeResponse as ErrorResponse).error).toContain(
+      "Cross-chain trading is disabled",
+    );
   });
 
   test("agent can execute a trade and verify reason field is returned in responses", async () => {
@@ -1015,9 +835,6 @@ describe("Trading API", () => {
     // Start a competition with our agent
     const competitionName = `Reason Verification Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
-
-    // Wait for balances to be properly initialized
-    await wait(500);
 
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -1042,12 +859,6 @@ describe("Trading API", () => {
 
     // Verify reason is included in the trade execution response
     expect(tradeResponse.transaction.reason).toBe(specificReason);
-    console.log(
-      `Verified reason in trade execution response: "${tradeResponse.transaction.reason}"`,
-    );
-
-    // Wait for trade to be processed
-    await wait(500);
 
     // Get trade history
     const tradeHistoryResponse =
@@ -1063,9 +874,6 @@ describe("Trading API", () => {
 
     // Verify reason is included in trade history
     expect(lastTrade?.reason).toBe(specificReason);
-    console.log(
-      `Verified reason in trade history response: "${lastTrade?.reason}"`,
-    );
 
     // Further verify other trade details match
     expect(lastTrade?.fromToken).toBe(usdcTokenAddress);
@@ -1091,9 +899,6 @@ describe("Trading API", () => {
     // Start a competition with our agent
     const competitionName = `Reason Required Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
-
-    // Wait for balances to be properly initialized
-    await wait(500);
 
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -1145,11 +950,7 @@ describe("Trading API", () => {
     // Get token addresses for testing
     const svmUsdcAddress = config.specificChainTokens.svm.usdc;
     const ethTokenAddress = config.specificChainTokens.eth.eth;
-
-    if (!ethTokenAddress) {
-      console.log("Skipping test: Ethereum ETH token address not configured");
-      return;
-    }
+    expect(ethTokenAddress).toBeTruthy();
 
     // Start a competition with cross-chain trading DISABLED
     const competitionName = `Cross-Chain Settings Test ${Date.now()}`;
@@ -1161,26 +962,20 @@ describe("Trading API", () => {
 
     expect(competitionResponse.success).toBe(true);
 
-    // Wait for balances to be properly initialized
-    await wait(500);
-
     // Check if competition rules reflect the disabled cross-chain trading
     const rulesResponse = await agentClient.getRules();
     expect(rulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list
-    if (rulesResponse.success && rulesResponse.rules) {
-      const crossChainRule = rulesResponse.rules.tradingRules.find(
-        (rule: string) => rule.includes("Cross-chain trading"),
-      );
-      expect(crossChainRule).toBeDefined();
-      expect(crossChainRule).toContain("disallowAll");
-    }
+    const rules = rulesResponse as CompetitionRulesResponse;
+    expect(rules.rules).toBeDefined();
+    const crossChainRule = rules.rules.tradingRules.find((rule: string) =>
+      rule.includes("Cross-chain trading"),
+    );
+    expect(crossChainRule).toBeDefined();
+    expect(crossChainRule).toContain("disallowAll");
 
     // Verify that cross-chain trading is actually disabled by attempting a cross-chain trade
-    console.log(
-      "Attempting cross-chain trade when it's disabled in competition settings",
-    );
 
     const balanceResponse = await agentClient.getBalance();
     const svmUsdcBalance = parseFloat(
@@ -1210,7 +1005,6 @@ describe("Trading API", () => {
     await adminClient.endCompetition(
       (competitionResponse as StartCompetitionResponse).competition.id,
     );
-    await wait(500);
 
     // Start a new competition with cross-chain trading ENABLED
     const secondCompetitionName = `Cross-Chain Enabled Test ${Date.now()}`;
@@ -1221,25 +1015,21 @@ describe("Trading API", () => {
     });
 
     expect(secondCompetitionResponse.success).toBe(true);
-    await wait(500);
 
     // Check if competition rules reflect the enabled cross-chain trading
     const secondRulesResponse = await agentClient.getRules();
     expect(secondRulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list
-    if (secondRulesResponse.success && secondRulesResponse.rules) {
-      const crossChainRule = secondRulesResponse.rules.tradingRules.find(
-        (rule: string) => rule.includes("Cross-chain trading"),
-      );
-      expect(crossChainRule).toBeDefined();
-      expect(crossChainRule).toContain("Cross-chain trading type: allow");
-    }
+    const secondRules = secondRulesResponse as CompetitionRulesResponse;
+    expect(secondRules.rules).toBeDefined();
+    const secondCrossChainRule = secondRules.rules.tradingRules.find(
+      (rule: string) => rule.includes("Cross-chain trading"),
+    );
+    expect(secondCrossChainRule).toBeDefined();
+    expect(secondCrossChainRule).toContain("Cross-chain trading type: allow");
 
     // Now try to execute a cross-chain trade (should succeed)
-    console.log(
-      "Attempting cross-chain trade when it's enabled in competition settings",
-    );
 
     const secondTradeResponse = await agentClient.executeTrade({
       fromToken: svmUsdcAddress,
@@ -1252,13 +1042,6 @@ describe("Trading API", () => {
 
     // Expect the trade to succeed now that cross-chain trading is enabled
     expect(secondTradeResponse.success).toBe(true);
-    if (!secondTradeResponse.success) {
-      console.error(
-        "Cross-chain trade failed with error:",
-        (secondTradeResponse as ErrorResponse).error,
-      );
-      console.error("Competition settings were:", secondCompetitionResponse);
-    }
   });
 
   test("EVM-to-EVM trades are recognized as cross-chain", async () => {
@@ -1267,20 +1050,11 @@ describe("Trading API", () => {
       (chain) => chain !== "svm" && chain !== "evm",
     );
 
-    if (evmChains.length < 2) {
-      console.log(
-        "Skipping EVM-to-EVM cross-chain test: Need at least 2 EVM chains configured",
-      );
-      return;
-    }
+    expect(evmChains.length).toBeGreaterThanOrEqual(2);
 
     // Select two different EVM chains for testing
     const sourceChain = config.evmChains[0] as SpecificChain;
     const targetChain = evmChains[1] as SpecificChain;
-
-    console.log(
-      `Testing EVM-to-EVM cross-chain trading from ${sourceChain} to ${targetChain}`,
-    );
 
     // Get USDC addresses for both chains
     const sourceUsdcAddress =
@@ -1292,12 +1066,8 @@ describe("Trading API", () => {
         targetChain as keyof typeof config.specificChainTokens
       ]?.usdc;
 
-    if (!sourceUsdcAddress || !targetUsdcAddress) {
-      console.log(
-        `Skipping EVM-to-EVM test: USDC not configured for ${sourceChain} or ${targetChain}`,
-      );
-      return;
-    }
+    expect(sourceUsdcAddress).toBeTruthy();
+    expect(targetUsdcAddress).toBeTruthy();
 
     // Setup admin client
     const adminClient = createTestClient();
@@ -1319,7 +1089,6 @@ describe("Trading API", () => {
     });
 
     expect(competitionResponse.success).toBe(true);
-    await wait(500);
 
     // Verify the agent has some balance on the source chain
     const initialBalanceResponse = await agentClient.getBalance();
@@ -1331,18 +1100,10 @@ describe("Trading API", () => {
         "0",
     );
 
-    // If we don't have any balance, we'll need to skip this test
-    if (!sourceUsdcBalance || sourceUsdcBalance <= 0) {
-      console.log(
-        `No balance available for ${sourceChain} USDC, skipping test`,
-      );
-      return;
-    }
+    // Ensure we have sufficient balance for the test
+    expect(sourceUsdcBalance).toBeGreaterThan(0);
 
     const tradeAmount = Math.min(10, sourceUsdcBalance * 0.1).toString();
-    console.log(
-      `Trading ${tradeAmount} USDC from ${sourceChain} to ${targetChain}`,
-    );
 
     // Attempt to execute an EVM-to-EVM cross-chain trade when disabled
     const crossChainTradeResponse = await agentClient.executeTrade({
@@ -1366,7 +1127,6 @@ describe("Trading API", () => {
     await adminClient.endCompetition(
       (competitionResponse as StartCompetitionResponse).competition.id,
     );
-    await wait(500);
 
     // Start a new competition with cross-chain trading ENABLED
     const secondCompetitionName = `EVM-EVM Cross-Chain Enabled Test ${Date.now()}`;
@@ -1377,7 +1137,6 @@ describe("Trading API", () => {
     });
 
     expect(secondCompetitionResponse.success).toBe(true);
-    await wait(500);
 
     // Now try to execute the same EVM-to-EVM cross-chain trade (should succeed)
     const secondTradeResponse = await agentClient.executeTrade({
@@ -1393,21 +1152,6 @@ describe("Trading API", () => {
 
     // Expect the trade to succeed now that cross-chain trading is enabled
     expect(secondTradeResponse.success).toBe(true);
-    if (!secondTradeResponse.success) {
-      console.error(
-        "EVM-to-EVM cross-chain trade failed with error:",
-        (secondTradeResponse as ErrorResponse).error,
-      );
-      console.error("Competition settings were:", secondCompetitionResponse);
-      console.error("Trade parameters:", {
-        fromToken: sourceUsdcAddress,
-        toToken: targetUsdcAddress,
-        fromChain: BlockchainType.EVM,
-        toChain: BlockchainType.EVM,
-        fromSpecificChain: sourceChain,
-        toSpecificChain: targetChain,
-      });
-    }
   });
 
   test("CrossChainTradingType.disallowXParent allows same-parent-chain trading but blocks cross-parent-chain trading", async () => {
@@ -1431,7 +1175,6 @@ describe("Trading API", () => {
     });
 
     expect(competitionResponse.success).toBe(true);
-    await wait(500);
 
     // Get token addresses for testing
     // For EVM-to-EVM trading (should succeed)
@@ -1451,18 +1194,12 @@ describe("Trading API", () => {
         ?.amount.toString() || "0",
     );
 
-    // If we don't have any balance on Base, we need to skip this test
-    if (baseUsdcBalance <= 0) {
-      console.log("No balance available for Base USDC, skipping test");
-      return;
-    }
+    // Ensure we have sufficient balance on Base for the test
+    expect(baseUsdcBalance).toBeGreaterThan(0);
 
     const tradeAmount = Math.min(10, baseUsdcBalance * 0.1).toString();
 
     // PART 1: Test that EVM-to-EVM trading works with disallowXParent
-    console.log(
-      `Testing EVM-to-EVM trading (Base -> ETH) with disallowXParent setting`,
-    );
 
     const evmToEvmResponse = await agentClient.executeTrade({
       fromToken: baseUsdcAddress,
@@ -1477,24 +1214,8 @@ describe("Trading API", () => {
 
     // Expect the EVM-to-EVM trade to succeed with disallowXParent
     expect(evmToEvmResponse.success).toBe(true);
-    if (!evmToEvmResponse.success) {
-      console.error(
-        "EVM-to-EVM trade failed unexpectedly with disallowXParent setting:",
-        (evmToEvmResponse as ErrorResponse).error,
-      );
-    } else {
-      console.log(
-        "EVM-to-EVM trade succeeded as expected with disallowXParent setting",
-      );
-    }
-
-    // Wait for the trade to process
-    await wait(500);
 
     // PART 2: Test that EVM-to-SVM trading fails with disallowXParent
-    console.log(
-      `Testing EVM-to-SVM trading (ETH -> Solana) with disallowXParent setting`,
-    );
 
     // Get updated balances after the first successful trade
     const updatedBalanceResponse = await agentClient.getBalance();
@@ -1504,12 +1225,7 @@ describe("Trading API", () => {
         ?.amount.toString() || "0",
     );
 
-    if (ethUsdcBalance <= 0) {
-      console.log(
-        "No ETH USDC balance available for testing EVM-to-SVM, skipping second part",
-      );
-      return;
-    }
+    expect(ethUsdcBalance).toBeGreaterThan(0);
 
     const secondTradeAmount = Math.min(5, ethUsdcBalance * 0.1).toString();
 
@@ -1528,10 +1244,6 @@ describe("Trading API", () => {
     expect(evmToSvmResponse.success).toBe(false);
     expect((evmToSvmResponse as ErrorResponse).error).toContain(
       "Cross-parent chain trading is disabled. Both tokens must be on the same parent blockchain",
-    );
-
-    console.log(
-      "EVM-to-SVM trade failed as expected with disallowXParent setting",
     );
   });
 
@@ -1553,9 +1265,6 @@ describe("Trading API", () => {
       competitionName,
       [agent.id],
     );
-
-    // Wait for balances to be properly initialized
-    await wait(500);
 
     const smallValue = 2.938e-27;
 
@@ -1594,6 +1303,7 @@ describe("Trading API", () => {
     expect(result?.toAmount).toBe(smallValue);
     expect(result?.price).toBe(smallValue);
   });
+
   test("trade amount USD is calculated and returned correctly", async () => {
     // Setup admin client
     const adminClient = createTestClient();
@@ -1610,9 +1320,6 @@ describe("Trading API", () => {
     const competitionName = `USD Amount Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Wait for balances to be properly initialized
-    await wait(500);
-
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const solTokenAddress = config.specificChainTokens.svm.sol;
@@ -1622,7 +1329,6 @@ describe("Trading API", () => {
     expect(priceResponse.success).toBe(true);
     const solPrice = (priceResponse as PriceResponse).price;
     expect(solPrice).toBeGreaterThan(0);
-    console.log(`Current SOL price: $${solPrice}`);
 
     // Define trade amount
     const tradeAmount = 100; // 100 USDC
@@ -1647,13 +1353,9 @@ describe("Trading API", () => {
     ).toBeDefined();
     const actualUsdValue = (tradeResponse as TradeResponse).transaction
       .tradeAmountUsd;
-    console.log(`Trade amount USD: $${actualUsdValue}`);
 
     // Verify that the USD value is approximately correct (allow for small variations)
     expect(actualUsdValue).toBeCloseTo(expectedUsdValue, 0); // Using precision 0 to allow for some variation
-
-    // Wait for trade to be processed
-    await wait(500);
 
     // Verify tradeAmountUsd also appears in trade history
     const tradeHistoryResponse = await agentClient.getTradeHistory();
@@ -1664,13 +1366,8 @@ describe("Trading API", () => {
 
     // Verify tradeAmountUsd is included in trade history and matches the trade response
     expect(lastTrade).toBeDefined();
-    if (lastTrade) {
-      expect(lastTrade.tradeAmountUsd).toBeDefined();
-      expect(lastTrade.tradeAmountUsd as number).toBeCloseTo(
-        actualUsdValue!,
-        1,
-      );
-    }
+    expect(lastTrade!.tradeAmountUsd).toBeDefined();
+    expect(lastTrade!.tradeAmountUsd as number).toBeCloseTo(actualUsdValue!, 1);
 
     // Execute another trade with different token to verify tradeAmountUsd is calculated correctly
     const reverseTradeAmount = 10; // 10 SOL
@@ -1691,9 +1388,6 @@ describe("Trading API", () => {
     // Verify tradeAmountUsd is correctly calculated for the reverse trade
     const reverseActualUsdValue = (reverseTradeResponse as TradeResponse)
       .transaction.tradeAmountUsd;
-    console.log(
-      `Reverse trade amount USD: $${reverseActualUsdValue} (expected ~$${reverseExpectedUsdValue})`,
-    );
 
     // Verify USD value is approximately correct, allowing for some variation due to price fluctuations
     expect(reverseActualUsdValue).toBeCloseTo(reverseExpectedUsdValue, 0);
@@ -1715,15 +1409,11 @@ describe("Trading API", () => {
     const competitionName = `Symbol Verification Test ${Date.now()}`;
     await startTestCompetition(adminClient, competitionName, [agent.id]);
 
-    // Wait for balances to be properly initialized
-    await wait(500);
-
     // Get tokens to trade - use tokens we know have symbols
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const solTokenAddress = config.specificChainTokens.svm.sol;
 
     // 1. Verify symbols are returned in initial balance response
-    console.log("1. Checking symbols in initial balance response...");
     const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
 
@@ -1736,34 +1426,27 @@ describe("Trading API", () => {
     );
 
     // Verify symbol fields exist and are not empty
-    if (usdcBalance) {
-      expect(usdcBalance.symbol).toBeDefined();
-      expect(typeof usdcBalance.symbol).toBe("string");
-      expect(usdcBalance.symbol.length).toBeGreaterThan(0);
-      console.log(`USDC symbol in balance: "${usdcBalance.symbol}"`);
-    }
+    expect(usdcBalance).toBeDefined();
+    expect(usdcBalance!.symbol).toBeDefined();
+    expect(typeof usdcBalance!.symbol).toBe("string");
+    expect(usdcBalance!.symbol.length).toBeGreaterThan(0);
 
-    if (solBalance) {
-      expect(solBalance.symbol).toBeDefined();
-      expect(typeof solBalance.symbol).toBe("string");
-      expect(solBalance.symbol.length).toBeGreaterThan(0);
-      console.log(`SOL symbol in balance: "${solBalance.symbol}"`);
-    }
+    expect(solBalance).toBeDefined();
+    expect(solBalance!.symbol).toBeDefined();
+    expect(typeof solBalance!.symbol).toBe("string");
+    expect(solBalance!.symbol.length).toBeGreaterThan(0);
 
     // 2. Get a trade quote and verify symbols are included
-    console.log("2. Checking symbols in trade quote response...");
-    const quoteResponse = await agentClient.getQuote(
+    const quote = (await agentClient.getQuote(
       usdcTokenAddress,
       solTokenAddress,
       "100",
-    );
+    )) as QuoteResponse;
 
     // Check if it's an error response
-    expect(quoteResponse).toBeDefined();
-    expect("error" in quoteResponse).toBe(false); // Should not be an error response
+    expect(quote).toBeDefined();
+    expect("error" in quote).toBe(false); // Should not be an error response
 
-    // Cast to QuoteResponse since we've verified it's not an error
-    const quote = quoteResponse as QuoteResponse;
     expect(quote.fromToken).toBe(usdcTokenAddress);
     expect(quote.toToken).toBe(solTokenAddress);
     expect(quote.symbols).toBeDefined();
@@ -1774,11 +1457,7 @@ describe("Trading API", () => {
     expect(quote.symbols.fromTokenSymbol.length).toBeGreaterThan(0);
     expect(quote.symbols.toTokenSymbol.length).toBeGreaterThan(0);
 
-    console.log(`Quote fromTokenSymbol: "${quote.symbols.fromTokenSymbol}"`);
-    console.log(`Quote toTokenSymbol: "${quote.symbols.toTokenSymbol}"`);
-
     // 3. Execute a trade and verify symbols in trade execution response
-    console.log("3. Executing trade and checking symbols in response...");
     const tradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
@@ -1789,31 +1468,19 @@ describe("Trading API", () => {
     });
 
     expect(tradeResponse.success).toBe(true);
-    if (tradeResponse.success) {
-      const transaction = (tradeResponse as TradeResponse).transaction;
+    const transaction = (tradeResponse as TradeResponse).transaction;
 
-      // Verify toTokenSymbol is included (we only store toTokenSymbol in the database)
-      expect(transaction.toTokenSymbol).toBeDefined();
-      expect(typeof transaction.toTokenSymbol).toBe("string");
-      expect(transaction.toTokenSymbol.length).toBeGreaterThan(0);
-      console.log(
-        `Trade execution toTokenSymbol: "${transaction.toTokenSymbol}"`,
-      );
+    // Verify toTokenSymbol is included (we only store toTokenSymbol in the database)
+    expect(transaction.toTokenSymbol).toBeDefined();
+    expect(typeof transaction.toTokenSymbol).toBe("string");
+    expect(transaction.toTokenSymbol.length).toBeGreaterThan(0);
 
-      // Verify fromTokenSymbol is included
-      expect(transaction.fromTokenSymbol).toBeDefined();
-      expect(typeof transaction.fromTokenSymbol).toBe("string");
-      expect(transaction.fromTokenSymbol.length).toBeGreaterThan(0);
-      console.log(
-        `Trade execution fromTokenSymbol: "${transaction.fromTokenSymbol}"`,
-      );
-    }
-
-    // Wait for trade to be processed
-    await wait(500);
+    // Verify fromTokenSymbol is included
+    expect(transaction.fromTokenSymbol).toBeDefined();
+    expect(typeof transaction.fromTokenSymbol).toBe("string");
+    expect(transaction.fromTokenSymbol.length).toBeGreaterThan(0);
 
     // 4. Verify symbols are returned in updated balance response
-    console.log("4. Checking symbols in updated balance response...");
     const updatedBalanceResponse = await agentClient.getBalance();
     expect(updatedBalanceResponse.success).toBe(true);
 
@@ -1826,51 +1493,35 @@ describe("Trading API", () => {
     );
 
     // Verify symbols are still present and correct
-    if (updatedUsdcBalance) {
-      expect(updatedUsdcBalance.symbol).toBeDefined();
-      expect(typeof updatedUsdcBalance.symbol).toBe("string");
-      expect(updatedUsdcBalance.symbol.length).toBeGreaterThan(0);
-      console.log(`Updated USDC symbol: "${updatedUsdcBalance.symbol}"`);
-    }
+    expect(updatedUsdcBalance).toBeDefined();
+    expect(updatedUsdcBalance!.symbol).toBeDefined();
+    expect(typeof updatedUsdcBalance!.symbol).toBe("string");
+    expect(updatedUsdcBalance!.symbol.length).toBeGreaterThan(0);
 
-    if (updatedSolBalance) {
-      expect(updatedSolBalance.symbol).toBeDefined();
-      expect(typeof updatedSolBalance.symbol).toBe("string");
-      expect(updatedSolBalance.symbol.length).toBeGreaterThan(0);
-      console.log(`Updated SOL symbol: "${updatedSolBalance.symbol}"`);
-    }
+    expect(updatedSolBalance).toBeDefined();
+    expect(updatedSolBalance!.symbol).toBeDefined();
+    expect(typeof updatedSolBalance!.symbol).toBe("string");
+    expect(updatedSolBalance!.symbol.length).toBeGreaterThan(0);
 
     // 5. Verify symbols in trade history
-    console.log("5. Checking symbols in trade history response...");
     const tradeHistoryResponse = await agentClient.getTradeHistory();
     expect(tradeHistoryResponse.success).toBe(true);
 
-    if (tradeHistoryResponse.success) {
-      const tradeHistory = tradeHistoryResponse as TradeHistoryResponse;
-      expect(tradeHistory.trades.length).toBeGreaterThan(0);
+    const tradeHistory = tradeHistoryResponse as TradeHistoryResponse;
+    expect(tradeHistory.trades.length).toBeGreaterThan(0);
 
-      const lastTrade = tradeHistory.trades[0];
-      expect(lastTrade).toBeDefined();
+    const lastTrade = tradeHistory.trades[0];
+    expect(lastTrade).toBeDefined();
 
-      if (lastTrade) {
-        expect(lastTrade.toTokenSymbol).toBeDefined();
-        expect(typeof lastTrade.toTokenSymbol).toBe("string");
-        expect(lastTrade.toTokenSymbol.length).toBeGreaterThan(0);
-        console.log(
-          `Trade history toTokenSymbol: "${lastTrade.toTokenSymbol}"`,
-        );
+    expect(lastTrade!.toTokenSymbol).toBeDefined();
+    expect(typeof lastTrade!.toTokenSymbol).toBe("string");
+    expect(lastTrade!.toTokenSymbol.length).toBeGreaterThan(0);
 
-        expect(lastTrade.fromTokenSymbol).toBeDefined();
-        expect(typeof lastTrade.fromTokenSymbol).toBe("string");
-        expect(lastTrade.fromTokenSymbol.length).toBeGreaterThan(0);
-        console.log(
-          `Trade history fromTokenSymbol: "${lastTrade.fromTokenSymbol}"`,
-        );
-      }
-    }
+    expect(lastTrade!.fromTokenSymbol).toBeDefined();
+    expect(typeof lastTrade!.fromTokenSymbol).toBe("string");
+    expect(lastTrade!.fromTokenSymbol.length).toBeGreaterThan(0);
 
     // 6. Verify symbols in balances response
-    console.log("6. Checking symbols in balances response...");
     // Reuse existing balance data since no trades were executed since the last balance fetch
     const symbolBalances = (updatedBalanceResponse as BalancesResponse)
       .balances;
@@ -1878,62 +1529,40 @@ describe("Trading API", () => {
     expect(symbolBalances.length).toBeGreaterThan(0);
 
     // Check each token in the balances has a symbol
-    symbolBalances.forEach((balance, index) => {
+    symbolBalances.forEach((balance) => {
       expect(balance.symbol).toBeDefined();
       expect(typeof balance.symbol).toBe("string");
       expect(balance.symbol.length).toBeGreaterThan(0);
-      console.log(
-        `Balance token ${index} symbol: "${balance.symbol}" for address ${balance.tokenAddress}`,
-      );
     });
 
     // 7. Verify symbols match between trade execution and balances response
-    console.log(
-      "7. Verifying symbol consistency between trade execution and balances...",
+    expect(tradeResponse.success);
+    const tradeTransaction = (tradeResponse as TradeResponse).transaction;
+    const balances = (updatedBalanceResponse as BalancesResponse).balances;
+
+    // Find SOL token in balances (the toToken from our trade)
+    const solTokenInBalances = balances.find(
+      (b) => b.tokenAddress === solTokenAddress,
     );
-    if (!("error" in quoteResponse) && tradeResponse.success) {
-      const quote = quoteResponse as QuoteResponse;
-      const tradeTransaction = (tradeResponse as TradeResponse).transaction;
-      const balances = (updatedBalanceResponse as BalancesResponse).balances;
 
-      // Find SOL token in balances (the toToken from our trade)
-      const solTokenInBalances = balances.find(
-        (b) => b.tokenAddress === solTokenAddress,
-      );
+    // Find USDC token in balances (the fromToken from our trade)
+    const usdcTokenInBalances = balances.find(
+      (b) => b.tokenAddress === usdcTokenAddress,
+    );
 
-      // Find USDC token in balances (the fromToken from our trade)
-      const usdcTokenInBalances = balances.find(
-        (b) => b.tokenAddress === usdcTokenAddress,
-      );
+    expect(solTokenInBalances).toBeDefined();
+    // Verify the toTokenSymbol from quote matches what's in the balances
+    expect(quote.symbols.toTokenSymbol).toBe(solTokenInBalances!.symbol);
 
-      if (solTokenInBalances) {
-        // Verify the toTokenSymbol from quote matches what's in the balances
-        expect(quote.symbols.toTokenSymbol).toBe(solTokenInBalances.symbol);
+    // Verify the toTokenSymbol from trade execution matches what's in the balances
+    expect(tradeTransaction.toTokenSymbol).toBe(solTokenInBalances!.symbol);
 
-        // Verify the toTokenSymbol from trade execution matches what's in the balances
-        expect(tradeTransaction.toTokenSymbol).toBe(solTokenInBalances.symbol);
+    expect(usdcTokenInBalances).toBeDefined();
+    // Verify the fromTokenSymbol from quote matches what's in the balances
+    expect(quote.symbols.fromTokenSymbol).toBe(usdcTokenInBalances!.symbol);
 
-        console.log(
-          `toTokenSymbol consistency verified: "${quote.symbols.toTokenSymbol}" across all responses`,
-        );
-      }
-
-      if (usdcTokenInBalances) {
-        // Verify the fromTokenSymbol from quote matches what's in the balances
-        expect(quote.symbols.fromTokenSymbol).toBe(usdcTokenInBalances.symbol);
-
-        // Verify the fromTokenSymbol from trade execution matches what's in the balances
-        expect(tradeTransaction.fromTokenSymbol).toBe(
-          usdcTokenInBalances.symbol,
-        );
-
-        console.log(
-          `fromTokenSymbol consistency verified: "${quote.symbols.fromTokenSymbol}" across all responses`,
-        );
-      }
-    }
-
-    console.log("✅ All symbol verification tests passed!");
+    // Verify the fromTokenSymbol from trade execution matches what's in the balances
+    expect(tradeTransaction.fromTokenSymbol).toBe(usdcTokenInBalances!.symbol);
   });
 
   test("agent can execute a trade and verify balance updates", async () => {
@@ -1956,9 +1585,6 @@ describe("Trading API", () => {
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
 
-    // Wait for balances to be properly initialized
-    await wait(500);
-
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
     expect((initialBalanceResponse as BalancesResponse).success).toBe(true);
@@ -1966,16 +1592,11 @@ describe("Trading API", () => {
 
     // Initial USDC balance should be the starting amount (e.g., 10000)
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-    console.log(
-      JSON.stringify(initialBalanceResponse),
-      "initialBalanceResponse test",
-    );
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
     expect(initialUsdcBalance).toBeGreaterThan(0);
 
     // Use SOL token for trading (since we know it has a price in the test environment)
@@ -1986,13 +1607,9 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial SOL balance: ${initialSolBalance}`);
 
     // Use a small fixed amount that should be less than the initial balance
     const tradeAmount = 100; // Use a small amount that should be available
-    console.log(
-      `Trade amount: ${tradeAmount} (should be less than ${initialUsdcBalance})`,
-    );
 
     // Execute a buy trade (buying SOL with USDC)
     const buyTradeResponse = await agentClient.executeTrade({
@@ -2004,7 +1621,6 @@ describe("Trading API", () => {
       reason,
     });
 
-    console.log(`Buy trade response: ${JSON.stringify(buyTradeResponse)}`);
     expect(buyTradeResponse.success).toBe(true);
     expect((buyTradeResponse as TradeResponse).transaction).toBeDefined();
     expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
@@ -2016,27 +1632,13 @@ describe("Trading API", () => {
     expect(
       (buyTradeResponse as TradeResponse).transaction.toTokenSymbol,
     ).toBeDefined();
-    console.log(
-      `Buy trade fromTokenSymbol: "${(buyTradeResponse as TradeResponse).transaction.fromTokenSymbol}"`,
-    );
-    console.log(
-      `Buy trade toTokenSymbol: "${(buyTradeResponse as TradeResponse).transaction.toTokenSymbol}"`,
-    );
 
     // Verify chain field is included in transaction response
-    if ((buyTradeResponse as TradeResponse).transaction.fromChain) {
-      expect((buyTradeResponse as TradeResponse).transaction.fromChain).toBe(
-        BlockchainType.SVM,
-      );
-    }
-    if ((buyTradeResponse as TradeResponse).transaction.toChain) {
-      expect((buyTradeResponse as TradeResponse).transaction.toChain).toBe(
-        BlockchainType.SVM,
-      );
-    }
-
-    // Wait a bit longer for the trade to process
-    await wait(500);
+    const buyTransaction = (buyTradeResponse as TradeResponse).transaction;
+    expect(buyTransaction.fromChain).toBeDefined();
+    expect(buyTransaction.fromChain).toBe(BlockchainType.SVM);
+    expect(buyTransaction.toChain).toBeDefined();
+    expect(buyTransaction.toChain).toBe(BlockchainType.SVM);
 
     // Check updated balance
     const updatedBalanceResponse = await agentClient.getBalance();
@@ -2048,18 +1650,12 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(
-      `Updated USDC balance: ${updatedUsdcBalance} (should be less than ${initialUsdcBalance})`,
-    );
     expect(updatedUsdcBalance).toBeLessThan(initialUsdcBalance);
     // SOL balance should have increased
     const updatedSolBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Updated SOL balance: ${updatedSolBalance} (should be greater than ${initialSolBalance})`,
     );
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
@@ -2074,20 +1670,17 @@ describe("Trading API", () => {
     ).toBeGreaterThan(0);
 
     // Verify chain fields in trades if they exist
-    const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
-    if (lastTrade?.fromChain) {
-      expect(lastTrade.fromChain).toBe(BlockchainType.SVM);
-    }
-    if (lastTrade?.toChain) {
-      expect(lastTrade.toChain).toBe(BlockchainType.SVM);
-    }
+    const lastTradeItem = (tradeHistoryResponse as TradeHistoryResponse)
+      .trades[0];
+    expect(lastTradeItem).toBeDefined();
+    expect(lastTradeItem!.fromChain).toBeDefined();
+    expect(lastTradeItem!.fromChain).toBe(BlockchainType.SVM);
+    expect(lastTradeItem!.toChain).toBeDefined();
+    expect(lastTradeItem!.toChain).toBe(BlockchainType.SVM);
 
     // Execute a sell trade (selling SOL for USDC)
     // Sell 50% of what we have to ensure we never try to sell more than we have
     const tokenToSell = updatedSolBalance * 0.5;
-    console.log(
-      `Token to sell: ${tokenToSell} (should be less than ${updatedSolBalance})`,
-    );
 
     const sellTradeResponse = await agentClient.executeTrade({
       fromToken: solTokenAddress,
@@ -2098,12 +1691,8 @@ describe("Trading API", () => {
       reason,
     });
 
-    console.log(`Sell trade response: ${JSON.stringify(sellTradeResponse)}`);
     expect(sellTradeResponse.success).toBe(true);
     expect((sellTradeResponse as TradeResponse).transaction).toBeDefined();
-
-    // Wait a bit longer for the trade to process
-    await wait(500);
 
     // Check final balance
     const finalBalanceResponse = await agentClient.getBalance();
@@ -2114,18 +1703,12 @@ describe("Trading API", () => {
         .find((b) => b.tokenAddress === usdcTokenAddress)
         ?.amount.toString() || "0",
     );
-    console.log(
-      `Final USDC balance: ${finalUsdcBalance} (should be greater than ${updatedUsdcBalance})`,
-    );
     expect(finalUsdcBalance).toBeGreaterThan(updatedUsdcBalance);
     // SOL balance should have decreased compared to after buying
     const finalSolBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === solTokenAddress)
         ?.amount.toString() || "0",
-    );
-    console.log(
-      `Final SOL balance: ${finalSolBalance} (should be less than ${updatedSolBalance})`,
     );
     expect(finalSolBalance).toBeLessThan(updatedSolBalance);
   });
@@ -2150,9 +1733,6 @@ describe("Trading API", () => {
       tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
     });
 
-    // Wait for balances to be properly initialized
-    await wait(500);
-
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
     expect(initialBalanceResponse.success).toBe(true);
@@ -2165,14 +1745,12 @@ describe("Trading API", () => {
         ?.amount.toString() || "0",
     );
 
-    console.log(`Initial USDC balance: ${initialUsdcBalance}`);
     expect(initialUsdcBalance).toBeGreaterThan(0);
 
     const tradeAmount = 100; // Trade 100 USDC
 
     // Test 1: Burn tokens by trading to EVM dead address
     const evmDeadAddress = "0x000000000000000000000000000000000000dead";
-    console.log(`Testing burn to EVM dead address: ${evmDeadAddress}`);
 
     const evmBurnTradeResponse = await agentClient.executeTrade({
       fromToken: svmUsdcAddress,
@@ -2183,36 +1761,24 @@ describe("Trading API", () => {
       reason: "Burning tokens by trading to EVM dead address",
     });
 
-    console.log(
-      `EVM burn trade response: ${JSON.stringify(evmBurnTradeResponse)}`,
-    );
-
     // Trade should succeed
     expect(evmBurnTradeResponse.success).toBe(true);
 
-    if (evmBurnTradeResponse.success) {
-      const transaction = (evmBurnTradeResponse as TradeResponse).transaction;
+    const transaction = (evmBurnTradeResponse as TradeResponse).transaction;
 
-      // Verify trade was recorded correctly
-      expect(transaction.fromToken).toBe(svmUsdcAddress);
-      expect(transaction.toToken).toBe(evmDeadAddress);
-      expect(parseFloat(transaction.fromAmount.toString())).toBe(tradeAmount);
+    // Verify trade was recorded correctly
+    expect(transaction.fromToken).toBe(svmUsdcAddress);
+    expect(transaction.toToken).toBe(evmDeadAddress);
+    expect(parseFloat(transaction.fromAmount.toString())).toBe(tradeAmount);
 
-      // Key assertion: toAmount should be 0 (tokens burned)
-      expect(parseFloat(transaction.toAmount.toString())).toBe(0);
+    // Key assertion: toAmount should be 0 (tokens burned)
+    expect(parseFloat(transaction.toAmount.toString())).toBe(0);
 
-      // Price should be 0 since we're burning
-      expect(parseFloat(transaction.price.toString())).toBe(0);
+    // Price should be 0 since we're burning
+    expect(parseFloat(transaction.price.toString())).toBe(0);
 
-      // Trade amount USD should reflect the value of tokens burned
-      expect(transaction.tradeAmountUsd).toBeGreaterThan(0);
-
-      console.log(
-        `Burn trade recorded - fromAmount: ${transaction.fromAmount}, toAmount: ${transaction.toAmount}, price: ${transaction.price}`,
-      );
-    }
-
-    await wait(500);
+    // Trade amount USD should reflect the value of tokens burned
+    expect(transaction.tradeAmountUsd).toBeGreaterThan(0);
 
     // Check updated balance after EVM burn
     const afterEvmBurnBalanceResponse = await agentClient.getBalance();
@@ -2224,9 +1790,6 @@ describe("Trading API", () => {
 
     // USDC balance should have decreased (tokens burned)
     expect(afterEvmBurnUsdcBalance).toBe(initialUsdcBalance - tradeAmount);
-    console.log(
-      `USDC balance after EVM burn: ${afterEvmBurnUsdcBalance} (decreased by ${tradeAmount})`,
-    );
 
     // Verify no balance was created for the dead address
     const evmDeadBalance = parseFloat(
@@ -2238,7 +1801,6 @@ describe("Trading API", () => {
 
     // Test 2: Burn tokens by trading to Solana dead address
     const solanaDeadAddress = "1nc1nerator11111111111111111111111111111111";
-    console.log(`Testing burn to Solana dead address: ${solanaDeadAddress}`);
 
     const solanaBurnTradeResponse = await agentClient.executeTrade({
       fromToken: svmUsdcAddress,
@@ -2249,37 +1811,27 @@ describe("Trading API", () => {
       reason: "Burning tokens by trading to Solana dead address",
     });
 
-    console.log(
-      `Solana burn trade response: ${JSON.stringify(solanaBurnTradeResponse)}`,
-    );
-
     // Trade should succeed
     expect(solanaBurnTradeResponse.success).toBe(true);
 
-    if (solanaBurnTradeResponse.success) {
-      const transaction = (solanaBurnTradeResponse as TradeResponse)
-        .transaction;
+    const solanaBurnTransaction = (solanaBurnTradeResponse as TradeResponse)
+      .transaction;
 
-      // Verify trade was recorded correctly
-      expect(transaction.fromToken).toBe(svmUsdcAddress);
-      expect(transaction.toToken).toBe(solanaDeadAddress);
-      expect(parseFloat(transaction.fromAmount.toString())).toBe(tradeAmount);
+    // Verify trade was recorded correctly
+    expect(solanaBurnTransaction.fromToken).toBe(svmUsdcAddress);
+    expect(solanaBurnTransaction.toToken).toBe(solanaDeadAddress);
+    expect(parseFloat(solanaBurnTransaction.fromAmount.toString())).toBe(
+      tradeAmount,
+    );
 
-      // Key assertion: toAmount should be 0 (tokens burned)
-      expect(parseFloat(transaction.toAmount.toString())).toBe(0);
+    // Key assertion: toAmount should be 0 (tokens burned)
+    expect(parseFloat(solanaBurnTransaction.toAmount.toString())).toBe(0);
 
-      // Price should be 0 since we're burning
-      expect(parseFloat(transaction.price.toString())).toBe(0);
+    // Price should be 0 since we're burning
+    expect(parseFloat(solanaBurnTransaction.price.toString())).toBe(0);
 
-      // Trade amount USD should reflect the value of tokens burned
-      expect(transaction.tradeAmountUsd).toBeGreaterThan(0);
-
-      console.log(
-        `Solana burn trade recorded - fromAmount: ${transaction.fromAmount}, toAmount: ${transaction.toAmount}, price: ${transaction.price}`,
-      );
-    }
-
-    await wait(500);
+    // Trade amount USD should reflect the value of tokens burned
+    expect(solanaBurnTransaction.tradeAmountUsd).toBeGreaterThan(0);
 
     // Check final balance after both burns
     const finalBalanceResponse = await agentClient.getBalance();
@@ -2291,9 +1843,6 @@ describe("Trading API", () => {
 
     // USDC balance should have decreased by both burn amounts
     expect(finalUsdcBalance).toBe(initialUsdcBalance - tradeAmount * 2);
-    console.log(
-      `Final USDC balance: ${finalUsdcBalance} (decreased by ${tradeAmount * 2} total)`,
-    );
 
     // Verify no balance was created for the Solana dead address
     const solanaDeadBalance = parseFloat(
@@ -2316,23 +1865,17 @@ describe("Trading API", () => {
     expect(solanaBurnTrade).toBeDefined();
     expect(evmBurnTrade).toBeDefined();
 
-    if (solanaBurnTrade) {
-      expect(parseFloat(solanaBurnTrade.toAmount.toString())).toBe(0);
-      expect(parseFloat(solanaBurnTrade.price.toString())).toBe(0);
-      expect(solanaBurnTrade.reason).toBe(
-        "Burning tokens by trading to Solana dead address",
-      );
-    }
+    expect(parseFloat(solanaBurnTrade!.toAmount.toString())).toBe(0);
+    expect(parseFloat(solanaBurnTrade!.price.toString())).toBe(0);
+    expect(solanaBurnTrade!.reason).toBe(
+      "Burning tokens by trading to Solana dead address",
+    );
 
-    if (evmBurnTrade) {
-      expect(parseFloat(evmBurnTrade.toAmount.toString())).toBe(0);
-      expect(parseFloat(evmBurnTrade.price.toString())).toBe(0);
-      expect(evmBurnTrade.reason).toBe(
-        "Burning tokens by trading to EVM dead address",
-      );
-    }
-
-    console.log("✅ All token burn tests passed!");
+    expect(parseFloat(evmBurnTrade!.toAmount.toString())).toBe(0);
+    expect(parseFloat(evmBurnTrade!.price.toString())).toBe(0);
+    expect(evmBurnTrade!.reason).toBe(
+      "Burning tokens by trading to EVM dead address",
+    );
   });
 
   test("agent cannot execute trade on competition they are not registered for", async () => {
@@ -2361,16 +1904,12 @@ describe("Trading API", () => {
     });
 
     expect(competitionResponse.success).toBe(true);
-    await wait(500);
 
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const solTokenAddress = config.specificChainTokens.svm.sol;
 
     // Attempt to execute a trade - this should fail because the agent is not registered
-    console.log(
-      "Attempting to trade with agent not registered for competition",
-    );
     const tradeResponse = await agentClient.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
@@ -2383,18 +1922,12 @@ describe("Trading API", () => {
     // Verify the trade failed
     expect(tradeResponse.success).toBe(false);
     expect((tradeResponse as ErrorResponse).error).toContain("not registered");
-    console.log(
-      `Trade failed as expected: ${(tradeResponse as ErrorResponse).error}`,
-    );
 
     // Verify that the agent can get balance but it should be empty since they're not in the competition
     const balanceResponse = await agentClient.getBalance();
     expect(balanceResponse.success).toBe(true);
     expect((balanceResponse as BalancesResponse).balances).toBeDefined();
     expect((balanceResponse as BalancesResponse).balances.length).toBe(0);
-    console.log(
-      `Balance check returned empty as expected: ${(balanceResponse as BalancesResponse).balances.length} balances`,
-    );
 
     // Verify that the agent can get trade history but it should be empty since they're not in the competition
     const tradeHistoryResponse = await agentClient.getTradeHistory();
@@ -2403,10 +1936,5 @@ describe("Trading API", () => {
     expect((tradeHistoryResponse as TradeHistoryResponse).trades.length).toBe(
       0,
     );
-    console.log(
-      `Trade history returned empty as expected: ${(tradeHistoryResponse as TradeHistoryResponse).trades.length} trades`,
-    );
-
-    console.log("✅ All unregistered agent tests passed!");
   });
 });
