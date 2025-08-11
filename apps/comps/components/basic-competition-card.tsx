@@ -52,7 +52,7 @@ export const BasicCompetitionCard: React.FC<BasicCompetitionCardProps> = ({
         <h1 className="mb-6 mt-4 text-4xl font-bold">{competition.name}</h1>
         <div className="flex h-3/4 items-center">
           <ShareModal
-            url={`https://app.recall.network/competitions/${competition.id}`}
+            url={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/competitions/${competition.id}`}
             title="Share Competition"
             subtitle={
               <p className="text-muted-foreground text-sm">
