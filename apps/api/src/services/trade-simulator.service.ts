@@ -164,10 +164,16 @@ export class TradeSimulator {
         toPrice,
         chainInfo,
         reason,
-        currentBalance,
       );
 
-      return result;
+      // Log trade summary
+      serviceLogger.debug(`[TradeSimulator] Trade executed successfully:
+                Initial ${fromToken} Balance: ${currentBalance}
+                New ${fromToken} Balance: ${result.updatedBalances.fromTokenBalance}
+                New ${toToken} Balance: ${result.updatedBalances.toTokenBalance ?? "N/A (burn)"}
+            `);
+
+      return result.trade;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error during trade";
@@ -915,8 +921,7 @@ export class TradeSimulator {
    * @param toPrice The price data for the destination token
    * @param chainInfo The resolved chain and specific chain information
    * @param reason The reason for the trade
-   * @param currentBalance The current balance of the agent's fromToken
-   * @returns The created trade record
+   * @returns Object containing the created trade record and updated balances
    */
   private async executeTradeAndUpdateDatabase(
     agentId: string,
@@ -931,8 +936,13 @@ export class TradeSimulator {
     toPrice: PriceReport,
     chainInfo: ChainOptions,
     reason: string,
-    currentBalance: number,
-  ): Promise<SelectTrade> {
+  ): Promise<{
+    trade: SelectTrade;
+    updatedBalances: {
+      fromTokenBalance: number;
+      toTokenBalance?: number;
+    };
+  }> {
     // Create trade record with atomic balance updates
     const trade: InsertTrade = {
       id: uuidv4(),
@@ -982,12 +992,6 @@ export class TradeSimulator {
     }
     this.tradeCache.set(agentId, cachedTrades);
 
-    serviceLogger.debug(`[TradeSimulator] Trade executed successfully:
-                Initial ${fromToken} Balance: ${currentBalance}
-                New ${fromToken} Balance: ${result.updatedBalances.fromTokenBalance}
-                New ${toToken} Balance: ${result.updatedBalances.toTokenBalance ?? "N/A (burn)"}
-            `);
-
-    return result.trade;
+    return result;
   }
 }
