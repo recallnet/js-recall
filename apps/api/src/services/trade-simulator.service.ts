@@ -167,19 +167,6 @@ export class TradeSimulator {
         currentBalance,
       );
 
-      // Trigger a portfolio snapshot for the trading agent only
-      // We run this asynchronously without awaiting to avoid delaying the trade response
-      this.portfolioSnapshotter
-        .takePortfolioSnapshotForAgent(competitionId, agentId)
-        .catch((error) => {
-          serviceLogger.error(
-            `[TradeSimulator] Error taking portfolio snapshot for agent ${agentId} after trade: ${error.message}`,
-          );
-        });
-      serviceLogger.debug(
-        `[TradeSimulator] Portfolio snapshot triggered for agent ${agentId} in competition ${competitionId} after trade`,
-      );
-
       return result;
     } catch (error) {
       const errorMessage =
