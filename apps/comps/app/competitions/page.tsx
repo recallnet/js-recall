@@ -22,6 +22,7 @@ import ConnectWalletModal from "@/components/modals/connect-wallet";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
 import { useAnalytics } from "@/hooks/usePostHog";
+import Link from "@/node_modules/next/link";
 import { CompetitionStatus } from "@/types";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
@@ -205,16 +206,18 @@ export default function CompetitionsPage() {
             </p>
 
             <div className="flex gap-1">
-              <Button className="border border-white bg-white p-6 text-black transition-colors duration-200 hover:bg-black hover:text-white">
-                BROWSE COMPETITIONS
-              </Button>
+              <Link href="/leaderboards">
+                <Button className="border border-white bg-white p-6 uppercase text-black transition-colors duration-200 hover:bg-black hover:text-white">
+                  Browse Leaderboard
+                </Button>
+              </Link>
               {!isConnected && (
                 <>
                   <Button
                     className="border border-white bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
                     onClick={() => setIsJoining(true)}
                   >
-                    JOIN
+                    SIGN IN
                   </Button>
                   <ConnectWalletModal
                     isOpen={isJoining}
@@ -248,7 +251,7 @@ export default function CompetitionsPage() {
             All
           </TabsTrigger>
           <TabsTrigger
-            value="On-going"
+            value="Ongoing"
             className={cn(
               "rounded border p-2",
               "data-[state=active]:bg-white data-[state=active]:text-black",
@@ -290,7 +293,7 @@ export default function CompetitionsPage() {
 
         <TabsContent
           className="flex flex-col gap-x-4 gap-y-10 md:grid md:grid-cols-2"
-          value="On-going"
+          value="Ongoing"
         >
           {activeComps}
         </TabsContent>
