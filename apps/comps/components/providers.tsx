@@ -38,7 +38,18 @@ function WalletProvider(props: { children: ReactNode }) {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 5 * 60 * 1000, //keep data for 5min
+            gcTime: 30 * 60 * 1000, //keep in cache after components unmount
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  );
 
   return (
     <ThemeProvider

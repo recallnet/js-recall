@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAtom } from "jotai";
 
 import { ApiClient, UnauthorizedError } from "@/lib/api-client";
-import { useUser } from "@/state/atoms";
+import { AuthStatus, useUser, userAtom } from "@/state/atoms";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 
 import { useClientCleanup } from "./useAuth";
@@ -14,7 +15,7 @@ const apiClient = new ApiClient();
  * @returns Query result with profile data
  */
 export const useProfile = () => {
-  const { status } = useUser();
+  const { status, user } = useUser();
   const cleanup = useClientCleanup();
 
   return useQuery({
@@ -22,6 +23,8 @@ export const useProfile = () => {
     staleTime: 1000,
     queryFn: async (): Promise<ProfileResponse["user"]> => {
       try {
+        if (user && user.name && status === "authenticated") return user;
+
         const res = await apiClient.getProfile();
         if (!res.success) throw new Error("Error when fetching profile");
         return res.user;
@@ -41,6 +44,7 @@ export const useProfile = () => {
  * @returns Mutation for updating profile
  */
 export const useUpdateProfile = () => {
+  const [_, setUser] = useAtom(userAtom);
   const queryClient = useQueryClient();
   const { trackEvent } = useAnalytics();
 
@@ -48,7 +52,7 @@ export const useUpdateProfile = () => {
     mutationFn: async (data: UpdateProfileRequest) => {
       return apiClient.updateProfile(data);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       const updatedFields = Object.keys(variables).filter(
         (key) => variables[key as keyof UpdateProfileRequest] !== undefined,
       );
@@ -59,6 +63,7 @@ export const useUpdateProfile = () => {
 
       // Invalidate profile query to get updated data
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      setUser({ user: data.user, status: "authenticated" as AuthStatus });
     },
   });
 };
