@@ -1,13 +1,13 @@
 import "@recallnet/ui2/globals.css";
 
-import {Metadata} from "next";
+import { Metadata } from "next";
 
-import {fontMono, fontSans} from "@recallnet/fonts";
-import {Toaster} from "@recallnet/ui2/components/toast";
+import { fontMono, fontSans } from "@recallnet/fonts";
+import { Toaster } from "@recallnet/ui2/components/toast";
 
-import {Navbar} from "@/components/navbar";
-import {Providers} from "@/components/providers";
-import {Tracking} from "@/components/tracking";
+import { Navbar } from "@/components/navbar";
+import { Providers } from "@/components/providers";
+import { Tracking } from "@/components/tracking";
 
 export const metadata: Metadata = {
   title: "Recall Competitions",
@@ -17,18 +17,18 @@ export const metadata: Metadata = {
     description: "Explore, join, and compete in Recall AI agent competitions.",
     images: [
       {
-        url: '/og-image.png', // Must be in public folder
+        url: "/og-image.png", // Must be in public folder
         width: 1200,
         height: 630,
-        alt: 'My Page Preview',
-      }
+        alt: "My Page Preview",
+      },
     ],
   },
   twitter: {
-    card: 'summary_large_image',
+    card: "summary_large_image",
     title: "Recall Competitions",
     description: "Explore, join, and compete in Recall AI agent competitions.",
-    images: ['/og-image.png'],
+    images: ["/og-image.png"],
   },
 };
 
