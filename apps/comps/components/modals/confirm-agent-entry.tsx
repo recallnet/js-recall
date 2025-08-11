@@ -97,7 +97,7 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
               <li className="flex items-center gap-1">
                 <span className="flex items-center">
                   <span
-                    className="mr-3 flex-shrink-0 rounded-full bg-current"
+                    className="mr-4 flex-shrink-0 rounded-full bg-current"
                     style={{ width: 5, height: 5 }}
                   ></span>
                   Prize Pool
