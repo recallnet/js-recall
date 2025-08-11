@@ -258,7 +258,7 @@ export default function CompetitionsPage() {
               "data-[state=inactive]:text-secondary-foreground",
             )}
           >
-            On-going
+            Ongoing
           </TabsTrigger>
           <TabsTrigger
             value="Upcoming"
