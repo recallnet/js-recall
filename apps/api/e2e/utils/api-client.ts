@@ -41,7 +41,6 @@ import {
   LoginResponse,
   LogoutResponse,
   NonceResponse,
-  PortfolioResponse,
   PriceHistoryResponse,
   PriceResponse,
   PublicAgentResponse,
@@ -864,17 +863,6 @@ export class ApiClient {
       return response.data as BalancesResponse;
     } catch (error) {
       return this.handleApiError(error, "get balances");
-    }
-  }
-  /**
-   * Get portfolio value and information
-   */
-  async getPortfolio(): Promise<PortfolioResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get("/api/agent/portfolio");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get portfolio");
     }
   }
 

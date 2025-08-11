@@ -764,7 +764,7 @@ Get agent balances
 
 ##### Description:
 
-Retrieve all token balances for the authenticated agent
+Retrieve all token balances with current prices for the authenticated agent
 
 ##### Responses
 
@@ -773,32 +773,6 @@ Retrieve all token balances for the authenticated agent
 | 200  | Balances retrieved successfully |
 | 401  | Agent not authenticated         |
 | 500  | Internal server error           |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| BearerAuth      |        |
-
-### /api/agent/portfolio
-
-#### GET
-
-##### Summary:
-
-Get agent portfolio
-
-##### Description:
-
-Retrieve portfolio information including total value and token breakdown for the authenticated agent
-
-##### Responses
-
-| Code | Description                      |
-| ---- | -------------------------------- |
-| 200  | Portfolio retrieved successfully |
-| 401  | Agent not authenticated          |
-| 500  | Internal server error            |
 
 ##### Security
 
