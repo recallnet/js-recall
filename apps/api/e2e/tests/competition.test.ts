@@ -1725,7 +1725,7 @@ describe("Competition API", () => {
       [agent1.id, agent2.id],
     );
     const competitionId = startResult.competition.id;
-
+    await wait(100);
     // Make trades with both clients
     const trades1 = await client1.executeTrade({
       fromToken: config.specificChainTokens.eth.eth,

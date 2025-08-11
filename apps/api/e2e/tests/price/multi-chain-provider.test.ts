@@ -115,6 +115,14 @@ describe("Multi-Chain Provider Tests", () => {
 
   describe("Multi-chain price fetching", () => {
     it("should try to fetch prices for Ethereum mainnet tokens", async () => {
+      // Ensure there is an active competition (required by price route middleware)
+      const { agent } = await registerUserAndAgentAndGetClient({ adminApiKey });
+      const startResp = await adminClient.startCompetition({
+        name: `Eth Token Price Test ${Date.now()}`,
+        agentIds: [agent.id],
+      });
+      expect(startResp.success).toBe(true);
+
       // Test direct price fetching from MultiChainProvider
       const ethToken = testTokens.eth.ETH;
 
@@ -167,6 +175,14 @@ describe("Multi-Chain Provider Tests", () => {
     });
 
     it("should try to fetch prices for unknown tokens by searching multiple chains", async () => {
+      // Ensure there is an active competition (required by price route middleware)
+      const { agent } = await registerUserAndAgentAndGetClient({ adminApiKey });
+      const startResp = await adminClient.startCompetition({
+        name: `Unknown Token Price Test ${Date.now()}`,
+        agentIds: [agent.id],
+      });
+      expect(startResp.success).toBe(true);
+
       // Example token from Base chain (this is a real token, but may not be in our test data)
       const unknownToken = "0x532f27101965dd16442E59d40670FaF5eBB142E4";
 
@@ -274,6 +290,16 @@ describe("Multi-Chain Provider Tests", () => {
           expectedChain: "eth",
         },
       ];
+
+      // Ensure there is an active competition (required by price route middleware)
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+      });
+      const startResp = await adminClient.startCompetition({
+        name: `Different Chain Price Test ${Date.now()}`,
+        agentIds: [agent.id],
+      });
+      expect(startResp.success).toBe(true);
 
       // Test each token directly with the MultiChainProvider
       for (const token of knownTokens) {

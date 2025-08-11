@@ -1897,6 +1897,21 @@ Purpose: WALLET_VERIFICATION`;
       const balanceResponse = await agentClient.getBalance();
       expect(balanceResponse.success).toBe(true);
 
+      // Ensure there is an active competition so the pricing endpoints are
+      // open, but do NOT add the first agent to it
+      const { agent: otherAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Active Competition Only Agent",
+        agentDescription:
+          "Agent used to create an active competition for middleware",
+      });
+      const startActiveCompResponse = await adminClient.startCompetition({
+        name: `Enable Price Access ${Date.now()}`,
+        description: "Active competition to satisfy price route middleware",
+        agentIds: [otherAgent.id],
+      });
+      expect(startActiveCompResponse.success).toBe(true);
+
       // 4. Price data access
       const priceResponse = await agentClient.getPrice(
         "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",

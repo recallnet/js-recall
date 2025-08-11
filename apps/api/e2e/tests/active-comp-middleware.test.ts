@@ -6,11 +6,13 @@ import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
+  wait,
 } from "@/e2e/utils/test-helpers.js";
 import { BlockchainType } from "@/types/index.js";
 
 describe("Active Competition Middleware", () => {
   test("GET /api/price returns 403 when no active competition exists", async () => {
+    await wait(100); // ensure cache is expired
     // Setup admin client and login
     const adminApiKey = await getAdminApiKey();
     const adminClient = createTestClient();
