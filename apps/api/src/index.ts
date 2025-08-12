@@ -14,7 +14,7 @@ import { makePriceController } from "@/controllers/price.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
-import { closeDb, migrateDb } from "@/database/db.js";
+import { closeDb, runMigrationsWithLock } from "@/database/db.js";
 import { apiLogger } from "@/lib/logger.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
@@ -48,29 +48,21 @@ const app = express();
 const apiRouter = express.Router();
 
 const PORT = config.server.port;
-let databaseInitialized = false;
 
 // Set up API prefix configuration
 const apiBasePath = config.server.apiPrefix
   ? `/${config.server.apiPrefix}`
   : "";
 
-// Only run migrations in development, not production
-if (process.env.NODE_ENV !== "production") {
-  try {
-    // Migrate the database if needed
-    apiLogger.info("Checking database connection...");
-    await migrateDb();
-    apiLogger.info("Database connection and schema verification completed");
-    databaseInitialized = true;
-  } catch (error) {
-    apiLogger.error(`Database initialization error: ${error}`);
-    apiLogger.error("Exiting...");
-    process.exit(1);
-  }
-} else {
-  apiLogger.info("Production mode: Skipping automatic database migrations");
-  databaseInitialized = true; // Assume database is already set up in production
+// Run migrations with distributed lock coordination
+try {
+  apiLogger.info("Attempting to run database migrations...");
+  await runMigrationsWithLock();
+  apiLogger.info("Database migrations completed successfully");
+} catch (error) {
+  apiLogger.error(`Database initialization error: ${error}`);
+  apiLogger.error("Exiting...");
+  process.exit(1);
 }
 
 const services = new ServiceRegistry();
@@ -242,9 +234,6 @@ const mainServer = app.listen(PORT, "0.0.0.0", () => {
   apiLogger.info(`\n========================================`);
   apiLogger.info(`Server is running on port ${PORT}`);
   apiLogger.info(`Environment: ${config.server.nodeEnv}`);
-  apiLogger.info(
-    `Database: ${databaseInitialized ? "Connected" : "Error - Limited functionality"}`,
-  );
   apiLogger.info(
     `API documentation: http://localhost:${PORT}${apiBasePath}/api/docs`,
   );
