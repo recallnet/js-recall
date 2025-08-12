@@ -231,7 +231,7 @@ export function makeAgentController(services: ServiceRegistry) {
       try {
         const agentId = req.agentId as string;
 
-        // Get the balances, this could be hundereds
+        // Get the balances, this could be hundreds
         const balances = await services.balanceManager.getAllBalances(agentId);
 
         // Extract all unique token addresses
