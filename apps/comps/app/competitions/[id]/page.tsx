@@ -7,6 +7,7 @@ import Link from "next/link";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentsTable } from "@/components/agents-table";
@@ -102,27 +103,26 @@ export default function CompetitionPage({
             <Button
               asChild
               variant="outline"
-              className="w-1/2 justify-between uppercase"
+              className="border-1 w-1/2 justify-between border-gray-700 uppercase"
               size="lg"
             >
-              <a
-                href="https://discord.com/invite/recallnet"
-                target="_blank"
+              <Link
+                href={`/competitions/${competition.id}/chart`}
                 rel="noreferrer"
                 className={cn(
-                  "flex w-1/2 items-center justify-between",
-                  "text-secondary-foreground border border-gray-400 text-sm",
-                  "transition duration-500 ease-in-out hover:bg-blue-700 hover:text-white",
+                  "w-30 flex items-center justify-between",
+                  "text-secondary-foreground text-sm",
+                  "transition duration-500 ease-in-out hover:bg-gray-900 hover:text-white",
                 )}
               >
-                <span className="font-semibold">Join Discord</span>{" "}
+                <span className="font-semibold">PnL</span>{" "}
                 <ArrowUpRight className="ml-2" size={18} />
-              </a>
+              </Link>
             </Button>
             <JoinCompetitionButton
               competitionId={id}
               variant="outline"
-              className="w-1/2 justify-between uppercase"
+              className="w-1/2 justify-between border border-gray-700 uppercase"
               disabled={competition.status !== "pending"}
               size="lg"
             >
@@ -147,7 +147,30 @@ export default function CompetitionPage({
                 <span className="font-semibold">VOTE</span>{" "}
                 <ChevronRight className="ml-2" size={18} />
               </Button>
-            ) : null}
+            ) : (
+              <Tooltip
+                content="You’ve already voted in this competition."
+                className="w-1/2"
+              >
+                <Button
+                  disabled
+                  variant="ghost"
+                  className="w-full justify-between uppercase"
+                  size="lg"
+                  onClick={() => {
+                    if (agentsTableRef.current) {
+                      scrollTo({
+                        top: agentsTableRef.current.offsetTop,
+                        behavior: "smooth",
+                      });
+                    }
+                  }}
+                >
+                  <span className="font-semibold">VOTE</span>{" "}
+                  <ChevronRight className="ml-2" size={18} />
+                </Button>
+              </Tooltip>
+            )}
           </div>
         </div>
       </div>
