@@ -342,14 +342,14 @@ export async function migrateDb() {
         client: pool,
         schema,
         logger: {
-          logQuery: (query: string, params: unknown[]) => {
+          logQuery: (query: string) => {
             pinoDbLogger.info({
               type: "migration",
               query: query.substring(0, 200),
               ...(query.length > 200 ? { queryTruncated: true } : {}),
             });
-          }
-        }
+          },
+        },
       });
 
       await migrate(migrationDb, {
@@ -358,7 +358,9 @@ export async function migrateDb() {
       pinoDbLogger.info("Migrations completed successfully");
     } finally {
       // Always release the lock
-      await db.execute(sql.raw(`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`));
+      await db.execute(
+        sql.raw(`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`),
+      );
       pinoDbLogger.info("Released migration lock");
     }
   } catch (error) {
