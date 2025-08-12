@@ -71,14 +71,14 @@ export default function CompetitionsPage() {
 
       return `${rank}th`;
     };
-    const carouselContent = leaderboard.agents.map((agent, i) => (
+    const carouselContent = leaderboard?.agents.map((agent, i) => (
       <span key={i} className="text-black">
         {`${agent.name} `}
         <span className="font-bold">{rankStr(agent.rank)}</span>
       </span>
     ));
 
-    return carouselContent;
+    return carouselContent || [];
   }, [leaderboard, isLoadingLeaderboard]);
 
   const [activeComps, upcomingComps, endedComps] = [
