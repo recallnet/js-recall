@@ -336,7 +336,23 @@ export async function migrateDb() {
 
     try {
       pinoDbLogger.info("Acquired migration lock, running migrations...");
-      await migrate(db, {
+
+      // Create a database instance with verbose logging for migrations only
+      const migrationDb = drizzle({
+        client: pool,
+        schema,
+        logger: {
+          logQuery: (query: string, params: unknown[]) => {
+            pinoDbLogger.info({
+              type: "migration",
+              query: query.substring(0, 200),
+              ...(query.length > 200 ? { queryTruncated: true } : {}),
+            });
+          }
+        }
+      });
+
+      await migrate(migrationDb, {
         migrationsFolder: path.join(__dirname, "../../drizzle"),
       });
       pinoDbLogger.info("Migrations completed successfully");
