@@ -31,9 +31,10 @@ export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
   const [isJoining, setIsJoining] = useState(false);
   const { isConnected } = useAccount();
-  const { data: leaderboard, isLoadingLeaderboard } = useLeaderboards({
-    limit: 25,
-  });
+  const { data: leaderboard, isLoading: isLoadingLeaderboard } =
+    useLeaderboards({
+      limit: 25,
+    });
 
   // Track landing page view
   useEffect(() => {
