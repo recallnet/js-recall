@@ -21,66 +21,19 @@ import { JoinSwarmSection } from "@/components/join-swarm-section";
 import ConnectWalletModal from "@/components/modals/connect-wallet";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
+import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { useAnalytics } from "@/hooks/usePostHog";
 import Link from "@/node_modules/next/link";
 import { CompetitionStatus } from "@/types";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
-function getTimeUntilDate(targetDate: string | Date): string {
-  const now = new Date();
-  const target = new Date(targetDate);
-
-  // Reset time to start of day for accurate comparison
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const targetDay = new Date(
-    target.getFullYear(),
-    target.getMonth(),
-    target.getDate(),
-  );
-
-  const diffInMs = targetDay.getTime() - today.getTime();
-  const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
-
-  // If it's today
-  if (diffInDays === 0) {
-    return "today";
-  }
-
-  // If it's in the past
-  if (diffInDays < 0) {
-    const pastDays = Math.abs(diffInDays);
-    if (pastDays === 1) return "yesterday";
-    if (pastDays < 7) return `${pastDays} days ago`;
-    if (pastDays < 30) {
-      const weeks = Math.floor(pastDays / 7);
-      return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
-    }
-    const months = Math.floor(pastDays / 30);
-    return `${months} month${months > 1 ? "s" : ""} ago`;
-  }
-
-  // Future dates
-  if (diffInDays === 1) {
-    return "tomorrow";
-  }
-
-  if (diffInDays < 7) {
-    return `in ${diffInDays} days`;
-  }
-
-  if (diffInDays < 30) {
-    const weeks = Math.floor(diffInDays / 7);
-    return `in ${weeks} week${weeks > 1 ? "s" : ""}`;
-  }
-
-  const months = Math.floor(diffInDays / 30);
-  return `in ${months} month${months > 1 ? "s" : ""}`;
-}
-
 export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
   const [isJoining, setIsJoining] = useState(false);
   const { isConnected } = useAccount();
+  const { data: leaderboard, isLoadingLeaderboard } = useLeaderboards({
+    limit: 25,
+  });
 
   // Track landing page view
   useEffect(() => {
@@ -108,36 +61,24 @@ export default function CompetitionsPage() {
     useUserCompetitions();
 
   const carouselContent = React.useMemo(() => {
-    const compCarousel =
-      upcomingCompetitions?.competitions
-        .filter((comp) => !!comp.startDate)
-        .map((comp, i) => (
-          <span key={i} className="text-black">
-            {comp.name} starts in{" "}
-            <span className="font-bold">
-              {getTimeUntilDate(new Date(comp?.startDate as string))}
-            </span>
-          </span>
-        )) || [];
-    const votesCarousel =
-      upcomingCompetitions?.competitions
-        .filter((comp) => !!comp.stats?.totalVotes)
-        .map((comp, i) => (
-          <span key={i} className="text-black">
-            {comp.name} received{" "}
-            <span className="font-bold">
-              {comp.stats.totalVotes} total votes
-            </span>
-          </span>
-        )) || [];
-    const carouselContent = compCarousel.concat(votesCarousel).concat([
-      <span key="custom">
-        Placeholder content <span className="font-bold">1000</span>
-      </span>,
-    ]);
+    if (isLoadingLeaderboard) return [];
+
+    const rankStr = (rank: number) => {
+      if (rank === 1) return "1st";
+      if (rank === 2) return "2nd";
+      if (rank === 3) return "3rd";
+
+      return `${rank}th`;
+    };
+    const carouselContent = leaderboard.agents.map((agent, i) => (
+      <span key={i} className="text-black">
+        {`${agent.name} `}
+        <span className="font-bold">{rankStr(agent.rank)}</span>
+      </span>
+    ));
 
     return carouselContent;
-  }, [upcomingCompetitions?.competitions]);
+  }, [leaderboard, isLoadingLeaderboard]);
 
   const [activeComps, upcomingComps, endedComps] = [
     mergeCompetitionsWithUserData(
@@ -164,7 +105,8 @@ export default function CompetitionsPage() {
     isLoadingActiveCompetitions ||
     isLoadingUpcomingCompetitions ||
     isLoadingEndedCompetitions ||
-    isLoadingUserCompetitions
+    isLoadingUserCompetitions ||
+    isLoadingLeaderboard
   ) {
     return <CompetitionsSkeleton />;
   }
@@ -342,9 +284,9 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
     ],
   );
 
-  // at least 8 elements. The carousel must be filled to work
+  // at least 15 elements. The carousel must be filled to work
   const multiplyContent =
-    Math.floor(8 / texts.length) + Number(8 % texts.length != 0);
+    Math.floor(15 / texts.length) + Number(8 % texts.length != 0);
   const content = Array.from({ length: multiplyContent }, () => [
     ...texts,
   ]).flat();
@@ -373,7 +315,10 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex gap-10">
           {content.map((component, index) => (
-            <div key={index} className="flex items-center gap-10">
+            <div
+              key={index}
+              className={cn("flex items-center gap-10", index == 0 && "ml-10")}
+            >
               {renderComponent(component, index)}
               {sparkle}
             </div>
