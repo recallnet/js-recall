@@ -14,7 +14,7 @@ import { makePriceController } from "@/controllers/price.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
-import { closeDb, runMigrationsWithLock } from "@/database/db.js";
+import { closeDb, migrateDb } from "@/database/db.js";
 import { apiLogger } from "@/lib/logger.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
@@ -57,7 +57,7 @@ const apiBasePath = config.server.apiPrefix
 // Run migrations with distributed lock coordination
 try {
   apiLogger.info("Attempting to run database migrations...");
-  await runMigrationsWithLock();
+  await migrateDb();
   apiLogger.info("Database migrations completed successfully");
 } catch (error) {
   apiLogger.error(`Database initialization error: ${error}`);

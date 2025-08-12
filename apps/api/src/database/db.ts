@@ -318,53 +318,37 @@ export async function dropAll() {
   });
 }
 
-async function migrateDb() {
-  // Run normal Drizzle migrations
-  await migrate(db, {
-    migrationsFolder: path.join(__dirname, "../../drizzle"),
-  });
-}
-
 /**
  * Run database migrations with distributed lock coordination
  * Uses PostgreSQL advisory locks to ensure only one instance runs migrations
  */
-export async function runMigrationsWithLock() {
+export async function migrateDb() {
   const MIGRATION_LOCK_ID = 77; // Arbitrary but consistent lock ID
-  const MAX_WAIT_TIME = 300000; // 5 minutes timeout
-  const RETRY_INTERVAL = 5000; // Check every 5 seconds
+  const MAX_WAIT_TIME = "5min";
 
-  const startTime = Date.now();
+  try {
+    // Set lock timeout to match MAX_WAIT_TIME
+    await db.execute(sql.raw(`SET lock_timeout = '${MAX_WAIT_TIME}'`));
 
-  while (Date.now() - startTime < MAX_WAIT_TIME) {
+    // Acquire the advisory lock (blocking with timeout)
+    pinoDbLogger.info("Acquiring migration lock...");
+    await db.execute(sql.raw(`SELECT pg_advisory_lock(${MIGRATION_LOCK_ID})`));
+
     try {
-      // Try to acquire the advisory lock (non-blocking)
-      const result = await db.execute(sql`SELECT pg_try_advisory_lock(${MIGRATION_LOCK_ID}) as acquired`);
-      const acquired = result.rows[0]?.acquired;
-
-      if (acquired) {
-        try {
-          pinoDbLogger.info("Acquired migration lock, running migrations...");
-          await migrateDb();
-          pinoDbLogger.info("Migrations completed successfully");
-          return;
-        } finally {
-          // Always release the lock
-          await db.execute(sql`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`);
-          pinoDbLogger.info("Released migration lock");
-        }
-      } else {
-        // Another instance is running migrations, wait and retry
-        pinoDbLogger.info("Another instance is running migrations, waiting...");
-        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
-      }
-    } catch (error) {
-      pinoDbLogger.error("Error during migration lock process:", error);
-      throw error;
+      pinoDbLogger.info("Acquired migration lock, running migrations...");
+      await migrate(db, {
+        migrationsFolder: path.join(__dirname, "../../drizzle"),
+      });
+      pinoDbLogger.info("Migrations completed successfully");
+    } finally {
+      // Always release the lock
+      await db.execute(sql.raw(`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`));
+      pinoDbLogger.info("Released migration lock");
     }
+  } catch (error) {
+    pinoDbLogger.error("Error during migration lock process:", error);
+    throw error;
   }
-
-  throw new Error(`Migration lock timeout after ${MAX_WAIT_TIME}ms`);
 }
 
 export async function seedDb() {
