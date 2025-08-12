@@ -2,12 +2,11 @@
 
 import React from "react";
 
-import { SortState } from "@recallnet/ui2/components/table";
-
 import AgentProfile from "@/components/agent-profile";
 import { LoadingAgentProfile } from "@/components/agent-profile/loading";
 import { FooterSection } from "@/components/footer-section";
 import { useAgent } from "@/hooks/useAgent";
+import { useSorting } from "@/hooks/useSorting";
 import { AgentWithOwnerResponse } from "@/types";
 
 export default function AgentPage({
@@ -18,20 +17,9 @@ export default function AgentPage({
   const { id } = React.use(params);
 
   const [status, setCompStatus] = React.useState("all");
-  const [sortState, setSorted] = React.useState(
-    {} as Record<string, SortState>,
-  );
+  const { sortState, handleSortChange } = useSorting();
   const { data, isLoading: isLoadingAgent } = useAgent(id);
   const { agent, owner } = data || ({} as unknown as AgentWithOwnerResponse);
-
-  const handleSortChange = React.useCallback((field: string) => {
-    setSorted((sort) => {
-      const cur = sort[field];
-      const nxt =
-        !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return { [field]: nxt };
-    });
-  }, []);
 
   if (isLoadingAgent || !agent) return <LoadingAgentProfile />;
 

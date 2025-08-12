@@ -1,4 +1,4 @@
-import { ArrowDownUp } from "lucide-react";
+import { ArrowDown, ArrowDownUp, ArrowUp } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
@@ -98,23 +98,29 @@ function SortableTableHeader({
   onToggleSort = () => 1,
   ...props
 }: SortableTableHeaderProps) {
-  const iconSize = sortState === "none" ? 20 : 22;
-  const iconClass = cn(
-    "transition-transform duration-200",
-    sortState === "none" && "text-secondary-foreground",
-    sortState !== "none" && "text-white",
-    sortState === "desc" && "rotate-180",
-  );
+  const getSortIcon = () => {
+    switch (sortState) {
+      case "asc":
+        return <ArrowUp className="text-white" size={16} />;
+      case "desc":
+        return <ArrowDown className="text-white" size={16} />;
+      default:
+        return <ArrowDownUp className="text-secondary-foreground" size={16} />;
+    }
+  };
 
   return (
     <TableHead
       onClick={onToggleSort}
-      className={cn("hover:bg-accent/50 cursor-pointer text-left", className)}
+      className={cn(
+        "hover:bg-accent/50 cursor-pointer text-left text-sm font-bold leading-[150%] tracking-[0.03em]",
+        className,
+      )}
       {...props}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <span className="font-semibold">{props.children}</span>
-        <ArrowDownUp className={iconClass} size={iconSize} />
+        {getSortIcon()}
       </div>
     </TableHead>
   );
