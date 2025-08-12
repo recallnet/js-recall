@@ -84,6 +84,26 @@ export default function CompetitionPage({
     );
   }
 
+  const votingBtn = (
+    <Button
+      disabled
+      variant="ghost"
+      className="w-full justify-between uppercase"
+      size="lg"
+      onClick={() => {
+        if (agentsTableRef.current) {
+          scrollTo({
+            top: agentsTableRef.current.offsetTop,
+            behavior: "smooth",
+          });
+        }
+      }}
+    >
+      <span className="font-semibold">VOTE</span>{" "}
+      <ChevronRight className="ml-2" size={18} />
+    </Button>
+  );
+
   return (
     <div style={{ marginTop: "-40px" }}>
       <CompetitionVotingBanner competition={competition} />
@@ -130,47 +150,17 @@ export default function CompetitionPage({
               <Plus className="ml-2" size={18} />
             </JoinCompetitionButton>
             {competition.userVotingInfo?.canVote ? (
-              <Button
-                disabled={!competition.votingEnabled}
-                variant="ghost"
-                className="w-1/2 justify-between uppercase"
-                size="lg"
-                onClick={() => {
-                  if (agentsTableRef.current) {
-                    scrollTo({
-                      top: agentsTableRef.current.offsetTop,
-                      behavior: "smooth",
-                    });
-                  }
-                }}
-              >
-                <span className="font-semibold">VOTE</span>{" "}
-                <ChevronRight className="ml-2" size={18} />
-              </Button>
-            ) : (
-              <Tooltip
-                content="You’ve already voted in this competition."
-                className="w-1/2"
-              >
-                <Button
-                  disabled
-                  variant="ghost"
-                  className="w-full justify-between uppercase"
-                  size="lg"
-                  onClick={() => {
-                    if (agentsTableRef.current) {
-                      scrollTo({
-                        top: agentsTableRef.current.offsetTop,
-                        behavior: "smooth",
-                      });
-                    }
-                  }}
+              competition.userVotingInfo?.info?.hasVoted ? (
+                <Tooltip
+                  content="You’ve already voted in this competition."
+                  className="w-1/2"
                 >
-                  <span className="font-semibold">VOTE</span>{" "}
-                  <ChevronRight className="ml-2" size={18} />
-                </Button>
-              </Tooltip>
-            )}
+                  {votingBtn}
+                </Tooltip>
+              ) : (
+                votingBtn
+              )
+            ) : null}
           </div>
         </div>
       </div>
