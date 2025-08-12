@@ -38,6 +38,7 @@ import { configureUserRoutes } from "@/routes/user.routes.js";
 import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
+import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
 // Create Express app
@@ -128,28 +129,19 @@ const agentApiKeyRoutes = [
 ];
 
 const userSessionRoutes = [`${apiBasePath}/api/user`];
-
-// Apply agent API key authentication to agent routes
-app.use(
-  agentApiKeyRoutes,
-  authMiddleware(
-    services.agentManager,
-    services.userManager,
-    services.adminManager,
-    services.competitionManager,
-  ),
+const authMiddlewareInstance = authMiddleware(
+  services.agentManager,
+  services.userManager,
+  services.adminManager,
 );
+// Apply agent API key authentication to agent routes
+app.use(agentApiKeyRoutes, authMiddlewareInstance);
 
 // Apply SIWE session authentication to user routes
 app.use(
   userSessionRoutes,
   siweSessionMiddleware, // Apply SIWE session middleware first to populate req.session
-  authMiddleware(
-    services.agentManager,
-    services.userManager,
-    services.adminManager,
-    services.competitionManager,
-  ),
+  authMiddlewareInstance,
 );
 
 // Apply rate limiting middleware AFTER authentication
@@ -180,23 +172,13 @@ const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(
   authController,
   siweSessionMiddleware,
-  authMiddleware(
-    services.agentManager,
-    services.userManager,
-    services.adminManager,
-    services.competitionManager,
-  ),
+  authMiddlewareInstance,
 );
 const competitionsRoutes = configureCompetitionsRoutes(
   competitionController,
   optionalAuth,
   siweSessionMiddleware,
-  authMiddleware(
-    services.agentManager,
-    services.userManager,
-    services.adminManager,
-    services.competitionManager,
-  ),
+  authMiddlewareInstance,
 );
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
@@ -210,11 +192,12 @@ const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
 
+const activeCompFilter = activeCompMiddleware();
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
 apiRouter.use("/verify-email", emailVerificationRoutes);
-apiRouter.use("/trade", tradeRoutes);
-apiRouter.use("/price", priceRoutes);
+apiRouter.use("/trade", activeCompFilter, tradeRoutes);
+apiRouter.use("/price", activeCompFilter, priceRoutes);
 apiRouter.use("/competitions", competitionsRoutes);
 apiRouter.use("/admin/setup", adminSetupRoutes);
 apiRouter.use("/admin", adminRoutes);
