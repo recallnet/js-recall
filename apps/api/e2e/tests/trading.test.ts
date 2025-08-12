@@ -10,7 +10,6 @@ import {
   BlockchainType,
   CROSS_CHAIN_TRADING_TYPE,
   ErrorResponse,
-  PortfolioResponse,
   PriceResponse,
   QuoteResponse,
   SpecificChain,
@@ -416,11 +415,14 @@ describe("Trading API", () => {
     expect((excessiveAmountResponse as ErrorResponse).error).toContain(
       "Cannot trade between identical tokens",
     );
-    // Get portfolio value to calculate appropriate test amounts
-    const portfolioResponse =
-      (await agentClient.getPortfolio()) as PortfolioResponse;
-    expect(portfolioResponse.success).toBe(true);
-    const portfolioValue = portfolioResponse.totalValue;
+    // Get fresh balances to calculate current portfolio value after trade attempts
+    const balancesResponse = await agentClient.getBalance();
+    expect(balancesResponse.success).toBe(true);
+    const balances = (balancesResponse as BalancesResponse).balances;
+    const portfolioValue = balances.reduce(
+      (sum, balance) => sum + (balance.value || 0),
+      0,
+    );
     // Test insufficient balance with an amount below max trade percentage but above actual balance
     // Calculate 25% of portfolio value (below the 30% max trade limit) but ensure it exceeds the USDC balance
     const insufficientBalanceAmount = Math.max(
@@ -563,11 +565,12 @@ describe("Trading API", () => {
     console.log(`Consolidated USDC balance: ${consolidatedUsdcBalance}`);
     expect(consolidatedUsdcBalance).toBeGreaterThan(0);
 
-    // Get portfolio value to calculate trade percentage
-    const portfolioResponse =
-      (await agentClient.getPortfolio()) as PortfolioResponse;
-    expect(portfolioResponse.success).toBe(true);
-    const portfolioValue = portfolioResponse.totalValue;
+    // Calculate portfolio value from existing balance data after consolidation
+    const balances = (balanceAfterConsolidation as BalancesResponse).balances;
+    const portfolioValue = balances.reduce(
+      (sum, balance) => sum + balance.value,
+      0,
+    );
     console.log(`Portfolio value: $${portfolioValue}`);
 
     // Try to trade almost all of our USDC balance for SOL
@@ -1866,67 +1869,62 @@ describe("Trading API", () => {
       }
     }
 
-    // 6. Verify symbols in portfolio response
-    console.log("6. Checking symbols in portfolio response...");
-    const portfolioResponse = await agentClient.getPortfolio();
-    expect(portfolioResponse.success).toBe(true);
+    // 6. Verify symbols in balances response
+    console.log("6. Checking symbols in balances response...");
+    // Reuse existing balance data since no trades were executed since the last balance fetch
+    const symbolBalances = (updatedBalanceResponse as BalancesResponse)
+      .balances;
+    expect(symbolBalances).toBeDefined();
+    expect(symbolBalances.length).toBeGreaterThan(0);
 
-    if (portfolioResponse.success) {
-      const portfolio = portfolioResponse as PortfolioResponse;
-      expect(portfolio.tokens).toBeDefined();
-      expect(portfolio.tokens.length).toBeGreaterThan(0);
+    // Check each token in the balances has a symbol
+    symbolBalances.forEach((balance, index) => {
+      expect(balance.symbol).toBeDefined();
+      expect(typeof balance.symbol).toBe("string");
+      expect(balance.symbol.length).toBeGreaterThan(0);
+      console.log(
+        `Balance token ${index} symbol: "${balance.symbol}" for address ${balance.tokenAddress}`,
+      );
+    });
 
-      // Check each token in the portfolio has a symbol
-      portfolio.tokens.forEach((token, index) => {
-        expect(token.symbol).toBeDefined();
-        expect(typeof token.symbol).toBe("string");
-        expect(token.symbol.length).toBeGreaterThan(0);
-        console.log(
-          `Portfolio token ${index} symbol: "${token.symbol}" for address ${token.token}`,
-        );
-      });
-    }
-
-    // 7. Verify symbols match between responses
-    console.log("7. Verifying symbol consistency across responses...");
-    if (
-      !("error" in quoteResponse) &&
-      tradeResponse.success &&
-      portfolioResponse.success
-    ) {
+    // 7. Verify symbols match between trade execution and balances response
+    console.log(
+      "7. Verifying symbol consistency between trade execution and balances...",
+    );
+    if (!("error" in quoteResponse) && tradeResponse.success) {
       const quote = quoteResponse as QuoteResponse;
       const tradeTransaction = (tradeResponse as TradeResponse).transaction;
-      const portfolio = portfolioResponse as PortfolioResponse;
+      const balances = (updatedBalanceResponse as BalancesResponse).balances;
 
-      // Find SOL token in portfolio (the toToken from our trade)
-      const solTokenInPortfolio = portfolio.tokens.find(
-        (t) => t.token === solTokenAddress,
+      // Find SOL token in balances (the toToken from our trade)
+      const solTokenInBalances = balances.find(
+        (b) => b.tokenAddress === solTokenAddress,
       );
 
-      // Find USDC token in portfolio (the fromToken from our trade)
-      const usdcTokenInPortfolio = portfolio.tokens.find(
-        (t) => t.token === usdcTokenAddress,
+      // Find USDC token in balances (the fromToken from our trade)
+      const usdcTokenInBalances = balances.find(
+        (b) => b.tokenAddress === usdcTokenAddress,
       );
 
-      if (solTokenInPortfolio) {
-        // Verify the toTokenSymbol from quote matches what's in the portfolio
-        expect(quote.symbols.toTokenSymbol).toBe(solTokenInPortfolio.symbol);
+      if (solTokenInBalances) {
+        // Verify the toTokenSymbol from quote matches what's in the balances
+        expect(quote.symbols.toTokenSymbol).toBe(solTokenInBalances.symbol);
 
-        // Verify the toTokenSymbol from trade execution matches what's in the portfolio
-        expect(tradeTransaction.toTokenSymbol).toBe(solTokenInPortfolio.symbol);
+        // Verify the toTokenSymbol from trade execution matches what's in the balances
+        expect(tradeTransaction.toTokenSymbol).toBe(solTokenInBalances.symbol);
 
         console.log(
           `toTokenSymbol consistency verified: "${quote.symbols.toTokenSymbol}" across all responses`,
         );
       }
 
-      if (usdcTokenInPortfolio) {
-        // Verify the fromTokenSymbol from quote matches what's in the portfolio
-        expect(quote.symbols.fromTokenSymbol).toBe(usdcTokenInPortfolio.symbol);
+      if (usdcTokenInBalances) {
+        // Verify the fromTokenSymbol from quote matches what's in the balances
+        expect(quote.symbols.fromTokenSymbol).toBe(usdcTokenInBalances.symbol);
 
-        // Verify the fromTokenSymbol from trade execution matches what's in the portfolio
+        // Verify the fromTokenSymbol from trade execution matches what's in the balances
         expect(tradeTransaction.fromTokenSymbol).toBe(
-          usdcTokenInPortfolio.symbol,
+          usdcTokenInBalances.symbol,
         );
 
         console.log(
@@ -2407,16 +2405,6 @@ describe("Trading API", () => {
     );
     console.log(
       `Trade history returned empty as expected: ${(tradeHistoryResponse as TradeHistoryResponse).trades.length} trades`,
-    );
-
-    // Verify that the agent can get portfolio but it should be empty since they're not in the competition
-    const portfolioResponse = await agentClient.getPortfolio();
-    expect(portfolioResponse.success).toBe(true);
-    expect((portfolioResponse as PortfolioResponse).tokens).toBeDefined();
-    expect((portfolioResponse as PortfolioResponse).tokens.length).toBe(0);
-    expect((portfolioResponse as PortfolioResponse).totalValue).toBe(0);
-    console.log(
-      `Portfolio returned empty as expected: ${(portfolioResponse as PortfolioResponse).tokens.length} tokens, total value: $${(portfolioResponse as PortfolioResponse).totalValue}`,
     );
 
     console.log("✅ All unregistered agent tests passed!");
