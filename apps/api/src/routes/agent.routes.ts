@@ -191,7 +191,7 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    * /api/agent/balances:
    *   get:
    *     summary: Get agent balances
-   *     description: Retrieve all token balances for the authenticated agent
+   *     description: Retrieve all token balances with current prices for the authenticated agent
    *     tags:
    *       - Agent
    *     security:
@@ -221,6 +221,14 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       amount:
    *                         type: number
    *                         example: 100.5
+   *                       price:
+   *                         type: number
+   *                         description: Current token price in USD
+   *                         example: 1.0
+   *                       value:
+   *                         type: number
+   *                         description: Token value in USD (amount * price)
+   *                         example: 100.5
    *                       symbol:
    *                         type: string
    *                         example: "USDC"
@@ -236,79 +244,6 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *         description: Internal server error
    */
   router.get("/balances", agentController.getBalances);
-
-  /**
-   * @openapi
-   * /api/agent/portfolio:
-   *   get:
-   *     summary: Get agent portfolio
-   *     description: Retrieve portfolio information including total value and token breakdown for the authenticated agent
-   *     tags:
-   *       - Agent
-   *     security:
-   *       - BearerAuth: []
-   *     responses:
-   *       200:
-   *         description: Portfolio retrieved successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 agentId:
-   *                   type: string
-   *                   format: uuid
-   *                 totalValue:
-   *                   type: number
-   *                   description: Total portfolio value in USD
-   *                   example: 1250.75
-   *                 tokens:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       token:
-   *                         type: string
-   *                         description: Token address
-   *                         example: "0x1234567890abcdef1234567890abcdef12345678"
-   *                       amount:
-   *                         type: number
-   *                         description: Token amount
-   *                         example: 100.5
-   *                       price:
-   *                         type: number
-   *                         description: Token price in USD
-   *                         example: 1.0
-   *                       value:
-   *                         type: number
-   *                         description: Token value in USD
-   *                         example: 100.5
-   *                       chain:
-   *                         type: string
-   *                         enum: [evm, svm]
-   *                       specificChain:
-   *                         type: string
-   *                         example: "svm"
-   *                       symbol:
-   *                         type: string
-   *                         example: "USDC"
-   *                 source:
-   *                   type: string
-   *                   description: Data source (snapshot or live-calculation)
-   *                   enum: [snapshot, live-calculation]
-   *                 snapshotTime:
-   *                   type: string
-   *                   format: date-time
-   *                   description: Time of snapshot (only present if source is snapshot)
-   *       401:
-   *         description: Agent not authenticated
-   *       500:
-   *         description: Internal server error
-   */
-  router.get("/portfolio", agentController.getPortfolio);
 
   /**
    * @openapi

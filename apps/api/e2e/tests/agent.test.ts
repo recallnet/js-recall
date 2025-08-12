@@ -33,6 +33,7 @@ import {
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { generateHandleFromName, isValidHandle } from "@/lib/handle-utils.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 describe("Agent API", () => {
   // Clean up test state before each test
@@ -2524,8 +2525,9 @@ Purpose: WALLET_VERIFICATION`;
         reason: "Agent 4 catastrophic trade - burning everything",
       });
 
-      // Wait for portfolio snapshots to be created
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Trigger portfolio snapshots proactively
+      const services = new ServiceRegistry();
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
       // Check rankings for each agent
       const rankingResults = [];

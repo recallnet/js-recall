@@ -245,6 +245,8 @@ export interface TokenBalance {
   chain: BlockchainType;
   specificChain: SpecificChain;
   symbol: string;
+  price: number;
+  value: number;
 }
 
 // Balances response
@@ -262,15 +264,6 @@ export interface TokenPortfolioItem {
   chain: BlockchainType;
   specificChain: SpecificChain | null;
   symbol: string;
-}
-
-// Portfolio response
-export interface PortfolioResponse extends ApiResponse {
-  agentId: string;
-  totalValue: number;
-  tokens: TokenPortfolioItem[];
-  snapshotTime: string;
-  source: PortfolioSource;
 }
 
 // Trade transaction
