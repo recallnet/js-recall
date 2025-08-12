@@ -685,11 +685,9 @@ describe("Sandbox Mode", () => {
     expect(latestSnapshot?.agentId).toBe(newAgent!.id);
     expect(latestSnapshot?.competitionId).toBe(competition.id);
 
-    // Verify the snapshot has token values (confirming it's a complete snapshot)
-    expect(latestSnapshot?.valuesByToken).toBeDefined();
-    expect(Object.keys(latestSnapshot!.valuesByToken).length).toBeGreaterThan(
-      0,
-    );
+    // Verify the snapshot has a total value (confirming it's a complete snapshot)
+    expect(latestSnapshot?.totalValue).toBeDefined();
+    expect(latestSnapshot?.totalValue).toBeGreaterThan(0);
 
     console.log(
       `[Test] Manually added agent ${newAgent.id} successfully got portfolio snapshot with total value: $${latestSnapshot?.totalValue}`,
