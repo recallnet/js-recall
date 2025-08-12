@@ -14,13 +14,13 @@ import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
-import { CompetitionStatus } from "@/types";
+import { AgentCompetition, CompetitionStatus } from "@/types";
 import { formatDate } from "@/utils/format";
 
 import { ShareModal } from "../share-modal";
 import { ChartSkeleton } from "./chart-skeleton";
 import { ChartWrapper } from "./chart-wrapper";
-import { HoverContext, LIMIT_AGENTS_PER_PAGE, colors } from "./constants";
+import { CHART_COLORS, HoverContext, LIMIT_AGENTS_PER_PAGE } from "./constants";
 import { CustomLegend } from "./custom-legend";
 import { PortfolioChartProps, TimelineViewRecord } from "./types";
 import { datesByWeek, formatDateShort } from "./utils";
@@ -348,14 +348,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
       agentNames.add(agentTimeline.agentName);
     });
 
-    // Map timeline agents to our format, trying to get imageUrl from agents prop when possible
-    return Array.from(agentNames).map((agentName) => {
-      const agentWithImage = agents?.find((agent) => agent.name === agentName);
-      return {
-        name: agentName,
-        imageUrl: agentWithImage?.imageUrl || `/default_agent_2.png`,
-      };
-    });
+    // Map timeline agents to our format, only including agents that exist in the agents prop
+    return Array.from(agentNames)
+      .map((agentName) => agents?.find((agent) => agent.name === agentName))
+      .filter((agent): agent is AgentCompetition => agent !== undefined);
   }, [timelineRaw, agents]);
 
   // Current page agents with data - only show agents from the current pagination page when NOT searching
@@ -363,20 +359,15 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     // If searching, use all timeline agents for filtering
     if (debouncedSearchQuery) {
       return allTimelineAgents.filter((agent) =>
-        allDataKeys.some((agentName) => agentName === agent.name),
+        allDataKeys.some((agentName) => agentName === agent?.name),
       );
     }
 
     // If not searching, use current page agents
     if (!agents || agents.length === 0) return [];
-    return agents
-      .filter((agent) =>
-        allDataKeys.some((agentName) => agentName === agent.name),
-      )
-      .map((agent) => ({
-        name: agent.name,
-        imageUrl: agent.imageUrl || `/default_agent_2.png`,
-      }));
+    return agents.filter((agent) =>
+      allDataKeys.some((agentName) => agentName === agent.name),
+    );
   }, [agents, allDataKeys, allTimelineAgents, debouncedSearchQuery]);
 
   // Filtered agents for the legend (based on search query)
@@ -410,7 +401,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
       // When searching, show agents from current search page
       const startIndex = (currentLegendPage - 1) * LIMIT_AGENTS_PER_PAGE;
       const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
-      return filteredAgentsForLegend.slice(startIndex, endIndex);
+      return filteredAgentsForLegend.slice(startIndex, endIndex) || [];
     }
   }, [
     allAgentsWithData,
@@ -440,7 +431,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   const agentColorMap = useMemo(() => {
     const map: Record<string, string> = {};
     chartVisibleAgentKeys.forEach((agentName, index) => {
-      map[agentName] = colors[index % colors.length]!;
+      map[agentName] = CHART_COLORS[index % CHART_COLORS.length]!;
     });
     return map;
   }, [chartVisibleAgentKeys]);
@@ -566,9 +557,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
           </div>
           <div className="border-t-1 my-2 w-full"></div>
           <CustomLegend
-            agents={
-              filteredAgentsForLegend as { name: string; imageUrl: string }[]
-            }
+            agents={filteredAgentsForLegend}
             colorMap={agentColorMap}
             currentValues={hoveredDataPoint || latestValues}
             currentOrder={hoveredOrder}
