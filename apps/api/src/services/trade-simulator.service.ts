@@ -164,23 +164,26 @@ export class TradeSimulator {
         toPrice,
         chainInfo,
         reason,
-        currentBalance,
       );
 
-      // Trigger a portfolio snapshot for the trading agent only
-      // We run this asynchronously without awaiting to avoid delaying the trade response
-      this.portfolioSnapshotter
-        .takePortfolioSnapshotForAgent(competitionId, agentId)
-        .catch((error) => {
-          serviceLogger.error(
-            `[TradeSimulator] Error taking portfolio snapshot for agent ${agentId} after trade: ${error.message}`,
-          );
-        });
-      serviceLogger.debug(
-        `[TradeSimulator] Portfolio snapshot triggered for agent ${agentId} in competition ${competitionId} after trade`,
-      );
+      // Log trade summary
+      serviceLogger.debug(`[TradeSimulator] Trade executed successfully:
+                Trade ID: ${result.trade.id}
+                Agent: ${agentId}
+                Competition: ${competitionId}
+                Reason: ${reason}
+                From Token: ${fromToken} (${fromPrice.symbol}) @ $${fromPrice.price.toFixed(6)}
+                To Token: ${toToken} (${toPrice.symbol}) @ $${toPrice.price.toFixed(6)}
+                Trade Amount: ${fromAmount} ${fromPrice.symbol} → ${toAmount} ${toPrice.symbol}
+                Exchange Rate: 1 ${fromPrice.symbol} = ${exchangeRate.toFixed(6)} ${toPrice.symbol}
+                USD Value: $${fromValueUSD.toFixed(2)}
+                Chains: ${chainInfo.fromChain || "N/A"} → ${chainInfo.toChain || "N/A"}
+                Initial ${fromToken} Balance: ${currentBalance}
+                New ${fromToken} Balance: ${result.updatedBalances.fromTokenBalance}
+                New ${toToken} Balance: ${result.updatedBalances.toTokenBalance ?? "N/A (burn)"}
+            `);
 
-      return result;
+      return result.trade;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error during trade";
@@ -928,8 +931,7 @@ export class TradeSimulator {
    * @param toPrice The price data for the destination token
    * @param chainInfo The resolved chain and specific chain information
    * @param reason The reason for the trade
-   * @param currentBalance The current balance of the agent's fromToken
-   * @returns The created trade record
+   * @returns Object containing the created trade record and updated balances
    */
   private async executeTradeAndUpdateDatabase(
     agentId: string,
@@ -944,8 +946,13 @@ export class TradeSimulator {
     toPrice: PriceReport,
     chainInfo: ChainOptions,
     reason: string,
-    currentBalance: number,
-  ): Promise<SelectTrade> {
+  ): Promise<{
+    trade: SelectTrade;
+    updatedBalances: {
+      fromTokenBalance: number;
+      toTokenBalance?: number;
+    };
+  }> {
     // Create trade record with atomic balance updates
     const trade: InsertTrade = {
       id: uuidv4(),
@@ -995,12 +1002,6 @@ export class TradeSimulator {
     }
     this.tradeCache.set(agentId, cachedTrades);
 
-    serviceLogger.debug(`[TradeSimulator] Trade executed successfully:
-                Initial ${fromToken} Balance: ${currentBalance}
-                New ${fromToken} Balance: ${result.updatedBalances.fromTokenBalance}
-                New ${toToken} Balance: ${result.updatedBalances.toTokenBalance ?? "N/A (burn)"}
-            `);
-
-    return result.trade;
+    return result;
   }
 }
