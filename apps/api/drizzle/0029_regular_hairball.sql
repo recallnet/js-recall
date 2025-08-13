@@ -1,0 +1,1 @@
+DROP TABLE "trading_comps"."portfolio_token_values" CASCADE;

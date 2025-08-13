@@ -16,7 +16,6 @@ import {
 } from "@/database/schema/ranking/defs.js";
 import {
   portfolioSnapshots,
-  portfolioTokenValues,
   trades,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
@@ -176,21 +175,6 @@ async function deleteCompetitionData(
       deletions.push({
         table: "agent_score_history",
         count: scoreHistoryDeleted.length,
-      });
-
-      // Delete from portfolio_token_values (through portfolio_snapshots cascade)
-      const tokenValuesDeleted = await tx
-        .select({ count: sql<number>`count(*)` })
-        .from(portfolioTokenValues)
-        .innerJoin(
-          portfolioSnapshots,
-          eq(portfolioTokenValues.portfolioSnapshotId, portfolioSnapshots.id),
-        )
-        .where(eq(portfolioSnapshots.competitionId, competitionId))
-        .then((r) => r[0]?.count || 0);
-      deletions.push({
-        table: "portfolio_token_values",
-        count: Number(tokenValuesDeleted),
       });
 
       // Delete from portfolio_snapshots

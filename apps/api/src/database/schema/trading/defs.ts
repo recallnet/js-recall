@@ -240,38 +240,6 @@ export const portfolioSnapshots = tradingComps.table(
 );
 
 /**
- * Table for token values of portfolios in a competition.
- */
-export const portfolioTokenValues = tradingComps.table(
-  "portfolio_token_values",
-  {
-    id: serial().primaryKey().notNull(),
-    portfolioSnapshotId: integer("portfolio_snapshot_id").notNull(),
-    tokenAddress: varchar("token_address", { length: 50 }).notNull(),
-    amount: numeric({ mode: "number" }).notNull(),
-    valueUsd: numeric("value_usd", {
-      precision: 30,
-      scale: 15,
-      mode: "number",
-    }).notNull(),
-    price: numeric({ mode: "number" }).notNull(),
-    specificChain: varchar("specific_chain", { length: 20 }),
-    symbol: varchar("symbol", { length: 20 }).notNull(),
-  },
-  (table) => [
-    index("idx_portfolio_token_values_snapshot_id").on(
-      table.portfolioSnapshotId,
-    ),
-    index("idx_portfolio_token_values_specific_chain").on(table.specificChain),
-    foreignKey({
-      columns: [table.portfolioSnapshotId],
-      foreignColumns: [portfolioSnapshots.id],
-      name: "portfolio_token_values_portfolio_snapshot_id_fkey",
-    }).onDelete("cascade"),
-  ],
-);
-
-/**
  * Table for trading constraints per competition.
  */
 export const tradingConstraints = tradingComps.table(
