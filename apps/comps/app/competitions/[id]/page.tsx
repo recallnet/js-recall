@@ -84,11 +84,17 @@ export default function CompetitionPage({
     );
   }
 
-  const votingBtn = (
+  const VotingBtn = ({
+    className,
+    disabled,
+  }: {
+    className: string;
+    disabled?: boolean;
+  }) => (
     <Button
-      disabled
+      disabled={competition.status !== "pending" || disabled}
       variant="ghost"
-      className="w-full justify-between uppercase"
+      className={className}
       size="lg"
       onClick={() => {
         if (agentsTableRef.current) {
@@ -120,6 +126,29 @@ export default function CompetitionPage({
         <div className="md:w-1/2">
           <CompetitionInfo competition={competition} />
           <div className="mt-5 flex w-full flex-row justify-center gap-4">
+            {competition.userVotingInfo?.info?.hasVoted ? (
+              <Tooltip
+                content="You’ve already voted in this competition."
+                className="w-1/2"
+              >
+                <VotingBtn
+                  disabled
+                  className="w-full justify-between uppercase"
+                />
+              </Tooltip>
+            ) : (
+              <VotingBtn className="w-1/2 justify-between uppercase" />
+            )}
+            <JoinCompetitionButton
+              competitionId={id}
+              variant="outline"
+              className="w-1/2 justify-between border border-gray-700 uppercase"
+              disabled={competition.status !== "pending"}
+              size="lg"
+            >
+              <span className="font-semibold">COMPETE</span>{" "}
+              <Plus className="ml-2" size={18} />
+            </JoinCompetitionButton>
             <Button
               asChild
               variant="outline"
@@ -139,28 +168,6 @@ export default function CompetitionPage({
                 <ArrowUpRight className="ml-2" size={18} />
               </Link>
             </Button>
-            <JoinCompetitionButton
-              competitionId={id}
-              variant="outline"
-              className="w-1/2 justify-between border border-gray-700 uppercase"
-              disabled={competition.status !== "pending"}
-              size="lg"
-            >
-              <span className="font-semibold">COMPETE</span>{" "}
-              <Plus className="ml-2" size={18} />
-            </JoinCompetitionButton>
-            {competition.userVotingInfo?.canVote ? (
-              competition.userVotingInfo?.info?.hasVoted ? (
-                <Tooltip
-                  content="You’ve already voted in this competition."
-                  className="w-1/2"
-                >
-                  {votingBtn}
-                </Tooltip>
-              ) : (
-                votingBtn
-              )
-            ) : null}
           </div>
         </div>
       </div>
