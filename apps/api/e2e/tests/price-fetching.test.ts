@@ -4,6 +4,7 @@ import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { PriceResponse, SpecificChain } from "@/e2e/utils/api-types.js";
 import {
+  createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
@@ -37,6 +38,15 @@ describe("Price Fetching", () => {
       adminApiKey,
     });
     clientApiKey = result.apiKey;
+
+    // Ensure there's an active competition for price route middleware
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+    const startResp = await adminClient.startCompetition({
+      name: `Price Fetching Test ${Date.now()}`,
+      agentIds: [result.agent.id],
+    });
+    expect(startResp.success).toBe(true);
   });
 
   test("should fetch prices for standard tokens", async () => {

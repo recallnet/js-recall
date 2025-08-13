@@ -16,7 +16,7 @@ export interface TooltipProps {
 }
 
 export interface CustomLegendProps {
-  agents: { name: string; imageUrl: string }[];
+  agents: AgentCompetition[];
   colorMap: Record<string, string>;
   currentValues?: Record<string, number>;
   currentOrder?: string[];
@@ -31,7 +31,7 @@ export interface CustomLegendProps {
 
 export interface PortfolioChartProps {
   competition: Competition;
-  agents?: AgentCompetition[]; // Current page agents from parent pagination
+  agents: AgentCompetition[]; // Current page agents from parent pagination
   className?: string;
   totalAgents?: number; // Total number of agents for pagination
   currentPage?: number; // Current page from parent

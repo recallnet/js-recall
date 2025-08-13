@@ -256,6 +256,7 @@ jobs:
           # Portfolio configuration
           PORTFOLIO_SNAPSHOT_INTERVAL_MS=10000
           PORTFOLIO_PRICE_FRESHNESS_MS=10000
+          CACHE_ACTIVE_COMP_TTL_MS=1
 
           # Optional: Disable ability for participants to view leaderboard activity
           DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false

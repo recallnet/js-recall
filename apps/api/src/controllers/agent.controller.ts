@@ -1,11 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 
-import {
-  findActive,
-  getAgentPortfolioSnapshots,
-  getPortfolioTokenValues,
-} from "@/database/repositories/competition-repository.js";
-import { agentLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -231,7 +225,7 @@ export function makeAgentController(services: ServiceRegistry) {
       try {
         const agentId = req.agentId as string;
 
-        // Get the balances, this could be hundereds
+        // Get the balances, this could be hundreds
         const balances = await services.balanceManager.getAllBalances(agentId);
 
         // Extract all unique token addresses
@@ -249,6 +243,8 @@ export function makeAgentController(services: ServiceRegistry) {
             return {
               ...balance,
               chain: priceReport.chain,
+              price: priceReport.price,
+              value: balance.amount * priceReport.price,
               specificChain: priceReport.specificChain || balance.specificChain,
               symbol: priceReport.symbol || balance.symbol,
             };
@@ -270,140 +266,6 @@ export function makeAgentController(services: ServiceRegistry) {
           success: true,
           agentId,
           balances: enhancedBalances,
-        });
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Get portfolio information for the authenticated agent
-     * @param req Express request with agentId from API key
-     * @param res Express response
-     * @param next Express next function
-     */
-    async getPortfolio(req: Request, res: Response, next: NextFunction) {
-      try {
-        const agentId = req.agentId as string;
-
-        // First, check if there's an active competition
-        const activeCompetition = await findActive();
-
-        // Check if we have snapshot data (preferred method)
-        // TODO(stbrody): Remove this block.  We don't need to use snapshot information to get the current portfolio.
-        // We can calculate it directly (which is currently the fallback method) as the main way to get this. We just
-        // need to make sure we have good caching in place.
-        if (activeCompetition) {
-          // Try to get the latest snapshot for this agent (limit to 1 for performance)
-          const agentSnapshots = await getAgentPortfolioSnapshots(
-            activeCompetition.id,
-            agentId,
-            1, // Only fetch the most recent snapshot
-          );
-
-          // If we have a snapshot, use it
-          if (agentSnapshots.length > 0) {
-            // Get the most recent snapshot
-            const latestSnapshot = agentSnapshots[0]!;
-
-            // Get the token values for this snapshot
-            const tokenValues = await getPortfolioTokenValues(
-              latestSnapshot.id,
-            );
-
-            // Format the token values with additional information
-            const formattedTokens = tokenValues.map((tokenValue) => {
-              // Use the price from the snapshot and only determine chain type
-              const chain = services.priceTracker.determineChain(
-                tokenValue.tokenAddress,
-              );
-
-              // For SVM tokens, the specificChain is always 'svm'
-              // For EVM tokens, we don't have specificChain without an API call, so we'll leave it undefined
-              const specificChain = chain === "svm" ? "svm" : undefined;
-
-              return {
-                token: tokenValue.tokenAddress,
-                amount: tokenValue.amount,
-                price: tokenValue.price,
-                value: tokenValue.valueUsd,
-                chain,
-                specificChain,
-                symbol: tokenValue.symbol, // Use symbol from the snapshot/database
-              };
-            });
-
-            // Return the snapshot information
-            return res.status(200).json({
-              success: true,
-              agentId,
-              totalValue: latestSnapshot.totalValue,
-              tokens: formattedTokens,
-              snapshotTime: latestSnapshot.timestamp,
-              source: "snapshot", // Indicate this is from a snapshot
-            });
-          }
-
-          // No snapshot, but we should initiate one for future requests
-          agentLogger.debug(
-            `No portfolio snapshots found for agent ${agentId} in competition ${activeCompetition.id}`,
-          );
-          // Request a snapshot for this agent asynchronously (don't await)
-          services.portfolioSnapshotter
-            .takePortfolioSnapshotForAgent(activeCompetition.id, agentId)
-            .catch((error) => {
-              agentLogger.error(
-                `Error taking snapshot for agent ${agentId}:`,
-                error,
-              );
-            });
-        }
-
-        // Fall back to calculating portfolio on-demand
-        agentLogger.debug(
-          `Using live calculation for portfolio of agent ${agentId}`,
-        );
-
-        // Get the balances
-        const balances = await services.balanceManager.getAllBalances(agentId);
-        let totalValue = 0;
-        const tokenValues = [];
-
-        // Get unique token addresses
-        const uniqueTokens = [
-          ...new Set(balances.map((balance) => balance.tokenAddress)),
-        ];
-
-        // Get token price info in bulk, this chunks dexscreener api requests to
-        // reduce load and rate limiting.
-        const priceMap =
-          await services.priceTracker.getBulkPrices(uniqueTokens);
-
-        // Calculate values efficiently
-        for (const balance of balances) {
-          const priceReport = priceMap.get(balance.tokenAddress);
-          const price = priceReport?.price || 0;
-          const value = price ? balance.amount * price : 0;
-          totalValue += value;
-
-          tokenValues.push({
-            token: balance.tokenAddress,
-            amount: balance.amount,
-            price: price,
-            value,
-            chain: priceReport?.chain,
-            specificChain: priceReport?.specificChain,
-            symbol: priceReport?.symbol || balance.symbol,
-          });
-        }
-
-        // Return the calculated portfolio information
-        return res.status(200).json({
-          success: true,
-          agentId,
-          totalValue,
-          tokens: tokenValues,
-          source: "live-calculation", // Indicate this is a live calculation
         });
       } catch (error) {
         next(error);

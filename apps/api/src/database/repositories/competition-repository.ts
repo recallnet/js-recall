@@ -1808,14 +1808,14 @@ async function getAgentPortfolioTimelineImpl(
       competition_id: string;
       total_value: number;
     }>(sql`
-      SELECT 
-        timestamp, 
-        agent_id, 
-        name AS agent_name, 
-        competition_id, 
-        total_value 
+      SELECT
+        timestamp,
+        agent_id,
+        name AS agent_name,
+        competition_id,
+        total_value
       FROM (
-        SELECT 
+        SELECT
           ROW_NUMBER() OVER (
             PARTITION BY ps.agent_id, ps.competition_id,FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
             ORDER BY ps.timestamp DESC
@@ -1826,15 +1826,15 @@ async function getAgentPortfolioTimelineImpl(
           ps.competition_id,
           ps.total_value
         FROM competition_agents ca
-        JOIN trading_comps.portfolio_snapshots ps 
-          ON ps.agent_id = ca.agent_id 
+        JOIN trading_comps.portfolio_snapshots ps
+          ON ps.agent_id = ca.agent_id
           AND ps.competition_id = ca.competition_id
         JOIN agents a ON a.id = ca.agent_id
         JOIN competitions c ON c.id = ca.competition_id
         WHERE ca.competition_id = ${competitionId}
           AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
       ) AS ranked_snapshots
-      WHERE rn = 1 
+      WHERE rn = 1
     `);
 
     // Convert snake_case to camelCase
@@ -1976,7 +1976,12 @@ async function getBatchVoteCountsImpl(
           totalVotes: 0,
         });
       }
-      const competition = competitionVoteMap.get(competitionId)!;
+      const competition = competitionVoteMap.get(competitionId);
+      if (!competition) {
+        // This is only here to keep typescript and auto code review happy
+        // since the `has()` check above ensures the competition value exists
+        continue;
+      }
       competition.agentVotes.set(agentId, voteCount);
       competition.totalVotes += voteCount;
     }

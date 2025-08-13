@@ -37,6 +37,7 @@ export async function startServer(): Promise<void> {
       METRICS_PORT: process.env.METRICS_PORT || "3003",
       METRICS_HOST: "127.0.0.1", // Secure binding for tests
       TEST_MODE: "true",
+      LOG_LEVEL: "debug",
     },
     stdio: "inherit",
     shell: true,
