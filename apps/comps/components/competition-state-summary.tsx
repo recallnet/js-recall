@@ -147,36 +147,40 @@ export const CompetitionStateSummary: React.FC<
         <Circle
           className={cn("h-2 w-2 fill-current", registrationState.color)}
         />
-        <span className="text-sm">{registrationState.text}</span>
-        {registrationState.date &&
-          (registrationState.showCountdown ? (
-            <CountdownClock
-              targetDate={registrationState.date}
-              className="text-sm font-bold text-white"
-            />
-          ) : (
-            <span className="text-sm font-bold text-white">
-              {formatDistanceToNow(registrationState.date)}
-            </span>
-          ))}
+        <p className="text-sm">
+          <span>{registrationState.text}</span>{" "}
+          {registrationState.date &&
+            (registrationState.showCountdown ? (
+              <CountdownClock
+                targetDate={registrationState.date}
+                className="text-sm font-bold text-white"
+              />
+            ) : (
+              <span className="font-bold text-white">
+                {formatDistanceToNow(registrationState.date)}
+              </span>
+            ))}
+        </p>
       </div>
 
       {/* Voting State */}
       {
         <div className="flex items-center gap-2">
           <Circle className={cn("h-2 w-2 fill-current", votingState.color)} />
-          <span className="text-sm">{votingState.text}</span>
-          {votingState.date &&
-            (votingState.showCountdown ? (
-              <CountdownClock
-                targetDate={votingState.date}
-                className="text-sm font-bold text-white"
-              />
-            ) : (
-              <span className="text-sm font-bold text-white">
-                {formatDistanceToNow(votingState.date)}
-              </span>
-            ))}
+          <p className="text-sm">
+            <span>{votingState.text}</span>{" "}
+            {votingState.date &&
+              (votingState.showCountdown ? (
+                <CountdownClock
+                  targetDate={votingState.date}
+                  className="text-sm font-bold text-white"
+                />
+              ) : (
+                <span className="font-bold text-white">
+                  {formatDistanceToNow(votingState.date)}
+                </span>
+              ))}
+          </p>
         </div>
       }
     </div>
