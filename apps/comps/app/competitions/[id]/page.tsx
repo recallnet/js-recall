@@ -35,6 +35,7 @@ export default function CompetitionPage({
 }) {
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
@@ -152,12 +153,24 @@ export default function CompetitionPage({
             <Button
               asChild
               variant="outline"
-              className="border-1 w-1/2 justify-between border-gray-700 uppercase"
+              className={cn(
+                "border-1 w-1/2 justify-between border-gray-700 uppercase",
+
+                "w-30 flex items-center justify-between",
+                "text-secondary-foreground text-sm",
+                "transition duration-500 ease-in-out hover:bg-gray-900 hover:text-white",
+              )}
               size="lg"
+              onClick={() => {
+                if (chartRef.current) {
+                  scrollTo({
+                    top: chartRef.current.offsetTop,
+                    behavior: "smooth",
+                  });
+                }
+              }}
             >
-              <Link
-                href={`/competitions/${competition.id}/chart`}
-                rel="noreferrer"
+              <div
                 className={cn(
                   "w-30 flex items-center justify-between",
                   "text-secondary-foreground text-sm",
@@ -166,7 +179,7 @@ export default function CompetitionPage({
               >
                 <span className="font-semibold">PnL</span>{" "}
                 <ArrowUpRight className="ml-2" size={18} />
-              </Link>
+              </div>
             </Button>
           </div>
         </div>
@@ -229,6 +242,7 @@ export default function CompetitionPage({
             onPageChange={handlePageChange}
           />
           <TimelineChart
+            ref={chartRef}
             className="mt-5"
             competition={competition}
             agents={agentsData?.agents || []}
