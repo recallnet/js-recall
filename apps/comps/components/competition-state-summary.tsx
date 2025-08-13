@@ -83,7 +83,7 @@ export const CompetitionStateSummary: React.FC<
 
   const getVotingState = () => {
     // 1. Voting is not enabled (grey)
-    if (!competition.votingEnabled) {
+    if (competition.votingEnabled !== undefined && !competition.votingEnabled) {
       return {
         text: "Voting is not enabled",
         color: "text-gray-500",
