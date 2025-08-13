@@ -30,16 +30,12 @@ import {
 } from "@/database/schema/core/types.js";
 import {
   portfolioSnapshots,
-  portfolioTokenValues,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
 } from "@/database/schema/trading/defs.js";
 import { tradingConstraints } from "@/database/schema/trading/defs.js";
 import { InsertTradingCompetition } from "@/database/schema/trading/types.js";
-import {
-  InsertPortfolioSnapshot,
-  InsertPortfolioTokenValue,
-} from "@/database/schema/trading/types.js";
+import { InsertPortfolioSnapshot } from "@/database/schema/trading/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import {
@@ -702,42 +698,6 @@ async function createPortfolioSnapshotImpl(snapshot: InsertPortfolioSnapshot) {
 }
 
 /**
- * Insert multiple portfolio token values in a batch operation
- * @param tokenValues Array of portfolio token values to insert
- * @returns Array of inserted portfolio token values
- */
-async function batchCreatePortfolioTokenValuesImpl(
-  tokenValues: Omit<InsertPortfolioTokenValue, "id">[],
-) {
-  if (!tokenValues.length) {
-    return [];
-  }
-
-  try {
-    repositoryLogger.debug(
-      `Batch inserting ${tokenValues.length} portfolio token values`,
-    );
-
-    const results = await db
-      .insert(portfolioTokenValues)
-      .values(tokenValues)
-      .returning();
-
-    repositoryLogger.debug(
-      `[CompetitionRepository] Successfully inserted ${results.length} portfolio token values`,
-    );
-
-    return results;
-  } catch (error) {
-    repositoryLogger.error(
-      "Error batch inserting portfolio token values:",
-      error,
-    );
-    throw error;
-  }
-}
-
-/**
  * Get latest portfolio snapshots for all active agents in a competition
  * @param competitionId Competition ID
  */
@@ -1070,22 +1030,6 @@ async function getAgentCompetitionRankingImpl(
 }
 
 /**
- * Get portfolio token values for a snapshot
- * @param snapshotId Snapshot ID
- */
-async function getPortfolioTokenValuesImpl(snapshotId: number) {
-  try {
-    return await db
-      .select()
-      .from(portfolioTokenValues)
-      .where(eq(portfolioTokenValues.portfolioSnapshotId, snapshotId));
-  } catch (error) {
-    repositoryLogger.error("Error in getPortfolioTokenValues:", error);
-    throw error;
-  }
-}
-
-/**
  * Get all portfolio snapshots
  * @param competitionId Optional competition ID to filter by
  */
@@ -1103,26 +1047,6 @@ async function getAllPortfolioSnapshotsImpl(competitionId?: string) {
     return await query;
   } catch (error) {
     repositoryLogger.error("Error in getAllPortfolioSnapshots:", error);
-    throw error;
-  }
-}
-
-/**
- * Get portfolio token values for multiple snapshots
- * @param snapshotIds Array of snapshot IDs
- */
-async function getPortfolioTokenValuesByIdsImpl(snapshotIds: number[]) {
-  try {
-    if (snapshotIds.length === 0) {
-      return [];
-    }
-
-    return await db
-      .select()
-      .from(portfolioTokenValues)
-      .where(inArray(portfolioTokenValues.portfolioSnapshotId, snapshotIds));
-  } catch (error) {
-    repositoryLogger.error("Error in getPortfolioTokenValuesByIds:", error);
     throw error;
   }
 }
@@ -1670,12 +1594,6 @@ export const createPortfolioSnapshot = createTimedRepositoryFunction(
   "createPortfolioSnapshot",
 );
 
-export const batchCreatePortfolioTokenValues = createTimedRepositoryFunction(
-  batchCreatePortfolioTokenValuesImpl,
-  "CompetitionRepository",
-  "batchCreatePortfolioTokenValues",
-);
-
 export const getLatestPortfolioSnapshots = createTimedRepositoryFunction(
   getLatestPortfolioSnapshotsImpl,
   "CompetitionRepository",
@@ -1706,22 +1624,10 @@ export const getAgentCompetitionRanking = createTimedRepositoryFunction(
   "getAgentCompetitionRanking",
 );
 
-export const getPortfolioTokenValues = createTimedRepositoryFunction(
-  getPortfolioTokenValuesImpl,
-  "CompetitionRepository",
-  "getPortfolioTokenValues",
-);
-
 export const getAllPortfolioSnapshots = createTimedRepositoryFunction(
   getAllPortfolioSnapshotsImpl,
   "CompetitionRepository",
   "getAllPortfolioSnapshots",
-);
-
-export const getPortfolioTokenValuesByIds = createTimedRepositoryFunction(
-  getPortfolioTokenValuesByIdsImpl,
-  "CompetitionRepository",
-  "getPortfolioTokenValuesByIds",
 );
 
 export const count = createTimedRepositoryFunction(

@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
-import {
-  BalancesResponse,
-  PortfolioSnapshot,
-  SnapshotResponse,
-} from "@/e2e/utils/api-types.js";
+import { BalancesResponse, SnapshotResponse } from "@/e2e/utils/api-types.js";
 import {
   createTestClient,
   getAdminApiKey,
@@ -72,11 +68,9 @@ describe("Portfolio Snapshots", () => {
     const snapshot = typedResponse.snapshots[0];
     expect(snapshot?.agentId).toBe(agent.id);
     expect(snapshot?.competitionId).toBe(competitionId);
-    // Verify the snapshot has token values
-    expect(snapshot?.valuesByToken).toBeDefined();
-    expect(
-      Object.keys((snapshot as PortfolioSnapshot).valuesByToken).length,
-    ).toBeGreaterThan(0);
+    // Verify the snapshot has a total value
+    expect(snapshot?.totalValue).toBeDefined();
+    expect(snapshot?.totalValue).toBeGreaterThan(0);
   });
 
   // Test that snapshots can be taken manually
@@ -212,13 +206,11 @@ describe("Portfolio Snapshots", () => {
 
     // Should have at least one more snapshot
     expect(afterEndCount).toBeGreaterThan(beforeEndCount);
-    // Verify the final snapshot has current portfolio values
+    // Verify the final snapshot has a portfolio value
     const finalSnapshot =
       afterEndResponse.snapshots[afterEndResponse.snapshots.length - 1];
-    expect(finalSnapshot?.valuesByToken[solTokenAddress]).toBeDefined();
-    expect(
-      finalSnapshot?.valuesByToken[solTokenAddress]?.amount,
-    ).toBeGreaterThan(0);
+    expect(finalSnapshot?.totalValue).toBeDefined();
+    expect(finalSnapshot?.totalValue).toBeGreaterThan(0);
   });
 
   // Test portfolio value calculation accuracy
@@ -250,17 +242,16 @@ describe("Portfolio Snapshots", () => {
     // Get initial balances
     const initialBalanceResponse =
       (await client.getBalance()) as BalancesResponse;
-    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-    const initialUsdcBalance =
-      initialBalanceResponse.balances.find(
-        (b) => b.tokenAddress === usdcTokenAddress,
-      )?.amount || 0;
 
-    // Get token price using direct service call instead of API
-    const priceTracker = new PriceTracker();
-    const usdcPriceResponse = await priceTracker.getPrice(usdcTokenAddress);
-    expect(usdcPriceResponse).not.toBeNull();
-    const usdcPrice = usdcPriceResponse;
+    // Verify we have a diversified portfolio with multiple tokens
+    expect(initialBalanceResponse.balances.length).toBeGreaterThan(0);
+
+    // Calculate expected portfolio value from the balance response
+    // Each balance already includes the USD value calculation
+    const expectedPortfolioValue = initialBalanceResponse.balances.reduce(
+      (total, balance) => total + (balance.value || 0),
+      0,
+    );
 
     // Get initial snapshot
     const initialSnapshotsResponse = (await adminClient.request(
@@ -270,27 +261,13 @@ describe("Portfolio Snapshots", () => {
     const initialSnapshot = initialSnapshotsResponse.snapshots[0];
     expect(initialSnapshot).not.toBeUndefined();
 
-    // Verify the USDC value is calculated correctly
-    const priceTolerance = 0.005; // 0.5% tolerance for stablecoin depegging
-    const usdcValue = initialSnapshot?.valuesByToken[usdcTokenAddress];
-    expect(usdcValue).not.toBeUndefined();
-    expect(usdcValue!.amount).toBeCloseTo(initialUsdcBalance);
-
-    // Use a more lenient tolerance for USD value due to potential stablecoin depegging
-    // Allow up to 0.5% variance (typical USDC depeg range)
-    const expectedValue = initialUsdcBalance * usdcPrice!.price;
-    const tolerance = expectedValue * priceTolerance;
-    const actualDiff = Math.abs(usdcValue!.valueUsd - expectedValue);
+    // Verify the portfolio value calculation matches the balance endpoint
+    // Allow 1% tolerance for price fluctuations between balance and snapshot calls
+    const tolerance = expectedPortfolioValue * 0.01;
+    const actualDiff = Math.abs(
+      initialSnapshot!.totalValue - expectedPortfolioValue,
+    );
     expect(actualDiff).toBeLessThan(tolerance);
-
-    // Verify total portfolio value is the sum of all token values
-    const totalValue = Object.values(
-      (initialSnapshot as PortfolioSnapshot).valuesByToken,
-    ).reduce((sum: number, token) => sum + token.valueUsd, 0);
-    // Use same tolerance as individual token values for consistency
-    const totalTolerance = totalValue * priceTolerance;
-    const totalDiff = Math.abs(initialSnapshot!.totalValue - totalValue);
-    expect(totalDiff).toBeLessThan(totalTolerance);
   });
 
   // Test that the configuration is loaded correctly

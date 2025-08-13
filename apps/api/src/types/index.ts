@@ -474,7 +474,6 @@ export interface PortfolioValue {
   competitionId: string;
   timestamp: Date;
   totalValue: number;
-  valuesByToken: Record<string, { amount: number; valueUsd: number }>;
 }
 
 /**

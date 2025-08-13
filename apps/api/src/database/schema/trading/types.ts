@@ -19,11 +19,6 @@ export type SelectPortfolioSnapshot =
 export type InsertPortfolioSnapshot =
   typeof defs.portfolioSnapshots.$inferInsert;
 
-export type SelectPortfolioTokenValue =
-  typeof defs.portfolioTokenValues.$inferSelect;
-export type InsertPortfolioTokenValue =
-  typeof defs.portfolioTokenValues.$inferInsert;
-
 export type SelectTradingConstraints =
   typeof defs.tradingConstraints.$inferSelect;
 export type InsertTradingConstraints =

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { portfolioSnapshots, trades } from "@/database/schema/trading/defs.js";
+import { trades } from "@/database/schema/trading/defs.js";
 import {
   BalancesResponse,
   BlockchainType,
@@ -172,89 +172,6 @@ describe("Specific Chains", () => {
     expect(trade?.toSpecificChain).toBe("eth");
     expect(trade?.fromToken).toBe(ethToken);
     expect(trade?.toToken).toBe(usdcToken);
-  });
-
-  test("specificChain is correctly recorded in portfolio_token_values when taking snapshots", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register a new user/agent
-    const { agent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent Portfolio",
-    });
-
-    // Start a competition with the agent
-    const competitionName = `Portfolio Chain Test ${Date.now()}`;
-    const competition = await startTestCompetition(
-      adminClient,
-      competitionName,
-      [agent.id],
-    );
-
-    // Get the competition ID
-    const competitionId = competition.competition.id;
-
-    // Manually trigger a portfolio snapshot
-    await adminClient.request(
-      "post",
-      `/api/admin/competition/${competitionId}/snapshot`,
-    );
-
-    // Wait briefly for snapshot to complete
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Find the most recent portfolio snapshot for this agent
-    const snapshotResult = await db.query.portfolioSnapshots.findFirst({
-      where: eq(portfolioSnapshots.agentId, agent.id),
-      orderBy: desc(portfolioSnapshots.timestamp),
-      with: {
-        portfolioTokenValues: true,
-      },
-    });
-
-    // Verify we have portfolio token value records
-    expect(snapshotResult?.portfolioTokenValues.length).toBeGreaterThan(0);
-
-    // Verify each token has the correct specific_chain based on config
-    for (const tokenValue of snapshotResult?.portfolioTokenValues ?? []) {
-      const tokenAddress = tokenValue.tokenAddress.toLowerCase();
-      const assignedChain = tokenValue.specificChain;
-
-      // Find which chain this token should belong to according to config
-      let expectedChain = null;
-
-      // Check each chain in the config to find a match for this token
-      for (const [chain, tokenMap] of Object.entries(
-        config.specificChainTokens,
-      )) {
-        // Check if any token address in this chain matches our token
-        const tokenAddresses = Object.values(tokenMap);
-
-        if (
-          tokenAddresses.some(
-            (address) =>
-              typeof address === "string" &&
-              address.toLowerCase() === tokenAddress,
-          )
-        ) {
-          expectedChain = chain;
-          break;
-        }
-      }
-
-      // If no specific chain was found in config, it should default to a sensible value
-      if (!expectedChain) {
-        expectedChain = tokenAddress.startsWith("0x") ? "eth" : "svm";
-      }
-
-      // Assert that the chain in the database matches what we expect from config
-      expect(assignedChain).toBe(expectedChain);
-      console.log(
-        `Portfolio token ${tokenAddress} correctly assigned to chain ${assignedChain}`,
-      );
-    }
   });
 
   test("can purchase token on optimism", async () => {

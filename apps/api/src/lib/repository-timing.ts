@@ -106,7 +106,7 @@ function getOperationFromMethod(methodName: string): string {
     name.includes("populate") ||
     name.includes("sync") ||
     (name.includes("batch") &&
-      (name.includes("create") || name.includes("insert"))) // batchCreatePortfolioTokenValues, batchInsertLeaderboard
+      (name.includes("create") || name.includes("insert"))) // batchInsertLeaderboard
   ) {
     return "INSERT";
   }
