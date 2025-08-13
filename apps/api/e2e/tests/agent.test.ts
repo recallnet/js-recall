@@ -33,6 +33,7 @@ import {
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
 import { generateHandleFromName, isValidHandle } from "@/lib/handle-utils.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 describe("Agent API", () => {
   // Clean up test state before each test
@@ -1897,6 +1898,21 @@ Purpose: WALLET_VERIFICATION`;
       const balanceResponse = await agentClient.getBalance();
       expect(balanceResponse.success).toBe(true);
 
+      // Ensure there is an active competition so the pricing endpoints are
+      // open, but do NOT add the first agent to it
+      const { agent: otherAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Active Competition Only Agent",
+        agentDescription:
+          "Agent used to create an active competition for middleware",
+      });
+      const startActiveCompResponse = await adminClient.startCompetition({
+        name: `Enable Price Access ${Date.now()}`,
+        description: "Active competition to satisfy price route middleware",
+        agentIds: [otherAgent.id],
+      });
+      expect(startActiveCompResponse.success).toBe(true);
+
       // 4. Price data access
       const priceResponse = await agentClient.getPrice(
         "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
@@ -2509,8 +2525,9 @@ Purpose: WALLET_VERIFICATION`;
         reason: "Agent 4 catastrophic trade - burning everything",
       });
 
-      // Wait for portfolio snapshots to be created
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Trigger portfolio snapshots proactively
+      const services = new ServiceRegistry();
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
 
       // Check rankings for each agent
       const rankingResults = [];

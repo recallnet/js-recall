@@ -9,6 +9,7 @@ import { Button } from "@recallnet/ui2/components/button";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { ChartSkeleton, TimelineChart } from "@/components/timeline-chart";
+import { LIMIT_AGENTS_PER_PAGE } from "@/components/timeline-chart/constants";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 
@@ -87,7 +88,7 @@ export default function CompetitionChartPage({
         <TimelineChart
           competition={competition}
           agents={agentsData?.agents || []}
-          totalAgents={agentsData?.pagination?.total || 0}
+          totalAgents={LIMIT_AGENTS_PER_PAGE} // Only show the top 10 agents (no pagination)
           currentPage={1}
           onPageChange={handlePageChange}
           className="shadow-2xl"

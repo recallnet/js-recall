@@ -48,6 +48,13 @@ describe("Chain Detection Debug", () => {
     });
     client = result.client;
 
+    // Ensure there is an active competition for API price tests
+    const startResp = await adminClient.startCompetition({
+      name: `Chain Detection Debug ${Date.now()}`,
+      agentIds: [result.agent.id],
+    });
+    expect(startResp.success).toBe(true);
+
     // Initialize price tracker
     priceTracker = new PriceTracker();
   });

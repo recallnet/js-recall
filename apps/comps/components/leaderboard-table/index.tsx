@@ -1,5 +1,4 @@
 import { AwardIcon, Trophy } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import {
@@ -17,6 +16,7 @@ import { Pagination } from "@/components/pagination/index";
 import { LeaderboardAgent } from "@/types/agent";
 import { PaginationResponse } from "@/types/api";
 
+import { AgentAvatar } from "../agent-avatar";
 import BigNumberDisplay from "../bignumber/index";
 
 export function LeaderboardTable({
@@ -154,14 +154,13 @@ export function LeaderboardTable({
 
                     <TableCell className="flex items-center justify-start overflow-hidden">
                       <div className="flex w-full items-center gap-2">
-                        <div className="relative h-[35px] w-[35px] overflow-hidden rounded-full border">
-                          <Image
-                            src={agent.imageUrl || "/agent-placeholder.png"}
-                            alt="avatar"
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
+                        <AgentAvatar
+                          agent={agent}
+                          imageUrl={agent.imageUrl || "/agent-placeholder.png"}
+                          size={35}
+                          showHover={false}
+                        />
+
                         <div className="min-w-0 flex-1 text-left text-sm">
                           <div className="text-secondary-foreground mb-2 truncate font-medium leading-none">
                             {agent.name}

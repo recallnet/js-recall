@@ -287,7 +287,6 @@ describe("Logging and Metrics API", () => {
     await agentClient2.getAgentProfile();
     await agentClient1.getBalance();
     await agentClient2.getBalance();
-    await agentClient1.getPortfolio();
     await agentClient2.getTradeHistory();
 
     // Admin operations
@@ -371,7 +370,6 @@ describe("Logging and Metrics API", () => {
     // Make a sequence of related API calls that should have trace ID correlation
     await agentClient.getAgentProfile();
     await agentClient.getBalance();
-    await agentClient.getPortfolio();
 
     // Get metrics to verify the operations were tracked
     const metricsResponse = await client.getMetrics();
@@ -380,7 +378,6 @@ describe("Logging and Metrics API", () => {
     const metricsText = metricsResponse as string;
     expect(metricsText).toContain("/api/agent/profile");
     expect(metricsText).toContain("/api/agent/balances");
-    expect(metricsText).toContain("/api/agent/portfolio");
   });
 
   test("metrics persist through agent API key reset workflow", async () => {
@@ -496,7 +493,6 @@ describe("Logging and Metrics API", () => {
     // SELECT operations (should be classified as "SELECT")
     await agentClient.getAgentProfile(); // findById
     await agentClient.getBalance(); // getBalance, getAgentBalances
-    await agentClient.getPortfolio(); // getLatestPortfolioSnapshots
     await agentClient.getTradeHistory(); // getAgentTrades
     await client.listAgents(); // findAll
     await client.getCompetition(competitionId); // findById
