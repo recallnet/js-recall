@@ -228,6 +228,15 @@ export class CompetitionManager {
   }
 
   /**
+   * Get the number of registered participants in a competition
+   * @param competitionId The competition ID
+   * @returns The number of registered participants
+   */
+  async getParticipantCount(competitionId: string): Promise<number> {
+    return getParticipantCount(competitionId);
+  }
+
+  /**
    * Start a competition
    * @param competitionId The competition ID
    * @param agentIds Array of agent IDs participating in the competition

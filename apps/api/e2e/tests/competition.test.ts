@@ -4538,6 +4538,42 @@ describe("Competition API", () => {
       );
       expect(join2Result.success).toBe(true);
 
+      // Verify that all client types get correct participant information while competition is in pending status
+      // Test 1: Admin client
+      const adminDetailResponse =
+        await adminClient.getCompetition(competitionId);
+      expect(adminDetailResponse.success).toBe(true);
+      const adminCompetition = (
+        adminDetailResponse as CompetitionDetailResponse
+      ).competition;
+      expect(adminCompetition.status).toBe("pending");
+      expect(adminCompetition.maxParticipants).toBe(maxParticipants); // Max participants limit
+      expect(adminCompetition.stats?.totalAgents).toBe(2); // Current registered participants
+
+      // Test 2: Agent client (using agent1's client)
+      const agentDetailResponse = await client1.getCompetition(competitionId);
+      expect(agentDetailResponse.success).toBe(true);
+      const agentCompetition = (
+        agentDetailResponse as CompetitionDetailResponse
+      ).competition;
+      expect(agentCompetition.status).toBe("pending");
+      expect(agentCompetition.maxParticipants).toBe(maxParticipants); // Max participants limit
+      expect(agentCompetition.stats?.totalAgents).toBe(2); // Current registered participants
+
+      // Test 3: User client (need to create one)
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Participant Count Test User",
+        userEmail: "participant-test@example.com",
+      });
+      const userDetailResponse = await userClient.getCompetition(competitionId);
+      expect(userDetailResponse.success).toBe(true);
+      const userCompetition = (userDetailResponse as CompetitionDetailResponse)
+        .competition;
+      expect(userCompetition.status).toBe("pending");
+      expect(userCompetition.maxParticipants).toBe(maxParticipants); // Max participants limit
+      expect(userCompetition.stats?.totalAgents).toBe(2); // Current registered participants
+
       // Try to register third agent - should fail (over limit)
       const join3Result = await client3.joinCompetition(
         competitionId,
