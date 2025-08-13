@@ -4,7 +4,6 @@ import { agents, competitions } from "../core/defs.js";
 import {
   balances,
   portfolioSnapshots,
-  portfolioTokenValues,
   trades,
   tradingCompetitions,
 } from "./defs.js";
@@ -39,7 +38,7 @@ export const tradesRelations = relations(trades, ({ one }) => ({
 
 export const portfolioSnapshotsRelations = relations(
   portfolioSnapshots,
-  ({ one, many }) => ({
+  ({ one }) => ({
     agent: one(agents, {
       fields: [portfolioSnapshots.agentId],
       references: [agents.id],
@@ -47,17 +46,6 @@ export const portfolioSnapshotsRelations = relations(
     competition: one(competitions, {
       fields: [portfolioSnapshots.competitionId],
       references: [competitions.id],
-    }),
-    portfolioTokenValues: many(portfolioTokenValues),
-  }),
-);
-
-export const portfolioTokenValuesRelations = relations(
-  portfolioTokenValues,
-  ({ one }) => ({
-    portfolioSnapshot: one(portfolioSnapshots, {
-      fields: [portfolioTokenValues.portfolioSnapshotId],
-      references: [portfolioSnapshots.id],
     }),
   }),
 );

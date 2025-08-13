@@ -524,12 +524,6 @@ export interface PortfolioSnapshot {
   competitionId: string;
   totalValue: number;
   timestamp: string;
-  valuesByToken: {
-    [tokenAddress: string]: {
-      amount: number;
-      valueUsd: number;
-    };
-  };
 }
 
 // Portfolio snapshots response
