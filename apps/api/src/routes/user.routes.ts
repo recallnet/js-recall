@@ -902,6 +902,11 @@ export function configureUserRoutes(
    *                       updatedAt:
    *                         type: string
    *                         format: date-time
+   *                       maxParticipants:
+   *                         type: integer
+   *                         nullable: true
+   *                         description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                         example: 50
    *                       agents:
    *                         type: array
    *                         items:

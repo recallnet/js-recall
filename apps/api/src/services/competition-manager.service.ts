@@ -22,12 +22,14 @@ import {
   getBulkAgentPortfolioSnapshots,
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
+  getParticipantCount,
   isAgentActiveInCompetition,
   updateAgentCompetitionStatus,
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
 import {
+  SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@/database/schema/core/types.js";
@@ -124,6 +126,7 @@ export class CompetitionManager {
    * @param votingEndDate Optional voting end date
    * @param joinStartDate Optional start date for joining the competition
    * @param joinEndDate Optional end date for joining the competition
+   * @param maxParticipants Optional maximum number of participants allowed
    * @returns The created competition
    */
   async createCompetition(
@@ -139,6 +142,7 @@ export class CompetitionManager {
     votingEndDate?: Date,
     joinStartDate?: Date,
     joinEndDate?: Date,
+    maxParticipants?: number,
     tradingConstraints?: TradingConstraintsInput,
     rewards?: Record<number, number>,
   ) {
@@ -155,6 +159,7 @@ export class CompetitionManager {
       votingEndDate: votingEndDate || null,
       joinStartDate: joinStartDate || null,
       joinEndDate: joinEndDate || null,
+      maxParticipants: maxParticipants || null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
       sandboxMode,
@@ -921,6 +926,25 @@ export class CompetitionManager {
   }
 
   /**
+   * Validate participant limit for a competition
+   * @param competition Competition object
+   * @throws ApiError if the participant limit is exceeded
+   */
+  private async validateParticipantLimit(
+    competition: SelectCompetition,
+  ): Promise<void> {
+    if (!competition.maxParticipants) return;
+
+    const currentCount = await getParticipantCount(competition.id);
+    if (currentCount >= competition.maxParticipants) {
+      throw new ApiError(
+        403,
+        `Competition has reached maximum participant limit (${competition.maxParticipants})`,
+      );
+    }
+  }
+
+  /**
    * Join an agent to a competition
    * @param competitionId Competition ID
    * @param agentId Agent ID
@@ -973,7 +997,10 @@ export class CompetitionManager {
       throw error;
     }
 
-    // 5. Check agent status is eligible
+    // 5. Check participant limit
+    await this.validateParticipantLimit(competition);
+
+    // 6. Check agent status is eligible
     if (
       agent.status === ACTOR_STATUS.DELETED ||
       agent.status === ACTOR_STATUS.SUSPENDED
@@ -981,12 +1008,12 @@ export class CompetitionManager {
       throw new Error("Agent is not eligible to join competitions");
     }
 
-    // 6. Check if competition status is pending
+    // 7. Check if competition status is pending
     if (competition.status !== COMPETITION_STATUS.PENDING) {
       throw new Error("Cannot join competition that has already started/ended");
     }
 
-    // 7. Check if agent is already actively registered
+    // 8. Check if agent is already actively registered
     const isAlreadyActive = await isAgentActiveInCompetition(
       competitionId,
       agentId,

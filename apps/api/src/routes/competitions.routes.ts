@@ -98,6 +98,11 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: When the competition was last updated
+   *                       maxParticipants:
+   *                         type: integer
+   *                         nullable: true
+   *                         description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                         example: 50
    *                       rewards:
    *                         nullable: true
    *                         type: array
@@ -679,6 +684,11 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: When the competition was last updated
+   *                     maxParticipants:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                       example: 50
    *                     rewards:
    *                       type: array
    *                       nullable: true

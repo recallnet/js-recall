@@ -89,6 +89,11 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for joining the competition (ISO 8601 format). Must be after or equal to joinStartDate if both are provided.
    *                 example: "2024-01-14T23:59:59Z"
+   *               maxParticipants:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: Maximum number of participants allowed to register for this competition. If not specified, there is no limit.
+   *                 example: 50
    *               tradingConstraints:
    *                 type: object
    *                 description: Trading constraints for the competition (used when creating a new competition)
@@ -174,6 +179,11 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Competition creation date
+   *                     maxParticipants:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                       example: 50
    *                     rewards:
    *                       type: array
    *                       description: Rewards for competition placements
@@ -380,6 +390,11 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [trading]
    *                       description: The type of competition
+   *                     maxParticipants:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                       example: 50
    *                     agentIds:
    *                       type: array
    *                       items:
@@ -505,6 +520,11 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [trading]
    *                       description: The type of competition
+   *                     maxParticipants:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                       example: 50
    *                 leaderboard:
    *                   type: array
    *                   items:

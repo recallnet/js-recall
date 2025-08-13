@@ -536,6 +536,7 @@ export function makeAdminController(services: ServiceRegistry) {
           votingEndDate,
           joinStartDate,
           joinEndDate,
+          maxParticipants,
           tradingConstraints,
           rewards,
         } = result.data;
@@ -554,6 +555,7 @@ export function makeAdminController(services: ServiceRegistry) {
           votingEndDate ? new Date(votingEndDate) : undefined,
           joinStartDate ? new Date(joinStartDate) : undefined,
           joinEndDate ? new Date(joinEndDate) : undefined,
+          maxParticipants,
           tradingConstraints,
           rewards,
         );
@@ -695,6 +697,7 @@ export function makeAdminController(services: ServiceRegistry) {
             votingEndDate ? new Date(votingEndDate) : undefined,
             joinStartDate ? new Date(joinStartDate) : undefined,
             joinEndDate ? new Date(joinEndDate) : undefined,
+            undefined, // maxParticipants (not available in start competition schema)
             tradingConstraints,
             rewards,
           );

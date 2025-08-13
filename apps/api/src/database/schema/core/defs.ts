@@ -189,6 +189,7 @@ export const competitions = pgTable(
     votingEndDate: timestamp("voting_end_date", { withTimezone: true }),
     joinStartDate: timestamp("join_start_date", { withTimezone: true }),
     joinEndDate: timestamp("join_end_date", { withTimezone: true }),
+    maxParticipants: integer("max_participants"),
     status: competitionStatus("status").notNull(),
     sandboxMode: boolean("sandbox_mode").notNull().default(false),
     createdAt: timestamp("created_at", {

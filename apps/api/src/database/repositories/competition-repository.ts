@@ -1175,6 +1175,33 @@ async function countAgentCompetitionsImpl(agentId: string): Promise<number> {
 }
 
 /**
+ * Count the number of active participants in a competition
+ * @param competitionId The ID of the competition
+ * @returns The number of active participants in the competition
+ */
+async function getParticipantCountImpl(competitionId: string): Promise<number> {
+  try {
+    const [result] = await db
+      .select({ count: drizzleCount() })
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+        ),
+      );
+
+    return result?.count ?? 0;
+  } catch (error) {
+    repositoryLogger.error(
+      `[CompetitionRepository] Error counting participants for competition ${competitionId}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Find competitions by status, or default to all competitions if no status is provided
  * @param status Competition status
  * @param params Pagination parameters
@@ -1734,6 +1761,12 @@ export const countAgentCompetitions = createTimedRepositoryFunction(
   countAgentCompetitionsImpl,
   "CompetitionRepository",
   "countAgentCompetitions",
+);
+
+export const getParticipantCount = createTimedRepositoryFunction(
+  getParticipantCountImpl,
+  "CompetitionRepository",
+  "getParticipantCount",
 );
 
 export const findByStatus = createTimedRepositoryFunction(

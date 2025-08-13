@@ -430,6 +430,7 @@ export class ApiClient {
     votingEndDate?: string,
     joinStartDate?: string,
     joinEndDate?: string,
+    maxParticipants?: number,
     tradingConstraints?: TradingConstraints,
     rewards?: Record<number, number>,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
@@ -449,6 +450,7 @@ export class ApiClient {
           votingEndDate,
           joinStartDate,
           joinEndDate,
+          maxParticipants,
           tradingConstraints,
           rewards,
         },
