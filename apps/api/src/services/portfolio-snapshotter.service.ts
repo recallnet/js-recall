@@ -31,18 +31,12 @@ export class PortfolioSnapshotter {
    * @param competitionId The competition ID
    * @param agentId The agent ID
    * @param timestamp Optional timestamp for the snapshot (defaults to current time)
-   * @returns Object with snapshot statistics
    */
   async takePortfolioSnapshotForAgent(
     competitionId: string,
     agentId: string,
     timestamp: Date = new Date(),
-  ): Promise<{
-    priceLookupCount: number;
-    dbPriceHitCount: number;
-    reusedPriceCount: number;
-    totalValue: number;
-  }> {
+  ): Promise<void> {
     repositoryLogger.debug(
       `[PortfolioSnapshotter] Taking portfolio snapshot for agent ${agentId} in competition ${competitionId}`,
     );
@@ -58,23 +52,13 @@ export class PortfolioSnapshotter {
       repositoryLogger.debug(
         `[PortfolioSnapshotter] Competition ${competitionId} has ended (end date: ${competition.endDate.toISOString()}, current time: ${timestamp.toISOString()}). Skipping portfolio snapshot for agent ${agentId}`,
       );
-      return {
-        priceLookupCount: 0,
-        dbPriceHitCount: 0,
-        reusedPriceCount: 0,
-        totalValue: 0,
-      };
+      return;
     }
 
     const balances = await this.balanceManager.getAllBalances(agentId);
     let totalValue = 0;
-    let priceLookupCount = 0;
-    let dbPriceHitCount = 0;
-    let reusedPriceCount = 0;
 
     for (const balance of balances) {
-      priceLookupCount++;
-
       // First try to get latest price record from the database to reuse chain information
       const latestPriceRecord = await getLatestPrice(
         balance.tokenAddress,
@@ -90,7 +74,6 @@ export class PortfolioSnapshotter {
         latestPriceRecord.chain &&
         latestPriceRecord.specificChain
       ) {
-        dbPriceHitCount++;
         specificChain = latestPriceRecord.specificChain;
 
         // If price is recent enough (less than 10 minutes old), use it directly
@@ -108,7 +91,6 @@ export class PortfolioSnapshotter {
             specificChain: latestPriceRecord.specificChain as SpecificChain,
             token: latestPriceRecord.token,
           };
-          reusedPriceCount++;
           repositoryLogger.debug(
             `[PortfolioSnapshotter] Using fresh price for ${balance.tokenAddress} from DB: $${priceResult.price} (${specificChain}) - age ${Math.round(priceAge / 1000)}s, threshold ${Math.round(config.portfolio.priceFreshnessMs / 1000)}s`,
           );
@@ -163,13 +145,6 @@ export class PortfolioSnapshotter {
     repositoryLogger.debug(
       `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} - Total value: $${totalValue.toFixed(2)}`,
     );
-
-    return {
-      priceLookupCount,
-      dbPriceHitCount,
-      reusedPriceCount,
-      totalValue,
-    };
   }
 
   /**
@@ -184,19 +159,13 @@ export class PortfolioSnapshotter {
     const startTime = Date.now();
     const agents = await getCompetitionAgents(competitionId);
     const timestamp = new Date();
-    let totalPriceLookupCount = 0;
-    let totalDbPriceHitCount = 0;
-    let totalReusedPriceCount = 0;
 
     for (const agentId of agents) {
-      const stats = await this.takePortfolioSnapshotForAgent(
+      await this.takePortfolioSnapshotForAgent(
         competitionId,
         agentId,
         timestamp,
       );
-      totalPriceLookupCount += stats.priceLookupCount;
-      totalDbPriceHitCount += stats.dbPriceHitCount;
-      totalReusedPriceCount += stats.reusedPriceCount;
     }
 
     const endTime = Date.now();
@@ -204,12 +173,6 @@ export class PortfolioSnapshotter {
 
     repositoryLogger.debug(
       `[PortfolioSnapshotter] Completed portfolio snapshots for ${agents.length} agents in ${duration}ms`,
-    );
-    repositoryLogger.debug(
-      `[PortfolioSnapshotter] Price lookup stats: Total: ${totalPriceLookupCount}, DB hits: ${totalDbPriceHitCount}, Hit rate: ${((totalDbPriceHitCount / totalPriceLookupCount) * 100).toFixed(2)}%`,
-    );
-    repositoryLogger.debug(
-      `[PortfolioSnapshotter] Reused existing prices: ${totalReusedPriceCount}/${totalPriceLookupCount} (${((totalReusedPriceCount / totalPriceLookupCount) * 100).toFixed(2)}%)`,
     );
   }
 
