@@ -1,13 +1,11 @@
 import { config } from "@/config/index.js";
 import {
-  batchCreatePortfolioTokenValues,
   createPortfolioSnapshot,
   findAll,
   findById,
   getAgentPortfolioSnapshots,
   getAgentPortfolioTimeline,
   getCompetitionAgents,
-  getPortfolioTokenValues,
 } from "@/database/repositories/competition-repository.js";
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { repositoryLogger } from "@/lib/logger.js";
@@ -69,16 +67,6 @@ export class PortfolioSnapshotter {
     }
 
     const balances = await this.balanceManager.getAllBalances(agentId);
-    const valuesByToken: Record<
-      string,
-      {
-        amount: number;
-        valueUsd: number;
-        price: number;
-        symbol: string;
-        specificChain: string | null;
-      }
-    > = {};
     let totalValue = 0;
     let priceLookupCount = 0;
     let dbPriceHitCount = 0;
@@ -156,13 +144,6 @@ export class PortfolioSnapshotter {
 
       if (priceResult) {
         const valueUsd = balance.amount * priceResult.price;
-        valuesByToken[balance.tokenAddress] = {
-          amount: balance.amount,
-          valueUsd,
-          price: priceResult.price,
-          symbol: priceResult.symbol,
-          specificChain: priceResult.specificChain,
-        };
         totalValue += valueUsd;
       } else {
         repositoryLogger.warn(
@@ -172,27 +153,12 @@ export class PortfolioSnapshotter {
     }
 
     // Create portfolio snapshot in database
-    const snapshot = await createPortfolioSnapshot({
+    await createPortfolioSnapshot({
       agentId,
       competitionId,
       timestamp,
       totalValue,
     });
-
-    // Store token values in batch
-    const tokenValuesToInsert = Object.entries(valuesByToken).map(
-      ([token, data]) => ({
-        portfolioSnapshotId: snapshot.id,
-        tokenAddress: token,
-        amount: data.amount,
-        valueUsd: data.valueUsd,
-        price: data.price,
-        symbol: data.symbol,
-        specificChain: data.specificChain,
-      }),
-    );
-
-    await batchCreatePortfolioTokenValues(tokenValuesToInsert);
 
     repositoryLogger.debug(
       `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} - Total value: $${totalValue.toFixed(2)}`,
@@ -265,26 +231,7 @@ export class PortfolioSnapshotter {
       limit,
     );
 
-    const promises = snapshots.map(async (snapshot) => {
-      const tokenValues = await getPortfolioTokenValues(snapshot.id);
-      const valuesByToken: Record<
-        string,
-        { amount: number; valueUsd: number }
-      > = {};
-      for (const tokenValue of tokenValues) {
-        valuesByToken[tokenValue.tokenAddress] = {
-          amount: tokenValue.amount,
-          valueUsd: tokenValue.valueUsd,
-        };
-      }
-
-      return {
-        ...snapshot,
-        valuesByToken,
-      };
-    });
-
-    return await Promise.all(promises);
+    return snapshots;
   }
 
   /**
