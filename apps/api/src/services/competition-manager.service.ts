@@ -159,7 +159,7 @@ export class CompetitionManager {
       votingEndDate: votingEndDate || null,
       joinStartDate: joinStartDate || null,
       joinEndDate: joinEndDate || null,
-      maxParticipants: maxParticipants || null,
+      maxParticipants: maxParticipants ?? null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
       sandboxMode,
