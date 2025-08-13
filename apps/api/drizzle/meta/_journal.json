@@ -211,6 +211,13 @@
       "when": 1755038091583,
       "tag": "0029_regular_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1755109694246,
+      "tag": "0030_fine_epoch",
+      "breakpoints": true
     }
   ]
 }
