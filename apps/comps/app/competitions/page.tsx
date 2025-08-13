@@ -26,6 +26,7 @@ import { useAnalytics } from "@/hooks/usePostHog";
 import Link from "@/node_modules/next/link";
 import { CompetitionStatus } from "@/types";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
+import { toOrdinal } from "@/utils/format";
 
 export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
@@ -64,17 +65,10 @@ export default function CompetitionsPage() {
   const carouselContent = React.useMemo(() => {
     if (isLoadingLeaderboard) return [];
 
-    const rankStr = (rank: number) => {
-      if (rank === 1) return "1st";
-      if (rank === 2) return "2nd";
-      if (rank === 3) return "3rd";
-
-      return `${rank}th`;
-    };
     const carouselContent = leaderboard?.agents.map((agent, i) => (
       <span key={i} className="text-black">
         {`${agent.name} `}
-        <span className="font-bold">{rankStr(agent.rank)}</span>
+        <span className="font-bold">{toOrdinal(agent.rank)}</span>
       </span>
     ));
 
