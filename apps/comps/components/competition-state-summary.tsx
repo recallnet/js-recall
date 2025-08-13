@@ -82,17 +82,7 @@ export const CompetitionStateSummary: React.FC<
   };
 
   const getVotingState = () => {
-    // 1. Voting is not enabled (grey)
-    if (competition.votingEnabled !== undefined && !competition.votingEnabled) {
-      return {
-        text: "Voting is not enabled",
-        color: "text-gray-500",
-        date: null,
-        showCountdown: false,
-      };
-    }
-
-    // 2. You already voted (grey)
+    // 1. You already voted (grey)
     if (hasVoted) {
       return {
         text: "You already voted",
@@ -102,7 +92,7 @@ export const CompetitionStateSummary: React.FC<
       };
     }
 
-    // 3. Voting period hasn't started (grey)
+    // 2. Voting period hasn't started (grey)
     if (votingStartDate && isFuture(votingStartDate)) {
       const timeDiff = votingStartDate.getTime() - now.getTime();
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
@@ -115,7 +105,7 @@ export const CompetitionStateSummary: React.FC<
       };
     }
 
-    // 4. Voting closes in [hh:mm:ss] (green)
+    // 3. Voting closes in [hh:mm:ss] (green)
     if (votingEndDate && isFuture(votingEndDate)) {
       const timeDiff = votingEndDate.getTime() - now.getTime();
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
@@ -128,7 +118,7 @@ export const CompetitionStateSummary: React.FC<
       };
     }
 
-    // 5. Voting is closed (grey)
+    // 4. Voting is closed (grey)
     return {
       text: "Voting is closed",
       color: "text-gray-500",
