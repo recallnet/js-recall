@@ -155,6 +155,7 @@ const dbLogger = {
 
       // Handle common SQL operations
       const knownOperations = [
+        "SET", // for lock_timeout
         "SELECT",
         "INSERT",
         "UPDATE",
