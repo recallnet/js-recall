@@ -16,6 +16,7 @@ import {
   formatCompetitionType,
 } from "../utils/competition-utils";
 import { CompetitionActions } from "./competition-actions";
+import { CompetitionStateSummary } from "./competition-state-summary";
 import { CompetitionStatusBanner } from "./competition-status-banner";
 import { ParticipantsAvatars } from "./participants-avatars";
 import { Rewards } from "./rewards";
@@ -81,7 +82,14 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
 
           <hr />
 
-          <CompetitionActions competition={competition} className="px-6 py-4" />
+          {competition.status === CompetitionStatus.Ended ? null : (
+            <CompetitionStateSummary
+              competition={competition}
+              className="px-6 py-2"
+            />
+          )}
+
+          <CompetitionActions competition={competition} className="px-6 pb-4" />
         </div>
 
         <div className="flex w-full flex-col">
