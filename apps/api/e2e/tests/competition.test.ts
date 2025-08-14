@@ -4994,7 +4994,6 @@ describe("Competition API", () => {
       const agentCompetitionsResponse = (await agentClient.getAgentCompetitions(
         agent.id,
       )) as AgentCompetitionsResponse;
-      console.log("agentCompetitionsResponse", agentCompetitionsResponse);
       expect(agentCompetitionsResponse.success).toBe(true);
 
       // Find our competition in the results
