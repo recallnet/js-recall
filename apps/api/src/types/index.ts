@@ -454,6 +454,9 @@ export interface EnhancedCompetition {
   status: CompetitionStatus;
   createdAt: Date | null;
   updatedAt: Date | null;
+  // Competition participant properties
+  registeredParticipants: number;
+  maxParticipants: number | null;
   // Agent-specific metrics
   portfolioValue: number;
   pnl: number;

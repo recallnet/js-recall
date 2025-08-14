@@ -757,6 +757,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           competitionId,
+          registeredParticipants: competition.registeredParticipants,
           maxParticipants: competition.maxParticipants,
           agents,
           pagination: buildPaginationResponse(

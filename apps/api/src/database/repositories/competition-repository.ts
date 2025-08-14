@@ -62,6 +62,7 @@ function buildCompetitionWithRewardsQuery() {
   return db
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      registeredParticipants: sql<number>`count(${competitionAgents.agentId})::int`,
       rewards: sql<
         | Array<{ rank: number; reward: number; agentId: string | null }>
         | undefined
@@ -83,6 +84,13 @@ function buildCompetitionWithRewardsQuery() {
     .innerJoin(
       competitions,
       eq(tradingCompetitions.competitionId, competitions.id),
+    )
+    .leftJoin(
+      competitionAgents,
+      and(
+        eq(competitionAgents.competitionId, competitions.id),
+        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+      ),
     )
     .leftJoin(
       competitionRewards,
@@ -143,13 +151,22 @@ async function findAllImpl() {
   return await db
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      registeredParticipants: sql<number>`count(${competitionAgents.agentId})::int`,
       ...getTableColumns(competitions),
     })
     .from(tradingCompetitions)
     .innerJoin(
       competitions,
       eq(tradingCompetitions.competitionId, competitions.id),
-    );
+    )
+    .leftJoin(
+      competitionAgents,
+      and(
+        eq(competitionAgents.competitionId, competitions.id),
+        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+      ),
+    )
+    .groupBy(competitions.id, tradingCompetitions.crossChainTradingType);
 }
 
 /**
@@ -160,6 +177,7 @@ async function findByIdImpl(id: string) {
   const [result] = await db
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      registeredParticipants: sql<number>`count(${competitionAgents.agentId})::int`,
       ...getTableColumns(competitions),
     })
     .from(tradingCompetitions)
@@ -167,7 +185,15 @@ async function findByIdImpl(id: string) {
       competitions,
       eq(tradingCompetitions.competitionId, competitions.id),
     )
+    .leftJoin(
+      competitionAgents,
+      and(
+        eq(competitionAgents.competitionId, competitions.id),
+        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+      ),
+    )
     .where(eq(competitions.id, id))
+    .groupBy(competitions.id, tradingCompetitions.crossChainTradingType)
     .limit(1);
   return result;
 }
@@ -654,6 +680,7 @@ async function findActiveImpl() {
     const [result] = await db
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        registeredParticipants: sql<number>`count(${competitionAgents.agentId})::int`,
         ...getTableColumns(competitions),
       })
       .from(tradingCompetitions)
@@ -661,8 +688,17 @@ async function findActiveImpl() {
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
       )
+      .leftJoin(
+        competitionAgents,
+        and(
+          eq(competitionAgents.competitionId, competitions.id),
+          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+        ),
+      )
       .where(eq(competitions.status, COMPETITION_STATUS.ACTIVE))
+      .groupBy(competitions.id, tradingCompetitions.crossChainTradingType)
       .limit(1);
+
     return result;
   } catch (error) {
     repositoryLogger.error("Error in findActive:", error);
