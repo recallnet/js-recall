@@ -2,11 +2,12 @@
 
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ArrowUpRight, ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentsTable } from "@/components/agents-table";
@@ -34,6 +35,7 @@ export default function CompetitionPage({
 }) {
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
@@ -83,6 +85,32 @@ export default function CompetitionPage({
     );
   }
 
+  const VotingBtn = ({
+    className,
+    disabled,
+  }: {
+    className: string;
+    disabled?: boolean;
+  }) => (
+    <Button
+      disabled={competition.status !== "pending" || disabled}
+      variant="ghost"
+      className={className}
+      size="lg"
+      onClick={() => {
+        if (agentsTableRef.current) {
+          scrollTo({
+            top: agentsTableRef.current.offsetTop,
+            behavior: "smooth",
+          });
+        }
+      }}
+    >
+      <span className="font-semibold">VOTE</span>{" "}
+      <ChevronRight className="ml-2" size={18} />
+    </Button>
+  );
+
   return (
     <div style={{ marginTop: "-40px" }}>
       <CompetitionVotingBanner competition={competition} />
@@ -99,55 +127,49 @@ export default function CompetitionPage({
         <div className="md:w-1/2">
           <CompetitionInfo competition={competition} />
           <div className="mt-5 flex w-full flex-row justify-center gap-4">
-            <Button
-              asChild
-              variant="outline"
-              className="w-1/2 justify-between uppercase"
-              size="lg"
-            >
-              <a
-                href="https://discord.com/invite/recallnet"
-                target="_blank"
-                rel="noreferrer"
-                className={cn(
-                  "flex w-1/2 items-center justify-between",
-                  "text-secondary-foreground border border-gray-400 text-sm",
-                  "transition duration-500 ease-in-out hover:bg-blue-700 hover:text-white",
-                )}
+            {competition.userVotingInfo?.info?.hasVoted ? (
+              <Tooltip
+                content="You’ve already voted in this competition."
+                className="w-1/2"
               >
-                <span className="font-semibold">Join Discord</span>{" "}
-                <ArrowUpRight className="ml-2" size={18} />
-              </a>
-            </Button>
+                <VotingBtn
+                  disabled
+                  className="w-full justify-between uppercase"
+                />
+              </Tooltip>
+            ) : (
+              <VotingBtn className="w-1/2 justify-between uppercase" />
+            )}
             <JoinCompetitionButton
               competitionId={id}
               variant="outline"
-              className="w-1/2 justify-between uppercase"
+              className="w-1/2 justify-between border border-gray-700 uppercase"
               disabled={competition.status !== "pending"}
               size="lg"
             >
               <span className="font-semibold">COMPETE</span>{" "}
               <Plus className="ml-2" size={18} />
             </JoinCompetitionButton>
-            {competition.userVotingInfo?.canVote ? (
-              <Button
-                disabled={!competition.votingEnabled}
-                variant="ghost"
-                className="w-1/2 justify-between uppercase"
-                size="lg"
-                onClick={() => {
-                  if (agentsTableRef.current) {
-                    scrollTo({
-                      top: agentsTableRef.current.offsetTop,
-                      behavior: "smooth",
-                    });
-                  }
-                }}
-              >
-                <span className="font-semibold">VOTE</span>{" "}
+            <Button
+              variant="outline"
+              className={cn(
+                "w-1/2 justify-between border border-gray-700 uppercase",
+              )}
+              size="lg"
+              onClick={() => {
+                if (chartRef.current) {
+                  scrollTo({
+                    top: chartRef.current.offsetTop,
+                    behavior: "smooth",
+                  });
+                }
+              }}
+            >
+              <div className={cn("flex w-full items-center justify-between")}>
+                <span className="font-semibold">Chart</span>{" "}
                 <ChevronRight className="ml-2" size={18} />
-              </Button>
-            ) : null}
+              </div>
+            </Button>
           </div>
         </div>
       </div>
@@ -209,6 +231,7 @@ export default function CompetitionPage({
             onPageChange={handlePageChange}
           />
           <TimelineChart
+            ref={chartRef}
             className="mt-5"
             competition={competition}
             agents={agentsData?.agents || []}
