@@ -671,10 +671,6 @@ describe("Logging and Metrics API", () => {
       { pattern: 'method="insertRewards"', expectedOp: "INSERT" },
       { pattern: 'method="insertRewardsTree"', expectedOp: "INSERT" },
 
-      {
-        pattern: 'method="batchCreatePortfolioTokenValues"',
-        expectedOp: "INSERT",
-      },
       { pattern: 'method="addAgentToCompetition"', expectedOp: "INSERT" },
       { pattern: 'method="addAgents"', expectedOp: "INSERT" },
 
