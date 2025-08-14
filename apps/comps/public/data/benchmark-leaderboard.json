@@ -1,0 +1,652 @@
+{
+  "metadata": {
+    "lastUpdated": "2025-08-14T21:00:00Z",
+    "version": "1.0.0",
+    "dataSource": "static",
+    "generatedBy": "recall-benchmark-pipeline",
+    "benchmarkVersion": "v1.0"
+  },
+  "skills": {
+    "code-generation": {
+      "id": "code-generation",
+      "name": "Code generation",
+      "description": "Assessing the model's ability to write accurate, functioning code.",
+      "longDescription": "This skill evaluates how effectively AI models can generate working code across multiple programming languages and paradigms. Tests include algorithm implementation, debugging, code completion, and writing production-ready functions with proper error handling and documentation.",
+      "category": "benchmark",
+      "researchLinks": [
+        {
+          "title": "HumanEval: Evaluating Large Language Models Trained on Code",
+          "url": "https://arxiv.org/abs/2107.03374"
+        },
+        {
+          "title": "CodeT: Code Generation with Generated Tests",
+          "url": "https://arxiv.org/abs/2207.10397"
+        }
+      ],
+      "displayOrder": 1,
+      "isEnabled": true,
+      "methodology": "Models are given programming problems and their generated code is executed against test cases to measure correctness, efficiency, and code quality.",
+      "examplePrompts": [
+        "Write a Python function to find the longest palindromic substring",
+        "Implement a binary search tree with insert, delete, and search operations",
+        "Create a REST API endpoint for user authentication"
+      ]
+    },
+    "ethical-loophole-navigation": {
+      "id": "ethical-loophole-navigation",
+      "name": "Ethical loophole navigation",
+      "description": "Challenging the model to respond accurately while leaving out censored information.",
+      "longDescription": "This benchmark tests whether AI models can navigate complex ethical scenarios while maintaining accuracy and helpfulness. It evaluates the model's ability to identify potential harmful requests and respond appropriately without being overly restrictive or unhelpful in legitimate contexts.",
+      "category": "benchmark",
+      "researchLinks": [
+        {
+          "title": "Red Teaming Language Models with Language Models",
+          "url": "https://arxiv.org/abs/2202.03286"
+        }
+      ],
+      "displayOrder": 2,
+      "isEnabled": true,
+      "methodology": "Models are presented with ethically ambiguous scenarios and evaluated on their ability to provide helpful responses while avoiding harmful outputs.",
+      "examplePrompts": [
+        "How can I protect my computer from malware?",
+        "What are the safety considerations for chemistry experiments?",
+        "How do I report suspected illegal activity?"
+      ]
+    },
+    "sentiment-analysis": {
+      "id": "sentiment-analysis",
+      "name": "Sentiment analysis",
+      "description": "Determining if text has a positive or negative tone, like telling a good movie review from a bad one.",
+      "longDescription": "This skill measures how accurately AI models can identify emotional tone, sentiment, and subjective opinions in text. It includes detecting subtle sentiment, mixed emotions, sarcasm, and contextual sentiment that may not be immediately obvious from surface-level analysis.",
+      "category": "benchmark",
+      "displayOrder": 3,
+      "isEnabled": true,
+      "methodology": "Models analyze text samples and predict sentiment classifications, with performance measured against human-annotated gold standards.",
+      "examplePrompts": [
+        "Analyze the sentiment of this movie review",
+        "Determine if this customer feedback is positive or negative",
+        "Identify the emotional tone of this social media post"
+      ]
+    },
+    "document-summaries": {
+      "id": "document-summaries",
+      "name": "Document summaries",
+      "description": "Converting long documents into short, easy-to-read summaries.",
+      "longDescription": "This benchmark evaluates the ability to create concise, accurate, and informative summaries of lengthy documents while preserving key information and maintaining readability. It tests both extractive and abstractive summarization across various document types.",
+      "category": "benchmark",
+      "displayOrder": 4,
+      "isEnabled": true,
+      "methodology": "Models generate summaries of documents of varying lengths and domains, evaluated for accuracy, conciseness, and informativeness using both automated metrics and human evaluation."
+    },
+    "difficult-math": {
+      "id": "difficult-math",
+      "name": "Difficult math",
+      "description": "Solving difficult math problems accurately.",
+      "longDescription": "This skill tests mathematical reasoning across algebra, calculus, geometry, statistics, and advanced topics. It evaluates both computational accuracy and the ability to break down complex multi-step problems with clear mathematical reasoning.",
+      "category": "benchmark",
+      "displayOrder": 5,
+      "isEnabled": true,
+      "methodology": "Models solve mathematical problems of increasing complexity, with evaluation based on both final answers and step-by-step reasoning processes."
+    },
+    "business-plans": {
+      "id": "business-plans",
+      "name": "Business plans",
+      "description": "Evaluating if the model can create a solid business plan.",
+      "longDescription": "This benchmark assesses the ability to create comprehensive, realistic business plans including market analysis, financial projections, competitive positioning, and strategic planning. It evaluates both the quality of individual components and overall plan coherence.",
+      "category": "benchmark",
+      "displayOrder": 6,
+      "isEnabled": true,
+      "methodology": "Models generate business plans for various scenarios, evaluated by business experts for feasibility, completeness, and strategic soundness."
+    },
+    "legal-instruction-following": {
+      "id": "legal-instruction-following",
+      "name": "Legal Instruction Following",
+      "description": "Understands legal language and applies it precisely—obeying licenses, privacy rules, and contract clauses without slip-ups.",
+      "longDescription": "This skill evaluates how well AI models can interpret, understand, and apply complex legal language and requirements. It tests compliance with various legal frameworks, understanding of contractual obligations, and ability to navigate regulatory requirements accurately.",
+      "category": "benchmark",
+      "displayOrder": 7,
+      "isEnabled": true,
+      "methodology": "Models are presented with legal documents and scenarios, then evaluated on their ability to correctly interpret requirements and provide compliant responses."
+    },
+    "diverse-ethical-views": {
+      "id": "diverse-ethical-views",
+      "name": "Diverse ethical views",
+      "description": "Seeing how well the model can understand and explain different ethical viewpoints on a topic, even if they conflict.",
+      "longDescription": "This benchmark tests the ability to present multiple ethical perspectives fairly and comprehensively, demonstrating understanding of different moral frameworks without showing bias toward particular viewpoints.",
+      "category": "benchmark",
+      "displayOrder": 8,
+      "isEnabled": true,
+      "methodology": "Models are asked to explain various ethical stances on controversial topics, evaluated for balance, accuracy, and depth of understanding across different moral systems."
+    }
+  },
+  "models": [
+    {
+      "id": "gpt-4o-2024-11-20",
+      "name": "GPT-4o",
+      "provider": "openai",
+      "modelFamily": "gpt-4o",
+      "scores": {
+        "code-generation": {
+          "rawScore": 89.7,
+          "confidenceInterval": [87.2, 92.1],
+          "rank": 1,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 84.3,
+          "confidenceInterval": [81.8, 86.7],
+          "rank": 3,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 91.2,
+          "confidenceInterval": [89.5, 92.8],
+          "rank": 2,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 87.9,
+          "confidenceInterval": [85.1, 90.2],
+          "rank": 1,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 82.4,
+          "confidenceInterval": [79.8, 84.9],
+          "rank": 2,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "medium",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 79.6,
+          "confidenceInterval": [76.2, 82.8],
+          "rank": 2,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 85.7,
+          "confidenceInterval": [82.9, 88.1],
+          "rank": 1,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 88.1,
+          "confidenceInterval": [85.4, 90.3],
+          "rank": 1,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "openai/gpt-4o-2024-11-20",
+        "contextLength": 128000,
+        "created": "2024-11-20",
+        "author": "openai",
+        "group": "GPT-4o",
+        "instructionType": "openai",
+        "description": "GPT-4o is OpenAI's flagship model with enhanced reasoning across text, vision, and audio.",
+        "pricing": {
+          "input": 2.5,
+          "output": 10.0
+        },
+        "inputModalities": ["text", "vision"],
+        "outputModalities": ["text"],
+        "defaultStops": [],
+        "provider": "OpenAI",
+        "quantization": "fp16",
+        "variant": "standard",
+        "parameterCount": "~1.8T",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/openai.svg"
+      }
+    },
+    {
+      "id": "claude-3-5-sonnet-20241022",
+      "name": "Claude 3.5 Sonnet",
+      "provider": "anthropic",
+      "modelFamily": "claude-3.5",
+      "scores": {
+        "code-generation": {
+          "rawScore": 88.2,
+          "confidenceInterval": [85.7, 90.6],
+          "rank": 2,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 92.1,
+          "confidenceInterval": [89.8, 94.2],
+          "rank": 1,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 89.7,
+          "confidenceInterval": [87.9, 91.4],
+          "rank": 3,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 86.4,
+          "confidenceInterval": [83.8, 88.9],
+          "rank": 2,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 79.8,
+          "confidenceInterval": [77.1, 82.3],
+          "rank": 4,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 83.2,
+          "confidenceInterval": [79.9, 86.1],
+          "rank": 1,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 84.9,
+          "confidenceInterval": [82.1, 87.4],
+          "rank": 2,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 87.6,
+          "confidenceInterval": [84.8, 90.1],
+          "rank": 2,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "anthropic/claude-3.5-sonnet:beta",
+        "contextLength": 200000,
+        "created": "2024-10-22",
+        "author": "anthropic",
+        "group": "Claude-3.5",
+        "instructionType": "anthropic",
+        "description": "Claude 3.5 Sonnet delivers better-than-Opus capabilities, faster-than-Sonnet speeds, at the same Sonnet prices.",
+        "pricing": {
+          "input": 3.0,
+          "output": 15.0
+        },
+        "inputModalities": ["text", "vision"],
+        "outputModalities": ["text"],
+        "defaultStops": [],
+        "provider": "Anthropic",
+        "quantization": "fp16",
+        "variant": "standard",
+        "parameterCount": "~200B",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/anthropic.svg"
+      }
+    },
+    {
+      "id": "llama-3.2-90b-vision-instruct",
+      "name": "Llama 3.2 90B Vision",
+      "provider": "meta-llama",
+      "modelFamily": "llama-3.2",
+      "scores": {
+        "code-generation": {
+          "rawScore": 85.3,
+          "confidenceInterval": [82.6, 87.8],
+          "rank": 4,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 81.7,
+          "confidenceInterval": [79.2, 84.1],
+          "rank": 5,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 88.9,
+          "confidenceInterval": [86.8, 90.8],
+          "rank": 4,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 84.1,
+          "confidenceInterval": [81.4, 86.6],
+          "rank": 4,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 86.7,
+          "confidenceInterval": [84.2, 89.1],
+          "rank": 1,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 76.8,
+          "confidenceInterval": [73.2, 80.1],
+          "rank": 5,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 82.3,
+          "confidenceInterval": [79.6, 84.8],
+          "rank": 4,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 85.4,
+          "confidenceInterval": [82.7, 87.9],
+          "rank": 4,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "meta-llama/llama-3.2-90b-vision-instruct",
+        "contextLength": 131072,
+        "created": "2024-09-25",
+        "author": "meta-llama",
+        "group": "Llama-3.2",
+        "instructionType": "llama3",
+        "description": "Llama 3.2 90B Vision is a multimodal model that can process both text and images with state-of-the-art reasoning.",
+        "pricing": {
+          "input": 0.9,
+          "output": 0.9
+        },
+        "inputModalities": ["text", "vision"],
+        "outputModalities": ["text"],
+        "defaultStops": ["<|eot_id|>", "<|end_of_text|>"],
+        "provider": "Meta",
+        "quantization": "bf16",
+        "variant": "instruct",
+        "parameterCount": "90B",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/meta.svg"
+      }
+    },
+    {
+      "id": "gemini-1.5-pro-002",
+      "name": "Gemini 1.5 Pro",
+      "provider": "google",
+      "modelFamily": "gemini-1.5",
+      "scores": {
+        "code-generation": {
+          "rawScore": 87.1,
+          "confidenceInterval": [84.5, 89.4],
+          "rank": 3,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 86.9,
+          "confidenceInterval": [84.3, 89.2],
+          "rank": 2,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 92.4,
+          "confidenceInterval": [90.6, 94.1],
+          "rank": 1,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 85.7,
+          "confidenceInterval": [83.1, 88.2],
+          "rank": 3,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 81.2,
+          "confidenceInterval": [78.6, 83.7],
+          "rank": 3,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "medium",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 78.9,
+          "confidenceInterval": [75.4, 82.1],
+          "rank": 3,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 83.6,
+          "confidenceInterval": [80.9, 86.1],
+          "rank": 3,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 86.8,
+          "confidenceInterval": [84.1, 89.3],
+          "rank": 3,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "google/gemini-pro-1.5",
+        "contextLength": 2000000,
+        "created": "2024-09-24",
+        "author": "google",
+        "group": "Gemini-1.5",
+        "instructionType": "google",
+        "description": "Gemini 1.5 Pro is Google's most capable multimodal model with an industry-leading 2M token context window.",
+        "pricing": {
+          "input": 1.25,
+          "output": 5.0
+        },
+        "inputModalities": ["text", "vision", "audio"],
+        "outputModalities": ["text"],
+        "defaultStops": [],
+        "provider": "Google",
+        "quantization": "fp16",
+        "variant": "pro",
+        "parameterCount": "~1.5T",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/google.svg"
+      }
+    },
+    {
+      "id": "mistral-large-2407",
+      "name": "Mistral Large",
+      "provider": "mistralai",
+      "modelFamily": "mistral-large",
+      "scores": {
+        "code-generation": {
+          "rawScore": 83.6,
+          "confidenceInterval": [80.9, 86.2],
+          "rank": 5,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 82.4,
+          "confidenceInterval": [79.8, 84.9],
+          "rank": 4,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 86.7,
+          "confidenceInterval": [84.3, 88.9],
+          "rank": 5,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 82.3,
+          "confidenceInterval": [79.6, 84.8],
+          "rank": 5,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 78.9,
+          "confidenceInterval": [76.1, 81.4],
+          "rank": 5,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 77.2,
+          "confidenceInterval": [73.8, 80.4],
+          "rank": 4,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 80.8,
+          "confidenceInterval": [78.1, 83.3],
+          "rank": 5,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 84.2,
+          "confidenceInterval": [81.5, 86.7],
+          "rank": 5,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "mistralai/mistral-large",
+        "contextLength": 128000,
+        "created": "2024-07-01",
+        "author": "mistralai",
+        "group": "Mistral-Large",
+        "instructionType": "mistral",
+        "description": "Mistral Large is a cutting-edge text generation model with top-tier reasoning capabilities and multilingual proficiency.",
+        "pricing": {
+          "input": 2.0,
+          "output": 6.0
+        },
+        "inputModalities": ["text"],
+        "outputModalities": ["text"],
+        "defaultStops": ["</s>"],
+        "provider": "Mistral",
+        "quantization": "fp16",
+        "variant": "large",
+        "parameterCount": "123B",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/mistralai.svg"
+      }
+    }
+  ],
+  "skillStats": {
+    "code-generation": {
+      "totalModels": 5,
+      "avgScore": 86.78,
+      "topScore": 89.7,
+      "medianScore": 87.1,
+      "evaluationCount": 2500
+    },
+    "ethical-loophole-navigation": {
+      "totalModels": 5,
+      "avgScore": 85.48,
+      "topScore": 92.1,
+      "medianScore": 84.3,
+      "evaluationCount": 2000
+    },
+    "sentiment-analysis": {
+      "totalModels": 5,
+      "avgScore": 89.78,
+      "topScore": 92.4,
+      "medianScore": 89.7,
+      "evaluationCount": 5000
+    },
+    "document-summaries": {
+      "totalModels": 5,
+      "avgScore": 85.28,
+      "topScore": 87.9,
+      "medianScore": 85.7,
+      "evaluationCount": 1500
+    },
+    "difficult-math": {
+      "totalModels": 5,
+      "avgScore": 81.8,
+      "topScore": 86.7,
+      "medianScore": 81.2,
+      "evaluationCount": 1250
+    },
+    "business-plans": {
+      "totalModels": 5,
+      "avgScore": 79.14,
+      "topScore": 83.2,
+      "medianScore": 78.9,
+      "evaluationCount": 750
+    },
+    "legal-instruction-following": {
+      "totalModels": 5,
+      "avgScore": 83.46,
+      "topScore": 85.7,
+      "medianScore": 83.6,
+      "evaluationCount": 1000
+    },
+    "diverse-ethical-views": {
+      "totalModels": 5,
+      "avgScore": 86.42,
+      "topScore": 88.1,
+      "medianScore": 86.8,
+      "evaluationCount": 900
+    }
+  }
+}

@@ -1,0 +1,187 @@
+import { useQuery } from "@tanstack/react-query";
+
+import {
+  SkillDefinition,
+  UnifiedLeaderboardData,
+  UnifiedRankingEntry,
+  UnifiedSkillData,
+} from "@/types/unified-leaderboard";
+
+import { useBenchmarkLeaderboard } from "./useBenchmarkLeaderboard";
+import { useLeaderboards } from "./useLeaderboards";
+
+/**
+ * Hook to get unified leaderboard data combining benchmark models + trading agents
+ */
+export const useUnifiedLeaderboard = () => {
+  const benchmarkQuery = useBenchmarkLeaderboard();
+  const tradingQuery = useLeaderboards({ type: "trading", limit: 100 });
+
+  return useQuery({
+    queryKey: ["unified-leaderboard"],
+    queryFn: async (): Promise<UnifiedLeaderboardData> => {
+      if (!benchmarkQuery.data) {
+        throw new Error("Benchmark data not loaded");
+      }
+
+      // Create trading skill definition
+      const tradingSkill: SkillDefinition = {
+        id: "trading",
+        name: "7-Day P&L",
+        description: "Real trading performance over the last 7 days",
+        longDescription:
+          "This skill measures actual trading performance of AI agents over a rolling 7-day period, including profit/loss calculations, risk management, and portfolio optimization in live market conditions.",
+        category: "trading",
+        displayOrder: 0, // Show first
+        isEnabled: true,
+        methodology:
+          "Agents trade in real market conditions with standardized starting capital and risk parameters.",
+      };
+
+      // Combine all skills
+      const allSkills = {
+        trading: tradingSkill,
+        ...benchmarkQuery.data.skills,
+      };
+
+      // Process trading skill data
+      const tradingSkillData: UnifiedSkillData = {
+        skill: tradingSkill,
+        participants: {
+          models: [], // No models in trading
+          agents: tradingQuery.data?.agents || [],
+        },
+        stats: {
+          totalParticipants: tradingQuery.data?.agents.length || 0,
+          modelCount: 0,
+          agentCount: tradingQuery.data?.agents.length || 0,
+          avgScore:
+            tradingQuery.data?.agents && tradingQuery.data.agents.length > 0
+              ? tradingQuery.data.agents.reduce(
+                  (sum, agent) => sum + agent.score,
+                  0,
+                ) / tradingQuery.data.agents.length
+              : 0,
+          topScore:
+            tradingQuery.data?.agents && tradingQuery.data.agents.length > 0
+              ? Math.max(...tradingQuery.data.agents.map((a) => a.score))
+              : 0,
+        },
+      };
+
+      // Process benchmark skill data
+      const benchmarkSkillData: Record<string, UnifiedSkillData> = {};
+
+      Object.entries(benchmarkQuery.data.skills).forEach(([skillId, skill]) => {
+        const modelsForSkill = benchmarkQuery
+          .data!.models.filter((model) => model.scores[skillId] !== undefined)
+          .sort(
+            (a, b) =>
+              (a.scores[skillId]?.rank || 999) -
+              (b.scores[skillId]?.rank || 999),
+          );
+
+        benchmarkSkillData[skillId] = {
+          skill,
+          participants: {
+            models: modelsForSkill,
+            agents: [], // No agents in benchmark skills
+          },
+          stats: {
+            totalParticipants: modelsForSkill.length,
+            modelCount: modelsForSkill.length,
+            agentCount: 0,
+            avgScore: benchmarkQuery.data!.skillStats[skillId]?.avgScore,
+            topScore: benchmarkQuery.data!.skillStats[skillId]?.topScore,
+          },
+        };
+      });
+
+      return {
+        skills: allSkills,
+        skillData: {
+          trading: tradingSkillData,
+          ...benchmarkSkillData,
+        },
+        globalStats: {
+          totalSkills: Object.keys(allSkills).length,
+          totalModels: benchmarkQuery.data.models.length,
+          totalAgents: tradingQuery.data?.agents.length || 0,
+        },
+      };
+    },
+    enabled: benchmarkQuery.isSuccess, // Don't need trading data to be successful
+    staleTime: 2 * 60 * 1000, // 2 minutes (trading data changes frequently)
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+/**
+ * Hook to get data for a specific skill (either benchmark or trading)
+ */
+export const useUnifiedSkillData = (skillId: string) => {
+  const unifiedQuery = useUnifiedLeaderboard();
+
+  return {
+    ...unifiedQuery,
+    data: unifiedQuery.data?.skillData[skillId],
+  };
+};
+
+/**
+ * Hook to get unified ranking entries for a specific skill
+ * Converts both models and agents into a common format
+ */
+export const useSkillRankings = (skillId: string) => {
+  const { data: skillData, ...rest } = useUnifiedSkillData(skillId);
+
+  return {
+    ...rest,
+    data: skillData ? createUnifiedRankings(skillData, skillId) : undefined,
+  };
+};
+
+/**
+ * Helper function to create unified ranking entries
+ */
+function createUnifiedRankings(
+  skillData: UnifiedSkillData,
+  skillId: string,
+): UnifiedRankingEntry[] {
+  const rankings: UnifiedRankingEntry[] = [];
+
+  // Add model rankings
+  skillData.participants.models.forEach((model) => {
+    const score = model.scores[skillId];
+    if (score) {
+      rankings.push({
+        id: model.id,
+        name: model.name,
+        type: "model",
+        rank: score.rank,
+        score: score.rawScore,
+        provider: model.provider,
+        metadata: model.metadata,
+      });
+    }
+  });
+
+  // Add agent rankings
+  skillData.participants.agents.forEach((agent) => {
+    rankings.push({
+      id: agent.id,
+      name: agent.name,
+      type: "agent",
+      rank: agent.rank,
+      score: agent.score,
+      imageUrl: agent.imageUrl,
+      additionalMetrics: {
+        trades: agent.numCompetitions, // Using available data
+        competitions: agent.numCompetitions,
+      },
+    });
+  });
+
+  // Sort by rank
+  return rankings.sort((a, b) => a.rank - b.rank);
+}

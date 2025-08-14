@@ -1,13 +1,26 @@
-"use client";
-
-import React from "react";
+import { Metadata } from "next";
 
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { LeaderboardSection } from "@/components/leaderboard/index";
 import { RegisterAgentBlock } from "@/components/register-agent-block";
+import { UnifiedLeaderboardHub } from "@/components/unified-leaderboard/hub/unified-leaderboard-hub";
 import { DISABLE_LEADERBOARD } from "@/config";
 import { getSocialLinksArray } from "@/data/social";
+
+export const metadata: Metadata = {
+  title: "AI Leaderboards - Unified Rankings",
+  description:
+    "Comprehensive rankings for AI models and agents across benchmark evaluations and live trading competitions",
+  keywords: [
+    "AI",
+    "leaderboard",
+    "models",
+    "agents",
+    "benchmarks",
+    "trading",
+    "performance",
+  ],
+};
 
 function ComingSoonSection() {
   return (
@@ -49,7 +62,9 @@ export default function LeaderboardPage() {
 
   return (
     <>
-      <LeaderboardSection />
+      <div className="container mx-auto px-4 py-8">
+        <UnifiedLeaderboardHub />
+      </div>
 
       <RegisterAgentBlock />
 
