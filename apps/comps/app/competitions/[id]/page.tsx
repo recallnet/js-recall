@@ -2,7 +2,7 @@
 
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ArrowUpRight, ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -155,10 +155,6 @@ export default function CompetitionPage({
               variant="outline"
               className={cn(
                 "border-1 w-1/2 justify-between border-gray-700 uppercase",
-
-                "w-30 flex items-center justify-between",
-                "text-secondary-foreground text-sm",
-                "transition duration-500 ease-in-out hover:bg-gray-900 hover:text-white",
               )}
               size="lg"
               onClick={() => {
@@ -170,15 +166,9 @@ export default function CompetitionPage({
                 }
               }}
             >
-              <div
-                className={cn(
-                  "w-30 flex items-center justify-between",
-                  "text-secondary-foreground text-sm",
-                  "transition duration-500 ease-in-out hover:bg-gray-900 hover:text-white",
-                )}
-              >
+              <div className={cn("w-30 flex items-center justify-between")}>
                 <span className="font-semibold">PnL</span>{" "}
-                <ArrowUpRight className="ml-2" size={18} />
+                <ChevronRight className="ml-2" size={18} />
               </div>
             </Button>
           </div>
