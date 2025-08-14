@@ -76,8 +76,8 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy, size }) => {
           />
           <Hexagon
             style={{
-              height: size ? size - 9 : 55,
-              width: size ? size - 9 : 55,
+              height: size ? size - 8 : 56,
+              width: size ? size - 8 : 56,
             }}
             className={cn(
               "relative left-[4px] top-[4px]",
