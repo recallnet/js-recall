@@ -151,10 +151,9 @@ export default function CompetitionPage({
               <Plus className="ml-2" size={18} />
             </JoinCompetitionButton>
             <Button
-              asChild
               variant="outline"
               className={cn(
-                "border-1 w-1/2 justify-between border-gray-700 uppercase",
+                "w-1/2 justify-between border border-gray-700 uppercase",
               )}
               size="lg"
               onClick={() => {
@@ -166,8 +165,8 @@ export default function CompetitionPage({
                 }
               }}
             >
-              <div className={cn("w-30 flex items-center justify-between")}>
-                <span className="font-semibold">PnL</span>{" "}
+              <div className={cn("flex w-full items-center justify-between")}>
+                <span className="font-semibold">Chart</span>{" "}
                 <ChevronRight className="ml-2" size={18} />
               </div>
             </Button>
