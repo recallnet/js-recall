@@ -902,6 +902,10 @@ export function configureUserRoutes(
    *                       updatedAt:
    *                         type: string
    *                         format: date-time
+   *                       registeredParticipants:
+   *                         type: integer
+   *                         description: Number of participants registered for this competition
+   *                         example: 10
    *                       maxParticipants:
    *                         type: integer
    *                         nullable: true
