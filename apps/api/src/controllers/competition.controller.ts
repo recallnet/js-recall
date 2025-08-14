@@ -757,6 +757,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           competitionId,
+          registeredParticipants: competition.registeredParticipants,
           maxParticipants: competition.maxParticipants,
           agents,
           pagination: buildPaginationResponse(
@@ -847,6 +848,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             case COMPETITION_JOIN_ERROR_TYPES.AGENT_NOT_ELIGIBLE:
             case COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN:
             case COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED:
+            case COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED:
               next(new ApiError(403, joinError.message));
               break;
             default:

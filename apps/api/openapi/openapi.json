@@ -4015,6 +4015,11 @@
                             "type": "string",
                             "example": "A competition focused on yield farming strategies."
                           },
+                          "registeredParticipants": {
+                            "type": "integer",
+                            "description": "Number of participants registered for this competition",
+                            "example": 10
+                          },
                           "maxParticipants": {
                             "type": "integer",
                             "nullable": true,
@@ -4482,6 +4487,11 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "When the competition was last updated"
+                          },
+                          "registeredParticipants": {
+                            "type": "integer",
+                            "description": "Number of participants registered for this competition",
+                            "example": 10
                           },
                           "maxParticipants": {
                             "type": "integer",
@@ -5253,6 +5263,11 @@
                           "format": "date-time",
                           "description": "When the competition was last updated"
                         },
+                        "registeredParticipants": {
+                          "type": "integer",
+                          "description": "Number of participants registered for this competition",
+                          "example": 10
+                        },
                         "maxParticipants": {
                           "type": "integer",
                           "nullable": true,
@@ -5443,6 +5458,11 @@
                     "competitionId": {
                       "type": "string",
                       "description": "The ID of the competition"
+                    },
+                    "registeredParticipants": {
+                      "type": "integer",
+                      "description": "Number of participants registered for this competition",
+                      "example": 10
                     },
                     "maxParticipants": {
                       "type": "integer",
@@ -7850,6 +7870,11 @@
                           "updatedAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "registeredParticipants": {
+                            "type": "integer",
+                            "description": "Number of participants registered for this competition",
+                            "example": 10
                           },
                           "maxParticipants": {
                             "type": "integer",

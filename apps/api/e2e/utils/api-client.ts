@@ -15,6 +15,7 @@ import {
   AdminUserResponse,
   AdminUsersListResponse,
   AgentApiKeyResponse,
+  AgentCompetitionsResponse,
   AgentMetadata,
   AgentNonceResponse,
   AgentProfileResponse,
@@ -196,8 +197,7 @@ export class ApiClient {
       limit?: number;
       offset?: number;
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): Promise<any | ErrorResponse> {
+  ): Promise<AgentCompetitionsResponse | ErrorResponse> {
     try {
       const queryParams = new URLSearchParams();
 

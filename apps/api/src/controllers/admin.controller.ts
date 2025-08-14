@@ -1831,7 +1831,11 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Add agent to competition using repository method
-        await addAgentToCompetition(competitionId, agentId);
+        await addAgentToCompetition(
+          competitionId,
+          agentId,
+          competition.maxParticipants,
+        );
 
         // Complete sandbox mode logic if enabled
         if (competition.sandboxMode) {

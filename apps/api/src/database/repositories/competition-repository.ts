@@ -62,6 +62,7 @@ function buildCompetitionWithRewardsQuery() {
   return db
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      registeredParticipants: sql<number>`count(${competitionAgents.agentId})::int`,
       rewards: sql<
         | Array<{ rank: number; reward: number; agentId: string | null }>
         | undefined
@@ -83,6 +84,13 @@ function buildCompetitionWithRewardsQuery() {
     .innerJoin(
       competitions,
       eq(tradingCompetitions.competitionId, competitions.id),
+    )
+    .leftJoin(
+      competitionAgents,
+      and(
+        eq(competitionAgents.competitionId, competitions.id),
+        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+      ),
     )
     .leftJoin(
       competitionRewards,
@@ -143,13 +151,22 @@ async function findAllImpl() {
   return await db
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      registeredParticipants: sql<number>`count(${competitionAgents.agentId})::int`,
       ...getTableColumns(competitions),
     })
     .from(tradingCompetitions)
     .innerJoin(
       competitions,
       eq(tradingCompetitions.competitionId, competitions.id),
-    );
+    )
+    .leftJoin(
+      competitionAgents,
+      and(
+        eq(competitionAgents.competitionId, competitions.id),
+        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+      ),
+    )
+    .groupBy(competitions.id, tradingCompetitions.crossChainTradingType);
 }
 
 /**
@@ -160,6 +177,7 @@ async function findByIdImpl(id: string) {
   const [result] = await db
     .select({
       crossChainTradingType: tradingCompetitions.crossChainTradingType,
+      registeredParticipants: sql<number>`count(${competitionAgents.agentId})::int`,
       ...getTableColumns(competitions),
     })
     .from(tradingCompetitions)
@@ -167,7 +185,15 @@ async function findByIdImpl(id: string) {
       competitions,
       eq(tradingCompetitions.competitionId, competitions.id),
     )
+    .leftJoin(
+      competitionAgents,
+      and(
+        eq(competitionAgents.competitionId, competitions.id),
+        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+      ),
+    )
     .where(eq(competitions.id, id))
+    .groupBy(competitions.id, tradingCompetitions.crossChainTradingType)
     .limit(1);
   return result;
 }
@@ -269,28 +295,57 @@ async function updateOneImpl(
 }
 
 /**
- * Add a single agent to a competition
+ * Atomically add an agent to a competition with participant limit validation
+ * This function checks the participant limit and adds the agent in a single transaction
+ * to prevent race conditions when multiple agents try to join simultaneously.
+ *
  * @param competitionId Competition ID
  * @param agentId Agent ID to add
+ * @param maxParticipants Maximum number of participants allowed (null means no limit)
+ * @throws Error if participant limit would be exceeded
  */
 async function addAgentToCompetitionImpl(
   competitionId: string,
   agentId: string,
-) {
+  maxParticipants?: number | null,
+): Promise<void> {
   try {
-    await db
-      .insert(competitionAgents)
-      .values({
-        competitionId,
-        agentId,
-        status: COMPETITION_AGENT_STATUS.ACTIVE,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .onConflictDoNothing();
+    await db.transaction(async (tx) => {
+      // If there's a participant limit, check it within the transaction
+      if (maxParticipants) {
+        const [countResult] = await tx
+          .select({ count: drizzleCount() })
+          .from(competitionAgents)
+          .where(
+            and(
+              eq(competitionAgents.competitionId, competitionId),
+              eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+            ),
+          );
+
+        const currentCount = countResult?.count ?? 0;
+        if (currentCount >= maxParticipants) {
+          throw new Error(
+            `Competition has reached maximum participant limit (${maxParticipants})`,
+          );
+        }
+      }
+
+      // Add the agent to the competition
+      await tx
+        .insert(competitionAgents)
+        .values({
+          competitionId,
+          agentId,
+          status: COMPETITION_AGENT_STATUS.ACTIVE,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .onConflictDoNothing();
+    });
   } catch (error) {
     repositoryLogger.error(
-      `Error adding agent ${agentId} to competition ${competitionId}:`,
+      `Error adding agent ${agentId} to competition ${competitionId} with limit check:`,
       error,
     );
     throw error;
@@ -654,6 +709,7 @@ async function findActiveImpl() {
     const [result] = await db
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        registeredParticipants: sql<number>`count(${competitionAgents.agentId})::int`,
         ...getTableColumns(competitions),
       })
       .from(tradingCompetitions)
@@ -661,8 +717,17 @@ async function findActiveImpl() {
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
       )
+      .leftJoin(
+        competitionAgents,
+        and(
+          eq(competitionAgents.competitionId, competitions.id),
+          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+        ),
+      )
       .where(eq(competitions.status, COMPETITION_STATUS.ACTIVE))
+      .groupBy(competitions.id, tradingCompetitions.crossChainTradingType)
       .limit(1);
+
     return result;
   } catch (error) {
     repositoryLogger.error("Error in findActive:", error);

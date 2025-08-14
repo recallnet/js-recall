@@ -29,7 +29,6 @@ import {
   updateOne,
 } from "@/database/repositories/competition-repository.js";
 import {
-  SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@/database/schema/core/types.js";
@@ -270,7 +269,11 @@ export class CompetitionManager {
       await this.balanceManager.resetAgentBalances(agentId);
 
       // Register agent in the competition (automatically sets status to 'active')
-      await addAgentToCompetition(competitionId, agentId);
+      await addAgentToCompetition(
+        competitionId,
+        agentId,
+        competition.maxParticipants,
+      );
 
       // Ensure agent is globally active (but don't force reactivation)
       const agent = await findAgentById(agentId);
@@ -935,25 +938,6 @@ export class CompetitionManager {
   }
 
   /**
-   * Validate participant limit for a competition
-   * @param competition Competition object
-   * @throws ApiError if the participant limit is exceeded
-   */
-  private async validateParticipantLimit(
-    competition: SelectCompetition,
-  ): Promise<void> {
-    if (!competition.maxParticipants) return;
-
-    const currentCount = await getParticipantCount(competition.id);
-    if (currentCount >= competition.maxParticipants) {
-      throw new ApiError(
-        403,
-        `Competition has reached maximum participant limit (${competition.maxParticipants})`,
-      );
-    }
-  }
-
-  /**
    * Join an agent to a competition
    * @param competitionId Competition ID
    * @param agentId Agent ID
@@ -1006,10 +990,7 @@ export class CompetitionManager {
       throw error;
     }
 
-    // 5. Check participant limit
-    await this.validateParticipantLimit(competition);
-
-    // 6. Check agent status is eligible
+    // 5. Check agent status is eligible
     if (
       agent.status === ACTOR_STATUS.DELETED ||
       agent.status === ACTOR_STATUS.SUSPENDED
@@ -1017,12 +998,12 @@ export class CompetitionManager {
       throw new Error("Agent is not eligible to join competitions");
     }
 
-    // 7. Check if competition status is pending
+    // 6. Check if competition status is pending
     if (competition.status !== COMPETITION_STATUS.PENDING) {
       throw new Error("Cannot join competition that has already started/ended");
     }
 
-    // 8. Check if agent is already actively registered
+    // 7. Check if agent is already actively registered
     const isAlreadyActive = await isAgentActiveInCompetition(
       competitionId,
       agentId,
@@ -1033,8 +1014,30 @@ export class CompetitionManager {
       );
     }
 
-    // Add agent to competition
-    await addAgentToCompetition(competitionId, agentId);
+    // 8. Atomically add agent to competition with participant limit check
+    // This prevents race conditions when multiple agents try to join simultaneously
+    try {
+      await addAgentToCompetition(
+        competitionId,
+        agentId,
+        competition.maxParticipants,
+      );
+    } catch (error) {
+      // Convert repository error to appropriate API error
+      if (
+        error instanceof Error &&
+        error.message.includes("maximum participant limit")
+      ) {
+        const competitionError = new Error(
+          error.message,
+        ) as CompetitionJoinError;
+        competitionError.type =
+          COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED;
+        competitionError.code = 403;
+        throw competitionError;
+      }
+      throw error;
+    }
 
     serviceLogger.debug(
       `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId}`,
@@ -1299,7 +1302,11 @@ export class CompetitionManager {
       await this.balanceManager.resetAgentBalances(agentId);
 
       // Add the agent to the competition
-      await addAgentToCompetition(activeCompetition.id, agentId);
+      await addAgentToCompetition(
+        activeCompetition.id,
+        agentId,
+        activeCompetition.maxParticipants,
+      );
 
       // Take a portfolio snapshot for the newly joined agent
       await this.portfolioSnapshotter.takePortfolioSnapshotForAgent(

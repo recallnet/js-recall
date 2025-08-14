@@ -98,6 +98,10 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: When the competition was last updated
+   *                       registeredParticipants:
+   *                         type: integer
+   *                         description: Number of participants registered for this competition
+   *                         example: 10
    *                       maxParticipants:
    *                         type: integer
    *                         nullable: true
@@ -684,6 +688,10 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: When the competition was last updated
+   *                     registeredParticipants:
+   *                       type: integer
+   *                       description: Number of participants registered for this competition
+   *                       example: 10
    *                     maxParticipants:
    *                       type: integer
    *                       nullable: true
@@ -819,6 +827,10 @@ export function configureCompetitionsRoutes(
    *                 competitionId:
    *                   type: string
    *                   description: The ID of the competition
+   *                 registeredParticipants:
+   *                   type: integer
+   *                   description: Number of participants registered for this competition
+   *                   example: 10
    *                 maxParticipants:
    *                   type: integer
    *                   nullable: true
