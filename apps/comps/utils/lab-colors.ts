@@ -163,6 +163,74 @@ export function getKnownLabColors(): Record<string, string> {
   return { ...KNOWN_LAB_COLORS };
 }
 
+// Agent-specific colors (professional muted palette matching lab aesthetic)
+const AGENT_COLORS = [
+  "#7BA05B", // Sage green
+  "#8B7CB6", // Soft lavender
+  "#D4857F", // Coral
+  "#B8956A", // Warm taupe
+  "#7A9FB8", // Sky blue
+  "#8A8E94", // Professional gray
+  "#A885A3", // Muted plum
+  "#7A9B7F", // Forest sage
+  "#9D8F7A", // Warm stone
+  "#C49B6A", // Bronze
+  "#7BB3A8", // Seafoam
+  "#BA8285", // Muted coral
+  "#9B8B7A", // Warm gray
+  "#5A8AB3", // Navy
+  "#8CA4C4", // Soft blue
+  "#A5B8D0", // Light blue gray
+  "#8FAE8F", // Soft mint
+  "#A5C2A5", // Light sage
+  "#A598B8", // Soft lilac
+  "#B8A5D0", // Light orchid
+  "#B5A592", // Light taupe
+  "#C8B5A5", // Warm beige
+  "#C8A5A5", // Soft coral
+  "#D0B5B5", // Blush
+  "#A5A8AB", // Light gray
+  "#B8BBC0", // Silver gray
+  "#8FB8B5", // Soft teal
+  "#A5C8C2", // Aqua mist
+  "#B8B595", // Soft gold
+  "#C8C2A5", // Champagne
+  "#C0A8B5", // Rose taupe
+  "#B5C0A8", // Sage beige
+];
+
+/**
+ * Generate a consistent color for an agent based on their name/ID
+ */
+function generateColorFromAgent(agentName: string): string {
+  const name = agentName.toLowerCase().trim();
+
+  // Use FNV-1a hash algorithm for better distribution
+  let hash = 2166136261; // FNV offset basis
+
+  for (let i = 0; i < name.length; i++) {
+    hash ^= name.charCodeAt(i);
+    hash = (hash * 16777619) >>> 0; // FNV prime, keep as 32-bit
+  }
+
+  // Add additional entropy from string characteristics
+  hash ^= name.length << 16;
+  hash ^= (name.charCodeAt(0) || 0) << 8;
+  hash ^= name.charCodeAt(name.length - 1) || 0;
+
+  // Ensure positive value and select from agent colors
+  const index = Math.abs(hash) % AGENT_COLORS.length;
+  return AGENT_COLORS[index]!;
+}
+
+/**
+ * Get color for an agent with consistent generation
+ */
+export function getAgentColor(agentName: string): string {
+  if (!agentName) return AGENT_COLORS[0]!;
+  return generateColorFromAgent(agentName);
+}
+
 /**
  * Add or update a lab color (for dynamic updates)
  */

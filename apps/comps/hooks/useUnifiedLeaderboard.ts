@@ -26,7 +26,7 @@ export const useUnifiedLeaderboard = () => {
 
       // Create trading skill definition
       const tradingSkill: SkillDefinition = {
-        id: "trading",
+        id: "7d-pnl",
         name: "7-Day P&L",
         description: "Real trading performance over the last 7 days",
         longDescription:
@@ -40,7 +40,7 @@ export const useUnifiedLeaderboard = () => {
 
       // Combine all skills
       const allSkills = {
-        trading: tradingSkill,
+        "7d-pnl": tradingSkill,
         ...benchmarkQuery.data.skills,
       };
 
@@ -100,7 +100,7 @@ export const useUnifiedLeaderboard = () => {
       return {
         skills: allSkills,
         skillData: {
-          trading: tradingSkillData,
+          "7d-pnl": tradingSkillData,
           ...benchmarkSkillData,
         },
         globalStats: {
@@ -110,7 +110,7 @@ export const useUnifiedLeaderboard = () => {
         },
       };
     },
-    enabled: benchmarkQuery.isSuccess, // Don't need trading data to be successful
+    enabled: benchmarkQuery.isSuccess && tradingQuery.isSuccess, // Wait for both data sources
     staleTime: 2 * 60 * 1000, // 2 minutes (trading data changes frequently)
     gcTime: 10 * 60 * 1000, // 10 minutes
   });

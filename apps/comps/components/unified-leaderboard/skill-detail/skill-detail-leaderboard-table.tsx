@@ -16,7 +16,7 @@ import {
   SkillDefinition,
   UnifiedSkillData,
 } from "@/types/unified-leaderboard";
-import { getLabColor } from "@/utils/lab-colors";
+import { getAgentColor, getLabColor } from "@/utils/lab-colors";
 
 import { LabLogo } from "../shared/lab-logo";
 
@@ -119,10 +119,10 @@ export const SkillDetailLeaderboardTable: React.FC<
               const isModel = participant.type === "model";
               const barWidth = (participant.score / maxScaleScore) * 100;
 
-              // Get lab color for models, use default for agents
+              // Get lab color for models, unique color for agents
               const barColor = isModel
                 ? getLabColor((participant as BenchmarkModel).provider)
-                : "#10B981"; // Green for agents
+                : getAgentColor(participant.name); // Unique color for each agent
 
               // Get confidence interval for models
               const confidenceInterval =

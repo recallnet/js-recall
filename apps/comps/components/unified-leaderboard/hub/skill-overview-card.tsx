@@ -10,7 +10,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { SkillOverviewCardProps } from "@/types/unified-leaderboard";
-import { getLabColor } from "@/utils/lab-colors";
+import { getAgentColor, getLabColor } from "@/utils/lab-colors";
 
 import { LabLogo } from "../shared/lab-logo";
 
@@ -107,7 +107,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
               // Get participant color
               const barColor = (() => {
                 if ("imageUrl" in participant) {
-                  return "#10B981"; // Green for agents
+                  return getAgentColor(participant.name); // Unique color for each agent
                 } else {
                   return getLabColor(participant.provider);
                 }
