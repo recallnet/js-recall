@@ -131,6 +131,12 @@ export async function setup() {
     );
   }
 
+  // Extend cache freshness to 10 minutes for all e2e tests to prevent cache expiration issues
+  process.env.PORTFOLIO_PRICE_FRESHNESS_MS = "600000"; // 10 minutes
+  testLogger.info(
+    `PORTFOLIO_PRICE_FRESHNESS_MS set to: ${process.env.PORTFOLIO_PRICE_FRESHNESS_MS}`,
+  );
+
   // Ensure TEST_MODE is set
   process.env.TEST_MODE = "true";
 

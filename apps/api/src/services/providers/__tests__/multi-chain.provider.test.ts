@@ -95,30 +95,6 @@ describe("MultiChainProvider", () => {
     });
   });
 
-  describe("Price caching", () => {
-    it("should cache prices and reuse them", async () => {
-      // First call to get and cache the price
-      const firstPriceReport = await provider.getPrice(ethereumTokens.ETH);
-      expect(firstPriceReport).not.toBeNull();
-
-      // Start timing
-      const start = Date.now();
-
-      // Second call should use cache and be much faster
-      const secondPriceReport = await provider.getPrice(ethereumTokens.ETH);
-
-      // End timing
-      const duration = Date.now() - start;
-
-      // Second call should be very quick (under 5ms) as it's using the cache
-      // TODO(stbrody): This is a bad way to check if the cache is being used. Make this check more targeted and less flaky.
-      expect(duration).toBeLessThan(15);
-
-      // Both prices should be the same
-      expect(secondPriceReport?.price).toBe(firstPriceReport?.price);
-    });
-  });
-
   describe("Token price fetching with specific chains", () => {
     it("should get detailed price info for Ethereum tokens", async () => {
       const priceReport = await provider.getPrice(

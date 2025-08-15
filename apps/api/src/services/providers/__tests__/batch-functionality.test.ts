@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { PriceTracker } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
 
 import { DexScreenerProvider } from "../dexscreener.provider.js";
@@ -191,33 +192,27 @@ describe("Batch Functionality Tests", () => {
         }
       });
     });
+  });
 
+  describe("PriceTracker caching and batch functionality", () => {
     it("should use cache for repeated batch requests", async () => {
-      const provider = new MultiChainProvider();
+      const priceTracker = new PriceTracker();
 
       const testTokens = [
         "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
       ];
 
       // First batch request
-      const firstResults = await provider.getBatchPrices(
-        testTokens,
-        BlockchainType.EVM,
-        "eth",
-      );
+      const firstResults = await priceTracker.getBulkPrices(testTokens);
 
       // Second batch request (should use cache)
-      const secondResults = await provider.getBatchPrices(
-        testTokens,
-        BlockchainType.EVM,
-        "eth",
-      );
+      const secondResults = await priceTracker.getBulkPrices(testTokens);
 
       expect(firstResults).toBeInstanceOf(Map);
       expect(secondResults).toBeInstanceOf(Map);
       expect(firstResults.size).toBe(secondResults.size);
 
-      // Results should be the same
+      // Results should be the same (cached)
       testTokens.forEach((token) => {
         const firstResult = firstResults.get(token);
         const secondResult = secondResults.get(token);
@@ -225,13 +220,12 @@ describe("Batch Functionality Tests", () => {
         if (firstResult && secondResult) {
           expect(firstResult.price).toBe(secondResult.price);
           expect(firstResult.symbol).toBe(secondResult.symbol);
+          expect(firstResult.timestamp).toBe(secondResult.timestamp);
         }
       });
     });
-  });
 
-  describe("Performance comparison", () => {
-    it("should demonstrate batch is faster than individual requests", async () => {
+    it("should return equivalent results for batch vs individual requests", async () => {
       // Test with multiple tokens
       const testTokens = [
         "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
@@ -239,27 +233,20 @@ describe("Batch Functionality Tests", () => {
         "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT
       ];
 
-      // Clear any existing cache by using a fresh provider
-      const freshProvider = new MultiChainProvider();
+      // Use same PriceTracker throughout test to leverage caching
+      const priceTracker = new PriceTracker();
 
-      const batchResults = await freshProvider.getBatchPrices(
-        testTokens,
-        BlockchainType.EVM,
-        "eth",
-      );
+      // Get batch results (populates cache)
+      const batchResults = await priceTracker.getBulkPrices(testTokens);
 
-      // Time individual requests
+      // Get individual results (should use cache)
       const individualResults = new Map();
       for (const token of testTokens) {
-        const result = await freshProvider.getPrice(
-          token,
-          BlockchainType.EVM,
-          "eth",
-        );
+        const result = await priceTracker.getPrice(token);
         individualResults.set(token, result);
       }
 
-      // Verify both methods return the same results
+      // Verify both methods return equivalent results
       expect(batchResults.size).toBe(individualResults.size);
 
       testTokens.forEach((token) => {
@@ -267,8 +254,13 @@ describe("Batch Functionality Tests", () => {
         const individualResult = individualResults.get(token);
 
         if (batchResult && individualResult) {
-          expect(batchResult.price).toBeCloseTo(individualResult.price, 2);
+          expect(batchResult.price).toBe(individualResult.price);
           expect(batchResult.symbol).toBe(individualResult.symbol);
+          expect(batchResult.chain).toBe(individualResult.chain);
+          expect(batchResult.specificChain).toBe(
+            individualResult.specificChain,
+          );
+          expect(batchResult.timestamp).toBe(individualResult.timestamp);
         }
       });
     });
