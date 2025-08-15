@@ -269,11 +269,7 @@ export class CompetitionManager {
       await this.balanceManager.resetAgentBalances(agentId);
 
       // Register agent in the competition (automatically sets status to 'active')
-      await addAgentToCompetition(
-        competitionId,
-        agentId,
-        competition.maxParticipants,
-      );
+      await addAgentToCompetition(competitionId, agentId);
 
       // Ensure agent is globally active (but don't force reactivation)
       const agent = await findAgentById(agentId);
@@ -292,7 +288,17 @@ export class CompetitionManager {
       );
     }
 
-    // Update competition status
+    // Update competition status (re-fetch to get the current registeredParticipants)
+    const currentCompetition = await findById(competitionId);
+    if (!currentCompetition) {
+      throw new Error(
+        `Competition not found after agent registration: ${competitionId}`,
+      );
+    }
+
+    // Update the original competition object with the current registeredParticipants
+    competition.registeredParticipants =
+      currentCompetition.registeredParticipants;
     competition.status = COMPETITION_STATUS.ACTIVE;
     competition.startDate = new Date();
     competition.updatedAt = new Date();
@@ -370,11 +376,18 @@ export class CompetitionManager {
       `[CompetitionManager] Competition ended. ${competitionAgents.length} agents remain 'active' in completed competition`,
     );
 
-    // Update competition status
+    // Update competition status (re-fetch to get the current registeredParticipants)
+    const currentCompetition = await findById(competitionId);
+    if (!currentCompetition) {
+      throw new Error(`Competition not found: ${competitionId}`);
+    }
+
+    // Update the original competition object with the current registeredParticipants
+    competition.registeredParticipants =
+      currentCompetition.registeredParticipants;
     competition.status = CompetitionStatusSchema.parse("ended");
     competition.endDate = new Date();
     competition.updatedAt = new Date();
-
     await updateCompetition(competition);
 
     serviceLogger.debug(
@@ -1017,11 +1030,7 @@ export class CompetitionManager {
     // 8. Atomically add agent to competition with participant limit check
     // This prevents race conditions when multiple agents try to join simultaneously
     try {
-      await addAgentToCompetition(
-        competitionId,
-        agentId,
-        competition.maxParticipants,
-      );
+      await addAgentToCompetition(competitionId, agentId);
     } catch (error) {
       // Convert repository error to appropriate API error
       if (
@@ -1302,11 +1311,7 @@ export class CompetitionManager {
       await this.balanceManager.resetAgentBalances(agentId);
 
       // Add the agent to the competition
-      await addAgentToCompetition(
-        activeCompetition.id,
-        agentId,
-        activeCompetition.maxParticipants,
-      );
+      await addAgentToCompetition(activeCompetition.id, agentId);
 
       // Take a portfolio snapshot for the newly joined agent
       await this.portfolioSnapshotter.takePortfolioSnapshotForAgent(

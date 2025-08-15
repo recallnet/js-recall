@@ -218,6 +218,13 @@
       "when": 1755109694246,
       "tag": "0030_fine_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1755289206891,
+      "tag": "0031_supreme_sprite",
+      "breakpoints": true
     }
   ]
 }
