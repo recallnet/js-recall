@@ -157,21 +157,4 @@ describe("DexScreenerProvider", () => {
       expect(chain).toBe(BlockchainType.EVM);
     });
   });
-
-  describe("Support checking", () => {
-    it("should support SOL token", async () => {
-      const supported = await provider.supports(solanaTokens.SOL, "svm");
-      expect(supported).toBe(true);
-    }, 15000);
-
-    it("should support ETH token", async () => {
-      const supported = await provider.supports(ethereumTokens.ETH, "eth");
-      expect(supported).toBe(true);
-    });
-
-    it("should not support invalid tokens", async () => {
-      const supported = await provider.supports("invalid_token_address", "eth");
-      expect(supported).toBe(false);
-    });
-  });
 });

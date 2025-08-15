@@ -486,42 +486,4 @@ export class NovesProvider implements PriceSource {
     }
     return null;
   }
-
-  /**
-   * Checks if a token is supported by the Noves API
-   * @param tokenAddress Token address to check
-   * @param specificChain Optional specific chain to check
-   * @returns True if token is supported, false otherwise
-   */
-  async supports(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<boolean> {
-    try {
-      serviceLogger.debug(
-        `[NovesProvider] Checking support for token: ${tokenAddress}`,
-      );
-      // First determine the chain
-      const tokenChain = this.determineChain(tokenAddress);
-
-      // Check cache
-      if (this.getCachedPrice(tokenAddress, tokenChain) !== null) {
-        return true;
-      }
-
-      // Try to get the price - if we get a value back, it's supported
-      const price = await this.getPrice(
-        tokenAddress,
-        tokenChain,
-        specificChain,
-      );
-      return price !== null;
-    } catch (error) {
-      serviceLogger.error(
-        `[NovesProvider] Error checking token support:`,
-        error instanceof Error ? error.message : "Unknown error",
-      );
-      return false;
-    }
-  }
 }

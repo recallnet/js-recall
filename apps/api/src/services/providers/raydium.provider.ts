@@ -302,41 +302,4 @@ export class RaydiumProvider implements PriceSource {
       return null;
     }
   }
-
-  async supports(
-    tokenAddress: string,
-    specificChain: SpecificChain = "svm",
-  ): Promise<boolean> {
-    try {
-      serviceLogger.debug(
-        `[RaydiumProvider] Checking support for token: ${tokenAddress}`,
-      );
-      // We only support SVM tokens
-      if (specificChain !== "svm") {
-        return false;
-      }
-
-      if (this.getCachedPrice(tokenAddress) !== null) {
-        return true;
-      }
-
-      // For known tokens, we'll always report support
-      if (this.KNOWN_TOKENS[tokenAddress]) {
-        return true;
-      }
-
-      const price = await this.getPrice(
-        tokenAddress,
-        BlockchainType.SVM,
-        "svm",
-      );
-      return price !== null;
-    } catch (error) {
-      serviceLogger.error(
-        `[RaydiumProvider] Error checking token support:`,
-        error instanceof Error ? error.message : "Unknown error",
-      );
-      return false;
-    }
-  }
 }
