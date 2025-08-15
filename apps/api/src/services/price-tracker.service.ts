@@ -6,6 +6,7 @@ import {
   getLatestPrice,
   getPriceHistory,
 } from "@/database/repositories/price-repository.js";
+import { InsertPrice } from "@/database/schema/trading/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import {
@@ -269,21 +270,25 @@ export class PriceTracker {
    * @param batchResults Results from getBatchPrices
    * @param resultMap Map to store the final results
    */
-  private processBatchResults(
+  private async processBatchResults(
     batchResults: Map<string, PriceReport | null>,
     resultMap: Map<string, PriceReport | null>,
-  ): void {
+  ): Promise<void> {
+    const pricesToStore: InsertPrice[] = [];
+
     for (const [tokenAddress, priceReport] of batchResults) {
       if (priceReport) {
         // Cache in memory
         this.setCachedPrice(priceReport);
 
-        // Store in database
-        this.storePrice(priceReport).catch((error) => {
-          serviceLogger.error(
-            `[PriceTracker] Error storing price for ${tokenAddress}:`,
-            error instanceof Error ? error.message : "Unknown error",
-          );
+        // Collect for batch database storage
+        pricesToStore.push({
+          token: priceReport.token,
+          price: priceReport.price,
+          symbol: priceReport.symbol,
+          timestamp: priceReport.timestamp,
+          chain: priceReport.chain,
+          specificChain: priceReport.specificChain,
         });
 
         serviceLogger.debug(
@@ -292,6 +297,11 @@ export class PriceTracker {
       }
 
       resultMap.set(tokenAddress, priceReport);
+    }
+
+    // Batch write all prices to database
+    if (pricesToStore.length > 0) {
+      await this.storePrices(pricesToStore);
     }
   }
 
@@ -306,7 +316,7 @@ export class PriceTracker {
         token: priceReport.token,
         price: priceReport.price,
         symbol: priceReport.symbol,
-        timestamp: new Date(),
+        timestamp: priceReport.timestamp,
         chain: priceReport.chain,
         specificChain: priceReport.specificChain,
       });
@@ -322,30 +332,13 @@ export class PriceTracker {
    * Store multiple prices in the database using batch operation
    * @param pricesData Array of price data to store
    */
-  private async storePrices(
-    pricesData: Array<{
-      tokenAddress: string;
-      price: number;
-      symbol: string;
-      chain: BlockchainType;
-      specificChain: SpecificChain;
-    }>,
-  ): Promise<void> {
+  private async storePrices(pricesData: InsertPrice[]): Promise<void> {
     if (pricesData.length === 0) {
       return;
     }
 
     try {
-      const insertData = pricesData.map((data) => ({
-        token: data.tokenAddress,
-        price: data.price,
-        symbol: data.symbol,
-        timestamp: new Date(),
-        chain: data.chain,
-        specificChain: data.specificChain,
-      }));
-
-      await createPriceBatch(insertData);
+      await createPriceBatch(pricesData);
     } catch (error) {
       serviceLogger.error(
         `[PriceTracker] Error storing prices in database:`,
@@ -694,6 +687,7 @@ export class PriceTracker {
     }
 
     const successfulTokens = new Set<string>();
+    const pricesToStore: InsertPrice[] = [];
 
     // Try each cached chain group
     for (const [cachedChain, tokens] of tokensByCachedChain) {
@@ -710,7 +704,17 @@ export class PriceTracker {
           if (priceResult) {
             resultMap.set(tokenAddr, priceResult);
             this.setCachedPrice(priceResult);
-            await this.storePrice(priceResult);
+
+            // Collect for batch database storage
+            pricesToStore.push({
+              token: priceResult.token,
+              price: priceResult.price,
+              symbol: priceResult.symbol,
+              timestamp: priceResult.timestamp,
+              chain: priceResult.chain,
+              specificChain: priceResult.specificChain,
+            });
+
             successfulTokens.add(tokenAddr);
           }
         }
@@ -724,6 +728,11 @@ export class PriceTracker {
           error instanceof Error ? error.message : "Unknown error",
         );
       }
+    }
+
+    // Batch write all prices to database
+    if (pricesToStore.length > 0) {
+      await this.storePrices(pricesToStore);
     }
 
     // Return tokens that still need multi-chain search
@@ -762,7 +771,7 @@ export class PriceTracker {
           evmTokens,
           BlockchainType.EVM,
         );
-        this.processBatchResults(evmResults, resultMap);
+        await this.processBatchResults(evmResults, resultMap);
       }
 
       // Process SVM tokens in batch
@@ -771,7 +780,7 @@ export class PriceTracker {
           svmTokens,
           BlockchainType.SVM,
         );
-        this.processBatchResults(svmResults, resultMap);
+        await this.processBatchResults(svmResults, resultMap);
       }
     } catch (error) {
       serviceLogger.error(
