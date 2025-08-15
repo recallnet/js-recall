@@ -109,10 +109,6 @@ export interface PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null>;
-  supports(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<boolean>;
 }
 
 // DexScreener API interfaces
