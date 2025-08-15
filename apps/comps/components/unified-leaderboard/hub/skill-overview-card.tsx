@@ -32,12 +32,14 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
           "h-[450px]", // Taller to prevent cutoff
         )}
       >
-        {/* Header - EXACTLY 72px */}
-        <div className="h-18 flex shrink-0 items-center justify-between p-6">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-white">{skill.name}</h3>
+        {/* Header - Mobile: flexible height, Desktop: EXACTLY 72px */}
+        <div className="min-h-18 md:h-18 flex shrink-0 items-center justify-between p-4 md:p-6">
+          <div className="flex items-center gap-3 pr-2">
+            <h3 className="text-base font-semibold leading-tight text-white md:text-lg md:leading-normal">
+              {skill.name}
+            </h3>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 md:gap-3">
             <Badge
               className={cn(
                 "text-xs",
@@ -49,21 +51,21 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
               {isTrading ? "LIVE" : "BENCHMARK"}
             </Badge>
             <ArrowRight
-              size={18}
-              className="text-gray-400 transition-transform group-hover:translate-x-1"
+              size={16}
+              className="text-gray-400 transition-transform group-hover:translate-x-1 md:h-[18px] md:w-[18px]"
             />
           </div>
         </div>
 
-        {/* Description - EXACTLY 80px */}
-        <div className="h-20 shrink-0 overflow-hidden px-6">
-          <p className="line-clamp-3 text-sm leading-relaxed text-gray-400">
+        {/* Description - Mobile: flexible height, Desktop: EXACTLY 80px */}
+        <div className="min-h-16 shrink-0 overflow-hidden px-4 md:h-20 md:px-6">
+          <p className="line-clamp-2 text-sm leading-relaxed text-gray-400 md:line-clamp-3">
             {skill.description}
           </p>
         </div>
 
-        {/* Stats - EXACTLY 56px */}
-        <div className="flex h-14 shrink-0 items-center gap-6 px-6">
+        {/* Stats - Mobile: flexible height, Desktop: EXACTLY 56px */}
+        <div className="flex min-h-12 shrink-0 items-center gap-4 px-4 md:h-14 md:gap-6 md:px-6">
           <div className="flex items-center gap-2">
             <Users size={14} className="text-gray-500" />
             <span className="text-sm text-gray-300">
@@ -85,8 +87,8 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
         </div>
 
         {/* Top Participants - Simplified */}
-        <div className="flex-1 border-t border-gray-800 bg-gray-900/30 p-4">
-          <div className="space-y-3">
+        <div className="flex-1 border-t border-gray-800 bg-gray-900/30 p-3 md:p-4">
+          <div className="space-y-2 md:space-y-3">
             {topParticipants.slice(0, 3).map((participant, index) => {
               // Get score for this participant
               const score = (() => {
@@ -116,7 +118,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
               return (
                 <div
                   key={participant.id}
-                  className="flex items-center gap-3 rounded p-2 hover:bg-gray-800/30"
+                  className="flex items-center gap-2 rounded p-1.5 hover:bg-gray-800/30 md:gap-3 md:p-2"
                 >
                   {/* Rank */}
                   <div className="flex h-5 w-5 items-center justify-center rounded bg-gray-600 text-xs font-medium text-white">
@@ -137,7 +139,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
                   {/* Name */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
-                      <div className="truncate text-sm text-white">
+                      <div className="truncate text-xs text-white md:text-sm">
                         {participant.name.length > 12
                           ? `${participant.name.substring(0, 12)}...`
                           : participant.name}
@@ -165,7 +167,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
                   </div>
 
                   {/* Bar */}
-                  <div className="h-2 w-20 rounded-full bg-gray-800">
+                  <div className="h-2 w-16 rounded-full bg-gray-800 md:w-20">
                     <div
                       className="h-2 rounded-full"
                       style={{
@@ -176,7 +178,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
                   </div>
 
                   {/* Score */}
-                  <div className="w-12 text-right font-mono text-sm text-white">
+                  <div className="w-10 text-right font-mono text-xs text-white md:w-12 md:text-sm">
                     {score.toFixed(1)}
                   </div>
                 </div>

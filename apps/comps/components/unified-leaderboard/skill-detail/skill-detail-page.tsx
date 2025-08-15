@@ -3,13 +3,17 @@
 import {
   ArrowLeft,
   Calendar,
+  ChevronDown,
+  ChevronRight,
   ExternalLink,
   Info,
   Loader2,
+  Target,
   TrendingUp,
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import React, { useState } from "react";
 
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Button } from "@recallnet/ui2/components/button";
@@ -27,6 +31,7 @@ interface SkillDetailPageProps {
 export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   skillId,
 }) => {
+  const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const { data, isLoading, error } = useUnifiedLeaderboard();
 
   if (isLoading) {
@@ -113,25 +118,90 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
           </p>
         </div>
 
-        {/* Extended Description */}
+        {/* Extended Description - Collapsible on Mobile */}
         {skill.longDescription && (
           <Card className="border-gray-800 p-6">
-            <div className="flex items-start gap-3">
+            <button
+              onClick={() => setIsAboutExpanded(!isAboutExpanded)}
+              className="-m-2 flex w-full items-start gap-3 rounded p-2 text-left transition-colors hover:bg-gray-800/50 md:pointer-events-none md:cursor-default"
+            >
               <Info size={20} className="mt-1 flex-shrink-0 text-blue-400" />
-              <div>
-                <h3 className="mb-2 text-lg font-semibold text-white">
-                  About This Skill
-                </h3>
-                <p className="leading-relaxed text-gray-300">
-                  {skill.longDescription}
-                </p>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">
+                    About This Skill
+                  </h3>
+                  <div className="md:hidden">
+                    {isAboutExpanded ? (
+                      <ChevronDown size={20} className="text-gray-400" />
+                    ) : (
+                      <ChevronRight size={20} className="text-gray-400" />
+                    )}
+                  </div>
+                </div>
               </div>
+            </button>
+            <div
+              className={`overflow-hidden transition-all duration-200 ${
+                isAboutExpanded
+                  ? "mt-3 max-h-96 opacity-100"
+                  : "max-h-0 opacity-0 md:mt-3 md:max-h-none md:opacity-100"
+              }`}
+            >
+              <p className="ml-8 leading-relaxed text-gray-300 md:ml-0">
+                {skill.longDescription}
+              </p>
             </div>
           </Card>
         )}
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+        {/* Stats Overview - Compact on Mobile */}
+        <div className="md:hidden">
+          <Card className="p-4">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="mb-1 flex items-center justify-center gap-1">
+                  <Users size={16} className="text-gray-400" />
+                  <span className="text-lg font-bold text-white">
+                    {skillData.stats.totalParticipants}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-400">
+                  {isTrading ? "Agents" : "Models"}
+                </div>
+              </div>
+
+              {skillData.stats.topScore && (
+                <div>
+                  <div className="mb-1 flex items-center justify-center gap-1">
+                    <Target size={16} className="text-green-400" />
+                    <span className="text-lg font-bold text-green-400">
+                      {typeof skillData.stats.topScore === "number"
+                        ? skillData.stats.topScore.toFixed(1)
+                        : skillData.stats.topScore}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400">Top Score</div>
+                </div>
+              )}
+
+              {skillData.stats.avgScore && (
+                <div>
+                  <div className="mb-1 flex items-center justify-center gap-1">
+                    <TrendingUp size={16} className="text-blue-400" />
+                    <span className="text-lg font-bold text-blue-400">
+                      {skillData.stats.avgScore.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400">Average</div>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Stats Overview - Desktop */}
+        <div className="hidden grid-cols-4 gap-6 md:grid">
           <Card className="p-6 text-center">
             <div className="mb-2 flex items-center justify-center gap-2">
               <Users size={20} className="text-gray-400" />
