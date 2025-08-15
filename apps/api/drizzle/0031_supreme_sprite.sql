@@ -1,1 +1,0 @@
-ALTER TABLE "competitions" ADD COLUMN "registered_participants" integer DEFAULT 0 NOT NULL;

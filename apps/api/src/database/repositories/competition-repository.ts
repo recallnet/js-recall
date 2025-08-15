@@ -285,7 +285,8 @@ async function addAgentToCompetitionImpl(
           registeredParticipants: competitions.registeredParticipants,
         })
         .from(competitions)
-        .where(eq(competitions.id, competitionId));
+        .where(eq(competitions.id, competitionId))
+        .for("update");
 
       if (!competition) {
         throw new Error(`Competition ${competitionId} not found`);
@@ -319,7 +320,7 @@ async function addAgentToCompetitionImpl(
         await tx
           .update(competitions)
           .set({
-            registeredParticipants: competition.registeredParticipants + 1,
+            registeredParticipants: sql`${competitions.registeredParticipants} + 1`,
             updatedAt: new Date(),
           })
           .where(eq(competitions.id, competitionId));
@@ -371,24 +372,13 @@ async function removeAgentFromCompetitionImpl(
 
       // If an agent was actually removed, decrement the registeredParticipants counter
       if (wasUpdated) {
-        // First get current count
-        const [currentCompetition] = await tx
-          .select({
-            registeredParticipants: competitions.registeredParticipants,
+        await tx
+          .update(competitions)
+          .set({
+            registeredParticipants: sql`${competitions.registeredParticipants} - 1`,
+            updatedAt: new Date(),
           })
-          .from(competitions)
           .where(eq(competitions.id, competitionId));
-
-        if (currentCompetition) {
-          await tx
-            .update(competitions)
-            .set({
-              registeredParticipants:
-                currentCompetition.registeredParticipants - 1,
-              updatedAt: new Date(),
-            })
-            .where(eq(competitions.id, competitionId));
-        }
       }
     });
 
@@ -424,14 +414,15 @@ async function addAgentsImpl(competitionId: string, agentIds: string[]) {
 
   try {
     await db.transaction(async (tx) => {
-      // Get current competition details
+      // Get current competition details with row lock
       const [competition] = await tx
         .select({
           maxParticipants: competitions.maxParticipants,
           registeredParticipants: competitions.registeredParticipants,
         })
         .from(competitions)
-        .where(eq(competitions.id, competitionId));
+        .where(eq(competitions.id, competitionId))
+        .for("update");
 
       if (!competition) {
         throw new Error(`Competition ${competitionId} not found`);
@@ -471,8 +462,7 @@ async function addAgentsImpl(competitionId: string, agentIds: string[]) {
         await tx
           .update(competitions)
           .set({
-            registeredParticipants:
-              competition.registeredParticipants + insertedCount,
+            registeredParticipants: sql`${competitions.registeredParticipants} + ${insertedCount}`,
             updatedAt: new Date(),
           })
           .where(eq(competitions.id, competitionId));
@@ -773,7 +763,7 @@ async function updateAgentCompetitionStatusImpl(
             await tx
               .update(competitions)
               .set({
-                registeredParticipants: competition.registeredParticipants - 1,
+                registeredParticipants: sql`${competitions.registeredParticipants} - 1`,
                 updatedAt: new Date(),
               })
               .where(eq(competitions.id, competitionId));
@@ -802,7 +792,7 @@ async function updateAgentCompetitionStatusImpl(
             await tx
               .update(competitions)
               .set({
-                registeredParticipants: competition.registeredParticipants + 1,
+                registeredParticipants: sql`${competitions.registeredParticipants} + 1`,
                 updatedAt: new Date(),
               })
               .where(eq(competitions.id, competitionId));

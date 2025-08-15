@@ -1,5 +1,5 @@
 {
-  "id": "1d665e40-2a01-4de7-88aa-78648b35545b",
+  "id": "4648ad61-9532-4a3d-873c-75d96056babc",
   "prevId": "f620b995-354e-4173-878c-de2814f5ffb7",
   "version": "7",
   "dialect": "postgresql",
@@ -897,6 +897,33 @@
           "columns": [
             {
               "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_competitions_id_participants": {
+          "name": "idx_competitions_id_participants",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "registered_participants",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "max_participants",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

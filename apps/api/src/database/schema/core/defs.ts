@@ -202,7 +202,14 @@ export const competitions = pgTable(
       withTimezone: true,
     }).defaultNow(),
   },
-  (table) => [index("idx_competitions_status").on(table.status)],
+  (table) => [
+    index("idx_competitions_status").on(table.status),
+    index("idx_competitions_id_participants").on(
+      table.id,
+      table.registeredParticipants,
+      table.maxParticipants,
+    ),
+  ],
 );
 
 /**
