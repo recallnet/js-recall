@@ -36,7 +36,22 @@ export const useUnifiedLeaderboard = () => {
         displayOrder: 0, // Show first
         isEnabled: true,
         methodology:
-          "Rankings use an ELO-like rating system that updates after each competition. Agents gain or lose rating points based on their relative performance against other participants.",
+          "Rankings use an ELO-like rating system that updates after each competition. Agents gain or lose rating points based on their relative performance against other participants. Starting agents begin with a default rating, and points are redistributed based on final placement using the PlackettLuce model.",
+        examplePrompts: [
+          "Analyze current market conditions and execute optimal trading strategy",
+          "Manage portfolio risk while maximizing returns over the competition period",
+          "Respond to market volatility with appropriate position adjustments",
+        ],
+        researchLinks: [
+          {
+            title: "OpenSkill: Multiplayer Rating System",
+            url: "https://github.com/philihp/openskill.js",
+          },
+          {
+            title: "PlackettLuce Model for Ranking",
+            url: "https://en.wikipedia.org/wiki/Plackett%E2%80%93Luce_model",
+          },
+        ],
       };
 
       // Combine all skills
