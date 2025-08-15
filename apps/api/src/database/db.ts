@@ -155,6 +155,7 @@ const dbLogger = {
 
       // Handle common SQL operations
       const knownOperations = [
+        "SET", // for lock_timeout
         "SELECT",
         "INSERT",
         "UPDATE",
@@ -318,11 +319,55 @@ export async function dropAll() {
   });
 }
 
+/**
+ * Run database migrations with distributed lock coordination
+ * Uses PostgreSQL advisory locks to ensure only one instance runs migrations
+ */
 export async function migrateDb() {
-  // Run normal Drizzle migrations
-  await migrate(db, {
-    migrationsFolder: path.join(__dirname, "../../drizzle"),
-  });
+  const MIGRATION_LOCK_ID = 77; // Arbitrary but consistent lock ID
+  const MAX_WAIT_TIME = "5min";
+
+  try {
+    // Set lock timeout to match MAX_WAIT_TIME
+    await db.execute(sql.raw(`SET lock_timeout = '${MAX_WAIT_TIME}'`));
+
+    // Acquire the advisory lock (blocking with timeout)
+    pinoDbLogger.info("Acquiring migration lock...");
+    await db.execute(sql.raw(`SELECT pg_advisory_lock(${MIGRATION_LOCK_ID})`));
+
+    try {
+      pinoDbLogger.info("Acquired migration lock, running migrations...");
+
+      // Create a database instance with verbose logging for migrations only
+      const migrationDb = drizzle({
+        client: pool,
+        schema,
+        logger: {
+          logQuery: (query: string) => {
+            pinoDbLogger.info({
+              type: "migration",
+              query: query.substring(0, 200),
+              ...(query.length > 200 ? { queryTruncated: true } : {}),
+            });
+          },
+        },
+      });
+
+      await migrate(migrationDb, {
+        migrationsFolder: path.join(__dirname, "../../drizzle"),
+      });
+      pinoDbLogger.info("Migrations completed successfully");
+    } finally {
+      // Always release the lock
+      await db.execute(
+        sql.raw(`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`),
+      );
+      pinoDbLogger.info("Released migration lock");
+    }
+  } catch (error) {
+    pinoDbLogger.error("Error during migration lock process:", error);
+    throw error;
+  }
 }
 
 export async function seedDb() {
