@@ -357,6 +357,9 @@ export interface Competition {
   // Join date constraint fields
   joinStartDate: string | null;
   joinEndDate: string | null;
+  // Participant limit field
+  maxParticipants: number | null;
+  registeredParticipants: number;
   tradingConstraints?: TradingConstraints;
   rewards?: {
     rank: number;

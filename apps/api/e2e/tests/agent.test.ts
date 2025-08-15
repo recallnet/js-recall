@@ -1112,40 +1112,41 @@ describe("Agent API", () => {
     createdCompetitions.push(pendingComp.competition);
 
     // Agent fetches list of competitions
-    const competitionsData = await agentClient.getAgentCompetitions(
+    const competitionsData = (await agentClient.getAgentCompetitions(
       agent.id,
       {},
-    );
+    )) as AgentCompetitionsResponse;
 
-    expect(competitionsData.success).toBe(true);
+    expect(competitionsData).toBeDefined();
+    expect(competitionsData!.success).toBe(true);
     expect(competitionsData.competitions).toBeDefined();
     expect(Array.isArray(competitionsData.competitions)).toBe(true);
     expect(competitionsData.competitions.length).toBe(3);
-    expect(competitionsData.competitions[0].status).toBe("ended");
-    expect(competitionsData.competitions[1].status).toBe("active");
-    expect(competitionsData.competitions[2].status).toBe("pending");
+    expect(competitionsData.competitions[0]?.status).toBe("ended");
+    expect(competitionsData.competitions[1]?.status).toBe("active");
+    expect(competitionsData.competitions[2]?.status).toBe("pending");
 
     // Verify all competitions are present
     for (const competition of createdCompetitions) {
-      const foundCompetition = competitionsData.competitions.find(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (c: any) => c.id === competition.id,
-      );
+      const foundCompetition = (
+        competitionsData.competitions as EnhancedCompetition[]
+      ).find((c) => c.id === competition.id);
       expect(foundCompetition).toBeDefined();
-      expect(foundCompetition.name).toBe(competition.name);
+      expect(foundCompetition!.name).toBe(competition.name);
     }
 
     // test if filtering by status works
     async function testStatus(status: string) {
-      const compsData = await agentClient.getAgentCompetitions(agent.id, {
+      const compsData = (await agentClient.getAgentCompetitions(agent.id, {
         status,
-      });
+      })) as AgentCompetitionsResponse;
 
-      expect(compsData.success).toBe(true);
+      expect(compsData).toBeDefined();
+      expect(compsData!.success).toBe(true);
       expect(compsData.competitions).toBeDefined();
       expect(Array.isArray(compsData.competitions)).toBe(true);
       expect(compsData.competitions.length).toBe(1);
-      expect(compsData.competitions[0].status).toBe(status);
+      expect(compsData.competitions[0]?.status).toBe(status);
     }
 
     await testStatus("pending");
@@ -1153,25 +1154,26 @@ describe("Agent API", () => {
     await testStatus("ended");
 
     // test if sorting works
-    const sortedComps = await agentClient.getAgentCompetitions(agent.id, {
+    const sortedComps = (await agentClient.getAgentCompetitions(agent.id, {
       sort: "-name",
-    });
+    })) as AgentCompetitionsResponse;
 
     expect(sortedComps.success).toBe(true);
     expect(sortedComps.competitions).toBeDefined();
     expect(Array.isArray(sortedComps.competitions)).toBe(true);
     expect(sortedComps.competitions.length).toBe(3);
-    expect(sortedComps.competitions[0].name).toBe(competitionNames[2]);
-    expect(sortedComps.competitions[1].name).toBe(competitionNames[1]);
-    expect(sortedComps.competitions[2].name).toBe(competitionNames[0]);
+    expect(sortedComps.competitions[0]?.name).toBe(competitionNames[2]);
+    expect(sortedComps.competitions[1]?.name).toBe(competitionNames[1]);
+    expect(sortedComps.competitions[2]?.name).toBe(competitionNames[0]);
 
     // test if pagination works
-    const pagedComps = await agentClient.getAgentCompetitions(agent.id, {
+    const pagedComps = (await agentClient.getAgentCompetitions(agent.id, {
       limit: 2,
       offset: 0,
-    });
+    })) as AgentCompetitionsResponse;
 
-    expect(pagedComps.success).toBe(true);
+    expect(pagedComps).toBeDefined();
+    expect(pagedComps!.success).toBe(true);
     expect(pagedComps.competitions).toBeDefined();
     expect(Array.isArray(pagedComps.competitions)).toBe(true);
     expect(pagedComps.competitions.length).toBe(2);
@@ -2076,11 +2078,12 @@ Purpose: WALLET_VERIFICATION`;
         agent.id,
         {},
       );
-      expect(competitionsResponse.success).toBe(true);
+      expect(competitionsResponse).toBeDefined();
+      expect(competitionsResponse!.success).toBe(true);
 
-      const leftCompetition = competitionsResponse.competitions.find(
-        (c: EnhancedCompetition) => c.id === competitionId,
-      );
+      const leftCompetition = (
+        competitionsResponse as AgentCompetitionsResponse
+      ).competitions?.find((c: EnhancedCompetition) => c.id === competitionId);
 
       expect(leftCompetition).toBeDefined();
       expect(leftCompetition?.totalTrades).toBe(1);
@@ -2539,7 +2542,8 @@ Purpose: WALLET_VERIFICATION`;
           offset: 0,
         });
 
-        expect(competitionsResponse.success).toBe(true);
+        expect(competitionsResponse).toBeDefined();
+        expect(competitionsResponse!.success).toBe(true);
         const response = competitionsResponse as AgentCompetitionsResponse;
 
         const testCompetition = response.competitions.find(

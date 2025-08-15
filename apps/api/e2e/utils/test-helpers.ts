@@ -251,6 +251,7 @@ export async function createTestCompetition(
   votingEndDate?: string,
   joinStartDate?: string,
   joinEndDate?: string,
+  maxParticipants?: number,
 ): Promise<CreateCompetitionResponse> {
   const result = await adminClient.createCompetition(
     name,
@@ -265,6 +266,7 @@ export async function createTestCompetition(
     votingEndDate,
     joinStartDate,
     joinEndDate,
+    maxParticipants,
   );
 
   if (!result.success) {

@@ -98,6 +98,15 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: When the competition was last updated
+   *                       registeredParticipants:
+   *                         type: integer
+   *                         description: Number of participants registered for this competition
+   *                         example: 10
+   *                       maxParticipants:
+   *                         type: integer
+   *                         nullable: true
+   *                         description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                         example: 50
    *                       rewards:
    *                         nullable: true
    *                         type: array
@@ -679,6 +688,15 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: When the competition was last updated
+   *                     registeredParticipants:
+   *                       type: integer
+   *                       description: Number of participants registered for this competition
+   *                       example: 10
+   *                     maxParticipants:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                       example: 50
    *                     rewards:
    *                       type: array
    *                       nullable: true
@@ -809,6 +827,15 @@ export function configureCompetitionsRoutes(
    *                 competitionId:
    *                   type: string
    *                   description: The ID of the competition
+   *                 registeredParticipants:
+   *                   type: integer
+   *                   description: Number of participants registered for this competition
+   *                   example: 10
+   *                 maxParticipants:
+   *                   type: integer
+   *                   nullable: true
+   *                   description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                   example: 50
    *                 agents:
    *                   type: array
    *                   description: List of agents participating in the competition

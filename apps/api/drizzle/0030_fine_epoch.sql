@@ -1,0 +1,1 @@
+ALTER TABLE "competitions" ADD COLUMN "max_participants" integer;

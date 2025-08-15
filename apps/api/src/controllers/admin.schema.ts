@@ -72,6 +72,7 @@ export const AdminCreateCompetitionSchema = z
     votingEndDate: z.iso.datetime().optional(),
     joinStartDate: z.iso.datetime().optional(),
     joinEndDate: z.iso.datetime().optional(),
+    maxParticipants: z.number().int().min(1).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
   })

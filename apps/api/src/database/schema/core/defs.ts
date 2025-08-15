@@ -189,6 +189,10 @@ export const competitions = pgTable(
     votingEndDate: timestamp("voting_end_date", { withTimezone: true }),
     joinStartDate: timestamp("join_start_date", { withTimezone: true }),
     joinEndDate: timestamp("join_end_date", { withTimezone: true }),
+    maxParticipants: integer("max_participants"),
+    registeredParticipants: integer("registered_participants")
+      .default(0)
+      .notNull(),
     status: competitionStatus("status").notNull(),
     sandboxMode: boolean("sandbox_mode").notNull().default(false),
     createdAt: timestamp("created_at", {
@@ -198,7 +202,14 @@ export const competitions = pgTable(
       withTimezone: true,
     }).defaultNow(),
   },
-  (table) => [index("idx_competitions_status").on(table.status)],
+  (table) => [
+    index("idx_competitions_status").on(table.status),
+    index("idx_competitions_id_participants").on(
+      table.id,
+      table.registeredParticipants,
+      table.maxParticipants,
+    ),
+  ],
 );
 
 /**

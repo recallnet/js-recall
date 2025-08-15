@@ -22,6 +22,7 @@ import {
   getBulkAgentPortfolioSnapshots,
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
+  getParticipantCount,
   isAgentActiveInCompetition,
   updateAgentCompetitionStatus,
   update as updateCompetition,
@@ -124,6 +125,7 @@ export class CompetitionManager {
    * @param votingEndDate Optional voting end date
    * @param joinStartDate Optional start date for joining the competition
    * @param joinEndDate Optional end date for joining the competition
+   * @param maxParticipants Optional maximum number of participants allowed
    * @returns The created competition
    */
   async createCompetition(
@@ -139,6 +141,7 @@ export class CompetitionManager {
     votingEndDate?: Date,
     joinStartDate?: Date,
     joinEndDate?: Date,
+    maxParticipants?: number,
     tradingConstraints?: TradingConstraintsInput,
     rewards?: Record<number, number>,
   ) {
@@ -155,6 +158,7 @@ export class CompetitionManager {
       votingEndDate: votingEndDate || null,
       joinStartDate: joinStartDate || null,
       joinEndDate: joinEndDate || null,
+      maxParticipants: maxParticipants ?? null,
       status: COMPETITION_STATUS.PENDING,
       crossChainTradingType: tradingType,
       sandboxMode,
@@ -223,6 +227,15 @@ export class CompetitionManager {
   }
 
   /**
+   * Get the number of registered participants in a competition
+   * @param competitionId The competition ID
+   * @returns The number of registered participants
+   */
+  async getParticipantCount(competitionId: string): Promise<number> {
+    return getParticipantCount(competitionId);
+  }
+
+  /**
    * Start a competition
    * @param competitionId The competition ID
    * @param agentIds Array of agent IDs participating in the competition
@@ -275,7 +288,17 @@ export class CompetitionManager {
       );
     }
 
-    // Update competition status
+    // Update competition status (re-fetch to get the current registeredParticipants)
+    const currentCompetition = await findById(competitionId);
+    if (!currentCompetition) {
+      throw new Error(
+        `Competition not found after agent registration: ${competitionId}`,
+      );
+    }
+
+    // Update the original competition object with the current registeredParticipants
+    competition.registeredParticipants =
+      currentCompetition.registeredParticipants;
     competition.status = COMPETITION_STATUS.ACTIVE;
     competition.startDate = new Date();
     competition.updatedAt = new Date();
@@ -353,11 +376,18 @@ export class CompetitionManager {
       `[CompetitionManager] Competition ended. ${competitionAgents.length} agents remain 'active' in completed competition`,
     );
 
-    // Update competition status
+    // Update competition status (re-fetch to get the current registeredParticipants)
+    const currentCompetition = await findById(competitionId);
+    if (!currentCompetition) {
+      throw new Error(`Competition not found: ${competitionId}`);
+    }
+
+    // Update the original competition object with the current registeredParticipants
+    competition.registeredParticipants =
+      currentCompetition.registeredParticipants;
     competition.status = CompetitionStatusSchema.parse("ended");
     competition.endDate = new Date();
     competition.updatedAt = new Date();
-
     await updateCompetition(competition);
 
     serviceLogger.debug(
@@ -997,8 +1027,26 @@ export class CompetitionManager {
       );
     }
 
-    // Add agent to competition
-    await addAgentToCompetition(competitionId, agentId);
+    // 8. Atomically add agent to competition with participant limit check
+    // This prevents race conditions when multiple agents try to join simultaneously
+    try {
+      await addAgentToCompetition(competitionId, agentId);
+    } catch (error) {
+      // Convert repository error to appropriate API error
+      if (
+        error instanceof Error &&
+        error.message.includes("maximum participant limit")
+      ) {
+        const competitionError = new Error(
+          error.message,
+        ) as CompetitionJoinError;
+        competitionError.type =
+          COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED;
+        competitionError.code = 403;
+        throw competitionError;
+      }
+      throw error;
+    }
 
     serviceLogger.debug(
       `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId}`,
