@@ -9,10 +9,38 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
-import { SkillOverviewCardProps } from "@/types/unified-leaderboard";
+import { LeaderboardAgent } from "@/types/agent";
+import {
+  BenchmarkModel,
+  SkillOverviewCardProps,
+} from "@/types/unified-leaderboard";
 import { getAgentColor, getLabColor } from "@/utils/lab-colors";
 
 import { LabLogo } from "../shared/lab-logo";
+
+// Helper functions to reduce complexity
+const getParticipantScore = (
+  participant: BenchmarkModel | LeaderboardAgent,
+  skillId: string,
+): number => {
+  if ("scores" in participant && skillId in participant.scores) {
+    return participant.scores[skillId]?.rawScore || 0;
+  }
+  if ("score" in participant) {
+    return participant.score;
+  }
+  return 0;
+};
+
+const getParticipantColor = (
+  participant: BenchmarkModel | LeaderboardAgent,
+): string => {
+  if ("imageUrl" in participant) {
+    return getAgentColor(participant.name);
+  } else {
+    return getLabColor((participant as BenchmarkModel).provider);
+  }
+};
 
 export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
   skill,
@@ -90,30 +118,11 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
         <div className="flex-1 border-t border-gray-800 bg-gray-900/30 p-3 md:p-4">
           <div className="space-y-2 md:space-y-3">
             {topParticipants.slice(0, 3).map((participant, index) => {
-              // Get score for this participant
-              const score = (() => {
-                if ("scores" in participant && skill.id in participant.scores) {
-                  return participant.scores[skill.id]?.rawScore || 0;
-                }
-                if ("score" in participant) {
-                  return participant.score;
-                }
-                return 0;
-              })();
-
-              // Calculate bar width relative to top score
+              const score = getParticipantScore(participant, skill.id);
               const barWidth = stats.topScore
                 ? (score / stats.topScore) * 100
                 : 0;
-
-              // Get participant color
-              const barColor = (() => {
-                if ("imageUrl" in participant) {
-                  return getAgentColor(participant.name); // Unique color for each agent
-                } else {
-                  return getLabColor(participant.provider);
-                }
-              })();
+              const barColor = getParticipantColor(participant);
 
               return (
                 <div

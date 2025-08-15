@@ -20,6 +20,24 @@ import { getAgentColor, getLabColor } from "@/utils/lab-colors";
 
 import { LabLogo } from "../shared/lab-logo";
 
+// Helper function to extract participant metrics
+const getParticipantMetrics = (
+  participant: ParticipantEntry,
+  skillId: string,
+) => {
+  const isModel = participant.type === "model";
+  let maxScore = participant.score;
+  let confidenceInterval: [number, number] | undefined;
+
+  if (isModel && skillId in (participant as BenchmarkModel).scores) {
+    const scoreData = (participant as BenchmarkModel).scores[skillId];
+    confidenceInterval = scoreData?.confidenceInterval;
+    maxScore = confidenceInterval ? confidenceInterval[1] : participant.score;
+  }
+
+  return { maxScore, confidenceInterval, isModel };
+};
+
 interface SkillDetailLeaderboardTableProps {
   skill: SkillDefinition;
   skillData: UnifiedSkillData;
@@ -63,15 +81,9 @@ export const SkillDetailLeaderboardTable: React.FC<
 
   // Calculate max score for bar scaling, including confidence intervals
   const maxPossibleScore = Math.max(
-    ...filteredParticipants.map((p) => {
-      const isModel = p.type === "model";
-      if (isModel && skill.id in (p as BenchmarkModel).scores) {
-        const confidence = (p as BenchmarkModel).scores[skill.id]
-          ?.confidenceInterval;
-        return confidence ? confidence[1] : p.score;
-      }
-      return p.score;
-    }),
+    ...filteredParticipants.map(
+      (p) => getParticipantMetrics(p, skill.id).maxScore,
+    ),
     1,
   );
 
@@ -116,22 +128,17 @@ export const SkillDetailLeaderboardTable: React.FC<
           <div className="space-y-3">
             {filteredParticipants.map((participant, index) => {
               const isExpanded = expandedRow === participant.id;
-              const isModel = participant.type === "model";
+              const metrics = getParticipantMetrics(participant, skill.id);
+              const isModel = metrics.isModel;
+              const confidenceInterval = metrics.confidenceInterval;
               const barWidth = (participant.score / maxScaleScore) * 100;
 
               // Get lab color for models, unique color for agents
               const barColor = isModel
                 ? getLabColor((participant as BenchmarkModel).provider)
-                : getAgentColor(participant.name); // Unique color for each agent
+                : getAgentColor(participant.name);
 
-              // Get confidence interval for models
-              const confidenceInterval =
-                isModel && skill.id in (participant as BenchmarkModel).scores
-                  ? (participant as BenchmarkModel).scores[skill.id]
-                      ?.confidenceInterval
-                  : undefined;
-
-              // Calculate confidence range positions
+              // Calculate confidence range positions for models
               const confidenceLowerWidth = confidenceInterval
                 ? (confidenceInterval[0] / maxScaleScore) * 100
                 : 0;

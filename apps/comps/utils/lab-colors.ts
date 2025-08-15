@@ -126,20 +126,21 @@ function generateColorFromProvider(provider: string): string {
 
   // Use hash to select from fallback colors
   const index = Math.abs(hash) % FALLBACK_COLORS.length;
-  return FALLBACK_COLORS[index]!;
+  return FALLBACK_COLORS[index] || "#8CA4C4";
 }
 
 /**
  * Get color for a lab/provider with fallback generation
  */
 export function getLabColor(provider: string): string {
-  if (!provider) return FALLBACK_COLORS[0]!;
+  if (!provider) return FALLBACK_COLORS[0] || "#8CA4C4";
 
   const normalizedProvider = provider.toLowerCase().trim();
 
   // Check known colors first
-  if (KNOWN_LAB_COLORS[normalizedProvider]) {
-    return KNOWN_LAB_COLORS[normalizedProvider]!;
+  const knownColor = KNOWN_LAB_COLORS[normalizedProvider];
+  if (knownColor) {
+    return knownColor;
   }
 
   // Check for partial matches (e.g., "meta-llama" contains "meta")
@@ -149,7 +150,7 @@ export function getLabColor(provider: string): string {
   );
 
   if (partialMatch) {
-    return KNOWN_LAB_COLORS[partialMatch]!;
+    return KNOWN_LAB_COLORS[partialMatch] || FALLBACK_COLORS[0] || "#8CA4C4";
   }
 
   // Generate consistent color for unknown provider
@@ -220,14 +221,14 @@ function generateColorFromAgent(agentName: string): string {
 
   // Ensure positive value and select from agent colors
   const index = Math.abs(hash) % AGENT_COLORS.length;
-  return AGENT_COLORS[index]!;
+  return AGENT_COLORS[index] || "#7BA05B";
 }
 
 /**
  * Get color for an agent with consistent generation
  */
 export function getAgentColor(agentName: string): string {
-  if (!agentName) return AGENT_COLORS[0]!;
+  if (!agentName) return AGENT_COLORS[0] || "#7BA05B";
   return generateColorFromAgent(agentName);
 }
 

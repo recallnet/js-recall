@@ -107,8 +107,8 @@ export const useUnifiedLeaderboard = () => {
             totalParticipants: modelsForSkill.length,
             modelCount: modelsForSkill.length,
             agentCount: 0,
-            avgScore: benchmarkQuery.data!.skillStats[skillId]?.avgScore,
-            topScore: benchmarkQuery.data!.skillStats[skillId]?.topScore,
+            avgScore: benchmarkQuery.data?.skillStats[skillId]?.avgScore,
+            topScore: benchmarkQuery.data?.skillStats[skillId]?.topScore,
           },
         };
       });
