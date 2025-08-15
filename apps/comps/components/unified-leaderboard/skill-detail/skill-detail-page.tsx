@@ -183,6 +183,14 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
           </Card>
         </div>
 
+        {/* Leaderboard Table */}
+        <div>
+          <h2 className="mb-6 text-2xl font-bold text-white">
+            {skill.name} Leaderboard
+          </h2>
+          <SkillDetailLeaderboardTable skill={skill} skillData={skillData} />
+        </div>
+
         {/* Methodology */}
         {skill.methodology && (
           <Card className="border-gray-800 p-6">
@@ -234,14 +242,6 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
             </div>
           </Card>
         )}
-      </div>
-
-      {/* Leaderboard Table */}
-      <div>
-        <h2 className="mb-6 text-2xl font-bold text-white">
-          {skill.name} Leaderboard
-        </h2>
-        <SkillDetailLeaderboardTable skill={skill} skillData={skillData} />
       </div>
     </div>
   );

@@ -9,9 +9,9 @@ import { LabLogoProps } from "@/types/unified-leaderboard";
 import { getLabColor } from "@/utils/lab-colors";
 
 const SIZE_CLASSES = {
-  sm: "w-4 h-4",
-  md: "w-6 h-6",
-  lg: "w-8 h-8",
+  sm: "w-6 h-6",
+  md: "w-8 h-8",
+  lg: "w-10 h-10",
 } as const;
 
 export const LabLogo: React.FC<LabLogoProps> = ({
@@ -49,7 +49,7 @@ export const LabLogo: React.FC<LabLogoProps> = ({
         fill
         className="object-contain"
         onError={() => setLogoFailed(true)}
-        sizes="32px"
+        sizes="40px"
       />
     </div>
   );

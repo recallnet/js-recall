@@ -132,7 +132,8 @@
           "rank": 1,
           "evaluatedAt": "2025-08-14T10:00:00Z",
           "contamination": "low",
-          "sampleSize": 500
+          "sampleSize": 500,
+          "notice": "Potential contamination warning: This model was evaluated after the public release of MultiChallenge, allowing model builder access to the prompts and solutions. Sampled at reasoning_effort: 'high'."
         },
         "ethical-loophole-navigation": {
           "rawScore": 84.3,
@@ -234,7 +235,8 @@
           "rank": 1,
           "evaluatedAt": "2025-08-14T10:00:00Z",
           "contamination": "none",
-          "sampleSize": 400
+          "sampleSize": 400,
+          "notice": "Evaluation note: This model showed exceptional performance in avoiding harmful outputs while maintaining helpfulness across diverse ethical scenarios."
         },
         "sentiment-analysis": {
           "rawScore": 89.7,
@@ -352,7 +354,8 @@
           "rank": 1,
           "evaluatedAt": "2025-08-14T10:00:00Z",
           "contamination": "low",
-          "sampleSize": 250
+          "sampleSize": 250,
+          "notice": "Limited sample size warning: Evaluated on a reduced dataset due to computational constraints. Results may have higher variance than typical evaluations."
         },
         "business-plans": {
           "rawScore": 76.8,
@@ -589,64 +592,723 @@
         "architecture": "transformer",
         "labLogoPath": "/logos/labs/mistralai.svg"
       }
+    },
+    {
+      "id": "gpt-4o-mini-2024-07-18",
+      "name": "GPT-4o Mini",
+      "provider": "openai",
+      "modelFamily": "gpt-4o",
+      "scores": {
+        "code-generation": {
+          "rawScore": 85.9,
+          "confidenceInterval": [83.2, 88.4],
+          "rank": 6,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 79.8,
+          "confidenceInterval": [77.1, 82.3],
+          "rank": 6,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 88.5,
+          "confidenceInterval": [86.2, 90.6],
+          "rank": 6,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 84.7,
+          "confidenceInterval": [81.9, 87.3],
+          "rank": 6,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 76.3,
+          "confidenceInterval": [73.8, 78.7],
+          "rank": 6,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "medium",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 75.1,
+          "confidenceInterval": [71.7, 78.3],
+          "rank": 6,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 78.9,
+          "confidenceInterval": [76.2, 81.4],
+          "rank": 6,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 82.7,
+          "confidenceInterval": [80.1, 85.2],
+          "rank": 6,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "openai/gpt-4o-mini-2024-07-18",
+        "contextLength": 128000,
+        "created": "2024-07-18",
+        "author": "openai",
+        "group": "GPT-4o",
+        "instructionType": "openai",
+        "description": "GPT-4o Mini is OpenAI's most cost-efficient small model that's smarter and cheaper than GPT-3.5 Turbo.",
+        "pricing": {
+          "input": 0.15,
+          "output": 0.6
+        },
+        "inputModalities": ["text", "vision"],
+        "outputModalities": ["text"],
+        "defaultStops": [],
+        "provider": "OpenAI",
+        "quantization": "fp16",
+        "variant": "mini",
+        "parameterCount": "~200B",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/openai.svg"
+      }
+    },
+    {
+      "id": "claude-3-haiku-20240307",
+      "name": "Claude 3 Haiku",
+      "provider": "anthropic",
+      "modelFamily": "claude-3",
+      "scores": {
+        "code-generation": {
+          "rawScore": 81.4,
+          "confidenceInterval": [78.9, 83.8],
+          "rank": 7,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 85.6,
+          "confidenceInterval": [83.1, 87.9],
+          "rank": 7,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 87.2,
+          "confidenceInterval": [84.8, 89.4],
+          "rank": 7,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 83.8,
+          "confidenceInterval": [81.2, 86.3],
+          "rank": 7,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 74.9,
+          "confidenceInterval": [72.3, 77.4],
+          "rank": 7,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 72.6,
+          "confidenceInterval": [69.1, 75.9],
+          "rank": 7,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 79.4,
+          "confidenceInterval": [76.8, 81.9],
+          "rank": 7,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 84.8,
+          "confidenceInterval": [82.1, 87.3],
+          "rank": 7,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "anthropic/claude-3-haiku-20240307",
+        "contextLength": 200000,
+        "created": "2024-03-07",
+        "author": "anthropic",
+        "group": "Claude-3",
+        "instructionType": "anthropic",
+        "description": "Claude 3 Haiku is Anthropic's fastest model with strong performance on most workloads.",
+        "pricing": {
+          "input": 0.25,
+          "output": 1.25
+        },
+        "inputModalities": ["text", "vision"],
+        "outputModalities": ["text"],
+        "defaultStops": [],
+        "provider": "Anthropic",
+        "quantization": "fp16",
+        "variant": "haiku",
+        "parameterCount": "~50B",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/anthropic.svg"
+      }
+    },
+    {
+      "id": "gemini-1.5-flash-002",
+      "name": "Gemini 1.5 Flash",
+      "provider": "google",
+      "modelFamily": "gemini-1.5",
+      "scores": {
+        "code-generation": {
+          "rawScore": 84.2,
+          "confidenceInterval": [81.6, 86.7],
+          "rank": 8,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 83.1,
+          "confidenceInterval": [80.5, 85.6],
+          "rank": 8,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 89.8,
+          "confidenceInterval": [87.4, 92.1],
+          "rank": 8,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 82.9,
+          "confidenceInterval": [80.3, 85.4],
+          "rank": 8,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 78.1,
+          "confidenceInterval": [75.6, 80.5],
+          "rank": 8,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "medium",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 74.3,
+          "confidenceInterval": [70.8, 77.6],
+          "rank": 8,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 80.2,
+          "confidenceInterval": [77.6, 82.7],
+          "rank": 8,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 83.5,
+          "confidenceInterval": [80.9, 86.0],
+          "rank": 8,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "google/gemini-flash-1.5",
+        "contextLength": 1000000,
+        "created": "2024-05-14",
+        "author": "google",
+        "group": "Gemini-1.5",
+        "instructionType": "google",
+        "description": "Gemini 1.5 Flash is Google's fast and versatile multimodal model designed for high-volume, high-frequency tasks.",
+        "pricing": {
+          "input": 0.075,
+          "output": 0.3
+        },
+        "inputModalities": ["text", "vision", "audio"],
+        "outputModalities": ["text"],
+        "defaultStops": [],
+        "provider": "Google",
+        "quantization": "fp16",
+        "variant": "flash",
+        "parameterCount": "~1T",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/google.svg"
+      }
+    },
+    {
+      "id": "llama-3.1-8b-instruct",
+      "name": "Llama 3.1 8B Instruct",
+      "provider": "meta-llama",
+      "modelFamily": "llama-3.1",
+      "scores": {
+        "code-generation": {
+          "rawScore": 78.9,
+          "confidenceInterval": [76.2, 81.5],
+          "rank": 9,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 76.4,
+          "confidenceInterval": [73.8, 78.9],
+          "rank": 9,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 85.1,
+          "confidenceInterval": [82.7, 87.4],
+          "rank": 9,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 79.6,
+          "confidenceInterval": [76.9, 82.2],
+          "rank": 9,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 71.8,
+          "confidenceInterval": [69.1, 74.4],
+          "rank": 9,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 69.7,
+          "confidenceInterval": [66.2, 73.1],
+          "rank": 9,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 75.6,
+          "confidenceInterval": [72.9, 78.2],
+          "rank": 9,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 79.3,
+          "confidenceInterval": [76.6, 81.9],
+          "rank": 9,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "meta-llama/llama-3.1-8b-instruct",
+        "contextLength": 131072,
+        "created": "2024-07-23",
+        "author": "meta-llama",
+        "group": "Llama-3.1",
+        "instructionType": "llama3",
+        "description": "Llama 3.1 8B is Meta's efficient instruction-tuned model with strong reasoning capabilities.",
+        "pricing": {
+          "input": 0.18,
+          "output": 0.18
+        },
+        "inputModalities": ["text"],
+        "outputModalities": ["text"],
+        "defaultStops": ["<|eot_id|>", "<|end_of_text|>"],
+        "provider": "Meta",
+        "quantization": "bf16",
+        "variant": "instruct",
+        "parameterCount": "8B",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/meta.svg"
+      }
+    },
+    {
+      "id": "mistral-7b-instruct-v0.3",
+      "name": "Mistral 7B Instruct",
+      "provider": "mistralai",
+      "modelFamily": "mistral-7b",
+      "scores": {
+        "code-generation": {
+          "rawScore": 76.2,
+          "confidenceInterval": [73.5, 78.8],
+          "rank": 10,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 74.9,
+          "confidenceInterval": [72.3, 77.4],
+          "rank": 10,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 82.6,
+          "confidenceInterval": [80.1, 85.0],
+          "rank": 10,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 77.8,
+          "confidenceInterval": [75.2, 80.3],
+          "rank": 10,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 68.4,
+          "confidenceInterval": [65.7, 71.0],
+          "rank": 10,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 66.9,
+          "confidenceInterval": [63.4, 70.3],
+          "rank": 10,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 72.1,
+          "confidenceInterval": [69.4, 74.7],
+          "rank": 10,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 76.8,
+          "confidenceInterval": [74.1, 79.4],
+          "rank": 10,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "mistralai/mistral-7b-instruct-v0.3",
+        "contextLength": 32768,
+        "created": "2024-05-22",
+        "author": "mistralai",
+        "group": "Mistral-7B",
+        "instructionType": "mistral",
+        "description": "Mistral 7B Instruct is a refined version of Mistral 7B optimized for instruction following.",
+        "pricing": {
+          "input": 0.12,
+          "output": 0.12
+        },
+        "inputModalities": ["text"],
+        "outputModalities": ["text"],
+        "defaultStops": ["</s>"],
+        "provider": "Mistral",
+        "quantization": "fp16",
+        "variant": "instruct",
+        "parameterCount": "7B",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/mistralai.svg"
+      }
+    },
+    {
+      "id": "cohere-command-r-plus",
+      "name": "Command R+",
+      "provider": "cohere",
+      "modelFamily": "command-r",
+      "scores": {
+        "code-generation": {
+          "rawScore": 80.7,
+          "confidenceInterval": [78.1, 83.2],
+          "rank": 11,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 500
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 77.8,
+          "confidenceInterval": [75.2, 80.3],
+          "rank": 11,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 84.3,
+          "confidenceInterval": [81.9, 86.6],
+          "rank": 11,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 81.4,
+          "confidenceInterval": [78.8, 83.9],
+          "rank": 11,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 73.5,
+          "confidenceInterval": [70.8, 76.1],
+          "rank": 11,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 78.4,
+          "confidenceInterval": [75.0, 81.7],
+          "rank": 11,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 76.9,
+          "confidenceInterval": [74.2, 79.5],
+          "rank": 11,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 81.2,
+          "confidenceInterval": [78.5, 83.8],
+          "rank": 11,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "cohere/command-r-plus",
+        "contextLength": 128000,
+        "created": "2024-04-04",
+        "author": "cohere",
+        "group": "Command-R",
+        "instructionType": "cohere",
+        "description": "Command R+ is Cohere's flagship text generation model optimized for retrieval augmented generation and tool use.",
+        "pricing": {
+          "input": 3.0,
+          "output": 15.0
+        },
+        "inputModalities": ["text"],
+        "outputModalities": ["text"],
+        "defaultStops": [],
+        "provider": "Cohere",
+        "quantization": "fp16",
+        "variant": "plus",
+        "parameterCount": "104B",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/cohere.svg"
+      }
+    },
+    {
+      "id": "deepseek-coder-v2-lite-instruct",
+      "name": "DeepSeek Coder V2 Lite",
+      "provider": "deepseek",
+      "modelFamily": "deepseek-coder-v2",
+      "scores": {
+        "code-generation": {
+          "rawScore": 82.1,
+          "confidenceInterval": [79.5, 84.6],
+          "rank": 12,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 500,
+          "notice": "Specialized model: This model was specifically trained for coding tasks and may show different performance patterns on non-programming evaluations."
+        },
+        "ethical-loophole-navigation": {
+          "rawScore": 72.4,
+          "confidenceInterval": [69.8, 74.9],
+          "rank": 12,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 400
+        },
+        "sentiment-analysis": {
+          "rawScore": 79.6,
+          "confidenceInterval": [77.1, 82.0],
+          "rank": 12,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 1000
+        },
+        "document-summaries": {
+          "rawScore": 75.2,
+          "confidenceInterval": [72.6, 77.7],
+          "rank": 12,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 300
+        },
+        "difficult-math": {
+          "rawScore": 75.7,
+          "confidenceInterval": [73.1, 78.2],
+          "rank": 12,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "low",
+          "sampleSize": 250
+        },
+        "business-plans": {
+          "rawScore": 65.8,
+          "confidenceInterval": [62.3, 69.2],
+          "rank": 12,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 150
+        },
+        "legal-instruction-following": {
+          "rawScore": 70.3,
+          "confidenceInterval": [67.6, 72.9],
+          "rank": 12,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 200
+        },
+        "diverse-ethical-views": {
+          "rawScore": 74.1,
+          "confidenceInterval": [71.4, 76.7],
+          "rank": 12,
+          "evaluatedAt": "2025-08-14T10:00:00Z",
+          "contamination": "none",
+          "sampleSize": 180
+        }
+      },
+      "metadata": {
+        "openrouterId": "deepseek-ai/deepseek-coder-v2-lite-instruct",
+        "contextLength": 163840,
+        "created": "2024-06-17",
+        "author": "deepseek",
+        "group": "DeepSeek-Coder-V2",
+        "instructionType": "deepseek",
+        "description": "DeepSeek Coder V2 Lite is a coding-focused model with strong programming capabilities at a lower cost.",
+        "pricing": {
+          "input": 0.14,
+          "output": 0.28
+        },
+        "inputModalities": ["text"],
+        "outputModalities": ["text"],
+        "defaultStops": ["<｜end▁of▁sentence｜>"],
+        "provider": "DeepSeek",
+        "quantization": "fp16",
+        "variant": "lite",
+        "parameterCount": "16B",
+        "architecture": "transformer",
+        "labLogoPath": "/logos/labs/deepseek.svg"
+      }
     }
   ],
   "skillStats": {
     "code-generation": {
-      "totalModels": 5,
-      "avgScore": 86.78,
+      "totalModels": 12,
+      "avgScore": 81.78,
       "topScore": 89.7,
-      "medianScore": 87.1,
-      "evaluationCount": 2500
+      "medianScore": 82.1,
+      "evaluationCount": 6000
     },
     "ethical-loophole-navigation": {
-      "totalModels": 5,
-      "avgScore": 85.48,
+      "totalModels": 12,
+      "avgScore": 80.42,
       "topScore": 92.1,
-      "medianScore": 84.3,
-      "evaluationCount": 2000
+      "medianScore": 79.8,
+      "evaluationCount": 4800
     },
     "sentiment-analysis": {
-      "totalModels": 5,
-      "avgScore": 89.78,
+      "totalModels": 12,
+      "avgScore": 86.12,
       "topScore": 92.4,
-      "medianScore": 89.7,
-      "evaluationCount": 5000
+      "medianScore": 86.7,
+      "evaluationCount": 12000
     },
     "document-summaries": {
-      "totalModels": 5,
-      "avgScore": 85.28,
+      "totalModels": 12,
+      "avgScore": 81.73,
       "topScore": 87.9,
-      "medianScore": 85.7,
-      "evaluationCount": 1500
+      "medianScore": 82.3,
+      "evaluationCount": 3600
     },
     "difficult-math": {
-      "totalModels": 5,
-      "avgScore": 81.8,
+      "totalModels": 12,
+      "avgScore": 75.85,
       "topScore": 86.7,
-      "medianScore": 81.2,
-      "evaluationCount": 1250
+      "medianScore": 76.3,
+      "evaluationCount": 3000
     },
     "business-plans": {
-      "totalModels": 5,
-      "avgScore": 79.14,
+      "totalModels": 12,
+      "avgScore": 73.06,
       "topScore": 83.2,
-      "medianScore": 78.9,
-      "evaluationCount": 750
+      "medianScore": 73.5,
+      "evaluationCount": 1800
     },
     "legal-instruction-following": {
-      "totalModels": 5,
-      "avgScore": 83.46,
+      "totalModels": 12,
+      "avgScore": 77.92,
       "topScore": 85.7,
-      "medianScore": 83.6,
-      "evaluationCount": 1000
+      "medianScore": 78.9,
+      "evaluationCount": 2400
     },
     "diverse-ethical-views": {
-      "totalModels": 5,
-      "avgScore": 86.42,
+      "totalModels": 12,
+      "avgScore": 81.68,
       "topScore": 88.1,
-      "medianScore": 86.8,
-      "evaluationCount": 900
+      "medianScore": 82.7,
+      "evaluationCount": 2160
     }
   }
 }

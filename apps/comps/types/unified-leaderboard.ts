@@ -24,6 +24,7 @@ export interface BenchmarkScore {
   evaluatedAt: string;
   contamination?: "none" | "low" | "medium" | "high";
   sampleSize?: number;
+  notice?: string;
 }
 
 export interface OpenRouterMetadata {

@@ -1,46 +1,115 @@
 // Dynamic lab color generation system
-// Provides consistent colors for AI labs/providers
+// Provides consistent, professional muted colors for AI labs/providers
+// Color palette inspired by modern corporate design with sophisticated tones
 
 const KNOWN_LAB_COLORS: Record<string, string> = {
-  // Major labs with brand-specific colors (avoiding Scale AI's exact colors)
-  openai: "#2563EB", // Deep blue
-  anthropic: "#7C3AED", // Warm purple
-  "meta-llama": "#10B981", // Bright green
-  meta: "#10B981", // Alias for meta-llama
-  google: "#EF4444", // Coral red
-  mistralai: "#F59E0B", // Amber orange
-  mistral: "#F59E0B", // Alias for mistralai
-  microsoft: "#06B6D4", // Cyan blue
-  deepseek: "#6B7280", // Cool gray
-  qwen: "#EC4899", // Magenta
-  alibaba: "#EC4899", // Alias for qwen
-  amazon: "#059669", // Forest green
-  cohere: "#8B5CF6", // Purple
-  ai21: "#F97316", // Orange
-  together: "#14B8A6", // Teal
-  fireworks: "#DC2626", // Red
-  anyscale: "#7C2D12", // Brown
-  replicate: "#1D4ED8", // Blue
+  // Major labs with professional, muted colors inspired by corporate design
+  openai: "#4A90B8", // Muted steel blue
+  anthropic: "#8B7CB6", // Soft lavender
+  "meta-llama": "#7BA05B", // Sage green
+  meta: "#7BA05B", // Alias for meta-llama
+  google: "#D4857F", // Distinct coral (shifted from #C4787A to avoid fireworks conflict)
+  mistralai: "#B8956A", // Warm taupe
+  mistral: "#B8956A", // Alias for mistralai
+  microsoft: "#7A9FB8", // Distinct sky blue (shifted from #6B9DB8)
+  deepseek: "#8A8E94", // Professional gray
+  qwen: "#A885A3", // Muted plum
+  alibaba: "#A885A3", // Alias for qwen
+  amazon: "#7A9B7F", // Forest sage
+  cohere: "#9D8F7A", // Distinct warm stone (shifted from #A39078 to avoid anyscale conflict)
+  ai21: "#C49B6A", // Distinct bronze (shifted from #B8956A to avoid mistral conflict)
+  together: "#7BB3A8", // Seafoam
+  fireworks: "#BA8285", // Distinct muted coral (shifted from #B87A7A to avoid google conflict)
+  anyscale: "#9B8B7A", // Warm gray
+  replicate: "#5A8AB3", // Distinct navy (shifted from #6B8DB8 to avoid openai conflict)
 };
 
-// Professional color palette for unknown providers
+// Professional muted color palette for unknown providers (66 unique colors, no conflicts with known labs)
 const FALLBACK_COLORS = [
-  "#3B82F6", // Blue
-  "#8B5CF6", // Purple
-  "#10B981", // Emerald
-  "#F59E0B", // Amber
-  "#EF4444", // Red
-  "#06B6D4", // Cyan
-  "#84CC16", // Lime
-  "#F97316", // Orange
-  "#EC4899", // Pink
-  "#14B8A6", // Teal
-  "#6366F1", // Indigo
-  "#A855F7", // Violet
-  "#22C55E", // Green
-  "#EAB308", // Yellow
-  "#DC2626", // Red-600
-  "#0891B2", // Sky
+  // Blues (avoiding known blue conflicts)
+  "#8CA4C4", // Soft blue
+  "#A5B8D0", // Light blue gray
+  "#6F8FA8", // Muted slate blue
+  "#9FB5CC", // Powder blue
+  "#7E9BBC", // Steel blue
+  "#B2C4D8", // Misty blue
+  "#85A5C0", // Cloudy blue
+  "#98B2C8", // Soft periwinkle
+
+  // Greens (avoiding known green conflicts)
+  "#8FAE8F", // Soft mint
+  "#A5C2A5", // Light sage
+  "#95B895", // Pale green
+  "#B8D4B8", // Mint cream
+  "#88AA88", // Moss sage
+  "#A8C8A8", // Eucalyptus
+  "#92B592", // Forest mist
+  "#B5D0B5", // Spa green
+
+  // Purples (avoiding known purple conflicts)
+  "#A598B8", // Soft lilac
+  "#B8A5D0", // Light orchid
+  "#9F8FB8", // Muted violet
+  "#C2A5C8", // Pale purple
+  "#AB98C4", // Heather
+  "#B5A5CC", // Lavender mist
+  "#A09BB5", // Purple gray
+  "#C8B5D8", // Soft mauve
+
+  // Browns/Taupes (avoiding known brown conflicts)
+  "#B5A592", // Light taupe
+  "#C8B5A5", // Warm beige
+  "#A59B88", // Mushroom
+  "#D0C2B5", // Linen
+  "#B8AA95", // Sand
+  "#C4B8A8", // Stone
+  "#A8A095", // Clay
+  "#D4C8B8", // Cream
+
+  // Corals/Pinks (avoiding known coral conflicts)
+  "#C8A5A5", // Soft coral
+  "#D0B5B5", // Blush
+  "#B89898", // Dusty pink
+  "#D8C2C2", // Rose cream
+  "#C2A098", // Peach
+  "#D4B8B5", // Light coral
+  "#B5A098", // Mauve pink
+  "#D8C8C2", // Pink beige
+
+  // Grays (avoiding known gray conflicts)
+  "#A5A8AB", // Light gray
+  "#B8BBC0", // Silver gray
+  "#9FA5A8", // Steel gray
+  "#C2C8CC", // Cloud gray
+  "#A8AEB5", // Slate gray
+  "#B5BBC2", // Pewter
+  "#98A0A5", // Storm gray
+  "#C8CED4", // Mist gray
+
+  // Teals/Cyans (avoiding known teal conflicts)
+  "#8FB8B5", // Soft teal
+  "#A5C8C2", // Aqua mist
+  "#92B5B2", // Sage teal
+  "#B8D4D0", // Mint teal
+  "#85B2A8", // Ocean sage
+  "#A8C8C4", // Sea foam
+  "#95B8B5", // Turquoise gray
+  "#B5D0CC", // Spa teal
+
+  // Yellows/Golds (avoiding conflicts)
+  "#B8B595", // Soft gold
+  "#C8C2A5", // Champagne
+  "#B2A888", // Khaki
+  "#D0C8B5", // Cream gold
+  "#B5B088", // Olive gold
+  "#C4C0A8", // Pale gold
+  "#A8A585", // Sage gold
+  "#D4D0B8", // Light champagne
+
+  // Additional unique tones
+  "#C0A8B5", // Rose taupe
+  "#B5C0A8", // Sage beige
+  "#A8B5C0", // Blue beige
 ];
 
 /**
