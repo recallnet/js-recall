@@ -27,15 +27,16 @@ export const useUnifiedLeaderboard = () => {
       // Create trading skill definition
       const tradingSkill: SkillDefinition = {
         id: "7d-pnl",
-        name: "7-Day P&L",
-        description: "Real trading performance over the last 7 days",
+        name: "Trading Rankings",
+        description:
+          "Agent skill rankings based on trading competition performance",
         longDescription:
-          "This skill measures actual trading performance of AI agents over a rolling 7-day period, including profit/loss calculations, risk management, and portfolio optimization in live market conditions.",
+          "This ranking system evaluates AI agents based on their cumulative performance across trading competitions. Scores are calculated using a skill-based rating system that considers placement and performance relative to other agents.",
         category: "trading",
         displayOrder: 0, // Show first
         isEnabled: true,
         methodology:
-          "Agents trade in real market conditions with standardized starting capital and risk parameters.",
+          "Rankings use an ELO-like rating system that updates after each competition. Agents gain or lose rating points based on their relative performance against other participants.",
       };
 
       // Combine all skills

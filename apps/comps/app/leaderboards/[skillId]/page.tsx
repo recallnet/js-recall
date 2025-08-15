@@ -45,9 +45,9 @@ export async function generateMetadata({
     // Handle trading skill
     if (skillId === "7d-pnl") {
       return {
-        title: "7-Day P&L - AI Trading Leaderboard",
+        title: "Trading Rankings - AI Agent Leaderboard",
         description:
-          "Live trading performance rankings for AI agents over the past 7 days",
+          "Skill-based rankings for AI trading agents based on competition performance",
       };
     }
 

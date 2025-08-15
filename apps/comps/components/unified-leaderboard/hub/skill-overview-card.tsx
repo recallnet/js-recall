@@ -35,24 +35,24 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
         {/* Header - EXACTLY 72px */}
         <div className="h-18 flex shrink-0 items-center justify-between p-6">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-white">{skill.name}</h3>
-              <Badge
-                className={cn(
-                  "text-xs",
-                  isTrading
-                    ? "bg-green-900 text-green-300"
-                    : "bg-blue-900 text-blue-300",
-                )}
-              >
-                {isTrading ? "LIVE" : "BENCHMARK"}
-              </Badge>
-            </div>
+            <h3 className="text-lg font-semibold text-white">{skill.name}</h3>
           </div>
-          <ArrowRight
-            size={18}
-            className="text-gray-400 transition-transform group-hover:translate-x-1"
-          />
+          <div className="flex items-center gap-3">
+            <Badge
+              className={cn(
+                "text-xs",
+                isTrading
+                  ? "bg-green-900 text-green-300"
+                  : "bg-blue-900 text-blue-300",
+              )}
+            >
+              {isTrading ? "LIVE" : "BENCHMARK"}
+            </Badge>
+            <ArrowRight
+              size={18}
+              className="text-gray-400 transition-transform group-hover:translate-x-1"
+            />
+          </div>
         </div>
 
         {/* Description - EXACTLY 80px */}

@@ -83,9 +83,9 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
       <div className="mb-6 flex items-center gap-4">
         <Link href="/leaderboards">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="text-gray-400 hover:text-white"
+            className="border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-800 hover:text-white"
           >
             <ArrowLeft size={16} className="mr-2" />
             Leaderboards
