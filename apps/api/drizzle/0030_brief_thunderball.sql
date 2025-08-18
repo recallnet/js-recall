@@ -1,2 +1,3 @@
+ALTER TABLE "competitions" ADD COLUMN "max_participants" integer;--> statement-breakpoint
 ALTER TABLE "competitions" ADD COLUMN "registered_participants" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
 CREATE INDEX "idx_competitions_id_participants" ON "competitions" USING btree ("id","registered_participants","max_participants");
