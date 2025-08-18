@@ -25,7 +25,7 @@ export function useSorting(initialSort?: string) {
     setSortState((prev) => {
       const current = prev[field] || "none";
       const next =
-        current === "none" ? "asc" : current === "asc" ? "desc" : "none";
+        current === "none" ? "desc" : current === "desc" ? "asc" : "none";
 
       // Clear all other fields when setting a new sort (single column sorting)
       return { [field]: next };
