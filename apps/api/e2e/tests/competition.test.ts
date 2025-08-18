@@ -4468,10 +4468,10 @@ describe("Competition API", () => {
     const tradeResponse = await agentClient.executeTrade({
       reason: "testing get trades endpoint",
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.svm.sol,
+      toToken: config.specificChainTokens.eth.eth,
       amount: "100",
       fromChain: BlockchainType.EVM,
-      toChain: BlockchainType.SVM,
+      toChain: BlockchainType.EVM,
     });
     expect(tradeResponse.success).toBe(true);
 
