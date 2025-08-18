@@ -333,6 +333,142 @@ describe("Competition API", () => {
     ).toBe(true);
   });
 
+  test("anyone can view competition rules by competition ID (public endpoint)", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a competition with specific trading constraints
+    const competitionName = `Public Rules Test ${Date.now()}`;
+    const customConstraints = {
+      minimumPairAgeHours: 96,
+      minimum24hVolumeUsd: 100000,
+      minimumLiquidityUsd: 200000,
+      minimumFdvUsd: 3000000,
+    };
+
+    const createResponse = (await adminClient.createCompetition(
+      competitionName,
+      "Test competition for public rules endpoint",
+      CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      customConstraints,
+    )) as CreateCompetitionResponse;
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
+
+    // Test 1: Authenticated agent can access the rules
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Rules Viewer Agent",
+    });
+
+    const agentRulesResponse = (await agentClient.getCompetitionRules(
+      competitionId,
+    )) as CompetitionRulesResponse;
+
+    expect(agentRulesResponse.success).toBe(true);
+    expect(agentRulesResponse.rules).toBeDefined();
+    expect(agentRulesResponse.competition).toBeDefined();
+    expect(agentRulesResponse.competition.id).toBe(competitionId);
+
+    // Verify rules structure
+    expect(agentRulesResponse.rules.tradingRules).toBeDefined();
+    expect(agentRulesResponse.rules.tradingRules).toBeInstanceOf(Array);
+    expect(agentRulesResponse.rules.rateLimits).toBeDefined();
+    expect(agentRulesResponse.rules.availableChains).toBeDefined();
+    expect(agentRulesResponse.rules.slippageFormula).toBeDefined();
+    expect(agentRulesResponse.rules.portfolioSnapshots).toBeDefined();
+
+    // Verify trading constraints
+    expect(agentRulesResponse.rules.tradingConstraints).toBeDefined();
+    expect(
+      agentRulesResponse.rules.tradingConstraints?.minimumPairAgeHours,
+    ).toBe(96);
+    expect(
+      agentRulesResponse.rules.tradingConstraints?.minimum24hVolumeUsd,
+    ).toBe(100000);
+    expect(
+      agentRulesResponse.rules.tradingConstraints?.minimumLiquidityUsd,
+    ).toBe(200000);
+    expect(agentRulesResponse.rules.tradingConstraints?.minimumFdvUsd).toBe(
+      3000000,
+    );
+
+    // Verify trading rules include the constraints
+    const tradingRules = agentRulesResponse.rules.tradingRules;
+    expect(
+      tradingRules.some((rule: string) =>
+        rule.includes("minimum 96 hours of trading history"),
+      ),
+    ).toBe(true);
+    expect(
+      tradingRules.some((rule: string) =>
+        rule.includes("minimum 24h volume of $100,000 USD"),
+      ),
+    ).toBe(true);
+
+    // Test 2: Unauthenticated client can also access the rules
+    const unauthClient = createTestClient();
+    const unauthRulesResponse = (await unauthClient.getCompetitionRules(
+      competitionId,
+    )) as CompetitionRulesResponse;
+
+    expect(unauthRulesResponse.success).toBe(true);
+    expect(unauthRulesResponse.rules).toBeDefined();
+    expect(unauthRulesResponse.competition.id).toBe(competitionId);
+
+    // Test 3: SIWE authenticated user can access the rules
+    const { client: siweClient } = await createSiweAuthenticatedClient({
+      adminApiKey,
+      userName: "SIWE Rules Viewer",
+      userEmail: "siwe-rules@example.com",
+    });
+
+    const siweRulesResponse = (await siweClient.getCompetitionRules(
+      competitionId,
+    )) as CompetitionRulesResponse;
+
+    expect(siweRulesResponse.success).toBe(true);
+    expect(siweRulesResponse.rules).toBeDefined();
+    expect(siweRulesResponse.competition.id).toBe(competitionId);
+
+    // Test 4: Returns 404 for non-existent competition
+    const nonExistentResponse = await agentClient.getCompetitionRules(
+      "00000000-0000-0000-0000-000000000000",
+    );
+
+    expect(nonExistentResponse.success).toBe(false);
+    expect((nonExistentResponse as ErrorResponse).error).toContain("not found");
+
+    // Test 5: Works for both pending and active competitions
+    // Start the competition
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Competition Starter Agent",
+    });
+
+    await adminClient.startExistingCompetition(competitionId, [agent.id]);
+
+    // Should still be able to get rules after competition is started
+    const activeRulesResponse = (await agentClient.getCompetitionRules(
+      competitionId,
+    )) as CompetitionRulesResponse;
+
+    expect(activeRulesResponse.success).toBe(true);
+    expect(activeRulesResponse.rules).toBeDefined();
+    expect(activeRulesResponse.competition.status).toBe("active");
+  });
+
   test("agents can view competition status and leaderboard", async () => {
     // Setup admin client and register an agent
     const adminClient = createTestClient();
@@ -3751,10 +3887,72 @@ describe("Competition API", () => {
       expect(Array.isArray(response.data.agents)).toBe(true);
     });
 
+    test("should allow unauthenticated access to GET /competitions/{id}/rules", async () => {
+      // Setup: Create competition with trading constraints via admin
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Public Rules Competition ${Date.now()}`;
+      const customConstraints = {
+        minimumPairAgeHours: 24,
+        minimum24hVolumeUsd: 50000,
+        minimumLiquidityUsd: 100000,
+        minimumFdvUsd: 1000000,
+      };
+
+      const createResponse = await adminClient.createCompetition(
+        competitionName,
+        "Test competition for public rules access",
+        undefined, // tradingType
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // endDate
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        customConstraints,
+      );
+
+      expect(createResponse.success).toBe(true);
+      const { competition } = createResponse as CreateCompetitionResponse;
+
+      // Test: Direct axios call without authentication
+      const response = await axios.get(
+        `${getBaseUrl()}/api/competitions/${competition.id}/rules`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.data.success).toBe(true);
+      expect(response.data.competition).toBeDefined();
+      expect(response.data.competition.id).toBe(competition.id);
+      expect(response.data.rules).toBeDefined();
+      expect(response.data.rules.tradingRules).toBeDefined();
+      expect(response.data.rules.rateLimits).toBeDefined();
+      expect(response.data.rules.availableChains).toBeDefined();
+      expect(response.data.rules.slippageFormula).toBeDefined();
+      expect(response.data.rules.portfolioSnapshots).toBeDefined();
+      expect(response.data.rules.tradingConstraints).toBeDefined();
+      expect(response.data.rules.tradingConstraints.minimumPairAgeHours).toBe(
+        24,
+      );
+      expect(response.data.rules.tradingConstraints.minimum24hVolumeUsd).toBe(
+        50000,
+      );
+      expect(response.data.rules.tradingConstraints.minimumLiquidityUsd).toBe(
+        100000,
+      );
+      expect(response.data.rules.tradingConstraints.minimumFdvUsd).toBe(
+        1000000,
+      );
+    });
+
     test("should return 404 for non-existent competition in public endpoints", async () => {
       const nonExistentId = "00000000-0000-0000-0000-000000000000";
 
-      // Test all three public endpoints with non-existent ID
+      // Test all four public endpoints with non-existent ID
       await expect(
         axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}`),
       ).rejects.toMatchObject({
@@ -3763,6 +3961,12 @@ describe("Competition API", () => {
 
       await expect(
         axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}/agents`),
+      ).rejects.toMatchObject({
+        response: { status: 404 },
+      });
+
+      await expect(
+        axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}/rules`),
       ).rejects.toMatchObject({
         response: { status: 404 },
       });

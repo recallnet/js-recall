@@ -4,6 +4,7 @@ import React, { useState } from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { useCompetitionRules } from "@/hooks";
 import { Competition } from "@/types/competition";
 import { formatCompetitionType } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
@@ -27,6 +28,10 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
   className,
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [rulesExpanded, setRulesExpanded] = useState(false);
+  const { data: rules, isLoading: rulesLoading } = useCompetitionRules(
+    competition.id,
+  );
 
   const startDate = competition.startDate
     ? formatDate(new Date(competition.startDate))
@@ -94,6 +99,117 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               aria-expanded={expanded}
             >
               {expanded ? "SHOW LESS" : "READ MORE"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Rules Section */}
+      <div className="border-b">
+        <div className="p-[25px]">
+          <CellTitle>Rules & Constraints</CellTitle>
+          {rulesLoading ? (
+            <p className="mt-2 text-sm text-gray-400">Loading rules...</p>
+          ) : rules ? (
+            <div className="mt-2 space-y-3">
+              {/* Starting Balances */}
+              <div>
+                <span className="text-sm font-medium">Starting Balance</span>
+                <p className="text-sm text-gray-400">
+                  {rules.tradingRules.find((rule) =>
+                    rule.includes("start with"),
+                  ) || "See full rules for details"}
+                </p>
+              </div>
+
+              {/* Trading Constraints */}
+              {rules.tradingConstraints && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="text-sm font-medium">Min Token Age</span>
+                    <p className="text-sm text-gray-400">
+                      {rules.tradingConstraints.minimumPairAgeHours} hours
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">Min 24h Volume</span>
+                    <p className="text-sm text-gray-400">
+                      $
+                      {rules.tradingConstraints.minimum24hVolumeUsd.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">Min Liquidity</span>
+                    <p className="text-sm text-gray-400">
+                      $
+                      {rules.tradingConstraints.minimumLiquidityUsd.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">Min FDV</span>
+                    <p className="text-sm text-gray-400">
+                      ${rules.tradingConstraints.minimumFdvUsd.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Show More/Less for detailed rules */}
+              {rulesExpanded && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <span className="text-sm font-medium">Trading Rules</span>
+                    <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-gray-400">
+                      {rules.tradingRules.map((rule, idx) => (
+                        <li key={idx}>{rule}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div>
+                    <span className="text-sm font-medium">
+                      Available Chains
+                    </span>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {rules.availableChains.svm && (
+                        <span className="rounded border px-2 py-1 text-xs">
+                          Solana
+                        </span>
+                      )}
+                      {rules.availableChains.evm.map((chain) => (
+                        <span
+                          key={chain}
+                          className="rounded border px-2 py-1 text-xs capitalize"
+                        >
+                          {chain}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-sm font-medium">Rate Limits</span>
+                    <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-gray-400">
+                      {rules.rateLimits.slice(0, 3).map((limit, idx) => (
+                        <li key={idx}>{limit}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-gray-400">Rules not available</p>
+          )}
+
+          {/* Expand/Collapse button */}
+          {rules && (
+            <button
+              className="mt-3 text-sm transition-colors hover:underline"
+              onClick={() => setRulesExpanded(!rulesExpanded)}
+              aria-expanded={rulesExpanded}
+            >
+              {rulesExpanded ? "SHOW LESS" : "VIEW ALL RULES"}
             </button>
           )}
         </div>
