@@ -216,15 +216,34 @@ async function updateImpl(
         .where(eq(competitions.id, competition.id))
         .returning();
 
-      const [tradingComp] = await tx
-        .update(tradingCompetitions)
-        .set({
-          ...competition,
-        })
-        .where(eq(tradingCompetitions.competitionId, competition.id))
-        .returning();
+      // Only update `trading_competitions` if we have relevant updates
+      let tradingComp:
+        | Partial<Omit<InsertTradingCompetition, "competitionId">>
+        | undefined;
+      const tradingCompetitionFields = {
+        crossChainTradingType: competition.crossChainTradingType,
+      };
+      const hasTradingCompetitionUpdates = Object.values(
+        tradingCompetitionFields,
+      ).some((value) => value !== undefined);
 
-      return { ...comp!, ...tradingComp! };
+      if (hasTradingCompetitionUpdates) {
+        // Use the `returning` to get the updated competition
+        [tradingComp] = await tx
+          .update(tradingCompetitions)
+          .set(tradingCompetitionFields)
+          .where(eq(tradingCompetitions.competitionId, competition.id))
+          .returning();
+      } else {
+        // Fetch current trading competition data if no updates needed
+        [tradingComp] = await tx
+          .select()
+          .from(tradingCompetitions)
+          .where(eq(tradingCompetitions.competitionId, competition.id))
+          .limit(1);
+      }
+
+      return { ...comp, ...tradingComp };
     });
     return result;
   } catch (error) {
@@ -347,8 +366,6 @@ async function removeAgentFromCompetitionImpl(
   reason?: string,
 ): Promise<boolean> {
   try {
-    let wasUpdated = false;
-
     await db.transaction(async (tx) => {
       // Remove/disqualify the agent from the competition
       const result = await tx
@@ -368,31 +385,29 @@ async function removeAgentFromCompetitionImpl(
         )
         .returning();
 
-      wasUpdated = result.length > 0;
+      if (result.length === 0) {
+        repositoryLogger.debug(
+          `No active agent ${agentId} found in competition ${competitionId} to remove`,
+        );
+        throw new Error(
+          `Agent ${agentId} was not removed from competition ${competitionId}`,
+        );
+      }
 
       // If an agent was actually removed, decrement the registeredParticipants counter
-      if (wasUpdated) {
-        await tx
-          .update(competitions)
-          .set({
-            registeredParticipants: sql`${competitions.registeredParticipants} - 1`,
-            updatedAt: new Date(),
-          })
-          .where(eq(competitions.id, competitionId));
-      }
-    });
-
-    if (wasUpdated) {
+      await tx
+        .update(competitions)
+        .set({
+          registeredParticipants: sql`${competitions.registeredParticipants} - 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(competitions.id, competitionId));
       repositoryLogger.debug(
         `Removed agent ${agentId} from competition ${competitionId}`,
       );
-    } else {
-      repositoryLogger.debug(
-        `No active agent ${agentId} found in competition ${competitionId} to remove`,
-      );
-    }
+    });
 
-    return wasUpdated;
+    return true;
   } catch (error) {
     repositoryLogger.error(
       `Error removing agent ${agentId} from competition ${competitionId}:`,
@@ -1288,33 +1303,6 @@ async function countAgentCompetitionsImpl(agentId: string): Promise<number> {
 }
 
 /**
- * Count the number of active participants in a competition
- * @param competitionId The ID of the competition
- * @returns The number of active participants in the competition
- */
-async function getParticipantCountImpl(competitionId: string): Promise<number> {
-  try {
-    const [result] = await db
-      .select({ count: drizzleCount() })
-      .from(competitionAgents)
-      .where(
-        and(
-          eq(competitionAgents.competitionId, competitionId),
-          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
-        ),
-      );
-
-    return result?.count ?? 0;
-  } catch (error) {
-    repositoryLogger.error(
-      `[CompetitionRepository] Error counting participants for competition ${competitionId}:`,
-      error,
-    );
-    throw error;
-  }
-}
-
-/**
  * Find competitions by status, or default to all competitions if no status is provided
  * @param status Competition status
  * @param params Pagination parameters
@@ -1856,12 +1844,6 @@ export const countAgentCompetitions = createTimedRepositoryFunction(
   countAgentCompetitionsImpl,
   "CompetitionRepository",
   "countAgentCompetitions",
-);
-
-export const getParticipantCount = createTimedRepositoryFunction(
-  getParticipantCountImpl,
-  "CompetitionRepository",
-  "getParticipantCount",
 );
 
 export const findByStatus = createTimedRepositoryFunction(

@@ -479,7 +479,7 @@ export class ApiClient {
         {
           competitionId,
           agentIds,
-          crossChainTradingType,
+          tradingType: crossChainTradingType,
           sandboxMode,
           externalUrl,
           imageUrl,

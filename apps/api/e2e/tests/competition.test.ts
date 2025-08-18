@@ -4301,13 +4301,11 @@ describe("Competition API", () => {
 
       // Create a competition first
       const competitionName = `Pre-registered Test Competition ${Date.now()}`;
-      const createResult = await adminClient.createCompetition(
+      const createResult = (await adminClient.createCompetition(
         competitionName,
         "Test competition for pre-registered agent validation",
-      );
+      )) as CreateCompetitionResponse;
       expect(createResult.success).toBe(true);
-      if (!createResult.success)
-        throw new Error("Failed to create competition");
       const competitionId = createResult.competition.id;
 
       // Add agent1 to the competition (pre-registered)
@@ -4321,14 +4319,13 @@ describe("Competition API", () => {
 
       // Test: Try to start competition with invalid agent2 and valid agent3
       // Should fail because agent2 is inactive, even though agent1 is pre-registered
-      const startResponse = await adminClient.startExistingCompetition(
+      const startResponse = (await adminClient.startExistingCompetition(
         competitionId,
         [agent2.id, agent3.id], // agent2 is inactive, agent3 is valid
         CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-      );
+      )) as ErrorResponse;
 
       expect(startResponse.success).toBe(false);
-      if (startResponse.success) throw new Error("Expected failure");
       expect(startResponse.error).toContain(
         "Cannot start competition: the following agent IDs are invalid or inactive:",
       );
@@ -4346,7 +4343,6 @@ describe("Competition API", () => {
       );
 
       expect(startResponse2.success).toBe(true);
-      if (!startResponse2.success) throw new Error("Expected success");
       const competition = (startResponse2 as StartCompetitionResponse)
         .competition;
       expect(competition.status).toBe("active");

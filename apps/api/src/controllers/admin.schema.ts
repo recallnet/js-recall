@@ -111,6 +111,8 @@ export const AdminStartCompetitionSchema = z
     sandboxMode: z.boolean().optional(),
     externalUrl: z.url().optional(),
     imageUrl: z.url().optional(),
+    type: CompetitionTypeSchema.optional(),
+    startDate: z.iso.datetime().optional(),
     endDate: z.iso.datetime().optional(),
     votingStartDate: z.iso.datetime().optional(),
     votingEndDate: z.iso.datetime().optional(),

@@ -973,7 +973,7 @@ export class AgentManager {
       // Filter out null competitions and ensure required fields are present
       const validCompetitions = results.competitions.filter(
         (comp) => comp !== null,
-      ) as (SelectCompetition & { registeredParticipants: number })[];
+      ) as SelectCompetition[];
 
       // Attach metrics to each valid competition
       const enhancedCompetitions = await Promise.all(
@@ -1131,7 +1131,7 @@ export class AgentManager {
               (data) =>
                 data.competitions?.id === comp.id &&
                 data.agents?.id === agent.id,
-            )?.competitionsLeaderboard;
+            )?.competitions_leaderboard;
 
             if (leaderboardData?.rank) {
               agent.rank = leaderboardData.rank;
@@ -1245,7 +1245,7 @@ export class AgentManager {
           const leaderboardData = results.competitions.find(
             (data) =>
               data.competitions?.id === compId && data.agents?.id === agent.id,
-          )?.competitionsLeaderboard;
+          )?.competitions_leaderboard;
 
           if (leaderboardData?.rank) {
             agent.rank = leaderboardData.rank;
@@ -1557,7 +1557,7 @@ export class AgentManager {
    * @returns Enhanced competition with agent metrics
    */
   async attachCompetitionMetrics(
-    competition: SelectCompetition & { registeredParticipants: number },
+    competition: SelectCompetition,
     agentId: string,
   ): Promise<EnhancedCompetition> {
     try {

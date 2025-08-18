@@ -64,6 +64,11 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to competition image
    *                 example: https://example.com/competition-image.jpg
+   *               startDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: Start date for the competition (ISO 8601 format)
+   *                 example: "2024-01-01T00:00:00Z"
    *               endDate:
    *                 type: string
    *                 format: date-time
@@ -264,6 +269,11 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to competition image (used when creating a new competition)
    *                 example: https://example.com/competition-image.jpg
+   *               startDate:
+   *                 type: string
+   *                 format: date-time
+   *                 description: Start date for the competition (ISO 8601 format)
+   *                 example: "2024-01-01T00:00:00Z"
    *               endDate:
    *                 type: string
    *                 format: date-time

@@ -622,14 +622,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
           0,
         );
 
-        // Get registered participant count (includes all registered agents, not just those with trades)
-        const participantCount =
-          await services.competitionManager.getParticipantCount(competitionId);
-
         // Get stats for this competition
         const stats = {
           totalTrades: trades.length,
-          totalAgents: participantCount,
+          totalAgents: competition.registeredParticipants,
           totalVolume: trades.reduce(
             (acc, trade) => acc + trade.tradeAmountUsd,
             0,

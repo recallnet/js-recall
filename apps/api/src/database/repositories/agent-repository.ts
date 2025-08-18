@@ -4,7 +4,6 @@ import {
   desc,
   count as drizzleCount,
   eq,
-  getTableColumns,
   ilike,
   inArray,
   sql,
@@ -155,21 +154,7 @@ async function findAgentCompetitionsImpl(
     }
 
     let query = db
-      .select({
-        // Include all existing fields using spread
-        ...getTableColumns(competitionAgents),
-        agents: getTableColumns(agents),
-        competitions: {
-          ...getTableColumns(competitions),
-          // Add `registeredParticipants` count via subquery (only ACTIVE agents)
-          registeredParticipants: sql<number>`(
-            SELECT COUNT(*) 
-            FROM ${competitionAgents} ca_count 
-            WHERE ca_count.competition_id = ${competitions.id} 
-            AND ca_count.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
-          )::int`,
-        },
-      })
+      .select()
       .from(competitionAgents)
       .leftJoin(agents, eq(competitionAgents.agentId, agents.id))
       .leftJoin(
@@ -786,22 +771,7 @@ async function findUserAgentCompetitionsImpl(
     }
 
     let fullResultsQuery = db
-      .select({
-        // Include all existing fields using spread
-        ...getTableColumns(competitionAgents),
-        agents: getTableColumns(agents),
-        competitions: {
-          ...getTableColumns(competitions),
-          // Add `registeredParticipants` count via subquery (only ACTIVE agents)
-          registeredParticipants: sql<number>`(
-            SELECT COUNT(*) 
-            FROM ${competitionAgents} ca_count 
-            WHERE ca_count.competition_id = ${competitions.id} 
-            AND ca_count.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
-          )::int`,
-        },
-        competitionsLeaderboard: getTableColumns(competitionsLeaderboard),
-      })
+      .select()
       .from(competitionAgents)
       .leftJoin(agents, eq(competitionAgents.agentId, agents.id))
       .leftJoin(
