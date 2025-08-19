@@ -53,6 +53,15 @@ export function JoinCompetitionButton({
   const { mutate: joinCompetition, isPending: isJoining } =
     useJoinCompetition();
 
+  // Check if the competition has reached its participant limit
+  const isAtParticipantLimit = () => {
+    return (
+      competition &&
+      competition.maxParticipants !== null &&
+      competition.registeredParticipants >= competition.maxParticipants
+    );
+  };
+
   // Check if registration is allowed based on join dates and participant limits
   const canJoin = () => {
     if (!competition) return false;
@@ -75,10 +84,7 @@ export function JoinCompetitionButton({
     if (competition.status !== "pending") return false;
 
     // Check participant limit
-    if (
-      competition.maxParticipants !== null &&
-      competition.registeredParticipants >= competition.maxParticipants
-    ) {
+    if (isAtParticipantLimit()) {
       return false;
     }
 
@@ -101,13 +107,9 @@ export function JoinCompetitionButton({
         : null;
 
       // Check participant limit first
-      if (
-        competition &&
-        competition.maxParticipants !== null &&
-        competition.registeredParticipants >= competition.maxParticipants
-      ) {
+      if (isAtParticipantLimit()) {
         toast.error("Registration is full", {
-          description: `This competition has reached its maximum capacity of ${competition.maxParticipants} participants`,
+          description: `This competition has reached its maximum capacity of ${competition!.maxParticipants} participants`,
         });
         return;
       }

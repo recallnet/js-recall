@@ -92,14 +92,10 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
                   {competition.registeredParticipants}
                 </span>
               </div>
-              {competition.maxParticipants && (
-                <div className="flex flex-col">
-                  <CellTitle className="mb-1 font-medium">Limit</CellTitle>
-                  <span className="font-bold">
-                    {competition.maxParticipants}
-                  </span>
-                </div>
-              )}
+              <div className="flex flex-col">
+                <CellTitle className="mb-1 font-medium">Limit</CellTitle>
+                <span className="font-bold">{competition.maxParticipants}</span>
+              </div>
             </div>
           ) : (
             <span className="font-bold">
