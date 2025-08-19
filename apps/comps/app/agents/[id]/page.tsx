@@ -17,9 +17,15 @@ export default function AgentPage({
   const { id } = React.use(params);
 
   const [status, setCompStatus] = React.useState("all");
-  const { sortState, handleSortChange } = useSorting();
+  // Define sorting configuration for agent competitions
+  const sortDescFirst = {
+    rank: false, // Lower ranks (#1, #2, #3) first
+    name: false, // Alphabetical order
+  };
+
+  const { sortState, handleSortChange } = useSorting(sortDescFirst);
   const { data, isLoading: isLoadingAgent } = useAgent(id);
-  const { agent, owner } = data || ({} as unknown as AgentWithOwnerResponse);
+  const { agent, owner } = data || ({} as AgentWithOwnerResponse);
 
   if (isLoadingAgent || !agent) return <LoadingAgentProfile />;
 

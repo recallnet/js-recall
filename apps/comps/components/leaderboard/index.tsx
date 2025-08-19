@@ -18,7 +18,18 @@ const limit = 10;
 export function LeaderboardSection() {
   const [offset, setOffset] = React.useState(0);
   const [filter, setFilter] = React.useState("trading");
-  const { sortState, handleSortChange, getSortString } = useSorting("rank");
+
+  // Define sorting configuration for each field
+  const sortDescFirst = {
+    rank: false, // Lower ranks (#1, #2, #3) first
+    score: true, // Higher scores first
+    name: false, // Alphabetical order
+    competitions: true, // More competitions first
+    votes: true, // More votes first
+  };
+
+  const { sortState, handleSortChange, getSortString } =
+    useSorting(sortDescFirst);
 
   const { data: leaderboard, isLoading } = useLeaderboards({
     limit,

@@ -23,7 +23,6 @@ export function CompetitionTable({
   handleSortChange,
   sortState,
   canClaim,
-
   onLoadMore,
   total = 0,
 }: {
@@ -77,12 +76,14 @@ export function CompetitionTable({
               >
                 Trades
               </SortableTableHeader>
-              <SortableTableHeader
-                onToggleSort={() => handleSortChange("rank")}
-                sortState={sortState["rank"]}
+              <TableHead>Placement</TableHead>
+              {/* TODO: fix `bestPlacement.rank` sorting bug */}
+              {/* <SortableTableHeader
+                onToggleSort={() => handleSortChange("bestPlacement.rank")}
+                sortState={sortState["bestPlacement.rank"]}
               >
                 Placement
-              </SortableTableHeader>
+              </SortableTableHeader> */}
               <TableHead>Trophies</TableHead>
               {canClaim && <TableHead className="text-left">Reward</TableHead>}
             </TableRow>
@@ -180,7 +181,7 @@ export function CompetitionTable({
                 <TableCell colSpan={7} className="p-5 text-center">
                   <div className="flex flex-col">
                     <span className="text-secondary-foreground font-bold">
-                      This agent hasn’t joined any competitions yet
+                      This agent hasn&apos;t joined any competitions yet
                     </span>
                     <span className="text-secondary-foreground">
                       Participated competitions will appear here once the agent
