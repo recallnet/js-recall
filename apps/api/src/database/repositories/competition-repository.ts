@@ -66,15 +66,19 @@ function buildCompetitionWithRewardsQuery() {
         | Array<{ rank: number; reward: number; agentId: string | null }>
         | undefined
       >`
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'rank', ${competitionRewards.rank},
-              'reward', ${competitionRewards.reward},
-              'agentId', ${competitionRewards.agentId}
-            ) ORDER BY ${competitionRewards.rank}
-          ) FILTER (WHERE ${competitionRewards.id} IS NOT NULL),
-          NULL
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'rank', cr.rank,
+                'reward', cr.reward,
+                'agentId', cr.agent_id
+              ) ORDER BY cr.rank
+            ),
+            NULL
+          )
+          FROM ${competitionRewards} cr
+          WHERE cr.competition_id = ${competitions.id}
         )
       `.as("rewards"),
       ...getTableColumns(competitions),
@@ -83,15 +87,6 @@ function buildCompetitionWithRewardsQuery() {
     .innerJoin(
       competitions,
       eq(tradingCompetitions.competitionId, competitions.id),
-    )
-    .leftJoin(
-      competitionRewards,
-      eq(competitions.id, competitionRewards.competitionId),
-    )
-    .groupBy(
-      tradingCompetitions.competitionId,
-      competitions.id,
-      tradingCompetitions.crossChainTradingType,
     );
 }
 
@@ -221,15 +216,34 @@ async function updateImpl(
         .where(eq(competitions.id, competition.id))
         .returning();
 
-      const [tradingComp] = await tx
-        .update(tradingCompetitions)
-        .set({
-          ...competition,
-        })
-        .where(eq(tradingCompetitions.competitionId, competition.id))
-        .returning();
+      // Only update `trading_competitions` if we have relevant updates
+      let tradingComp:
+        | Partial<Omit<InsertTradingCompetition, "competitionId">>
+        | undefined;
+      const tradingCompetitionFields = {
+        crossChainTradingType: competition.crossChainTradingType,
+      };
+      const hasTradingCompetitionUpdates = Object.values(
+        tradingCompetitionFields,
+      ).some((value) => value !== undefined);
 
-      return { ...comp!, ...tradingComp! };
+      if (hasTradingCompetitionUpdates) {
+        // Use the `returning` to get the updated competition
+        [tradingComp] = await tx
+          .update(tradingCompetitions)
+          .set(tradingCompetitionFields)
+          .where(eq(tradingCompetitions.competitionId, competition.id))
+          .returning();
+      } else {
+        // Fetch current trading competition data if no updates needed
+        [tradingComp] = await tx
+          .select()
+          .from(tradingCompetitions)
+          .where(eq(tradingCompetitions.competitionId, competition.id))
+          .limit(1);
+      }
+
+      return { ...comp, ...tradingComp };
     });
     return result;
   } catch (error) {
@@ -269,28 +283,71 @@ async function updateOneImpl(
 }
 
 /**
- * Add a single agent to a competition
+ * Atomically add an agent to a competition with participant limit validation
+ * This function checks the participant limit and adds the agent in a single transaction
+ * to prevent race conditions when multiple agents try to join simultaneously.
+ *
  * @param competitionId Competition ID
  * @param agentId Agent ID to add
+ * @throws Error if participant limit would be exceeded
  */
 async function addAgentToCompetitionImpl(
   competitionId: string,
   agentId: string,
-) {
+): Promise<void> {
   try {
-    await db
-      .insert(competitionAgents)
-      .values({
-        competitionId,
-        agentId,
-        status: COMPETITION_AGENT_STATUS.ACTIVE,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .onConflictDoNothing();
+    await db.transaction(async (tx) => {
+      // Get competition details including maxParticipants and current registeredParticipants
+      const [competition] = await tx
+        .select({
+          maxParticipants: competitions.maxParticipants,
+          registeredParticipants: competitions.registeredParticipants,
+        })
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .for("update");
+
+      if (!competition) {
+        throw new Error(`Competition ${competitionId} not found`);
+      }
+
+      // Check participant limit if one exists
+      if (
+        competition.maxParticipants &&
+        competition.registeredParticipants >= competition.maxParticipants
+      ) {
+        throw new Error(
+          `Competition has reached maximum participant limit (${competition.maxParticipants})`,
+        );
+      }
+
+      // Add the agent to the competition and check if it was actually inserted
+      const insertResult = await tx
+        .insert(competitionAgents)
+        .values({
+          competitionId,
+          agentId,
+          status: COMPETITION_AGENT_STATUS.ACTIVE,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .onConflictDoNothing()
+        .returning({ insertedId: competitionAgents.agentId });
+
+      // Only increment the counter if the agent was actually inserted
+      if (insertResult.length > 0) {
+        await tx
+          .update(competitions)
+          .set({
+            registeredParticipants: sql`${competitions.registeredParticipants} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(eq(competitions.id, competitionId));
+      }
+    });
   } catch (error) {
     repositoryLogger.error(
-      `Error adding agent ${agentId} to competition ${competitionId}:`,
+      `Error adding agent ${agentId} to competition ${competitionId} with limit check:`,
       error,
     );
     throw error;
@@ -309,36 +366,48 @@ async function removeAgentFromCompetitionImpl(
   reason?: string,
 ): Promise<boolean> {
   try {
-    const result = await db
-      .update(competitionAgents)
-      .set({
-        status: COMPETITION_AGENT_STATUS.DISQUALIFIED,
-        deactivationReason: reason || "Disqualified from competition",
-        deactivatedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(competitionAgents.competitionId, competitionId),
-          eq(competitionAgents.agentId, agentId),
-          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
-        ),
-      )
-      .returning();
+    await db.transaction(async (tx) => {
+      // Remove/disqualify the agent from the competition
+      const result = await tx
+        .update(competitionAgents)
+        .set({
+          status: COMPETITION_AGENT_STATUS.DISQUALIFIED,
+          deactivationReason: reason || "Disqualified from competition",
+          deactivatedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(competitionAgents.competitionId, competitionId),
+            eq(competitionAgents.agentId, agentId),
+            eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+          ),
+        )
+        .returning();
 
-    const wasUpdated = result.length > 0;
+      if (result.length === 0) {
+        repositoryLogger.debug(
+          `No active agent ${agentId} found in competition ${competitionId} to remove`,
+        );
+        throw new Error(
+          `Agent ${agentId} was not removed from competition ${competitionId}`,
+        );
+      }
 
-    if (wasUpdated) {
+      // If an agent was actually removed, decrement the registeredParticipants counter
+      await tx
+        .update(competitions)
+        .set({
+          registeredParticipants: sql`${competitions.registeredParticipants} - 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(competitions.id, competitionId));
       repositoryLogger.debug(
         `Removed agent ${agentId} from competition ${competitionId}`,
       );
-    } else {
-      repositoryLogger.debug(
-        `No active agent ${agentId} found in competition ${competitionId} to remove`,
-      );
-    }
+    });
 
-    return wasUpdated;
+    return true;
   } catch (error) {
     repositoryLogger.error(
       `Error removing agent ${agentId} from competition ${competitionId}:`,
@@ -349,21 +418,75 @@ async function removeAgentFromCompetitionImpl(
 }
 
 /**
- * Add agents to a competition
+ * Add agents to a competition (bulk operation)
  * @param competitionId Competition ID
  * @param agentIds Array of agent IDs
  */
 async function addAgentsImpl(competitionId: string, agentIds: string[]) {
-  const now = new Date();
-  const values = agentIds.map((agentId) => ({
-    competitionId,
-    agentId,
-    status: COMPETITION_AGENT_STATUS.ACTIVE,
-    createdAt: now,
-    updatedAt: now,
-  }));
+  if (agentIds.length === 0) {
+    return;
+  }
+
   try {
-    await db.insert(competitionAgents).values(values).onConflictDoNothing();
+    await db.transaction(async (tx) => {
+      // Get current competition details with row lock
+      const [competition] = await tx
+        .select({
+          maxParticipants: competitions.maxParticipants,
+          registeredParticipants: competitions.registeredParticipants,
+        })
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .for("update");
+
+      if (!competition) {
+        throw new Error(`Competition ${competitionId} not found`);
+      }
+
+      // Check if adding these agents would exceed the limit
+      if (competition.maxParticipants) {
+        const potentialTotal =
+          competition.registeredParticipants + agentIds.length;
+        if (potentialTotal > competition.maxParticipants) {
+          throw new Error(
+            `Adding ${agentIds.length} agents would exceed the maximum participant limit (${competition.maxParticipants})`,
+          );
+        }
+      }
+
+      const now = new Date();
+      const values = agentIds.map((agentId) => ({
+        competitionId,
+        agentId,
+        status: COMPETITION_AGENT_STATUS.ACTIVE,
+        createdAt: now,
+        updatedAt: now,
+      }));
+
+      // Insert agents and get the count of actually inserted rows
+      const insertResult = await tx
+        .insert(competitionAgents)
+        .values(values)
+        .onConflictDoNothing()
+        .returning({ insertedId: competitionAgents.agentId });
+
+      const insertedCount = insertResult.length;
+
+      // Update the registered participants count based on actual insertions
+      if (insertedCount > 0) {
+        await tx
+          .update(competitions)
+          .set({
+            registeredParticipants: sql`${competitions.registeredParticipants} + ${insertedCount}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(competitions.id, competitionId));
+      }
+
+      repositoryLogger.debug(
+        `Added ${insertedCount} out of ${agentIds.length} agents to competition ${competitionId}`,
+      );
+    });
   } catch (error) {
     repositoryLogger.error("Error in addAgents:", error);
     throw error;
@@ -581,37 +704,117 @@ async function updateAgentCompetitionStatusImpl(
   reason?: string,
 ): Promise<boolean> {
   try {
-    const baseUpdateData = {
-      status,
-      updatedAt: new Date(),
-    };
+    let wasUpdated = false;
 
-    // Add deactivation fields when moving to inactive status, clear them when reactivating
-    const updateData =
-      status !== COMPETITION_AGENT_STATUS.ACTIVE
-        ? {
-            ...baseUpdateData,
-            deactivationReason: reason || `Status changed to ${status}`,
-            deactivatedAt: new Date(),
+    await db.transaction(async (tx) => {
+      // First get the current status
+      const [currentStatus] = await tx
+        .select({ status: competitionAgents.status })
+        .from(competitionAgents)
+        .where(
+          and(
+            eq(competitionAgents.competitionId, competitionId),
+            eq(competitionAgents.agentId, agentId),
+          ),
+        );
+
+      if (!currentStatus) {
+        return; // Agent not found in competition
+      }
+
+      // Only proceed if status is actually changing
+      if (currentStatus.status === status) {
+        return; // No change needed
+      }
+
+      const baseUpdateData = {
+        status,
+        updatedAt: new Date(),
+      };
+
+      // Add deactivation fields when moving to inactive status, clear them when reactivating
+      const updateData =
+        status !== COMPETITION_AGENT_STATUS.ACTIVE
+          ? {
+              ...baseUpdateData,
+              deactivationReason: reason || `Status changed to ${status}`,
+              deactivatedAt: new Date(),
+            }
+          : {
+              ...baseUpdateData,
+              deactivationReason: null,
+              deactivatedAt: null,
+            };
+
+      const result = await tx
+        .update(competitionAgents)
+        .set(updateData)
+        .where(
+          and(
+            eq(competitionAgents.competitionId, competitionId),
+            eq(competitionAgents.agentId, agentId),
+          ),
+        )
+        .returning();
+
+      wasUpdated = result.length > 0;
+
+      // Update the registered participants counter if the status change affects it
+      if (wasUpdated) {
+        const wasActive =
+          currentStatus.status === COMPETITION_AGENT_STATUS.ACTIVE;
+        const isNowActive = status === COMPETITION_AGENT_STATUS.ACTIVE;
+
+        if (wasActive && !isNowActive) {
+          // Decrement counter: ACTIVE -> non-ACTIVE
+          const [competition] = await tx
+            .select({
+              registeredParticipants: competitions.registeredParticipants,
+            })
+            .from(competitions)
+            .where(eq(competitions.id, competitionId));
+
+          if (competition && competition.registeredParticipants > 0) {
+            await tx
+              .update(competitions)
+              .set({
+                registeredParticipants: sql`${competitions.registeredParticipants} - 1`,
+                updatedAt: new Date(),
+              })
+              .where(eq(competitions.id, competitionId));
           }
-        : {
-            ...baseUpdateData,
-            deactivationReason: null,
-            deactivatedAt: null,
-          };
+        } else if (!wasActive && isNowActive) {
+          // Increment counter: non-ACTIVE -> ACTIVE
+          const [competition] = await tx
+            .select({
+              maxParticipants: competitions.maxParticipants,
+              registeredParticipants: competitions.registeredParticipants,
+            })
+            .from(competitions)
+            .where(eq(competitions.id, competitionId));
 
-    const result = await db
-      .update(competitionAgents)
-      .set(updateData)
-      .where(
-        and(
-          eq(competitionAgents.competitionId, competitionId),
-          eq(competitionAgents.agentId, agentId),
-        ),
-      )
-      .returning();
+          if (competition) {
+            // Check participant limit before reactivating
+            if (
+              competition.maxParticipants &&
+              competition.registeredParticipants >= competition.maxParticipants
+            ) {
+              throw new Error(
+                `Cannot reactivate agent: Competition has reached maximum participant limit (${competition.maxParticipants})`,
+              );
+            }
 
-    const wasUpdated = result.length > 0;
+            await tx
+              .update(competitions)
+              .set({
+                registeredParticipants: sql`${competitions.registeredParticipants} + 1`,
+                updatedAt: new Date(),
+              })
+              .where(eq(competitions.id, competitionId));
+          }
+        }
+      }
+    });
 
     if (wasUpdated) {
       repositoryLogger.debug(
@@ -663,6 +866,7 @@ async function findActiveImpl() {
       )
       .where(eq(competitions.status, COMPETITION_STATUS.ACTIVE))
       .limit(1);
+
     return result;
   } catch (error) {
     repositoryLogger.error("Error in findActive:", error);

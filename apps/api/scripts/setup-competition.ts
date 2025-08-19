@@ -285,10 +285,10 @@ async function setupCompetition() {
 
     // Create and start the competition
     console.log(`\n${colors.blue}Creating competition...${colors.reset}`);
-    const competition = await services.competitionManager.createCompetition(
+    const competition = await services.competitionManager.createCompetition({
       name,
       description,
-    );
+    });
 
     console.log(
       `${colors.blue}Starting competition with ${agentIds.length} agents...${colors.reset}`,

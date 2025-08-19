@@ -625,7 +625,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Get stats for this competition
         const stats = {
           totalTrades: trades.length,
-          totalAgents: new Set(trades.map((trade) => trade.agentId)).size,
+          totalAgents: competition.registeredParticipants,
           totalVolume: trades.reduce(
             (acc, trade) => acc + trade.tradeAmountUsd,
             0,
@@ -753,6 +753,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           competitionId,
+          registeredParticipants: competition.registeredParticipants,
+          maxParticipants: competition.maxParticipants,
           agents,
           pagination: buildPaginationResponse(
             total,
@@ -842,6 +844,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             case COMPETITION_JOIN_ERROR_TYPES.AGENT_NOT_ELIGIBLE:
             case COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN:
             case COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED:
+            case COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED:
               next(new ApiError(403, joinError.message));
               break;
             default:
