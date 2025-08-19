@@ -3,13 +3,11 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "env": [
-        "HOST"
-      ]
+      "env": ["HOST"]
     },
     "dev": {
-        "cache": false,
-        "persistent": true
+      "cache": false,
+      "persistent": true
     }
   }
 }
