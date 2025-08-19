@@ -225,6 +225,13 @@
       "when": 1755568689927,
       "tag": "0031_nappy_onslaught",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1755615076680,
+      "tag": "0032_left_talisman",
+      "breakpoints": true
     }
   ]
 }
