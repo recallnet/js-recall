@@ -11,15 +11,51 @@ env:
   NEXT_PUBLIC_CHAIN_NAME: testnet
 
 jobs:
-  quality:
-    name: Check lint, format, and build
+  # First job: Detect what changed
+  changes:
+    name: Detect Changes
     runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      comps: ${{ steps.filter.outputs.comps }}
+      portal: ${{ steps.filter.outputs.portal }}
+      faucet: ${{ steps.filter.outputs.faucet }}
+      registration: ${{ steps.filter.outputs.registration }}
+      packages: ${{ steps.filter.outputs.packages }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        # with:
-        #   submodules: true
-        #   fetch-depth: 0
+
+      - name: Detect Changed Paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/**'
+            comps:
+              - 'apps/comps/**'
+              - 'packages/**'
+            portal:
+              - 'apps/portal/**'
+              - 'packages/**'
+            faucet:
+              - 'apps/faucet/**'
+              - 'packages/**'
+            registration:
+              - 'apps/registration/**'
+              - 'packages/**'
+            packages:
+              - 'packages/**'
+
+  quality:
+    name: Lint, Format, and Build
+    runs-on: ubuntu-latest
+    needs: changes
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -52,6 +88,7 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
+      # Always run lint and format checks on everything
       - name: Run Lint Check
         run: pnpm lint
 
@@ -59,8 +96,46 @@ jobs:
         run: pnpm format:check
 
       - name: Check for incorrect, missing, or duplicate database migrations
+        if: needs.changes.outputs.api == 'true'
         shell: bash
         run: bash scripts/check-migrations.sh
 
-      - name: Run Build
-        run: pnpm build
+      # Use Turborepo filtering to build only what changed
+      - name: Build Changed Packages
+        run: |
+          FILTER_FLAGS=""
+
+          # Build specific apps if they changed
+          if [[ "${{ needs.changes.outputs.api }}" == "true" ]]; then
+            FILTER_FLAGS="$FILTER_FLAGS --filter=api"
+          fi
+
+          if [[ "${{ needs.changes.outputs.comps }}" == "true" ]]; then
+            FILTER_FLAGS="$FILTER_FLAGS --filter=comps"
+          fi
+
+          if [[ "${{ needs.changes.outputs.portal }}" == "true" ]]; then
+            FILTER_FLAGS="$FILTER_FLAGS --filter=portal"
+          fi
+
+          if [[ "${{ needs.changes.outputs.faucet }}" == "true" ]]; then
+            FILTER_FLAGS="$FILTER_FLAGS --filter=faucet"
+          fi
+
+          if [[ "${{ needs.changes.outputs.registration }}" == "true" ]]; then
+            FILTER_FLAGS="$FILTER_FLAGS --filter=registration"
+          fi
+
+          # If only packages changed, build all packages
+          if [[ "${{ needs.changes.outputs.packages }}" == "true" && -z "$FILTER_FLAGS" ]]; then
+            FILTER_FLAGS="--filter='./packages/*'"
+          fi
+
+          # If nothing specific changed (e.g., root config files), build everything
+          if [[ -z "$FILTER_FLAGS" ]]; then
+            echo "No specific changes detected, building everything"
+            pnpm build
+          else
+            echo "Building with filters: $FILTER_FLAGS"
+            pnpm turbo build $FILTER_FLAGS
+          fi

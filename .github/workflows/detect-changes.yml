@@ -1,0 +1,78 @@
+name: Detect Changes
+
+on:
+  workflow_call:
+    outputs:
+      api:
+        description: "Whether apps/api has changes"
+        value: ${{ jobs.changes.outputs.api }}
+      comps:
+        description: "Whether apps/comps has changes"
+        value: ${{ jobs.changes.outputs.comps }}
+      portal:
+        description: "Whether apps/portal has changes"
+        value: ${{ jobs.changes.outputs.portal }}
+      faucet:
+        description: "Whether apps/faucet has changes"
+        value: ${{ jobs.changes.outputs.faucet }}
+      registration:
+        description: "Whether apps/registration has changes"
+        value: ${{ jobs.changes.outputs.registration }}
+      packages:
+        description: "Whether any packages have changes"
+        value: ${{ jobs.changes.outputs.packages }}
+      any-app:
+        description: "Whether any app has changes"
+        value: ${{ jobs.changes.outputs.any-app }}
+
+jobs:
+  changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      comps: ${{ steps.filter.outputs.comps }}
+      portal: ${{ steps.filter.outputs.portal }}
+      faucet: ${{ steps.filter.outputs.faucet }}
+      registration: ${{ steps.filter.outputs.registration }}
+      packages: ${{ steps.filter.outputs.packages }}
+      any-app: ${{ steps.any-app.outputs.changed }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Detect Changed Paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - '.github/workflows/api-ci.yml'
+              - 'scripts/check-migrations.sh'
+            comps:
+              - 'apps/comps/**'
+            portal:
+              - 'apps/portal/**'
+            faucet:
+              - 'apps/faucet/**'
+            registration:
+              - 'apps/registration/**'
+            packages:
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+              - 'package.json'
+
+      - name: Check if any app changed
+        id: any-app
+        run: |
+          if [[ "${{ steps.filter.outputs.api }}" == "true" || \
+                "${{ steps.filter.outputs.comps }}" == "true" || \
+                "${{ steps.filter.outputs.portal }}" == "true" || \
+                "${{ steps.filter.outputs.faucet }}" == "true" || \
+                "${{ steps.filter.outputs.registration }}" == "true" ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
