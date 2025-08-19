@@ -1,0 +1,2 @@
+CREATE INDEX "idx_trades_agent_timestamp" ON "trading_comps"."trades" USING btree ("agent_id","timestamp");--> statement-breakpoint
+CREATE INDEX "idx_trades_competition_timestamp" ON "trading_comps"."trades" USING btree ("competition_id","timestamp");
