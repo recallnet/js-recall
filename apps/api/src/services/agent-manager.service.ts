@@ -970,10 +970,10 @@ export class AgentManager {
       // Get competitions from repository
       const results = await findAgentCompetitions(agentId, params);
 
-      // Filter out null competitions upfront to optimize processing
+      // Filter out null competitions and ensure required fields are present
       const validCompetitions = results.competitions.filter(
-        (comp): comp is SelectCompetition => comp !== null,
-      );
+        (comp) => comp !== null,
+      ) as SelectCompetition[];
 
       // Attach metrics to each valid competition
       const enhancedCompetitions = await Promise.all(

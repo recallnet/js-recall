@@ -183,6 +183,8 @@ async function findAgentCompetitionsImpl(
     }
 
     const results = await query;
+
+    // Get total count for pagination (count of competitions, not agents)
     const total = await db
       .select({ count: drizzleCount() })
       .from(competitionAgents)

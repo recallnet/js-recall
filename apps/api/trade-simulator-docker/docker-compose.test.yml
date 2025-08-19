@@ -1,4 +1,7 @@
 # This is a test docker-compose file that is not intended for production use!
+
+name: compapp-test
+
 services:
   trading-simulator-app:
     image: textile/js-recall:latest

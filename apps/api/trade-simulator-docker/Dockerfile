@@ -36,9 +36,5 @@ EXPOSE $PORT $METRICS_PORT
 
 WORKDIR /workdir/apps/api
 
-# Create startup script
-COPY apps/api/trade-simulator-docker/startup.sh ./startup.sh
-RUN chmod +x ./startup.sh
-
 # Start the application
-CMD ["./startup.sh"]
+CMD ["node", "dist/src/index.js"]
