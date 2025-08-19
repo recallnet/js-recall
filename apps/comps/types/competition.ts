@@ -159,5 +159,6 @@ export interface CompetitionRules {
     minimum24hVolumeUsd: number;
     minimumLiquidityUsd: number;
     minimumFdvUsd: number;
+    minTradesPerDay?: number | null;
   };
 }

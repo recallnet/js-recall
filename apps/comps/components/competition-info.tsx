@@ -182,6 +182,17 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
                       ${rules.tradingConstraints.minimumFdvUsd.toLocaleString()}
                     </p>
                   </div>
+                  {rules.tradingConstraints.minTradesPerDay !== null &&
+                    rules.tradingConstraints.minTradesPerDay !== undefined && (
+                      <div>
+                        <span className="text-sm font-medium">
+                          Min Trades/Day
+                        </span>
+                        <p className="text-sm text-gray-400">
+                          {rules.tradingConstraints.minTradesPerDay} trades
+                        </p>
+                      </div>
+                    )}
                 </div>
               )}
 
