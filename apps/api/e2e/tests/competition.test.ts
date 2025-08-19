@@ -38,6 +38,7 @@ import {
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   startTestCompetition,
+  strictTradingConstraints,
 } from "@/e2e/utils/test-helpers.js";
 import { wait } from "@/e2e/utils/test-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -337,6 +338,51 @@ describe("Competition API", () => {
         rule.includes("minimum FDV of $2,000,000 USD"),
       ),
     ).toBe(true);
+  });
+
+  test("should include minTradesPerDay in active competition rules", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Active Rules Min Trades Agent",
+      });
+
+    // Start a competition with minTradesPerDay
+    const constraintsWithMinTrades = {
+      minimumPairAgeHours: 24,
+      minimum24hVolumeUsd: 20000,
+      minimumLiquidityUsd: 100000,
+      minimumFdvUsd: 1000000,
+      minTradesPerDay: 7,
+    };
+
+    const competitionName = `Active Rules Min Trades Test ${Date.now()}`;
+    await adminClient.startCompetition({
+      name: competitionName,
+      description: "Competition to test active rules endpoint with min trades",
+      agentIds: [agent.id],
+      tradingConstraints: constraintsWithMinTrades,
+    });
+
+    // Agent gets competition rules (authenticated endpoint for active competition)
+    const rulesResponse =
+      (await agentClient.getRules()) as CompetitionRulesResponse;
+    expect(rulesResponse.success).toBe(true);
+    expect(rulesResponse.rules).toBeDefined();
+    expect(rulesResponse.rules.tradingConstraints).toBeDefined();
+    expect(rulesResponse.rules.tradingConstraints?.minTradesPerDay).toBe(7);
+
+    // Verify the rule string is included
+    const tradingRules = rulesResponse.rules.tradingRules;
+    const minTradesRule = tradingRules.find((rule: string) =>
+      rule.includes("Minimum trades per day requirement: 7 trades"),
+    );
+    expect(minTradesRule).toBeDefined();
   });
 
   test("anyone can view competition rules by competition ID (public endpoint)", async () => {
@@ -3955,6 +4001,217 @@ describe("Competition API", () => {
       expect(response.data.rules.tradingConstraints.minimumFdvUsd).toBe(
         1000000,
       );
+    });
+
+    test("should handle minTradesPerDay in competition creation and retrieval", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create competition with minTradesPerDay set
+      const competitionName = `Min Trades Test Competition ${Date.now()}`;
+      const minTradesConstraints = {
+        minimumPairAgeHours: 12,
+        minimum24hVolumeUsd: 10000,
+        minimumLiquidityUsd: 50000,
+        minimumFdvUsd: 500000,
+        minTradesPerDay: 5,
+      };
+
+      const createResponse = await adminClient.createCompetition(
+        competitionName,
+        "Test competition with min trades per day",
+        undefined, // tradingType
+        false, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // endDate
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        undefined, // maxParticipants
+        minTradesConstraints,
+      );
+
+      expect(createResponse.success).toBe(true);
+      expect("competition" in createResponse).toBe(true);
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Verify minTradesPerDay appears in rules endpoint (public)
+      const rulesResponse =
+        await adminClient.getCompetitionRules(competitionId);
+      expect(rulesResponse.success).toBe(true);
+      expect("rules" in rulesResponse).toBe(true);
+      const rules = (rulesResponse as CompetitionRulesResponse).rules;
+      expect(rules.tradingConstraints).toBeDefined();
+      expect(rules.tradingConstraints?.minTradesPerDay).toBe(5);
+
+      // Verify the rule string is included
+      const minTradesRule = rules.tradingRules.find((rule: string) =>
+        rule.includes("Minimum trades per day requirement: 5 trades"),
+      );
+      expect(minTradesRule).toBeDefined();
+
+      // Verify minTradesPerDay appears in competition detail endpoint (public)
+      const detailResponse = await adminClient.getCompetition(competitionId);
+      expect(detailResponse.success).toBe(true);
+      expect("competition" in detailResponse).toBe(true);
+      const competition = (detailResponse as CompetitionDetailResponse)
+        .competition;
+      expect(competition.tradingConstraints).toBeDefined();
+      expect(competition.tradingConstraints?.minTradesPerDay).toBe(5);
+    });
+
+    test("should handle null minTradesPerDay in competition creation", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create competition with minTradesPerDay explicitly set to null
+      const competitionName = `Null Min Trades Test ${Date.now()}`;
+      const nullMinTradesConstraints = {
+        minimumPairAgeHours: 12,
+        minimum24hVolumeUsd: 10000,
+        minimumLiquidityUsd: 50000,
+        minimumFdvUsd: 500000,
+        minTradesPerDay: null,
+      };
+
+      const createResponse = await adminClient.createCompetition(
+        competitionName,
+        "Test competition with null min trades per day",
+        undefined, // tradingType
+        false, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // endDate
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        undefined, // maxParticipants
+        nullMinTradesConstraints,
+      );
+
+      expect(createResponse.success).toBe(true);
+      expect("competition" in createResponse).toBe(true);
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Verify minTradesPerDay is null in rules endpoint
+      const rulesResponse =
+        await adminClient.getCompetitionRules(competitionId);
+      expect(rulesResponse.success).toBe(true);
+      expect("rules" in rulesResponse).toBe(true);
+      const rules = (rulesResponse as CompetitionRulesResponse).rules;
+      expect(rules.tradingConstraints?.minTradesPerDay).toBe(null);
+
+      // Verify no min trades rule string is included
+      const minTradesRule = rules.tradingRules.find((rule: string) =>
+        rule.includes("Minimum trades per day requirement"),
+      );
+      expect(minTradesRule).toBeUndefined();
+    });
+
+    test("should show minTradesPerDay for authenticated users in competitions list", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a SIWE authenticated client
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+      });
+
+      // Create a pending competition with minTradesPerDay
+      const competitionName = `Listed Competition ${Date.now()}`;
+      const constraintsWithMinTrades = {
+        minimumPairAgeHours: 24,
+        minimum24hVolumeUsd: 20000,
+        minimumLiquidityUsd: 100000,
+        minimumFdvUsd: 1000000,
+        minTradesPerDay: 10,
+      };
+
+      await adminClient.createCompetition(
+        competitionName,
+        "Competition for listing test",
+        undefined, // tradingType
+        false, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // endDate
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        undefined, // maxParticipants
+        constraintsWithMinTrades,
+      );
+
+      // Get competitions list as authenticated user
+      const listResponse = await userClient.getCompetitions("pending");
+      expect(listResponse.success).toBe(true);
+      expect("competitions" in listResponse).toBe(true);
+
+      // Find our competition
+      const competitions = (listResponse as UpcomingCompetitionsResponse)
+        .competitions;
+      const ourCompetition = competitions.find(
+        (c) => c.name === competitionName,
+      );
+      expect(ourCompetition).toBeDefined();
+      expect(ourCompetition?.tradingConstraints).toBeDefined();
+      expect(ourCompetition?.tradingConstraints?.minTradesPerDay).toBe(10);
+    });
+
+    test("should handle minTradesPerDay when starting a competition", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agents
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Min Trades Agent 1",
+      });
+      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Min Trades Agent 2",
+      });
+
+      // Start a competition with minTradesPerDay using strictTradingConstraints (which has minTradesPerDay: 10)
+      const competitionName = `Started Min Trades Competition ${Date.now()}`;
+      const startResponse = await adminClient.startCompetition({
+        name: competitionName,
+        description: "Competition with min trades per day requirement",
+        agentIds: [agent1.id, agent2.id],
+        tradingConstraints: strictTradingConstraints,
+      });
+
+      expect(startResponse.success).toBe(true);
+      expect("competition" in startResponse).toBe(true);
+      const competitionId = (startResponse as StartCompetitionResponse)
+        .competition.id;
+
+      // Verify minTradesPerDay appears in rules endpoint
+      const rulesResponse =
+        await adminClient.getCompetitionRules(competitionId);
+      expect(rulesResponse.success).toBe(true);
+      expect("rules" in rulesResponse).toBe(true);
+      const rules = (rulesResponse as CompetitionRulesResponse).rules;
+      expect(rules.tradingConstraints?.minTradesPerDay).toBe(10);
+
+      // Verify the rule string is included
+      const minTradesRule = rules.tradingRules.find((rule: string) =>
+        rule.includes("Minimum trades per day requirement: 10 trades"),
+      );
+      expect(minTradesRule).toBeDefined();
     });
 
     test("should return 404 for non-existent competition in public endpoints", async () => {

@@ -473,6 +473,7 @@ export interface CompetitionRulesResponse extends ApiResponse {
       minimum24hVolumeUsd: number;
       minimumLiquidityUsd: number;
       minimumFdvUsd: number;
+      minTradesPerDay?: number;
     };
   };
 }
@@ -506,6 +507,7 @@ export interface TradingConstraints {
   minimum24hVolumeUsd?: number;
   minimumLiquidityUsd?: number;
   minimumFdvUsd?: number;
+  minTradesPerDay?: number | null;
 }
 
 // Competition agents response

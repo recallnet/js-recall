@@ -736,15 +736,15 @@ async function updateAgentCompetitionStatusImpl(
       const updateData =
         status !== COMPETITION_AGENT_STATUS.ACTIVE
           ? {
-            ...baseUpdateData,
-            deactivationReason: reason || `Status changed to ${status}`,
-            deactivatedAt: new Date(),
-          }
+              ...baseUpdateData,
+              deactivationReason: reason || `Status changed to ${status}`,
+              deactivatedAt: new Date(),
+            }
           : {
-            ...baseUpdateData,
-            deactivationReason: null,
-            deactivatedAt: null,
-          };
+              ...baseUpdateData,
+              deactivationReason: null,
+              deactivatedAt: null,
+            };
 
       const result = await tx
         .update(competitionAgents)

@@ -325,7 +325,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         for (const chain of Object.keys(config.specificChainBalances)) {
           const chainBalances =
             config.specificChainBalances[
-            chain as keyof typeof config.specificChainBalances
+              chain as keyof typeof config.specificChainBalances
             ];
           const tokenItems = [];
 
@@ -402,6 +402,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
           availableChains,
           slippageFormula,
           portfolioSnapshots,
+          tradingConstraints: {
+            minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
+            minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
+            minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
+            minimumFdvUsd: tradingConstraints.minimumFdvUsd,
+            minTradesPerDay: tradingConstraints.minTradesPerDay,
+          },
         };
 
         res.status(200).json({
@@ -1089,7 +1096,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         for (const chain of Object.keys(config.specificChainBalances)) {
           const chainBalances =
             config.specificChainBalances[
-            chain as keyof typeof config.specificChainBalances
+              chain as keyof typeof config.specificChainBalances
             ];
           const tokenItems = [];
 

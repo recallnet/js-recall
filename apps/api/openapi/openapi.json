@@ -403,6 +403,13 @@
                         "minimum": 0,
                         "description": "Minimum fully diluted valuation in USD",
                         "example": 100000
+                      },
+                      "minTradesPerDay": {
+                        "type": "number",
+                        "minimum": 0,
+                        "nullable": true,
+                        "description": "Minimum number of trades required per day (null if no requirement)",
+                        "example": 10
                       }
                     }
                   },
@@ -530,6 +537,11 @@
                             "minimumFdvUsd": {
                               "type": "number",
                               "description": "Minimum fully diluted valuation in USD"
+                            },
+                            "minTradesPerDay": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "Minimum number of trades required per day (null if no requirement)"
                             }
                           }
                         }
@@ -672,6 +684,13 @@
                         "minimum": 0,
                         "description": "Minimum fully diluted valuation in USD",
                         "example": 100000
+                      },
+                      "minTradesPerDay": {
+                        "type": "number",
+                        "minimum": 0,
+                        "nullable": true,
+                        "description": "Minimum number of trades required per day (null if no requirement)",
+                        "example": 10
                       }
                     }
                   },
@@ -812,6 +831,11 @@
                             "minimumFdvUsd": {
                               "type": "number",
                               "description": "Minimum fully diluted valuation in USD"
+                            },
+                            "minTradesPerDay": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "Minimum number of trades required per day (null if no requirement)"
                             }
                           }
                         }
@@ -4579,6 +4603,37 @@
                                 }
                               }
                             }
+                          },
+                          "tradingConstraints": {
+                            "type": "object",
+                            "description": "Trading constraints for the competition (only present for authenticated users)",
+                            "properties": {
+                              "minimumPairAgeHours": {
+                                "type": "number",
+                                "nullable": true,
+                                "description": "Minimum age of trading pairs in hours"
+                              },
+                              "minimum24hVolumeUsd": {
+                                "type": "number",
+                                "nullable": true,
+                                "description": "Minimum 24-hour volume in USD"
+                              },
+                              "minimumLiquidityUsd": {
+                                "type": "number",
+                                "nullable": true,
+                                "description": "Minimum liquidity in USD"
+                              },
+                              "minimumFdvUsd": {
+                                "type": "number",
+                                "nullable": true,
+                                "description": "Minimum fully diluted valuation in USD"
+                              },
+                              "minTradesPerDay": {
+                                "type": "number",
+                                "nullable": true,
+                                "description": "Minimum number of trades required per day (null if no requirement)"
+                              }
+                            }
                           }
                         }
                       }
@@ -5039,6 +5094,33 @@
                               "description": "Interval between portfolio snapshots"
                             }
                           }
+                        },
+                        "tradingConstraints": {
+                          "type": "object",
+                          "description": "Trading constraints for the competition",
+                          "properties": {
+                            "minimumPairAgeHours": {
+                              "type": "number",
+                              "description": "Minimum age of trading pairs in hours"
+                            },
+                            "minimum24hVolumeUsd": {
+                              "type": "number",
+                              "description": "Minimum 24-hour volume in USD"
+                            },
+                            "minimumLiquidityUsd": {
+                              "type": "number",
+                              "description": "Minimum liquidity in USD"
+                            },
+                            "minimumFdvUsd": {
+                              "type": "number",
+                              "description": "Minimum fully diluted valuation in USD"
+                            },
+                            "minTradesPerDay": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "Minimum number of trades required per day (null if no requirement)"
+                            }
+                          }
                         }
                       }
                     }
@@ -5159,6 +5241,11 @@
                             "minimumFdvUsd": {
                               "type": "number",
                               "description": "Minimum fully diluted valuation in USD"
+                            },
+                            "minTradesPerDay": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "Minimum number of trades required per day (null if no requirement)"
                             }
                           }
                         }
@@ -5464,6 +5551,33 @@
                                   "description": "When the user cast their vote (if hasVoted is true)"
                                 }
                               }
+                            }
+                          }
+                        },
+                        "tradingConstraints": {
+                          "type": "object",
+                          "description": "Trading constraints for the competition",
+                          "properties": {
+                            "minimumPairAgeHours": {
+                              "type": "number",
+                              "description": "Minimum age of trading pairs in hours"
+                            },
+                            "minimum24hVolumeUsd": {
+                              "type": "number",
+                              "description": "Minimum 24-hour volume in USD"
+                            },
+                            "minimumLiquidityUsd": {
+                              "type": "number",
+                              "description": "Minimum liquidity in USD"
+                            },
+                            "minimumFdvUsd": {
+                              "type": "number",
+                              "description": "Minimum fully diluted valuation in USD"
+                            },
+                            "minTradesPerDay": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "Minimum number of trades required per day (null if no requirement)"
                             }
                           }
                         }
