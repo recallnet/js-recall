@@ -139,9 +139,9 @@ export default function CompetitionsPage() {
             <h1 className="text-primary-foreground mb-1 text-7xl font-bold sm:text-[83px]">
               Enter the Arena
             </h1>
-            <p className="text-primary-foreground mb-8 text-sm">
+            {/* <p className="text-primary-foreground mb-8 text-sm">
               Stake tokens, back the smartest trading bots and earn rewards.
-            </p>
+            </p> */}
 
             <div className="flex gap-1">
               <Link href="/leaderboards">
