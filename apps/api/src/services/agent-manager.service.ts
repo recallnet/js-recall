@@ -16,6 +16,7 @@ import {
   deleteAgent,
   findAgentCompetitions,
   findAll,
+  findByApiKeyHash,
   findByCompetition,
   findById,
   findByName,
@@ -51,6 +52,7 @@ import {
   SelectAgent,
   SelectCompetition,
 } from "@/database/schema/core/types.js";
+import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { transformToTrophy } from "@/lib/trophy-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -137,6 +139,9 @@ export class AgentManager {
       // Encrypt API key for storage
       const encryptedApiKey = this.encryptApiKey(apiKey);
 
+      // Generate hash for fast lookups
+      const apiKeyHash = hashApiKey(apiKey);
+
       // Create agent record
       const agent: InsertAgent = {
         id,
@@ -146,6 +151,7 @@ export class AgentManager {
         description,
         imageUrl,
         apiKey: encryptedApiKey, // Store encrypted key in database
+        apiKeyHash, // Store hash for fast lookups
         walletAddress,
         metadata,
         email,
@@ -292,6 +298,115 @@ export class AgentManager {
   }
 
   /**
+   * Check if an API key is cached and validate the agent status
+   * @private
+   */
+  private checkCachedApiKey(apiKey: string): string | null {
+    const cachedAuth = this.apiKeyCache.get(apiKey);
+    if (!cachedAuth) {
+      return null;
+    }
+
+    // Check if the agent is inactive
+    if (this.inactiveAgentsCache.has(cachedAuth.agentId)) {
+      const deactivationInfo = this.inactiveAgentsCache.get(cachedAuth.agentId);
+      throw new Error(
+        `Your agent has been deactivated from the competition: ${deactivationInfo?.reason}`,
+      );
+    }
+
+    return cachedAuth.agentId;
+  }
+
+  /**
+   * Find and migrate a legacy agent without API key hash
+   * @private
+   */
+  private async findAndMigrateLegacyAgent(
+    apiKey: string,
+    apiKeyHash: string,
+  ): Promise<SelectAgent | undefined> {
+    // NOTE: The N+1 pattern during migration is unavoidable but acceptable because:
+    // 1. Temporary - only during migration period until all agents have hashes
+    // 2. Infrequent - only happens for agents without hashes making requests
+    // 3. Self-improving - each successful migration reduces future lookups
+    //
+    // TODO(REC-576): Remove this entire method once all agents have been migrated
+    const agents = await findAll();
+
+    for (const legacyAgent of agents) {
+      // Skip agents that already have a hash
+      if (legacyAgent.apiKeyHash) {
+        continue;
+      }
+
+      try {
+        const decryptedKey = decryptApiKey(
+          legacyAgent.apiKey,
+          String(config.security.rootEncryptionKey),
+        );
+
+        if (decryptedKey === apiKey) {
+          // Found matching agent - perform live migration
+          serviceLogger.info(
+            `[AgentManager] Live migrating API key hash for agent ${legacyAgent.id}`,
+          );
+
+          try {
+            // Update the agent with the hash for future lookups
+            legacyAgent.apiKeyHash = apiKeyHash;
+            return await update(legacyAgent);
+          } catch (updateError) {
+            // Log error but continue validation - don't break authentication
+            serviceLogger.error(
+              `[AgentManager] Failed to update hash for agent ${legacyAgent.id}:`,
+              updateError,
+            );
+            // Return the agent without hash update for this request
+            return legacyAgent;
+          }
+        }
+      } catch (decryptError) {
+        // Log but continue checking other agents
+        serviceLogger.error(
+          `[AgentManager] Error decrypting key for agent ${legacyAgent.id}:`,
+          decryptError,
+        );
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Validate agent status and update caches
+   * @private
+   */
+  private validateAgentStatus(agent: SelectAgent, apiKey: string): void {
+    // Check if globally suspended/deleted
+    // Note: We now allow "inactive" agents to authenticate for non-competition operations
+    if (
+      agent.status === ACTOR_STATUS.SUSPENDED ||
+      agent.status === ACTOR_STATUS.DELETED
+    ) {
+      // Cache the deactivation info
+      this.inactiveAgentsCache.set(agent.id, {
+        reason: agent.deactivationReason || "No reason provided",
+        date: agent.deactivationDate || new Date(),
+      });
+      throw new Error(
+        `Your agent has been ${agent.status}: ${agent.deactivationReason}`,
+      );
+    }
+
+    // Add to cache (now includes inactive agents for per-competition checking)
+    this.apiKeyCache.set(apiKey, {
+      agentId: agent.id,
+      key: apiKey,
+    });
+  }
+
+  /**
    * Validate an API key and check if the agent is allowed to access
    * @param apiKey The API key to validate
    * @returns The agent ID if valid and not inactive, null otherwise
@@ -300,63 +415,27 @@ export class AgentManager {
   async validateApiKey(apiKey: string) {
     try {
       // First check cache
-      const cachedAuth = this.apiKeyCache.get(apiKey);
-      if (cachedAuth) {
-        // Check if the agent is inactive
-        if (this.inactiveAgentsCache.has(cachedAuth.agentId)) {
-          const deactivationInfo = this.inactiveAgentsCache.get(
-            cachedAuth.agentId,
-          );
-          throw new Error(
-            `Your agent has been deactivated from the competition: ${deactivationInfo?.reason}`,
-          );
-        }
-        return cachedAuth.agentId;
+      const cachedAgentId = this.checkCachedApiKey(apiKey);
+      if (cachedAgentId) {
+        return cachedAgentId;
       }
 
-      // If not in cache, search all agents and check if any decrypted key matches
-      const agents = await findAll();
+      // Use hash-based lookup for O(1) performance
+      const apiKeyHash = hashApiKey(apiKey);
+      let agent = await findByApiKeyHash(apiKeyHash);
 
-      for (const agent of agents) {
-        try {
-          const decryptedKey = this.decryptApiKey(agent.apiKey);
-
-          if (decryptedKey === apiKey) {
-            // Found matching agent, check if globally suspended/deleted
-            // Note: We now allow "inactive" agents to authenticate for non-competition operations
-            if (
-              agent.status === ACTOR_STATUS.SUSPENDED ||
-              agent.status === ACTOR_STATUS.DELETED
-            ) {
-              // Cache the deactivation info
-              this.inactiveAgentsCache.set(agent.id, {
-                reason: agent.deactivationReason || "No reason provided",
-                date: agent.deactivationDate || new Date(),
-              });
-              throw new Error(
-                `Your agent has been ${agent.status}: ${agent.deactivationReason}`,
-              );
-            }
-
-            // Add to cache (now includes inactive agents for per-competition checking)
-            this.apiKeyCache.set(apiKey, {
-              agentId: agent.id,
-              key: apiKey,
-            });
-
-            return agent.id;
-          }
-        } catch (decryptError) {
-          // Log but continue checking other agents
-          serviceLogger.error(
-            `[AgentManager] Error decrypting key for agent ${agent.id}:`,
-            decryptError,
-          );
+      // Try legacy migration if hash lookup fails
+      if (!agent) {
+        agent = await this.findAndMigrateLegacyAgent(apiKey, apiKeyHash);
+        if (!agent) {
+          return null;
         }
       }
 
-      // No matching agent found
-      return null;
+      // Validate agent status and update caches
+      this.validateAgentStatus(agent, apiKey);
+
+      return agent.id;
     } catch (error) {
       serviceLogger.error("[AgentManager] Error validating API key:", error);
       throw error; // Re-throw to allow middleware to handle it
@@ -416,40 +495,6 @@ export class AgentManager {
   }
 
   /**
-   * Decrypt an encrypted API key
-   * @param encryptedKey The encrypted API key
-   * @returns The original API key
-   */
-  private decryptApiKey(encryptedKey: string): string {
-    try {
-      const algorithm = "aes-256-cbc";
-      const parts = encryptedKey.split(":");
-
-      if (parts.length !== 2) {
-        throw new Error("Invalid encrypted key format");
-      }
-
-      const iv = Buffer.from(parts[0]!, "hex");
-      const encrypted = parts[1]!;
-
-      // Create a consistently-sized key from the root encryption key
-      const cryptoKey = crypto
-        .createHash("sha256")
-        .update(String(config.security.rootEncryptionKey))
-        .digest();
-
-      const decipher = crypto.createDecipheriv(algorithm, cryptoKey, iv);
-      let decrypted = decipher.update(encrypted, "hex", "utf8");
-      decrypted += decipher.final("utf8");
-
-      return decrypted;
-    } catch (error) {
-      serviceLogger.error("[AgentManager] Error decrypting API key:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Get a decrypted API key for a specific agent
    * This is intended only for admin access to help users that have lost their API keys
    * @param agentId ID of the agent whose API key should be retrieved
@@ -479,8 +524,11 @@ export class AgentManager {
       }
 
       try {
-        // Use the private method to decrypt the key
-        const apiKey = this.decryptApiKey(agent.apiKey);
+        // Decrypt the API key using shared utility
+        const apiKey = decryptApiKey(
+          agent.apiKey,
+          String(config.security.rootEncryptionKey),
+        );
         return {
           success: true,
           apiKey,
@@ -844,8 +892,12 @@ export class AgentManager {
       // Encrypt the new API key for storage
       const encryptedApiKey = this.encryptApiKey(newApiKey);
 
-      // Update the agent with the new encrypted API key
+      // Generate hash for fast lookups
+      const apiKeyHash = hashApiKey(newApiKey);
+
+      // Update the agent with the new encrypted API key and hash
       agent.apiKey = encryptedApiKey;
+      agent.apiKeyHash = apiKeyHash;
       agent.updatedAt = new Date();
 
       // Save the updated agent to the database
