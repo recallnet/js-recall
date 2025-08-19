@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Info } from "lucide-react";
+import { BarChart3, ExternalLink, Info } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@recallnet/ui2/components/badge";
@@ -15,7 +15,7 @@ import {
   BenchmarkModel,
   SkillDefinition,
   UnifiedSkillData,
-} from "@/types/unified-leaderboard";
+} from "@/types/leaderboard";
 import { getAgentColor, getLabColor } from "@/utils/lab-colors";
 
 import { LabLogo } from "../shared/lab-logo";
@@ -186,11 +186,161 @@ export const SkillDetailLeaderboardTable: React.FC<
                           <span className="truncate text-sm font-medium text-white">
                             {participant.name}
                           </span>
+
+                          {/* Model Statistics Icon */}
+                          {isModel && (
+                            <Tooltip
+                              content={
+                                <div className="max-w-sm space-y-3 p-4">
+                                  <div className="border-b border-gray-700 pb-2">
+                                    <h4 className="text-sm font-medium text-white">
+                                      Model Statistics
+                                    </h4>
+                                  </div>
+
+                                  <div className="space-y-2 text-xs">
+                                    {/* Provider */}
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-400">
+                                        Provider:
+                                      </span>
+                                      <span className="font-medium text-white">
+                                        {
+                                          (participant as BenchmarkModel)
+                                            .provider
+                                        }
+                                      </span>
+                                    </div>
+
+                                    {/* Model Family */}
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-400">
+                                        Family:
+                                      </span>
+                                      <span className="text-white">
+                                        {
+                                          (participant as BenchmarkModel)
+                                            .modelFamily
+                                        }
+                                      </span>
+                                    </div>
+
+                                    {/* Context Length */}
+                                    {(participant as BenchmarkModel)
+                                      .context_length && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">
+                                          Context:
+                                        </span>
+                                        <span className="text-white">
+                                          {(
+                                            participant as BenchmarkModel
+                                          ).context_length!.toLocaleString()}{" "}
+                                          tokens
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {/* Architecture */}
+                                    {(participant as BenchmarkModel)
+                                      .architecture?.tokenizer && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">
+                                          Tokenizer:
+                                        </span>
+                                        <span className="text-white">
+                                          {
+                                            (participant as BenchmarkModel)
+                                              .architecture!.tokenizer
+                                          }
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {/* Input Modalities */}
+                                    {(participant as BenchmarkModel)
+                                      .architecture?.input_modalities && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">
+                                          Input:
+                                        </span>
+                                        <span className="text-white">
+                                          {(
+                                            participant as BenchmarkModel
+                                          ).architecture!.input_modalities.join(
+                                            ", ",
+                                          )}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {/* Pricing */}
+                                    {(participant as BenchmarkModel)
+                                      .pricing && (
+                                      <div className="space-y-1">
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-400">
+                                            Input Price:
+                                          </span>
+                                          <span className="text-green-400">
+                                            $
+                                            {
+                                              (participant as BenchmarkModel)
+                                                .pricing!.prompt
+                                            }
+                                            /1M tokens
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-400">
+                                            Output Price:
+                                          </span>
+                                          <span className="text-green-400">
+                                            $
+                                            {
+                                              (participant as BenchmarkModel)
+                                                .pricing!.completion
+                                            }
+                                            /1M tokens
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Creation Date */}
+                                    {(participant as BenchmarkModel)
+                                      .created && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">
+                                          Created:
+                                        </span>
+                                        <span className="text-white">
+                                          {new Date(
+                                            (participant as BenchmarkModel)
+                                              .created! * 1000,
+                                          ).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              }
+                            >
+                              <button
+                                className="flex h-4 w-4 cursor-help touch-manipulation items-center justify-center rounded-full bg-gray-700/50 text-gray-400 transition-colors hover:bg-gray-600/50 hover:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:ring-offset-1 focus:ring-offset-gray-900 active:bg-gray-600"
+                                aria-label={`View statistics for ${(participant as BenchmarkModel).name}`}
+                                type="button"
+                              >
+                                <BarChart3 size={10} />
+                              </button>
+                            </Tooltip>
+                          )}
+
                           {/* NEW badge for recent models */}
                           {isModel &&
-                            (participant as BenchmarkModel).metadata?.created &&
+                            (participant as BenchmarkModel).created &&
                             new Date(
-                              (participant as BenchmarkModel).metadata.created,
+                              (participant as BenchmarkModel).created! * 1000, // Convert unix timestamp to milliseconds
                             ) >
                               new Date(
                                 Date.now() - 30 * 24 * 60 * 60 * 1000,
@@ -218,21 +368,20 @@ export const SkillDetailLeaderboardTable: React.FC<
                               </Tooltip>
                             )}
                           {/* Info button for expandable details */}
-                          {isModel &&
-                            (participant as BenchmarkModel).metadata && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  setExpandedRow(
-                                    isExpanded ? null : participant.id,
-                                  )
-                                }
-                                className="h-5 w-5 p-0 opacity-0"
-                              >
-                                <Info size={12} className="text-gray-400" />
-                              </Button>
-                            )}
+                          {isModel && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setExpandedRow(
+                                  isExpanded ? null : participant.id,
+                                )
+                              }
+                              className="h-5 w-5 p-0 opacity-0"
+                            >
+                              <Info size={12} className="text-gray-400" />
+                            </Button>
+                          )}
                         </div>
                         {isModel && (
                           <div className="text-xs text-gray-400">
@@ -319,7 +468,6 @@ export const SkillDetailLeaderboardTable: React.FC<
                 return null;
 
               const model = expandedParticipant as BenchmarkModel;
-              const metadata = model.metadata;
               const benchmark = model.scores[skill.id];
 
               return (
@@ -338,25 +486,25 @@ export const SkillDetailLeaderboardTable: React.FC<
                         Model Specifications
                       </h5>
                       <div className="space-y-2 text-sm">
-                        {metadata.parameterCount && (
+                        {model.description && (
                           <div className="flex justify-between">
-                            <span className="text-gray-400">Parameters:</span>
-                            <span className="text-white">
-                              {metadata.parameterCount}
+                            <span className="text-gray-400">Description:</span>
+                            <span className="text-sm text-white">
+                              {model.description.substring(0, 100)}...
                             </span>
                           </div>
                         )}
                         <div className="flex justify-between">
                           <span className="text-gray-400">Context Length:</span>
                           <span className="text-white">
-                            {metadata.contextLength.toLocaleString()}
+                            {model.context_length?.toLocaleString() || "N/A"}
                           </span>
                         </div>
-                        {metadata.architecture && (
+                        {model.architecture?.tokenizer && (
                           <div className="flex justify-between">
-                            <span className="text-gray-400">Architecture:</span>
+                            <span className="text-gray-400">Tokenizer:</span>
                             <span className="text-white">
-                              {metadata.architecture}
+                              {model.architecture.tokenizer}
                             </span>
                           </div>
                         )}
@@ -372,13 +520,13 @@ export const SkillDetailLeaderboardTable: React.FC<
                         <div className="flex justify-between">
                           <span className="text-gray-400">Input:</span>
                           <span className="text-white">
-                            ${metadata.pricing.input}
+                            ${model.pricing?.prompt || "0"}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Output:</span>
                           <span className="text-white">
-                            ${metadata.pricing.output}
+                            ${model.pricing?.completion || "0"}
                           </span>
                         </div>
                       </div>
@@ -427,31 +575,35 @@ export const SkillDetailLeaderboardTable: React.FC<
                   <div className="space-y-3">
                     <h5 className="font-medium text-gray-300">Capabilities</h5>
                     <div className="flex flex-wrap gap-2">
-                      {metadata.inputModalities.map((modality) => (
-                        <Badge
-                          key={modality}
-                          variant="blue"
-                          className="text-xs"
-                        >
-                          Input: {modality}
-                        </Badge>
-                      ))}
-                      {metadata.outputModalities.map((modality) => (
-                        <Badge
-                          key={modality}
-                          variant="green"
-                          className="text-xs"
-                        >
-                          Output: {modality}
-                        </Badge>
-                      ))}
+                      {model.architecture?.input_modalities.map(
+                        (modality: string) => (
+                          <Badge
+                            key={modality}
+                            variant="blue"
+                            className="text-xs"
+                          >
+                            Input: {modality}
+                          </Badge>
+                        ),
+                      )}
+                      {model.architecture?.output_modalities.map(
+                        (modality: string) => (
+                          <Badge
+                            key={modality}
+                            variant="green"
+                            className="text-xs"
+                          >
+                            Output: {modality}
+                          </Badge>
+                        ),
+                      )}
                     </div>
                   </div>
 
                   {/* OpenRouter Link */}
                   <div>
                     <a
-                      href={`https://openrouter.ai/models/${metadata.openrouterId}`}
+                      href={`https://openrouter.ai/models/${model.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300"

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { BenchmarkLeaderboardPayload } from "@/types/unified-leaderboard";
+import { BenchmarkLeaderboardData } from "@/types/leaderboard";
 
 /**
  * Hook to fetch benchmark leaderboard data from static JSON
@@ -9,7 +9,7 @@ import { BenchmarkLeaderboardPayload } from "@/types/unified-leaderboard";
 export const useBenchmarkLeaderboard = () => {
   return useQuery({
     queryKey: ["benchmark-leaderboard"],
-    queryFn: async (): Promise<BenchmarkLeaderboardPayload> => {
+    queryFn: async (): Promise<BenchmarkLeaderboardData> => {
       const response = await fetch("/data/benchmark-leaderboard.json");
 
       if (!response.ok) {

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Button } from "@recallnet/ui2/components/button";
@@ -23,6 +24,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
 
 import { SkillDetailLeaderboardTable } from "./skill-detail-leaderboard-table";
+import { SkillDetailLeaderboardTableMobile } from "./skill-detail-leaderboard-table-mobile";
 
 interface SkillDetailPageProps {
   skillId: string;
@@ -117,6 +119,25 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
             {skill.description}
           </p>
         </div>
+
+        {/* Skill Category Info */}
+        <Card className="border-gray-800 bg-gray-900/30 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Evaluation Type:</span>
+              <Badge
+                className={cn(
+                  "text-sm",
+                  isTrading
+                    ? "bg-green-900 text-green-300"
+                    : "bg-blue-900 text-blue-300",
+                )}
+              >
+                {isTrading ? "LIVE" : "BENCHMARK"}
+              </Badge>
+            </div>
+          </div>
+        </Card>
 
         {/* Extended Description - Collapsible on Mobile */}
         {skill.longDescription && (
@@ -258,34 +279,95 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
           <h2 className="mb-6 text-2xl font-bold text-white">
             {skill.name} Leaderboard
           </h2>
-          <SkillDetailLeaderboardTable skill={skill} skillData={skillData} />
+
+          {/* Desktop View */}
+          <div className="hidden md:block">
+            <SkillDetailLeaderboardTable skill={skill} skillData={skillData} />
+          </div>
+
+          {/* Mobile View */}
+          <div className="block md:hidden">
+            <SkillDetailLeaderboardTableMobile
+              skill={skill}
+              skillData={skillData}
+            />
+          </div>
         </div>
 
         {/* Methodology */}
         {skill.methodology && (
           <Card className="border-gray-800 p-6">
-            <h3 className="mb-4 text-lg font-semibold text-white">
+            <h2 className="mb-6 text-2xl font-bold text-white">
               Evaluation Methodology
-            </h3>
-            <p className="leading-relaxed text-gray-300">{skill.methodology}</p>
-          </Card>
-        )}
-
-        {/* Example Prompts */}
-        {skill.examplePrompts && skill.examplePrompts.length > 0 && (
-          <Card className="border-gray-800 p-6">
-            <h3 className="mb-4 text-lg font-semibold text-white">
-              Example Prompts
-            </h3>
-            <div className="space-y-3">
-              {skill.examplePrompts.map((prompt, index) => (
-                <div
-                  key={index}
-                  className="rounded-lg bg-gray-900 p-4 font-mono text-sm text-gray-300"
-                >
-                  {prompt}
-                </div>
-              ))}
+            </h2>
+            <div className="prose prose-invert prose-gray max-w-none">
+              <ReactMarkdown
+                components={{
+                  h1: ({ children }) => (
+                    <h1 className="mb-4 text-2xl font-bold text-white">
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="mb-3 text-xl font-semibold text-white">
+                      {children}
+                    </h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="mb-2 text-lg font-medium text-white">
+                      {children}
+                    </h3>
+                  ),
+                  h4: ({ children }) => (
+                    <h4 className="mb-2 text-base font-medium text-gray-200">
+                      {children}
+                    </h4>
+                  ),
+                  p: ({ children }) => (
+                    <p className="mb-4 leading-relaxed text-gray-300">
+                      {children}
+                    </p>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="mb-4 ml-6 list-disc space-y-1 text-gray-300">
+                      {children}
+                    </ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="mb-4 ml-6 list-decimal space-y-1 text-gray-300">
+                      {children}
+                    </ol>
+                  ),
+                  li: ({ children }) => (
+                    <li className="text-gray-300">{children}</li>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-semibold text-white">
+                      {children}
+                    </strong>
+                  ),
+                  em: ({ children }) => (
+                    <em className="italic text-gray-200">{children}</em>
+                  ),
+                  code: ({ children }) => (
+                    <code className="rounded bg-gray-800 px-1.5 py-0.5 font-mono text-sm text-blue-300">
+                      {children}
+                    </code>
+                  ),
+                  pre: ({ children }) => (
+                    <pre className="mb-4 overflow-x-auto rounded-lg bg-gray-900 p-4">
+                      {children}
+                    </pre>
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="mb-4 border-l-4 border-gray-600 pl-4 italic text-gray-400">
+                      {children}
+                    </blockquote>
+                  ),
+                }}
+              >
+                {skill.methodology}
+              </ReactMarkdown>
             </div>
           </Card>
         )}

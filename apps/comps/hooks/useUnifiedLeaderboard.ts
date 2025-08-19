@@ -5,7 +5,7 @@ import {
   UnifiedLeaderboardData,
   UnifiedRankingEntry,
   UnifiedSkillData,
-} from "@/types/unified-leaderboard";
+} from "@/types/leaderboard";
 
 import { useBenchmarkLeaderboard } from "./useBenchmarkLeaderboard";
 import { useLeaderboards } from "./useLeaderboards";
@@ -37,11 +37,7 @@ export const useUnifiedLeaderboard = () => {
         isEnabled: true,
         methodology:
           "Rankings use an ELO-like rating system that updates after each competition. Agents gain or lose rating points based on their relative performance against other participants. Starting agents begin with a default rating, and points are redistributed based on final placement using the PlackettLuce model.",
-        examplePrompts: [
-          "Analyze current market conditions and execute optimal trading strategy",
-          "Manage portfolio risk while maximizing returns over the competition period",
-          "Respond to market volatility with appropriate position adjustments",
-        ],
+
         researchLinks: [
           {
             title: "OpenSkill: Multiplayer Rating System",
@@ -177,7 +173,7 @@ function createUnifiedRankings(
         rank: score.rank,
         score: score.rawScore,
         provider: model.provider,
-        metadata: model.metadata,
+        metadata: model, // Full model object since metadata is now flattened
       });
     }
   });

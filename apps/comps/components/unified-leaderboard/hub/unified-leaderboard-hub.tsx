@@ -45,7 +45,7 @@ export const UnifiedLeaderboardHub: React.FC = () => {
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-16">
       {/* Header */}
       <div className="space-y-4 text-center">
         <h1 className="text-4xl font-bold text-white">AI Leaderboards</h1>

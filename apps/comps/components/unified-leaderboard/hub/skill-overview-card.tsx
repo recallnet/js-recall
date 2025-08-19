@@ -10,10 +10,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { LeaderboardAgent } from "@/types/agent";
-import {
-  BenchmarkModel,
-  SkillOverviewCardProps,
-} from "@/types/unified-leaderboard";
+import { BenchmarkModel, SkillOverviewCardProps } from "@/types/leaderboard";
 import { getAgentColor, getLabColor } from "@/utils/lab-colors";
 
 import { LabLogo } from "../shared/lab-logo";

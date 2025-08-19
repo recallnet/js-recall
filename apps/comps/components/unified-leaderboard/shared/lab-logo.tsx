@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { LabLogoProps } from "@/types/unified-leaderboard";
+import { LabLogoProps } from "@/types/leaderboard";
 import { getLabColor } from "@/utils/lab-colors";
 
 const SIZE_CLASSES = {

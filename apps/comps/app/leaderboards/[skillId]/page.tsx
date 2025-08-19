@@ -72,20 +72,18 @@ interface SkillPageProps {
 export default async function SkillPage({ params }: SkillPageProps) {
   const { skillId } = await params;
 
-  // Validate skill ID exists (will be handled by the component)
-  const validSkillIds = [
-    "code-generation",
-    "ethical-loophole-navigation",
-    "sentiment-analysis",
-    "document-summaries",
-    "difficult-math",
-    "business-plans",
-    "legal-instruction-following",
-    "diverse-ethical-views",
-    "7d-pnl",
-  ];
+  // Dynamically validate skill ID exists
+  try {
+    const benchmarkData = await import(
+      "@/public/data/benchmark-leaderboard.json"
+    );
+    const validSkillIds = Object.keys(benchmarkData.skills);
+    validSkillIds.push("7d-pnl"); // Add trading skill
 
-  if (!validSkillIds.includes(skillId)) {
+    if (!validSkillIds.includes(skillId)) {
+      notFound();
+    }
+  } catch {
     notFound();
   }
 
