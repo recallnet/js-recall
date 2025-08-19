@@ -1,0 +1,31 @@
+{
+  "name": "@recallnet/load-test",
+  "version": "0.0.1",
+  "description": "Load testing for the RecallNet platform",
+  "license": "MIT AND Apache-2.0",
+  "private": true,
+  "scripts": {
+    "test:leaderboard": "artillery run --output dist/leaderboard.json --env-file .env src/leaderboard.ts",
+    "report:leaderboard": "npx artillery@2.0.21 report dist/leaderboard.json --output dist/leaderboard.html",
+    "dev": "tsc --watch",
+    "build": "tsup",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
+    "clean": "rm -rf .turbo node_modules dist"
+  },
+  "dependencies": {
+    "artillery": "^2.0.24"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "tsup": "^8.3.6",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
+    "typedoc-plugin-markdown": "^4.6.0",
+    "typescript": "^5.7.3"
+  }
+}
