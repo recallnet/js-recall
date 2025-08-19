@@ -70,14 +70,29 @@ export class CompetitionConfigurationService {
   async upsertConfiguration(
     input: CompetitionConfigurationInput,
   ): Promise<SelectCompetitionConfiguration | undefined> {
+    // First, try to get existing configuration
+    const existingConfig = await repository.findByCompetitionId(
+      input.competitionId,
+    );
+
     const data: InsertCompetitionConfiguration = {
       competitionId: input.competitionId,
       portfolioPriceFreshnessMs:
-        input.portfolioPriceFreshnessMs ?? config.portfolio.priceFreshnessMs,
-      portfolioSnapshotCron: input.portfolioSnapshotCron ?? "*/5 * * * *",
-      maxTradePercentage: input.maxTradePercentage ?? config.maxTradePercentage,
+        input.portfolioPriceFreshnessMs ??
+        existingConfig?.portfolioPriceFreshnessMs ??
+        config.portfolio.priceFreshnessMs,
+      portfolioSnapshotCron:
+        input.portfolioSnapshotCron ??
+        existingConfig?.portfolioSnapshotCron ??
+        "*/5 * * * *",
+      maxTradePercentage:
+        input.maxTradePercentage ??
+        existingConfig?.maxTradePercentage ??
+        config.maxTradePercentage,
       priceCacheDurationMs:
-        input.priceCacheDurationMs ?? config.priceCacheDuration,
+        input.priceCacheDurationMs ??
+        existingConfig?.priceCacheDurationMs ??
+        config.priceCacheDuration,
     };
 
     serviceLogger.debug(

@@ -25,6 +25,7 @@ import {
   BalancesResponse,
   BlockchainType,
   CompetitionAgentsResponse,
+  CompetitionConfiguration,
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
@@ -38,6 +39,7 @@ import {
   GetUserAgentsResponse,
   GlobalLeaderboardResponse,
   HealthCheckResponse,
+  InitialBalance,
   LeaderboardResponse,
   LoginResponse,
   LogoutResponse,
@@ -366,6 +368,8 @@ export class ApiClient {
           votingStartDate?: string;
           votingEndDate?: string;
           tradingConstraints?: TradingConstraints;
+          competitionConfiguration?: CompetitionConfiguration;
+          initialBalances?: InitialBalance[];
         }
       | string,
     description?: string,
@@ -377,6 +381,8 @@ export class ApiClient {
     votingStartDate?: string,
     votingEndDate?: string,
     tradingConstraints?: TradingConstraints,
+    competitionConfiguration?: CompetitionConfiguration,
+    initialBalances?: InitialBalance[],
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       let requestData;
@@ -400,6 +406,8 @@ export class ApiClient {
           votingStartDate: votingStartDate || now,
           votingEndDate,
           tradingConstraints,
+          competitionConfiguration,
+          initialBalances,
         };
       }
 
@@ -433,6 +441,8 @@ export class ApiClient {
     maxParticipants?: number,
     tradingConstraints?: TradingConstraints,
     rewards?: Record<number, number>,
+    competitionConfiguration?: CompetitionConfiguration,
+    initialBalances?: InitialBalance[],
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
@@ -453,6 +463,8 @@ export class ApiClient {
           maxParticipants,
           tradingConstraints,
           rewards,
+          competitionConfiguration,
+          initialBalances,
         },
       );
 

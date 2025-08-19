@@ -860,10 +860,12 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Update the competition configuration
         if (competitionConfiguration) {
-          await services.competitionConfigurationService.updateConfiguration(
+          await services.competitionConfigurationService.upsertConfiguration({
             competitionId,
-            competitionConfiguration,
-          );
+            ...competitionConfiguration,
+          });
+          // Clear the configuration cache after update
+          services.configurationService.clearConfigCache(competitionId);
         }
 
         // Update the initial balances

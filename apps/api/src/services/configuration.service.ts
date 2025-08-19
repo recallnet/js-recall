@@ -35,6 +35,13 @@ export class ConfigurationService {
       const activeCompetition = await findActive();
 
       if (activeCompetition) {
+        // Clear cache if active competition changed
+        if (
+          this.activeCompetitionId &&
+          this.activeCompetitionId !== activeCompetition.id
+        ) {
+          this.clearConfigCache();
+        }
         this.activeCompetitionId = activeCompetition.id;
 
         // Load competition-specific configuration from database
@@ -63,6 +70,10 @@ export class ConfigurationService {
           },
         );
       } else {
+        // Clear cache when no active competition
+        if (this.activeCompetitionId) {
+          this.clearConfigCache();
+        }
         this.activeCompetitionId = null;
         // No active competition, keep the environment variable settings
         features.SANDBOX_MODE = false; // Default to false when no active competition

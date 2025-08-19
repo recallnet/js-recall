@@ -318,30 +318,41 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
-        // Build initial balances description based on config
+        // Build initial balances description based on competition configuration
+        const initialBalances =
+          await services.competitionInitialBalancesService.getInitialBalances(
+            activeCompetition.id,
+          );
+
         const initialBalanceDescriptions = [];
+        const balancesByChain = new Map<
+          string,
+          Array<{ symbol: string; amount: number }>
+        >();
 
-        // Chain-specific balances
-        for (const chain of Object.keys(config.specificChainBalances)) {
-          const chainBalances =
-            config.specificChainBalances[
-              chain as keyof typeof config.specificChainBalances
-            ];
-          const tokenItems = [];
-
-          for (const token of Object.keys(chainBalances)) {
-            const amount = chainBalances[token];
-            if (amount && amount > 0) {
-              tokenItems.push(`${amount} ${token.toUpperCase()}`);
-            }
+        // Group balances by chain
+        for (const balance of initialBalances) {
+          if (!balancesByChain.has(balance.specificChain)) {
+            balancesByChain.set(balance.specificChain, []);
           }
+          balancesByChain.get(balance.specificChain)!.push({
+            symbol: balance.tokenSymbol,
+            amount: balance.amount,
+          });
+        }
+
+        // Build descriptions
+        for (const [chain, tokens] of balancesByChain) {
+          const tokenItems = tokens
+            .filter((t) => t.amount > 0)
+            .map((t) => `${t.amount} ${t.symbol.toUpperCase()}`);
 
           if (tokenItems.length > 0) {
             let chainName = chain;
             // Format chain name for better readability
             if (chain === "eth") chainName = "Ethereum";
             else if (chain === "svm") chainName = "Solana";
-            else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
+            else chainName = chain.charAt(0).toUpperCase() + chain.slice(1);
 
             initialBalanceDescriptions.push(
               `${chainName}: ${tokenItems.join(", ")}`,
@@ -355,12 +366,18 @@ export function makeCompetitionController(services: ServiceRegistry) {
             activeCompetition.id,
           );
 
+        // Get competition-specific configuration
+        const maxTradePercentage =
+          await services.configurationService.getMaxTradePercentage(
+            activeCompetition.id,
+          );
+
         // Define base rules
         const tradingRules = [
           "Trading is only allowed for tokens with valid price data",
           `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
           "Minimum trade amount: 0.000001 tokens",
-          `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
+          `Maximum single trade: ${maxTradePercentage}% of agent's total portfolio value`,
           "No shorting allowed (trades limited to available balance)",
           "Slippage is applied to all trades based on trade size",
           `Cross-chain trading type: ${activeCompetition.crossChainTradingType}`,
@@ -391,8 +408,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
         };
         const slippageFormula =
           "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
+
+        // Get competition-specific snapshot configuration
+        const snapshotCron =
+          await services.configurationService.getPortfolioSnapshotCron(
+            activeCompetition.id,
+          );
         const portfolioSnapshots = {
-          interval: `${config.portfolio.snapshotIntervalMs / 60000} minutes`,
+          schedule: `Cron expression: ${snapshotCron}`,
         };
 
         // Assemble all rules
@@ -1089,30 +1112,41 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Build initial balances description based on config
+        // Build initial balances description based on competition configuration
+        const initialBalances =
+          await services.competitionInitialBalancesService.getInitialBalances(
+            competitionId,
+          );
+
         const initialBalanceDescriptions = [];
+        const balancesByChain = new Map<
+          string,
+          Array<{ symbol: string; amount: number }>
+        >();
 
-        // Chain-specific balances
-        for (const chain of Object.keys(config.specificChainBalances)) {
-          const chainBalances =
-            config.specificChainBalances[
-              chain as keyof typeof config.specificChainBalances
-            ];
-          const tokenItems = [];
-
-          for (const token of Object.keys(chainBalances)) {
-            const amount = chainBalances[token];
-            if (amount && amount > 0) {
-              tokenItems.push(`${amount} ${token.toUpperCase()}`);
-            }
+        // Group balances by chain
+        for (const balance of initialBalances) {
+          if (!balancesByChain.has(balance.specificChain)) {
+            balancesByChain.set(balance.specificChain, []);
           }
+          balancesByChain.get(balance.specificChain)!.push({
+            symbol: balance.tokenSymbol,
+            amount: balance.amount,
+          });
+        }
+
+        // Build descriptions
+        for (const [chain, tokens] of balancesByChain) {
+          const tokenItems = tokens
+            .filter((t) => t.amount > 0)
+            .map((t) => `${t.amount} ${t.symbol.toUpperCase()}`);
 
           if (tokenItems.length > 0) {
             let chainName = chain;
             // Format chain name for better readability
             if (chain === "eth") chainName = "Ethereum";
             else if (chain === "svm") chainName = "Solana";
-            else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
+            else chainName = chain.charAt(0).toUpperCase() + chain.slice(1);
 
             initialBalanceDescriptions.push(
               `${chainName}: ${tokenItems.join(", ")}`,
@@ -1126,12 +1160,18 @@ export function makeCompetitionController(services: ServiceRegistry) {
             competition.id,
           );
 
+        // Get competition-specific configuration
+        const maxTradePercentage =
+          await services.configurationService.getMaxTradePercentage(
+            competitionId,
+          );
+
         // Define base rules (same logic as getRules but for specific competition)
         const tradingRules = [
           "Trading is only allowed for tokens with valid price data",
           `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
           "Minimum trade amount: 0.000001 tokens",
-          `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
+          `Maximum single trade: ${maxTradePercentage}% of agent's total portfolio value`,
           "No shorting allowed (trades limited to available balance)",
           "Slippage is applied to all trades based on trade size",
           `Cross-chain trading type: ${competition.crossChainTradingType}`,
@@ -1166,8 +1206,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const slippageFormula =
           "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
 
+        // Get competition-specific snapshot configuration
+        const snapshotCron =
+          await services.configurationService.getPortfolioSnapshotCron(
+            competitionId,
+          );
         const portfolioSnapshots = {
-          interval: `${config.portfolio.snapshotIntervalMs / 60000} minutes`,
+          schedule: `Cron expression: ${snapshotCron}`,
         };
 
         // Assemble all rules
