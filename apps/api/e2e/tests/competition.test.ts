@@ -6,6 +6,7 @@ import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { agents, competitionAgents } from "@/database/schema/core/defs.js";
 import {
+  AgentCompetitionsResponse,
   AgentProfileResponse,
   AgentTrophy,
   BlockchainType,
@@ -14,14 +15,17 @@ import {
   CompetitionDetailResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
+  CompetitionWithAgents,
   CreateCompetitionResponse,
   EndCompetitionResponse,
+  EnhancedCompetition,
   ErrorResponse,
   LeaderboardResponse,
   StartCompetitionResponse,
   TradeResponse,
   UpcomingCompetitionsResponse,
   UserAgentApiKeyResponse,
+  UserCompetitionsResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
@@ -195,10 +199,10 @@ describe("Competition API", () => {
         agent1.id,
         agent2.id,
       ]);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      expect(error.success).toBe(false);
-      expect(error.error).toContain("active");
+    } catch (error) {
+      const errorResponse = error as ErrorResponse;
+      expect(errorResponse.success).toBe(false);
+      expect(errorResponse.error).toContain("active");
     }
   });
 
@@ -230,6 +234,7 @@ describe("Competition API", () => {
       undefined,
       undefined,
       undefined,
+      undefined, // maxParticipants
       {
         ...looseTradingConstraints,
         // This 24 hour volume should block that trade below
@@ -291,6 +296,7 @@ describe("Competition API", () => {
       undefined,
       undefined,
       undefined,
+      undefined, // maxParticipants
       customConstraints,
     )) as CreateCompetitionResponse;
 
@@ -719,8 +725,7 @@ describe("Competition API", () => {
     const ascResponse = (await agentClient.getCompetitions(
       "pending",
       "foo",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    )) as any;
+    )) as ErrorResponse;
 
     expect(ascResponse.success).toBe(false);
     expect(ascResponse.status).toBe(400);
@@ -1045,6 +1050,7 @@ describe("Competition API", () => {
       undefined,
       undefined,
       undefined,
+      undefined, // maxParticipants
       customConstraints,
     )) as CreateCompetitionResponse;
 
@@ -4295,13 +4301,11 @@ describe("Competition API", () => {
 
       // Create a competition first
       const competitionName = `Pre-registered Test Competition ${Date.now()}`;
-      const createResult = await adminClient.createCompetition(
+      const createResult = (await adminClient.createCompetition(
         competitionName,
         "Test competition for pre-registered agent validation",
-      );
+      )) as CreateCompetitionResponse;
       expect(createResult.success).toBe(true);
-      if (!createResult.success)
-        throw new Error("Failed to create competition");
       const competitionId = createResult.competition.id;
 
       // Add agent1 to the competition (pre-registered)
@@ -4315,14 +4319,13 @@ describe("Competition API", () => {
 
       // Test: Try to start competition with invalid agent2 and valid agent3
       // Should fail because agent2 is inactive, even though agent1 is pre-registered
-      const startResponse = await adminClient.startExistingCompetition(
+      const startResponse = (await adminClient.startExistingCompetition(
         competitionId,
         [agent2.id, agent3.id], // agent2 is inactive, agent3 is valid
         CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-      );
+      )) as ErrorResponse;
 
       expect(startResponse.success).toBe(false);
-      if (startResponse.success) throw new Error("Expected failure");
       expect(startResponse.error).toContain(
         "Cannot start competition: the following agent IDs are invalid or inactive:",
       );
@@ -4340,7 +4343,6 @@ describe("Competition API", () => {
       );
 
       expect(startResponse2.success).toBe(true);
-      if (!startResponse2.success) throw new Error("Expected success");
       const competition = (startResponse2 as StartCompetitionResponse)
         .competition;
       expect(competition.status).toBe("active");
@@ -4384,6 +4386,7 @@ describe("Competition API", () => {
         undefined,
         undefined,
         undefined,
+        undefined, // maxParticipants
         looseTradingConstraints,
         rewards,
       );
@@ -4440,6 +4443,729 @@ describe("Competition API", () => {
           competitionAgents[i]?.id,
         );
       }
+    });
+  });
+
+  describe("Participant Limits", () => {
+    test("should create competition with participant limit", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxParticipants = 3;
+      const competitionName = `Limited Competition ${Date.now()}`;
+
+      const createResponse = (await adminClient.createCompetition(
+        competitionName,
+        "Test competition with participant limit",
+        CROSS_CHAIN_TRADING_TYPE.ALLOW,
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // endDate
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants, // maxParticipants
+      )) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      expect(createResponse.competition.maxParticipants).toBe(maxParticipants);
+    });
+
+    test("should enforce participant limit during registration", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxParticipants = 2;
+      const competitionName = `Limited Registration Test ${Date.now()}`;
+
+      // Create competition with limit
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Competition with 2 participant limit",
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants,
+      );
+
+      // Create multiple agents for testing
+      const { agent: agent1, client: client1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Limit Test Agent 1",
+        });
+
+      const { agent: agent2, client: client2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Limit Test Agent 2",
+        });
+
+      const { agent: agent3, client: client3 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Limit Test Agent 3",
+        });
+
+      const competitionId = createResponse.competition.id;
+
+      // Register first agent - should succeed
+      const join1Result = await client1.joinCompetition(
+        competitionId,
+        agent1.id,
+      );
+      expect(join1Result.success).toBe(true);
+
+      // Register second agent - should succeed (at limit)
+      const join2Result = await client2.joinCompetition(
+        competitionId,
+        agent2.id,
+      );
+      expect(join2Result.success).toBe(true);
+
+      // Verify that all client types get correct participant information while competition is in pending status
+      // Test 1: Admin client
+      const adminDetailResponse =
+        await adminClient.getCompetition(competitionId);
+      expect(adminDetailResponse.success).toBe(true);
+      const adminCompetition = (
+        adminDetailResponse as CompetitionDetailResponse
+      ).competition;
+      expect(adminCompetition.status).toBe("pending");
+      expect(adminCompetition.maxParticipants).toBe(maxParticipants); // Max participants limit
+      expect(adminCompetition.stats?.totalAgents).toBe(2); // Current registered participants
+      expect(adminCompetition.registeredParticipants).toBe(2);
+
+      // Test 2: Agent client (using agent1's client)
+      const agentDetailResponse = await client1.getCompetition(competitionId);
+      expect(agentDetailResponse.success).toBe(true);
+      const agentCompetition = (
+        agentDetailResponse as CompetitionDetailResponse
+      ).competition;
+      expect(agentCompetition.status).toBe("pending");
+      expect(agentCompetition.maxParticipants).toBe(maxParticipants); // Max participants limit
+      expect(agentCompetition.stats?.totalAgents).toBe(2); // Current registered participants
+      expect(agentCompetition.registeredParticipants).toBe(2);
+
+      // Test 3: User client (need to create one)
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "Participant Count Test User",
+        userEmail: "participant-test@example.com",
+      });
+      const userDetailResponse = await userClient.getCompetition(competitionId);
+      expect(userDetailResponse.success).toBe(true);
+      const userCompetition = (userDetailResponse as CompetitionDetailResponse)
+        .competition;
+      expect(userCompetition.status).toBe("pending");
+      expect(userCompetition.maxParticipants).toBe(maxParticipants); // Max participants limit
+      expect(userCompetition.stats?.totalAgents).toBe(2); // Current registered participants
+      expect(userCompetition.registeredParticipants).toBe(2);
+
+      // Try to register third agent - should fail (over limit)
+      const join3Result = (await client3.joinCompetition(
+        competitionId,
+        agent3.id,
+      )) as ErrorResponse;
+      expect(join3Result.success).toBe(false);
+      expect(join3Result.error).toContain("maximum participant limit");
+    });
+
+    test("should return participant count information in API responses", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxParticipants = 5;
+      const competitionName = `Count Test Competition ${Date.now()}`;
+
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Competition for testing participant count responses",
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants,
+      );
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Count Test Agent",
+      });
+
+      const competitionId = createResponse.competition.id;
+
+      // Check competition details endpoint
+      const detailResponse = (await agentClient.getCompetition(
+        competitionId,
+      )) as CompetitionDetailResponse;
+      expect(detailResponse.success).toBe(true);
+      expect(detailResponse.competition.maxParticipants).toBe(maxParticipants);
+      expect(detailResponse.competition.registeredParticipants).toBe(0);
+
+      // Check competitions list endpoint
+      const listResponse = (await agentClient.getCompetitions(
+        "pending",
+      )) as UpcomingCompetitionsResponse;
+      expect(listResponse.success).toBe(true);
+
+      const competition = listResponse.competitions.find(
+        (c) => c.id === competitionId,
+      );
+      expect(competition).toBeDefined();
+      expect(competition!.maxParticipants).toBe(maxParticipants);
+      expect(competition!.registeredParticipants).toBe(0);
+
+      // Check competition agents endpoint
+      const agentsResponse = (await agentClient.getCompetitionAgents(
+        competitionId,
+      )) as CompetitionAgentsResponse;
+      expect(agentsResponse.success).toBe(true);
+      expect(agentsResponse.pagination.total).toBe(0); // current participant count
+    });
+
+    test("should handle competition without participant limit", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Unlimited Competition ${Date.now()}`;
+
+      // Test that unlimited competitions work as before
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Competition without participant limit",
+        // maxParticipants not specified - should default to null/unlimited
+      );
+
+      expect(createResponse.success).toBe(true);
+      expect(createResponse.competition.maxParticipants).toBeNull();
+    });
+
+    test("should validate participant limit minimum value", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Invalid Limit Competition ${Date.now()}`;
+
+      // Test that maxParticipants must be >= 1 if specified
+      const result = await adminClient.createCompetition(
+        competitionName,
+        "Competition with invalid limit",
+        CROSS_CHAIN_TRADING_TYPE.ALLOW,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0, // Invalid: should be >= 1
+      );
+
+      expect(result.success).toBe(false);
+    });
+
+    test("should work with pending competitions in list view", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxParticipants = 3;
+      const competitionName = `Pending Limit Test ${Date.now()}`;
+
+      // Test that pending competitions show participant limits in list view
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Pending competition with participant limit",
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants,
+      );
+
+      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Pending Limit Test Agent",
+      });
+
+      const pendingCompetitions = (await agentClient.getCompetitions(
+        "pending",
+      )) as UpcomingCompetitionsResponse;
+      expect(pendingCompetitions.success).toBe(true);
+
+      const ourCompetition = pendingCompetitions.competitions.find(
+        (c) => c.id === createResponse.competition.id,
+      ) as EnhancedCompetition;
+
+      expect(ourCompetition).toBeDefined();
+      expect(ourCompetition.maxParticipants).toBe(maxParticipants);
+      expect(ourCompetition.registeredParticipants).toBe(0);
+    });
+
+    test("should enforce participant limit with mixed registration attempts", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxParticipants = 1;
+      const competitionName = `Single Participant Test ${Date.now()}`;
+
+      // Create competition with very low limit to test edge case
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Competition allowing only 1 participant",
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants,
+      );
+
+      // Create two agents
+      const { agent: agent1, client: client1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Single Slot Agent 1",
+        });
+
+      const { agent: agent2, client: client2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Single Slot Agent 2",
+        });
+
+      const competitionId = createResponse.competition.id;
+
+      // First registration should succeed
+      const join1Result = await client1.joinCompetition(
+        competitionId,
+        agent1.id,
+      );
+      expect(join1Result.success).toBe(true);
+
+      // Second registration should fail immediately
+      const join2Result = (await client2.joinCompetition(
+        competitionId,
+        agent2.id,
+      )) as ErrorResponse;
+      expect(join2Result.success).toBe(false);
+      expect(join2Result.error).toContain("maximum participant limit");
+      expect(join2Result.error).toContain("1");
+
+      // Verify the competition shows correct participant count
+      const agentsResponse = (await client1.getCompetitionAgents(
+        competitionId,
+      )) as CompetitionAgentsResponse;
+      expect(agentsResponse.success).toBe(true);
+      expect(agentsResponse.pagination.total).toBe(1);
+    });
+
+    test("should return maxParticipants in admin start competition response", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxParticipants = 3;
+
+      // First create agents to start the competition with
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Start Test Agent 1",
+      });
+
+      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Start Test Agent 2",
+      });
+
+      // Create competition with maxParticipants first
+      const competitionName = `Start Competition Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition with participant limit for start endpoint",
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants,
+      );
+
+      // Start the existing competition
+      const startResponse = (await startExistingTestCompetition(
+        adminClient,
+        createResponse.competition.id,
+        [agent1.id, agent2.id],
+      )) as StartCompetitionResponse;
+
+      expect(startResponse.success).toBe(true);
+      expect(startResponse.competition.maxParticipants).toBe(maxParticipants);
+    });
+
+    test("should return maxParticipants in admin end competition response", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxParticipants = 5;
+
+      // Create agents and start a competition
+      const { agent: agent1, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "End Test Agent 1",
+        });
+
+      // Create competition with maxParticipants first
+      const competitionName = `End Competition Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition for end endpoint",
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants,
+      );
+
+      // Start the competition
+      const startResponse = await startExistingTestCompetition(
+        adminClient,
+        createResponse.competition.id,
+        [agent1.id],
+      );
+
+      expect(startResponse.success).toBe(true);
+
+      // End the competition (endCompetition just returns success/error, not competition data)
+      const endResponse = await adminClient.endCompetition(
+        startResponse.competition.id,
+      );
+      expect(endResponse.success).toBe(true);
+
+      // Verify maxParticipants is still accessible via detail endpoint after ending
+      const detailAfterEnd = (await agentClient.getCompetition(
+        startResponse.competition.id,
+      )) as CompetitionDetailResponse;
+      expect(detailAfterEnd.success).toBe(true);
+      expect(detailAfterEnd.competition.maxParticipants).toBe(maxParticipants);
+      expect(detailAfterEnd.competition.registeredParticipants).toBe(1);
+    });
+
+    test("should return maxParticipants and registeredParticipants in user competitions endpoint", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxParticipants = 4;
+
+      // Create a SIWE authenticated user
+      const { client: userClient } = await createSiweAuthenticatedClient({
+        adminApiKey,
+        userName: "User Competition Test",
+      });
+
+      // Create an agent for this user via SIWE session
+      const agentResponse = (await createTestAgent(
+        userClient,
+        "User Competition Agent",
+        "Agent for user competition endpoint test",
+      )) as AgentProfileResponse;
+      expect(agentResponse.success).toBe(true);
+      const agent = agentResponse.agent;
+
+      // Create competition with maxParticipants first
+      const competitionName = `User Competition Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition for user endpoint",
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants,
+      );
+
+      // Start the competition with this agent
+      const startResponse = (await startExistingTestCompetition(
+        adminClient,
+        createResponse.competition.id,
+        [agent.id],
+      )) as StartCompetitionResponse;
+      expect(startResponse.success).toBe(true);
+
+      // Get user competitions
+      const userCompetitionsResponse = (await userClient.getUserCompetitions({
+        limit: 10,
+      })) as UserCompetitionsResponse;
+      expect(userCompetitionsResponse.success).toBe(true);
+
+      // Find our competition in the results
+      const ourCompetition = userCompetitionsResponse.competitions.find(
+        (c) => c.id === startResponse.competition.id,
+      ) as CompetitionWithAgents;
+      console.log("ourCompetition", ourCompetition);
+
+      expect(ourCompetition).toBeDefined();
+      expect(ourCompetition.maxParticipants).toBe(maxParticipants);
+      expect(ourCompetition.registeredParticipants).toBe(1);
+    });
+
+    test("should return maxParticipants and registeredParticipants in agent competitions endpoint", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxParticipants = 6;
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Competition Test",
+        });
+
+      // Create competition with maxParticipants first
+      const competitionName = `Agent Competition Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition for agent endpoint",
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants,
+      );
+
+      // Start the competition with this agent
+      const startResponse = await startExistingTestCompetition(
+        adminClient,
+        createResponse.competition.id,
+        [agent.id],
+      );
+      expect(startResponse.success).toBe(true);
+
+      // Get agent competitions
+      const agentCompetitionsResponse = (await agentClient.getAgentCompetitions(
+        agent.id,
+      )) as AgentCompetitionsResponse;
+      expect(agentCompetitionsResponse.success).toBe(true);
+
+      // Find our competition in the results
+      const ourCompetition = agentCompetitionsResponse.competitions.find(
+        (c) => c.id === startResponse.competition.id,
+      ) as EnhancedCompetition;
+
+      expect(ourCompetition).toBeDefined();
+      expect(ourCompetition.maxParticipants).toBe(maxParticipants);
+      expect(ourCompetition.registeredParticipants).toBe(1);
+    });
+
+    test("should return maxParticipants and registeredParticipants in competitions endpoint", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Competitions Test Agent",
+      });
+
+      // Create competition
+      const competitionName = `Competitions Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition for competitions endpoint",
+      );
+
+      // Start the competition
+      const startResponse = await startExistingTestCompetition(
+        adminClient,
+        createResponse.competition.id,
+        [agent.id],
+      );
+      expect(startResponse.success).toBe(true);
+
+      // Get upcoming competitions
+      const competitionsResponse =
+        (await adminClient.getCompetitions()) as UpcomingCompetitionsResponse;
+      expect(competitionsResponse.success).toBe(true);
+
+      const ourCompetition = competitionsResponse
+        .competitions[0] as EnhancedCompetition;
+
+      expect(ourCompetition).toBeDefined();
+      expect(ourCompetition.maxParticipants).toBeNull();
+      expect(ourCompetition.registeredParticipants).toBe(1);
+    });
+
+    test("should handle null maxParticipants across all endpoints", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Null Limit Test Agent",
+        });
+
+      // Create competition without maxParticipants (should be null/unlimited)
+      const competitionName = `Null Limit Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition without participant limit",
+        // maxParticipants not specified - defaults to null/unlimited
+      );
+      const competitionId = createResponse.competition.id;
+      expect(createResponse.success).toBe(true);
+      expect(createResponse.competition.maxParticipants).toBeNull();
+
+      // Test that the same null value appears in other endpoints
+      const detailResponse = (await agentClient.getCompetition(
+        competitionId,
+      )) as CompetitionDetailResponse;
+      expect(detailResponse.success).toBe(true);
+      expect(detailResponse.competition.maxParticipants).toBeNull();
+      expect(detailResponse.competition.registeredParticipants).toBe(0);
+
+      // Test agent competitions endpoint
+      const startResponse = await startExistingTestCompetition(
+        adminClient,
+        createResponse.competition.id,
+        [agent.id],
+      );
+      expect(startResponse.success).toBe(true);
+      const agentCompetitionsResponse = (await agentClient.getAgentCompetitions(
+        agent.id,
+      )) as AgentCompetitionsResponse;
+      expect(agentCompetitionsResponse.success).toBe(true);
+
+      const ourCompetition = agentCompetitionsResponse.competitions.find(
+        (c) => c.id === competitionId,
+      ) as EnhancedCompetition;
+      expect(ourCompetition).toBeDefined();
+      expect(ourCompetition.maxParticipants).toBeNull();
+      expect(ourCompetition.registeredParticipants).toBe(1);
+
+      // Test user competitions endpoint
+      const userCompetitionsResponse = (await agentClient.getUserCompetitions({
+        limit: 10,
+      })) as UserCompetitionsResponse;
+      expect(userCompetitionsResponse.success).toBe(true);
+
+      const ourCompetition2 = userCompetitionsResponse.competitions.find(
+        (c) => c.id === competitionId,
+      ) as CompetitionWithAgents;
+      expect(ourCompetition2).toBeDefined();
+      expect(ourCompetition2.maxParticipants).toBeNull();
+      expect(ourCompetition2.registeredParticipants).toBe(1);
+
+      const multipleCompetitionsResponse =
+        (await agentClient.getCompetitions()) as UpcomingCompetitionsResponse;
+      expect(multipleCompetitionsResponse.success).toBe(true);
+
+      const ourCompetition3 = multipleCompetitionsResponse.competitions.find(
+        (c) => c.id === competitionId,
+      ) as CompetitionWithAgents;
+      expect(ourCompetition3).toBeDefined();
+      expect(ourCompetition3.maxParticipants).toBeNull();
+      expect(ourCompetition3.registeredParticipants).toBe(1);
+    });
+
+    test("should handle disqualifying agent in registeredParticipants", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Null Limit Test Agent",
+        });
+
+      // Create competition without maxParticipants (should be null/unlimited)
+      const competitionName = `Null Limit Test ${Date.now()}`;
+      const createResponse = await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition without participant limit",
+        // maxParticipants not specified - defaults to null/unlimited
+      );
+      const competitionId = createResponse.competition.id;
+      expect(createResponse.success).toBe(true);
+      expect(createResponse.competition.maxParticipants).toBeNull();
+
+      // Test agent competitions endpoint
+      const startResponse = await startExistingTestCompetition(
+        adminClient,
+        createResponse.competition.id,
+        [agent.id],
+      );
+      expect(startResponse.success).toBe(true);
+
+      // Remove the agent from the competition
+      const removeResponse = await adminClient.removeAgentFromCompetition(
+        competitionId,
+        agent.id,
+        "Test disqualification",
+      );
+      expect(removeResponse.success).toBe(true);
+
+      // Test multiple competitions endpoint, but with zero registered participants (by DQ'ing the agent)
+      const multipleCompetitionsResponse =
+        (await agentClient.getCompetitions()) as UpcomingCompetitionsResponse;
+      expect(multipleCompetitionsResponse.success).toBe(true);
+
+      const ourCompetition3 = multipleCompetitionsResponse.competitions.find(
+        (c) => c.id === competitionId,
+      ) as CompetitionWithAgents;
+      expect(ourCompetition3).toBeDefined();
+      expect(ourCompetition3.maxParticipants).toBeNull();
+      expect(ourCompetition3.registeredParticipants).toBe(0);
     });
   });
 });

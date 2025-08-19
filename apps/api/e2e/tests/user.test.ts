@@ -2816,6 +2816,7 @@ describe("User API", () => {
       undefined,
       undefined,
       undefined,
+      undefined,
       {
         minimum24hVolumeUsd: 0,
         minimumFdvUsd: 0,
