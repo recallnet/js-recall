@@ -701,7 +701,7 @@ export class PriceTracker {
         if (!tokensByCachedChain.has(cachedChain)) {
           tokensByCachedChain.set(cachedChain, []);
         }
-        tokensByCachedChain.get(cachedChain)!.push(addr);
+        tokensByCachedChain.get(cachedChain)?.push(addr);
       }
     }
 
@@ -715,7 +715,12 @@ export class PriceTracker {
     // Try each cached chain group
     for (const [cachedChain, tokens] of tokensByCachedChain) {
       try {
-        const chainType = this.determineChain(tokens[0]!);
+        const firstToken = tokens[0];
+        if (!firstToken) {
+          continue;
+        }
+
+        const chainType = this.determineChain(firstToken);
         const cachedChainResults = await this.multiChainProvider.getBatchPrices(
           tokens,
           chainType,
