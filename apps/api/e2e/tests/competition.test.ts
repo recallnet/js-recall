@@ -366,6 +366,7 @@ describe("Competition API", () => {
       undefined,
       undefined,
       undefined,
+      undefined, // maxParticipants
       customConstraints,
     )) as CreateCompetitionResponse;
 
@@ -3919,6 +3920,7 @@ describe("Competition API", () => {
         undefined, // votingEndDate
         undefined, // joinStartDate
         undefined, // joinEndDate
+        undefined, // maxParticipants
         customConstraints,
       );
 
