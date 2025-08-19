@@ -4,7 +4,6 @@ import {
   create as createPrice,
   createBatch as createPriceBatch,
   getLatestPrice,
-  getPriceHistory,
 } from "@/database/repositories/price-repository.js";
 import { InsertPrice } from "@/database/schema/trading/types.js";
 import { serviceLogger } from "@/lib/logger.js";
@@ -73,19 +72,6 @@ export class PriceTracker {
 
     // Solana addresses are base58 encoded and typically 32-44 characters long
     return BlockchainType.SVM;
-  }
-
-  /**
-   * Get a provider by name
-   * @param name The name of the provider to get
-   * @returns The provider instance or null if not found
-   */
-  getProviderByName(name: string): PriceSource | null {
-    return (
-      this.providers.find(
-        (p) => p.getName().toLowerCase() === name.toLowerCase(),
-      ) || null
-    );
   }
 
   /**
@@ -368,134 +354,6 @@ export class PriceTracker {
         error,
       );
     }
-  }
-
-  /**
-   * Check if a token is supported by the provider
-   * @param tokenAddress The token address to check
-   * @returns True if the provider supports the token
-   * // TODO(stbrody): This is not used anywhere.  Remove?
-   */
-  async isTokenSupported(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<boolean> {
-    if (!this.multiChainProvider) {
-      return false;
-    }
-
-    try {
-      return await this.multiChainProvider.supports(
-        tokenAddress,
-        specificChain,
-      );
-    } catch (error) {
-      serviceLogger.debug(
-        `[PriceTracker] Error checking support for ${tokenAddress}:`,
-        error instanceof Error ? error.message : "Unknown error",
-      );
-      return false;
-    }
-  }
-
-  /**
-   * Get historical price data for a token
-   * @param tokenAddress The token address
-   * @param timeframe The timeframe to get history for (e.g. '24h', '7d', '30d')
-   * @param allowMockData Whether to generate mock data if real data is not available (defaults to config setting)
-   * @returns An array of price points or null if not available
-   */
-  async getPriceHistory(
-    tokenAddress: string,
-    timeframe: string,
-    allowMockData: boolean = config.allowMockPriceHistory,
-  ): Promise<{ timestamp: string; price: number }[] | null> {
-    serviceLogger.debug(
-      `[PriceTracker] Getting price history for ${tokenAddress} (${timeframe})`,
-    );
-
-    try {
-      // Convert timeframe to hours for database query
-      let hours = 24; // Default to 24 hours
-
-      if (timeframe === "7d") hours = 24 * 7;
-      else if (timeframe === "30d") hours = 24 * 30;
-      else if (timeframe === "1h") hours = 1;
-      else if (timeframe === "6h") hours = 6;
-
-      // Get historical data from database
-      const history = await getPriceHistory(tokenAddress, hours);
-
-      if (history && history.length > 0) {
-        serviceLogger.debug(
-          `[PriceTracker] Retrieved ${history.length} historical price points from database`,
-        );
-        return history.map((point) => ({
-          timestamp: point.timestamp?.toISOString() ?? "",
-          price: point.price,
-        }));
-      }
-    } catch (error) {
-      serviceLogger.error(
-        `[PriceTracker] Error fetching price history:`,
-        error,
-      );
-    }
-
-    // If we don't have enough historical data in the database or an error occurred,
-    // generate mock data based on current price, but only if allowed
-    if (!allowMockData) {
-      serviceLogger.debug(
-        `[PriceTracker] No historical data available and mock data generation is disabled`,
-      );
-      return null;
-    }
-
-    serviceLogger.debug(
-      `[PriceTracker] WARNING: Generating SIMULATED price history data (not real market data)`,
-    );
-    const currentPrice = await this.getPrice(tokenAddress);
-    if (!currentPrice) return null;
-
-    // Convert timeframe to number of data points
-    let dataPoints = 24; // Default for 24h
-    let intervalMs = 3600 * 1000; // 1 hour in milliseconds
-
-    if (timeframe === "7d") {
-      dataPoints = 7 * 24;
-      intervalMs = 3600 * 1000; // 1 hour
-    } else if (timeframe === "30d") {
-      dataPoints = 30;
-      intervalMs = 24 * 3600 * 1000; // 1 day
-    } else if (timeframe === "1h") {
-      dataPoints = 12;
-      intervalMs = 5 * 60 * 1000; // 5 minutes
-    } else if (timeframe === "6h") {
-      dataPoints = 12;
-      intervalMs = 30 * 60 * 1000; // 30 minutes
-    }
-
-    // Cap data points to a reasonable number
-    dataPoints = Math.min(dataPoints, 180);
-
-    // Generate some mock historical data based on current price
-    const now = Date.now();
-    const history = [];
-    for (let i = 0; i < dataPoints; i++) {
-      const time = now - i * intervalMs;
-      // Create somewhat realistic price movements (±2%)
-      const randomVariation = 0.98 + Math.random() * 0.04;
-      history.push({
-        timestamp: new Date(time).toISOString(),
-        price: currentPrice.price * randomVariation,
-        simulated: true, // Add a flag to indicate this is simulated data
-      });
-    }
-
-    serviceLogger.debug(
-      `[PriceTracker] Generated ${dataPoints} simulated data points for ${timeframe} timeframe`,
-    );
-    return history.reverse(); // Return in chronological order
   }
 
   /**

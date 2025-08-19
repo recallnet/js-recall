@@ -150,36 +150,6 @@ export class MultiChainProvider implements PriceSource {
   }
 
   /**
-   * Checks if a token is supported by trying to fetch its price
-   * @param tokenAddress Token address to check
-   * @returns True if token is supported, false otherwise
-   */
-  async supports(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<boolean> {
-    try {
-      // Check the blockchain type
-      const chainType = this.determineChain(tokenAddress);
-
-      // For Solana tokens, delegate to DexScreenerProvider
-      if (chainType === BlockchainType.SVM) {
-        return this.dexScreenerProvider.supports(tokenAddress, specificChain);
-      }
-
-      // For EVM tokens, try to get the price - if we get a value back, it's supported
-      const price = await this.getPrice(tokenAddress, undefined, specificChain);
-      return price !== null;
-    } catch (error) {
-      serviceLogger.debug(
-        `[MultiChainProvider] Error checking support for ${tokenAddress}:`,
-        error instanceof Error ? error.message : "Unknown error",
-      );
-      return false;
-    }
-  }
-
-  /**
    * Get prices for multiple tokens in a single batch request
    * @param tokenAddresses Array of token addresses to fetch prices for
    * @param blockchainType Blockchain type

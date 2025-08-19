@@ -431,25 +431,6 @@ export class DexScreenerProvider implements PriceSource {
   }
 
   /**
-   * Check if the provider supports this token
-   */
-  async supports(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<boolean> {
-    // Always support burn addresses
-    if (this.isBurnAddress(tokenAddress)) {
-      return true;
-    }
-
-    const chain = this.determineChain(tokenAddress);
-
-    // Try to get a price - if successful, we support it
-    const price = await this.getPrice(tokenAddress, chain, specificChain);
-    return price !== null;
-  }
-
-  /**
    * Get prices for multiple tokens in batches
    * @param tokenAddresses Array of token addresses
    * @param chain Blockchain type

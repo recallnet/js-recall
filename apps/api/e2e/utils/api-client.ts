@@ -42,7 +42,6 @@ import {
   LoginResponse,
   LogoutResponse,
   NonceResponse,
-  PriceHistoryResponse,
   PriceResponse,
   PublicAgentResponse,
   QuoteResponse,
@@ -1153,46 +1152,6 @@ export class ApiClient {
       return response.data as PriceResponse;
     } catch (error) {
       return this.handleApiError(error, "get price");
-    }
-  }
-
-  /**
-   * Get price history for a token
-   *
-   * @param token The token address
-   * @param interval Time interval (e.g., '1h', '1d')
-   * @param chain Optional blockchain type
-   * @param specificChain Optional specific chain
-   * @param startTime Optional start time
-   * @param endTime Optional end time
-   */
-  async getPriceHistory(
-    token: string,
-    interval: string,
-    chain?: BlockchainType,
-    specificChain?: SpecificChain,
-    startTime?: string,
-    endTime?: string,
-  ): Promise<PriceHistoryResponse | ErrorResponse> {
-    try {
-      let path = `/api/price/history?token=${encodeURIComponent(token)}&interval=${interval}`;
-      if (chain) {
-        path += `&chain=${encodeURIComponent(chain)}`;
-      }
-      if (specificChain) {
-        path += `&specificChain=${encodeURIComponent(specificChain)}`;
-      }
-      if (startTime) {
-        path += `&startTime=${encodeURIComponent(startTime)}`;
-      }
-      if (endTime) {
-        path += `&endTime=${encodeURIComponent(endTime)}`;
-      }
-
-      const response = await this.axiosInstance.get(path);
-      return response.data as PriceHistoryResponse;
-    } catch (error) {
-      return this.handleApiError(error, "get price history");
     }
   }
 
