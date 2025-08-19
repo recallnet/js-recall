@@ -239,6 +239,13 @@
       "when": 1755622284284,
       "tag": "0033_little_vulture",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1755629309903,
+      "tag": "0034_tidy_avengers",
+      "breakpoints": true
     }
   ]
 }

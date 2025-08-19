@@ -285,3 +285,78 @@ export const tradingConstraints = tradingComps.table(
     index("idx_trading_constraints_competition_id").on(table.competitionId),
   ],
 );
+
+/**
+ * Table for competition runtime configurations.
+ */
+export const competitionConfigurations = tradingComps.table(
+  "competition_configurations",
+  {
+    competitionId: uuid("competition_id")
+      .primaryKey()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    // Portfolio configuration
+    portfolioPriceFreshnessMs: integer("portfolio_price_freshness_ms")
+      .notNull()
+      .default(600000), // 10 minutes default
+    portfolioSnapshotCron: varchar("portfolio_snapshot_cron", { length: 50 })
+      .notNull()
+      .default("*/5 * * * *"), // Default: every 5 minutes
+    // Trading configuration
+    maxTradePercentage: integer("max_trade_percentage").notNull().default(25), // 25% default
+    // Price configuration
+    priceCacheDurationMs: integer("price_cache_duration_ms")
+      .notNull()
+      .default(30000), // 30 seconds default
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).defaultNow(),
+  },
+  (table) => [
+    index("idx_competition_configurations_competition_id").on(
+      table.competitionId,
+    ),
+  ],
+);
+
+/**
+ * Table for competition initial token balances.
+ */
+export const competitionInitialBalances = tradingComps.table(
+  "competition_initial_balances",
+  {
+    id: uuid().primaryKey().notNull(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    tokenSymbol: varchar("token_symbol", { length: 20 }).notNull(),
+    tokenAddress: varchar("token_address", { length: 50 }).notNull(),
+    amount: integer("amount").notNull().default(0),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).defaultNow(),
+  },
+  (table) => [
+    index("idx_competition_initial_balances_competition_id").on(
+      table.competitionId,
+    ),
+    unique("competition_initial_balances_unique").on(
+      table.competitionId,
+      table.specificChain,
+      table.tokenSymbol,
+    ),
+  ],
+);

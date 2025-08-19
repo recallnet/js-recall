@@ -23,3 +23,13 @@ export type SelectTradingConstraints =
   typeof defs.tradingConstraints.$inferSelect;
 export type InsertTradingConstraints =
   typeof defs.tradingConstraints.$inferInsert;
+
+export type SelectCompetitionConfiguration =
+  typeof defs.competitionConfigurations.$inferSelect;
+export type InsertCompetitionConfiguration =
+  typeof defs.competitionConfigurations.$inferInsert;
+
+export type SelectCompetitionInitialBalance =
+  typeof defs.competitionInitialBalances.$inferSelect;
+export type InsertCompetitionInitialBalance =
+  typeof defs.competitionInitialBalances.$inferInsert;

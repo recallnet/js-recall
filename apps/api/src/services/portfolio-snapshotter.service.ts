@@ -1,4 +1,3 @@
-import { config } from "@/config/index.js";
 import {
   createPortfolioSnapshot,
   findAll,
@@ -10,7 +9,11 @@ import {
 import { getLatestPrice } from "@/database/repositories/price-repository.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { BalanceManager, PriceTracker } from "@/services/index.js";
+import {
+  BalanceManager,
+  ConfigurationService,
+  PriceTracker,
+} from "@/services/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
 
 /**
@@ -20,10 +23,16 @@ import { BlockchainType, SpecificChain } from "@/types/index.js";
 export class PortfolioSnapshotter {
   private balanceManager: BalanceManager;
   private priceTracker: PriceTracker;
+  private configurationService: ConfigurationService;
 
-  constructor(balanceManager: BalanceManager, priceTracker: PriceTracker) {
+  constructor(
+    balanceManager: BalanceManager,
+    priceTracker: PriceTracker,
+    configurationService: ConfigurationService,
+  ) {
     this.balanceManager = balanceManager;
     this.priceTracker = priceTracker;
+    this.configurationService = configurationService;
   }
 
   /**
@@ -93,9 +102,15 @@ export class PortfolioSnapshotter {
         dbPriceHitCount++;
         specificChain = latestPriceRecord.specificChain;
 
-        // If price is recent enough (less than 10 minutes old), use it directly
+        // Get competition-specific price freshness
+        const priceFreshnessMs =
+          await this.configurationService.getPortfolioPriceFreshnessMs(
+            competitionId,
+          );
+
+        // If price is recent enough, use it directly
         const priceAge = Date.now() - latestPriceRecord.timestamp.getTime();
-        const isFreshPrice = priceAge < config.portfolio.priceFreshnessMs;
+        const isFreshPrice = priceAge < priceFreshnessMs;
 
         if (isFreshPrice) {
           // Use the existing price if it's fresh
@@ -110,7 +125,7 @@ export class PortfolioSnapshotter {
           };
           reusedPriceCount++;
           repositoryLogger.debug(
-            `[PortfolioSnapshotter] Using fresh price for ${balance.tokenAddress} from DB: $${priceResult.price} (${specificChain}) - age ${Math.round(priceAge / 1000)}s, threshold ${Math.round(config.portfolio.priceFreshnessMs / 1000)}s`,
+            `[PortfolioSnapshotter] Using fresh price for ${balance.tokenAddress} from DB: $${priceResult.price} (${specificChain}) - age ${Math.round(priceAge / 1000)}s, threshold ${Math.round(priceFreshnessMs / 1000)}s`,
           );
         } else if (specificChain && latestPriceRecord.chain) {
           // Use specific chain information to avoid chain detection when fetching a new price

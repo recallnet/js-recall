@@ -13,7 +13,10 @@ import { serviceLogger } from "@/lib/logger.js";
 import { EXEMPT_TOKENS, calculateSlippage } from "@/lib/trade-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
-import { PortfolioSnapshotter } from "@/services/index.js";
+import {
+  ConfigurationService,
+  PortfolioSnapshotter,
+} from "@/services/index.js";
 import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
 import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
 
@@ -46,9 +49,8 @@ export class TradeSimulator {
   private priceTracker: PriceTracker;
   // Cache of recent trades for performance (agentId -> trades)
   private tradeCache: Map<string, SelectTrade[]>;
-  // Maximum trade percentage of portfolio value
-  private maxTradePercentage: number;
   private portfolioSnapshotter: PortfolioSnapshotter;
+  private configurationService: ConfigurationService;
   private dexScreenerProvider: DexScreenerProvider;
   // Cache of trading constraints per competition
   private constraintsCache: Map<string, TradingConstraints>;
@@ -57,15 +59,15 @@ export class TradeSimulator {
     balanceManager: BalanceManager,
     priceTracker: PriceTracker,
     portfolioSnapshotter: PortfolioSnapshotter,
+    configurationService: ConfigurationService,
   ) {
     this.balanceManager = balanceManager;
     this.priceTracker = priceTracker;
     this.portfolioSnapshotter = portfolioSnapshotter;
+    this.configurationService = configurationService;
     this.dexScreenerProvider = new DexScreenerProvider();
     this.tradeCache = new Map();
     this.constraintsCache = new Map();
-    // Get the maximum trade percentage from config
-    this.maxTradePercentage = config.maxTradePercentage;
   }
 
   /**
@@ -135,6 +137,7 @@ export class TradeSimulator {
       // Validate balances and portfolio limits
       await this.validateBalancesAndPortfolio(
         agentId,
+        competitionId,
         fromToken,
         fromAmount,
         fromValueUSD,
@@ -811,6 +814,7 @@ export class TradeSimulator {
   /**
    * Validates balances and portfolio limits for a trade.
    * @param agentId The agent ID
+   * @param competitionId The competition ID
    * @param fromToken The source token address
    * @param fromAmount The amount to trade
    * @param fromValueUSD The USD value of the trade
@@ -819,6 +823,7 @@ export class TradeSimulator {
    */
   private async validateBalancesAndPortfolio(
     agentId: string,
+    competitionId: string,
     fromToken: string,
     fromAmount: number,
     fromValueUSD: number,
@@ -836,21 +841,24 @@ export class TradeSimulator {
       throw new ApiError(400, "Insufficient balance");
     }
 
+    // Get competition-specific max trade percentage
+    const maxTradePercentage =
+      await this.configurationService.getMaxTradePercentage(competitionId);
+
     // Calculate portfolio value to check maximum trade size (configurable percentage of portfolio)
     const portfolioValue = await this.calculatePortfolioValue(agentId);
-    // TODO: maxTradePercentage should probably be a setting per comp.
-    const maxTradeValue = portfolioValue * (this.maxTradePercentage / 100);
+    const maxTradeValue = portfolioValue * (maxTradePercentage / 100);
     serviceLogger.debug(
       `[TradeSimulator] Portfolio value: $${portfolioValue}, Max trade value: $${maxTradeValue}, Attempted trade value: $${fromValueUSD}`,
     );
 
     if (fromValueUSD > maxTradeValue) {
       serviceLogger.debug(
-        `[TradeSimulator] Trade exceeds maximum size: $${fromValueUSD} > $${maxTradeValue} (${this.maxTradePercentage}% of portfolio)`,
+        `[TradeSimulator] Trade exceeds maximum size: $${fromValueUSD} > $${maxTradeValue} (${maxTradePercentage}% of portfolio)`,
       );
       throw new ApiError(
         400,
-        `Trade exceeds maximum size (${this.maxTradePercentage}% of portfolio value)`,
+        `Trade exceeds maximum size (${maxTradePercentage}% of portfolio value)`,
       );
     }
   }

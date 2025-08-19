@@ -3,6 +3,8 @@ import { AgentManager } from "@/services/agent-manager.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
 import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
+import { CompetitionConfigurationService } from "@/services/competition-configuration.service.js";
+import { CompetitionInitialBalancesService } from "@/services/competition-initial-balances.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
@@ -41,26 +43,45 @@ class ServiceRegistry {
   private _emailVerificationService: EmailVerificationService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
+  private _competitionConfigurationService: CompetitionConfigurationService;
+  private _competitionInitialBalancesService: CompetitionInitialBalancesService;
 
   constructor() {
     // Initialize services in dependency order
-    this._balanceManager = new BalanceManager();
+    // Competition configuration services (no dependencies)
+    this._competitionInitialBalancesService =
+      new CompetitionInitialBalancesService();
+    this._competitionConfigurationService =
+      new CompetitionConfigurationService();
+
+    // Balance manager now depends on competition initial balances service
+    this._balanceManager = new BalanceManager(
+      this._competitionInitialBalancesService,
+    );
     this._priceTracker = new PriceTracker();
-    this._portfolioSnapshotter = new PortfolioSnapshotter(
-      this._balanceManager,
-      this._priceTracker,
-    );
-    this._tradeSimulator = new TradeSimulator(
-      this._balanceManager,
-      this._priceTracker,
-      this._portfolioSnapshotter,
-    );
 
     // Initialize auth service (no dependencies needed)
     this._authService = new AuthService();
 
-    // Configuration service for dynamic settings
-    this._configurationService = new ConfigurationService();
+    // Configuration service now depends on competition configuration service
+    this._configurationService = new ConfigurationService(
+      this._competitionConfigurationService,
+    );
+
+    // Portfolio snapshotter now depends on configuration service
+    this._portfolioSnapshotter = new PortfolioSnapshotter(
+      this._balanceManager,
+      this._priceTracker,
+      this._configurationService,
+    );
+
+    // Trade simulator depends on portfolio snapshotter
+    this._tradeSimulator = new TradeSimulator(
+      this._balanceManager,
+      this._priceTracker,
+      this._portfolioSnapshotter,
+      this._configurationService,
+    );
 
     // Initialize agent rank service (no dependencies)
     this._agentRankService = new AgentRankService();
@@ -97,6 +118,8 @@ class ServiceRegistry {
       this._voteManager,
       this._tradingConstraintsService,
       this._competitionRewardService,
+      this._competitionConfigurationService,
+      this._competitionInitialBalancesService,
     );
 
     // Initialize LeaderboardService with required dependencies
@@ -178,6 +201,14 @@ class ServiceRegistry {
   get competitionRewardService(): CompetitionRewardService {
     return this._competitionRewardService;
   }
+
+  get competitionConfigurationService(): CompetitionConfigurationService {
+    return this._competitionConfigurationService;
+  }
+
+  get competitionInitialBalancesService(): CompetitionInitialBalancesService {
+    return this._competitionInitialBalancesService;
+  }
 }
 
 export {
@@ -186,6 +217,8 @@ export {
   AgentRankService,
   AuthService,
   BalanceManager,
+  CompetitionConfigurationService,
+  CompetitionInitialBalancesService,
   CompetitionManager,
   CompetitionRewardService,
   ConfigurationService,

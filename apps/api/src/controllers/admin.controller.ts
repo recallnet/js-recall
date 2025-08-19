@@ -539,6 +539,8 @@ export function makeAdminController(services: ServiceRegistry) {
           maxParticipants,
           tradingConstraints,
           rewards,
+          competitionConfiguration,
+          initialBalances,
         } = result.data;
 
         // Create a new competition
@@ -562,6 +564,8 @@ export function makeAdminController(services: ServiceRegistry) {
             maxParticipants,
             tradingConstraints,
             rewards,
+            competitionConfiguration,
+            initialBalances,
           },
         );
 
@@ -606,6 +610,8 @@ export function makeAdminController(services: ServiceRegistry) {
           joinEndDate,
           tradingConstraints,
           rewards,
+          competitionConfiguration,
+          initialBalances,
         } = result.data;
 
         // Validate that all provided agent IDs exist in the database and are active
@@ -711,6 +717,8 @@ export function makeAdminController(services: ServiceRegistry) {
             maxParticipants: undefined,
             tradingConstraints,
             rewards,
+            competitionConfiguration,
+            initialBalances,
           });
         }
 
@@ -804,16 +812,23 @@ export function makeAdminController(services: ServiceRegistry) {
           );
         }
 
-        // Extract rewards and tradingConstraints from the validated data
-        const { rewards, tradingConstraints, ...competitionUpdates } =
-          bodyResult.data;
+        // Extract special fields from the validated data
+        const {
+          rewards,
+          tradingConstraints,
+          competitionConfiguration,
+          initialBalances,
+          ...competitionUpdates
+        } = bodyResult.data;
         const updates = competitionUpdates as UpdateCompetition;
 
         // Check if there are any updates to apply
         if (
           Object.keys(updates).length === 0 &&
           !rewards &&
-          !tradingConstraints
+          !tradingConstraints &&
+          !competitionConfiguration &&
+          !initialBalances
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -841,6 +856,22 @@ export function makeAdminController(services: ServiceRegistry) {
               competitionId,
               rewards,
             );
+        }
+
+        // Update the competition configuration
+        if (competitionConfiguration) {
+          await services.competitionConfigurationService.updateConfiguration(
+            competitionId,
+            competitionConfiguration,
+          );
+        }
+
+        // Update the initial balances
+        if (initialBalances) {
+          await services.competitionInitialBalancesService.updateInitialBalances(
+            competitionId,
+            initialBalances,
+          );
         }
 
         // Return the updated competition
@@ -1838,7 +1869,10 @@ export function makeAdminController(services: ServiceRegistry) {
           );
 
           // Reset the agent's balances to starting values (consistent with startCompetition order)
-          await services.balanceManager.resetAgentBalances(agentId);
+          await services.balanceManager.resetAgentBalancesForCompetition(
+            agentId,
+            competitionId,
+          );
         }
 
         // Add agent to competition using repository method
