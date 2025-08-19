@@ -273,6 +273,7 @@ export const tradingConstraints = tradingComps.table(
       scale: 2,
       mode: "number",
     }).notNull(),
+    minTradesPerDay: integer("min_trades_per_day"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

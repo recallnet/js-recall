@@ -736,15 +736,15 @@ async function updateAgentCompetitionStatusImpl(
       const updateData =
         status !== COMPETITION_AGENT_STATUS.ACTIVE
           ? {
-              ...baseUpdateData,
-              deactivationReason: reason || `Status changed to ${status}`,
-              deactivatedAt: new Date(),
-            }
+            ...baseUpdateData,
+            deactivationReason: reason || `Status changed to ${status}`,
+            deactivatedAt: new Date(),
+          }
           : {
-              ...baseUpdateData,
-              deactivationReason: null,
-              deactivatedAt: null,
-            };
+            ...baseUpdateData,
+            deactivationReason: null,
+            deactivatedAt: null,
+          };
 
       const result = await tx
         .update(competitionAgents)
@@ -1994,6 +1994,7 @@ async function getEnrichedCompetitionsImpl(
     minimum24hVolumeUsd: number | null;
     minimumLiquidityUsd: number | null;
     minimumFdvUsd: number | null;
+    minTradesPerDay: number | null;
   }[]
 > {
   if (competitionIds.length === 0) {
@@ -2018,6 +2019,7 @@ async function getEnrichedCompetitionsImpl(
         minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
         minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
         minimumFdvUsd: tradingConstraints.minimumFdvUsd,
+        minTradesPerDay: tradingConstraints.minTradesPerDay,
       })
       .from(competitions)
       .leftJoin(
@@ -2041,6 +2043,7 @@ async function getEnrichedCompetitionsImpl(
       minimum24hVolumeUsd: row.minimum24hVolumeUsd,
       minimumLiquidityUsd: row.minimumLiquidityUsd,
       minimumFdvUsd: row.minimumFdvUsd,
+      minTradesPerDay: row.minTradesPerDay,
     }));
   } catch (error) {
     repositoryLogger.error("Error in getEnrichedCompetitionsImpl:", error);

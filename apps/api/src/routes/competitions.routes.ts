@@ -159,6 +159,30 @@ export function configureCompetitionsRoutes(
    *                                 format: date-time
    *                                 nullable: true
    *                                 description: When the user cast their vote (if hasVoted is true)
+   *                       tradingConstraints:
+   *                         type: object
+   *                         description: Trading constraints for the competition (only present for authenticated users)
+   *                         properties:
+   *                           minimumPairAgeHours:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum age of trading pairs in hours
+   *                           minimum24hVolumeUsd:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum 24-hour volume in USD
+   *                           minimumLiquidityUsd:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum liquidity in USD
+   *                           minimumFdvUsd:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum fully diluted valuation in USD
+   *                           minTradesPerDay:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum number of trades required per day (null if no requirement)
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata
@@ -594,6 +618,10 @@ export function configureCompetitionsRoutes(
    *                         minimumFdvUsd:
    *                           type: number
    *                           description: Minimum fully diluted valuation in USD
+   *                         minTradesPerDay:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum number of trades required per day (null if no requirement)
    *       404:
    *         description: Competition not found
    *       500:
@@ -835,6 +863,26 @@ export function configureCompetitionsRoutes(
    *                               format: date-time
    *                               nullable: true
    *                               description: When the user cast their vote (if hasVoted is true)
+   *                     tradingConstraints:
+   *                       type: object
+   *                       description: Trading constraints for the competition
+   *                       properties:
+   *                         minimumPairAgeHours:
+   *                           type: number
+   *                           description: Minimum age of trading pairs in hours
+   *                         minimum24hVolumeUsd:
+   *                           type: number
+   *                           description: Minimum 24-hour volume in USD
+   *                         minimumLiquidityUsd:
+   *                           type: number
+   *                           description: Minimum liquidity in USD
+   *                         minimumFdvUsd:
+   *                           type: number
+   *                           description: Minimum fully diluted valuation in USD
+   *                         minTradesPerDay:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum number of trades required per day (null if no requirement)
    *       400:
    *         description: Bad request - Invalid competition ID format
    *       404:

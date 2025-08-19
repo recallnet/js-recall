@@ -325,7 +325,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         for (const chain of Object.keys(config.specificChainBalances)) {
           const chainBalances =
             config.specificChainBalances[
-              chain as keyof typeof config.specificChainBalances
+            chain as keyof typeof config.specificChainBalances
             ];
           const tokenItems = [];
 
@@ -370,6 +370,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
           `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
           `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
         ];
+
+        // Add minimum trades per day rule if set
+        if (tradingConstraints.minTradesPerDay !== null) {
+          tradingRules.push(
+            `Minimum trades per day requirement: ${tradingConstraints.minTradesPerDay} trades`,
+          );
+        }
         const rateLimits = [
           `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
           "100 requests per minute for trade operations",
@@ -534,6 +541,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
               minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
               minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
               minimumFdvUsd: enrichment.minimumFdvUsd,
+              minTradesPerDay: enrichment.minTradesPerDay,
             };
 
             return {
@@ -1081,7 +1089,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         for (const chain of Object.keys(config.specificChainBalances)) {
           const chainBalances =
             config.specificChainBalances[
-              chain as keyof typeof config.specificChainBalances
+            chain as keyof typeof config.specificChainBalances
             ];
           const tokenItems = [];
 
@@ -1127,6 +1135,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
           `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
         ];
 
+        // Add minimum trades per day rule if set
+        if (tradingConstraints.minTradesPerDay !== null) {
+          tradingRules.push(
+            `Minimum trades per day requirement: ${tradingConstraints.minTradesPerDay} trades`,
+          );
+        }
+
         const rateLimits = [
           `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
           "100 requests per minute for trade operations",
@@ -1160,6 +1175,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
             minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
             minimumFdvUsd: tradingConstraints.minimumFdvUsd,
+            minTradesPerDay: tradingConstraints.minTradesPerDay,
           },
         };
 
