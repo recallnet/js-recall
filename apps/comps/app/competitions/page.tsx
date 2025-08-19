@@ -19,6 +19,7 @@ import CompetitionsSkeleton from "@/components/competitions-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import ConnectWalletModal from "@/components/modals/connect-wallet";
+import { DISABLE_LEADERBOARD } from "@/config";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
@@ -108,8 +109,8 @@ export default function CompetitionsPage() {
 
   return (
     <div>
-      <div className="h-120 absolute relative left-1/2 top-[-41] w-full -translate-x-1/2 transform pt-40">
-        {carouselContent.length > 0 && (
+      <div className="h-120 relative left-1/2 top-[-41] w-full -translate-x-1/2 transform pt-40">
+        {carouselContent.length > 0 && !DISABLE_LEADERBOARD && (
           <HeroCarousel
             className="absolute left-[-350px] right-[-350px] top-0"
             texts={carouselContent}
