@@ -285,9 +285,9 @@ export const config = {
     // Default snapshot interval: 5 minutes (600000ms)
     // The snapshot is taken and configured via cron
     snapshotIntervalMs: parseInt("600000", 10),
-    // How fresh a price needs to be to reuse directly from DB (default: 10 minutes)
+    // How fresh a price needs to be to reuse directly from cache (default: 1 minute)
     priceFreshnessMs: parseInt(
-      process.env.PORTFOLIO_PRICE_FRESHNESS_MS || "600000",
+      process.env.PORTFOLIO_PRICE_FRESHNESS_MS || "60000",
       10,
     ),
   },

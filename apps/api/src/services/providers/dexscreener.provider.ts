@@ -17,17 +17,6 @@ export class DexScreenerProvider implements PriceSource {
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
 
-  // Add cache for token prices with composite key (tokenAddress:specificChain)
-  private readonly tokenPriceCache: Map<
-    string,
-    DexScreenerTokenInfo & {
-      timestamp: number;
-      chain: BlockchainType;
-      specificChain: SpecificChain;
-    }
-  > = new Map();
-  private readonly CACHE_DURATION = 3600000; // 1 hour in milliseconds
-
   // Mapping for DexScreener specific chain names
   private readonly chainMapping: Record<SpecificChain, string> = {
     eth: "ethereum",
@@ -359,81 +348,6 @@ export class DexScreenerProvider implements PriceSource {
   }
 
   /**
-   * Generates a cache key from token address and chain
-   */
-  private getCacheKey(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): string {
-    return `${tokenAddress.toLowerCase()}:${specificChain}`;
-  }
-
-  /**
-   * Get cached token price if available
-   */
-  private getCachedPrice(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ):
-    | (DexScreenerTokenInfo & {
-        chain: BlockchainType;
-        specificChain: SpecificChain;
-      })
-    | null {
-    const cacheKey = this.getCacheKey(tokenAddress, specificChain);
-    const cached = this.tokenPriceCache.get(cacheKey);
-
-    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      serviceLogger.debug(
-        `[DexScreenerProvider] Using cached price for ${tokenAddress} on ${specificChain}: $${cached.price}`,
-      );
-      return {
-        price: cached.price,
-        symbol: cached.symbol,
-        chain: cached.chain,
-        specificChain: cached.specificChain,
-        pairCreatedAt: cached.pairCreatedAt,
-        volume: cached.volume,
-        liquidity: cached.liquidity,
-        fdv: cached.fdv,
-      };
-    }
-    return null;
-  }
-
-  /**
-   * Cache token price and its chain
-   */
-  private setCachedPrice(
-    tokenAddress: string,
-    chain: BlockchainType,
-    specificChain: SpecificChain,
-    price: number,
-    symbol: string,
-    pairCreatedAt?: number,
-    volume?: { h24?: number },
-    liquidity?: { usd?: number },
-    fdv?: number,
-  ): void {
-    const cacheKey = this.getCacheKey(tokenAddress, specificChain);
-    this.tokenPriceCache.set(cacheKey, {
-      price,
-      symbol,
-      timestamp: Date.now(),
-      chain,
-      specificChain,
-      pairCreatedAt,
-      volume,
-      liquidity,
-      fdv,
-    });
-
-    serviceLogger.debug(
-      `[DexScreenerProvider] Cached price for ${tokenAddress} on ${specificChain}: $${price}`,
-    );
-  }
-
-  /**
    * Check if a token address is a burn address (dead address)
    */
   private isBurnAddress(tokenAddress: string): boolean {
@@ -485,23 +399,6 @@ export class DexScreenerProvider implements PriceSource {
       };
     }
 
-    // Check cache first
-    const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
-    if (cachedPrice !== null) {
-      return {
-        price: cachedPrice.price,
-        symbol: cachedPrice.symbol,
-        token: tokenAddress,
-        timestamp: new Date(),
-        chain: cachedPrice.chain,
-        specificChain: cachedPrice.specificChain,
-        pairCreatedAt: cachedPrice.pairCreatedAt,
-        volume: cachedPrice.volume,
-        liquidity: cachedPrice.liquidity,
-        fdv: cachedPrice.fdv,
-      };
-    }
-
     // Get the DexScreener chain identifier
     const dexScreenerChain = this.getDexScreenerChain(
       tokenAddress,
@@ -517,19 +414,6 @@ export class DexScreenerProvider implements PriceSource {
     );
 
     if (price !== null) {
-      // Cache the price
-      this.setCachedPrice(
-        tokenAddress,
-        chain,
-        specificChain,
-        price.price,
-        price.symbol,
-        price.pairCreatedAt,
-        price.volume,
-        price.liquidity,
-        price.fdv,
-      );
-
       return {
         price: price.price,
         symbol: price.symbol,
@@ -555,11 +439,6 @@ export class DexScreenerProvider implements PriceSource {
   ): Promise<boolean> {
     // Always support burn addresses
     if (this.isBurnAddress(tokenAddress)) {
-      return true;
-    }
-
-    // Check cache first
-    if (this.getCachedPrice(tokenAddress, specificChain) !== null) {
       return true;
     }
 
@@ -668,11 +547,11 @@ export class DexScreenerProvider implements PriceSource {
   ): Promise<Map<string, DexScreenerTokenInfo | null>> {
     const results = new Map<string, DexScreenerTokenInfo | null>();
 
-    // Normalize addresses and check cache first
+    // Normalize addresses and filter out burn addresses
     const normalizedAddresses = tokenAddresses.map((addr) =>
       addr.toLowerCase(),
     );
-    const uncachedAddresses: string[] = [];
+    const addressesToFetch: string[] = [];
 
     for (const normalizedAddr of normalizedAddresses) {
       const originalAddr = tokenAddresses.find(
@@ -693,31 +572,18 @@ export class DexScreenerProvider implements PriceSource {
         continue;
       }
 
-      // Check cache
-      const cachedPrice = this.getCachedPrice(normalizedAddr, specificChain);
-      if (cachedPrice !== null) {
-        results.set(originalAddr, {
-          price: cachedPrice.price,
-          symbol: cachedPrice.symbol,
-          pairCreatedAt: cachedPrice.pairCreatedAt,
-          volume: cachedPrice.volume,
-          liquidity: cachedPrice.liquidity,
-          fdv: cachedPrice.fdv,
-        });
-      } else {
-        uncachedAddresses.push(originalAddr);
-      }
+      addressesToFetch.push(originalAddr);
     }
 
-    // If all tokens were cached or burn addresses, return early
+    // If all tokens are burn addresses, return early
     if (
-      uncachedAddresses.length === 0 ||
-      typeof uncachedAddresses[0] === "undefined"
+      addressesToFetch.length === 0 ||
+      typeof addressesToFetch[0] === "undefined"
     ) {
       return results;
     }
 
-    const firstAddress = uncachedAddresses[0];
+    const firstAddress = addressesToFetch[0];
 
     const dexScreenerChain = this.getDexScreenerChain(
       firstAddress,
@@ -726,7 +592,7 @@ export class DexScreenerProvider implements PriceSource {
     );
 
     // Join addresses with comma for batch request
-    const addressesParam = uncachedAddresses
+    const addressesParam = addressesToFetch
       .map((addr) => addr.toLowerCase())
       .join(",");
     const url = `${this.API_BASE}/${dexScreenerChain}/${addressesParam}`;
@@ -735,7 +601,7 @@ export class DexScreenerProvider implements PriceSource {
       `[DexScreenerProvider] Fetching batch prices from: ${url}`,
     );
     serviceLogger.debug(
-      `[DexScreenerProvider] Batch size: ${uncachedAddresses.length} tokens`,
+      `[DexScreenerProvider] Batch size: ${addressesToFetch.length} tokens`,
     );
 
     let retries = 0;
@@ -754,7 +620,7 @@ export class DexScreenerProvider implements PriceSource {
           response.data.length > 0
         ) {
           // Process each token in the batch
-          for (const originalAddr of uncachedAddresses) {
+          for (const originalAddr of addressesToFetch) {
             const normalizedAddr = originalAddr.toLowerCase();
             const tokenPrice = this.extractPriceUsd(
               normalizedAddr,
@@ -763,19 +629,6 @@ export class DexScreenerProvider implements PriceSource {
             );
 
             if (tokenPrice) {
-              // Cache the price
-              this.setCachedPrice(
-                normalizedAddr,
-                chain,
-                specificChain,
-                tokenPrice.price,
-                tokenPrice.symbol,
-                tokenPrice.pairCreatedAt,
-                tokenPrice.volume,
-                tokenPrice.liquidity,
-                tokenPrice.fdv,
-              );
-
               results.set(originalAddr, tokenPrice);
               serviceLogger.debug(
                 `[DexScreenerProvider] Found batch price for ${originalAddr}: $${tokenPrice.price} (${tokenPrice.symbol})`,
@@ -791,8 +644,8 @@ export class DexScreenerProvider implements PriceSource {
           serviceLogger.debug(
             `[DexScreenerProvider] No data returned for batch request: ${url}`,
           );
-          // Set all uncached tokens to null
-          uncachedAddresses.forEach((addr) => {
+          // Set all addresses to null when no data returned
+          addressesToFetch.forEach((addr) => {
             results.set(addr, null);
           });
         }
@@ -815,8 +668,8 @@ export class DexScreenerProvider implements PriceSource {
       `[DexScreenerProvider] Failed to fetch batch prices after ${this.MAX_RETRIES} retries`,
     );
 
-    // Set all uncached tokens to null on failure
-    uncachedAddresses.forEach((addr) => {
+    // Set all addresses to null on failure
+    addressesToFetch.forEach((addr) => {
       results.set(addr, null);
     });
 
