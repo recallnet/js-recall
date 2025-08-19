@@ -1,7 +1,14 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import React, { useState } from "react";
 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
@@ -36,7 +43,10 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
   className,
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const [rulesExpanded, setRulesExpanded] = useState(false);
+  const [balancesExpanded, setBalancesExpanded] = useState(false);
+  const [tradingRulesExpanded, setTradingRulesExpanded] = useState(false);
+  const [chainsExpanded, setChainsExpanded] = useState(false);
+  const [rateLimitsExpanded, setRateLimitsExpanded] = useState(false);
   const { data: rules, isLoading: rulesLoading } = useCompetitionRules(
     competition.id,
   );
@@ -57,226 +67,289 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
     : competition.description;
 
   return (
-    <section className={cn(className, "border text-white")}>
-      <div className="grid grid-cols-2 border-b">
-        <div className="flex flex-col items-start gap-2 border-r p-[25px]">
-          <CellTitle>Reward</CellTitle>
-          {competition.rewards ? (
-            <Rewards rewards={competition.rewards} />
-          ) : (
-            <p className="text-xl font-semibold">TBA</p>
-          )}
-        </div>
-        <div className="flex flex-col items-start gap-2 p-[25px]">
-          <div className="flex w-full items-center justify-between">
-            <CellTitle>Status</CellTitle>
-            <CompetitionStatusBadge status={competition.status} />
-          </div>
-          <span className="font-bold">
-            {startDate} - {endDate}
-          </span>
-        </div>
-      </div>
+    <Tabs defaultValue="info" className={cn(className, "text-white")}>
+      <TabsList className="mb-4 gap-2">
+        <TabsTrigger
+          value="info"
+          className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:hover:bg-white data-[state=active]:hover:text-black"
+        >
+          Info
+        </TabsTrigger>
+        <TabsTrigger
+          value="rules"
+          className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:hover:bg-white data-[state=active]:hover:text-black"
+        >
+          Rules
+        </TabsTrigger>
+      </TabsList>
 
-      <div className="grid grid-cols-2 border-b">
-        <div className="flex items-center gap-2 border-r p-[25px]">
-          <CellTitle>Skills</CellTitle>
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded border p-2 text-xs capitalize">
-              {formatCompetitionType(competition.type)}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col items-start gap-2 p-[25px]">
-          <CellTitle>Participants</CellTitle>
-          {competition.maxParticipants ? (
-            <div className="mt-2 grid w-full grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                <CellTitle className="mb-1 font-medium">Registered</CellTitle>
-                <span className="font-bold">
-                  {competition.registeredParticipants}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <CellTitle className="mb-1 font-medium">Limit</CellTitle>
-                <span className="font-bold">{competition.maxParticipants}</span>
-              </div>
+      <TabsContent value="info" className="border">
+        <div>
+          <div className="grid grid-cols-2 border-b">
+            <div className="flex flex-col items-start gap-2 border-r p-[25px]">
+              <CellTitle>Reward</CellTitle>
+              {competition.rewards ? (
+                <Rewards rewards={competition.rewards} />
+              ) : (
+                <p className="text-xl font-semibold">TBA</p>
+              )}
             </div>
-          ) : (
-            <span className="font-bold">
-              {competition.registeredParticipants}
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="border-b">
-        <div className="p-[25px]">
-          <CellTitle>About</CellTitle>
-          <div
-            className={`relative ${expanded ? "max-h-40 overflow-y-auto" : "max-h-16 overflow-hidden"}`}
-          >
-            <p className="whitespace-pre-line pr-2">
-              {expanded ? competition.description : shortDesc}
-            </p>
-            {!expanded && isLong && (
-              <div className="pointer-events-none absolute bottom-0 left-0 h-8 w-full bg-gradient-to-t from-black to-transparent" />
-            )}
-          </div>
-          {isLong && (
-            <button
-              className="hover: mt-2 self-start transition-colors"
-              onClick={() => setExpanded((v) => !v)}
-              aria-expanded={expanded}
-            >
-              {expanded ? "SHOW LESS" : "READ MORE"}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Rules Section */}
-      <div className="border-b">
-        <div className="p-[25px]">
-          <CellTitle>Rules & Constraints</CellTitle>
-          {rulesLoading ? (
-            <p className="mt-2 text-sm text-gray-400">Loading rules...</p>
-          ) : rules ? (
-            <div className="mt-2 space-y-3">
-              {/* Starting Balances */}
-              <div>
-                <span className="text-sm font-medium">Starting Balance</span>
-                <p className="text-sm text-gray-400">
-                  {rules.tradingRules.find((rule) =>
-                    rule.includes("start with"),
-                  ) || "See full rules for details"}
-                </p>
+            <div className="flex flex-col items-start gap-2 p-[25px]">
+              <div className="flex w-full items-center justify-between">
+                <CellTitle>Status</CellTitle>
+                <CompetitionStatusBadge status={competition.status} />
               </div>
+              <span>
+                {startDate} - {endDate}
+              </span>
+            </div>
+          </div>
 
-              {/* Trading Constraints */}
-              {rules.tradingConstraints && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <span className="text-sm font-medium">Min Token Age</span>
-                    <p className="text-sm text-gray-400">
-                      {rules.tradingConstraints.minimumPairAgeHours} hours
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium">Min 24h Volume</span>
-                    <p className="text-sm text-gray-400">
-                      $
-                      {rules.tradingConstraints.minimum24hVolumeUsd.toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium">Min Liquidity</span>
-                    <p className="text-sm text-gray-400">
-                      $
-                      {rules.tradingConstraints.minimumLiquidityUsd.toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium">Min FDV</span>
-                    <p className="text-sm text-gray-400">
-                      ${rules.tradingConstraints.minimumFdvUsd.toLocaleString()}
-                    </p>
-                  </div>
-                  {rules.tradingConstraints.minTradesPerDay !== null &&
-                    rules.tradingConstraints.minTradesPerDay !== undefined && (
-                      <div>
-                        <span className="text-sm font-medium">
-                          Min Trades/Day
-                        </span>
-                        <p className="text-sm text-gray-400">
-                          {rules.tradingConstraints.minTradesPerDay} trades
-                        </p>
+          <div className="flex items-center gap-2 border-b p-[25px]">
+            <CellTitle>Skills</CellTitle>
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded border p-2 text-xs capitalize">
+                {formatCompetitionType(competition.type)}
+              </span>
+            </div>
+          </div>
+
+          <div className="border-b">
+            <div className="p-[25px]">
+              <CellTitle>About</CellTitle>
+              <div
+                className={`relative ${expanded ? "max-h-40 overflow-y-auto" : "max-h-16 overflow-hidden"}`}
+              >
+                <p className="whitespace-pre-line pr-2">
+                  {expanded ? competition.description : shortDesc}
+                </p>
+                {!expanded && isLong && (
+                  <div className="pointer-events-none absolute bottom-0 left-0 h-8 w-full bg-gradient-to-t from-black to-transparent" />
+                )}
+              </div>
+              {isLong && (
+                <button
+                  className="hover: mt-2 self-start transition-colors"
+                  onClick={() => setExpanded((v) => !v)}
+                  aria-expanded={expanded}
+                >
+                  {expanded ? "SHOW LESS" : "READ MORE"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3">
+            <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
+              <CellTitle>Total Trades</CellTitle>
+              <span className="font-bold">{competition.stats.totalTrades}</span>
+            </div>
+            <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
+              <CellTitle>Volume</CellTitle>
+              <span className="font-bold">
+                $
+                {competition.stats.totalVolume.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
+            <div className="flex flex-col items-start justify-center gap-2 p-[25px]">
+              <CellTitle>Tokens Traded</CellTitle>
+              <span className="font-bold">
+                {competition.stats.uniqueTokens}
+              </span>
+            </div>
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="rules" className="border">
+        <div>
+          {rulesLoading ? (
+            <div className="p-[25px]">
+              <p className="text-sm text-gray-400">Loading rules...</p>
+            </div>
+          ) : rules ? (
+            <div className="divide-y">
+              {/* Balances & Constraints Section */}
+              <div
+                className="cursor-pointer p-[25px]"
+                onClick={() => setBalancesExpanded(!balancesExpanded)}
+                aria-expanded={balancesExpanded}
+                role="button"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <CellTitle>Balances & Constraints</CellTitle>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      balancesExpanded ? "rotate-180" : "",
+                    )}
+                  />
+                </div>
+                {balancesExpanded && (
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <span className="text-sm font-medium">
+                        Starting Balance
+                      </span>
+                      <p className="text-sm text-gray-400">
+                        {rules.tradingRules.find((rule) =>
+                          rule.includes("start with"),
+                        ) || "See full rules for details"}
+                      </p>
+                    </div>
+                    {rules.tradingConstraints && (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <span className="text-sm font-medium">
+                            Min Token Age
+                          </span>
+                          <p className="text-sm text-gray-400">
+                            {rules.tradingConstraints.minimumPairAgeHours} hours
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium">
+                            Min 24h Volume
+                          </span>
+                          <p className="text-sm text-gray-400">
+                            $
+                            {rules.tradingConstraints.minimum24hVolumeUsd.toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium">
+                            Min Liquidity
+                          </span>
+                          <p className="text-sm text-gray-400">
+                            $
+                            {rules.tradingConstraints.minimumLiquidityUsd.toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium">Min FDV</span>
+                          <p className="text-sm text-gray-400">
+                            $
+                            {rules.tradingConstraints.minimumFdvUsd.toLocaleString()}
+                          </p>
+                        </div>
+                        {rules.tradingConstraints.minTradesPerDay !== null &&
+                          rules.tradingConstraints.minTradesPerDay !==
+                            undefined && (
+                            <div>
+                              <span className="text-sm font-medium">
+                                Min Trades/Day
+                              </span>
+                              <p className="text-sm text-gray-400">
+                                {rules.tradingConstraints.minTradesPerDay}{" "}
+                                trades
+                              </p>
+                            </div>
+                          )}
                       </div>
                     )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
 
-              {/* Show More/Less for detailed rules */}
-              {rulesExpanded && (
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <span className="text-sm font-medium">Trading Rules</span>
-                    <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-gray-400">
+              {/* Trading Rules Section */}
+              <div
+                className="cursor-pointer p-[25px]"
+                onClick={() => setTradingRulesExpanded(!tradingRulesExpanded)}
+                aria-expanded={tradingRulesExpanded}
+                role="button"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <CellTitle>Trading Rules</CellTitle>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      tradingRulesExpanded ? "rotate-180" : "",
+                    )}
+                  />
+                </div>
+                {tradingRulesExpanded && (
+                  <div className="mt-4">
+                    <ul className="list-inside list-disc space-y-1 text-sm text-gray-400">
                       {rules.tradingRules.map((rule, idx) => (
                         <li key={idx}>{rule}</li>
                       ))}
                     </ul>
                   </div>
+                )}
+              </div>
 
-                  <div>
-                    <span className="text-sm font-medium">
-                      Available Chains
-                    </span>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {rules.availableChains.svm && (
-                        <span className="rounded border px-2 py-1 text-xs">
-                          Solana
-                        </span>
-                      )}
-                      {rules.availableChains.evm.map((chain) => (
-                        <span
-                          key={chain}
-                          className="rounded border px-2 py-1 text-xs capitalize"
-                        >
-                          {chain}
-                        </span>
-                      ))}
-                    </div>
+              {/* Supported Chains Section */}
+              <div
+                className="cursor-pointer p-[25px]"
+                onClick={() => setChainsExpanded(!chainsExpanded)}
+                aria-expanded={chainsExpanded}
+                role="button"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <CellTitle>Supported Chains</CellTitle>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      chainsExpanded ? "rotate-180" : "",
+                    )}
+                  />
+                </div>
+                {chainsExpanded && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {rules.availableChains.svm && (
+                      <span className="rounded border px-2 py-1 text-xs">
+                        Solana
+                      </span>
+                    )}
+                    {rules.availableChains.evm.map((chain) => (
+                      <span
+                        key={chain}
+                        className="rounded border px-2 py-1 text-xs capitalize"
+                      >
+                        {chain}
+                      </span>
+                    ))}
                   </div>
+                )}
+              </div>
 
-                  <div>
-                    <span className="text-sm font-medium">Rate Limits</span>
-                    <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-gray-400">
-                      {rules.rateLimits.slice(0, 3).map((limit, idx) => (
+              {/* Rate Limits Section */}
+              <div
+                className="cursor-pointer p-[25px]"
+                onClick={() => setRateLimitsExpanded(!rateLimitsExpanded)}
+                aria-expanded={rateLimitsExpanded}
+                role="button"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <CellTitle>Rate Limits</CellTitle>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      rateLimitsExpanded ? "rotate-180" : "",
+                    )}
+                  />
+                </div>
+                {rateLimitsExpanded && (
+                  <div className="mt-4">
+                    <ul className="list-inside list-disc space-y-1 text-sm text-gray-400">
+                      {rules.rateLimits.map((limit, idx) => (
                         <li key={idx}>{limit}</li>
                       ))}
                     </ul>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ) : (
-            <p className="mt-2 text-sm text-gray-400">Rules not available</p>
-          )}
-
-          {/* Expand/Collapse button */}
-          {rules && (
-            <button
-              className="mt-3 text-sm transition-colors hover:underline"
-              onClick={() => setRulesExpanded(!rulesExpanded)}
-              aria-expanded={rulesExpanded}
-            >
-              {rulesExpanded ? "SHOW LESS" : "VIEW ALL RULES"}
-            </button>
+            <div className="p-[25px]">
+              <p className="text-sm text-gray-400">Rules not available</p>
+            </div>
           )}
         </div>
-      </div>
-
-      <div className="grid grid-cols-3">
-        <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
-          <CellTitle>Total Trades</CellTitle>
-          <span className="font-bold">{competition.stats.totalTrades}</span>
-        </div>
-        <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
-          <CellTitle>Volume</CellTitle>
-          <span className="font-bold">
-            $
-            {competition.stats.totalVolume.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        </div>
-        <div className="flex flex-col items-start justify-center gap-2 p-[25px]">
-          <CellTitle>Tokens Traded</CellTitle>
-          <span className="font-bold">{competition.stats.uniqueTokens}</span>
-        </div>
-      </div>
-    </section>
+      </TabsContent>
+    </Tabs>
   );
 };
