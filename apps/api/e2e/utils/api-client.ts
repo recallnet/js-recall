@@ -15,6 +15,7 @@ import {
   AdminUserResponse,
   AdminUsersListResponse,
   AgentApiKeyResponse,
+  AgentCompetitionsResponse,
   AgentMetadata,
   AgentNonceResponse,
   AgentProfileResponse,
@@ -196,8 +197,7 @@ export class ApiClient {
       limit?: number;
       offset?: number;
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): Promise<any | ErrorResponse> {
+  ): Promise<AgentCompetitionsResponse | ErrorResponse> {
     try {
       const queryParams = new URLSearchParams();
 
@@ -430,6 +430,7 @@ export class ApiClient {
     votingEndDate?: string,
     joinStartDate?: string,
     joinEndDate?: string,
+    maxParticipants?: number,
     tradingConstraints?: TradingConstraints,
     rewards?: Record<number, number>,
   ): Promise<CreateCompetitionResponse | ErrorResponse> {
@@ -449,6 +450,7 @@ export class ApiClient {
           votingEndDate,
           joinStartDate,
           joinEndDate,
+          maxParticipants,
           tradingConstraints,
           rewards,
         },
@@ -477,7 +479,7 @@ export class ApiClient {
         {
           competitionId,
           agentIds,
-          crossChainTradingType,
+          tradingType: crossChainTradingType,
           sandboxMode,
           externalUrl,
           imageUrl,
