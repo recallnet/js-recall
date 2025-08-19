@@ -106,6 +106,12 @@ export class PriceTracker {
 
     // Determine which chain this token belongs to if not provided
     const tokenChain = blockchainType || this.determineChain(tokenAddress);
+
+    // For Solana tokens, the specificChain is always "svm"
+    if (tokenChain === BlockchainType.SVM && !specificChain) {
+      specificChain = "svm";
+    }
+
     serviceLogger.debug(
       `[PriceTracker] ${blockchainType ? "Using provided" : "Detected"} token ${tokenAddress} on chain: ${tokenChain}`,
     );
@@ -161,7 +167,14 @@ export class PriceTracker {
     const uncachedTokens: string[] = [];
 
     for (const tokenAddress of tokenAddresses) {
-      const cachedPrice = this.getCachedPrice(tokenAddress);
+      // Determine the specific chain for proper cache lookup
+      const tokenChain = this.determineChain(tokenAddress);
+      let specificChain: SpecificChain | undefined;
+      if (tokenChain === BlockchainType.SVM) {
+        specificChain = "svm";
+      }
+
+      const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
       if (cachedPrice) {
         serviceLogger.debug(
           `[PriceTracker] Using cached price for ${tokenAddress}: $${cachedPrice.price}`,
@@ -177,7 +190,17 @@ export class PriceTracker {
     const tokensNeedingAPI: string[] = [];
 
     for (const tokenAddress of uncachedTokens) {
-      const dbCachedPrice = await this.getDatabaseCachedPrice(tokenAddress);
+      // Determine the specific chain for proper database cache lookup
+      const tokenChain = this.determineChain(tokenAddress);
+      let specificChain: SpecificChain | undefined;
+      if (tokenChain === BlockchainType.SVM) {
+        specificChain = "svm";
+      }
+
+      const dbCachedPrice = await this.getDatabaseCachedPrice(
+        tokenAddress,
+        specificChain,
+      );
       if (dbCachedPrice) {
         resultMap.set(tokenAddress, dbCachedPrice);
         databaseCacheHits++;
@@ -779,6 +802,7 @@ export class PriceTracker {
         const svmResults = await this.multiChainProvider.getBatchPrices(
           svmTokens,
           BlockchainType.SVM,
+          "svm", // For SVM tokens, specificChain is always "svm"
         );
         await this.processBatchResults(svmResults, resultMap);
       }
