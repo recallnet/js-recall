@@ -364,6 +364,53 @@ export class CompetitionManager {
   }
 
   /**
+   * Calculates final leaderboard, enriches with PnL data, and persists to database
+   * @param competitionId The competition ID
+   * @param totalAgents Total number of agents in the competition
+   * @returns Number of leaderboard entries that were saved
+   */
+  private async calculateAndPersistFinalLeaderboard(
+    competitionId: string,
+    totalAgents: number,
+  ): Promise<number> {
+    // Get the leaderboard (calculated from final snapshots)
+    const leaderboard = await this.getLeaderboard(competitionId);
+
+    const enrichedEntries = [];
+
+    // Note: the leaderboard array could be quite large, avoiding Promise.all
+    // so that these async calls to get pnl happen in series and don't over
+    // use system resources.
+    for (let i = 0; i < leaderboard.length; i++) {
+      const entry = leaderboard[i];
+      if (entry === undefined) continue;
+
+      const { pnl, startingValue } =
+        await this.agentManager.getAgentPerformanceForComp(
+          entry.agentId,
+          competitionId,
+        );
+
+      enrichedEntries.push({
+        agentId: entry.agentId,
+        competitionId,
+        rank: i + 1, // 1-based ranking
+        pnl,
+        startingValue,
+        totalAgents,
+        score: entry.value, // Portfolio value in USD is saved as `score`
+      });
+    }
+
+    // Persist to database
+    if (enrichedEntries.length > 0) {
+      await batchInsertLeaderboard(enrichedEntries);
+    }
+
+    return enrichedEntries.length;
+  }
+
+  /**
    * End a competition
    * @param competitionId The competition ID
    * @returns The updated competition
@@ -399,44 +446,17 @@ export class CompetitionManager {
     // Reload configuration settings (revert to environment defaults)
     await this.configurationService.loadCompetitionSettings();
 
-    const leaderboard = await this.getLeaderboard(competitionId);
-
-    const leaderboardEntries = [];
-    // Note: the leaderboard array could be quite large, avoiding Promise.all
-    //  so that these async calls to get pnl happen in series and don't over
-    //  use system resorces.
-    for (let i = 0; i < leaderboard.length; i++) {
-      const entry = leaderboard[i];
-      if (entry === undefined) continue;
-      const agentId = entry.agentId;
-      const { pnl, startingValue } =
-        await this.agentManager.getAgentPerformanceForComp(
-          agentId,
-          competitionId,
-        );
-
-      const val = {
-        agentId,
-        competitionId,
-        rank: i + 1, // 1-based ranking
-        pnl,
-        startingValue,
-        totalAgents: competitionAgents.length,
-        score: entry.value, // Use the the total portfolio value in usd is saved as `score`
-      };
-
-      leaderboardEntries.push(val);
-    }
-
-    if (leaderboardEntries.length > 0) {
-      await batchInsertLeaderboard(leaderboardEntries);
-    }
+    // Calculate final leaderboard, enrich with PnL data, and persist to database
+    const leaderboardCount = await this.calculateAndPersistFinalLeaderboard(
+      competitionId,
+      competitionAgents.length,
+    );
 
     // Update agent ranks based on competition results
     await this.agentRankService.updateAgentRanksForCompetition(competitionId);
 
     serviceLogger.debug(
-      `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ${competitionAgents.length} agents, ${leaderboardEntries.length} leaderboard entries`,
+      `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ${competitionAgents.length} agents, ${leaderboardCount} leaderboard entries`,
     );
 
     return finalCompetition;
