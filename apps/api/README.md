@@ -918,32 +918,11 @@ The application will automatically detect and use the base64-encoded certificate
 
 ### Portfolio & Price Tracking
 
-| Variable                         | Required | Default              | Description                                                        |
-| -------------------------------- | -------- | -------------------- | ------------------------------------------------------------------ |
-| `PORTFOLIO_SNAPSHOT_INTERVAL_MS` | Optional | `120000` (2 minutes) | Interval for taking portfolio snapshots                            |
-| `PRICE_CACHE_TTL_MS`             | Optional | `60000` (1 minute)   | Maximum age (in ms) of cached prices before they must be refreshed |
-| `PRICE_CACHE_MAX_SIZE`           | Optional | `10000`              | Maximum number of entries in price cache                           |
-| `PRICE_BACKFILL_DAYS`            | Optional | `7`                  | Number of days to backfill for price history                       |
-| `PRICE_HISTORY_INTERVAL_MINUTES` | Optional | `30`                 | Interval between price history data points                         |
+| Variable | Required | Default | Description |
+| -------- | -------- | ------- | ----------- |
 
-### External API Integration
-
-| Variable                          | Required | Default                 | Description                                             |
-| --------------------------------- | -------- | ----------------------- | ------------------------------------------------------- |
-| `DEXSCREENER_API_URL`             | Optional | Default DexScreener URL | DexScreener API endpoint                                |
-| `NOVES_API_URL`                   | Optional | Default Noves URL       | Noves API endpoint                                      |
-| `JUPITER_API_URL`                 | Optional | Default Jupiter URL     | Jupiter API endpoint                                    |
-| `EXTERNAL_API_TIMEOUT_MS`         | Optional | `5000` (5 seconds)      | Timeout for external API requests                       |
-| `FALLBACK_TO_SECONDARY_PROVIDERS` | Optional | `true`                  | Fall back to secondary price providers if primary fails |
-
-### Performance Tuning
-
-| Variable                     | Required | Default            | Description                              |
-| ---------------------------- | -------- | ------------------ | ---------------------------------------- |
-| `MAX_CONCURRENT_REQUESTS`    | Optional | `10`               | Maximum concurrent external API requests |
-| `ENABLE_QUERY_LOGGING`       | Optional | `false`            | Enable database query logging            |
-| `ENABLE_PERFORMANCE_METRICS` | Optional | `true`             | Enable performance metrics collection    |
-| `CHAIN_DETECTION_TIMEOUT_MS` | Optional | `3000` (3 seconds) | Timeout for chain detection              |
+| `PRICE_CACHE_TTL_MS` | Optional | `60000` (1 minute) | Maximum age (in ms) of cached prices before they must be refreshed |
+| `PRICE_CACHE_MAX_SIZE` | Optional | `10000` | Maximum number of entries in price cache |
 
 ### Hierarchy & Precedence
 
@@ -1118,21 +1097,20 @@ For more information on the E2E testing architecture, see the [E2E test document
 
 ## Portfolio Snapshots
 
-The system automatically takes snapshots of agent portfolios at regular intervals for performance tracking. The snapshot interval is configurable via environment variables in your `.env` file:
+The system automatically takes snapshots of agent portfolios at regular intervals for performance tracking. This is done via a cron job that runs a script to trigger snapshots. The scheduling is not internal to the application and is therefore not configurable within the app.
+
+You can however configure price tracking settings via environment variables in your `.env` file:
 
 ```
-# Configure portfolio snapshot interval in milliseconds (default: 2 minutes)
-PORTFOLIO_SNAPSHOT_INTERVAL_MS=120000
-
 # Configure price tracker settings
 PRICE_CACHE_TTL_MS=60000         # Maximum age (in ms) of cached prices before they must be refreshed (default: 1 minute)
 PRICE_CACHE_MAX_SIZE=10000       # Maximum number of entries in price caches (default: 10000)
 ```
 
-You can adjust these intervals based on your needs:
+You can adjust these settings based on your needs:
 
-- For testing environments, you may want to use shorter intervals (e.g., 10,000ms = 10 seconds for snapshots, 30,000ms = 30 seconds for price cache freshness)
-- For production environments, you might want to use longer intervals to reduce API load (e.g., 300,000ms = 5 minutes for snapshots, 1,800,000ms = 30 minutes for price cache freshness)
+- For testing environments, you may want to use shorter intervals (e.g., 30,000ms = 30 seconds for price cache freshness)
+- For production environments, you might want to use longer intervals to reduce API load (e.g., 1,800,000ms = 30 minutes for price cache freshness)
 
 The price cache TTL determines the maximum age of a cached price before it's considered stale and must be fetched fresh from the API. Shorter values mean more frequent API calls but fresher prices, while longer values reduce API load but may use slightly older price data. The cache size limit ensures memory usage stays bounded.
 

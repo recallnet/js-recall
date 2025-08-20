@@ -523,12 +523,6 @@ export function configureCompetitionsRoutes(
    *                     slippageFormula:
    *                       type: string
    *                       description: Formula used for calculating slippage
-   *                     portfolioSnapshots:
-   *                       type: object
-   *                       properties:
-   *                         interval:
-   *                           type: string
-   *                           description: Interval between portfolio snapshots
    *                     tradingConstraints:
    *                       type: object
    *                       description: Trading constraints for the competition

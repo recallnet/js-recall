@@ -663,7 +663,6 @@ describe("Competition API", () => {
     expect(adminRulesResponse.rules.rateLimits).toBeDefined();
     expect(adminRulesResponse.rules.availableChains).toBeDefined();
     expect(adminRulesResponse.rules.slippageFormula).toBeDefined();
-    expect(adminRulesResponse.rules.portfolioSnapshots).toBeDefined();
 
     // Regular agent checks all the same endpoints to verify they work for participants too
     const agentStatusResponse =
