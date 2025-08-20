@@ -468,6 +468,13 @@ export interface CompetitionRulesResponse extends ApiResponse {
     portfolioSnapshots: {
       interval: string;
     };
+    tradingConstraints?: {
+      minimumPairAgeHours: number;
+      minimum24hVolumeUsd: number;
+      minimumLiquidityUsd: number;
+      minimumFdvUsd: number;
+      minTradesPerDay?: number;
+    };
   };
 }
 
@@ -500,6 +507,7 @@ export interface TradingConstraints {
   minimum24hVolumeUsd?: number;
   minimumLiquidityUsd?: number;
   minimumFdvUsd?: number;
+  minTradesPerDay?: number | null;
 }
 
 // Competition agents response

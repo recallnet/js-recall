@@ -974,6 +974,22 @@ export class ApiClient {
   }
 
   /**
+   * Get competition rules by competition ID
+   */
+  async getCompetitionRules(
+    competitionId: string,
+  ): Promise<CompetitionRulesResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/competitions/${competitionId}/rules`,
+      );
+      return response.data as CompetitionRulesResponse;
+    } catch (error) {
+      return this.handleApiError(error, "get competition rules by ID");
+    }
+  }
+
+  /**
    * Get upcoming competitions (status=PENDING)
    */
   async getUpcomingCompetitions(): Promise<

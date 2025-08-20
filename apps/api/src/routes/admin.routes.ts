@@ -123,6 +123,12 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: Minimum fully diluted valuation in USD
    *                     example: 100000
+   *                   minTradesPerDay:
+   *                     type: number
+   *                     minimum: 0
+   *                     nullable: true
+   *                     description: Minimum number of trades required per day (null if no requirement)
+   *                     example: 10
    *               rewards:
    *                 type: object
    *                 description: Rewards for competition placements
@@ -219,6 +225,10 @@ export function configureAdminRoutes(
    *                         minimumFdvUsd:
    *                           type: number
    *                           description: Minimum fully diluted valuation in USD
+   *                         minTradesPerDay:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum number of trades required per day (null if no requirement)
    *       400:
    *         description: |-
    *           Bad Request - Various validation errors:
@@ -335,6 +345,12 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: Minimum fully diluted valuation in USD
    *                     example: 100000
+   *                   minTradesPerDay:
+   *                     type: number
+   *                     minimum: 0
+   *                     nullable: true
+   *                     description: Minimum number of trades required per day (null if no requirement)
+   *                     example: 10
    *               rewards:
    *                 type: object
    *                 description: Rewards for competition placements
@@ -441,6 +457,10 @@ export function configureAdminRoutes(
    *                         minimumFdvUsd:
    *                           type: number
    *                           description: Minimum fully diluted valuation in USD
+   *                         minTradesPerDay:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum number of trades required per day (null if no requirement)
    *                 initializedAgents:
    *                   type: array
    *                   items:
