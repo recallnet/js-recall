@@ -1,11 +1,4 @@
 import { config } from "@/config/index.js";
-import {
-  count as countPrices,
-  create as createPrice,
-  createBatch as createPriceBatch,
-  getLatestPrice,
-} from "@/database/repositories/price-repository.js";
-import { InsertPrice } from "@/database/schema/trading/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import {
@@ -102,28 +95,19 @@ export class PriceTracker {
       `[PriceTracker] ${blockchainType ? "Using provided" : "Detected"} token ${tokenAddress} on chain: ${tokenChain}`,
     );
 
-    // 1st: Check in-memory cache first (fastest)
+    // Check in-memory cache first
     const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
     if (cachedPrice) {
       return cachedPrice;
     }
 
-    // 2nd: Check database cache (slower, but persistent)
-    const dbCachedPrice = await this.getDatabaseCachedPrice(
-      tokenAddress,
-      specificChain,
-    );
-    if (dbCachedPrice) {
-      return dbCachedPrice;
-    }
-
-    // 3rd: Determine which specific chain to try (cached chain first, then fallback)
+    // Determine which specific chain to try (cached chain first, then fallback)
     const chainToTry = this.resolveSpecificChainToTry(
       tokenAddress,
       specificChain,
     );
 
-    // 4th: Fetch from live API via MultiChainProvider (slowest, but always fresh)
+    // Fetch from live API via MultiChainProvider
     return await this.fetchAndCachePrice(tokenAddress, tokenChain, chainToTry);
   }
 
@@ -145,12 +129,9 @@ export class PriceTracker {
       return resultMap;
     }
 
-    // Track cache performance
-    let inMemoryCacheHits = 0;
-    let databaseCacheHits = 0;
-
-    // Step 1: Check PriceTracker's in-memory cache for all tokens
-    const uncachedTokens: string[] = [];
+    // Check in-memory cache for all tokens
+    const tokensNeedingAPI: string[] = [];
+    let cacheHits = 0;
 
     for (const tokenAddress of tokenAddresses) {
       // Determine the specific chain for proper cache lookup
@@ -162,50 +143,20 @@ export class PriceTracker {
 
       const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
       if (cachedPrice) {
-        serviceLogger.debug(
-          `[PriceTracker] Using cached price for ${tokenAddress}: $${cachedPrice.price}`,
-        );
         resultMap.set(tokenAddress, cachedPrice);
-        inMemoryCacheHits++;
-      } else {
-        uncachedTokens.push(tokenAddress);
-      }
-    }
-
-    // Step 2: Check database cache for remaining tokens
-    const tokensNeedingAPI: string[] = [];
-
-    for (const tokenAddress of uncachedTokens) {
-      // Determine the specific chain for proper database cache lookup
-      const tokenChain = this.determineChain(tokenAddress);
-      let specificChain: SpecificChain | undefined;
-      if (tokenChain === BlockchainType.SVM) {
-        specificChain = "svm";
-      }
-
-      const dbCachedPrice = await this.getDatabaseCachedPrice(
-        tokenAddress,
-        specificChain,
-      );
-      if (dbCachedPrice) {
-        resultMap.set(tokenAddress, dbCachedPrice);
-        databaseCacheHits++;
+        cacheHits++;
       } else {
         tokensNeedingAPI.push(tokenAddress);
       }
     }
 
-    // Step 3: Try cached chains first for tokens with known chain mappings (optimization)
+    // Try cached chains first for tokens with known chain mappings (optimization)
     const remainingTokensForBatch = await this.tryBatchPricesWithCachedChains(
       tokensNeedingAPI,
       resultMap,
     );
 
-    // Track cached chain performance
-    const cachedChainHits =
-      tokensNeedingAPI.length - remainingTokensForBatch.length;
-
-    // Step 4: Use batch API for remaining tokens (preserving batching efficiency)
+    // Use batch API for remaining tokens (preserving batching efficiency)
     await this.fetchRemainingTokensViaBatch(remainingTokensForBatch, resultMap);
 
     const successfulPrices = Array.from(resultMap.values()).filter(
@@ -214,64 +165,10 @@ export class PriceTracker {
 
     serviceLogger.debug(
       `[PriceTracker] Bulk price retrieval complete: ${successfulPrices}/${tokenAddresses.length} tokens ` +
-        `(${inMemoryCacheHits} memory hits, ${databaseCacheHits} DB hits, ${cachedChainHits} cached chain hits, ${remainingTokensForBatch.length} multi-chain API requests)`,
+        `(${cacheHits} cache hits, ${tokensNeedingAPI.length} API requests)`,
     );
 
     return resultMap;
-  }
-
-  /**
-   * Get price from database cache, including chain determination and memory cache update
-   * @param tokenAddress The token address to look up
-   * @param specificChain Optional specific chain - if provided, uses it; otherwise tries to determine it
-   * @returns PriceReport from database if fresh, null otherwise
-   */
-  private async getDatabaseCachedPrice(
-    tokenAddress: string,
-    specificChain?: SpecificChain,
-  ): Promise<PriceReport | null> {
-    try {
-      // Use provided chain or try to determine it
-      const chainToUse = specificChain || this.getCachedChain(tokenAddress);
-      if (!chainToUse) {
-        // No known chain mapping, can't query database
-        return null;
-      }
-
-      const dbPrice = await getLatestPrice(tokenAddress, chainToUse);
-      if (
-        dbPrice &&
-        dbPrice.timestamp &&
-        this.isPriceFresh(dbPrice.timestamp)
-      ) {
-        // Convert database record to PriceReport
-        const priceReport: PriceReport = {
-          token: dbPrice.token,
-          price: dbPrice.price,
-          symbol: dbPrice.symbol,
-          timestamp: dbPrice.timestamp,
-          chain: dbPrice.chain as BlockchainType,
-          specificChain: dbPrice.specificChain as SpecificChain,
-        };
-
-        // Cache in memory for future requests
-        this.setCachedPrice(priceReport);
-
-        serviceLogger.debug(
-          `[PriceTracker] Using fresh price from database for ${tokenAddress}: $${priceReport.price}`,
-        );
-
-        return priceReport;
-      }
-
-      return null;
-    } catch (error) {
-      serviceLogger.debug(
-        `[PriceTracker] Error checking database cache for ${tokenAddress}:`,
-        error instanceof Error ? error.message : "Unknown error",
-      );
-      return null;
-    }
   }
 
   /**
@@ -283,22 +180,10 @@ export class PriceTracker {
     batchResults: Map<string, PriceReport | null>,
     resultMap: Map<string, PriceReport | null>,
   ): Promise<void> {
-    const pricesToStore: InsertPrice[] = [];
-
     for (const [tokenAddress, priceReport] of batchResults) {
       if (priceReport) {
         // Cache in memory
         this.setCachedPrice(priceReport);
-
-        // Collect for batch database storage
-        pricesToStore.push({
-          token: priceReport.token,
-          price: priceReport.price,
-          symbol: priceReport.symbol,
-          timestamp: priceReport.timestamp,
-          chain: priceReport.chain,
-          specificChain: priceReport.specificChain,
-        });
 
         serviceLogger.debug(
           `[PriceTracker] Got price from batch API for ${tokenAddress}: $${priceReport.price}`,
@@ -306,53 +191,6 @@ export class PriceTracker {
       }
 
       resultMap.set(tokenAddress, priceReport);
-    }
-
-    // Batch write all prices to database
-    if (pricesToStore.length > 0) {
-      await this.storePrices(pricesToStore);
-    }
-  }
-
-  /**
-   * Store a price in the database.  Note that the price report contains more fields than the
-   * database table, so some of the fields get ignored.
-   * @param priceReport The price report to store
-   */
-  private async storePrice(priceReport: PriceReport): Promise<void> {
-    try {
-      await createPrice({
-        token: priceReport.token,
-        price: priceReport.price,
-        symbol: priceReport.symbol,
-        timestamp: priceReport.timestamp,
-        chain: priceReport.chain,
-        specificChain: priceReport.specificChain,
-      });
-    } catch (error) {
-      serviceLogger.error(
-        `[PriceTracker] Error storing price in database:`,
-        error,
-      );
-    }
-  }
-
-  /**
-   * Store multiple prices in the database using batch operation
-   * @param pricesData Array of price data to store
-   */
-  private async storePrices(pricesData: InsertPrice[]): Promise<void> {
-    if (pricesData.length === 0) {
-      return;
-    }
-
-    try {
-      await createPriceBatch(pricesData);
-    } catch (error) {
-      serviceLogger.error(
-        `[PriceTracker] Error storing prices in database:`,
-        error,
-      );
     }
   }
 
@@ -362,9 +200,6 @@ export class PriceTracker {
    */
   async isHealthy(): Promise<boolean> {
     try {
-      // Check if database is accessible
-      await countPrices();
-
       // Check if provider is responsive
       if (this.multiChainProvider) {
         try {
@@ -523,9 +358,8 @@ export class PriceTracker {
         `[PriceTracker] Got price $${priceResult.price} from live API (chain: ${priceResult.specificChain})`,
       );
 
-      // Cache in both memory and database
+      // Cache in memory
       this.setCachedPrice(priceResult);
-      await this.storePrice(priceResult);
 
       return priceResult;
     } catch (error) {
@@ -568,7 +402,6 @@ export class PriceTracker {
     }
 
     const successfulTokens = new Set<string>();
-    const pricesToStore: InsertPrice[] = [];
 
     // Try each cached chain group
     for (const [cachedChain, tokens] of tokensByCachedChain) {
@@ -590,17 +423,6 @@ export class PriceTracker {
           if (priceResult) {
             resultMap.set(tokenAddr, priceResult);
             this.setCachedPrice(priceResult);
-
-            // Collect for batch database storage
-            pricesToStore.push({
-              token: priceResult.token,
-              price: priceResult.price,
-              symbol: priceResult.symbol,
-              timestamp: priceResult.timestamp,
-              chain: priceResult.chain,
-              specificChain: priceResult.specificChain,
-            });
-
             successfulTokens.add(tokenAddr);
           }
         }
@@ -614,11 +436,6 @@ export class PriceTracker {
           error instanceof Error ? error.message : "Unknown error",
         );
       }
-    }
-
-    // Batch write all prices to database
-    if (pricesToStore.length > 0) {
-      await this.storePrices(pricesToStore);
     }
 
     // Return tokens that still need multi-chain search
