@@ -73,6 +73,15 @@ interface TradingConstraintsInput {
 }
 
 /**
+ * Represents an entry in a competition leaderboard
+ */
+interface LeaderboardEntry {
+  agentId: string;
+  value: number; // Portfolio value in USD
+  pnl: number; // Profit/Loss amount (0 if not calculated)
+}
+
+/**
  * Competition Manager Service
  * Manages trading competitions with agent-based participation
  */
@@ -557,87 +566,164 @@ export class CompetitionManager {
   }
 
   /**
-   * Get the leaderboard for a competition
+   * Retrieves the saved leaderboard from the database for an ended competition
    * @param competitionId The competition ID
-   * @returns Array of agent IDs sorted by portfolio value
+   * @returns The saved leaderboard entries or empty array if not found
    */
-  async getLeaderboard(competitionId: string) {
-    try {
-      // TODO: this function has many paths it potentially takes depending on
-      //  the state of several tables. We should refactor and ideally only have
-      //  one, which doesn't have to do calculations for every (uncached) request.
-      const competition = await findById(competitionId);
-      const competitionStatus = competition?.status;
+  private async getSavedLeaderboard(
+    competitionId: string,
+  ): Promise<LeaderboardEntry[]> {
+    const leaderboardEntries =
+      await findLeaderboardByTradingComp(competitionId);
+    return leaderboardEntries.map((entry) => ({
+      agentId: entry.agentId,
+      value: entry.score,
+      pnl: entry.pnl,
+    }));
+  }
 
-      // Default case: `COMPETITION_STATUS.PENDING` will have no leaderboard—so we just return the agents
-      if (competitionStatus === COMPETITION_STATUS.PENDING) {
-        const agents = await getCompetitionAgents(competitionId);
-        const globalLeaderboard = await getAllAgentRanks(agents);
+  /**
+   * Calculates leaderboard from the latest portfolio snapshots
+   * @param competitionId The competition ID
+   * @returns Leaderboard entries sorted by portfolio value (descending)
+   */
+  private async calculateLeaderboardFromSnapshots(
+    competitionId: string,
+  ): Promise<LeaderboardEntry[]> {
+    const snapshots = await getLatestPortfolioSnapshots(competitionId);
+    if (snapshots.length === 0) {
+      return [];
+    }
 
-        // Create map of agent IDs to their global rank scores and sort by global rank score (if applicable)
-        const globalLeaderboardMap = new Map(
-          globalLeaderboard.map((agent) => [agent.id, agent.score]),
-        );
-        return agents
-          .map((agentId) => ({
-            agentId,
-            value: 0,
-            pnl: 0,
-            globalScore: globalLeaderboardMap.get(agentId) ?? -1, // Use -1 for unranked agents so they appear after ranked ones
-          }))
-          .sort((a, b) => b.globalScore - a.globalScore)
-          .map(({ agentId, value, pnl }) => ({
-            agentId,
-            value,
-            pnl,
-          }));
-      }
+    return snapshots
+      .map((snapshot) => ({
+        agentId: snapshot.agentId,
+        value: snapshot.totalValue,
+        pnl: 0, // PnL not available from snapshots alone
+      }))
+      .sort((a, b) => b.value - a.value);
+  }
 
-      // Case: an `COMPETITION_STATUS.ENDED` should have leaderboard entries in the `competitions_leaderboard` table, unless it was recently ended
-      const leaderboardEntries =
-        await findLeaderboardByTradingComp(competitionId);
-      if (leaderboardEntries.length > 0) {
-        return leaderboardEntries.map((entry) => ({
-          agentId: entry.agentId,
-          value: entry.score,
-          pnl: entry.pnl,
-        }));
-      }
+  /**
+   * Calculates leaderboard from current live portfolio values
+   * @param competitionId The competition ID
+   * @returns Leaderboard entries sorted by portfolio value (descending)
+   */
+  private async calculateLeaderboardFromLivePortfolios(
+    competitionId: string,
+  ): Promise<LeaderboardEntry[]> {
+    const agents = await getCompetitionAgents(competitionId);
 
-      serviceLogger.debug(
-        `[CompetitionManager] No leaderboard found in database for competition ${competitionId}, calculating from snapshots or current values`,
-      );
+    // Use bulk portfolio value calculation
+    const portfolioValues =
+      await this.tradeSimulator.calculateBulkPortfolioValues(agents);
 
-      // Case: `COMPETITION_STATUS.ACTIVE` or a recently ended competition will need to calculate from snapshots
-      const snapshots = await getLatestPortfolioSnapshots(competitionId);
-      if (snapshots.length > 0) {
-        // Sort by value descending
-        return snapshots
-          .map((snapshot) => ({
-            agentId: snapshot.agentId,
-            value: snapshot.totalValue,
-            pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
-          }))
-          .sort(
-            (a: { value: number }, b: { value: number }) => b.value - a.value,
-          );
-      }
+    const leaderboard = agents.map((agentId) => ({
+      agentId,
+      value: portfolioValues.get(agentId) || 0,
+      pnl: 0, // PnL not available without historical data
+    }));
 
-      // Fallback to calculating current values
-      const agents = await getCompetitionAgents(competitionId);
+    // Sort by value descending
+    return leaderboard.sort((a, b) => b.value - a.value);
+  }
 
-      // Use bulk portfolio value calculation
-      const portfolioValues =
-        await this.tradeSimulator.calculateBulkPortfolioValues(agents);
+  /**
+   * Calculates a leaderboard for pending competitions based on global agent rankings
+   * @param competitionId The competition ID
+   * @returns Leaderboard entries sorted by global ranking score
+   */
+  private async calculatePendingCompetitionLeaderboard(
+    competitionId: string,
+  ): Promise<LeaderboardEntry[]> {
+    const agents = await getCompetitionAgents(competitionId);
+    const globalLeaderboard = await getAllAgentRanks(agents);
 
-      const leaderboard = agents.map((agentId) => ({
+    // Create map of agent IDs to their global rank scores
+    const globalLeaderboardMap = new Map(
+      globalLeaderboard.map((agent) => [agent.id, agent.score]),
+    );
+
+    return agents
+      .map((agentId) => ({
         agentId,
-        value: portfolioValues.get(agentId) || 0,
-        pnl: 0, // TODO: if there's no competitions_leaderboard row we don't have a pnl
+        value: 0, // No portfolio value for pending competitions
+        pnl: 0,
+        globalScore: globalLeaderboardMap.get(agentId) ?? -1, // Use -1 for unranked agents
+      }))
+      .sort((a, b) => b.globalScore - a.globalScore)
+      .map(({ agentId, value, pnl }) => ({
+        agentId,
+        value,
+        pnl,
       }));
+  }
 
-      // Sort by value descending
-      return leaderboard.sort((a, b) => b.value - a.value);
+  /**
+   * Retrieves or calculates the leaderboard for a competition
+   *
+   * The method follows this precedence order based on competition status:
+   * - PENDING: Returns agents sorted by global ranking (no portfolio values)
+   * - ENDED: Returns saved leaderboard from database, or calculates from snapshots if recently ended
+   * - ACTIVE: Calculates from portfolio snapshots, or live values as fallback
+   *
+   * @param competitionId The unique identifier of the competition
+   * @returns Promise resolving to an array of leaderboard entries sorted by value (highest first)
+   * @throws Will not throw - returns empty array on errors (logs the error)
+   */
+  async getLeaderboard(competitionId: string): Promise<LeaderboardEntry[]> {
+    try {
+      const competition = await findById(competitionId);
+      if (!competition) {
+        serviceLogger.warn(
+          `[CompetitionManager] Competition ${competitionId} not found`,
+        );
+        return [];
+      }
+
+      switch (competition.status) {
+        case COMPETITION_STATUS.PENDING:
+          return await this.calculatePendingCompetitionLeaderboard(
+            competitionId,
+          );
+
+        case COMPETITION_STATUS.ENDED: {
+          // Try saved leaderboard first
+          const savedLeaderboard =
+            await this.getSavedLeaderboard(competitionId);
+          if (savedLeaderboard.length > 0) {
+            return savedLeaderboard;
+          }
+
+          serviceLogger.debug(
+            `[CompetitionManager] No saved leaderboard found for ended competition ${competitionId}, calculating from snapshots`,
+          );
+          // Fall through to calculate from snapshots
+        }
+
+        case COMPETITION_STATUS.ACTIVE: {
+          // Try snapshots first
+          const snapshotLeaderboard =
+            await this.calculateLeaderboardFromSnapshots(competitionId);
+          if (snapshotLeaderboard.length > 0) {
+            return snapshotLeaderboard;
+          }
+
+          serviceLogger.debug(
+            `[CompetitionManager] No snapshots found for competition ${competitionId}, calculating from live portfolio values`,
+          );
+          // Fallback to live calculation
+          return await this.calculateLeaderboardFromLivePortfolios(
+            competitionId,
+          );
+        }
+
+        default:
+          serviceLogger.warn(
+            `[CompetitionManager] Unknown competition status: ${competition.status}`,
+          );
+          return [];
+      }
     } catch (error) {
       serviceLogger.error(
         `[CompetitionManager] Error getting leaderboard for competition ${competitionId}:`,
