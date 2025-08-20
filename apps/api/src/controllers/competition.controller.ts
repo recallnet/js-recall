@@ -325,7 +325,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         for (const chain of Object.keys(config.specificChainBalances)) {
           const chainBalances =
             config.specificChainBalances[
-            chain as keyof typeof config.specificChainBalances
+              chain as keyof typeof config.specificChainBalances
             ];
           const tokenItems = [];
 
@@ -1096,7 +1096,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         for (const chain of Object.keys(config.specificChainBalances)) {
           const chainBalances =
             config.specificChainBalances[
-            chain as keyof typeof config.specificChainBalances
+              chain as keyof typeof config.specificChainBalances
             ];
           const tokenItems = [];
 
