@@ -1,3 +1,5 @@
+import { LRUCache } from "lru-cache";
+
 import { config } from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
@@ -17,13 +19,24 @@ export class PriceTracker {
   // private novesProvider: NovesProvider | null = null;
   private multiChainProvider: MultiChainProvider;
 
-  // In-memory cache for token prices
-  private readonly tokenPriceCache: Map<string, PriceReport> = new Map();
+  // In-memory LRU cache for token prices
+  private readonly tokenPriceCache: LRUCache<string, PriceReport>;
 
   // Track which chain a token belongs to for quicker lookups
-  private readonly chainToTokenCache: Map<string, SpecificChain> = new Map();
+  private readonly chainToTokenCache: LRUCache<string, SpecificChain>;
 
   constructor() {
+    // Initialize LRU caches
+    this.tokenPriceCache = new LRUCache<string, PriceReport>({
+      max: config.priceTracker.maxCacheSize,
+      ttl: config.priceTracker.priceTTLMs,
+    });
+
+    this.chainToTokenCache = new LRUCache<string, SpecificChain>({
+      max: config.priceTracker.maxCacheSize,
+      // No TTL - chain mappings are permanent
+    });
+
     // Initialize only the MultiChainProvider
     this.multiChainProvider = new MultiChainProvider();
     serviceLogger.debug(
@@ -255,7 +268,7 @@ export class PriceTracker {
     const cacheKey = this.getCacheKey(normalizedAddress, chainToLookup);
     const cached = this.tokenPriceCache.get(cacheKey);
 
-    if (cached && this.isPriceFresh(cached.timestamp)) {
+    if (cached) {
       serviceLogger.debug(
         `[PriceTracker] Using cached price for ${normalizedAddress} on ${chainToLookup}: $${cached.price}`,
       );
@@ -506,13 +519,5 @@ export class PriceTracker {
    */
   private getCachedChain(tokenAddress: string): SpecificChain | null {
     return this.chainToTokenCache.get(tokenAddress.toLowerCase()) || null;
-  }
-
-  /**
-   * Check if a cached price is still fresh enough to use
-   */
-  private isPriceFresh(timestamp: Date): boolean {
-    const priceAge = Date.now() - timestamp.getTime();
-    return priceAge < config.portfolio.priceFreshnessMs;
   }
 }

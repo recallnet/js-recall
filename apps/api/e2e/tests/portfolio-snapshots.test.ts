@@ -297,14 +297,14 @@ describe("Portfolio Snapshots", () => {
     await wait(500);
 
     // Get the freshness threshold from config
-    const freshnessThreshold = config.portfolio.priceFreshnessMs;
+    const freshnessThreshold = config.priceTracker.priceTTLMs;
 
     console.log(
       `[Test] Using price freshness threshold of ${freshnessThreshold}ms`,
     );
     console.log(
       `[Test] Price freshness setting from config: `,
-      config.portfolio.priceFreshnessMs,
+      config.priceTracker.priceTTLMs,
     );
 
     // Ensure we have a token priced in the database first by querying the price directly
