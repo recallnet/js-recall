@@ -369,17 +369,7 @@ export class CompetitionManager {
       throw new Error(`Competition is not active: ${competition.status}`);
     }
 
-    // Take final portfolio snapshots
-    await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
-
-    // Get agents in the competition
-    const competitionAgents = await getCompetitionAgents(competitionId);
-
-    serviceLogger.debug(
-      `[CompetitionManager] Competition ended. ${competitionAgents.length} agents remain 'active' in completed competition`,
-    );
-
-    // Update the competition status, and use this latest response to have accurate `registeredParticipants`
+    // Update the competition status FIRST to prevent new trades from being processed
     const finalCompetition = await updateCompetition({
       id: competitionId,
       status: COMPETITION_STATUS.ENDED,
@@ -388,12 +378,17 @@ export class CompetitionManager {
     });
 
     serviceLogger.debug(
-      `[CompetitionManager] Ended competition: ${competition.name} (${competitionId})`,
+      `[CompetitionManager] Ending competition: ${competition.name} (${competitionId}) - status updated to ENDED`,
     );
+
+    // Take final portfolio snapshots (force=true to ensure we get final values even though status is ENDED)
+    await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId, true);
+
+    // Get agents in the competition
+    const competitionAgents = await getCompetitionAgents(competitionId);
 
     // Reload configuration settings (revert to environment defaults)
     await this.configurationService.loadCompetitionSettings();
-    serviceLogger.debug(`[CompetitionManager] Reloaded configuration settings`);
 
     const leaderboard = await this.getLeaderboard(competitionId);
 
@@ -430,6 +425,10 @@ export class CompetitionManager {
 
     // Update agent ranks based on competition results
     await this.agentRankService.updateAgentRanksForCompetition(competitionId);
+
+    serviceLogger.debug(
+      `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ${competitionAgents.length} agents, ${leaderboardEntries.length} leaderboard entries`,
+    );
 
     return finalCompetition;
   }
