@@ -42,7 +42,6 @@ import {
   LoginResponse,
   LogoutResponse,
   NonceResponse,
-  PriceHistoryResponse,
   PriceResponse,
   PublicAgentResponse,
   QuoteResponse,
@@ -1081,6 +1080,64 @@ export class ApiClient {
   }
 
   /**
+   * Get trades for a competition
+   * @param competitionId Competition ID
+   * @param limit Optional number of trades to return
+   * @param offset Optional offset for pagination
+   * @returns Array of Trade objects
+   */
+  async getCompetitionTrades(
+    competitionId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<TradeHistoryResponse | ErrorResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
+
+      const url = `/api/competitions/${competitionId}/trades?${params.toString()}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as TradeHistoryResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get competition trades: competitionId=${competitionId}, limit=${limit}, offset=${offset}`,
+      );
+    }
+  }
+
+  /**
+   * Get trades for an agent in a competition
+   * @param competitionId Competition ID
+   * @param agentId Agent ID
+   * @param limit Optional number of trades to return
+   * @param offset Optional offset for pagination
+   * @returns Array of Trade objects
+   */
+  async getAgentTradesInCompetition(
+    competitionId: string,
+    agentId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<TradeHistoryResponse | ErrorResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
+
+      const url = `/api/competitions/${competitionId}/agents/${agentId}/trades?${params.toString()}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as TradeHistoryResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get agent trades in competition: competitionId=${competitionId}, agentId=${agentId}, limit=${limit}, offset=${offset}`,
+      );
+    }
+  }
+
+  /**
    * Get timeline for a competition
    * @param competitionId Competition ID
    * @param bucket Time bucket interval in minutes (default: 30)
@@ -1169,46 +1226,6 @@ export class ApiClient {
       return response.data as PriceResponse;
     } catch (error) {
       return this.handleApiError(error, "get price");
-    }
-  }
-
-  /**
-   * Get price history for a token
-   *
-   * @param token The token address
-   * @param interval Time interval (e.g., '1h', '1d')
-   * @param chain Optional blockchain type
-   * @param specificChain Optional specific chain
-   * @param startTime Optional start time
-   * @param endTime Optional end time
-   */
-  async getPriceHistory(
-    token: string,
-    interval: string,
-    chain?: BlockchainType,
-    specificChain?: SpecificChain,
-    startTime?: string,
-    endTime?: string,
-  ): Promise<PriceHistoryResponse | ErrorResponse> {
-    try {
-      let path = `/api/price/history?token=${encodeURIComponent(token)}&interval=${interval}`;
-      if (chain) {
-        path += `&chain=${encodeURIComponent(chain)}`;
-      }
-      if (specificChain) {
-        path += `&specificChain=${encodeURIComponent(specificChain)}`;
-      }
-      if (startTime) {
-        path += `&startTime=${encodeURIComponent(startTime)}`;
-      }
-      if (endTime) {
-        path += `&endTime=${encodeURIComponent(endTime)}`;
-      }
-
-      const response = await this.axiosInstance.get(path);
-      return response.data as PriceHistoryResponse;
-    } catch (error) {
-      return this.handleApiError(error, "get price history");
     }
   }
 

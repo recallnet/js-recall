@@ -1,10 +1,4 @@
 import { config } from "@/config/index.js";
-import {
-  count as countPrices,
-  create as createPrice,
-  createBatch as createPriceBatch,
-  getPriceHistory,
-} from "@/database/repositories/price-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import {
@@ -22,6 +16,12 @@ export class PriceTracker {
   providers: PriceSource[];
   // private novesProvider: NovesProvider | null = null;
   private multiChainProvider: MultiChainProvider;
+
+  // In-memory cache for token prices
+  private readonly tokenPriceCache: Map<string, PriceReport> = new Map();
+
+  // Track which chain a token belongs to for quicker lookups
+  private readonly chainToTokenCache: Map<string, SpecificChain> = new Map();
 
   constructor() {
     // Initialize only the MultiChainProvider
@@ -68,19 +68,6 @@ export class PriceTracker {
   }
 
   /**
-   * Get a provider by name
-   * @param name The name of the provider to get
-   * @returns The provider instance or null if not found
-   */
-  getProviderByName(name: string): PriceSource | null {
-    return (
-      this.providers.find(
-        (p) => p.getName().toLowerCase() === name.toLowerCase(),
-      ) || null
-    );
-  }
-
-  /**
    * Get current price for a token
    * @param tokenAddress The token address to get price for
    * @param blockchainType Optional blockchain type override (EVM or SVM)
@@ -91,77 +78,37 @@ export class PriceTracker {
     tokenAddress: string,
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
-  ) {
+  ): Promise<PriceReport | null> {
     serviceLogger.debug(
       `[PriceTracker] Getting price for token: ${tokenAddress}`,
     );
 
     // Determine which chain this token belongs to if not provided
     const tokenChain = blockchainType || this.determineChain(tokenAddress);
+
+    // For Solana tokens, the specificChain is always "svm"
+    if (tokenChain === BlockchainType.SVM && !specificChain) {
+      specificChain = "svm";
+    }
+
     serviceLogger.debug(
       `[PriceTracker] ${blockchainType ? "Using provided" : "Detected"} token ${tokenAddress} on chain: ${tokenChain}`,
     );
 
-    if (!this.multiChainProvider) {
-      serviceLogger.error(`[PriceTracker] No MultiChainProvider available`);
-
-      return null;
+    // Check in-memory cache first
+    const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
+    if (cachedPrice) {
+      return cachedPrice;
     }
 
-    try {
-      serviceLogger.debug(
-        `[PriceTracker] Using MultiChainProvider for token ${tokenAddress}`,
-      );
-
-      // Get price from MultiChainProvider (which has its own cache)
-      const priceResult = await this.multiChainProvider.getPrice(
-        tokenAddress,
-        tokenChain,
-        specificChain,
-      );
-
-      if (priceResult !== null) {
-        // Handle both number and PriceReport return types
-        const price = priceResult.price;
-        const chain = priceResult.chain;
-
-        // For number results, ensure we have a valid specificChain
-        const tokenSpecificChain = priceResult.specificChain;
-
-        // Get the symbol
-        const symbol = priceResult.symbol;
-
-        serviceLogger.debug(
-          `[PriceTracker] Got price $${price} from MultiChainProvider`,
-        );
-
-        // Store price in database for historical record
-        await this.storePrice(
-          tokenAddress,
-          price,
-          symbol,
-          chain,
-          tokenSpecificChain,
-        );
-
-        return priceResult;
-      } else {
-        serviceLogger.debug(
-          `[PriceTracker] No price available from MultiChainProvider for ${tokenAddress}`,
-        );
-      }
-    } catch (error) {
-      serviceLogger.error(
-        `[PriceTracker] Error fetching price from MultiChainProvider:`,
-        error instanceof Error ? error.message : "Unknown error",
-      );
-    }
-
-    serviceLogger.debug(
-      `[PriceTracker] No price available for ${tokenAddress}`,
+    // Determine which specific chain to try (cached chain first, then fallback)
+    const chainToTry = this.resolveSpecificChainToTry(
+      tokenAddress,
+      specificChain,
     );
 
-    return null;
+    // Fetch from live API via MultiChainProvider
+    return await this.fetchAndCachePrice(tokenAddress, tokenChain, chainToTry);
   }
 
   /**
@@ -173,7 +120,7 @@ export class PriceTracker {
     tokenAddresses: string[],
   ): Promise<Map<string, PriceReport | null>> {
     serviceLogger.debug(
-      `[PriceTracker] Getting bulk token info for ${tokenAddresses.length} tokens`,
+      `[PriceTracker] Getting bulk prices for ${tokenAddresses.length} tokens`,
     );
 
     const resultMap = new Map<string, PriceReport | null>();
@@ -182,305 +129,69 @@ export class PriceTracker {
       return resultMap;
     }
 
-    // Group tokens by chain type for efficient processing
-    const evmTokens: string[] = [];
-    const svmTokens: string[] = [];
+    // Check in-memory cache for all tokens
+    const tokensNeedingAPI: string[] = [];
+    let cacheHits = 0;
 
     for (const tokenAddress of tokenAddresses) {
-      const chainType = this.determineChain(tokenAddress);
-      if (chainType === BlockchainType.EVM) {
-        evmTokens.push(tokenAddress);
+      // Determine the specific chain for proper cache lookup
+      const tokenChain = this.determineChain(tokenAddress);
+      let specificChain: SpecificChain | undefined;
+      if (tokenChain === BlockchainType.SVM) {
+        specificChain = "svm";
+      }
+
+      const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
+      if (cachedPrice) {
+        resultMap.set(tokenAddress, cachedPrice);
+        cacheHits++;
       } else {
-        svmTokens.push(tokenAddress);
+        tokensNeedingAPI.push(tokenAddress);
       }
     }
 
-    // Process EVM tokens in bulk if MultiChainProvider supports it
-    if (evmTokens.length > 0 && this.multiChainProvider) {
-      try {
-        // Use batch processing to reduce API calls
-        const batchResults = await this.multiChainProvider.getBatchPrices(
-          evmTokens,
-          BlockchainType.EVM,
-        );
+    // Try cached chains first for tokens with known chain mappings (optimization)
+    const remainingTokensForBatch = await this.tryBatchPricesWithCachedChains(
+      tokensNeedingAPI,
+      resultMap,
+    );
 
-        // Store prices and add to result map
-        const pricesToStore = [];
+    // Use batch API for remaining tokens (preserving batching efficiency)
+    await this.fetchRemainingTokensViaBatch(remainingTokensForBatch, resultMap);
 
-        for (const [tokenAddress, priceReport] of batchResults) {
-          if (priceReport && priceReport.price !== null) {
-            pricesToStore.push({
-              tokenAddress,
-              price: priceReport.price,
-              symbol: priceReport.symbol,
-              chain: priceReport.chain,
-              specificChain: priceReport.specificChain,
-            });
-
-            resultMap.set(tokenAddress, priceReport);
-          } else {
-            resultMap.set(tokenAddress, null);
-          }
-        }
-
-        // Store all prices in a single batch operation
-        await this.storePrices(pricesToStore);
-      } catch (error) {
-        serviceLogger.error(
-          "[PriceTracker] Error in bulk EVM token processing:",
-          error,
-        );
-        // Fallback to individual processing for EVM tokens
-        for (const tokenAddress of evmTokens) {
-          const priceReport = await this.getPrice(tokenAddress);
-          resultMap.set(tokenAddress, priceReport);
-        }
-      }
-    }
-
-    // Process SVM tokens in bulk if MultiChainProvider supports it
-    if (svmTokens.length > 0 && this.multiChainProvider) {
-      try {
-        // Use batch processing to reduce API calls
-        const batchResults = await this.multiChainProvider.getBatchPrices(
-          svmTokens,
-          BlockchainType.SVM,
-        );
-
-        // Store prices and add to result map
-        const pricesToStore = [];
-
-        for (const [tokenAddress, priceReport] of batchResults) {
-          if (priceReport && priceReport.price !== null) {
-            pricesToStore.push({
-              tokenAddress,
-              price: priceReport.price,
-              symbol: priceReport.symbol,
-              chain: priceReport.chain,
-              specificChain: priceReport.specificChain,
-            });
-
-            resultMap.set(tokenAddress, priceReport);
-          } else {
-            resultMap.set(tokenAddress, null);
-          }
-        }
-
-        // Store all prices in a single batch operation
-        await this.storePrices(pricesToStore);
-      } catch (error) {
-        serviceLogger.error(
-          "[PriceTracker] Error in bulk SVM token processing:",
-          error,
-        );
-        // Fallback to individual processing for SVM tokens
-        for (const tokenAddress of svmTokens) {
-          const priceReport = await this.getPrice(tokenAddress);
-          resultMap.set(tokenAddress, priceReport);
-        }
-      }
-    }
+    const successfulPrices = Array.from(resultMap.values()).filter(
+      (v) => v !== null,
+    ).length;
 
     serviceLogger.debug(
-      `[PriceTracker] Successfully retrieved bulk token info for ${Array.from(resultMap.values()).filter((v) => v !== null).length}/${tokenAddresses.length} tokens`,
+      `[PriceTracker] Bulk price retrieval complete: ${successfulPrices}/${tokenAddresses.length} tokens ` +
+        `(${cacheHits} cache hits, ${tokensNeedingAPI.length} API requests)`,
     );
 
     return resultMap;
   }
 
   /**
-   * Store a price in the database
-   * @param tokenAddress The token address
-   * @param price The price to store
-   * @param symbol The token symbol
-   * @param chain The blockchain type
-   * @param specificChain The specific chain (optional)
+   * Process batch results from MultiChainProvider and cache them
+   * @param batchResults Results from getBatchPrices
+   * @param resultMap Map to store the final results
    */
-  private async storePrice(
-    tokenAddress: string,
-    price: number,
-    symbol: string,
-    chain: BlockchainType,
-    specificChain: SpecificChain,
+  private async processBatchResults(
+    batchResults: Map<string, PriceReport | null>,
+    resultMap: Map<string, PriceReport | null>,
   ): Promise<void> {
-    try {
-      await createPrice({
-        token: tokenAddress,
-        price,
-        symbol,
-        timestamp: new Date(),
-        chain,
-        specificChain,
-      });
-    } catch (error) {
-      serviceLogger.error(
-        `[PriceTracker] Error storing price in database:`,
-        error,
-      );
-    }
-  }
+    for (const [tokenAddress, priceReport] of batchResults) {
+      if (priceReport) {
+        // Cache in memory
+        this.setCachedPrice(priceReport);
 
-  /**
-   * Store multiple prices in the database using batch operation
-   * @param pricesData Array of price data to store
-   */
-  private async storePrices(
-    pricesData: Array<{
-      tokenAddress: string;
-      price: number;
-      symbol: string;
-      chain: BlockchainType;
-      specificChain: SpecificChain;
-    }>,
-  ): Promise<void> {
-    if (pricesData.length === 0) {
-      return;
-    }
-
-    try {
-      const insertData = pricesData.map((data) => ({
-        token: data.tokenAddress,
-        price: data.price,
-        symbol: data.symbol,
-        timestamp: new Date(),
-        chain: data.chain,
-        specificChain: data.specificChain,
-      }));
-
-      await createPriceBatch(insertData);
-    } catch (error) {
-      serviceLogger.error(
-        `[PriceTracker] Error storing prices in database:`,
-        error,
-      );
-    }
-  }
-
-  /**
-   * Check if a token is supported by the provider
-   * @param tokenAddress The token address to check
-   * @returns True if the provider supports the token
-   */
-  async isTokenSupported(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<boolean> {
-    if (!this.multiChainProvider) {
-      return false;
-    }
-
-    try {
-      return await this.multiChainProvider.supports(
-        tokenAddress,
-        specificChain,
-      );
-    } catch (error) {
-      serviceLogger.debug(
-        `[PriceTracker] Error checking support for ${tokenAddress}:`,
-        error instanceof Error ? error.message : "Unknown error",
-      );
-      return false;
-    }
-  }
-
-  /**
-   * Get historical price data for a token
-   * @param tokenAddress The token address
-   * @param timeframe The timeframe to get history for (e.g. '24h', '7d', '30d')
-   * @param allowMockData Whether to generate mock data if real data is not available (defaults to config setting)
-   * @returns An array of price points or null if not available
-   */
-  async getPriceHistory(
-    tokenAddress: string,
-    timeframe: string,
-    allowMockData: boolean = config.allowMockPriceHistory,
-  ): Promise<{ timestamp: string; price: number }[] | null> {
-    serviceLogger.debug(
-      `[PriceTracker] Getting price history for ${tokenAddress} (${timeframe})`,
-    );
-
-    try {
-      // Convert timeframe to hours for database query
-      let hours = 24; // Default to 24 hours
-
-      if (timeframe === "7d") hours = 24 * 7;
-      else if (timeframe === "30d") hours = 24 * 30;
-      else if (timeframe === "1h") hours = 1;
-      else if (timeframe === "6h") hours = 6;
-
-      // Get historical data from database
-      const history = await getPriceHistory(tokenAddress, hours);
-
-      if (history && history.length > 0) {
         serviceLogger.debug(
-          `[PriceTracker] Retrieved ${history.length} historical price points from database`,
+          `[PriceTracker] Got price from batch API for ${tokenAddress}: $${priceReport.price}`,
         );
-        return history.map((point) => ({
-          timestamp: point.timestamp?.toISOString() ?? "",
-          price: point.price,
-        }));
       }
-    } catch (error) {
-      serviceLogger.error(
-        `[PriceTracker] Error fetching price history:`,
-        error,
-      );
+
+      resultMap.set(tokenAddress, priceReport);
     }
-
-    // If we don't have enough historical data in the database or an error occurred,
-    // generate mock data based on current price, but only if allowed
-    if (!allowMockData) {
-      serviceLogger.debug(
-        `[PriceTracker] No historical data available and mock data generation is disabled`,
-      );
-      return null;
-    }
-
-    serviceLogger.debug(
-      `[PriceTracker] WARNING: Generating SIMULATED price history data (not real market data)`,
-    );
-    const currentPrice = await this.getPrice(tokenAddress);
-    if (!currentPrice) return null;
-
-    // Convert timeframe to number of data points
-    let dataPoints = 24; // Default for 24h
-    let intervalMs = 3600 * 1000; // 1 hour in milliseconds
-
-    if (timeframe === "7d") {
-      dataPoints = 7 * 24;
-      intervalMs = 3600 * 1000; // 1 hour
-    } else if (timeframe === "30d") {
-      dataPoints = 30;
-      intervalMs = 24 * 3600 * 1000; // 1 day
-    } else if (timeframe === "1h") {
-      dataPoints = 12;
-      intervalMs = 5 * 60 * 1000; // 5 minutes
-    } else if (timeframe === "6h") {
-      dataPoints = 12;
-      intervalMs = 30 * 60 * 1000; // 30 minutes
-    }
-
-    // Cap data points to a reasonable number
-    dataPoints = Math.min(dataPoints, 180);
-
-    // Generate some mock historical data based on current price
-    const now = Date.now();
-    const history = [];
-    for (let i = 0; i < dataPoints; i++) {
-      const time = now - i * intervalMs;
-      // Create somewhat realistic price movements (±2%)
-      const randomVariation = 0.98 + Math.random() * 0.04;
-      history.push({
-        timestamp: new Date(time).toISOString(),
-        price: currentPrice.price * randomVariation,
-        simulated: true, // Add a flag to indicate this is simulated data
-      });
-    }
-
-    serviceLogger.debug(
-      `[PriceTracker] Generated ${dataPoints} simulated data points for ${timeframe} timeframe`,
-    );
-    return history.reverse(); // Return in chronological order
   }
 
   /**
@@ -489,9 +200,6 @@ export class PriceTracker {
    */
   async isHealthy(): Promise<boolean> {
     try {
-      // Check if database is accessible
-      await countPrices();
-
       // Check if provider is responsive
       if (this.multiChainProvider) {
         try {
@@ -514,5 +222,297 @@ export class PriceTracker {
       serviceLogger.error("[PriceTracker] Health check failed:", error);
       return false;
     }
+  }
+
+  /**
+   * Generates a cache key from token address and chain
+   */
+  private getCacheKey(
+    tokenAddress: string,
+    specificChain?: SpecificChain,
+  ): string {
+    return specificChain
+      ? `${tokenAddress.toLowerCase()}:${specificChain}`
+      : tokenAddress.toLowerCase();
+  }
+
+  /**
+   * Get cached token price if available
+   */
+  private getCachedPrice(
+    tokenAddress: string,
+    specificChain?: SpecificChain,
+  ): PriceReport | null {
+    const normalizedAddress = tokenAddress.toLowerCase();
+
+    // Determine which chain to look up: provided chain or known chain
+    const chainToLookup =
+      specificChain || this.getCachedChain(normalizedAddress);
+    if (!chainToLookup) {
+      return null;
+    }
+
+    const cacheKey = this.getCacheKey(normalizedAddress, chainToLookup);
+    const cached = this.tokenPriceCache.get(cacheKey);
+
+    if (cached && this.isPriceFresh(cached.timestamp)) {
+      serviceLogger.debug(
+        `[PriceTracker] Using cached price for ${normalizedAddress} on ${chainToLookup}: $${cached.price}`,
+      );
+      return cached;
+    }
+
+    return null;
+  }
+
+  /**
+   * Cache token price and its chain
+   */
+  private setCachedPrice(priceReport: PriceReport): void {
+    const normalizedAddress = priceReport.token.toLowerCase();
+    const cacheKey = this.getCacheKey(
+      normalizedAddress,
+      priceReport.specificChain,
+    );
+
+    this.tokenPriceCache.set(cacheKey, priceReport);
+
+    // Also cache the token-to-chain mapping for future lookups
+    if (priceReport.chain === BlockchainType.EVM) {
+      this.chainToTokenCache.set(normalizedAddress, priceReport.specificChain);
+    }
+
+    serviceLogger.debug(
+      `[PriceTracker] Cached price for ${normalizedAddress} on ${priceReport.specificChain}: $${priceReport.price}`,
+    );
+  }
+
+  /**
+   * Resolve which specific chain to try for a token
+   * @param tokenAddress The token address
+   * @param providedSpecificChain The specific chain provided by caller (if any)
+   * @returns The specific chain to try (provided, cached, or undefined for multi-chain search)
+   */
+  private resolveSpecificChainToTry(
+    tokenAddress: string,
+    providedSpecificChain?: SpecificChain,
+  ): SpecificChain | undefined {
+    // If a specific chain was provided, use it
+    if (providedSpecificChain) {
+      return providedSpecificChain;
+    }
+
+    // Try cached chain if available (optimization)
+    const cachedChain = this.getCachedChain(tokenAddress);
+    if (cachedChain) {
+      serviceLogger.debug(
+        `[PriceTracker] Using cached chain ${cachedChain} for token ${tokenAddress}`,
+      );
+      return cachedChain;
+    }
+
+    // No specific chain - let MultiChainProvider try all chains
+    return undefined;
+  }
+
+  /**
+   * Fetch price from MultiChainProvider and cache the result
+   * @param tokenAddress The token address
+   * @param blockchainType The blockchain type
+   * @param specificChain The specific chain to try (or undefined for multi-chain search)
+   * @returns The price result or null if not available
+   */
+  private async fetchAndCachePrice(
+    tokenAddress: string,
+    blockchainType: BlockchainType,
+    specificChain?: SpecificChain,
+  ): Promise<PriceReport | null> {
+    if (!this.multiChainProvider) {
+      serviceLogger.error(`[PriceTracker] No MultiChainProvider available`);
+      return null;
+    }
+
+    try {
+      const apiType = specificChain
+        ? `specific chain ${specificChain}`
+        : "multi-chain search";
+
+      serviceLogger.debug(
+        `[PriceTracker] Fetching live price from API for token ${tokenAddress} using ${apiType}`,
+      );
+
+      const priceResult = await this.multiChainProvider.getPrice(
+        tokenAddress,
+        blockchainType,
+        specificChain,
+      );
+
+      if (!priceResult) {
+        serviceLogger.debug(
+          `[PriceTracker] No price available from API for ${tokenAddress}`,
+        );
+        return null;
+      }
+
+      serviceLogger.debug(
+        `[PriceTracker] Got price $${priceResult.price} from live API (chain: ${priceResult.specificChain})`,
+      );
+
+      // Cache in memory
+      this.setCachedPrice(priceResult);
+
+      return priceResult;
+    } catch (error) {
+      serviceLogger.error(
+        `[PriceTracker] Error fetching price from API:`,
+        error instanceof Error ? error.message : "Unknown error",
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Try to get batch prices using cached chains first
+   * @param tokenAddresses Array of token addresses to try
+   * @param resultMap Map to store successful results
+   * @returns Array of token addresses that still need multi-chain search
+   */
+  private async tryBatchPricesWithCachedChains(
+    tokenAddresses: string[],
+    resultMap: Map<string, PriceReport | null>,
+  ): Promise<string[]> {
+    if (!this.multiChainProvider || tokenAddresses.length === 0) {
+      return tokenAddresses;
+    }
+
+    // Group tokens by cached chain in a single pass
+    const tokensByCachedChain = new Map<SpecificChain, string[]>();
+    for (const addr of tokenAddresses) {
+      const cachedChain = this.getCachedChain(addr);
+      if (cachedChain) {
+        if (!tokensByCachedChain.has(cachedChain)) {
+          tokensByCachedChain.set(cachedChain, []);
+        }
+        tokensByCachedChain.get(cachedChain)?.push(addr);
+      }
+    }
+
+    if (tokensByCachedChain.size === 0) {
+      return tokenAddresses; // No tokens with cached chains
+    }
+
+    const successfulTokens = new Set<string>();
+
+    // Try each cached chain group
+    for (const [cachedChain, tokens] of tokensByCachedChain) {
+      try {
+        const firstToken = tokens[0];
+        if (!firstToken) {
+          continue;
+        }
+
+        const chainType = this.determineChain(firstToken);
+        const cachedChainResults = await this.multiChainProvider.getBatchPrices(
+          tokens,
+          chainType,
+          cachedChain,
+        );
+
+        // Process successful results
+        for (const [tokenAddr, priceResult] of cachedChainResults) {
+          if (priceResult) {
+            resultMap.set(tokenAddr, priceResult);
+            this.setCachedPrice(priceResult);
+            successfulTokens.add(tokenAddr);
+          }
+        }
+
+        serviceLogger.debug(
+          `[PriceTracker] Cached chain ${cachedChain}: ${successfulTokens.size} hits from ${tokens.length} tokens`,
+        );
+      } catch (error) {
+        serviceLogger.debug(
+          `[PriceTracker] Error with cached chain ${cachedChain}, tokens will fallback to multi-chain search:`,
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    }
+
+    // Return tokens that still need multi-chain search
+    return tokenAddresses.filter((addr) => !successfulTokens.has(addr));
+  }
+
+  /**
+   * Fetch remaining tokens via multi-chain batch API as final fallback
+   * @param remainingTokens Array of tokens that still need pricing
+   * @param resultMap Map to store the results
+   */
+  private async fetchRemainingTokensViaBatch(
+    remainingTokens: string[],
+    resultMap: Map<string, PriceReport | null>,
+  ): Promise<void> {
+    if (remainingTokens.length === 0 || !this.multiChainProvider) {
+      return;
+    }
+
+    try {
+      serviceLogger.debug(
+        `[PriceTracker] Fetching ${remainingTokens.length} tokens via batch API`,
+      );
+
+      // Group tokens by chain type for efficient batch processing
+      const evmTokens = remainingTokens.filter(
+        (addr) => this.determineChain(addr) === BlockchainType.EVM,
+      );
+      const svmTokens = remainingTokens.filter(
+        (addr) => this.determineChain(addr) === BlockchainType.SVM,
+      );
+
+      // Process EVM tokens in batch
+      if (evmTokens.length > 0) {
+        const evmResults = await this.multiChainProvider.getBatchPrices(
+          evmTokens,
+          BlockchainType.EVM,
+        );
+        await this.processBatchResults(evmResults, resultMap);
+      }
+
+      // Process SVM tokens in batch
+      if (svmTokens.length > 0) {
+        const svmResults = await this.multiChainProvider.getBatchPrices(
+          svmTokens,
+          BlockchainType.SVM,
+          "svm", // For SVM tokens, specificChain is always "svm"
+        );
+        await this.processBatchResults(svmResults, resultMap);
+      }
+    } catch (error) {
+      serviceLogger.error(
+        `[PriceTracker] Error in batch API processing:`,
+        error instanceof Error ? error.message : "Unknown error",
+      );
+
+      // Fallback: set remaining tokens to null
+      for (const tokenAddress of remainingTokens) {
+        if (!resultMap.has(tokenAddress)) {
+          resultMap.set(tokenAddress, null);
+        }
+      }
+    }
+  }
+
+  /**
+   * Get the cached chain for a token if available
+   */
+  private getCachedChain(tokenAddress: string): SpecificChain | null {
+    return this.chainToTokenCache.get(tokenAddress.toLowerCase()) || null;
+  }
+
+  /**
+   * Check if a cached price is still fresh enough to use
+   */
+  private isPriceFresh(timestamp: Date): boolean {
+    const priceAge = Date.now() - timestamp.getTime();
+    return priceAge < config.portfolio.priceFreshnessMs;
   }
 }

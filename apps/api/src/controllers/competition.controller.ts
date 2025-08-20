@@ -325,7 +325,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         for (const chain of Object.keys(config.specificChainBalances)) {
           const chainBalances =
             config.specificChainBalances[
-              chain as keyof typeof config.specificChainBalances
+            chain as keyof typeof config.specificChainBalances
             ];
           const tokenItems = [];
 
@@ -1096,7 +1096,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         for (const chain of Object.keys(config.specificChainBalances)) {
           const chainBalances =
             config.specificChainBalances[
-              chain as keyof typeof config.specificChainBalances
+            chain as keyof typeof config.specificChainBalances
             ];
           const tokenItems = [];
 
@@ -1190,6 +1190,94 @@ export function makeCompetitionController(services: ServiceRegistry) {
           success: true,
           competition,
           rules: allRules,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get trades for a competition
+     * @param req Request
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getCompetitionTrades(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID from path parameter
+        const competitionId = ensureUuid(req.params.competitionId);
+        const pagingParams = PagingParamsSchema.parse(req.query);
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Get trades
+        const trades = await services.tradeSimulator.getCompetitionTrades(
+          competitionId,
+          pagingParams.limit,
+          pagingParams.offset,
+        );
+
+        res.status(200).json({
+          success: true,
+          trades,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get trades for an agent in a competition
+     * @param req Request
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getAgentTradesInCompetition(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID from path parameter
+        const { competitionId, agentId } = CompetitionAgentParamsSchema.parse(
+          req.params,
+        );
+        const pagingParams = PagingParamsSchema.parse(req.query);
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Check if agent exists
+        const agent = await services.agentManager.getAgent(agentId);
+        if (!agent) {
+          throw new ApiError(404, "Agent not found");
+        }
+
+        // Get trades
+        const trades =
+          await services.tradeSimulator.getAgentTradesInCompetition(
+            competitionId,
+            agentId,
+            pagingParams.limit,
+            pagingParams.offset,
+          );
+
+        res.status(200).json({
+          success: true,
+          trades,
         });
       } catch (error) {
         next(error);

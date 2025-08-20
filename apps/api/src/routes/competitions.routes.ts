@@ -1277,5 +1277,141 @@ export function configureCompetitionsRoutes(
     controller.getCompetitionTimeline,
   );
 
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/trades:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get trades for a competition
+   *     description: Get all trades for a specific competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the competition to get trades for
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
+   *         required: false
+   *         description: Maximum number of results to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         required: false
+   *         description: Number of results to skip for pagination
+   *     responses:
+   *       200:
+   *         description: Competition trades retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 trades:
+   *                   type: array
+   *                   description: List of trades in the competition
+   *                   items:
+   *                     type: object
+   *       400:
+   *         description: Bad request - Invalid competition ID format
+   *       404:
+   *         description: Competition not found
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/trades",
+    ...authMiddlewares,
+    controller.getCompetitionTrades,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/agents/{agentId}/trades:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get trades for an agent in a competition
+   *     description: Get all trades for a specific agent in a specific competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the competition
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the agent
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
+   *         required: false
+   *         description: Maximum number of results to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         required: false
+   *         description: Number of results to skip for pagination
+   *     responses:
+   *       200:
+   *         description: Agent trades retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 trades:
+   *                   type: array
+   *                   description: List of trades by the agent in the competition
+   *                   items:
+   *                     type: object
+   *       400:
+   *         description: Bad request - Invalid ID format
+   *       404:
+   *         description: Competition or agent not found
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/agents/:agentId/trades",
+    ...authMiddlewares,
+    controller.getAgentTradesInCompetition,
+  );
+
   return router;
 }

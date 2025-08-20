@@ -580,21 +580,6 @@ export interface PriceResponse extends ApiResponse {
   timestamp?: string;
 }
 
-// Price history point
-export interface PriceHistoryPoint {
-  timestamp: string;
-  price: number;
-}
-
-// Price history response
-export interface PriceHistoryResponse extends ApiResponse {
-  token: string;
-  chain: BlockchainType;
-  specificChain: SpecificChain | null;
-  interval: string;
-  history: PriceHistoryPoint[];
-}
-
 /**
  * HEALTH CHECK TYPES
  */
