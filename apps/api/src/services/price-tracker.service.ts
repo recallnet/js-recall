@@ -95,19 +95,19 @@ export class PriceTracker {
       `[PriceTracker] ${blockchainType ? "Using provided" : "Detected"} token ${tokenAddress} on chain: ${tokenChain}`,
     );
 
-    // 1st: Check in-memory cache first
+    // Check in-memory cache first
     const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
     if (cachedPrice) {
       return cachedPrice;
     }
 
-    // 2nd: Determine which specific chain to try (cached chain first, then fallback)
+    // Determine which specific chain to try (cached chain first, then fallback)
     const chainToTry = this.resolveSpecificChainToTry(
       tokenAddress,
       specificChain,
     );
 
-    // 3rd: Fetch from live API via MultiChainProvider
+    // Fetch from live API via MultiChainProvider
     return await this.fetchAndCachePrice(tokenAddress, tokenChain, chainToTry);
   }
 
@@ -129,11 +129,9 @@ export class PriceTracker {
       return resultMap;
     }
 
-    // Track cache performance
-    let inMemoryCacheHits = 0;
-
-    // Step 1: Check PriceTracker's in-memory cache for all tokens
+    // Check in-memory cache for all tokens
     const tokensNeedingAPI: string[] = [];
+    let cacheHits = 0;
 
     for (const tokenAddress of tokenAddresses) {
       // Determine the specific chain for proper cache lookup
@@ -145,27 +143,20 @@ export class PriceTracker {
 
       const cachedPrice = this.getCachedPrice(tokenAddress, specificChain);
       if (cachedPrice) {
-        serviceLogger.debug(
-          `[PriceTracker] Using cached price for ${tokenAddress}: $${cachedPrice.price}`,
-        );
         resultMap.set(tokenAddress, cachedPrice);
-        inMemoryCacheHits++;
+        cacheHits++;
       } else {
         tokensNeedingAPI.push(tokenAddress);
       }
     }
 
-    // Step 2: Try cached chains first for tokens with known chain mappings (optimization)
+    // Try cached chains first for tokens with known chain mappings (optimization)
     const remainingTokensForBatch = await this.tryBatchPricesWithCachedChains(
       tokensNeedingAPI,
       resultMap,
     );
 
-    // Track cached chain performance
-    const cachedChainHits =
-      tokensNeedingAPI.length - remainingTokensForBatch.length;
-
-    // Step 3: Use batch API for remaining tokens (preserving batching efficiency)
+    // Use batch API for remaining tokens (preserving batching efficiency)
     await this.fetchRemainingTokensViaBatch(remainingTokensForBatch, resultMap);
 
     const successfulPrices = Array.from(resultMap.values()).filter(
@@ -174,7 +165,7 @@ export class PriceTracker {
 
     serviceLogger.debug(
       `[PriceTracker] Bulk price retrieval complete: ${successfulPrices}/${tokenAddresses.length} tokens ` +
-        `(${inMemoryCacheHits} memory hits, ${cachedChainHits} cached chain hits, ${remainingTokensForBatch.length} multi-chain API requests)`,
+        `(${cacheHits} cache hits, ${tokensNeedingAPI.length} API requests)`,
     );
 
     return resultMap;
