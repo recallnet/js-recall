@@ -334,6 +334,12 @@
                     "description": "URL to competition image",
                     "example": "https://example.com/competition-image.jpg"
                   },
+                  "startDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start date for the competition (ISO 8601 format)",
+                    "example": "2024-01-01T00:00:00Z"
+                  },
                   "endDate": {
                     "type": "string",
                     "format": "date-time",
@@ -363,6 +369,12 @@
                     "format": "date-time",
                     "description": "End date for joining the competition (ISO 8601 format). Must be after or equal to joinStartDate if both are provided.",
                     "example": "2024-01-14T23:59:59Z"
+                  },
+                  "maxParticipants": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Maximum number of participants allowed to register for this competition. If not specified, there is no limit.",
+                    "example": 50
                   },
                   "tradingConstraints": {
                     "type": "object",
@@ -474,6 +486,12 @@
                           "format": "date-time",
                           "description": "Competition creation date"
                         },
+                        "maxParticipants": {
+                          "type": "integer",
+                          "nullable": true,
+                          "description": "Maximum number of participants allowed to register for this competition. null means no limit.",
+                          "example": 50
+                        },
                         "rewards": {
                           "type": "array",
                           "description": "Rewards for competition placements",
@@ -575,6 +593,12 @@
                     "type": "string",
                     "description": "URL to competition image (used when creating a new competition)",
                     "example": "https://example.com/competition-image.jpg"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start date for the competition (ISO 8601 format)",
+                    "example": "2024-01-01T00:00:00Z"
                   },
                   "endDate": {
                     "type": "string",
@@ -735,6 +759,12 @@
                           "type": "string",
                           "enum": ["trading"],
                           "description": "The type of competition"
+                        },
+                        "maxParticipants": {
+                          "type": "integer",
+                          "nullable": true,
+                          "description": "Maximum number of participants allowed to register for this competition. null means no limit.",
+                          "example": 50
                         },
                         "agentIds": {
                           "type": "array",
@@ -902,6 +932,12 @@
                           "type": "string",
                           "enum": ["trading"],
                           "description": "The type of competition"
+                        },
+                        "maxParticipants": {
+                          "type": "integer",
+                          "nullable": true,
+                          "description": "Maximum number of participants allowed to register for this competition. null means no limit.",
+                          "example": 50
                         }
                       }
                     },
@@ -3991,6 +4027,17 @@
                             "type": "string",
                             "example": "A competition focused on yield farming strategies."
                           },
+                          "registeredParticipants": {
+                            "type": "integer",
+                            "description": "Number of participants registered for this competition",
+                            "example": 10
+                          },
+                          "maxParticipants": {
+                            "type": "integer",
+                            "nullable": true,
+                            "description": "Maximum number of participants allowed to register for this competition. null means no limit.",
+                            "example": 50
+                          },
                           "portfolioValue": {
                             "type": "number",
                             "description": "Agent's current portfolio value in this competition",
@@ -4452,6 +4499,17 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "When the competition was last updated"
+                          },
+                          "registeredParticipants": {
+                            "type": "integer",
+                            "description": "Number of participants registered for this competition",
+                            "example": 10
+                          },
+                          "maxParticipants": {
+                            "type": "integer",
+                            "nullable": true,
+                            "description": "Maximum number of participants allowed to register for this competition. null means no limit.",
+                            "example": 50
                           },
                           "rewards": {
                             "nullable": true,
@@ -5217,6 +5275,17 @@
                           "format": "date-time",
                           "description": "When the competition was last updated"
                         },
+                        "registeredParticipants": {
+                          "type": "integer",
+                          "description": "Number of participants registered for this competition",
+                          "example": 10
+                        },
+                        "maxParticipants": {
+                          "type": "integer",
+                          "nullable": true,
+                          "description": "Maximum number of participants allowed to register for this competition. null means no limit.",
+                          "example": 50
+                        },
                         "rewards": {
                           "type": "array",
                           "nullable": true,
@@ -5401,6 +5470,17 @@
                     "competitionId": {
                       "type": "string",
                       "description": "The ID of the competition"
+                    },
+                    "registeredParticipants": {
+                      "type": "integer",
+                      "description": "Number of participants registered for this competition",
+                      "example": 10
+                    },
+                    "maxParticipants": {
+                      "type": "integer",
+                      "nullable": true,
+                      "description": "Maximum number of participants allowed to register for this competition. null means no limit.",
+                      "example": 50
                     },
                     "agents": {
                       "type": "array",
@@ -7977,6 +8057,17 @@
                           "updatedAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "registeredParticipants": {
+                            "type": "integer",
+                            "description": "Number of participants registered for this competition",
+                            "example": 10
+                          },
+                          "maxParticipants": {
+                            "type": "integer",
+                            "nullable": true,
+                            "description": "Maximum number of participants allowed to register for this competition. null means no limit.",
+                            "example": 50
                           },
                           "agents": {
                             "type": "array",

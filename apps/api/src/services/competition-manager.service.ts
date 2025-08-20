@@ -55,7 +55,6 @@ import {
   CompetitionAgentStatus,
   CompetitionJoinError,
   CompetitionStatus,
-  CompetitionStatusSchema,
   CompetitionType,
   CrossChainTradingType,
   PagingParams,
@@ -119,29 +118,52 @@ export class CompetitionManager {
    * @param externalUrl Optional URL for external competition details
    * @param imageUrl Optional URL to the competition image
    * @param type Competition type (defaults to trading)
+   * @param startDate Optional start date for the competition
    * @param endDate Optional end date for the competition
    * @param votingStartDate Optional voting start date
    * @param votingEndDate Optional voting end date
    * @param joinStartDate Optional start date for joining the competition
    * @param joinEndDate Optional end date for joining the competition
+   * @param maxParticipants Optional maximum number of participants allowed
+   * @param tradingConstraints Optional trading constraints for the competition
+   * @param rewards Optional rewards for the competition
    * @returns The created competition
    */
-  async createCompetition(
-    name: string,
-    description?: string,
-    tradingType: CrossChainTradingType = CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-    sandboxMode: boolean = false,
-    externalUrl?: string,
-    imageUrl?: string,
-    type: CompetitionType = COMPETITION_TYPE.TRADING,
-    endDate?: Date,
-    votingStartDate?: Date,
-    votingEndDate?: Date,
-    joinStartDate?: Date,
-    joinEndDate?: Date,
-    tradingConstraints?: TradingConstraintsInput,
-    rewards?: Record<number, number>,
-  ) {
+  async createCompetition({
+    name,
+    description,
+    tradingType,
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+    type,
+    startDate,
+    endDate,
+    votingStartDate,
+    votingEndDate,
+    joinStartDate,
+    joinEndDate,
+    maxParticipants,
+    tradingConstraints,
+    rewards,
+  }: {
+    name: string;
+    description?: string;
+    tradingType?: CrossChainTradingType;
+    sandboxMode?: boolean;
+    externalUrl?: string;
+    imageUrl?: string;
+    type?: CompetitionType;
+    startDate?: Date;
+    endDate?: Date;
+    votingStartDate?: Date;
+    votingEndDate?: Date;
+    joinStartDate?: Date;
+    joinEndDate?: Date;
+    maxParticipants?: number;
+    tradingConstraints?: TradingConstraintsInput;
+    rewards?: Record<number, number>;
+  }) {
     const id = uuidv4();
     const competition = {
       id,
@@ -149,16 +171,18 @@ export class CompetitionManager {
       description,
       externalUrl,
       imageUrl,
-      startDate: null,
-      endDate: endDate || null,
-      votingStartDate: votingStartDate || null,
-      votingEndDate: votingEndDate || null,
-      joinStartDate: joinStartDate || null,
-      joinEndDate: joinEndDate || null,
+      startDate: startDate ?? null,
+      endDate: endDate ?? null,
+      votingStartDate: votingStartDate ?? null,
+      votingEndDate: votingEndDate ?? null,
+      joinStartDate: joinStartDate ?? null,
+      joinEndDate: joinEndDate ?? null,
+      maxParticipants: maxParticipants ?? null,
       status: COMPETITION_STATUS.PENDING,
-      crossChainTradingType: tradingType,
-      sandboxMode,
-      type,
+      crossChainTradingType:
+        tradingType ?? CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      sandboxMode: sandboxMode ?? false,
+      type: type ?? COMPETITION_TYPE.TRADING,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -255,9 +279,6 @@ export class CompetitionManager {
       // Reset balances
       await this.balanceManager.resetAgentBalances(agentId);
 
-      // Register agent in the competition (automatically sets status to 'active')
-      await addAgentToCompetition(competitionId, agentId);
-
       // Ensure agent is globally active (but don't force reactivation)
       const agent = await findAgentById(agentId);
       if (!agent) {
@@ -270,16 +291,21 @@ export class CompetitionManager {
         );
       }
 
+      // Register agent in the competition (automatically sets status to 'active')
+      await addAgentToCompetition(competitionId, agentId);
+
       serviceLogger.debug(
         `[CompetitionManager] Agent ${agentId} ready for competition`,
       );
     }
 
-    // Update competition status
-    competition.status = COMPETITION_STATUS.ACTIVE;
-    competition.startDate = new Date();
-    competition.updatedAt = new Date();
-    await updateCompetition(competition);
+    // Update the competition, and use this latest response to have accurate `registeredParticipants`
+    const finalCompetition = await updateCompetition({
+      id: competitionId,
+      status: COMPETITION_STATUS.ACTIVE,
+      startDate: new Date(),
+      updatedAt: new Date(),
+    });
 
     serviceLogger.debug(
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
@@ -318,7 +344,7 @@ export class CompetitionManager {
     serviceLogger.debug(`[CompetitionManager] Reloaded configuration settings`);
 
     return {
-      ...competition,
+      ...finalCompetition,
       tradingConstraints: {
         minimumPairAgeHours: newConstraints?.minimumPairAgeHours,
         minimum24hVolumeUsd: newConstraints?.minimum24hVolumeUsd,
@@ -353,12 +379,13 @@ export class CompetitionManager {
       `[CompetitionManager] Competition ended. ${competitionAgents.length} agents remain 'active' in completed competition`,
     );
 
-    // Update competition status
-    competition.status = CompetitionStatusSchema.parse("ended");
-    competition.endDate = new Date();
-    competition.updatedAt = new Date();
-
-    await updateCompetition(competition);
+    // Update the competition status, and use this latest response to have accurate `registeredParticipants`
+    const finalCompetition = await updateCompetition({
+      id: competitionId,
+      status: COMPETITION_STATUS.ENDED,
+      endDate: new Date(),
+      updatedAt: new Date(),
+    });
 
     serviceLogger.debug(
       `[CompetitionManager] Ended competition: ${competition.name} (${competitionId})`,
@@ -404,7 +431,7 @@ export class CompetitionManager {
     // Update agent ranks based on competition results
     await this.agentRankService.updateAgentRanksForCompetition(competitionId);
 
-    return competition;
+    return finalCompetition;
   }
 
   /**
@@ -997,8 +1024,26 @@ export class CompetitionManager {
       );
     }
 
-    // Add agent to competition
-    await addAgentToCompetition(competitionId, agentId);
+    // 8. Atomically add agent to competition with participant limit check
+    // This prevents race conditions when multiple agents try to join simultaneously
+    try {
+      await addAgentToCompetition(competitionId, agentId);
+    } catch (error) {
+      // Convert repository error to appropriate API error
+      if (
+        error instanceof Error &&
+        error.message.includes("maximum participant limit")
+      ) {
+        const competitionError = new Error(
+          error.message,
+        ) as CompetitionJoinError;
+        competitionError.type =
+          COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED;
+        competitionError.code = 403;
+        throw competitionError;
+      }
+      throw error;
+    }
 
     serviceLogger.debug(
       `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId}`,

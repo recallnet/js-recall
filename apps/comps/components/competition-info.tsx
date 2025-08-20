@@ -16,8 +16,16 @@ export interface CompetitionInfoProps {
   className?: string;
 }
 
-const CellTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span className="text-secondary-foreground text-xs font-semibold uppercase tracking-widest">
+const CellTitle: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+}> = ({ children, className }) => (
+  <span
+    className={cn(
+      "text-secondary-foreground text-xs font-semibold uppercase tracking-widest",
+      className,
+    )}
+  >
     {children}
   </span>
 );
@@ -59,18 +67,41 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
             <CellTitle>Status</CellTitle>
             <CompetitionStatusBadge status={competition.status} />
           </div>
-          <span>
+          <span className="font-bold">
             {startDate} - {endDate}
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-b p-[25px]">
-        <CellTitle>Skills</CellTitle>
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded border p-2 text-xs capitalize">
-            {formatCompetitionType(competition.type)}
-          </span>
+      <div className="grid grid-cols-2 border-b">
+        <div className="flex items-center gap-2 border-r p-[25px]">
+          <CellTitle>Skills</CellTitle>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded border p-2 text-xs capitalize">
+              {formatCompetitionType(competition.type)}
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-col items-start gap-2 p-[25px]">
+          <CellTitle>Participants</CellTitle>
+          {competition.maxParticipants ? (
+            <div className="mt-2 grid w-full grid-cols-2 gap-4">
+              <div className="flex flex-col">
+                <CellTitle className="mb-1 font-medium">Registered</CellTitle>
+                <span className="font-bold">
+                  {competition.registeredParticipants}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <CellTitle className="mb-1 font-medium">Limit</CellTitle>
+                <span className="font-bold">{competition.maxParticipants}</span>
+              </div>
+            </div>
+          ) : (
+            <span className="font-bold">
+              {competition.registeredParticipants}
+            </span>
+          )}
         </div>
       </div>
 

@@ -211,6 +211,27 @@
       "when": 1755038091583,
       "tag": "0029_regular_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1755542584619,
+      "tag": "0030_brief_thunderball",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1755568689927,
+      "tag": "0031_nappy_onslaught",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1755615076680,
+      "tag": "0032_left_talisman",
+      "breakpoints": true
     }
   ]
 }

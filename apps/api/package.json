@@ -20,6 +20,7 @@
     "rewards:allocate": "tsx scripts/rewards-allocate.ts",
     "rewards:insert-test-data": "tsx scripts/insert-epoch-rewards.ts",
     "db:gen-migrations": "NODE_OPTIONS='--import tsx' drizzle-kit generate",
+    "db:custom-migration": "NODE_OPTIONS='--import tsx' drizzle-kit generate --custom",
     "db:check": "NODE_OPTIONS='--import tsx' drizzle-kit check",
     "db:migrate": "NODE_OPTIONS='--import tsx' drizzle-kit migrate",
     "db:clean": "tsx scripts/clean-db.ts",

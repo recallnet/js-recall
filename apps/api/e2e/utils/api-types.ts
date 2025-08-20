@@ -357,6 +357,9 @@ export interface Competition {
   // Join date constraint fields
   joinStartDate: string | null;
   joinEndDate: string | null;
+  // Participant limit field
+  maxParticipants: number | null;
+  registeredParticipants: number;
   tradingConstraints?: TradingConstraints;
   rewards?: {
     rank: number;
@@ -567,21 +570,6 @@ export interface PriceResponse extends ApiResponse {
   specificChain: SpecificChain | null;
   symbol: string;
   timestamp?: string;
-}
-
-// Price history point
-export interface PriceHistoryPoint {
-  timestamp: string;
-  price: number;
-}
-
-// Price history response
-export interface PriceHistoryResponse extends ApiResponse {
-  token: string;
-  chain: BlockchainType;
-  specificChain: SpecificChain | null;
-  interval: string;
-  history: PriceHistoryPoint[];
 }
 
 /**

@@ -19,7 +19,6 @@ import {
   ActorStatus,
   AdminCreateAgentSchema,
   COMPETITION_STATUS,
-  CROSS_CHAIN_TRADING_TYPE,
 } from "@/types/index.js";
 
 import {
@@ -531,31 +530,39 @@ export function makeAdminController(services: ServiceRegistry) {
           externalUrl,
           imageUrl,
           type,
+          startDate,
           endDate,
           votingStartDate,
           votingEndDate,
           joinStartDate,
           joinEndDate,
+          maxParticipants,
           tradingConstraints,
           rewards,
         } = result.data;
 
         // Create a new competition
         const competition = await services.competitionManager.createCompetition(
-          name,
-          description,
-          tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-          sandboxMode || false,
-          externalUrl,
-          imageUrl,
-          type,
-          endDate ? new Date(endDate) : undefined,
-          votingStartDate ? new Date(votingStartDate) : undefined,
-          votingEndDate ? new Date(votingEndDate) : undefined,
-          joinStartDate ? new Date(joinStartDate) : undefined,
-          joinEndDate ? new Date(joinEndDate) : undefined,
-          tradingConstraints,
-          rewards,
+          {
+            name,
+            description,
+            tradingType,
+            sandboxMode,
+            externalUrl,
+            imageUrl,
+            type,
+            startDate: startDate ? new Date(startDate) : undefined,
+            endDate: endDate ? new Date(endDate) : undefined,
+            votingStartDate: votingStartDate
+              ? new Date(votingStartDate)
+              : undefined,
+            votingEndDate: votingEndDate ? new Date(votingEndDate) : undefined,
+            joinStartDate: joinStartDate ? new Date(joinStartDate) : undefined,
+            joinEndDate: joinEndDate ? new Date(joinEndDate) : undefined,
+            maxParticipants,
+            tradingConstraints,
+            rewards,
+          },
         );
 
         // Return the created competition
@@ -590,6 +597,8 @@ export function makeAdminController(services: ServiceRegistry) {
           sandboxMode,
           externalUrl,
           imageUrl,
+          type,
+          startDate,
           endDate,
           votingStartDate,
           votingEndDate,
@@ -682,22 +691,27 @@ export function makeAdminController(services: ServiceRegistry) {
           // Schema validation ensures either competitionId or name is provided
 
           // Create a new competition
-          competition = await services.competitionManager.createCompetition(
-            name!,
+          competition = await services.competitionManager.createCompetition({
+            name: name!,
             description,
-            tradingType || CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-            sandboxMode || false,
+            tradingType,
+            sandboxMode,
             externalUrl,
             imageUrl,
-            undefined, // type parameter (will use default)
-            endDate ? new Date(endDate) : undefined,
-            votingStartDate ? new Date(votingStartDate) : undefined,
-            votingEndDate ? new Date(votingEndDate) : undefined,
-            joinStartDate ? new Date(joinStartDate) : undefined,
-            joinEndDate ? new Date(joinEndDate) : undefined,
+            type,
+            startDate: startDate ? new Date(startDate) : undefined,
+            endDate: endDate ? new Date(endDate) : undefined,
+            votingStartDate: votingStartDate
+              ? new Date(votingStartDate)
+              : undefined,
+            votingEndDate: votingEndDate ? new Date(votingEndDate) : undefined,
+            joinStartDate: joinStartDate ? new Date(joinStartDate) : undefined,
+            joinEndDate: joinEndDate ? new Date(joinEndDate) : undefined,
+            // Note: maxParticipants not available when starting new competition since this starting comps method has "dual" purpose actions
+            maxParticipants: undefined,
             tradingConstraints,
             rewards,
-          );
+          });
         }
 
         // Start the competition
