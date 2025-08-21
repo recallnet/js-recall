@@ -465,9 +465,6 @@ export interface CompetitionRulesResponse extends ApiResponse {
       evm: string[];
     };
     slippageFormula: string;
-    portfolioSnapshots: {
-      interval: string;
-    };
     tradingConstraints?: {
       minimumPairAgeHours: number;
       minimum24hVolumeUsd: number;

@@ -280,11 +280,7 @@ export const config = {
     domain:
       process.env.API_DOMAIN || "https://api.competitions.recall.network/",
   },
-  portfolio: {
-    // Default snapshot interval: 5 minutes (600000ms)
-    // The snapshot is taken and configured via cron
-    snapshotIntervalMs: parseInt("600000", 10),
-  },
+
   priceTracker: {
     // Maximum number of entries for the token price cache
     maxCacheSize: parseInt(process.env.PRICE_CACHE_MAX_SIZE || "10000", 10),

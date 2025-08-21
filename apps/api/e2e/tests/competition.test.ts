@@ -440,7 +440,6 @@ describe("Competition API", () => {
     expect(agentRulesResponse.rules.rateLimits).toBeDefined();
     expect(agentRulesResponse.rules.availableChains).toBeDefined();
     expect(agentRulesResponse.rules.slippageFormula).toBeDefined();
-    expect(agentRulesResponse.rules.portfolioSnapshots).toBeDefined();
 
     // Verify trading constraints
     expect(agentRulesResponse.rules.tradingConstraints).toBeDefined();
@@ -663,7 +662,6 @@ describe("Competition API", () => {
     expect(adminRulesResponse.rules.rateLimits).toBeDefined();
     expect(adminRulesResponse.rules.availableChains).toBeDefined();
     expect(adminRulesResponse.rules.slippageFormula).toBeDefined();
-    expect(adminRulesResponse.rules.portfolioSnapshots).toBeDefined();
 
     // Regular agent checks all the same endpoints to verify they work for participants too
     const agentStatusResponse =
@@ -3987,7 +3985,6 @@ describe("Competition API", () => {
       expect(response.data.rules.rateLimits).toBeDefined();
       expect(response.data.rules.availableChains).toBeDefined();
       expect(response.data.rules.slippageFormula).toBeDefined();
-      expect(response.data.rules.portfolioSnapshots).toBeDefined();
       expect(response.data.rules.tradingConstraints).toBeDefined();
       expect(response.data.rules.tradingConstraints.minimumPairAgeHours).toBe(
         24,
