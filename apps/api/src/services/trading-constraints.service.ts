@@ -17,6 +17,7 @@ export interface TradingConstraintsInput {
   minimum24hVolumeUsd?: number;
   minimumLiquidityUsd?: number;
   minimumFdvUsd?: number;
+  minTradesPerDay?: number | null;
 }
 
 /**
@@ -42,6 +43,7 @@ export class TradingConstraintsService {
         config.tradingConstraints.defaultMinimumLiquidityUsd,
       minimumFdvUsd:
         input.minimumFdvUsd ?? config.tradingConstraints.defaultMinimumFdvUsd,
+      minTradesPerDay: input.minTradesPerDay ?? null,
     };
 
     return await create(constraintsData);
@@ -76,6 +78,9 @@ export class TradingConstraintsService {
     }
     if (input.minimumFdvUsd !== undefined) {
       updateData.minimumFdvUsd = input.minimumFdvUsd;
+    }
+    if (input.minTradesPerDay !== undefined) {
+      updateData.minTradesPerDay = input.minTradesPerDay;
     }
 
     const result = await update(competitionId, updateData);
@@ -113,6 +118,7 @@ export class TradingConstraintsService {
         config.tradingConstraints.defaultMinimumLiquidityUsd,
       minimumFdvUsd:
         input.minimumFdvUsd ?? config.tradingConstraints.defaultMinimumFdvUsd,
+      minTradesPerDay: input.minTradesPerDay ?? null,
     };
 
     const result = await upsert(constraintsData);
@@ -132,6 +138,7 @@ export class TradingConstraintsService {
     minimum24hVolumeUsd: number;
     minimumLiquidityUsd: number;
     minimumFdvUsd: number;
+    minTradesPerDay: number | null;
   }> {
     const constraints = await this.getConstraints(competitionId);
 
@@ -141,6 +148,7 @@ export class TradingConstraintsService {
         minimum24hVolumeUsd: constraints.minimum24hVolumeUsd,
         minimumLiquidityUsd: constraints.minimumLiquidityUsd,
         minimumFdvUsd: constraints.minimumFdvUsd,
+        minTradesPerDay: constraints.minTradesPerDay,
       };
     }
 
@@ -149,6 +157,7 @@ export class TradingConstraintsService {
       minimum24hVolumeUsd: config.tradingConstraints.defaultMinimum24hVolumeUsd,
       minimumLiquidityUsd: config.tradingConstraints.defaultMinimumLiquidityUsd,
       minimumFdvUsd: config.tradingConstraints.defaultMinimumFdvUsd,
+      minTradesPerDay: null,
     };
   }
 
@@ -198,6 +207,12 @@ export class TradingConstraintsService {
       if (input.minimumFdvUsd > 1000000000000) {
         // 1 trillion
         errors.push("minimumFdvUsd cannot exceed 1 trillion USD");
+      }
+    }
+
+    if (input.minTradesPerDay !== undefined && input.minTradesPerDay !== null) {
+      if (input.minTradesPerDay < 0) {
+        errors.push("minTradesPerDay must be non-negative");
       }
     }
 

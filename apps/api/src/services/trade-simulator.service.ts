@@ -5,6 +5,7 @@ import {
   count,
   createTradeWithBalances,
   getAgentTrades,
+  getAgentTradesInCompetition,
   getCompetitionTrades,
 } from "@/database/repositories/trade-repository.js";
 import { findByCompetitionId } from "@/database/repositories/trading-constraints-repository.js";
@@ -296,6 +297,36 @@ export class TradeSimulator {
     } catch (error) {
       serviceLogger.error(
         `[TradeSimulator] Error getting competition trades:`,
+        error,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Get all trades for an agent in a competition
+   * @param competitionId The competition ID
+   * @param agentId The agent ID
+   * @param limit Optional number of trades to return
+   * @param offset Optional offset for pagination
+   * @returns Array of Trade objects
+   */
+  async getAgentTradesInCompetition(
+    competitionId: string,
+    agentId: string,
+    limit?: number,
+    offset?: number,
+  ) {
+    try {
+      return await getAgentTradesInCompetition(
+        competitionId,
+        agentId,
+        limit,
+        offset,
+      );
+    } catch (error) {
+      serviceLogger.error(
+        `[TradeSimulator] Error getting agent trades in competition:`,
         error,
       );
       return [];
