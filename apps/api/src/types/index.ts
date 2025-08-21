@@ -1196,3 +1196,13 @@ export const BucketParamSchema = z.coerce
   .default(30);
 
 export type BucketParam = z.infer<typeof BucketParamSchema>;
+
+export const TimestampSchema = z.coerce.date();
+
+export const SnapshotSchema = z.object({
+  id: z.number(),
+  competitionId: UuidSchema,
+  agentId: UuidSchema,
+  timestamp: TimestampSchema,
+  totalValue: z.number(),
+});

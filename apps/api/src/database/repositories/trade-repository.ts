@@ -1,4 +1,4 @@
-import { and, desc, count as drizzleCount, eq } from "drizzle-orm";
+import { and, desc, count as drizzleCount, eq, sql } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import {
@@ -213,6 +213,70 @@ async function countAgentTradesInCompetitionImpl(
 }
 
 /**
+ * Count trades for an agent across multiple competitions in bulk
+ * @param agentId Agent ID
+ * @param competitionIds Array of competition IDs
+ * @returns Map of competition ID to trade count
+ */
+async function countBulkAgentTradesInCompetitionsImpl(
+  agentId: string,
+  competitionIds: string[],
+): Promise<Map<string, number>> {
+  if (competitionIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    repositoryLogger.debug(
+      `countBulkAgentTradesInCompetitions called for agent ${agentId} in ${competitionIds.length} competitions`,
+    );
+
+    // Get trade counts for all competitions in one query
+    const results = await db
+      .select({
+        competitionId: trades.competitionId,
+        count: drizzleCount(),
+      })
+      .from(trades)
+      .where(
+        and(
+          eq(trades.agentId, agentId),
+          sql`${trades.competitionId} IN (${sql.join(
+            competitionIds.map((id) => sql`${id}`),
+            sql`, `,
+          )})`,
+        ),
+      )
+      .groupBy(trades.competitionId);
+
+    // Create map with results
+    const countMap = new Map<string, number>();
+
+    // Initialize all competitions with 0
+    for (const competitionId of competitionIds) {
+      countMap.set(competitionId, 0);
+    }
+
+    // Update with actual counts
+    for (const result of results) {
+      countMap.set(result.competitionId, result.count);
+    }
+
+    repositoryLogger.debug(
+      `Found trades in ${results.length}/${competitionIds.length} competitions`,
+    );
+
+    return countMap;
+  } catch (error) {
+    repositoryLogger.error(
+      "Error in countBulkAgentTradesInCompetitions:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Get trades for an agent in a competition
  * @param competitionId Competition ID
  * @param agentId Agent ID
@@ -323,6 +387,12 @@ export const countAgentTradesInCompetition = createTimedRepositoryFunction(
   countAgentTradesInCompetitionImpl,
   "TradeRepository",
   "countAgentTradesInCompetition",
+);
+
+export const countBulkAgentTradesInCompetitions = createTimedRepositoryFunction(
+  countBulkAgentTradesInCompetitionsImpl,
+  "TradeRepository",
+  "countBulkAgentTradesInCompetitions",
 );
 
 export const count = createTimedRepositoryFunction(

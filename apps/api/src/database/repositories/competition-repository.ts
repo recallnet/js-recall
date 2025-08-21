@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm";
 import { unionAll } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 
 import { db, dbRead } from "@/database/db.js";
 import {
@@ -44,6 +45,7 @@ import {
   CompetitionAgentStatus,
   CompetitionStatus,
   PagingParams,
+  SnapshotSchema,
 } from "@/types/index.js";
 
 import { getSort } from "./helpers.js";
@@ -1190,6 +1192,219 @@ async function getBoundedSnapshotsImpl(competitionId: string, agentId: string) {
 }
 
 /**
+ * Get bounded snapshots for an agent across multiple competitions in bulk
+ * @param agentId Agent ID
+ * @param competitionIds Array of competition IDs
+ * @returns Map of competition ID to bounded snapshots
+ */
+async function getBulkBoundedSnapshotsImpl(
+  agentId: string,
+  competitionIds: string[],
+): Promise<
+  Map<
+    string,
+    {
+      newest: typeof portfolioSnapshots.$inferSelect;
+      oldest: typeof portfolioSnapshots.$inferSelect;
+    } | null
+  >
+> {
+  if (competitionIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    repositoryLogger.debug(
+      `getBulkBoundedSnapshots called for agent ${agentId} in ${competitionIds.length} competitions`,
+    );
+
+    // Get only newest and oldest snapshots for each competition using window functions
+    const snapshotResults = await db.execute(
+      sql`
+        WITH ranked_snapshots AS (
+          SELECT *,
+            ROW_NUMBER() OVER (PARTITION BY competition_id ORDER BY timestamp DESC) as rn_desc,
+            ROW_NUMBER() OVER (PARTITION BY competition_id ORDER BY timestamp ASC) as rn_asc
+          FROM ${portfolioSnapshots}
+          WHERE agent_id = ${agentId}
+            AND competition_id IN (${sql.join(
+              competitionIds.map((id) => sql`${id}`),
+              sql`, `,
+            )})
+        )
+        SELECT id, competition_id, agent_id, timestamp, total_value
+        FROM ranked_snapshots
+        WHERE rn_desc = 1 OR rn_asc = 1
+      `,
+    );
+
+    // Convert raw results to typed snapshots
+    const allSnapshots = snapshotResults.rows
+      .map(function (row) {
+        const { data, success } = SnapshotSchema.safeParse(row);
+        if (!success) return;
+        return {
+          id: data.id,
+          competitionId: data.competitionId,
+          agentId: data.agentId,
+          timestamp: data.timestamp,
+          totalValue: data.totalValue,
+        };
+      })
+      .filter((r) => r);
+
+    // Group snapshots by competition and find newest/oldest for each
+    const snapshotMap = new Map<
+      string,
+      {
+        newest: typeof portfolioSnapshots.$inferSelect;
+        oldest: typeof portfolioSnapshots.$inferSelect;
+      } | null
+    >();
+
+    // Initialize map with null for all competitions
+    for (const competitionId of competitionIds) {
+      snapshotMap.set(competitionId, null);
+    }
+
+    // Group snapshots by competition
+    const snapshotsByCompetition = new Map<
+      string,
+      (typeof portfolioSnapshots.$inferSelect)[]
+    >();
+
+    for (const snapshot of allSnapshots) {
+      const { data, success } = SnapshotSchema.safeParse(snapshot);
+      if (!success) continue;
+      const compSnapshots =
+        snapshotsByCompetition.get(data.competitionId) || [];
+      compSnapshots.push(data);
+      snapshotsByCompetition.set(data.competitionId, compSnapshots);
+    }
+
+    // Find newest and oldest for each competition
+    for (const [competitionId, snapshots] of snapshotsByCompetition) {
+      if (snapshots.length > 0) {
+        // Sort by timestamp
+        const sorted = snapshots.sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        );
+
+        snapshotMap.set(competitionId, {
+          newest: sorted[0]!,
+          oldest: sorted[sorted.length - 1]!,
+        });
+      }
+    }
+
+    repositoryLogger.debug(
+      `Found snapshots for ${snapshotsByCompetition.size}/${competitionIds.length} competitions`,
+    );
+
+    return snapshotMap;
+  } catch (error) {
+    repositoryLogger.error("Error in getBulkBoundedSnapshots:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get rankings for a single agent across multiple competitions
+ * @param agentId Agent ID
+ * @param competitionIds Array of competition IDs
+ * @returns Map of competition ID to ranking data
+ */
+async function getAgentRankingsInCompetitionsImpl(
+  agentId: string,
+  competitionIds: string[],
+): Promise<Map<string, { rank: number; totalAgents: number } | undefined>> {
+  if (competitionIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    repositoryLogger.debug(
+      `getAgentRankingsInCompetitions called for agent ${agentId} in ${competitionIds.length} competitions`,
+    );
+
+    // Calculate rankings directly in SQL without fetching all agents
+    const rankingResults = await db.execute(
+      sql`
+        WITH latest_snapshots AS (
+          SELECT
+            competition_id,
+            agent_id,
+            total_value,
+            ROW_NUMBER() OVER (PARTITION BY competition_id, agent_id ORDER BY timestamp DESC) as rn
+          FROM ${portfolioSnapshots}
+          WHERE competition_id IN (${sql.join(
+            competitionIds.map((id) => sql`${id}`),
+            sql`, `,
+          )})
+        ),
+        ranked AS (
+          SELECT
+            competition_id,
+            agent_id,
+            total_value,
+            RANK() OVER (PARTITION BY competition_id ORDER BY total_value DESC) as rank,
+            COUNT(*) OVER (PARTITION BY competition_id) as total_agents
+          FROM latest_snapshots
+          WHERE rn = 1
+        )
+        SELECT
+          competition_id,
+          rank,
+          total_agents
+        FROM ranked
+        WHERE agent_id = ${agentId}
+      `,
+    );
+
+    // Convert results to map
+    const rankingsMap = new Map<
+      string,
+      { rank: number; totalAgents: number } | undefined
+    >();
+    const resultRowSchema = z
+      .object({
+        competition_id: z.string(),
+        rank: z.number(),
+        total_agents: z.number(),
+      })
+      .passthrough();
+
+    // Initialize all competitions with undefined
+    for (const competitionId of competitionIds) {
+      rankingsMap.set(competitionId, undefined);
+    }
+
+    // Update with actual rankings
+    for (const row of rankingResults.rows) {
+      const { data, success } = resultRowSchema.safeParse(row);
+      if (success !== true) {
+        continue;
+      }
+
+      rankingsMap.set(data.competition_id, {
+        rank: data.rank,
+        totalAgents: data.total_agents,
+      });
+    }
+
+    repositoryLogger.debug(
+      `Found rankings for ${Array.from(rankingsMap.values()).filter((r) => r).length}/${competitionIds.length} competitions`,
+    );
+
+    return rankingsMap;
+  } catch (error) {
+    repositoryLogger.error("Error in getAgentRankingsInCompetitions:", error);
+    throw error;
+  }
+}
+
+/**
  * Get agent's ranking in a specific competition
  * @param agentId Agent ID
  * @param competitionId Competition ID
@@ -1820,6 +2035,18 @@ export const getBoundedSnapshots = createTimedRepositoryFunction(
   getBoundedSnapshotsImpl,
   "CompetitionRepository",
   "getBoundedSnapshots",
+);
+
+export const getBulkBoundedSnapshots = createTimedRepositoryFunction(
+  getBulkBoundedSnapshotsImpl,
+  "CompetitionRepository",
+  "getBulkBoundedSnapshots",
+);
+
+export const getAgentRankingsInCompetitions = createTimedRepositoryFunction(
+  getAgentRankingsInCompetitionsImpl,
+  "CompetitionRepository",
+  "getAgentRankingsInCompetitions",
 );
 
 export const getAgentCompetitionRanking = createTimedRepositoryFunction(
