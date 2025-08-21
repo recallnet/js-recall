@@ -27,6 +27,7 @@
     "@recallnet/address-utils": "workspace:*",
     "@recallnet/fonts": "workspace:*",
     "@recallnet/ui2": "workspace:*",
+    "@sentry/nextjs": "^10.5.0",
     "@tanstack/react-query": "^5.69.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.8",

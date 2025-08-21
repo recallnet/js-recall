@@ -371,6 +371,13 @@ export const config = {
       ? parseInt(process.env.INDEXING_DELAY, 10)
       : 3000,
   },
+
+  // Sentry configuration
+  sentry: {
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
+    enabled: !!process.env.SENTRY_DSN,
+  },
 };
 
 /**
