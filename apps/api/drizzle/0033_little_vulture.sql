@@ -1,1 +1,0 @@
-ALTER TABLE "trading_comps"."trading_constraints" ADD COLUMN "min_trades_per_day" integer;
