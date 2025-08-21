@@ -1,138 +1,173 @@
-import axios from "axios";
-
 import { config } from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
 
-const EMAIL_VERIFICATION_PATH = "api/verify-email";
-
-/**
- * Interface for verification email payload
- */
-interface Payload {
-  transactionalId: string;
+interface LoopsPayload {
   email: string;
-  dataVariables: {
-    verificationLink: string;
+  subscribed: boolean;
+  mailingLists: {
+    [key: string]: boolean;
   };
 }
 
 /**
  * Email Service
- * Handles sending emails through the Loops API
+ * Handles sending emails through the Loops API (e.g, marketing emails)
  */
 export class EmailService {
   private readonly apiKey: string;
-  private readonly baseUrl: string =
-    "https://app.loops.so/api/v1/transactional";
-  private readonly apiDomain: string;
-  private readonly transactionalId: string;
+  private readonly mailingListId: string;
+  private readonly baseUrl = "https://app.loops.so/api/v1";
 
-  /**
-   * Creates a new instance of the EmailService
-   */
   constructor() {
     this.apiKey = config.email.apiKey;
-    this.apiDomain = config.api.domain.endsWith("/")
-      ? config.api.domain
-      : `${config.api.domain}/`;
-    this.transactionalId = config.email.transactionalId;
+    this.mailingListId = config.email.mailingListId;
 
     if (!this.apiKey) {
-      console.warn(
-        "[EmailService] No API key provided for email service. Email functionality will be disabled.",
-      );
+      serviceLogger.error("[EmailService] LOOPS_API_KEY not configured");
     }
 
-    if (!this.transactionalId) {
-      console.warn("[EmailService] No transactional id provided");
+    if (!this.mailingListId) {
+      serviceLogger.error(
+        "[EmailService] LOOPS_MAILING_LIST_ID not configured",
+      );
     }
   }
 
   /**
-   * Sends a transactional email using a template
-   * @param to The recipient email address
-   * @param token The verification token to include in the link
-   * @returns Promise resolving to the API response, or null if email functionality is disabled
-   * @throws Error if the API request fails
+   * Subscribe a user to the mailing list
+   * First tries to create, if user exists, then updates
+   * @param email User's email address
+   * @param options Additional user data
    */
-  async sendTransactionalEmail(
-    to: string,
-    token: string,
-  ): Promise<unknown | null> {
-    const verificationLink = this.formatVerificationLink(token);
-
-    const payload: Payload = {
-      email: to,
-      transactionalId: this.transactionalId,
-      dataVariables: {
-        verificationLink: verificationLink,
-      },
-    };
-
-    if (!this.isEmailEnabled()) {
+  async subscribeOrUnsubscribeUser(
+    email: string,
+    subscribed: boolean,
+  ): Promise<{ success: boolean; error?: string } | null> {
+    if (!this.isConfigured()) {
       serviceLogger.info(
-        "[EmailService] Email sending skipped - API key or transactional ID not provided",
+        "[EmailService] Loops configuration missing - API key or mailing list ID not provided",
       );
-      if (config.server.nodeEnv === "development") {
-        serviceLogger.info(
-          "[EmailService] Dev email payload:",
-          JSON.stringify(payload, null, 2),
-        );
-      }
       return null;
     }
 
-    return this.sendEmail(payload);
+    try {
+      // Prepare the payload for Loops API
+      const payload: LoopsPayload = {
+        email,
+        subscribed,
+        mailingLists: {
+          [this.mailingListId]: true,
+        },
+      };
+
+      // Try to create the contact first
+      const createResult = await this.createContact(payload);
+      if (createResult.success) {
+        serviceLogger.info(
+          `[EmailService] Successfully created contact for ${email}`,
+        );
+        return createResult;
+      }
+
+      // If creation failed, try to update (user might already exist)
+      if (
+        createResult.error?.includes("already exists") ||
+        createResult.error?.includes("duplicate")
+      ) {
+        serviceLogger.debug(`[EmailService] Contact exists, updating ${email}`);
+        return await this.updateContact(payload);
+      }
+
+      // If it's another error, return it
+      return createResult;
+    } catch (error) {
+      serviceLogger.error(
+        `[EmailService] Error subscribing user ${email}:`,
+        error,
+      );
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
   }
 
   /**
-   * Sends an email using the Loops API
-   * @param options Email options including recipients, subject, and content
-   * @returns Promise resolving to the API response
-   * @throws Error if the API request fails
+   * Create a new contact in Loops
    */
-  private async sendEmail(payload: Payload): Promise<unknown> {
+  private async createContact(
+    payload: LoopsPayload,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await axios.post(`${this.baseUrl}`, payload, {
+      const response = await fetch(`${this.baseUrl}/contacts/create`, {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify(payload),
       });
 
-      serviceLogger.info(`[EmailService] Email sent successfully`);
-      return response.data;
-    } catch (error) {
-      serviceLogger.error("[EmailService] Error sending email:", error);
+      const data = await response.json();
 
-      if (axios.isAxiosError(error)) {
-        serviceLogger.error(
-          "[EmailService] API response:",
-          error.response?.data,
-        );
-        throw new Error(
-          `Failed to send email: ${error.response?.data?.message || error.message}`,
-        );
+      if (response.ok) {
+        return { success: true };
+      } else {
+        serviceLogger.error("[EmailService] Create contact failed:", data);
+        return {
+          success: false,
+          error: data.message || `HTTP ${response.status}`,
+        };
       }
-
-      throw new Error(`Failed to send email: ${error}`);
+    } catch (error) {
+      serviceLogger.error("[EmailService] Error creating contact:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Network error",
+      };
     }
   }
 
   /**
-   * Checks if email functionality is enabled
-   * @returns True if both API key and transactional ID are provided, false otherwise
+   * Update an existing contact in Loops
    */
-  private isEmailEnabled(): boolean {
-    return Boolean(this.apiKey && this.transactionalId);
+  private async updateContact(
+    payload: LoopsPayload,
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/contacts/update`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true };
+      } else {
+        serviceLogger.error("[EmailService] Update contact failed:", data);
+        return {
+          success: false,
+          error: data.message || `HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      serviceLogger.error("[EmailService] Error updating contact:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Network error",
+      };
+    }
   }
 
   /**
-   * Creates a verification link using the API domain from config
-   * @param token The verification token to include in the link
-   * @returns A properly formatted verification URL
+   * Check if Loops is properly configured (e.g., we ignore unless configured)
    */
-  private formatVerificationLink(token: string): string {
-    return `${this.apiDomain}${EMAIL_VERIFICATION_PATH}?token=${token}`;
+  isConfigured(): boolean {
+    return !!(this.apiKey && this.mailingListId);
   }
 }

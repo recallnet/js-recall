@@ -1,7 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 
 import { authLogger } from "@/lib/logger.js";
-import { extractApiKey } from "@/middleware/auth-helpers.js";
+import {
+  extractPrivyIdentityToken,
+  verifyPrivyIdentityToken,
+} from "@/lib/privy-auth.js";
+import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AdminManager } from "@/services/admin-manager.service.js";
 import { AgentManager } from "@/services/agent-manager.service.js";
@@ -10,11 +14,12 @@ import { UserManager } from "@/services/user-manager.service.js";
 /**
  * Unified Authentication Middleware
  *
- * This middleware attempts to authenticate a request using three methods, in order:
- * 1. SIWE-based Session: Checks for an active user session established via SIWE.
- * 2. Agent API Key: If session authentication is not successful, it attempts to authenticate
+ * This middleware attempts to authenticate a request using four methods, in order:
+ * 1. Privy JWT Token: If session authentication is not successful, it attempts to authenticate
+ *    using a Privy JWT token provided in the 'privy-id-token' value in `headers.cookie`.
+ * 2. Agent API Key: If Privy JWT token authentication fails, it attempts to authenticate
  *    using an agent API key provided in the 'Authorization: Bearer <API_KEY>' header.
- * 3. Admin API Key: If agent API key fails, it attempts admin API key authentication.
+ * 3. Admin API Key: If agent API key authentication fails, it attempts admin API key authentication.
  *
  * If none of these methods successfully authenticate the request, an `ApiError` (401) is thrown.
  *
@@ -25,58 +30,55 @@ export const authMiddleware = (
   userManager: UserManager,
   adminManager: AdminManager,
 ) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, _: Response, next: NextFunction) => {
     try {
       authLogger.debug(`Received request to ${req.method} ${req.originalUrl}`);
 
       /**
-       * SIWE Session Authentication
+       * Privy Identity Token Authentication
        *
-       * This section attempts to authenticate the request using a SIWE session.
-       * It checks for the presence of a valid session, a valid SIWE message, and
-       * a matching wallet address. Sets userId and wallet in the request.
+       * This section attempts to authenticate the request using a Privy identity token.
+       * Tokens can be provided via privy-id-token cookie or header.
        */
-      if (
-        req.session &&
-        req.session.siwe &&
-        req.session.wallet &&
-        req.session.siwe.address === req.session.wallet
-      ) {
-        // Session expiry should be handled by `siweSessionMiddleware`, but double check just in case
-        if (
-          req.session.siwe.expirationTime &&
-          Date.now() > new Date(req.session.siwe.expirationTime).getTime()
-        ) {
-          authLogger.debug("[AuthMiddleware] SIWE session found but expired.");
-          req.session.destroy();
-        } else {
+      const identityToken = extractPrivyIdentityToken(req);
+      if (identityToken) {
+        authLogger.debug(
+          "[AuthMiddleware] Attempting Privy identity token authentication...",
+        );
+        try {
+          const { privyId } = await verifyPrivyIdentityToken(identityToken);
+          const path = new URL(
+            `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+          ).pathname;
+
+          req.privyToken = identityToken;
           authLogger.debug(
-            `[AuthMiddleware] SIWE session authentication successful for wallet: ${req.session.wallet}`,
+            `[AuthMiddleware] Privy authentication successful for user ID: ${privyId}`,
           );
-
-          // Set wallet from session
-          req.wallet = req.session.wallet;
-
-          // Look up user by wallet address
-          const user = await userManager.getUserByWalletAddress(
-            req.session.wallet,
-          );
-          if (user) {
-            req.userId = user.id;
-            authLogger.debug(
-              `[AuthMiddleware] Found user ${user.id} for wallet ${req.session.wallet}`,
-            );
-          } else {
-            authLogger.debug(
-              `[AuthMiddleware] No user found for wallet ${req.session.wallet} - user may need to register`,
+          const user = await userManager.getUserByPrivyId(privyId);
+          if (!user) {
+            if (isLoginEndpoint(path)) {
+              authLogger.debug(
+                `[AuthMiddleware] User with Privy ID ${privyId} not found, but login endpoint is being called`,
+              );
+              return next();
+            }
+            throw new ApiError(
+              401,
+              "[AuthMiddleware] Authentication failed. User not found.",
             );
           }
 
+          req.userId = user.id;
           return next();
+        } catch (error) {
+          authLogger.error(
+            `[AuthMiddleware] Privy authentication failed: ${error}`,
+          );
         }
       } else {
         authLogger.debug(
-          "[AuthMiddleware] No active SIWE session found or session invalid. Proceeding to API key auth.",
+          "[AuthMiddleware] No Privy identity token found. Proceeding to API key auth.",
         );
       }
 
@@ -93,7 +95,7 @@ export const authMiddleware = (
       if (!apiKey) {
         throw new ApiError(
           401,
-          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
         );
       }
 

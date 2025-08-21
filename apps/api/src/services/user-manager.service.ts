@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { createEmailVerificationToken } from "@/database/repositories/email-verification-repository.js";
 import {
   count,
   create,
@@ -8,6 +7,7 @@ import {
   findAll,
   findByEmail,
   findById,
+  findByPrivyId,
   findByWalletAddress,
   searchUsers,
   update,
@@ -59,28 +59,32 @@ export class UserManager {
     email?: string,
     imageUrl?: string,
     metadata?: UserMetadata,
+    privyId?: string,
   ) {
     try {
-      // Validate wallet address
       if (!walletAddress) {
         throw new Error("Wallet address is required");
       }
-
       if (!this.isValidEthereumAddress(walletAddress)) {
         throw new Error(
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
       }
+      if (!email) {
+        throw new Error("Email is required");
+      }
 
       // Convert to lowercase for consistency
-      const normalizedWalletAddress = walletAddress.toLowerCase();
+      const normalizedWalletAddress = walletAddress?.toLowerCase();
 
       // Check if user already exists with this wallet address
-      const existingUser = await findByWalletAddress(normalizedWalletAddress);
-      if (existingUser) {
-        throw new Error(
-          `User with wallet address ${normalizedWalletAddress} already exists`,
-        );
+      if (normalizedWalletAddress) {
+        const existingUser = await findByWalletAddress(normalizedWalletAddress);
+        if (existingUser) {
+          throw new Error(
+            `User with wallet address ${normalizedWalletAddress} already exists`,
+          );
+        }
       }
 
       // Check email uniqueness if provided
@@ -91,6 +95,9 @@ export class UserManager {
         }
       }
 
+      // Subscribe to email list
+      await this.emailService.subscribeOrUnsubscribeUser(email, true);
+
       // Generate user ID
       const id = uuidv4();
 
@@ -100,6 +107,7 @@ export class UserManager {
         walletAddress: normalizedWalletAddress,
         name,
         email,
+        privyId,
         imageUrl,
         metadata,
         status: "active",
@@ -113,11 +121,6 @@ export class UserManager {
       // Update cache
       this.userWalletCache.set(normalizedWalletAddress, id);
       this.userProfileCache.set(id, savedUser);
-
-      // Send email verification if email is provided
-      if (email) {
-        await this.sendEmailVerification(savedUser);
-      }
 
       serviceLogger.debug(
         `[UserManager] Registered user: ${name || "Unknown"} (${id}) with wallet ${normalizedWalletAddress}`,
@@ -207,15 +210,6 @@ export class UserManager {
         throw new Error(`User with ID ${user.id} not found`);
       }
 
-      // Check if email was updated to a new value
-      const emailChanged = user.email && currentUser.email !== user.email;
-      if (emailChanged) {
-        user = {
-          ...user,
-          isEmailVerified: false,
-        };
-      }
-
       const now = new Date();
       const updatedUser = await update({
         ...user,
@@ -224,13 +218,8 @@ export class UserManager {
 
       // Update cache
       this.userProfileCache.set(user.id, updatedUser);
-      if (updatedUser.walletAddress) {
+      if (updatedUser.walletAddress !== currentUser.walletAddress) {
         this.userWalletCache.set(updatedUser.walletAddress, user.id);
-      }
-
-      // Send verification email if email has changed
-      if (emailChanged && updatedUser.email) {
-        await this.sendEmailVerification(updatedUser);
       }
 
       serviceLogger.debug(`[UserManager] Updated user: ${user.id}`);
@@ -324,6 +313,34 @@ export class UserManager {
   }
 
   /**
+   * Get a user by Privy ID
+   * @param privyId The Privy ID to search for
+   * @returns The user or null if not found
+   */
+  async getUserByPrivyId(privyId: string): Promise<SelectUser | null> {
+    try {
+      // Note: We don't cache by Privy ID yet as this is a new feature
+      // and we expect most lookups to be by user ID or wallet address
+      const user = await findByPrivyId(privyId);
+
+      // Update profile cache if found
+      if (user) {
+        this.userProfileCache.set(user.id, user);
+        this.userWalletCache.set(user.walletAddress, user.id);
+        return user;
+      }
+
+      return null;
+    } catch (error) {
+      serviceLogger.error(
+        `[UserManager] Error retrieving user by Privy ID ${privyId}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  /**
    * Get a user by email
    * @param email The email to search for
    * @returns The user or null if not found
@@ -403,129 +420,5 @@ export class UserManager {
       walletCacheSize: this.userWalletCache.size,
       profileCacheSize: this.userProfileCache.size,
     };
-  }
-
-  /**
-   * Create a new email verification token for a user
-   * @param userId The ID of the user to create a token for
-   * @param expiresInHours How many hours until the token expires (default: 24)
-   * @returns The created token string
-   */
-  private async createEmailVerificationToken(
-    userId: string,
-    expiresInHours: number = 24,
-  ): Promise<string> {
-    try {
-      const token = uuidv4();
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + expiresInHours);
-
-      await createEmailVerificationToken({
-        id: uuidv4(),
-        userId,
-        token,
-        expiresAt,
-      });
-
-      serviceLogger.debug(
-        `[UserManager] Created email verification token for user ${userId}`,
-      );
-      return token;
-    } catch (error) {
-      serviceLogger.error(
-        `[UserManager] Error creating email verification token for user ${userId}:`,
-        error,
-      );
-      throw new Error(
-        `Failed to create email verification token: ${error instanceof Error ? error.message : error}`,
-      );
-    }
-  }
-
-  /**
-   * Send an email verification link to a user
-   * @param user The user to send the verification email to
-   * @returns The created email verification token
-   */
-  private async sendEmailVerification(user: SelectUser): Promise<void> {
-    try {
-      if (!user.email) {
-        console.warn(
-          `[UserManager] Cannot send verification email: User ${user.id} has no email address`,
-        );
-        return;
-      }
-
-      const tokenString = await this.createEmailVerificationToken(user.id, 24);
-
-      await this.emailService.sendTransactionalEmail(user.email, tokenString);
-
-      serviceLogger.debug(
-        `[UserManager] Sent verification email to ${user.email} for user ${user.id}`,
-      );
-    } catch (error) {
-      serviceLogger.error(
-        `[UserManager] Error sending verification email to user ${user.id}:`,
-        error,
-      );
-      // We don't throw here to prevent registration failure if email sending fails
-    }
-  }
-
-  /**
-   * Mark a user's email as verified
-   * @param userId The ID of the user whose email should be marked as verified
-   * @returns The updated user or null if the user was not found
-   */
-  async markEmailAsVerified(userId: string): Promise<SelectUser | null> {
-    try {
-      const updatedUser = await this.updateUser({
-        id: userId,
-        isEmailVerified: true,
-      });
-
-      serviceLogger.debug(
-        `[UserManager] Marked email as verified for user ${userId}`,
-      );
-      return updatedUser;
-    } catch (error) {
-      serviceLogger.error(
-        `[UserManager] Error marking email as verified for user ${userId}:`,
-        error,
-      );
-      return null;
-    }
-  }
-
-  /**
-   * Verify a user's email by creating a new verification token and sending it
-   * @param userId The ID of the user to verify email for
-   * @returns The created verification token
-   */
-  async verifyEmail(userId: string): Promise<void> {
-    try {
-      const user = await this.getUser(userId);
-      if (!user) {
-        throw new Error(`User with ID ${userId} not found`);
-      }
-
-      if (!user.email) {
-        throw new Error(`User ${userId} does not have an email address`);
-      }
-
-      await this.sendEmailVerification(user);
-
-      serviceLogger.debug(
-        `[UserManager] Email verification initiated for user ${userId}`,
-      );
-    } catch (error) {
-      serviceLogger.error(
-        `[UserManager] Error verifying email for user ${userId}:`,
-        error,
-      );
-      throw new Error(
-        `Failed to verify email: ${error instanceof Error ? error.message : error}`,
-      );
-    }
   }
 }

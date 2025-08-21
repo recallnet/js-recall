@@ -193,9 +193,15 @@ export const config = {
     sandboxUrl: "https://api.sandbox.competitions.recall.network",
   },
   email: {
-    autoVerifyUserEmail: process.env.ENABLE_AUTO_VERIFY_USER_EMAIL === "true",
     apiKey: process.env.LOOPS_API_KEY || "",
     transactionalId: process.env.LOOPS_TRANSACTIONAL_ID || "",
+    mailingListId: process.env.LOOPS_MAILING_LIST_ID || "",
+  },
+  privy: {
+    appId: process.env.PRIVY_APP_ID || "",
+    appSecret: process.env.PRIVY_APP_SECRET || "",
+    jwksEndpoint: process.env.PRIVY_JWKS_ENDPOINT || "",
+    jwksPublicKey: process.env.PRIVY_JWKS_PUBLIC_KEY || "",
   },
   // Frontend app configuration for interfacing with the server
   app: {

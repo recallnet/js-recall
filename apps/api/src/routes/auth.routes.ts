@@ -4,46 +4,12 @@ import { AuthController } from "@/controllers/auth.controller.js";
 
 export function configureAuthRoutes(
   controller: AuthController,
-  sessionMiddleware: RequestHandler,
-  agentAuthMiddleware: RequestHandler,
+  authMiddleware: RequestHandler,
 ) {
   const router = Router();
 
-  // Apply session middleware to all routes by default
-  router.use(sessionMiddleware);
-
-  /**
-   * @openapi
-   * /api/auth/nonce:
-   *   get:
-   *     summary: Get a random nonce for SIWE authentication
-   *     description: Generates a new nonce and stores it in the session for SIWE message verification
-   *     tags: [Auth]
-   *     responses:
-   *       200:
-   *         description: A new nonce generated successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               required:
-   *                 - nonce
-   *               properties:
-   *                 nonce:
-   *                   type: string
-   *                   description: The nonce to be used in the SIWE message
-   *                   example: "8J0eXAiOiJ..."
-   *       500:
-   *         description: Internal server error
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 error:
-   *                   type: string
-   */
-  router.get("/nonce", controller.getNonce);
+  // Apply auth middleware to all routes by default
+  router.use(authMiddleware);
 
   /**
    * @openapi
@@ -84,7 +50,7 @@ export function configureAuthRoutes(
    *                 error:
    *                   type: string
    */
-  router.get("/agent/nonce", agentAuthMiddleware, controller.getAgentNonce);
+  router.get("/agent/nonce", controller.getAgentNonce);
 
   /**
    * @openapi
@@ -211,39 +177,7 @@ export function configureAuthRoutes(
    *       409:
    *         description: Wallet address already in use
    */
-  router.post("/verify", agentAuthMiddleware, controller.verifyAgentWallet);
-
-  /**
-   * @openapi
-   * /api/auth/logout:
-   *   post:
-   *     summary: Logout the current user by destroying the session
-   *     description: Clears the session data and destroys the session cookie
-   *     tags: [Auth]
-   *     responses:
-   *       200:
-   *         description: Logout successful
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               required:
-   *                 - message
-   *               properties:
-   *                 message:
-   *                   type: string
-   *                   example: "Logged out successfully"
-   *       500:
-   *         description: Internal server error
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 error:
-   *                   type: string
-   */
-  router.post("/logout", controller.logout);
+  router.post("/verify", controller.verifyAgentWallet);
 
   return router;
 }

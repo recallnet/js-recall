@@ -1,6 +1,4 @@
 import { Request } from "express";
-import { IronSession } from "iron-session";
-import { SiweMessage } from "siwe";
 import { z } from "zod/v4";
 
 /**
@@ -314,6 +312,7 @@ export interface User {
   walletAddress: string;
   name?: string;
   email?: string;
+  privyId?: string;
   imageUrl?: string;
   metadata?: UserMetadata;
   status: ActorStatus;
@@ -487,7 +486,6 @@ export interface ApiAuth {
  * Extended Request interface for authenticated requests
  */
 export interface AuthenticatedRequest extends Request {
-  session?: IronSession<SessionData>;
   agentId?: string;
   userId?: string;
   adminId?: string;
@@ -497,18 +495,6 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     name: string;
   };
-}
-
-/**
- * Session data interface
- */
-export interface SessionData {
-  nonce?: string;
-  siwe?: SiweMessage;
-  agentId?: string;
-  userId?: string;
-  adminId?: string;
-  wallet?: string;
 }
 
 /**
@@ -771,7 +757,6 @@ export const UpdateUserProfileBodySchema = z
       .min(1, { message: "Name must be at least 1 character" })
       .optional(),
     imageUrl: z.url("Invalid image URL format").optional(),
-    email: z.email("Invalid email format").optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();

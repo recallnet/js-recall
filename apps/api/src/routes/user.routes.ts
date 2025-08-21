@@ -45,16 +45,21 @@ export function configureUserRoutes(
    *                     walletAddress:
    *                       type: string
    *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     walletLastVerifiedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     embeddedWalletAddress:
+   *                       type: string
+   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     privyId:
+   *                       type: string
+   *                       example: "1234567890abcdef1234567890abcdef12345678"
    *                     name:
    *                       type: string
    *                       example: "John Doe"
    *                     email:
    *                       type: string
    *                       example: "john@example.com"
-   *                     isEmailVerified:
-   *                       type: boolean
-   *                       description: Whether the user's email address has been verified
-   *                       example: true
    *                     imageUrl:
    *                       type: string
    *                       example: "https://example.com/avatar.jpg"
@@ -78,6 +83,77 @@ export function configureUserRoutes(
    *         description: Internal server error
    */
   router.get("/profile", userController.getProfile);
+
+  /**
+   * @openapi
+   * /api/user/wallet/link:
+   *   post:
+   *     summary: Link a wallet to the authenticated user
+   *     description: Link a wallet to the authenticated user
+   *     tags:
+   *       - User
+   *     security:
+   *       - SIWESession: []
+   *     responses:
+   *       200:
+   *         description: Wallet linked successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 user:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       format: uuid
+   *                     walletAddress:
+   *                       type: string
+   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     walletLastVerifiedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     embeddedWalletAddress:
+   *                       type: string
+   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     privyId:
+   *                       type: string
+   *                       example: "1234567890abcdef1234567890abcdef12345678"
+   *                     name:
+   *                       type: string
+   *                       example: "John Doe"
+   *                     email:
+   *                       type: string
+   *                       example: "john@example.com"
+   *                     imageUrl:
+   *                       type: string
+   *                       example: "https://example.com/avatar.jpg"
+   *                     status:
+   *                       type: string
+   *                       enum: [active, inactive, suspended, deleted]
+   *                     metadata:
+   *                       type: object
+   *                       example: { "foo": "bar" }
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                     updatedAt:
+   *                       type: string
+   *                     lastLoginAt:
+   *                       type: string
+   *                       format: date-time
+   *       401:
+   *         description: User not authenticated
+   *       404:
+   *         description: User not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.post("/wallet/link", userController.linkWallet);
 
   /**
    * @openapi
@@ -133,14 +209,20 @@ export function configureUserRoutes(
    *                     walletAddress:
    *                       type: string
    *                       nullable: true
+   *                     walletLastVerifiedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     embeddedWalletAddress:
+   *                       type: string
+   *                       nullable: true
+   *                     privyId:
+   *                       type: string
+   *                       nullable: true
    *                     name:
    *                       type: string
    *                     email:
    *                       type: string
    *                       nullable: true
-   *                     isEmailVerified:
-   *                       type: boolean
-   *                       description: Whether the user's email address has been verified
    *                     imageUrl:
    *                       type: string
    *                       nullable: true
@@ -153,6 +235,9 @@ export function configureUserRoutes(
    *                       type: string
    *                       format: date-time
    *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     lastLoginAt:
    *                       type: string
    *                       format: date-time
    *       400:
@@ -247,6 +332,9 @@ export function configureUserRoutes(
    *                     updatedAt:
    *                       type: string
    *                       format: date-time
+   *                     lastLoginAt:
+   *                       type: string
+   *                       format: date-time
    *       400:
    *         description: Invalid input (name is required)
    *       401:
@@ -309,8 +397,15 @@ export function configureUserRoutes(
    *                       walletAddress:
    *                         type: string
    *                         nullable: true
-   *                       isVerified:
-   *                         type: boolean
+   *                       walletLastVerifiedAt:
+   *                         type: string
+   *                         format: date-time
+   *                       embeddedWalletAddress:
+   *                         type: string
+   *                         nullable: true
+   *                       privyId:
+   *                         type: string
+   *                         nullable: true
    *                       name:
    *                         type: string
    *                       description:
@@ -394,6 +489,9 @@ export function configureUserRoutes(
    *                       updatedAt:
    *                         type: string
    *                         format: date-time
+   *                       lastLoginAt:
+   *                         type: string
+   *                         format: date-time
    *       401:
    *         description: User not authenticated
    *       500:
@@ -442,8 +540,15 @@ export function configureUserRoutes(
    *                     walletAddress:
    *                       type: string
    *                       nullable: true
-   *                     isVerified:
-   *                       type: boolean
+   *                     walletLastVerifiedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     embeddedWalletAddress:
+   *                       type: string
+   *                       nullable: true
+   *                     privyId:
+   *                       type: string
+   *                       nullable: true
    *                     name:
    *                       type: string
    *                     email:
@@ -528,6 +633,9 @@ export function configureUserRoutes(
    *                       type: string
    *                       format: date-time
    *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     lastLoginAt:
    *                       type: string
    *                       format: date-time
    *       400:
@@ -764,52 +872,6 @@ export function configureUserRoutes(
    *         description: Internal server error
    */
   router.put("/agents/:agentId/profile", userController.updateAgentProfile);
-
-  /**
-   * @openapi
-   * /api/user/verify-email:
-   *   post:
-   *     summary: Initiate email verification for the authenticated user
-   *     description: Creates a new email verification token and sends a verification email to the user's email address
-   *     tags:
-   *       - User
-   *     security:
-   *       - SIWESession: []
-   *     responses:
-   *       200:
-   *         description: Email verification initiated successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 message:
-   *                   type: string
-   *                   example: "Email verification initiated successfully"
-   *       400:
-   *         description: User does not have an email address
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 error:
-   *                   type: string
-   *                   example: "User does not have an email address"
-   *       401:
-   *         description: User not authenticated
-   *       404:
-   *         description: User not found
-   *       500:
-   *         description: Internal server error
-   */
-  router.post("/verify-email", userController.verifyEmail);
 
   /**
    * @openapi

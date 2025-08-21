@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { config, reloadSecurityConfig } from "@/config/index.js";
+import { reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import {
   SelectCompetitionReward,
@@ -19,6 +19,8 @@ import {
   ActorStatus,
   AdminCreateAgentSchema,
   COMPETITION_STATUS,
+  User,
+  UserMetadata,
 } from "@/types/index.js";
 
 import {
@@ -62,18 +64,6 @@ interface Agent {
   apiKey: string;
   metadata: unknown;
   email: string | null;
-  status: ActorStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface User {
-  id: string;
-  walletAddress: string;
-  name: string | null;
-  email: string | null;
-  imageUrl: string | null;
-  metadata: unknown;
   status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -316,6 +306,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   walletAddress: user.walletAddress,
                   name: user.name,
                   email: user.email,
+                  privyId: user.privyId,
                   imageUrl: user.imageUrl,
                   metadata: user.metadata,
                   status: user.status,
@@ -335,11 +326,14 @@ export function makeAdminController(services: ServiceRegistry) {
             success: true,
             user: {
               id: user.id,
+              name: user.name ?? undefined,
+              email: user.email ?? undefined,
+              privyId: user.privyId ?? undefined,
               walletAddress: user.walletAddress,
-              name: user.name,
-              email: user.email,
-              imageUrl: user.imageUrl,
-              metadata: user.metadata,
+              imageUrl: user.imageUrl ?? undefined,
+              metadata: user.metadata
+                ? (user.metadata as UserMetadata)
+                : undefined,
               status: user.status as ActorStatus,
               createdAt: user.createdAt,
               updatedAt: user.updatedAt,
@@ -953,6 +947,7 @@ export function makeAdminController(services: ServiceRegistry) {
           walletAddress: user.walletAddress,
           name: user.name,
           email: user.email,
+          privyId: user.privyId,
           status: user.status,
           imageUrl: user.imageUrl,
           metadata: user.metadata,
@@ -1094,13 +1089,19 @@ export function makeAdminController(services: ServiceRegistry) {
           results.users = users.map((user) => ({
             id: user.id,
             walletAddress: user.walletAddress,
-            name: user.name,
-            email: user.email,
+            walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
+            name: user.name ?? undefined,
+            email: user.email ?? undefined,
+            privyId: user.privyId ?? undefined,
+            embeddedWalletAddress: user.embeddedWalletAddress ?? undefined,
             status: user.status,
-            imageUrl: user.imageUrl,
-            metadata: user.metadata,
+            imageUrl: user.imageUrl ?? undefined,
+            metadata: user.metadata
+              ? (user.metadata as UserMetadata)
+              : undefined,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+            lastLoginAt: user.lastLoginAt ?? undefined,
           }));
         }
 
@@ -1779,23 +1780,6 @@ export function makeAdminController(services: ServiceRegistry) {
             success: false,
             error: "Agent owner not found",
           });
-        }
-
-        // Auto-verify email (e.g. for development, test, or sandbox modes)
-        if (!owner.isEmailVerified) {
-          if (config.email.autoVerifyUserEmail) {
-            adminLogger.info(
-              `[DEV/TEST] Auto-verifying email for user ${agent.ownerId} in ${process.env.NODE_ENV} mode`,
-            );
-            await services.userManager.markEmailAsVerified(agent.ownerId);
-            // Continue with adding agent to competition since we just verified the email
-          } else {
-            return res.status(403).json({
-              success: false,
-              error:
-                "Agent owner's email must be verified before adding to competition",
-            });
-          }
         }
 
         // Check if agent is already in the competition

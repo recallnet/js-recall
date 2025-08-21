@@ -1,7 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 
-import { config } from "@/config/index.js";
 import { userLogger } from "@/lib/logger.js";
+import {
+  extractPrivyIdentityToken,
+  verifyAndGetPrivyUserInfo,
+} from "@/lib/privy-auth.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -71,7 +74,7 @@ export function makeUserController(services: ServiceRegistry) {
         }
         const {
           userId,
-          body: { name, imageUrl, email, metadata },
+          body: { name, imageUrl, metadata },
         } = data;
 
         // Get the current user
@@ -80,20 +83,11 @@ export function makeUserController(services: ServiceRegistry) {
           throw new ApiError(404, "User not found");
         }
 
-        // Check if the email is already in use
-        if (email && email !== user.email) {
-          const existingUser = await services.userManager.getUserByEmail(email);
-          if (existingUser && existingUser.id !== userId) {
-            throw new ApiError(409, "Email already in use");
-          }
-        }
-
         // Prepare update data with only allowed fields
         const updateData = {
           id: userId,
           name,
           imageUrl,
-          email,
           metadata,
         };
 
@@ -108,6 +102,54 @@ export function makeUserController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           user: updatedUser,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Link a wallet to the authenticated user
+     * @param req Express request with userId from session
+     * @param res Express response
+     * @param next Express next function
+     */
+    async linkWallet(req: Request, res: Response, next: NextFunction) {
+      try {
+        const {
+          success,
+          data: userId,
+          error,
+        } = UuidSchema.safeParse(req.userId);
+        if (!success) {
+          throw new ApiError(400, `Invalid request format: ${error.message}`);
+        }
+        const identityToken = req.privyToken;
+        if (!identityToken) {
+          throw new ApiError(401, "Unauthorized");
+        }
+
+        // Use the Privy ID token to get custom linked wallets
+        const { customWallets } =
+          await verifyAndGetPrivyUserInfo(identityToken);
+        // Note: technically, we could allow for multiple custom wallets, but we only support one
+        // for now.
+        const customWallet = customWallets[0];
+        if (!customWallet) {
+          throw new ApiError(400, "No custom wallet found");
+        }
+
+        // Link the wallet
+        const linkedUser = await services.userManager.updateUser({
+          id: userId,
+          walletAddress: customWallet.address,
+          walletLastVerifiedAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        res.status(200).json({
+          success: true,
+          user: linkedUser,
         });
       } catch (error) {
         next(error);
@@ -292,22 +334,6 @@ export function makeUserController(services: ServiceRegistry) {
           throw new ApiError(404, "User not found");
         }
 
-        // Auto-verify email (e.g. for development, test, or sandbox modes)
-        if (!user.isEmailVerified) {
-          if (config.email.autoVerifyUserEmail) {
-            userLogger.info(
-              `[DEV/TEST] Auto-verifying email for user ${userId} in ${config.server.nodeEnv} mode`,
-            );
-            await services.userManager.markEmailAsVerified(userId);
-            // Continue with API key access since we just verified the email
-          } else {
-            throw new ApiError(
-              403,
-              "Email verification required to access agent API keys",
-            );
-          }
-        }
-
         // Get the decrypted API key using existing admin infrastructure
         const result =
           await services.agentManager.getDecryptedApiKeyById(agentId);
@@ -449,27 +475,6 @@ export function makeUserController(services: ServiceRegistry) {
             total: results.total,
             hasMore: params.limit + params.offset < results.total,
           },
-        });
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Verify email for the authenticated user
-     * @param req Express request with userId from session
-     * @param res Express response
-     * @param next Express next function
-     */
-    async verifyEmail(req: Request, res: Response, next: NextFunction) {
-      try {
-        const userId = req.userId as string;
-
-        await services.userManager.verifyEmail(userId);
-
-        res.status(200).json({
-          success: true,
-          message: "Email verification initiated successfully",
         });
       } catch (error) {
         next(error);
