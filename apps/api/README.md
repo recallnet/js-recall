@@ -918,13 +918,13 @@ The application will automatically detect and use the base64-encoded certificate
 
 ### Portfolio & Price Tracking
 
-| Variable                         | Required | Default               | Description                                  |
-| -------------------------------- | -------- | --------------------- | -------------------------------------------- |
-| `PORTFOLIO_SNAPSHOT_INTERVAL_MS` | Optional | `120000` (2 minutes)  | Interval for taking portfolio snapshots      |
-| `PORTFOLIO_PRICE_FRESHNESS_MS`   | Optional | `600000` (10 minutes) | Maximum age of price data before refreshing  |
-| `PRICE_CACHE_MS`                 | Optional | `60000` (1 minute)    | Duration to cache price data in memory       |
-| `PRICE_BACKFILL_DAYS`            | Optional | `7`                   | Number of days to backfill for price history |
-| `PRICE_HISTORY_INTERVAL_MINUTES` | Optional | `30`                  | Interval between price history data points   |
+| Variable                         | Required | Default              | Description                                                        |
+| -------------------------------- | -------- | -------------------- | ------------------------------------------------------------------ |
+| `PORTFOLIO_SNAPSHOT_INTERVAL_MS` | Optional | `120000` (2 minutes) | Interval for taking portfolio snapshots                            |
+| `PRICE_CACHE_TTL_MS`             | Optional | `60000` (1 minute)   | Maximum age (in ms) of cached prices before they must be refreshed |
+| `PRICE_CACHE_MAX_SIZE`           | Optional | `10000`              | Maximum number of entries in price cache                           |
+| `PRICE_BACKFILL_DAYS`            | Optional | `7`                  | Number of days to backfill for price history                       |
+| `PRICE_HISTORY_INTERVAL_MINUTES` | Optional | `30`                 | Interval between price history data points                         |
 
 ### External API Integration
 
@@ -1124,19 +1124,17 @@ The system automatically takes snapshots of agent portfolios at regular interval
 # Configure portfolio snapshot interval in milliseconds (default: 2 minutes)
 PORTFOLIO_SNAPSHOT_INTERVAL_MS=120000
 
-# Configure price freshness threshold in milliseconds (default: 10 minutes)
-PORTFOLIO_PRICE_FRESHNESS_MS=600000
-
-# Configure price cache duration in milliseconds (default: 1 minute)
-PRICE_CACHE_MS=60000
+# Configure price tracker settings
+PRICE_CACHE_TTL_MS=60000         # Maximum age (in ms) of cached prices before they must be refreshed (default: 1 minute)
+PRICE_CACHE_MAX_SIZE=10000       # Maximum number of entries in price caches (default: 10000)
 ```
 
 You can adjust these intervals based on your needs:
 
-- For testing environments, you may want to use shorter intervals (e.g., 10,000ms = 10 seconds for snapshots, 30,000ms = 30 seconds for price freshness)
-- For production environments, you might want to use longer intervals to reduce database and API load (e.g., 300,000ms = 5 minutes for snapshots, 1,800,000ms = 30 minutes for price freshness)
+- For testing environments, you may want to use shorter intervals (e.g., 10,000ms = 10 seconds for snapshots, 30,000ms = 30 seconds for price cache freshness)
+- For production environments, you might want to use longer intervals to reduce API load (e.g., 300,000ms = 5 minutes for snapshots, 1,800,000ms = 30 minutes for price cache freshness)
 
-The price freshness threshold controls when the system will reuse existing prices from the database instead of fetching new ones, optimizing both performance and accuracy.
+The price cache TTL determines the maximum age of a cached price before it's considered stale and must be fetched fresh from the API. Shorter values mean more frequent API calls but fresher prices, while longer values reduce API load but may use slightly older price data. The cache size limit ensures memory usage stays bounded.
 
 Portfolio snapshots are taken:
 
