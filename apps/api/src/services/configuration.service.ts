@@ -107,7 +107,7 @@ export class ConfigurationService {
     }
 
     // Fall back to environment configuration
-    return config.portfolio.priceFreshnessMs;
+    return config.priceTracker.priceTTLMs;
   }
 
   /**

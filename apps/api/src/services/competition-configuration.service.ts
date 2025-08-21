@@ -27,11 +27,11 @@ export class CompetitionConfigurationService {
     const data: InsertCompetitionConfiguration = {
       competitionId: input.competitionId,
       portfolioPriceFreshnessMs:
-        input.portfolioPriceFreshnessMs ?? config.portfolio.priceFreshnessMs,
+        input.portfolioPriceFreshnessMs ?? config.priceTracker.priceTTLMs,
       portfolioSnapshotCron: input.portfolioSnapshotCron ?? "*/5 * * * *", // Default: every 5 minutes
       maxTradePercentage: input.maxTradePercentage ?? config.maxTradePercentage,
       priceCacheDurationMs:
-        input.priceCacheDurationMs ?? config.priceCacheDuration,
+        input.priceCacheDurationMs ?? config.priceTracker.priceTTLMs,
     };
 
     serviceLogger.debug(
@@ -80,7 +80,7 @@ export class CompetitionConfigurationService {
       portfolioPriceFreshnessMs:
         input.portfolioPriceFreshnessMs ??
         existingConfig?.portfolioPriceFreshnessMs ??
-        config.portfolio.priceFreshnessMs,
+        config.priceTracker.priceTTLMs,
       portfolioSnapshotCron:
         input.portfolioSnapshotCron ??
         existingConfig?.portfolioSnapshotCron ??
@@ -92,7 +92,7 @@ export class CompetitionConfigurationService {
       priceCacheDurationMs:
         input.priceCacheDurationMs ??
         existingConfig?.priceCacheDurationMs ??
-        config.priceCacheDuration,
+        config.priceTracker.priceTTLMs,
     };
 
     serviceLogger.debug(
@@ -127,13 +127,13 @@ export class CompetitionConfigurationService {
     return {
       portfolioPriceFreshnessMs:
         configuration?.portfolioPriceFreshnessMs ??
-        config.portfolio.priceFreshnessMs,
+        config.priceTracker.priceTTLMs,
       portfolioSnapshotCron:
         configuration?.portfolioSnapshotCron ?? "*/5 * * * *",
       maxTradePercentage:
         configuration?.maxTradePercentage ?? config.maxTradePercentage,
       priceCacheDurationMs:
-        configuration?.priceCacheDurationMs ?? config.priceCacheDuration,
+        configuration?.priceCacheDurationMs ?? config.priceTracker.priceTTLMs,
     };
   }
 

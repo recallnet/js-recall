@@ -109,10 +109,10 @@ export const AdminCreateCompetitionSchema = z
     joinStartDate: z.iso.datetime().optional(),
     joinEndDate: z.iso.datetime().optional(),
     maxParticipants: z.number().int().min(1).optional(),
-    tradingConstraints: TradingConstraintsSchema,
-    rewards: RewardsSchema,
-    competitionConfiguration: CompetitionConfigurationSchema,
-    initialBalances: InitialBalancesSchema,
+    tradingConstraints: TradingConstraintsSchema.optional(),
+    rewards: RewardsSchema.optional(),
+    competitionConfiguration: CompetitionConfigurationSchema.optional(),
+    initialBalances: InitialBalancesSchema.optional(),
   })
   .refine(
     (data) => {
@@ -156,10 +156,10 @@ export const AdminStartCompetitionSchema = z
     votingEndDate: z.iso.datetime().optional(),
     joinStartDate: z.iso.datetime().optional(),
     joinEndDate: z.iso.datetime().optional(),
-    tradingConstraints: TradingConstraintsSchema,
-    rewards: RewardsSchema,
-    competitionConfiguration: CompetitionConfigurationSchema,
-    initialBalances: InitialBalancesSchema,
+    tradingConstraints: TradingConstraintsSchema.optional(),
+    rewards: RewardsSchema.optional(),
+    competitionConfiguration: CompetitionConfigurationSchema.optional(),
+    initialBalances: InitialBalancesSchema.optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
