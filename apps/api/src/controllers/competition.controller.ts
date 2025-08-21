@@ -1162,17 +1162,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const slippageFormula =
           "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
 
-        const portfolioSnapshots = {
-          interval: `${config.portfolio.snapshotIntervalMs / 60000} minutes`,
-        };
-
         // Assemble all rules
         const allRules = {
           tradingRules,
           rateLimits,
           availableChains,
           slippageFormula,
-          portfolioSnapshots,
           tradingConstraints: {
             minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
             minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,

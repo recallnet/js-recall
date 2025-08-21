@@ -440,7 +440,6 @@ describe("Competition API", () => {
     expect(agentRulesResponse.rules.rateLimits).toBeDefined();
     expect(agentRulesResponse.rules.availableChains).toBeDefined();
     expect(agentRulesResponse.rules.slippageFormula).toBeDefined();
-    expect(agentRulesResponse.rules.portfolioSnapshots).toBeDefined();
 
     // Verify trading constraints
     expect(agentRulesResponse.rules.tradingConstraints).toBeDefined();
