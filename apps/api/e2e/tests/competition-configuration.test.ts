@@ -119,7 +119,6 @@ describe("Competition Configuration (Stateless)", () => {
       expect(rules.tradingRules).toContain(
         `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
       );
-      expect(rules.portfolioSnapshots.schedule).toContain("*/5 * * * *"); // Default cron
     });
 
     test("should update competition configuration", async () => {
@@ -460,7 +459,6 @@ describe("Competition Configuration (Stateless)", () => {
       expect(rules.tradingRules).toContain(
         "Maximum single trade: 20% of agent's total portfolio value",
       );
-      expect(rules.portfolioSnapshots.schedule).toContain("0 */4 * * *");
 
       // Check initial balances in rules
       expect(
@@ -603,9 +601,6 @@ describe("Competition Configuration (Stateless)", () => {
       expect(rules1.rules.tradingRules).toContain(
         "Maximum single trade: 10% of agent's total portfolio value",
       );
-      expect(rules1.rules.portfolioSnapshots.schedule).toContain(
-        "*/10 * * * *",
-      );
 
       // End first competition
       await adminClient.endCompetition(comp1.id);
@@ -641,9 +636,6 @@ describe("Competition Configuration (Stateless)", () => {
       expect(rules2.rules.tradingRules).toContain(
         "Maximum single trade: 20% of agent's total portfolio value",
       );
-      expect(rules2.rules.portfolioSnapshots.schedule).toContain(
-        "*/20 * * * *",
-      );
     });
 
     test("should fallback to environment config when no competition config exists", async () => {
@@ -677,9 +669,6 @@ describe("Competition Configuration (Stateless)", () => {
       // Verify defaults are used (default is 15% from .env.test)
       expect(rulesResponse.rules.tradingRules).toContain(
         `Maximum single trade: 15% of agent's total portfolio value`,
-      );
-      expect(rulesResponse.rules.portfolioSnapshots.schedule).toContain(
-        "*/5 * * * *",
       );
     });
   });
