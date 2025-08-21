@@ -31,7 +31,6 @@ import {
 import { getAgentRankById } from "@/database/repositories/agentscore-repository.js";
 import {
   findBestPlacementForAgent,
-  getAgentCompetitionRanking,
   getAgentRankingsInCompetitions,
   getBoundedSnapshots,
   getBulkAgentCompetitionRankings,
@@ -44,7 +43,6 @@ import {
 } from "@/database/repositories/leaderboard-repository.js";
 import {
   countAgentTrades,
-  countAgentTradesInCompetition,
   countBulkAgentTradesInCompetitions,
 } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
@@ -1552,57 +1550,6 @@ export class AgentManager {
   }
 
   /**
-   * Attach agent-specific metrics to a competition object
-   * @param competition The competition object to enhance
-   * @param agentId The agent ID for metrics calculation
-   * @returns Enhanced competition with agent metrics
-   */
-  async attachCompetitionMetrics(
-    competition: SelectCompetition,
-    agentId: string,
-  ): Promise<EnhancedCompetition> {
-    try {
-      const { pnl, pnlPercent, portfolioValue } =
-        await this.getAgentPerformanceForComp(agentId, competition.id);
-
-      // Get total trades for agent in this competition
-      const totalTrades = await countAgentTradesInCompetition(
-        agentId,
-        competition.id,
-      );
-
-      // Get agent's ranking in this competition
-      const bestPlacement = await getAgentCompetitionRanking(
-        agentId,
-        competition.id,
-      );
-
-      return {
-        ...competition,
-        portfolioValue,
-        pnl,
-        pnlPercent,
-        totalTrades,
-        bestPlacement,
-      };
-    } catch (error) {
-      serviceLogger.error(
-        `[AgentManager] Error attaching competition metrics for agent ${agentId} in competition ${competition.id}:`,
-        error,
-      );
-      // Return competition with default values on error
-      return {
-        ...competition,
-        portfolioValue: 0,
-        pnl: 0,
-        pnlPercent: 0,
-        totalTrades: 0,
-        bestPlacement: undefined, // No valid ranking data on error
-      };
-    }
-  }
-
-  /**
    * Attach agent-specific metrics to multiple competitions in bulk
    * @param competitions Array of competitions to enhance
    * @param agentId Agent ID
@@ -1659,15 +1606,7 @@ export class AgentManager {
         `[AgentManager] Error attaching bulk competition metrics for agent ${agentId}:`,
         error,
       );
-      // Return competitions with default values on error
-      return competitions.map((competition) => ({
-        ...competition,
-        portfolioValue: 0,
-        pnl: 0,
-        pnlPercent: 0,
-        totalTrades: 0,
-        bestPlacement: undefined,
-      }));
+      throw error;
     }
   }
 
