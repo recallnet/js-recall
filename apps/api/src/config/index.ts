@@ -343,6 +343,13 @@ export const config = {
       10,
     ),
   },
+  
+  // Sentry configuration
+  sentry: {
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
+    enabled: !!process.env.SENTRY_DSN,
+  },
 };
 
 /**

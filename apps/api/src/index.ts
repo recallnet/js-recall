@@ -2,6 +2,8 @@ import cors from "cors";
 import express from "express";
 
 import { config } from "@/config/index.js";
+import { initSentry } from "@/lib/sentry.js";
+import * as Sentry from "@sentry/node";
 import { makeAdminController } from "@/controllers/admin.controller.js";
 import { makeAgentController } from "@/controllers/agent.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
@@ -40,6 +42,9 @@ import { ServiceRegistry } from "@/services/index.js";
 
 import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
+
+// Initialize Sentry before creating the Express app
+initSentry();
 
 // Create Express app
 const app = express();
@@ -225,6 +230,11 @@ app.get(`${apiBasePath}/api/health`, (_req, res) => {
 app.get(`${apiBasePath}`, (_req, res) => {
   res.redirect(`${apiBasePath}/api/docs`);
 });
+
+// Apply Sentry error handler before our custom error handler
+if (config.sentry?.enabled) {
+  app.use(Sentry.expressErrorHandler());
+}
 
 // Apply error handler
 app.use(errorHandler);
