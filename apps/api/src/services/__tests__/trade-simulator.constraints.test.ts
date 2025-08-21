@@ -52,6 +52,8 @@ describe("TradeSimulator - Trading Constraints", () => {
     let mockPriceTracker: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let mockPortfolioSnapshotter: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mockConfigurationService: any;
 
     // Mock constraints used across all tests
     const mockConstraints = {
@@ -78,11 +80,17 @@ describe("TradeSimulator - Trading Constraints", () => {
         takePortfolioSnapshotForAgent: vi.fn(),
       };
 
+      mockConfigurationService = {
+        getMaxTradePercentage: vi.fn().mockResolvedValue(25),
+        getPortfolioPriceFreshnessMs: vi.fn().mockResolvedValue(60000),
+      };
+
       // Create TradeSimulator instance with mocked dependencies
       tradeSimulator = new TradeSimulator(
         mockBalanceManager,
         mockPriceTracker,
         mockPortfolioSnapshotter,
+        mockConfigurationService,
       );
     });
 
