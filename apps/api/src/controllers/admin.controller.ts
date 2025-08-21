@@ -247,6 +247,8 @@ export function makeAdminController(services: ServiceRegistry) {
 
         const {
           walletAddress,
+          embeddedWalletAddress,
+          privyId,
           name,
           email,
           userImageUrl,
@@ -280,6 +282,8 @@ export function makeAdminController(services: ServiceRegistry) {
             email,
             userImageUrl,
             userMetadata,
+            privyId,
+            embeddedWalletAddress,
           );
 
           let agent = null;
@@ -304,6 +308,8 @@ export function makeAdminController(services: ServiceRegistry) {
                 user: {
                   id: user.id,
                   walletAddress: user.walletAddress,
+                  walletLastVerifiedAt: user.walletLastVerifiedAt,
+                  embeddedWalletAddress: user.embeddedWalletAddress,
                   name: user.name,
                   email: user.email,
                   privyId: user.privyId,
@@ -312,6 +318,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   status: user.status,
                   createdAt: user.createdAt,
                   updatedAt: user.updatedAt,
+                  lastLoginAt: user.lastLoginAt,
                 },
                 agentError:
                   agentError instanceof Error
@@ -330,6 +337,8 @@ export function makeAdminController(services: ServiceRegistry) {
               email: user.email ?? undefined,
               privyId: user.privyId ?? undefined,
               walletAddress: user.walletAddress,
+              embeddedWalletAddress: user.embeddedWalletAddress ?? "",
+              walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
               imageUrl: user.imageUrl ?? undefined,
               metadata: user.metadata
                 ? (user.metadata as UserMetadata)
@@ -337,6 +346,7 @@ export function makeAdminController(services: ServiceRegistry) {
               status: user.status as ActorStatus,
               createdAt: user.createdAt,
               updatedAt: user.updatedAt,
+              lastLoginAt: user.lastLoginAt ?? undefined,
             },
           };
 

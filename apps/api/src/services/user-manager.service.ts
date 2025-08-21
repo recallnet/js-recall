@@ -60,12 +60,17 @@ export class UserManager {
     imageUrl?: string,
     metadata?: UserMetadata,
     privyId?: string,
+    embeddedWalletAddress?: string,
   ) {
     try {
       if (!walletAddress) {
         throw new Error("Wallet address is required");
       }
-      if (!this.isValidEthereumAddress(walletAddress)) {
+      if (
+        !this.isValidEthereumAddress(walletAddress) ||
+        (embeddedWalletAddress &&
+          !this.isValidEthereumAddress(embeddedWalletAddress))
+      ) {
         throw new Error(
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
@@ -105,6 +110,7 @@ export class UserManager {
       const user: InsertUser = {
         id,
         walletAddress: normalizedWalletAddress,
+        embeddedWalletAddress: embeddedWalletAddress?.toLowerCase(),
         name,
         email,
         privyId,
@@ -113,6 +119,7 @@ export class UserManager {
         status: "active",
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
 
       // Store in database

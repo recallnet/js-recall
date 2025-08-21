@@ -74,14 +74,17 @@ export type ActorStatus = (typeof ACTOR_STATUS)[keyof typeof ACTOR_STATUS];
 export interface User {
   id: string;
   walletAddress: string;
+  walletLastVerifiedAt?: string;
+  embeddedWalletAddress: string;
+  privyId: string;
   name: string | null;
   email: string | null;
   imageUrl: string | null;
   metadata: Record<string, unknown> | null;
   status: string;
-  isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
+  lastLoginAt: string;
 }
 
 // User metadata structure
@@ -631,15 +634,8 @@ export interface ResetApiKeyResponse extends ApiResponse {
 }
 
 /**
- * SIWE AUTHENTICATION TYPES
+ * AUTHENTICATION TYPES
  */
-
-/**
- * Response from the nonce endpoint
- */
-export interface NonceResponse {
-  nonce: string;
-}
 
 /**
  * Response from the agent nonce endpoint
@@ -651,17 +647,10 @@ export interface AgentNonceResponse {
 /**
  * Response from the login endpoint
  */
-export interface LoginResponse {
-  agentId?: string;
-  userId?: string;
+export interface LoginResponse extends ApiResponse {
+  success: true;
+  userId: string;
   wallet: string;
-}
-
-/**
- * Response from the logout endpoint
- */
-export interface LogoutResponse {
-  message: string;
 }
 
 /**

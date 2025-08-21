@@ -1,10 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
 import { authLogger } from "@/lib/logger.js";
-import {
-  extractPrivyIdentityToken,
-  verifyPrivyIdentityToken,
-} from "@/lib/privy-auth.js";
+import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
+import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
 import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AdminManager } from "@/services/admin-manager.service.js";

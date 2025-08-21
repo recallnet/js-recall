@@ -38,6 +38,15 @@ export async function startServer(): Promise<void> {
       METRICS_HOST: "127.0.0.1", // Secure binding for tests
       TEST_MODE: "true",
       LOG_LEVEL: "debug",
+      // Privy test configuration
+      PRIVY_APP_ID: process.env.PRIVY_APP_ID || "test-app-id",
+      PRIVY_APP_SECRET: process.env.PRIVY_APP_SECRET || "test-app-secret",
+      PRIVY_JWKS_PUBLIC_KEY:
+        process.env.PRIVY_JWKS_PUBLIC_KEY ||
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2aUdZ7S6KPCBlrB+vNXjmIqbvww7pmx5Ozk81+rAB0vqe3A1WC2I5zUnU8EPqO2+RMsPjhUyqtzdJI9J7Sz3YA==",
+      PRIVY_JWKS_ENDPOINT:
+        process.env.PRIVY_JWKS_ENDPOINT ||
+        "https://auth.privy.test/.well-known/jwks.json",
     },
     stdio: "inherit",
     shell: true,

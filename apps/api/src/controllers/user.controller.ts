@@ -1,10 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 import { userLogger } from "@/lib/logger.js";
-import {
-  extractPrivyIdentityToken,
-  verifyAndGetPrivyUserInfo,
-} from "@/lib/privy-auth.js";
+import { verifyAndGetPrivyUserInfo } from "@/lib/privy/verify.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {

@@ -310,6 +310,8 @@ export interface SearchAdminsParams {
 export interface User {
   id: string;
   walletAddress: string;
+  embeddedWalletAddress?: string;
+  walletLastVerifiedAt?: Date;
   name?: string;
   email?: string;
   privyId?: string;
@@ -318,6 +320,7 @@ export interface User {
   status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
+  lastLoginAt?: Date;
 }
 
 /**

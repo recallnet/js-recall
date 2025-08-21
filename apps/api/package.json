@@ -66,10 +66,9 @@
     "competition"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT OR Apache-2.0",
   "dependencies": {
     "@privy-io/server-auth": "^1.31.0",
-    "@recallnet/api-sdk": "workspace:*",
     "@types/express": "^4.17.17",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^18.15.0",
@@ -103,7 +102,6 @@
   },
   "devDependencies": {
     "@elizaos/core": "^0.25.9",
-    "@recallnet/api-sdk": "workspace:*",
     "@recallnet/eslint-config": "workspace:^",
     "@recallnet/typescript-config": "workspace:*",
     "@types/bcrypt": "^5.0.0",

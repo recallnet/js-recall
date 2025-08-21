@@ -56,27 +56,9 @@ export function configureAuthRoutes(
    * @openapi
    * /api/auth/login:
    *   post:
-   *     summary: Verify SIWE signature and create a session
-   *     description: Verifies the SIWE message and signature, creates a session, and returns agent info
+   *     summary: Log in with Privy JWT
+   *     description: Verifies the SIWE message and signature, creates a session, and returns user info
    *     tags: [Auth]
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required:
-   *               - message
-   *               - signature
-   *             properties:
-   *               message:
-   *                 type: string
-   *                 description: The SIWE message to be verified
-   *                 example: "service.example.com wants you to sign in with your Ethereum account:\n0x123...\n\nI accept the ServiceOrg Terms of Service: https://service.example.com/tos\n\nURI: https://service.example.com/login\nVersion: 1\nChain ID: 1\nNonce: 8J0eXAiOiJ...\nIssued At: 2023-01-01T00:00:00.000Z"
-   *               signature:
-   *                 type: string
-   *                 description: The signature of the SIWE message
-   *                 example: "0x123abc..."
    *     responses:
    *       200:
    *         description: Authentication successful, session created
@@ -85,17 +67,20 @@ export function configureAuthRoutes(
    *             schema:
    *               type: object
    *               required:
-   *                 - agentId
+   *                 - userId
    *                 - wallet
    *               properties:
-   *                 agentId:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 userId:
    *                   type: string
    *                   nullable: true
-   *                   description: The ID of the authenticated agent
-   *                   example: "agent_123abc"
+   *                   description: The ID of the authenticated user
+   *                   example: "user_123abc"
    *                 wallet:
    *                   type: string
-   *                   description: The wallet address of the authenticated agent
+   *                   description: The wallet address of the authenticated user
    *                   example: "0x123..."
    *       401:
    *         description: Authentication failed

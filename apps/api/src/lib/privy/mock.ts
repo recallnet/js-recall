@@ -1,0 +1,218 @@
+/**
+ * Test implementation of Privy authentication for E2E testing
+ * This module provides mock implementations that bypass external API calls
+ */
+import type {
+  LinkedAccountWithMetadata,
+  User as PrivyUser,
+  WalletWithMetadata,
+} from "@privy-io/server-auth";
+
+import { authLogger } from "@/lib/logger.js";
+
+/**
+ * Mock implementation of PrivyClient for testing
+ */
+export class MockPrivyClient {
+  constructor(
+    public appId: string,
+    public appSecret: string,
+  ) {}
+
+  /**
+   * Mock getUser method that returns user data based on the JWT token
+   */
+  async getUser({ idToken }: { idToken: string }): Promise<PrivyUser> {
+    authLogger.debug("[MockPrivyClient] getUser called with token");
+
+    // Parse the JWT token to extract user data
+    const payload = this.parseJwtPayload(idToken);
+
+    // Create a mock Privy user from the JWT payload
+    return this.createUserFromJwtPayload(payload);
+  }
+
+  /**
+   * Parse JWT payload without verification (for testing)
+   */
+  private parseJwtPayload(token: string): Record<string, unknown> {
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      throw new Error("Invalid JWT format");
+    }
+
+    const payloadPart = parts[1];
+    if (!payloadPart) {
+      throw new Error("Invalid JWT payload");
+    }
+
+    const payload = Buffer.from(payloadPart, "base64").toString("utf-8");
+    return JSON.parse(payload) as Record<string, unknown>;
+  }
+
+  /**
+   * Create a mock Privy user from JWT payload
+   */
+  private createUserFromJwtPayload(
+    payload: Record<string, unknown>,
+  ): PrivyUser {
+    const privyId = String(payload.sub || "");
+    const email = payload.email ? String(payload.email) : undefined;
+    const provider = (payload.provider as string) || "email";
+    const walletAddress = payload.wallet_address
+      ? String(payload.wallet_address)
+      : undefined;
+    const walletChainType = payload.wallet_chain_type
+      ? String(payload.wallet_chain_type)
+      : "ethereum";
+    const name = payload.providerUsername
+      ? String(payload.providerUsername)
+      : undefined;
+
+    const now = new Date();
+    const linkedAccounts: LinkedAccountWithMetadata[] = [];
+
+    // Always add embedded wallet (required by our Privy configuration)
+    // Generate a valid Ethereum address from the privyId
+    const hash = privyId.split(":").pop() || "default";
+    const embeddedWalletAddress =
+      `0x${hash.padEnd(40, "0").slice(0, 40)}`.toLowerCase();
+    linkedAccounts.push({
+      type: "wallet",
+      address: embeddedWalletAddress,
+      walletClient: "privy",
+      walletClientType: "privy",
+      chainType: "ethereum",
+      chainId: "1",
+      verifiedAt: now,
+      firstVerifiedAt: now,
+      latestVerifiedAt: now,
+    } as WalletWithMetadata);
+
+    // Add email linked account if email is provided
+    if (email) {
+      linkedAccounts.push({
+        type: "email",
+        address: email,
+        verifiedAt: now,
+        firstVerifiedAt: now,
+        latestVerifiedAt: now,
+      } as LinkedAccountWithMetadata);
+    }
+
+    // Add custom wallet if provided
+    if (walletAddress) {
+      linkedAccounts.push({
+        type: "wallet",
+        address: walletAddress.toLowerCase(),
+        walletClient: "metamask",
+        walletClientType: "injected",
+        chainType: walletChainType,
+        chainId: "1",
+        verifiedAt: now,
+        firstVerifiedAt: now,
+        latestVerifiedAt: now,
+      } as WalletWithMetadata);
+    }
+
+    // Add provider-specific linked account
+    if (provider === "google" && email) {
+      linkedAccounts.push({
+        type: "google_oauth",
+        subject: privyId,
+        email: email,
+        name: name || null,
+        verifiedAt: now,
+        firstVerifiedAt: now,
+        latestVerifiedAt: now,
+      } as LinkedAccountWithMetadata);
+    } else if (provider === "github") {
+      linkedAccounts.push({
+        type: "github_oauth",
+        subject: privyId,
+        username: name || "testuser",
+        name: name || null,
+        verifiedAt: now,
+        firstVerifiedAt: now,
+        latestVerifiedAt: now,
+      } as LinkedAccountWithMetadata);
+    }
+
+    // Build the mock user object
+    const mockUser: PrivyUser = {
+      id: privyId,
+      createdAt: now,
+      linkedAccounts,
+      isGuest: false,
+      customMetadata: {},
+      wallet: {
+        address: (walletAddress || embeddedWalletAddress).toLowerCase(),
+        chainType:
+          walletChainType === "solana" ||
+          walletChainType === "bitcoin-segwit" ||
+          walletChainType === "cosmos" ||
+          walletChainType === "stellar" ||
+          walletChainType === "sui" ||
+          walletChainType === "tron" ||
+          walletChainType === "near" ||
+          walletChainType === "ton" ||
+          walletChainType === "spark"
+            ? walletChainType
+            : "ethereum",
+        walletClientType: walletAddress ? "injected" : "privy",
+        connectorType: walletAddress ? "injected" : "embedded",
+        verifiedAt: now,
+        firstVerifiedAt: now,
+        latestVerifiedAt: now,
+      },
+    };
+
+    // Add email object if email is provided
+    if (email) {
+      mockUser.email = {
+        address: email,
+        verifiedAt: now,
+        firstVerifiedAt: now,
+        latestVerifiedAt: now,
+      };
+    }
+
+    // Add provider-specific objects
+    if (provider === "google" && email) {
+      mockUser.google = {
+        email,
+        name: name || null,
+        subject: privyId,
+        verifiedAt: now,
+        firstVerifiedAt: now,
+        latestVerifiedAt: now,
+      };
+    } else if (provider === "github") {
+      mockUser.github = {
+        subject: privyId,
+        username: name || "testuser",
+        name: name || null,
+        email: email || null,
+        verifiedAt: now,
+        firstVerifiedAt: now,
+        latestVerifiedAt: now,
+      };
+    }
+
+    authLogger.debug(`[MockPrivyClient] Created mock user: ${privyId}`);
+    return mockUser;
+  }
+}
+
+/**
+ * Get Privy client - returns mock client in test mode
+ */
+export function getPrivyClient(appId: string, appSecret: string) {
+  if (process.env.TEST_MODE === "true") {
+    authLogger.debug("[getPrivyClient] Using MockPrivyClient for testing");
+    return new MockPrivyClient(appId, appSecret);
+  }
+
+  // This should never be called in test mode, but if it is, throw an error
+  throw new Error("Real PrivyClient should not be used in test mode");
+}

@@ -40,8 +40,6 @@ import {
   HealthCheckResponse,
   LeaderboardResponse,
   LoginResponse,
-  LogoutResponse,
-  NonceResponse,
   PriceResponse,
   PublicAgentResponse,
   QuoteResponse,
@@ -62,6 +60,12 @@ import {
   VoteResponse,
   VotingStateResponse,
 } from "./api-types.js";
+import {
+  PrivyAuthProvider,
+  type TestPrivyUser,
+  createMockPrivyToken,
+  createTestPrivyUser,
+} from "./privy.js";
 import { getBaseUrl } from "./server.js";
 
 /**
@@ -76,6 +80,7 @@ export class ApiClient {
   private baseUrl: string;
   private adminApiKey: string | undefined;
   private cookieJar: CookieJar;
+  private jwtToken: string | undefined;
 
   /**
    * Create a new API client
@@ -105,12 +110,10 @@ export class ApiClient {
       // Add common headers
       config.headers = config.headers || {};
 
-      // Set authentication header if API key is available
-      if (this.apiKey) {
-        config.headers["Authorization"] = `Bearer ${this.apiKey}`;
-      }
+      // Set authentication header based on available credentials
+      // Priority order: Admin API key > JWT token > Regular API key
 
-      // For admin routes, use admin API key if available and different from regular API key
+      // For admin routes, use admin API key if available
       if (
         this.adminApiKey &&
         (config.url?.startsWith("/api/admin") ||
@@ -120,11 +123,20 @@ export class ApiClient {
       ) {
         config.headers["Authorization"] = `Bearer ${this.adminApiKey}`;
       }
-
-      // Log request (simplified)
-      console.log(
-        `[ApiClient] Request to ${config.method?.toUpperCase()} ${config.url}`,
-      );
+      // For user routes that require JWT (Privy) authentication
+      else if (this.jwtToken) {
+        // Set the JWT token as a cookie header for Privy authentication
+        const existingCookie =
+          config.headers["Cookie"] || config.headers["cookie"] || "";
+        const privyCookie = `privy-id-token=${this.jwtToken}`;
+        config.headers["Cookie"] = existingCookie
+          ? `${existingCookie}; ${privyCookie}`
+          : privyCookie;
+      }
+      // Default to API key for agent authentication
+      else if (this.apiKey) {
+        config.headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
 
       return config;
     });
@@ -235,6 +247,62 @@ export class ApiClient {
   }
 
   /**
+   * Set JWT token for Privy authentication
+   * @param jwtToken The JWT token from Privy
+   */
+  setJwtToken(jwtToken: string): void {
+    this.jwtToken = jwtToken;
+  }
+
+  /**
+   * Clear JWT token
+   */
+  clearJwtToken(): void {
+    this.jwtToken = undefined;
+  }
+
+  /**
+   * Authenticate with Privy using a mock JWT token and sync profile
+   * @param user Test user data for authentication
+   * @returns Promise that resolves to the login response
+   */
+  async authenticateWithPrivy(user: {
+    name?: string;
+    email?: string;
+    imageUrl?: string;
+    provider?: PrivyAuthProvider;
+    walletAddress?: string;
+    walletChainType?: string;
+    privyId?: string;
+  }): Promise<LoginResponse | ErrorResponse> {
+    try {
+      // Create a mock JWT token
+      const jwtToken = await createMockPrivyToken(user);
+      this.setJwtToken(jwtToken);
+
+      // Call the login endpoint to authenticate and create/update the user
+      return await this.login();
+    } catch (error) {
+      return this.handleApiError(error, "authenticate with Privy");
+    }
+  }
+
+  /**
+   * Create a test user client authenticated with Privy
+   * @param userData Optional user data overrides
+   * @returns New ApiClient instance authenticated as the test user
+   */
+  async createPrivyUserClient(
+    userData: Partial<TestPrivyUser> = {},
+  ): Promise<ApiClient> {
+    const testUser = createTestPrivyUser(userData);
+
+    const client = new ApiClient(undefined, this.baseUrl);
+    await client.authenticateWithPrivy(testUser);
+    return client;
+  }
+
+  /**
    * Generate a random Ethereum address
    * @returns A valid Ethereum address (0x + 40 hex characters)
    */
@@ -265,6 +333,8 @@ export class ApiClient {
    */
   async registerUser({
     walletAddress,
+    embeddedWalletAddress,
+    privyId,
     name,
     email,
     userImageUrl,
@@ -276,7 +346,9 @@ export class ApiClient {
     agentMetadata,
     agentWalletAddress,
   }: {
-    walletAddress: string;
+    walletAddress?: string;
+    embeddedWalletAddress?: string;
+    privyId?: string;
     name?: string;
     email?: string;
     userImageUrl?: string;
@@ -291,6 +363,8 @@ export class ApiClient {
     try {
       const response = await this.axiosInstance.post("/api/admin/users", {
         walletAddress,
+        embeddedWalletAddress,
+        privyId,
         name,
         email,
         userImageUrl,
@@ -326,7 +400,7 @@ export class ApiClient {
   }: {
     user: {
       id?: string;
-      walletAddress?: string;
+      walletAddress?: string | null;
     };
     agent: {
       name: string;
@@ -1428,19 +1502,6 @@ export class ApiClient {
   }
 
   /**
-   * Get a nonce for SIWE authentication
-   * @returns A promise that resolves to the nonce response
-   */
-  async getNonce(): Promise<NonceResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get("/api/auth/nonce");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get nonce");
-    }
-  }
-
-  /**
    * Get a nonce for agent wallet verification
    * @returns A promise that resolves to the agent nonce response
    */
@@ -1459,31 +1520,12 @@ export class ApiClient {
    * @param signature The signature of the SIWE message
    * @returns A promise that resolves to the login response
    */
-  async login(
-    message: string,
-    signature: string,
-  ): Promise<LoginResponse | ErrorResponse> {
+  async login(): Promise<LoginResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post("/api/auth/login", {
-        message,
-        signature,
-      });
+      const response = await this.axiosInstance.post("/api/auth/login");
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "login with SIWE");
-    }
-  }
-
-  /**
-   * Logout and destroy the session
-   * @returns A promise that resolves to the logout response
-   */
-  async logout(): Promise<LogoutResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.post("/api/auth/logout");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "logout");
+      return this.handleApiError(error, "login with Privy");
     }
   }
 
@@ -1666,20 +1708,6 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get user competitions");
-    }
-  }
-
-  /**
-   * Verify user email with token
-   * Requires SIWE session authentication
-   * @param token Email verification token
-   */
-  async verifyEmail(): Promise<ApiResponse> {
-    try {
-      const response = await this.axiosInstance.post("/api/user/verify-email");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "verify email");
     }
   }
 }

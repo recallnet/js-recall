@@ -5,8 +5,6 @@ import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { expect } from "vitest";
 
-import { ApiSDK } from "@recallnet/api-sdk";
-
 import { db } from "@/database/db.js";
 import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
 
@@ -16,12 +14,13 @@ import {
   StartCompetitionResponse,
   TradingConstraints,
 } from "./api-types.js";
-import { getBaseUrl } from "./server.js";
 import {
-  createSiweMessage,
+  createMockPrivyToken,
+  createTestPrivyUser,
   createTestWallet,
-  signMessage,
-} from "./siwe-utils.js";
+  generateRandomPrivyId,
+} from "./privy.js";
+import { getBaseUrl } from "./server.js";
 
 // Configured test token address
 export const TEST_TOKEN_ADDRESS =
@@ -133,6 +132,8 @@ export function createTestClient(baseUrl?: string): ApiClient {
 export async function registerUserAndAgentAndGetClient({
   adminApiKey,
   walletAddress,
+  embeddedWalletAddress,
+  privyId,
   userName,
   userEmail,
   userImageUrl,
@@ -145,6 +146,8 @@ export async function registerUserAndAgentAndGetClient({
 }: {
   adminApiKey: string;
   walletAddress?: string;
+  embeddedWalletAddress?: string;
+  privyId?: string;
   userName?: string;
   userEmail?: string;
   userImageUrl?: string;
@@ -160,6 +163,8 @@ export async function registerUserAndAgentAndGetClient({
   // Register a new user with optional agent creation
   const result = await sdk.registerUser({
     walletAddress: walletAddress || generateRandomEthAddress(),
+    embeddedWalletAddress: embeddedWalletAddress || generateRandomEthAddress(),
+    privyId: privyId || generateRandomPrivyId(),
     name: userName || `User ${generateRandomString(8)}`,
     email: userEmail || `user-${generateRandomString(8)}@test.com`,
     userImageUrl,
@@ -189,6 +194,9 @@ export async function registerUserAndAgentAndGetClient({
     user: {
       id: result.user.id || "",
       walletAddress: result.user.walletAddress || "",
+      walletLastVerifiedAt: result.user.walletLastVerifiedAt || "",
+      embeddedWalletAddress: result.user.embeddedWalletAddress || "",
+      privyId: result.user.privyId || "",
       name: result.user.name || "",
       email: result.user.email || "",
       imageUrl: result.user.imageUrl || null,
@@ -196,6 +204,7 @@ export async function registerUserAndAgentAndGetClient({
       metadata: result.user.metadata || null,
       createdAt: result.user.createdAt || new Date().toISOString(),
       updatedAt: result.user.updatedAt || new Date().toISOString(),
+      lastLoginAt: result.user.lastLoginAt || new Date().toISOString(),
     },
     agent: {
       id: result.agent.id || "",
@@ -351,20 +360,10 @@ export function generateRandomEthAddress(): string {
 }
 
 /**
- * Helper for getting an instance of the sdk for a given api key
+ * Create a Privy-authenticated client for testing user routes
+ * This generates a unique test user and returns a client with an active Privy session
  */
-export function getApiSdk(apiKey: string): InstanceType<typeof ApiSDK> {
-  return new ApiSDK({
-    bearerAuth: apiKey,
-    serverURL: getBaseUrl(),
-  });
-}
-
-/**
- * Create a SIWE-authenticated client for testing user routes
- * This generates a unique wallet for each test and returns a client with an active SIWE session
- */
-export async function createSiweAuthenticatedClient({
+export async function createPrivyAuthenticatedClient({
   adminApiKey,
   userName,
   userEmail,
@@ -375,18 +374,18 @@ export async function createSiweAuthenticatedClient({
   userEmail?: string;
   userImageUrl?: string;
 }) {
-  const sdk = getApiSdk(adminApiKey);
+  const sdk = new ApiClient(adminApiKey);
 
   // Generate a unique wallet for this test
   const testWallet = createTestWallet();
 
   // Use unique names/emails for this test
   const timestamp = Date.now();
-  const uniqueUserName = userName || `SIWE User ${timestamp}`;
-  const uniqueUserEmail = userEmail || `siwe-user-${timestamp}@test.com`;
+  const uniqueUserName = userName || `Privy User ${timestamp}`;
+  const uniqueUserEmail = userEmail || `privy-user-${timestamp}@test.com`;
 
-  // Register a new user with the unique wallet address
-  const result = await sdk.admin.postApiAdminUsers({
+  // Register a new user
+  const result = await sdk.registerUser({
     walletAddress: testWallet.address,
     name: uniqueUserName,
     email: uniqueUserEmail,
@@ -395,33 +394,37 @@ export async function createSiweAuthenticatedClient({
   });
 
   if (!result.success || !result.user) {
+    // Propagate the original error with status code if available
+    if ("status" in result && result.status) {
+      const error = new Error(
+        result.error || "Failed to register user",
+      ) as Error & { statusCode: number };
+      error.statusCode = result.status;
+      throw error;
+    }
     throw new Error("Failed to register user for SIWE authentication");
   }
 
   // Create a session client (without API key)
+  const privyUser = createTestPrivyUser({
+    name: uniqueUserName,
+    email: uniqueUserEmail,
+    walletAddress: testWallet.address,
+    provider: "email",
+  });
+  const privyToken = await createMockPrivyToken(privyUser);
   const sessionClient = new ApiClient(undefined, getBaseUrl());
+  sessionClient.setJwtToken(privyToken);
 
-  // Perform SIWE authentication
-  const domain = new URL(getBaseUrl()).hostname || "localhost";
-
-  // Get nonce
-  const nonceResponse = await sessionClient.getNonce();
-  if (!nonceResponse || "error" in nonceResponse) {
-    throw new Error("Failed to get nonce for SIWE authentication");
+  // Login with Privy
+  const loginResponse = await sessionClient.login();
+  if (!loginResponse.success) {
+    throw new Error(`Failed to login with Privy: ${loginResponse.error}`);
   }
 
-  // Create and sign SIWE message using the unique wallet
-  const message = await createSiweMessage(
-    domain,
-    nonceResponse.nonce,
-    testWallet.address,
-  );
-  const signature = await signMessage(message, testWallet.account);
-
-  // Login with SIWE
-  const loginResponse = await sessionClient.login(message, signature);
-  if (!loginResponse || "error" in loginResponse) {
-    throw new Error("Failed to login with SIWE");
+  // Ensure we have a valid user ID
+  if (!loginResponse.userId) {
+    throw new Error("Failed to login with Privy: No userId returned");
   }
 
   // Add a small delay to ensure session is properly saved

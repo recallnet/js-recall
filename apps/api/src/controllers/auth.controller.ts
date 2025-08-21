@@ -1,10 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 import { authLogger } from "@/lib/logger.js";
-import {
-  extractPrivyIdentityToken,
-  verifyPrivyIdentityTokenAndEnsureUser,
-} from "@/lib/privy-auth.js";
+import { verifyPrivyIdentityTokenAndEnsureUser } from "@/lib/privy/verify.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 export function makeAuthController(services: ServiceRegistry) {
@@ -62,7 +59,7 @@ export function makeAuthController(services: ServiceRegistry) {
           `Login successful for user '${userId}' with wallet address '${walletAddress}'`,
         );
         req.userId = userId;
-        res.status(200).json({ userId, wallet: walletAddress });
+        res.status(200).json({ success: true, userId, wallet: walletAddress });
       } catch (error) {
         next(error);
       }
