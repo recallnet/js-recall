@@ -6,8 +6,8 @@ import React, { useState } from "react";
 import {
   Tabs,
   TabsContent,
-  TabsList,
-  TabsTrigger,
+  // TabsList,  // Temporarily commented out
+  // TabsTrigger,  // Temporarily commented out
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -68,6 +68,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
   return (
     <Tabs defaultValue="info" className={cn(className, "text-white")}>
+      {/* Temporarily hiding tabs UI - only showing info content
       <TabsList className="mb-4 gap-2">
         <TabsTrigger
           value="info"
@@ -82,6 +83,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           Rules
         </TabsTrigger>
       </TabsList>
+      */}
 
       <TabsContent value="info" className="border">
         <div>

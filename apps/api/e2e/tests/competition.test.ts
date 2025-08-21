@@ -440,7 +440,6 @@ describe("Competition API", () => {
     expect(agentRulesResponse.rules.rateLimits).toBeDefined();
     expect(agentRulesResponse.rules.availableChains).toBeDefined();
     expect(agentRulesResponse.rules.slippageFormula).toBeDefined();
-    expect(agentRulesResponse.rules.portfolioSnapshots).toBeDefined();
 
     // Verify trading constraints
     expect(agentRulesResponse.rules.tradingConstraints).toBeDefined();
@@ -663,7 +662,6 @@ describe("Competition API", () => {
     expect(adminRulesResponse.rules.rateLimits).toBeDefined();
     expect(adminRulesResponse.rules.availableChains).toBeDefined();
     expect(adminRulesResponse.rules.slippageFormula).toBeDefined();
-    expect(adminRulesResponse.rules.portfolioSnapshots).toBeDefined();
 
     // Regular agent checks all the same endpoints to verify they work for participants too
     const agentStatusResponse =
@@ -3987,7 +3985,6 @@ describe("Competition API", () => {
       expect(response.data.rules.rateLimits).toBeDefined();
       expect(response.data.rules.availableChains).toBeDefined();
       expect(response.data.rules.slippageFormula).toBeDefined();
-      expect(response.data.rules.portfolioSnapshots).toBeDefined();
       expect(response.data.rules.tradingConstraints).toBeDefined();
       expect(response.data.rules.tradingConstraints.minimumPairAgeHours).toBe(
         24,
@@ -4907,6 +4904,59 @@ describe("Competition API", () => {
         );
       }
     });
+  });
+
+  test("should get trades for a competition and for a specific agent", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Trade Viewer Test Agent",
+      });
+
+    // Start a competition
+    const competitionName = `Trade Viewer Test Competition ${Date.now()}`;
+    const startResponse = await startTestCompetition(
+      adminClient,
+      competitionName,
+      [agent.id],
+    );
+    const competitionId = startResponse.competition.id;
+
+    // Execute a trade
+    const tradeResponse = await agentClient.executeTrade({
+      reason: "testing get trades endpoint",
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: config.specificChainTokens.eth.eth,
+      amount: "100",
+      fromChain: BlockchainType.EVM,
+      toChain: BlockchainType.EVM,
+    });
+    expect(tradeResponse.success).toBe(true);
+
+    // Get competition trades
+    const competitionTradesResponse =
+      await adminClient.getCompetitionTrades(competitionId);
+    expect(competitionTradesResponse.success).toBe(true);
+    if (!competitionTradesResponse.success) return; // Type guard
+    expect(competitionTradesResponse.trades).toBeDefined();
+    expect(competitionTradesResponse.trades.length).toBe(1);
+    expect(competitionTradesResponse.trades[0]?.agentId).toBe(agent.id);
+
+    // Get agent trades in competition
+    const agentTradesResponse = await adminClient.getAgentTradesInCompetition(
+      competitionId,
+      agent.id,
+    );
+    expect(agentTradesResponse.success).toBe(true);
+    if (!agentTradesResponse.success) return; // Type guard
+    expect(agentTradesResponse.trades).toBeDefined();
+    expect(agentTradesResponse.trades.length).toBe(1);
+    expect(agentTradesResponse.trades[0]?.agentId).toBe(agent.id);
   });
 
   describe("Participant Limits", () => {

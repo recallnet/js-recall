@@ -213,6 +213,46 @@ async function countAgentTradesInCompetitionImpl(
 }
 
 /**
+ * Get trades for an agent in a competition
+ * @param competitionId Competition ID
+ * @param agentId Agent ID
+ * @param limit Optional result limit
+ * @param offset Optional result offset
+ */
+async function getAgentTradesInCompetitionImpl(
+  competitionId: string,
+  agentId: string,
+  limit?: number,
+  offset?: number,
+) {
+  try {
+    const query = db
+      .select()
+      .from(trades)
+      .where(
+        and(
+          eq(trades.competitionId, competitionId),
+          eq(trades.agentId, agentId),
+        ),
+      )
+      .orderBy(desc(trades.timestamp));
+
+    if (limit !== undefined) {
+      query.limit(limit);
+    }
+
+    if (offset !== undefined) {
+      query.offset(offset);
+    }
+
+    return await query;
+  } catch (error) {
+    repositoryLogger.error("Error in getAgentTradesInCompetition:", error);
+    throw error;
+  }
+}
+
+/**
  * Count all trades
  */
 async function countImpl() {
@@ -259,6 +299,12 @@ export const getAgentTrades = createTimedRepositoryFunction(
   getAgentTradesImpl,
   "TradeRepository",
   "getAgentTrades",
+);
+
+export const getAgentTradesInCompetition = createTimedRepositoryFunction(
+  getAgentTradesInCompetitionImpl,
+  "TradeRepository",
+  "getAgentTradesInCompetition",
 );
 
 export const getCompetitionTrades = createTimedRepositoryFunction(
