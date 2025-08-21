@@ -109,10 +109,6 @@ export interface PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null>;
-  supports(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<boolean>;
 }
 
 // DexScreener API interfaces
@@ -605,6 +601,7 @@ export const TradingConstraintsSchema = z
     minimum24hVolumeUsd: z.number().min(0),
     minimumLiquidityUsd: z.number().min(0),
     minimumFdvUsd: z.number().min(0),
+    minTradesPerDay: z.number().min(0).nullable().optional(),
   })
   .optional();
 

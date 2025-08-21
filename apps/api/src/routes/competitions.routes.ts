@@ -159,6 +159,30 @@ export function configureCompetitionsRoutes(
    *                                 format: date-time
    *                                 nullable: true
    *                                 description: When the user cast their vote (if hasVoted is true)
+   *                       tradingConstraints:
+   *                         type: object
+   *                         description: Trading constraints for the competition (only present for authenticated users)
+   *                         properties:
+   *                           minimumPairAgeHours:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum age of trading pairs in hours
+   *                           minimum24hVolumeUsd:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum 24-hour volume in USD
+   *                           minimumLiquidityUsd:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum liquidity in USD
+   *                           minimumFdvUsd:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum fully diluted valuation in USD
+   *                           minTradesPerDay:
+   *                             type: number
+   *                             nullable: true
+   *                             description: Minimum number of trades required per day (null if no requirement)
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata
@@ -499,12 +523,26 @@ export function configureCompetitionsRoutes(
    *                     slippageFormula:
    *                       type: string
    *                       description: Formula used for calculating slippage
-   *                     portfolioSnapshots:
+   *                     tradingConstraints:
    *                       type: object
+   *                       description: Trading constraints for the competition
    *                       properties:
-   *                         interval:
-   *                           type: string
-   *                           description: Interval between portfolio snapshots
+   *                         minimumPairAgeHours:
+   *                           type: number
+   *                           description: Minimum age of trading pairs in hours
+   *                         minimum24hVolumeUsd:
+   *                           type: number
+   *                           description: Minimum 24-hour volume in USD
+   *                         minimumLiquidityUsd:
+   *                           type: number
+   *                           description: Minimum liquidity in USD
+   *                         minimumFdvUsd:
+   *                           type: number
+   *                           description: Minimum fully diluted valuation in USD
+   *                         minTradesPerDay:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum number of trades required per day (null if no requirement)
    *       400:
    *         description: Bad request - No active competition
    *       401:
@@ -515,6 +553,99 @@ export function configureCompetitionsRoutes(
    *         description: Server error
    */
   router.get("/rules", ...authMiddlewares, controller.getRules);
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/rules:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get rules for a specific competition
+   *     description: Get the competition rules including trading constraints, rate limits, and formulas for a specific competition
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Competition rules retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 competition:
+   *                   type: object
+   *                   description: Competition details (optional)
+   *                 rules:
+   *                   type: object
+   *                   properties:
+   *                     tradingRules:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                       description: List of trading rules for the competition
+   *                     rateLimits:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                       description: List of rate limits for the competition
+   *                     availableChains:
+   *                       type: object
+   *                       properties:
+   *                         svm:
+   *                           type: boolean
+   *                           description: Whether SVM chains are available
+   *                         evm:
+   *                           type: array
+   *                           items:
+   *                             type: string
+   *                           description: List of available EVM chains
+   *                     slippageFormula:
+   *                       type: string
+   *                       description: Formula for calculating slippage
+   *                     portfolioSnapshots:
+   *                       type: object
+   *                       properties:
+   *                         interval:
+   *                           type: string
+   *                           description: Interval for portfolio snapshots
+   *                     tradingConstraints:
+   *                       type: object
+   *                       description: Trading constraints for the competition
+   *                       properties:
+   *                         minimumPairAgeHours:
+   *                           type: number
+   *                           description: Minimum age of trading pairs in hours
+   *                         minimum24hVolumeUsd:
+   *                           type: number
+   *                           description: Minimum 24-hour volume in USD
+   *                         minimumLiquidityUsd:
+   *                           type: number
+   *                           description: Minimum liquidity in USD
+   *                         minimumFdvUsd:
+   *                           type: number
+   *                           description: Minimum fully diluted valuation in USD
+   *                         minTradesPerDay:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum number of trades required per day (null if no requirement)
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/rules",
+    optionalAuthMiddleware,
+    controller.getCompetitionRules,
+  );
 
   /**
    * @openapi
@@ -746,6 +877,26 @@ export function configureCompetitionsRoutes(
    *                               format: date-time
    *                               nullable: true
    *                               description: When the user cast their vote (if hasVoted is true)
+   *                     tradingConstraints:
+   *                       type: object
+   *                       description: Trading constraints for the competition
+   *                       properties:
+   *                         minimumPairAgeHours:
+   *                           type: number
+   *                           description: Minimum age of trading pairs in hours
+   *                         minimum24hVolumeUsd:
+   *                           type: number
+   *                           description: Minimum 24-hour volume in USD
+   *                         minimumLiquidityUsd:
+   *                           type: number
+   *                           description: Minimum liquidity in USD
+   *                         minimumFdvUsd:
+   *                           type: number
+   *                           description: Minimum fully diluted valuation in USD
+   *                         minTradesPerDay:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum number of trades required per day (null if no requirement)
    *       400:
    *         description: Bad request - Invalid competition ID format
    *       404:
@@ -1118,6 +1269,142 @@ export function configureCompetitionsRoutes(
     "/:competitionId/timeline",
     optionalAuthMiddleware,
     controller.getCompetitionTimeline,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/trades:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get trades for a competition
+   *     description: Get all trades for a specific competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the competition to get trades for
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
+   *         required: false
+   *         description: Maximum number of results to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         required: false
+   *         description: Number of results to skip for pagination
+   *     responses:
+   *       200:
+   *         description: Competition trades retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 trades:
+   *                   type: array
+   *                   description: List of trades in the competition
+   *                   items:
+   *                     type: object
+   *       400:
+   *         description: Bad request - Invalid competition ID format
+   *       404:
+   *         description: Competition not found
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/trades",
+    ...authMiddlewares,
+    controller.getCompetitionTrades,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/agents/{agentId}/trades:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get trades for an agent in a competition
+   *     description: Get all trades for a specific agent in a specific competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the competition
+   *       - in: path
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the agent
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
+   *         required: false
+   *         description: Maximum number of results to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         required: false
+   *         description: Number of results to skip for pagination
+   *     responses:
+   *       200:
+   *         description: Agent trades retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 trades:
+   *                   type: array
+   *                   description: List of trades by the agent in the competition
+   *                   items:
+   *                     type: object
+   *       400:
+   *         description: Bad request - Invalid ID format
+   *       404:
+   *         description: Competition or agent not found
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/agents/:agentId/trades",
+    ...authMiddlewares,
+    controller.getAgentTradesInCompetition,
   );
 
   return router;

@@ -232,6 +232,20 @@
       "when": 1755615076680,
       "tag": "0032_left_talisman",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1755702267838,
+      "tag": "0033_rapid_forgotten_one",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1755719037877,
+      "tag": "0034_lonely_microbe",
+      "breakpoints": true
     }
   ]
 }

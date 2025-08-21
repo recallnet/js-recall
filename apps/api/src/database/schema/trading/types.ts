@@ -11,9 +11,6 @@ export type InsertBalance = typeof defs.balances.$inferInsert;
 export type SelectTrade = typeof defs.trades.$inferSelect;
 export type InsertTrade = typeof defs.trades.$inferInsert;
 
-export type SelectPrice = typeof defs.prices.$inferSelect;
-export type InsertPrice = typeof defs.prices.$inferInsert;
-
 export type SelectPortfolioSnapshot =
   typeof defs.portfolioSnapshots.$inferSelect;
 export type InsertPortfolioSnapshot =

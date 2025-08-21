@@ -177,34 +177,6 @@ export const trades = tradingComps.table(
 );
 
 /**
- * Table for prices of tokens in a competition.
- */
-export const prices = tradingComps.table(
-  "prices",
-  {
-    id: serial().primaryKey().notNull(),
-    token: varchar({ length: 50 }).notNull(),
-    price: numeric({ mode: "number" }).notNull(),
-    timestamp: timestamp({ withTimezone: true }).defaultNow(),
-    chain: varchar({ length: 10 }),
-    specificChain: varchar("specific_chain", { length: 20 }),
-    symbol: varchar("symbol", { length: 20 }).notNull(),
-  },
-  (table) => [
-    index("idx_prices_chain").on(table.chain),
-    index("idx_prices_specific_chain").on(table.specificChain),
-    index("idx_prices_timestamp").on(table.timestamp),
-    index("idx_prices_token").on(table.token),
-    index("idx_prices_token_chain").on(table.token, table.chain),
-    index("idx_prices_token_specific_chain").on(
-      table.token,
-      table.specificChain,
-    ),
-    index("idx_prices_token_timestamp").on(table.token, table.timestamp),
-  ],
-);
-
-/**
  * Table for portfolio snapshots of agents in a competition.
  */
 export const portfolioSnapshots = tradingComps.table(
@@ -273,6 +245,7 @@ export const tradingConstraints = tradingComps.table(
       scale: 2,
       mode: "number",
     }).notNull(),
+    minTradesPerDay: integer("min_trades_per_day"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
