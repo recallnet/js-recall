@@ -34,6 +34,14 @@ import {
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import {
+  CompetitionConfigurationInput,
+  CompetitionConfigurationService,
+} from "@/services/competition-configuration.service.js";
+import {
+  CompetitionInitialBalancesService,
+  InitialBalanceInput,
+} from "@/services/competition-initial-balances.service.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import {
   AgentManager,
@@ -86,6 +94,8 @@ export class CompetitionManager {
   private voteManager: VoteManager;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
+  private competitionConfigurationService: CompetitionConfigurationService;
+  private competitionInitialBalancesService: CompetitionInitialBalancesService;
 
   constructor(
     balanceManager: BalanceManager,
@@ -97,6 +107,8 @@ export class CompetitionManager {
     voteManager: VoteManager,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
+    competitionConfigurationService: CompetitionConfigurationService,
+    competitionInitialBalancesService: CompetitionInitialBalancesService,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -107,6 +119,8 @@ export class CompetitionManager {
     this.voteManager = voteManager;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
+    this.competitionConfigurationService = competitionConfigurationService;
+    this.competitionInitialBalancesService = competitionInitialBalancesService;
   }
 
   /**
@@ -146,6 +160,8 @@ export class CompetitionManager {
     maxParticipants,
     tradingConstraints,
     rewards,
+    competitionConfiguration,
+    initialBalances,
   }: {
     name: string;
     description?: string;
@@ -163,6 +179,11 @@ export class CompetitionManager {
     maxParticipants?: number;
     tradingConstraints?: TradingConstraintsInput;
     rewards?: Record<number, number>;
+    competitionConfiguration?: Omit<
+      CompetitionConfigurationInput,
+      "competitionId"
+    >;
+    initialBalances?: InitialBalanceInput[];
   }) {
     const id = uuidv4();
     const competition = {
@@ -210,6 +231,28 @@ export class CompetitionManager {
     serviceLogger.debug(
       `[CompetitionManager] Created trading constraints for competition ${id}`,
     );
+
+    // Create competition configuration if provided
+    if (competitionConfiguration) {
+      await this.competitionConfigurationService.createConfiguration({
+        ...competitionConfiguration,
+        competitionId: id,
+      });
+      serviceLogger.debug(
+        `[CompetitionManager] Created configuration for competition ${id}`,
+      );
+    }
+
+    // Create initial balances if provided
+    if (initialBalances) {
+      await this.competitionInitialBalancesService.createInitialBalances(
+        id,
+        initialBalances,
+      );
+      serviceLogger.debug(
+        `[CompetitionManager] Created initial balances for competition ${id}`,
+      );
+    }
 
     serviceLogger.debug(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}, type: ${type}}`,
@@ -276,8 +319,11 @@ export class CompetitionManager {
 
     // Process all agent additions and activations
     for (const agentId of agentIds) {
-      // Reset balances
-      await this.balanceManager.resetAgentBalances(agentId);
+      // Reset balances using competition-specific values
+      await this.balanceManager.resetAgentBalancesForCompetition(
+        agentId,
+        competitionId,
+      );
 
       // Ensure agent is globally active (but don't force reactivation)
       const agent = await findAgentById(agentId);
@@ -1305,7 +1351,10 @@ export class CompetitionManager {
       );
 
       // Reset the agent's balances to starting values (consistent with startCompetition order)
-      await this.balanceManager.resetAgentBalances(agentId);
+      await this.balanceManager.resetAgentBalancesForCompetition(
+        agentId,
+        activeCompetition.id,
+      );
 
       // Add the agent to the competition
       await addAgentToCompetition(activeCompetition.id, agentId);

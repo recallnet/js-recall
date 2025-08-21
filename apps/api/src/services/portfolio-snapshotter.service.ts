@@ -8,7 +8,11 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { BalanceManager, PriceTracker } from "@/services/index.js";
+import {
+  BalanceManager,
+  ConfigurationService,
+  PriceTracker,
+} from "@/services/index.js";
 import { SpecificChain } from "@/types/index.js";
 
 /**
@@ -18,10 +22,16 @@ import { SpecificChain } from "@/types/index.js";
 export class PortfolioSnapshotter {
   private balanceManager: BalanceManager;
   private priceTracker: PriceTracker;
+  private configurationService: ConfigurationService;
 
-  constructor(balanceManager: BalanceManager, priceTracker: PriceTracker) {
+  constructor(
+    balanceManager: BalanceManager,
+    priceTracker: PriceTracker,
+    configurationService: ConfigurationService,
+  ) {
     this.balanceManager = balanceManager;
     this.priceTracker = priceTracker;
+    this.configurationService = configurationService;
   }
 
   /**

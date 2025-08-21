@@ -366,6 +366,8 @@ export interface Competition {
     reward: number;
     agentId?: string;
   }[];
+  competitionConfiguration?: CompetitionConfiguration;
+  initialBalances?: InitialBalance[];
 }
 
 // Leaderboard entry (per-competition leaderboard)
@@ -505,6 +507,21 @@ export interface TradingConstraints {
   minimumLiquidityUsd?: number;
   minimumFdvUsd?: number;
   minTradesPerDay?: number | null;
+}
+
+// Competition configuration interface
+export interface CompetitionConfiguration {
+  portfolioPriceFreshnessMs?: number;
+  portfolioSnapshotCron?: string;
+  maxTradePercentage?: number;
+  priceCacheDurationMs?: number;
+}
+
+// Initial balance configuration
+export interface InitialBalance {
+  specificChain: SpecificChain;
+  tokenSymbol: string;
+  amount: number;
 }
 
 // Competition agents response

@@ -1,4 +1,3 @@
-import { config } from "@/config/index.js";
 import {
   count,
   getAgentBalances,
@@ -8,7 +7,8 @@ import {
   resetAgentBalances,
 } from "@/database/repositories/balance-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { SpecificChain } from "@/types/index.js";
+
+import { CompetitionInitialBalancesService } from "./competition-initial-balances.service.js";
 
 /**
  * Balance Manager Service
@@ -17,8 +17,12 @@ import { SpecificChain } from "@/types/index.js";
 export class BalanceManager {
   // Cache of agentId -> Map of tokenAddress -> balance
   private balanceCache: Map<string, Map<string, number>>;
+  private competitionInitialBalancesService: CompetitionInitialBalancesService;
 
-  constructor() {
+  constructor(
+    competitionInitialBalancesService: CompetitionInitialBalancesService,
+  ) {
+    this.competitionInitialBalancesService = competitionInitialBalancesService;
     this.balanceCache = new Map();
   }
 
@@ -37,93 +41,6 @@ export class BalanceManager {
       this.balanceCache.set(agentId, new Map<string, number>());
     }
     this.balanceCache.get(agentId)?.set(tokenAddress, absoluteBalance);
-  }
-
-  /**
-   * Initialize an agent's balances with default values
-   * @param agentId The agent ID
-   */
-  async initializeAgentBalances(agentId: string): Promise<void> {
-    serviceLogger.debug(
-      `[BalanceManager] Initializing balances for agent ${agentId}`,
-    );
-
-    try {
-      const initialBalances = new Map<
-        string,
-        { amount: number; symbol: string }
-      >();
-
-      // Add specific chain token balances (more granular)
-      this.addSpecificChainTokensToBalances(initialBalances);
-
-      // Save to database
-      await initializeAgentBalances(agentId, initialBalances);
-
-      // Update cache
-      const balanceMap = new Map<string, number>();
-      initialBalances.forEach(({ amount }, tokenAddress) => {
-        balanceMap.set(tokenAddress, amount);
-      });
-      this.balanceCache.set(agentId, balanceMap);
-    } catch (error) {
-      serviceLogger.error(
-        `[BalanceManager] Error initializing balances for agent ${agentId}:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Helper method to add token balances for specific chains
-   * @param balances The balances map to update
-   */
-  private addSpecificChainTokensToBalances(
-    balances: Map<string, { amount: number; symbol: string }>,
-  ): void {
-    const specificChainBalances = config.specificChainBalances;
-    const specificChainTokens = config.specificChainTokens;
-
-    if (!specificChainBalances || !specificChainTokens) {
-      console.warn(`[BalanceManager] No specific chain configuration found`);
-      return;
-    }
-
-    // Process each specific chain that we have balances for
-    Object.entries(specificChainBalances).forEach(([chain, tokenBalances]) => {
-      const specificChain = chain as SpecificChain;
-
-      // Only process chains that we have token configurations for
-      if (
-        specificChain === "eth" ||
-        specificChain === "polygon" ||
-        specificChain === "base" ||
-        specificChain === "svm" ||
-        specificChain === "optimism" ||
-        specificChain === "arbitrum"
-      ) {
-        // Type-safe access to the chain tokens
-        const chainTokens = specificChainTokens[specificChain];
-
-        // Add each configured token for this specific chain
-        Object.entries(tokenBalances).forEach(([symbol, amount]) => {
-          // Type assertion for the symbol access
-          const tokenAddress = chainTokens[symbol as keyof typeof chainTokens];
-
-          if (tokenAddress && amount > 0) {
-            serviceLogger.debug(
-              `[BalanceManager] Setting initial balance for specific chain ${chain} ${symbol}: ${amount}`,
-            );
-            balances.set(tokenAddress, { amount, symbol });
-          }
-        });
-      } else {
-        console.warn(
-          `[BalanceManager] No token configuration found for specific chain: ${chain}`,
-        );
-      }
-    });
   }
 
   /**
@@ -243,22 +160,62 @@ export class BalanceManager {
   }
 
   /**
-   * Reset an agent's balances to initial values
+   * Initialize an agent's balances for a specific competition
    * @param agentId The agent ID
+   * @param competitionId The competition ID
    */
-  async resetAgentBalances(agentId: string): Promise<void> {
+  async initializeAgentBalancesForCompetition(
+    agentId: string,
+    competitionId: string,
+  ): Promise<void> {
+    serviceLogger.debug(
+      `[BalanceManager] Initializing balances for agent ${agentId} in competition ${competitionId}`,
+    );
+
+    try {
+      // Get competition-specific initial balances
+      const initialBalances =
+        await this.competitionInitialBalancesService.getInitialBalancesMap(
+          competitionId,
+        );
+
+      // Save to database
+      await initializeAgentBalances(agentId, initialBalances);
+
+      // Update cache
+      const balanceMap = new Map<string, number>();
+      initialBalances.forEach(({ amount }, tokenAddress) => {
+        balanceMap.set(tokenAddress, amount);
+      });
+      this.balanceCache.set(agentId, balanceMap);
+    } catch (error) {
+      serviceLogger.error(
+        `[BalanceManager] Error initializing balances for agent ${agentId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Reset agent balances for a specific competition
+   * @param agentId The agent ID
+   * @param competitionId The competition ID
+   */
+  async resetAgentBalancesForCompetition(
+    agentId: string,
+    competitionId: string,
+  ): Promise<void> {
     try {
       serviceLogger.debug(
-        `[BalanceManager] Resetting balances for agent ${agentId}`,
+        `[BalanceManager] Resetting balances for agent ${agentId} in competition ${competitionId}`,
       );
 
-      const initialBalances = new Map<
-        string,
-        { amount: number; symbol: string }
-      >();
-
-      // Add specific chain token balances (more granular)
-      this.addSpecificChainTokensToBalances(initialBalances);
+      // Get competition-specific initial balances
+      const initialBalances =
+        await this.competitionInitialBalancesService.getInitialBalancesMap(
+          competitionId,
+        );
 
       // Reset in database
       await resetAgentBalances(agentId, initialBalances);
@@ -271,7 +228,7 @@ export class BalanceManager {
       this.balanceCache.set(agentId, balanceMap);
 
       serviceLogger.debug(
-        `[BalanceManager] Successfully reset balances for agent ${agentId}`,
+        `[BalanceManager] Successfully reset balances for agent ${agentId} in competition ${competitionId}`,
       );
     } catch (error) {
       serviceLogger.error(

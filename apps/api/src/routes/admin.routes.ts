@@ -139,6 +139,40 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               competitionConfiguration:
+   *                 type: object
+   *                 description: Competition-specific configuration settings
+   *                 properties:
+   *                   portfolioPriceFreshnessMs:
+   *                     type: number
+   *                     description: Maximum age of price data in milliseconds
+   *                     example: 600000
+   *                   portfolioSnapshotCron:
+   *                     type: string
+   *                     description: Cron expression for portfolio snapshots
+   *                   maxTradePercentage:
+   *                     type: number
+   *                     description: Maximum trade size as percentage of portfolio
+   *                     example: 25
+   *                   priceCacheDurationMs:
+   *                     type: number
+   *                     description: Duration to cache price data in milliseconds
+   *                     example: 300000
+   *               initialBalances:
+   *                 type: array
+   *                 description: Initial token balances for agents
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       description: Blockchain identifier
+   *                     tokenSymbol:
+   *                       type: string
+   *                       description: Token symbol
+   *                     amount:
+   *                       type: number
+   *                       description: Initial balance amount
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -361,6 +395,40 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               competitionConfiguration:
+   *                 type: object
+   *                 description: Competition-specific configuration settings
+   *                 properties:
+   *                   portfolioPriceFreshnessMs:
+   *                     type: number
+   *                     description: Maximum age of price data in milliseconds
+   *                     example: 600000
+   *                   portfolioSnapshotCron:
+   *                     type: string
+   *                     description: Cron expression for portfolio snapshots
+   *                   maxTradePercentage:
+   *                     type: number
+   *                     description: Maximum trade size as percentage of portfolio
+   *                     example: 25
+   *                   priceCacheDurationMs:
+   *                     type: number
+   *                     description: Duration to cache price data in milliseconds
+   *                     example: 300000
+   *               initialBalances:
+   *                 type: array
+   *                 description: Initial token balances for agents
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       description: Blockchain identifier
+   *                     tokenSymbol:
+   *                       type: string
+   *                       description: Token symbol
+   *                     amount:
+   *                       type: number
+   *                       description: Initial balance amount
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -639,6 +707,40 @@ export function configureAdminRoutes(
    *                 additionalProperties:
    *                   type: number
    *                   description: Reward amount for the given rank
+   *               competitionConfiguration:
+   *                 type: object
+   *                 description: Competition-specific configuration settings
+   *                 properties:
+   *                   portfolioPriceFreshnessMs:
+   *                     type: number
+   *                     description: Maximum age of price data in milliseconds
+   *                     example: 600000
+   *                   portfolioSnapshotCron:
+   *                     type: string
+   *                     description: Cron expression for portfolio snapshots
+   *                   maxTradePercentage:
+   *                     type: number
+   *                     description: Maximum trade size as percentage of portfolio
+   *                     example: 25
+   *                   priceCacheDurationMs:
+   *                     type: number
+   *                     description: Duration to cache price data in milliseconds
+   *                     example: 300000
+   *               initialBalances:
+   *                 type: array
+   *                 description: Initial token balances for agents
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       description: Blockchain identifier
+   *                     tokenSymbol:
+   *                       type: string
+   *                       description: Token symbol
+   *                     amount:
+   *                       type: number
+   *                       description: Initial balance amount
    *     responses:
    *       200:
    *         description: Competition updated successfully
