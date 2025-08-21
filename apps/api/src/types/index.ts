@@ -109,10 +109,6 @@ export interface PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null>;
-  supports(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<boolean>;
 }
 
 // DexScreener API interfaces
@@ -454,6 +450,9 @@ export interface EnhancedCompetition {
   status: CompetitionStatus;
   createdAt: Date | null;
   updatedAt: Date | null;
+  // Competition participant properties
+  registeredParticipants: number;
+  maxParticipants: number | null;
   // Agent-specific metrics
   portfolioValue: number;
   pnl: number;
@@ -602,6 +601,7 @@ export const TradingConstraintsSchema = z
     minimum24hVolumeUsd: z.number().min(0),
     minimumLiquidityUsd: z.number().min(0),
     minimumFdvUsd: z.number().min(0),
+    minTradesPerDay: z.number().min(0).nullable().optional(),
   })
   .optional();
 
@@ -1170,6 +1170,7 @@ export const COMPETITION_JOIN_ERROR_TYPES = {
   AGENT_ALREADY_REGISTERED: "AGENT_ALREADY_REGISTERED",
   JOIN_NOT_YET_OPEN: "JOIN_NOT_YET_OPEN",
   JOIN_CLOSED: "JOIN_CLOSED",
+  PARTICIPANT_LIMIT_EXCEEDED: "PARTICIPANT_LIMIT_EXCEEDED",
 } as const;
 
 export type CompetitionJoinErrorType =

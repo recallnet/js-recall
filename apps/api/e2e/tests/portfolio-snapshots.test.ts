@@ -270,21 +270,6 @@ describe("Portfolio Snapshots", () => {
     expect(actualDiff).toBeLessThan(tolerance);
   });
 
-  // Test that the configuration is loaded correctly
-  test("loads price freshness configuration correctly", async () => {
-    // Verify that config has the portfolio section and the priceFreshnessMs property
-    expect(config.portfolio).toBeDefined();
-    expect(config.portfolio.priceFreshnessMs).toBeDefined();
-
-    // Verify the value is what we expect from .env.test (10000ms)
-    // Note: This only works if .env.test is being loaded as expected
-    expect(config.portfolio.priceFreshnessMs).toBe(10000);
-
-    console.log(
-      `[Test] Portfolio config loaded correctly: ${JSON.stringify(config.portfolio)}`,
-    );
-  });
-
   // Test that price freshness threshold works correctly
   test("reuses prices within freshness threshold", async () => {
     // Setup admin client
@@ -312,14 +297,14 @@ describe("Portfolio Snapshots", () => {
     await wait(500);
 
     // Get the freshness threshold from config
-    const freshnessThreshold = config.portfolio.priceFreshnessMs;
+    const freshnessThreshold = config.priceTracker.priceTTLMs;
 
     console.log(
       `[Test] Using price freshness threshold of ${freshnessThreshold}ms`,
     );
     console.log(
       `[Test] Price freshness setting from config: `,
-      config.portfolio.priceFreshnessMs,
+      config.priceTracker.priceTTLMs,
     );
 
     // Ensure we have a token priced in the database first by querying the price directly

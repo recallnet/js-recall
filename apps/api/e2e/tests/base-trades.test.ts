@@ -10,7 +10,7 @@ import {
 import {
   createTestClient,
   getAdminApiKey,
-  looseTradingConstraints,
+  noTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
@@ -73,8 +73,8 @@ describe("Base Chain Trading", () => {
       undefined, // sandboxMode
       undefined, // externalUrl
       undefined, // imageUrl
-      // loosen the trading constraints since these tokens aren't as common
-      looseTradingConstraints,
+      // disable trading constraints for testing base chain functionality
+      noTradingConstraints,
     );
 
     // Wait for balances to be properly initialized
@@ -469,8 +469,8 @@ describe("Base Chain Trading", () => {
       undefined, // sandboxMode
       undefined, // externalUrl
       undefined, // imageUrl
-      // loosen the trading constraints since these tokens aren't as common
-      looseTradingConstraints,
+      // disable trading constraints for testing base chain functionality
+      noTradingConstraints,
     );
 
     // Wait for balances to be properly initialized

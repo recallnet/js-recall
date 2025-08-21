@@ -36,6 +36,11 @@ export const CompetitionStateSummary: React.FC<
   const isRegistered = competition.agents && competition.agents.length > 0;
 
   const getRegistrationState = () => {
+    // Check if registration is full
+    const isRegistrationFull =
+      competition.maxParticipants !== null &&
+      competition.registeredParticipants >= competition.maxParticipants;
+
     // 1. You are registered (grey)
     if (isRegistered) {
       return {
@@ -46,7 +51,17 @@ export const CompetitionStateSummary: React.FC<
       };
     }
 
-    // 2. Registration opens in [relative time] (blue)
+    // 2. Registration is full (red)
+    if (isRegistrationFull) {
+      return {
+        text: "Registration is full",
+        color: "text-red-500",
+        date: null,
+        showCountdown: false,
+      };
+    }
+
+    // 3. Registration opens in [relative time] (blue)
     if (joinStartDate && isFuture(joinStartDate)) {
       const timeDiff = joinStartDate.getTime() - now.getTime();
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
@@ -59,7 +74,7 @@ export const CompetitionStateSummary: React.FC<
       };
     }
 
-    // 3. Registration closes in [hh:mm:ss] (green)
+    // 4. Registration closes in [hh:mm:ss] (green)
     if (joinEndDate && isFuture(joinEndDate)) {
       const timeDiff = joinEndDate.getTime() - now.getTime();
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
@@ -72,7 +87,7 @@ export const CompetitionStateSummary: React.FC<
       };
     }
 
-    // 4. Registration is closed (grey)
+    // 5. Registration is closed (grey)
     return {
       text: "Registration is closed",
       color: "text-gray-500",
@@ -127,7 +142,22 @@ export const CompetitionStateSummary: React.FC<
     };
   };
 
+  const getRegistrationLimit = () => {
+    if (
+      competition.maxParticipants === null ||
+      competition.registeredParticipants >= competition.maxParticipants
+    ) {
+      return null;
+    }
+    return (
+      <span className="text-gray-400">
+        Limit: {competition.maxParticipants} participants
+      </span>
+    );
+  };
+
   const registrationState = getRegistrationState();
+  const registrationLimit = getRegistrationLimit();
   const votingState = getVotingState();
 
   return (
@@ -152,6 +182,14 @@ export const CompetitionStateSummary: React.FC<
             ))}
         </p>
       </div>
+
+      {/* Registration Limit */}
+      {registrationLimit && (
+        <div className="flex items-center gap-2">
+          <Circle className={cn("h-2 w-2 fill-current", "text-gray-500")} />
+          <p className="text-sm">{registrationLimit}</p>
+        </div>
+      )}
 
       {/* Voting State */}
       {

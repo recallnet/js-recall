@@ -1159,6 +1159,32 @@ Get the rules, rate limits, and other configuration details for the competition
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/competitions/{competitionId}/rules
+
+#### GET
+
+##### Summary:
+
+Get rules for a specific competition
+
+##### Description:
+
+Get the competition rules including trading constraints, rate limits, and formulas for a specific competition
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema |
+| ------------- | ---------- | -------------- | -------- | ------ |
+| competitionId | path       | Competition ID | Yes      | string |
+
+##### Responses
+
+| Code | Description                              |
+| ---- | ---------------------------------------- |
+| 200  | Competition rules retrieved successfully |
+| 404  | Competition not found                    |
+| 500  | Server error                             |
+
 ### /api/competitions/upcoming
 
 #### GET

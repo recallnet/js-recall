@@ -343,6 +343,15 @@ export function configureAgentsRoutes(
    *                       description:
    *                         type: string
    *                         example: "A competition focused on yield farming strategies."
+   *                       registeredParticipants:
+   *                         type: integer
+   *                         description: "Number of participants registered for this competition"
+   *                         example: 10
+   *                       maxParticipants:
+   *                         type: integer
+   *                         nullable: true
+   *                         description: Maximum number of participants allowed to register for this competition. null means no limit.
+   *                         example: 50
    *                       portfolioValue:
    *                         type: number
    *                         description: "Agent's current portfolio value in this competition"

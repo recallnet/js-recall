@@ -157,6 +157,12 @@ export const trades = tradingComps.table(
     index("idx_trades_timestamp").on(table.timestamp),
     index("idx_trades_to_chain").on(table.toChain),
     index("idx_trades_to_specific_chain").on(table.toSpecificChain),
+    // Compound indexes for optimized query patterns
+    index("idx_trades_agent_timestamp").on(table.agentId, table.timestamp),
+    index("idx_trades_competition_timestamp").on(
+      table.competitionId,
+      table.timestamp,
+    ),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],
@@ -167,34 +173,6 @@ export const trades = tradingComps.table(
       foreignColumns: [competitions.id],
       name: "trades_competition_id_fkey",
     }).onDelete("cascade"),
-  ],
-);
-
-/**
- * Table for prices of tokens in a competition.
- */
-export const prices = tradingComps.table(
-  "prices",
-  {
-    id: serial().primaryKey().notNull(),
-    token: varchar({ length: 50 }).notNull(),
-    price: numeric({ mode: "number" }).notNull(),
-    timestamp: timestamp({ withTimezone: true }).defaultNow(),
-    chain: varchar({ length: 10 }),
-    specificChain: varchar("specific_chain", { length: 20 }),
-    symbol: varchar("symbol", { length: 20 }).notNull(),
-  },
-  (table) => [
-    index("idx_prices_chain").on(table.chain),
-    index("idx_prices_specific_chain").on(table.specificChain),
-    index("idx_prices_timestamp").on(table.timestamp),
-    index("idx_prices_token").on(table.token),
-    index("idx_prices_token_chain").on(table.token, table.chain),
-    index("idx_prices_token_specific_chain").on(
-      table.token,
-      table.specificChain,
-    ),
-    index("idx_prices_token_timestamp").on(table.token, table.timestamp),
   ],
 );
 
@@ -267,6 +245,7 @@ export const tradingConstraints = tradingComps.table(
       scale: 2,
       mode: "number",
     }).notNull(),
+    minTradesPerDay: integer("min_trades_per_day"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

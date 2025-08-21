@@ -370,6 +370,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
           `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
           `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
         ];
+
+        // Add minimum trades per day rule if set
+        if (tradingConstraints.minTradesPerDay !== null) {
+          tradingRules.push(
+            `Minimum trades per day requirement: ${tradingConstraints.minTradesPerDay} trades`,
+          );
+        }
         const rateLimits = [
           `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
           "100 requests per minute for trade operations",
@@ -384,9 +391,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
         };
         const slippageFormula =
           "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
-        const portfolioSnapshots = {
-          interval: `${config.portfolio.snapshotIntervalMs / 60000} minutes`,
-        };
 
         // Assemble all rules
         const allRules = {
@@ -394,7 +398,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
           rateLimits,
           availableChains,
           slippageFormula,
-          portfolioSnapshots,
+          tradingConstraints: {
+            minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
+            minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
+            minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
+            minimumFdvUsd: tradingConstraints.minimumFdvUsd,
+            minTradesPerDay: tradingConstraints.minTradesPerDay,
+          },
         };
 
         res.status(200).json({
@@ -534,6 +544,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
               minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
               minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
               minimumFdvUsd: enrichment.minimumFdvUsd,
+              minTradesPerDay: enrichment.minTradesPerDay,
             };
 
             return {
@@ -625,7 +636,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Get stats for this competition
         const stats = {
           totalTrades: trades.length,
-          totalAgents: new Set(trades.map((trade) => trade.agentId)).size,
+          totalAgents: competition.registeredParticipants,
           totalVolume: trades.reduce(
             (acc, trade) => acc + trade.tradeAmountUsd,
             0,
@@ -753,6 +764,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           competitionId,
+          registeredParticipants: competition.registeredParticipants,
+          maxParticipants: competition.maxParticipants,
           agents,
           pagination: buildPaginationResponse(
             total,
@@ -842,6 +855,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             case COMPETITION_JOIN_ERROR_TYPES.AGENT_NOT_ELIGIBLE:
             case COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN:
             case COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED:
+            case COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED:
               next(new ApiError(403, joinError.message));
               break;
             default:
@@ -1041,6 +1055,222 @@ export function makeCompetitionController(services: ServiceRegistry) {
         res.status(200).json(transformedData);
       } catch (error) {
         console.error("OIII", error);
+        next(error);
+      }
+    },
+
+    /**
+     * Get competition rules by competition ID
+     * Public endpoint that returns rules for any competition
+     * @param req AuthenticatedRequest object (authentication optional)
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getCompetitionRules(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID from path parameter
+        const competitionId = req.params.competitionId;
+        if (!competitionId) {
+          throw new ApiError(400, "Competition ID is required");
+        }
+
+        // Get competition details
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Build initial balances description based on config
+        const initialBalanceDescriptions = [];
+
+        // Chain-specific balances
+        for (const chain of Object.keys(config.specificChainBalances)) {
+          const chainBalances =
+            config.specificChainBalances[
+              chain as keyof typeof config.specificChainBalances
+            ];
+          const tokenItems = [];
+
+          for (const token of Object.keys(chainBalances)) {
+            const amount = chainBalances[token];
+            if (amount && amount > 0) {
+              tokenItems.push(`${amount} ${token.toUpperCase()}`);
+            }
+          }
+
+          if (tokenItems.length > 0) {
+            let chainName = chain;
+            // Format chain name for better readability
+            if (chain === "eth") chainName = "Ethereum";
+            else if (chain === "svm") chainName = "Solana";
+            else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
+
+            initialBalanceDescriptions.push(
+              `${chainName}: ${tokenItems.join(", ")}`,
+            );
+          }
+        }
+
+        // Get trading constraints for the competition
+        const tradingConstraints =
+          await services.tradingConstraintsService.getConstraintsWithDefaults(
+            competition.id,
+          );
+
+        // Define base rules (same logic as getRules but for specific competition)
+        const tradingRules = [
+          "Trading is only allowed for tokens with valid price data",
+          `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
+          "Minimum trade amount: 0.000001 tokens",
+          `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
+          "No shorting allowed (trades limited to available balance)",
+          "Slippage is applied to all trades based on trade size",
+          `Cross-chain trading type: ${competition.crossChainTradingType}`,
+          "Transaction fees are not simulated",
+          `Token eligibility requires minimum ${tradingConstraints.minimumPairAgeHours} hours of trading history`,
+          `Token must have minimum 24h volume of $${tradingConstraints.minimum24hVolumeUsd.toLocaleString()} USD`,
+          `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
+          `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
+        ];
+
+        // Add minimum trades per day rule if set
+        if (tradingConstraints.minTradesPerDay !== null) {
+          tradingRules.push(
+            `Minimum trades per day requirement: ${tradingConstraints.minTradesPerDay} trades`,
+          );
+        }
+
+        const rateLimits = [
+          `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
+          "100 requests per minute for trade operations",
+          "300 requests per minute for price queries",
+          "30 requests per minute for balance/portfolio checks",
+          "3,000 requests per minute across all endpoints",
+          "10,000 requests per hour per agent",
+        ];
+
+        const availableChains = {
+          svm: true,
+          evm: config.evmChains,
+        };
+
+        const slippageFormula =
+          "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
+
+        // Assemble all rules
+        const allRules = {
+          tradingRules,
+          rateLimits,
+          availableChains,
+          slippageFormula,
+          tradingConstraints: {
+            minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
+            minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
+            minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
+            minimumFdvUsd: tradingConstraints.minimumFdvUsd,
+            minTradesPerDay: tradingConstraints.minTradesPerDay,
+          },
+        };
+
+        res.status(200).json({
+          success: true,
+          competition,
+          rules: allRules,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get trades for a competition
+     * @param req Request
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getCompetitionTrades(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID from path parameter
+        const competitionId = ensureUuid(req.params.competitionId);
+        const pagingParams = PagingParamsSchema.parse(req.query);
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Get trades
+        const trades = await services.tradeSimulator.getCompetitionTrades(
+          competitionId,
+          pagingParams.limit,
+          pagingParams.offset,
+        );
+
+        res.status(200).json({
+          success: true,
+          trades,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get trades for an agent in a competition
+     * @param req Request
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getAgentTradesInCompetition(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID from path parameter
+        const { competitionId, agentId } = CompetitionAgentParamsSchema.parse(
+          req.params,
+        );
+        const pagingParams = PagingParamsSchema.parse(req.query);
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Check if agent exists
+        const agent = await services.agentManager.getAgent(agentId);
+        if (!agent) {
+          throw new ApiError(404, "Agent not found");
+        }
+
+        // Get trades
+        const trades =
+          await services.tradeSimulator.getAgentTradesInCompetition(
+            competitionId,
+            agentId,
+            pagingParams.limit,
+            pagingParams.offset,
+          );
+
+        res.status(200).json({
+          success: true,
+          trades,
+        });
+      } catch (error) {
         next(error);
       }
     },

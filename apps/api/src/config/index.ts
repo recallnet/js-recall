@@ -280,16 +280,12 @@ export const config = {
     domain:
       process.env.API_DOMAIN || "https://api.competitions.recall.network/",
   },
-  priceCacheDuration: parseInt(process.env.PRICE_CACHE_MS || "30000", 10), // 30 seconds
-  portfolio: {
-    // Default snapshot interval: 5 minutes (600000ms)
-    // The snapshot is taken and configured via cron
-    snapshotIntervalMs: parseInt("600000", 10),
-    // How fresh a price needs to be to reuse directly from DB (default: 10 minutes)
-    priceFreshnessMs: parseInt(
-      process.env.PORTFOLIO_PRICE_FRESHNESS_MS || "600000",
-      10,
-    ),
+
+  priceTracker: {
+    // Maximum number of entries for the token price cache
+    maxCacheSize: parseInt(process.env.PRICE_CACHE_MAX_SIZE || "10000", 10),
+    // TTL for token price cache entries - how fresh a price needs to be to be reused from cache
+    priceTTLMs: parseInt(process.env.PRICE_CACHE_TTL_MS || "60000", 10),
   },
   // Whether to allow generation of mock price history data when real data is not available
   // Defaults to true in development/test, false in production
