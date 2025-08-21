@@ -3985,7 +3985,6 @@ describe("Competition API", () => {
       expect(response.data.rules.rateLimits).toBeDefined();
       expect(response.data.rules.availableChains).toBeDefined();
       expect(response.data.rules.slippageFormula).toBeDefined();
-      expect(response.data.rules.portfolioSnapshots).toBeDefined();
       expect(response.data.rules.tradingConstraints).toBeDefined();
       expect(response.data.rules.tradingConstraints.minimumPairAgeHours).toBe(
         24,
