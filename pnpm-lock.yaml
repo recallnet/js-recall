@@ -44,9 +44,6 @@ importers:
       '@privy-io/server-auth':
         specifier: ^1.31.0
         version: 1.31.0(bufferutil@4.0.9)(encoding@0.1.13)(ethers@6.14.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23))
-      '@recallnet/api-sdk':
-        specifier: workspace:*
-        version: link:../../packages/api-sdk
       '@types/express':
         specifier: ^4.17.17
         version: 4.17.22
@@ -89,6 +86,9 @@ importers:
       keccak256:
         specifier: ^1.0.6
         version: 1.0.6
+      lru-cache:
+        specifier: ^11.1.0
+        version: 11.1.0
       merkletreejs:
         specifier: ^0.5.2
         version: 0.5.2

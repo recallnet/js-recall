@@ -24,7 +24,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     responses:
    *       200:
    *         description: User profile retrieved successfully
@@ -93,7 +93,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     responses:
    *       200:
    *         description: Wallet linked successfully
@@ -164,7 +164,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     requestBody:
    *       required: true
    *       content:
@@ -260,7 +260,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     requestBody:
    *       required: true
    *       content:
@@ -368,7 +368,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     responses:
    *       200:
    *         description: Agents retrieved successfully
@@ -508,7 +508,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     parameters:
    *       - in: path
    *         name: agentId
@@ -660,7 +660,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     parameters:
    *       - in: path
    *         name: agentId
@@ -769,7 +769,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     parameters:
    *       - in: path
    *         name: agentId
@@ -882,7 +882,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     parameters:
    *       - in: query
    *         name: limit
