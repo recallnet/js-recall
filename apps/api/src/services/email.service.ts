@@ -37,11 +37,11 @@ export class EmailService {
    * Subscribe a user to the mailing list
    * First tries to create, if user exists, then updates
    * @param email User's email address
-   * @param options Additional user data
+   * @param subscribe Whether to subscribe the user (true) or unsubscribe (false)
    */
   async subscribeOrUnsubscribeUser(
     email: string,
-    subscribed: boolean,
+    subscribe: boolean,
   ): Promise<{ success: boolean; error?: string } | null> {
     if (!this.isConfigured()) {
       serviceLogger.info(
@@ -54,32 +54,13 @@ export class EmailService {
       // Prepare the payload for Loops API
       const payload: LoopsPayload = {
         email,
-        subscribed,
+        subscribed: subscribe,
         mailingLists: {
           [this.mailingListId]: true,
         },
       };
 
-      // Try to create the contact first
-      const createResult = await this.createContact(payload);
-      if (createResult.success) {
-        serviceLogger.info(
-          `[EmailService] Successfully created contact for ${email}`,
-        );
-        return createResult;
-      }
-
-      // If creation failed, try to update (user might already exist)
-      if (
-        createResult.error?.includes("already exists") ||
-        createResult.error?.includes("duplicate")
-      ) {
-        serviceLogger.debug(`[EmailService] Contact exists, updating ${email}`);
-        return await this.updateContact(payload);
-      }
-
-      // If it's another error, return it
-      return createResult;
+      return await this.updateContact(payload);
     } catch (error) {
       serviceLogger.error(
         `[EmailService] Error subscribing user ${email}:`,
@@ -93,43 +74,8 @@ export class EmailService {
   }
 
   /**
-   * Create a new contact in Loops
-   */
-  private async createContact(
-    payload: LoopsPayload,
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      const response = await fetch(`${this.baseUrl}/contacts/create`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        return { success: true };
-      } else {
-        serviceLogger.error("[EmailService] Create contact failed:", data);
-        return {
-          success: false,
-          error: data.message || `HTTP ${response.status}`,
-        };
-      }
-    } catch (error) {
-      serviceLogger.error("[EmailService] Error creating contact:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Network error",
-      };
-    }
-  }
-
-  /**
-   * Update an existing contact in Loops
+   * Update an existing contact in Loops. If the contact doesn't exist, Loops will automatically
+   * create it.
    */
   private async updateContact(
     payload: LoopsPayload,
