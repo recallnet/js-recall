@@ -19,7 +19,6 @@ describe("Logging and Metrics API", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("metrics endpoint returns Prometheus metrics", async () => {
@@ -49,8 +48,6 @@ describe("Logging and Metrics API", () => {
       expect(metricsText).toContain("nodejs_version_info");
       expect(metricsText).toContain("process_cpu_user_seconds_total");
     }
-
-    console.log("Metrics endpoint working correctly");
   });
 
   test("HTTP request metrics track different endpoints and methods", async () => {
@@ -77,8 +74,6 @@ describe("Logging and Metrics API", () => {
 
     // Check that we have successful status codes
     expect(metricsText).toContain('status_code="200"');
-
-    console.log("HTTP request metrics tracking different endpoints correctly");
   });
 
   test("database operation metrics track all repository operations with detailed labels", async () => {
@@ -123,10 +118,6 @@ describe("Logging and Metrics API", () => {
 
     // Verify status labels
     expect(metricsText).toContain('status="success"');
-
-    console.log(
-      "Database operation metrics tracking all operations with detailed labels",
-    );
   });
 
   test("database metrics track both successful and error operations", async () => {
@@ -156,9 +147,8 @@ describe("Logging and Metrics API", () => {
 
     // Verify we have database operation metrics with timing data
     expect(metricsText).toContain("repository_queries_total");
+    // Verify we have query duration histogram entries
     expect(metricsText).toContain("repository_query_duration_ms");
-
-    console.log("Database metrics track both successful and error operations");
   });
 
   test("database timing metrics provide performance insights", async () => {
@@ -202,10 +192,6 @@ describe("Logging and Metrics API", () => {
     // Verify operation types are differentiated
     expect(metricsText).toContain('operation="SELECT"');
     expect(metricsText).toContain('operation="INSERT"');
-
-    console.log(
-      "Database timing metrics provide detailed performance insights",
-    );
   });
 
   test("logging works during full agent trading workflow", async () => {
@@ -254,7 +240,6 @@ describe("Logging and Metrics API", () => {
     expect(startCompResult.success).toBe(true);
 
     // Step 3: Execute multiple trades to generate logging activity
-    console.log("Executing trades to generate logging activity...");
 
     // Agent 1: Execute a few trades
     const trade1Response = await agentClient1.executeTrade({
@@ -315,11 +300,6 @@ describe("Logging and Metrics API", () => {
     // Step 6: End the competition
     const endCompResult = await adminClient.endCompetition(competitionId);
     expect(endCompResult.success).toBe(true);
-
-    console.log("Full trading workflow completed with logging active");
-    console.log(
-      `Executed 3 trades across 2 agents in competition ${competitionId}`,
-    );
   });
 
   test("metrics endpoint handles concurrent requests properly", async () => {
@@ -351,8 +331,6 @@ describe("Logging and Metrics API", () => {
 
     // Verify we have accumulated requests from concurrent operations
     expect(metricsText).toContain("/health");
-
-    console.log("Metrics endpoint handles concurrent requests correctly");
   });
 
   test("HTTP request logging includes trace ID correlation", async () => {
@@ -416,8 +394,6 @@ describe("Logging and Metrics API", () => {
     expect(metricsText).toContain("/api/agent/profile");
     expect(metricsText).toContain("/api/agent/balances");
     expect(metricsText).toContain("/api/agent/reset-api-key");
-
-    console.log("Metrics persist through API key reset workflow");
   });
 
   test("error responses are properly tracked in metrics", async () => {
@@ -440,7 +416,6 @@ describe("Logging and Metrics API", () => {
       await client.getAgent("invalid-uuid");
     } catch {
       // Expected to fail
-      console.log("Invalid agent ID request failed as expected");
     }
 
     // Check that error responses are tracked in metrics
@@ -452,8 +427,6 @@ describe("Logging and Metrics API", () => {
     // Should have both success and error status codes
     expect(metricsText).toContain('status_code="200"'); // Successful metrics call
     expect(metricsText).toContain('status_code="401"'); // Authentication failure
-
-    console.log("Error responses are properly tracked in metrics");
   });
 
   test("database operations are properly classified and never show unknown patterns", async () => {
@@ -488,7 +461,6 @@ describe("Logging and Metrics API", () => {
     expect(startCompResult.success).toBe(true);
 
     // Execute operations that trigger different types of database operations
-    console.log("Executing operations to test database classification...");
 
     // SELECT operations (should be classified as "SELECT")
     await agentClient.getAgentProfile(); // findById
@@ -545,7 +517,6 @@ describe("Logging and Metrics API", () => {
     for (const operationType of expectedOperationTypes) {
       if (metricsText.includes(`operation="${operationType}"`)) {
         foundOperationTypes++;
-        console.log(`✓ Found ${operationType} operations in metrics`);
       }
     }
 
@@ -555,17 +526,11 @@ describe("Logging and Metrics API", () => {
     // CRITICAL: Ensure NO repository operations are classified as "QUERY" (the fallback)
     // This would indicate that some repository methods are not properly classified
     if (metricsText.includes('operation="QUERY"')) {
-      console.error(
-        "❌ Found QUERY operations - some repository methods are not properly classified!",
-      );
-
       // Extract and log the specific metrics that are using QUERY classification
-      const queryMetrics = metricsText
-        .split("\n")
-        .filter((line) => line.includes('operation="QUERY"'))
-        .slice(0, 5); // Show first 5 examples
-
-      console.error("Examples of QUERY operations:", queryMetrics);
+      // const queryMetrics = metricsText
+      //   .split("\n")
+      //   .filter((line) => line.includes('operation="QUERY"'))
+      //   .slice(0, 5); // Show first 5 examples
 
       expect(false).toBe(true); // Fail the test
     }
@@ -573,17 +538,11 @@ describe("Logging and Metrics API", () => {
     // CRITICAL: Ensure NO database operations show up as "UNKNOWN" from database logger
     // This would indicate that SQL query parsing is failing
     if (metricsText.includes('operation="UNKNOWN"')) {
-      console.error(
-        "❌ Found UNKNOWN operations - SQL query parsing is failing!",
-      );
-
       // Extract and log the specific metrics that are using UNKNOWN classification
-      const unknownMetrics = metricsText
-        .split("\n")
-        .filter((line) => line.includes('operation="UNKNOWN"'))
-        .slice(0, 5); // Show first 5 examples
-
-      console.error("Examples of UNKNOWN operations:", unknownMetrics);
+      // const unknownMetrics = metricsText
+      //   .split("\n")
+      //   .filter((line) => line.includes('operation="UNKNOWN"'))
+      //   .slice(0, 5); // Show first 5 examples
 
       expect(false).toBe(true); // Fail the test
     }
@@ -613,10 +572,6 @@ describe("Logging and Metrics API", () => {
       });
 
       if (trulyProblematic.length > 0) {
-        console.error(
-          `❌ Found problematic database operation pattern: ${pattern}`,
-        );
-        console.error("Examples:", trulyProblematic.slice(0, 3));
         expect(false).toBe(true); // Fail the test
       }
     }
@@ -690,13 +645,9 @@ describe("Logging and Metrics API", () => {
         const methodLine = lines.find((line) => line.includes(pattern));
 
         if (methodLine && !methodLine.includes(`operation="${expectedOp}"`)) {
-          console.error(`❌ Method ${pattern} not classified as ${expectedOp}`);
-          console.error(`Found line: ${methodLine}`);
           misclassifiedMethods++;
         } else if (methodLine) {
-          console.log(
-            `✓ Method ${pattern} correctly classified as ${expectedOp}`,
-          );
+          // Method correctly classified
         }
       }
     }
@@ -713,21 +664,13 @@ describe("Logging and Metrics API", () => {
       );
 
     if (queryRepositoryMethods.length > 0) {
-      console.error(
-        "❌ Found repository methods classified as QUERY (fallback):",
-      );
-      queryRepositoryMethods.slice(0, 5).forEach((line) => {
-        console.error(`  ${line}`);
-      });
+      expect(false).toBe(true); // Fail the test
       misclassifiedMethods += queryRepositoryMethods.length;
     }
 
     // Only fail the test if we have truly problematic misclassifications
     // Allow some tolerance for methods that might not be in our specific test patterns
     if (misclassifiedMethods > 0) {
-      console.error(
-        `❌ Found ${misclassifiedMethods} misclassified repository methods`,
-      );
       expect(false).toBe(true); // Fail the test
     }
   });

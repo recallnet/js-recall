@@ -25,7 +25,6 @@ describe("Leaderboard Access Control", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   /**
@@ -51,7 +50,6 @@ describe("Leaderboard Access Control", () => {
       (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
     expect(adminResponse.success).toBe(true);
     expect(adminResponse.leaderboard).toBeDefined();
-    console.log("Admin successfully accessed leaderboard when toggle is true");
 
     // Agent should not be able to access leaderboard
     try {
@@ -60,17 +58,9 @@ describe("Leaderboard Access Control", () => {
         | LeaderboardResponse;
       // If we get here with a success response, the access control is not working as expected
       if (result.success === true) {
-        console.log(
-          "ERROR: Participant was able to access leaderboard:",
-          result,
-        );
         expect(result.success).toBe(false); // Should have failed with access denied
       } else {
         // If we get a success:false response, that's also good - the API blocked access
-        console.log(
-          "Correctly blocked participant from accessing leaderboard with error:",
-          (result as ErrorResponse).error,
-        );
         expect(result.success).toBe(false);
       }
     } catch (error) {
@@ -82,7 +72,6 @@ describe("Leaderboard Access Control", () => {
           "restricted to administrators",
         );
       }
-      console.log("Correctly blocked participant from accessing leaderboard");
     }
   });
 });
