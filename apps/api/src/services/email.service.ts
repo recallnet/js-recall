@@ -1,10 +1,32 @@
 import { config } from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
 
+/**
+ * Metadata for where the user came from (stored in the Loops mailing list)
+ */
+const LOOPS_SOURCE = "comps_app";
+
+/**
+ * Response from the Loops API
+ */
+interface LoopsResponse {
+  success: boolean;
+  id?: string;
+  message?: string;
+}
+
+/**
+ * Loops API payload for updating a contact
+ * Note: the `email` field is the only required field in the payload.
+ */
 interface LoopsPayload {
   email: string;
-  subscribed: boolean;
-  mailingLists: {
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  source?: string;
+  subscribed?: boolean;
+  mailingLists?: {
     [key: string]: boolean;
   };
 }
@@ -34,27 +56,34 @@ export class EmailService {
   }
 
   /**
-   * Subscribe a user to the mailing list
-   * First tries to create, if user exists, then updates
+   * Subscribe a user to the mailing list. First tries to create, unless user exists, then updates
    * @param email User's email address
-   * @param subscribe Whether to subscribe the user (true) or unsubscribe (false)
+   * @param options Optional user metadata to update (`userId` or `name`), often used for new users
    */
-  async subscribeOrUnsubscribeUser(
+  async subscribeUser(
     email: string,
-    subscribe: boolean,
+    options?: {
+      userId?: string;
+      name?: string;
+    },
   ): Promise<{ success: boolean; error?: string } | null> {
     if (!this.isConfigured()) {
-      serviceLogger.info(
+      serviceLogger.debug(
         "[EmailService] Loops configuration missing - API key or mailing list ID not provided",
       );
       return null;
     }
+    serviceLogger.debug(
+      `[EmailService] Subscribing user ${email} to mailing list ${this.mailingListId}`,
+    );
 
     try {
-      // Prepare the payload for Loops API
       const payload: LoopsPayload = {
+        userId: options?.userId,
         email,
-        subscribed: subscribe,
+        firstName: options?.name,
+        source: LOOPS_SOURCE,
+        subscribed: true,
         mailingLists: {
           [this.mailingListId]: true,
         },
@@ -74,8 +103,52 @@ export class EmailService {
   }
 
   /**
+   * Unsubscribe a user from the mailing list
+   * @param email User's email address
+   * @param options Optional user metadata to update (`userId` or `name`)
+   */
+  async unsubscribeUser(
+    email: string,
+  ): Promise<{ success: boolean; error?: string } | null> {
+    if (!this.isConfigured()) {
+      serviceLogger.debug(
+        "[EmailService] Loops configuration missing - API key or mailing list ID not provided",
+      );
+      return null;
+    }
+    serviceLogger.debug(
+      `[EmailService] Unsubscribing user from mailing list: ${email}`,
+    );
+
+    try {
+      // Prepare the payload for Loops API
+      const payload: LoopsPayload = {
+        email,
+        source: LOOPS_SOURCE,
+        subscribed: false,
+        mailingLists: {
+          [this.mailingListId]: false,
+        },
+      };
+
+      return await this.updateContact(payload);
+    } catch (error) {
+      serviceLogger.error(
+        `[EmailService] Error subscribing user ${email}:`,
+        error,
+      );
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
    * Update an existing contact in Loops. If the contact doesn't exist, Loops will automatically
-   * create it.
+   * create a new contact.
+   * @param payload The payload to update the contact with
+   * @returns The response from the Loops API
    */
   private async updateContact(
     payload: LoopsPayload,
@@ -89,18 +162,13 @@ export class EmailService {
         },
         body: JSON.stringify(payload),
       });
+      const data: LoopsResponse = await response.json();
 
-      const data = await response.json();
-
-      if (response.ok) {
-        return { success: true };
-      } else {
+      if (!data.success) {
         serviceLogger.error("[EmailService] Update contact failed:", data);
-        return {
-          success: false,
-          error: data.message || `HTTP ${response.status}`,
-        };
+        throw new Error(data.message || `Loops API error: ${response.status}`);
       }
+      return { success: true };
     } catch (error) {
       serviceLogger.error("[EmailService] Error updating contact:", error);
       return {

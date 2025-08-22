@@ -5,8 +5,6 @@ import type {
 } from "@privy-io/server-auth";
 import { IncomingHttpHeaders } from "http";
 
-import { authLogger } from "@/lib/logger.js";
-
 /**
  * Extract Privy token from request headers cookies.
  *
@@ -149,9 +147,6 @@ export function extractPrivyUserInfo(privyUser: PrivyUser): PrivyUserInfo {
   }
   const customWallets = getCustomLinkedWallets(privyUser);
   const privyId = privyUser.id;
-  authLogger.debug(
-    `User ${privyId} has embedded wallet address: ${embeddedWallet.address}; custom wallet address: ${customWallets?.map((wallet) => wallet.address).join(", ")}`,
-  );
 
   // Check if Google or GitHub are provided, and if so, override the user's email-derived name
   const name =

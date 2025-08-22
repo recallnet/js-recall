@@ -81,6 +81,8 @@ export class UserManager {
 
       // Convert to lowercase for consistency
       const normalizedWalletAddress = walletAddress?.toLowerCase();
+      const normalizedEmbeddedWalletAddress =
+        embeddedWalletAddress?.toLowerCase();
 
       // Check if user already exists with this wallet address
       if (normalizedWalletAddress) {
@@ -100,17 +102,12 @@ export class UserManager {
         }
       }
 
-      // Subscribe to email list
-      await this.emailService.subscribeOrUnsubscribeUser(email, true);
-
-      // Generate user ID
-      const id = uuidv4();
-
       // Create user record
+      const id = uuidv4();
       const user: InsertUser = {
         id,
         walletAddress: normalizedWalletAddress,
-        embeddedWalletAddress: embeddedWalletAddress?.toLowerCase(),
+        embeddedWalletAddress: normalizedEmbeddedWalletAddress,
         name,
         email,
         privyId,
@@ -124,6 +121,12 @@ export class UserManager {
 
       // Store in database
       const savedUser = await create(user);
+
+      // Subscribe to email list
+      await this.emailService.subscribeUser(email, {
+        userId: id,
+        name: name ?? undefined,
+      });
 
       // Update cache
       this.userWalletCache.set(normalizedWalletAddress, id);

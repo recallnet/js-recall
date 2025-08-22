@@ -1,9 +1,7 @@
 import type { PrivyClient } from "@privy-io/server-auth";
 import { exportJWK, importSPKI, jwtVerify } from "jose";
-import { v4 as uuidv4 } from "uuid";
 
 import { config } from "@/config/index.js";
-import { create } from "@/database/repositories/user-repository.js";
 import { SelectUser } from "@/database/schema/core/types.js";
 import { authLogger } from "@/lib/logger.js";
 import type { UserManager } from "@/services/user-manager.service.js";
@@ -116,17 +114,17 @@ export async function verifyPrivyIdentityTokenAndEnsureUser(
   // must refetch user information from the Privy API and update are database accordingly.
   const { privyId, name, email, embeddedWallet, customWallets } =
     await verifyAndGetPrivyUserInfo(idToken);
+  const embeddedWalletAddress = embeddedWallet.address;
   const now = new Date();
 
   // Note: generally speaking, we *could* allow for multiple linked wallets, but our current Privy
   // configuration enforces maximum 1 linked wallet per account; hence, we can safely assume the
   // first value is the "primary" linked wallet.
-  const customWallet = customWallets[0];
+  const customWalletAddress = customWallets[0]?.address;
 
   // 1. Handle post-Privy migration users
   const existingUserWithPrivyId = await userManager.getUserByPrivyId(privyId);
   if (existingUserWithPrivyId) {
-    authLogger.debug(`Found existing user with Privy ID: ${privyId}`);
     return await userManager.updateUser({
       id: existingUserWithPrivyId.id,
       lastLoginAt: now,
@@ -136,34 +134,27 @@ export async function verifyPrivyIdentityTokenAndEnsureUser(
   // 2. Handle post-legacy but pre-Privy users (an `email` always exists via legacy Loops emails)
   const existingUserWithEmail = await userManager.getUserByEmail(email);
   if (existingUserWithEmail) {
-    authLogger.debug(
-      `Migrating existing email user ID: ${existingUserWithEmail.id} with new wallet ${customWallet?.address}`,
-    );
     return await userManager.updateUser({
       id: existingUserWithEmail.id,
       privyId,
       name: existingUserWithEmail.name ?? name,
-      embeddedWalletAddress: embeddedWallet.address,
+      embeddedWalletAddress,
       updatedAt: now,
       lastLoginAt: now,
     });
   }
 
   // 3. Handle legacy users (only a `walletAddress` exists, but it might not be connected to Privy)
-  if (customWallet?.address) {
-    const existingUserWithWallet = await userManager.getUserByWalletAddress(
-      customWallet.address,
-    );
+  if (customWalletAddress) {
+    const existingUserWithWallet =
+      await userManager.getUserByWalletAddress(customWalletAddress);
     if (existingUserWithWallet) {
-      authLogger.debug(
-        `Found existing wallet user ID: ${existingUserWithWallet.id} with wallet ${customWallet.address}`,
-      );
       return await userManager.updateUser({
         id: existingUserWithWallet.id,
         name: existingUserWithWallet.name ?? name,
         email,
         privyId,
-        embeddedWalletAddress: embeddedWallet.address,
+        embeddedWalletAddress,
         updatedAt: now,
         lastLoginAt: now,
       });
@@ -171,19 +162,13 @@ export async function verifyPrivyIdentityTokenAndEnsureUser(
   }
 
   // 4. Create completely new user, using the embedded wallet address as the primary wallet address
-  const userId = uuidv4();
-  authLogger.debug(`Creating new user '${userId}' for Privy ID: ${privyId}`);
-  return await create({
-    id: userId,
+  return await userManager.registerUser(
+    embeddedWalletAddress,
+    name,
+    email,
+    undefined,
+    undefined,
     privyId,
-    name: name,
-    email: email,
-    walletAddress: embeddedWallet.address,
-    walletLastVerifiedAt: now, // Note: we only track this for the `walletAddress` column
-    embeddedWalletAddress: embeddedWallet.address,
-    status: "active",
-    createdAt: now,
-    updatedAt: now,
-    lastLoginAt: now,
-  });
+    embeddedWalletAddress,
+  );
 }

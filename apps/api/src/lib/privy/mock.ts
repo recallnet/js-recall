@@ -23,8 +23,6 @@ export class MockPrivyClient {
    * Mock getUser method that returns user data based on the JWT token
    */
   async getUser({ idToken }: { idToken: string }): Promise<PrivyUser> {
-    authLogger.debug("[MockPrivyClient] getUser called with token");
-
     // Parse the JWT token to extract user data
     const payload = this.parseJwtPayload(idToken);
 
