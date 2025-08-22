@@ -15,6 +15,9 @@ import { authLogger } from "@/lib/logger.js";
  * Mock implementation of PrivyClient for testing
  */
 export class MockPrivyClient {
+  // Static map to track custom linked wallets for each privyId
+  private static linkedWallets = new Map<string, string[]>();
+
   constructor(
     public appId: string,
     public appSecret: string,
@@ -26,9 +29,31 @@ export class MockPrivyClient {
   async getUser({ idToken }: { idToken: string }): Promise<PrivyUser> {
     // Parse the JWT token to extract user data
     const payload = this.parseJwtPayload(idToken);
-
-    // Create a mock Privy user from the JWT payload
     return this.createUserFromJwtPayload(payload);
+  }
+
+  /**
+   * Static method to simulate linking a wallet to a user (used by tests)
+   */
+  static linkWallet(privyId: string, walletAddress: string): void {
+    const existingWallets = this.linkedWallets.get(privyId) || [];
+    if (!existingWallets.includes(walletAddress.toLowerCase())) {
+      existingWallets.push(walletAddress.toLowerCase());
+      this.linkedWallets.set(privyId, existingWallets);
+      authLogger.debug(
+        `[MockPrivyClient] Linked wallet ${walletAddress} to privyId ${privyId}`,
+      );
+      authLogger.debug(
+        `[MockPrivyClient] Total linked wallets for ${privyId}: ${existingWallets.length}`,
+      );
+    }
+  }
+
+  /**
+   * Static method to clear all linked wallets (useful for test cleanup)
+   */
+  static clearLinkedWallets(): void {
+    this.linkedWallets.clear();
   }
 
   /**
@@ -57,13 +82,13 @@ export class MockPrivyClient {
   ): PrivyUser {
     const privyId = String(payload.sub || "");
     const email = payload.email ? String(payload.email) : undefined;
-    const provider = (payload.provider as string) || "email";
+    const provider = (payload.provider as string) || undefined;
     const walletAddress = payload.wallet_address
       ? String(payload.wallet_address)
       : undefined;
     const walletChainType = payload.wallet_chain_type
       ? String(payload.wallet_chain_type)
-      : "ethereum";
+      : undefined;
     const name = payload.providerUsername
       ? String(payload.providerUsername)
       : undefined;
@@ -114,6 +139,44 @@ export class MockPrivyClient {
       } as WalletWithMetadata);
     }
 
+    // Add any dynamically linked wallets from JWT payload or static map
+    const linkedWalletsFromJWT = (payload.linked_wallets as string[]) || [];
+    const linkedWalletsFromMap =
+      MockPrivyClient.linkedWallets.get(privyId) || [];
+    const allLinkedWallets = [
+      ...new Set([...linkedWalletsFromJWT, ...linkedWalletsFromMap]),
+    ];
+    let mostRecentWallet = walletAddress || embeddedWalletAddress;
+
+    for (const linkedWallet of allLinkedWallets) {
+      // Skip if this wallet is already in the linkedAccounts
+      const alreadyExists = linkedAccounts.some(
+        (account) =>
+          account.type === "wallet" &&
+          account.address === linkedWallet.toLowerCase(),
+      );
+
+      if (!alreadyExists) {
+        authLogger.debug(
+          `[MockPrivyClient] Adding dynamically linked wallet: ${linkedWallet}`,
+        );
+        linkedAccounts.push({
+          type: "wallet",
+          address: linkedWallet.toLowerCase(),
+          walletClient: "metamask",
+          walletClientType: "injected",
+          chainType: "ethereum",
+          chainId: "1",
+          verifiedAt: now,
+          firstVerifiedAt: now,
+          latestVerifiedAt: now,
+        } as WalletWithMetadata);
+
+        // The most recent wallet is the last one added
+        mostRecentWallet = linkedWallet.toLowerCase();
+      }
+    }
+
     // Add provider-specific linked account
     if (provider === "google" && email) {
       linkedAccounts.push({
@@ -145,7 +208,7 @@ export class MockPrivyClient {
       isGuest: false,
       customMetadata: {},
       wallet: {
-        address: (walletAddress || embeddedWalletAddress).toLowerCase(),
+        address: mostRecentWallet.toLowerCase(),
         chainType:
           walletChainType === "solana" ||
           walletChainType === "bitcoin-segwit" ||
@@ -158,8 +221,10 @@ export class MockPrivyClient {
           walletChainType === "spark"
             ? walletChainType
             : "ethereum",
-        walletClientType: walletAddress ? "injected" : "privy",
-        connectorType: walletAddress ? "injected" : "embedded",
+        walletClientType:
+          mostRecentWallet === embeddedWalletAddress ? "privy" : "injected",
+        connectorType:
+          mostRecentWallet === embeddedWalletAddress ? "embedded" : "injected",
         verifiedAt: now,
         firstVerifiedAt: now,
         latestVerifiedAt: now,
@@ -179,7 +244,7 @@ export class MockPrivyClient {
     // Add provider-specific objects
     if (provider === "google" && email) {
       mockUser.google = {
-        email,
+        email: email,
         name: name || null,
         subject: privyId,
         verifiedAt: now,

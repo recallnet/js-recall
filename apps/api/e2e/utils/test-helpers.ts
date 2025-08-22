@@ -17,7 +17,6 @@ import {
 import {
   createMockPrivyToken,
   createTestPrivyUser,
-  createTestWallet,
   generateRandomPrivyId,
 } from "./privy.js";
 import { getBaseUrl } from "./server.js";
@@ -368,25 +367,36 @@ export async function createPrivyAuthenticatedClient({
   userName,
   userEmail,
   userImageUrl,
+  walletAddress,
+  embeddedWalletAddress,
 }: {
   adminApiKey: string;
   userName?: string;
   userEmail?: string;
   userImageUrl?: string;
+  walletAddress?: string;
+  embeddedWalletAddress?: string;
 }) {
   const sdk = new ApiClient(adminApiKey);
 
   // Generate a unique wallet for this test
-  const testWallet = createTestWallet();
+  const testWallet = walletAddress || generateRandomEthAddress();
+  const testEmbeddedWallet =
+    embeddedWalletAddress || generateRandomEthAddress();
 
   // Use unique names/emails for this test
   const timestamp = Date.now();
   const uniqueUserName = userName || `Privy User ${timestamp}`;
   const uniqueUserEmail = userEmail || `privy-user-${timestamp}@test.com`;
 
+  // Generate a unique privyId for the user
+  const privyId = generateRandomPrivyId();
+
   // Register a new user
   const result = await sdk.registerUser({
-    walletAddress: testWallet.address,
+    walletAddress: testWallet,
+    embeddedWalletAddress: testEmbeddedWallet,
+    privyId,
     name: uniqueUserName,
     email: uniqueUserEmail,
     userImageUrl,
@@ -407,9 +417,10 @@ export async function createPrivyAuthenticatedClient({
 
   // Create a session client (without API key)
   const privyUser = createTestPrivyUser({
+    privyId: result.user.privyId, // Use the actual privyId from the registered user
     name: uniqueUserName,
     email: uniqueUserEmail,
-    walletAddress: testWallet.address,
+    walletAddress: testWallet,
     provider: "email",
   });
   const privyToken = await createMockPrivyToken(privyUser);
@@ -433,8 +444,11 @@ export async function createPrivyAuthenticatedClient({
   return {
     client: sessionClient,
     user: {
-      id: result.user.id || "",
-      walletAddress: result.user.walletAddress || testWallet.address,
+      id: result.user.id,
+      walletAddress: result.user.walletAddress || testWallet,
+      embeddedWalletAddress:
+        result.user.embeddedWalletAddress || testEmbeddedWallet,
+      privyId: result.user.privyId,
       name: result.user.name || uniqueUserName,
       email: result.user.email || uniqueUserEmail,
       imageUrl: result.user.imageUrl || null,
@@ -442,6 +456,7 @@ export async function createPrivyAuthenticatedClient({
       metadata: result.user.metadata || null,
       createdAt: result.user.createdAt || new Date().toISOString(),
       updatedAt: result.user.updatedAt || new Date().toISOString(),
+      lastLoginAt: result.user.lastLoginAt || new Date().toISOString(),
     },
     wallet: testWallet, // Include wallet info for potential future use
     loginData: loginResponse,

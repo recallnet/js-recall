@@ -1213,3 +1213,20 @@ export const BestPlacementDbSchema = z.looseObject({
   rank: z.coerce.number(),
   total_agents: z.coerce.number(),
 });
+/**
+ * Privy identity token parameter schema
+ */
+export const PrivyIdentityTokenSchema = z.string(
+  "Invalid Privy identity token",
+);
+
+export type PrivyIdentityToken = z.infer<typeof PrivyIdentityTokenSchema>;
+
+/**
+ * Link wallet request schema for custom user wallet linking
+ */
+export const LinkUserWalletSchema = z.strictObject({
+  walletAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
+});
+
+export type LinkUserWallet = z.infer<typeof LinkUserWalletSchema>;

@@ -1,19 +1,24 @@
 import { NextFunction, Request, Response } from "express";
 
 import { userLogger } from "@/lib/logger.js";
-import { verifyAndGetPrivyUserInfo } from "@/lib/privy/verify.js";
+import { verifyPrivyUserHasLinkedWallet } from "@/lib/privy/verify.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AgentCompetitionsParamsSchema,
   CreateAgentSchema,
   GetUserAgentSchema,
+  LinkUserWalletSchema,
   UpdateUserAgentProfileSchema,
   UpdateUserProfileSchema,
   UuidSchema,
 } from "@/types/index.js";
 
-import { ensurePaging, ensureUserId } from "./request-helpers.js";
+import {
+  ensurePaging,
+  ensurePrivyIdentityToken,
+  ensureUserId,
+} from "./request-helpers.js";
 
 /**
  * User Controller
@@ -107,39 +112,35 @@ export function makeUserController(services: ServiceRegistry) {
 
     /**
      * Link a wallet to the authenticated user
-     * @param req Express request with userId from session
+     * @param req Express request with userId & privyToken from session, and the new wallet address
      * @param res Express response
      * @param next Express next function
      */
     async linkWallet(req: Request, res: Response, next: NextFunction) {
       try {
-        const {
-          success,
-          data: userId,
-          error,
-        } = UuidSchema.safeParse(req.userId);
+        const userId = ensureUserId(req);
+        const privyToken = ensurePrivyIdentityToken(req);
+        const { success, data, error } = LinkUserWalletSchema.safeParse(
+          req.body,
+        );
         if (!success) {
           throw new ApiError(400, `Invalid request format: ${error.message}`);
         }
-        const identityToken = req.privyToken;
-        if (!identityToken) {
-          throw new ApiError(401, "Unauthorized");
-        }
+        const { walletAddress } = data;
 
-        // Use the Privy ID token to get custom linked wallets
-        const { customWallets } =
-          await verifyAndGetPrivyUserInfo(identityToken);
-        // Note: technically, we could allow for multiple custom wallets, but we only support one
-        // for now.
-        const customWallet = customWallets[0];
-        if (!customWallet) {
-          throw new ApiError(400, "No custom wallet found");
+        // Verify the custom linked wallet is properly linked to the user
+        const isLinked = await verifyPrivyUserHasLinkedWallet(
+          privyToken,
+          walletAddress,
+        );
+        if (!isLinked) {
+          throw new ApiError(400, "Wallet not linked to user");
         }
 
         // Link the wallet
         const linkedUser = await services.userManager.updateUser({
           id: userId,
-          walletAddress: customWallet.address,
+          walletAddress,
           walletLastVerifiedAt: new Date(),
           updatedAt: new Date(),
         });

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 import { authLogger } from "@/lib/logger.js";
-import { verifyPrivyIdentityTokenAndEnsureUser } from "@/lib/privy/verify.js";
+import { verifyPrivyIdentityTokenAndUpdateUser } from "@/lib/privy/verify.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 export function makeAuthController(services: ServiceRegistry) {
@@ -50,7 +50,7 @@ export function makeAuthController(services: ServiceRegistry) {
           return res.status(401).json({ error: "Unauthorized" });
         }
         const { id: userId, walletAddress } =
-          await verifyPrivyIdentityTokenAndEnsureUser(
+          await verifyPrivyIdentityTokenAndUpdateUser(
             identityToken,
             services.userManager,
           );

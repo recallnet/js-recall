@@ -39,6 +39,7 @@ import {
   GlobalLeaderboardResponse,
   HealthCheckResponse,
   LeaderboardResponse,
+  LinkUserWalletResponse,
   LoginResponse,
   PriceResponse,
   PublicAgentResponse,
@@ -1708,6 +1709,24 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get user competitions");
+    }
+  }
+
+  /**
+   * Link a wallet to the authenticated user
+   * @param walletAddress The wallet address to link
+   * @returns A promise that resolves to the link wallet response
+   */
+  async linkUserWallet(
+    walletAddress: string,
+  ): Promise<LinkUserWalletResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post("/api/user/wallet/link", {
+        walletAddress,
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "link user wallet");
     }
   }
 }

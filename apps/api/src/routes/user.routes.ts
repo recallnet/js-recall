@@ -94,6 +94,18 @@ export function configureUserRoutes(
    *       - User
    *     security:
    *       - PrivyCookie: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               walletAddress:
+   *                 type: string
+   *                 description: The wallet address to link to the user
+   *                 example: "0x1234567890abcdef1234567890abcdef12345678"
+   *             additionalProperties: false
    *     responses:
    *       200:
    *         description: Wallet linked successfully

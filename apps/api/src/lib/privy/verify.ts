@@ -105,7 +105,7 @@ export async function verifyAndGetPrivyUserInfo(
  * @param userManager - The user manager to use to create or update users.
  * @returns The user object.
  */
-export async function verifyPrivyIdentityTokenAndEnsureUser(
+export async function verifyPrivyIdentityTokenAndUpdateUser(
   idToken: string,
   userManager: UserManager,
 ): Promise<SelectUser> {
@@ -116,11 +116,6 @@ export async function verifyPrivyIdentityTokenAndEnsureUser(
     await verifyAndGetPrivyUserInfo(idToken);
   const embeddedWalletAddress = embeddedWallet.address;
   const now = new Date();
-
-  // Note: generally speaking, we *could* allow for multiple linked wallets, but our current Privy
-  // configuration enforces maximum 1 linked wallet per account; hence, we can safely assume the
-  // first value is the "primary" linked wallet.
-  const customWalletAddress = customWallets[0]?.address;
 
   // 1. Handle post-Privy migration users
   const existingUserWithPrivyId = await userManager.getUserByPrivyId(privyId);
@@ -145,6 +140,13 @@ export async function verifyPrivyIdentityTokenAndEnsureUser(
   }
 
   // 3. Handle legacy users (only a `walletAddress` exists, but it might not be connected to Privy)
+  // This is an edge case where a user never logged in and set up an email, so our best guess is to
+  // use the "latest" connected wallet as the primary wallet address and see if the user exists.
+  const customWalletAddress = customWallets.sort(
+    (a, b) =>
+      (b.latestVerifiedAt?.getTime() ?? 0) -
+      (a.latestVerifiedAt?.getTime() ?? 0),
+  )[0]?.address;
   if (customWalletAddress) {
     const existingUserWithWallet =
       await userManager.getUserByWalletAddress(customWalletAddress);
@@ -171,4 +173,25 @@ export async function verifyPrivyIdentityTokenAndEnsureUser(
     privyId,
     embeddedWalletAddress,
   );
+}
+
+/**
+ * Verify a custom linked wallet address is properly linked by the user in Privy.
+ * @param idToken - The Privy identity token to verify.
+ * @param walletAddress - The wallet address to verify.
+ * @returns The custom linked wallet.
+ * @throws {Error} If the custom linked wallet is not found.
+ */
+export async function verifyPrivyUserHasLinkedWallet(
+  idToken: string,
+  walletAddress: string,
+): Promise<boolean> {
+  const { customWallets } = await verifyAndGetPrivyUserInfo(idToken);
+  const customWallet = customWallets.find(
+    (wallet) => wallet.address === walletAddress,
+  );
+  if (!customWallet) {
+    return false;
+  }
+  return true;
 }

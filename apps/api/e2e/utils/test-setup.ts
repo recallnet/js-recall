@@ -16,7 +16,7 @@ import client from "prom-client";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
 import { dbManager } from "./db-manager.js";
-import { setupPrivyTestEnvironment } from "./privy.js";
+import { clearPrivyLinkedWallets, setupPrivyTestEnvironment } from "./privy.js";
 
 // TODO: is this log file needed if we use Pino?
 // Path to log file
@@ -142,4 +142,6 @@ beforeEach(async function () {
 afterEach(async function () {
   // Clean up database state
   await dbManager.resetDatabase();
+  // Clear linked Privy wallets
+  await clearPrivyLinkedWallets();
 });

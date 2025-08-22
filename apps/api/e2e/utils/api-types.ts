@@ -916,3 +916,11 @@ export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
     status: string;
   };
 }
+
+/**
+ * Response type for linking a wallet to a user
+ */
+export interface LinkUserWalletResponse extends ApiResponse {
+  success: true;
+  user: User;
+}

@@ -1,6 +1,5 @@
 import { SignJWT, importPKCS8 } from "jose";
 import { v4 as uuidv4 } from "uuid";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 import { generateRandomEthAddress } from "./test-helpers.js";
 
@@ -56,6 +55,14 @@ export function setupPrivyTestEnvironment(): void {
   process.env.PRIVY_JWKS_PUBLIC_KEY = TEST_PRIVY_CONFIG.jwksPublicKey;
 }
 
+/**
+ * Clear linked wallets after each test to prevent test pollution
+ */
+export async function clearPrivyLinkedWallets(): Promise<void> {
+  const { MockPrivyClient } = await import("@/lib/privy/mock.js");
+  MockPrivyClient.clearLinkedWallets();
+}
+
 // Default test user data
 export const defaultTestUser = {
   privyId: "did:privy:test-user-12345",
@@ -96,6 +103,7 @@ export async function createMockPrivyToken(
     expiresIn?: string | number;
     issuer?: string;
     audience?: string;
+    linkedWallets?: string[];
   } = {},
 ): Promise<string> {
   const userData = { ...defaultTestUser, ...user };
@@ -113,6 +121,8 @@ export async function createMockPrivyToken(
     wallet_chain_type: userData.walletChainType,
     // Session ID
     sid: uuidv4(),
+    // Additional linked wallets (custom claim for testing)
+    linked_wallets: options.linkedWallets,
   })
     .setProtectedHeader({ alg: "ES256" })
     .setIssuedAt()
@@ -245,18 +255,4 @@ export async function createPrivyAuthHeader(
 ): Promise<string> {
   const token = await createMockPrivyToken(user);
   return `Bearer ${token}`;
-}
-
-/**
- * Generate a unique test wallet for isolated testing
- * @returns Object with privateKey, address, and account
- */
-export function createTestWallet() {
-  const privateKey = generatePrivateKey();
-  const account = privateKeyToAccount(privateKey);
-  return {
-    privateKey,
-    address: account.address,
-    account,
-  };
 }
