@@ -36,7 +36,6 @@ describe("Chain Detection Debug", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
 
     // Setup admin client
     adminClient = createTestClient();
@@ -63,14 +62,12 @@ describe("Chain Detection Debug", () => {
     it("should correctly detect Solana chain locally", () => {
       // Test direct chain detection for Solana tokens
       const chain = priceTracker.determineChain(solanaTokens.SOL);
-      console.log(`Determined chain for ${solanaTokens.SOL}: ${chain}`);
       expect(chain).toBe(BlockchainType.SVM);
     });
 
     it("should correctly detect Ethereum chain locally", () => {
       // Test direct chain detection for Ethereum tokens
       const chain = priceTracker.determineChain(ethereumTokens.ETH);
-      console.log(`Determined chain for ${ethereumTokens.ETH}: ${chain}`);
       expect(chain).toBe(BlockchainType.EVM);
     });
   });
@@ -78,9 +75,6 @@ describe("Chain Detection Debug", () => {
   describe("API Tests", () => {
     it("should detect Ethereum token as EVM chain", async () => {
       const response = await client.getPrice(ethereumTokens.ETH);
-      console.log(
-        `API response for Ethereum price: ${JSON.stringify(response)}`,
-      );
       expect(response.success).toBe(true); // Type guard to narrow the type
       expect((response as PriceResponse).chain).toBe(BlockchainType.EVM);
     });
@@ -90,11 +84,7 @@ describe("Chain Detection Debug", () => {
   describe("Direct Provider Tests", () => {
     it("should fetch Ethereum price via PriceTracker", async () => {
       // Test PriceTracker (which uses providers internally)
-      console.log(
-        `Fetching ETH price via PriceTracker for token: ${ethereumTokens.ETH}`,
-      );
       const price = await priceTracker.getPrice(ethereumTokens.ETH);
-      console.log(`PriceTracker ETH price response: ${price}`);
       expect(price).not.toBeNull();
       expect(typeof price?.price).toBe("number");
       expect(price?.price).toBeGreaterThan(0);
@@ -104,11 +94,7 @@ describe("Chain Detection Debug", () => {
   describe("Token Info Tests", () => {
     it("should get token info for Ethereum tokens", async () => {
       // Test the getPrice method directly since it's used for EVM tokens
-      console.log(
-        `Getting price info via PriceTracker for token: ${ethereumTokens.ETH}`,
-      );
       const priceReport = await priceTracker.getPrice(ethereumTokens.ETH);
-      console.log(`Price report response: ${JSON.stringify(priceReport)}`);
       expect(priceReport).not.toBeNull();
       expect(priceReport!.price).toBeGreaterThan(0);
       expect(priceReport!.chain).toBe(BlockchainType.EVM);

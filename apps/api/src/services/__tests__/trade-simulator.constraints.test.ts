@@ -611,7 +611,7 @@ describe("TradeSimulator - Trading Constraints", () => {
 
           // Skip test if price data is not available
           if (!priceData) {
-            console.warn(`Skipping ${token.name} - no price data available`);
+            // Skipping token - no price data available
             return;
           }
 
@@ -723,7 +723,7 @@ describe("TradeSimulator - Trading Constraints", () => {
         );
 
         if (!priceData) {
-          console.warn("Skipping edge case test - no price data available");
+          // Skipping edge case test - no price data available
           return;
         }
 
@@ -766,7 +766,7 @@ describe("TradeSimulator - Trading Constraints", () => {
         );
 
         if (!priceData) {
-          console.warn("Skipping structure test - no price data available");
+          // Skipping structure test - no price data available
           return;
         }
 
@@ -848,7 +848,7 @@ describe("TradeSimulator - Trading Constraints", () => {
           );
 
           if (!priceData) {
-            console.warn(`Skipping ${token.name} - no price data available`);
+            // Skipping token - no price data available
             continue;
           }
 

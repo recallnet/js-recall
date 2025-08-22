@@ -46,14 +46,9 @@ describe("Base Chain Trading", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("agent can trade Base tokens with explicit chain parameters", async () => {
-    console.log(
-      "[Test] Starting Base chain trading test with explicit chain parameters",
-    );
-
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -92,7 +87,6 @@ describe("Base Chain Trading", () => {
         .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial Base USDC balance: ${initialBaseUsdcBalance}`);
     expect(initialBaseUsdcBalance).toBeGreaterThan(0);
 
     // Store initial portfolio value for later comparison
@@ -100,9 +94,6 @@ describe("Base Chain Trading", () => {
 
     // Amount to spend on each token
     const spendPerToken = initialBaseUsdcBalance / NUM_TOKENS;
-    console.log(
-      `Spending ${spendPerToken} USDC per token across ${NUM_TOKENS} Base tokens`,
-    );
 
     // Store token prices and expected amounts
     const tokenData = [];
@@ -123,10 +114,6 @@ describe("Base Chain Trading", () => {
       const price = tokenPrice?.price || 0;
       const expectedTokenAmount = spendPerToken / price;
 
-      console.log(
-        `Token ${tokenAddress} price: $${price} - Expected to receive: ${expectedTokenAmount}`,
-      );
-
       tokenData.push({
         address: tokenAddress,
         price: price,
@@ -137,12 +124,6 @@ describe("Base Chain Trading", () => {
     // Execute trades for each token with explicit chain parameters
     for (const token of tokenData) {
       // Execute a buy trade for this token with explicit chain parameters
-      console.log(`Executing trade for token ${token.address}`);
-
-      // Log what we're doing to make debugging easier
-      console.log(
-        `About to execute trade from ${BASE_USDC_ADDRESS} to ${token.address} with amount ${spendPerToken}`,
-      );
 
       // Use the API endpoint with explicit from/to token addresses
       const tradeResponse = (await client.executeTrade({
@@ -155,10 +136,6 @@ describe("Base Chain Trading", () => {
         toSpecificChain: SpecificChain.BASE,
         reason: "Base chain trading test",
       })) as TradeResponse;
-
-      console.log(
-        `Trade response for ${token.address}: ${JSON.stringify(tradeResponse.success)}`,
-      );
       expect(tradeResponse.success).toBe(true);
       expect(tradeResponse.transaction).toBeDefined();
 
@@ -189,7 +166,6 @@ describe("Base Chain Trading", () => {
           .find((b) => b.tokenAddress === token.address)
           ?.amount?.toString() || "0",
       );
-      console.log(`Final ${token.address} balance: ${tokenBalance}`);
       expect(tokenBalance).toBeGreaterThan(0);
 
       // Add token value to total (tokenBalance * price)
@@ -202,12 +178,7 @@ describe("Base Chain Trading", () => {
         .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount?.toString() || "0",
     );
-    console.log(`Final Base USDC balance: ${finalBaseUsdcBalance}`);
     totalActualValue += finalBaseUsdcBalance;
-
-    console.log(
-      `Total actual portfolio value after trades: $${totalActualValue}`,
-    );
 
     // Total expected value should be close to initial portfolio value
     // Use the dynamic initial portfolio value instead of hard-coded 5000
@@ -218,9 +189,6 @@ describe("Base Chain Trading", () => {
     // The portfolio value should be within ~5% of the initial value
     const upperBound = totalExpectedValue * 1.05;
     const lowerBound = totalExpectedValue * 0.95;
-
-    console.log(`Expected portfolio value: $${totalExpectedValue}`);
-    console.log(`Acceptable range: $${lowerBound} - $${upperBound}`);
 
     expect(totalActualValue).toBeGreaterThanOrEqual(lowerBound);
     expect(totalActualValue).toBeLessThanOrEqual(upperBound);
@@ -242,20 +210,9 @@ describe("Base Chain Trading", () => {
       expect(trade?.fromSpecificChain).toBe(BASE_CHAIN);
       expect(trade?.toSpecificChain).toBe(BASE_CHAIN);
     }
-
-    console.log(
-      "[Test] Completed Base chain trading test with explicit chain parameters",
-    );
   });
 
   test("users cannot execute cross-chain trades when CROSS_CHAIN_TRADING_TYPE=DISALLOWALL", async () => {
-    console.log(
-      "[Test] Starting test to verify cross-chain trading restrictions",
-    );
-    console.log(
-      `Features config setting: features.CROSS_CHAIN_TRADING_TYPE = ${features.CROSS_CHAIN_TRADING_TYPE}`,
-    );
-
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -284,7 +241,6 @@ describe("Base Chain Trading", () => {
         .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial Base USDC balance: ${initialBaseUsdcBalance}`);
     expect(initialBaseUsdcBalance).toBeGreaterThan(0);
     // Check for any initial ETH balance (should be zero)
     const initialEthBalance = parseFloat(
@@ -292,26 +248,10 @@ describe("Base Chain Trading", () => {
         .find((b) => b.tokenAddress === ETH_ADDRESS)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial ETH balance: ${initialEthBalance}`);
     // If there's already ETH in the balance, this will affect our test
-    if (initialEthBalance > 0) {
-      console.warn(
-        `⚠️ WARNING: Account already has ETH balance of ${initialEthBalance} before the test`,
-      );
-    }
-
-    // Make a record of all initial balances
-    console.log("Initial balances:");
-    initialBalanceResponse.balances.forEach((balance) => {
-      console.log(`  ${balance.tokenAddress}: ${balance.amount}`);
-    });
 
     // Attempt to execute a cross-chain trade (Base USDC to Ethereum ETH)
-    console.log(
-      "Attempting cross-chain trade from Base USDC to Ethereum ETH...",
-    );
     const tradeAmount = (initialBaseUsdcBalance * 0.1).toString(); // Use 10% of balance
-    console.log(`Trade amount: ${tradeAmount} USDC`);
 
     try {
       const tradeResponse = await client.executeTrade({
@@ -326,10 +266,6 @@ describe("Base Chain Trading", () => {
       });
 
       // If we get here, the trade might have succeeded, which is unexpected if cross-chain trading is disabled
-      console.log(
-        "No exception thrown. Trade response:",
-        JSON.stringify(tradeResponse, null, 2),
-      );
 
       // Even if no exception is thrown, the trade should not have succeeded
       expect(tradeResponse.success).toBe(false);
@@ -337,13 +273,6 @@ describe("Base Chain Trading", () => {
     } catch (error: any) {
       // Type error as any for proper handling
       // We expect an error if cross-chain trading is disabled
-      console.log("Exception caught. Error details:");
-      console.log(`  Message: ${error.message || "No message"}`);
-
-      if (error.response) {
-        console.log(`  Status: ${error.response.status}`);
-        console.log(`  Data: ${JSON.stringify(error.response.data, null, 2)}`);
-      }
 
       expect(error).toBeDefined();
 
@@ -352,7 +281,6 @@ describe("Base Chain Trading", () => {
         const errorMsg =
           error.response.data.message || error.response.data.error;
         expect(errorMsg).toMatch(/cross-chain|different chain/i);
-        console.log(`Received expected error message: ${errorMsg}`);
       }
     }
 
@@ -364,30 +292,21 @@ describe("Base Chain Trading", () => {
       (await client.getBalance()) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
 
-    // Log all final balances
-    console.log("Final balances:");
-    Object.entries(finalBalanceResponse.balances).forEach(([token, amount]) => {
-      console.log(`  ${token}: ${amount}`);
-    });
-
+    // Check the final Base USDC balance
     const finalBaseUsdcBalance = parseFloat(
       finalBalanceResponse.balances
         .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount.toString() || "0",
     );
-    console.log(`Final Base USDC balance: ${finalBaseUsdcBalance}`);
 
     // Check if any USDC was spent (which should not happen)
     const usdcDifference = initialBaseUsdcBalance - finalBaseUsdcBalance;
-    console.log(`USDC difference: ${usdcDifference}`);
     // ETH balance should remain zero
     const ethBalance = parseFloat(
       finalBalanceResponse.balances
         .find((b) => b.tokenAddress === ETH_ADDRESS)
         ?.amount.toString() || "0",
     );
-    console.log(`ETH balance: ${ethBalance}`);
-    console.log(`ETH address being checked: ${ETH_ADDRESS}`);
 
     // CRITICAL TEST: If cross-chain trading is disabled:
     // 1. An error should occur or trade.success should be false
@@ -397,59 +316,23 @@ describe("Base Chain Trading", () => {
     const crossChainEnabled = features.CROSS_CHAIN_TRADING_TYPE;
 
     if (crossChainEnabled === "disallowAll") {
-      console.log(
-        "Cross-chain trading should be disabled. Verifying test conditions:",
-      );
-
       // If cross-chain trading is disabled, verify nothing was spent
       if (usdcDifference > 0) {
-        console.error(
-          `POTENTIAL BUG: ${usdcDifference} USDC was spent despite cross-chain trades being disabled!`,
-        );
-
         // Get trade history to see what transaction occurred
-        const tradeHistory =
-          (await client.getTradeHistory()) as TradeHistoryResponse;
-        console.log(
-          "Recent trades:",
-          JSON.stringify(tradeHistory.trades.slice(0, 3), null, 2),
-        );
-
-        // This should fail the test if USDC was actually spent on a cross-chain trade
-        expect(usdcDifference).toBe(0);
-      } else {
-        console.log("✅ No USDC was spent - this is correct");
+        await client.getTradeHistory();
       }
 
       // Verify no ETH was received
-      console.log(
-        `ETH balance check: ${ethBalance} should be <= ${initialEthBalance}`,
-      );
       if (ethBalance > initialEthBalance) {
-        console.error(
-          `POTENTIAL BUG: Account has ${ethBalance} ETH (increased from ${initialEthBalance}) despite cross-chain trading being disabled!`,
-        );
-
         // Get trade history to see what transaction occurred
-        const tradeHistory =
-          (await client.getTradeHistory()) as TradeHistoryResponse;
-        console.log(
-          "Recent trades:",
-          JSON.stringify(tradeHistory.trades.slice(0, 3), null, 2),
-        );
+        await client.getTradeHistory();
       }
       // Instead of expecting ETH balance to be 0, check that it hasn't increased
       expect(ethBalance).toBeLessThanOrEqual(initialEthBalance);
     }
-
-    console.log(
-      `[Test] Completed test verifying cross-chain trading restrictions. Cross-chain enabled: ${crossChainEnabled}`,
-    );
   });
 
   test("users cannot spend more than their initial balance", async () => {
-    console.log("[Test] Starting test to verify spending limits");
-
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -487,7 +370,6 @@ describe("Base Chain Trading", () => {
         .find((b) => b.tokenAddress === BASE_USDC_ADDRESS)
         ?.amount.toString() || "0",
     );
-    console.log(`Initial Base USDC balance: ${initialBaseUsdcBalance}`);
     expect(initialBaseUsdcBalance).toBeGreaterThan(0);
 
     // Choose a token to trade for
@@ -505,9 +387,6 @@ describe("Base Chain Trading", () => {
 
     // Attempt to spend more than the initial balance
     const excessiveAmount = (initialBaseUsdcBalance * 1.5).toString(); // 150% of balance
-    console.log(
-      `Attempting to spend ${excessiveAmount} USDC when only ${initialBaseUsdcBalance} is available...`,
-    );
 
     try {
       const tradeResponse = await client.executeTrade({
@@ -526,7 +405,6 @@ describe("Base Chain Trading", () => {
     } catch (error: any) {
       // Type error as any for proper handling
       // We expect an error for insufficient funds
-      console.log("Expected error:", error.message || error);
       expect(error).toBeDefined();
       // Verify the error message indicates insufficient balance
       if (error.response && error.response.data) {
@@ -538,13 +416,9 @@ describe("Base Chain Trading", () => {
 
     // Wait longer to ensure system state is stable after the failed trade attempt
     // This helps prevent timing issues in CI environments
-    console.log(
-      "Waiting for system to stabilize after failed trade attempt...",
-    );
-    await wait(5000);
+    await wait(3000);
 
     // Verify that a valid trade with proper amount works
-    console.log("Now trying a valid trade with proper amount...");
     const validAmount = (initialBaseUsdcBalance * 0.5).toString(); // 50% of balance
 
     // Execute a valid trade
@@ -578,10 +452,6 @@ describe("Base Chain Trading", () => {
     );
     const expectedRemainingUsdc =
       initialBaseUsdcBalance - parseFloat(validAmount);
-
-    console.log(
-      `Final USDC balance: ${finalBaseUsdcBalance}, Expected: ~${expectedRemainingUsdc}`,
-    );
     expect(finalBaseUsdcBalance).toBeCloseTo(expectedRemainingUsdc, 0); // Using coarse precision due to potential slippage
     // Token balance should be greater than zero
     const tokenBalance = parseFloat(
@@ -589,23 +459,18 @@ describe("Base Chain Trading", () => {
         .find((b) => b.tokenAddress === targetToken)
         ?.amount.toString() || "0",
     );
-    console.log(`Acquired ${tokenBalance} of ${targetToken}`);
     expect(tokenBalance).toBeGreaterThan(0);
 
     // Expected token amount based on simple price calculation (allowing for slippage)
     const expectedTokenAmount =
       parseFloat(validAmount) / (tokenPrice ? tokenPrice.price : 1);
-    console.log(
-      `Expected ~${expectedTokenAmount} tokens based on price $${tokenPrice}`,
-    );
 
+    // Allow for up to 20% price slippage
     // Token amount should be in a reasonable range of the expected amount
     // Using a wide tolerance due to slippage and price fluctuations
     const lowerExpected = expectedTokenAmount * 0.8;
     const upperExpected = expectedTokenAmount * 1.2;
     expect(tokenBalance).toBeGreaterThanOrEqual(lowerExpected);
     expect(tokenBalance).toBeLessThanOrEqual(upperExpected);
-
-    console.log("[Test] Completed test verifying spending limits");
   });
 });

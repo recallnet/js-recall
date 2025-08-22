@@ -48,11 +48,7 @@ describe("Agent API", () => {
     // Create a test client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user and agent
     const userName = `User ${Date.now()}`;
@@ -102,11 +98,7 @@ describe("Agent API", () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user and agent
     const { client: agentClient } = await registerUserAndAgentAndGetClient({
@@ -136,11 +128,7 @@ describe("Agent API", () => {
   test("agents can update their profile with description and imageUrl", async () => {
     // Setup admin client
     const client = createTestClient();
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user and agent
     const { client: agentClient } = await registerUserAndAgentAndGetClient({
@@ -181,11 +169,7 @@ describe("Agent API", () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user and agent
     await registerUserAndAgentAndGetClient({ adminApiKey });
@@ -351,11 +335,7 @@ describe("Agent API", () => {
   test("agent can retrieve profile with metadata", async () => {
     // Setup admin client
     const client = createTestClient();
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Define metadata for the agent
     const metadata: AgentMetadata = {
@@ -2606,9 +2586,6 @@ Purpose: WALLET_VERIFICATION`;
         .filter((rank): rank is number => rank !== undefined);
       expect(ranks.every((rank) => rank >= 1 && rank <= 4)).toBe(true);
       expect(new Set(ranks).size).toBe(4); // All ranks should be unique
-
-      // Log results for debugging
-      console.log("Multi-agent ranking results:", rankingResults);
     });
 
     test("should handle cross-competition metrics correctly (2 ended + 1 active)", async () => {
@@ -2815,18 +2792,8 @@ Purpose: WALLET_VERIFICATION`;
         }
       });
 
-      console.log("Cross-competition test results:", {
-        agent1Comps: agent1CompsSorted.map((c) => ({
-          id: c.id,
-          trades: c.totalTrades,
-          portfolio: c.portfolioValue,
-        })),
-        agent2Comps: agent2CompsSorted.map((c) => ({
-          id: c.id,
-          trades: c.totalTrades,
-          portfolio: c.portfolioValue,
-        })),
-      });
+      // Verify cross-competition metrics were calculated correctly
+      // Both agents should have metrics from all 3 competitions
     });
   });
 

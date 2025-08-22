@@ -64,18 +64,14 @@ describe("Multi-Agent Competition", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("should create a competition with multiple agents and validate isolation", async () => {
-    console.log("[Test] Starting multi-agent competition test");
-
     // Step 1: Setup admin client
     adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Step 2: Register 6 agents with unique names
-    console.log(`Registering ${NUM_AGENTS} agents...`);
     agentClients = [];
 
     for (let i = 0; i < NUM_AGENTS; i++) {
@@ -87,9 +83,6 @@ describe("Multi-Agent Competition", () => {
       });
 
       agentClients.push(agentData);
-      console.log(
-        `Registered agent: ${agentName} with ID: ${agentData.agent.id}`,
-      );
     }
 
     expect(agentClients.length).toBe(NUM_AGENTS);
@@ -98,7 +91,6 @@ describe("Multi-Agent Competition", () => {
     const competitionName = `Multi-Agent Competition ${Date.now()}`;
     const agentIds = agentClients.map((tc) => tc.agent.id);
 
-    console.log(`Starting competition with ${agentIds.length} agents...`);
     const competitionResponse = await startTestCompetition(
       adminClient,
       competitionName,
@@ -113,7 +105,6 @@ describe("Multi-Agent Competition", () => {
     await wait(500);
 
     // Step 4: Validate that all agents have the same starting balances
-    console.log("Validating starting balances...");
 
     // Get first agent's balance as reference
     const referenceBalanceResponse =
@@ -140,8 +131,6 @@ describe("Multi-Agent Competition", () => {
         ?.amount.toString() || "0",
     );
 
-    console.log(`Reference USDC balance: ${referenceUsdcBalance}`);
-    console.log(`Reference SOL balance: ${referenceSolBalance}`);
     // Validate other agents have identical balances
     for (let i = 1; i < NUM_AGENTS; i++) {
       const agentClient = agentClients[i]?.client;
@@ -167,17 +156,9 @@ describe("Multi-Agent Competition", () => {
           ?.amount.toString() || "0",
       );
       expect(agentSolBalance).toBe(referenceSolBalance);
-
-      console.log(
-        `Agent ${i + 1} USDC balance: ${agentUsdcBalance} - matches reference: ${agentUsdcBalance === referenceUsdcBalance}`,
-      );
-      console.log(
-        `Agent ${i + 1} SOL balance: ${agentSolBalance} - matches reference: ${agentSolBalance === referenceSolBalance}`,
-      );
     }
 
     // Step 5: Validate that API keys are properly isolated
-    console.log("Validating API key isolation...");
 
     // Try to access Agent 2's data using Agent 1's API key
     // Create a new client with Agent 1's API key
@@ -220,7 +201,6 @@ describe("Multi-Agent Competition", () => {
     expect(agent2ProfileResponse.agent.id).toBe(agentClients[1]?.agent.id);
 
     // Step 6: Validate that all agents can see the competition and leaderboard
-    console.log("Validating competition visibility...");
     for (let i = 0; i < NUM_AGENTS; i++) {
       const agentClient = agentClients[i]?.client;
 
@@ -245,8 +225,6 @@ describe("Multi-Agent Competition", () => {
       );
       expect(agentInLeaderboard).toBeDefined();
     }
-
-    console.log("[Test] Completed multi-agent competition test");
   });
 
   test("each agent should purchase a different token resulting in unique portfolio compositions", async () => {
@@ -366,9 +344,7 @@ describe("Multi-Agent Competition", () => {
           // They should have 0 of other agents' tokens
           expect(otherTokenBalance).toBe(0);
           if (otherTokenBalance > 0) {
-            console.error(
-              `ERROR: Agent ${i + 1} unexpectedly has ${otherTokenBalance} of token ${otherToken}`,
-            );
+            // Agent unexpectedly has tokens from another agent's portfolio
           }
         }
       }
