@@ -4,6 +4,7 @@
   "description": "Load testing for the RecallNet platform",
   "license": "MIT AND Apache-2.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "test:leaderboard": "artillery run --output dist/leaderboard.json --env-file .env src/leaderboard.ts",
     "test:agent-trading": "artillery run --output dist/agent-trading.json --env-file .env -e test src/agent-trading.ts",
@@ -16,9 +17,8 @@
     "clean": "rm -rf .turbo node_modules dist"
   },
   "dependencies": {
+    "@ngneat/falso": "^8.0.2",
     "artillery": "^2.0.24",
-    "artillery-plugin-faker": "^5.0.2",
-    "uuid": "^9.0.0",
     "viem": "^2.34.0"
   },
   "devDependencies": {

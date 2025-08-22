@@ -987,15 +987,12 @@ importers:
 
   packages/load-test:
     dependencies:
+      '@ngneat/falso':
+        specifier: ^8.0.2
+        version: 8.0.2
       artillery:
         specifier: ^2.0.24
         version: 2.0.24(@types/node@24.3.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      artillery-plugin-faker:
-        specifier: ^5.0.2
-        version: 5.0.2
-      uuid:
-        specifier: ^9.0.0
-        version: 9.0.1
       viem:
         specifier: ^2.34.0
         version: 2.34.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
@@ -2483,10 +2480,6 @@ packages:
     resolution: {integrity: sha512-zQ0IqbdX8FZ9aw11vP+dZkKDkS+kgIvQPHnSAXzP9pLu+Rfu3D3XEeLbicvoXJTYnhZiPmsZUxgdzXwNKxRPbA==}
     engines: {node: '>=14'}
 
-  '@faker-js/faker@7.6.0':
-    resolution: {integrity: sha512-XK6BTq1NDMo9Xqw/YkYyGjSsg44fbNwYRx7QK2CuoQgyy+f1rrTDHoExVM5PsyXCtfl2vs2vVJ0MN0yN6LppRw==}
-    engines: {node: '>=14.0.0', npm: '>=6.0.0'}
-
   '@fal-ai/client@1.2.0':
     resolution: {integrity: sha512-MNCnE5icY+OM5ahgYJItmydZ7AxhtzhgA5tQI13jVntzhLT0z+tetHIlAL1VA0XFZgldDzqxeTf9Pr5TW3VErg==}
     engines: {node: '>=18.0.0'}
@@ -3051,6 +3044,9 @@ packages:
 
   '@ngneat/falso@7.4.0':
     resolution: {integrity: sha512-7MzPP0YGNHDrohf/epmz6SVIjHGhKyHbh0bm+iZ1z/7KVW4xZi9Dx6Tl9NMPy6a4lWh/t3WXSsCGkgkuJ/eroQ==}
+
+  '@ngneat/falso@8.0.2':
+    resolution: {integrity: sha512-vhPtuoHoxE5JGWPSPBqEyTXcjI4MAn8GllR+Vs8FfpAQu2sQRd4PJc3e8kc9vdbdhYHx1C9HmbECgtGLK30z4w==}
 
   '@noble/ciphers@1.2.1':
     resolution: {integrity: sha512-rONPWMC7PeExE077uLE4oqWrZ1IvAfz3oH9LibVAcVCopJiA9R62uavnbEzdkVmJYI6M6Zgkbeb07+tWjlq2XA==}
@@ -5634,10 +5630,6 @@ packages:
 
   artillery-plugin-fake-data@1.3.0:
     resolution: {integrity: sha512-/D4jtMcpEWrZQBa27IkebgFn0ZBmYAZaFnza8Osk6/grzYCSV2rQ6tQMgCINSSePwa2tML7II8L0oCZrw/VIPQ==}
-
-  artillery-plugin-faker@5.0.2:
-    resolution: {integrity: sha512-AT0qszyNrfjrRg9qhJ4fDLl6SltO4IqYckr1BajA1l8t5nkIcoRoEcyFA+qtigjSFyJY2LCZbOctkXExQ/oY4w==}
-    engines: {node: '>= 12'}
 
   artillery-plugin-metrics-by-endpoint@1.18.0:
     resolution: {integrity: sha512-DyXDYuhi6uj5p6/H8EeyJ570+HpE28T+IsVFniiGnP23NW0Hvy6y8of9ID8UtAjz6RTJHrYP9E2jIwZfXv51fQ==}
@@ -11227,18 +11219,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.18.2:
-    resolution: {integrity: sha512-DMricUmwGZUVr++AEAe2uiVM7UoO9MAVZMDu05UQOaUII0lp+zOzLLU4Xqh/JvTqklB1T4uELaaPBKyjE1r4fQ==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.18.3:
     resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
     engines: {node: '>=10.0.0'}
@@ -13202,8 +13182,6 @@ snapshots:
       ethereum-cryptography: 2.2.1
       micro-ftch: 0.3.1
 
-  '@faker-js/faker@7.6.0': {}
-
   '@fal-ai/client@1.2.0':
     dependencies:
       '@msgpack/msgpack': 3.1.1
@@ -13859,6 +13837,11 @@ snapshots:
       third-party-capital: 1.0.20
 
   '@ngneat/falso@7.4.0':
+    dependencies:
+      seedrandom: 3.0.5
+      uuid: 8.3.2
+
+  '@ngneat/falso@8.0.2':
     dependencies:
       seedrandom: 3.0.5
       uuid: 8.3.2
@@ -16037,7 +16020,7 @@ snapshots:
       '@supabase/node-fetch': 2.6.15
       '@types/phoenix': 1.6.6
       '@types/ws': 8.18.1
-      ws: 8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -17534,14 +17517,6 @@ snapshots:
   artillery-plugin-fake-data@1.3.0:
     dependencies:
       '@ngneat/falso': 7.4.0
-
-  artillery-plugin-faker@5.0.2:
-    dependencies:
-      '@faker-js/faker': 7.6.0
-      debug: 4.4.1(supports-color@5.5.0)
-      lodash.get: 4.4.2
-    transitivePeerDependencies:
-      - supports-color
 
   artillery-plugin-metrics-by-endpoint@1.18.0:
     dependencies:
@@ -23757,11 +23732,6 @@ snapshots:
       utf-8-validate: 5.0.10
 
   ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10):
-    optionalDependencies:
-      bufferutil: 4.0.9
-      utf-8-validate: 5.0.10
-
-  ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     optionalDependencies:
       bufferutil: 4.0.9
       utf-8-validate: 5.0.10

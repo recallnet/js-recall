@@ -17,9 +17,6 @@ export const config = {
       },
     },
   },
-  plugins: {
-    "fake-data": {},
-  },
 };
 
 export const before = {
@@ -61,25 +58,8 @@ export const before = {
         headers: {
           Authorization: "Bearer {{ $env.ADMIN_API_KEY }}",
         },
-        json: {
-          name: "Test Load Comp",
-          description: "Load testing",
-          tradingType: "disallowAll",
-          sandboxMode: false,
-          type: "trading",
-          // externalUrl: "https://example.com/competition-details",
-          // imageUrl: "https://example.com/competition-image.jpg",
-          endDate: "2025-08-31T23:59:59Z",
-          votingStartDate: "2025-08-23T00:00:00Z",
-          votingEndDate: "2025-08-23T23:59:59Z",
-          joinStartDate: "2025-08-21T00:00:00Z",
-          joinEndDate: "2025-08-23T23:59:59Z",
-          rewards: {
-            "1": 1000,
-            "2": 500,
-            "3": 250,
-          },
-        },
+        beforeRequest: "setCompetitionPayload",
+        json: {},
         capture: {
           json: "$.competition.id",
           as: "competitionId",
@@ -149,7 +129,7 @@ export const scenarios = [
         log: "Starting agent trading scenario",
       },
       {
-        count: "{{ $env.AGENTS_COUNT }}",
+        count: 50, // 5.000 USDC / 100 buy trades
         loop: [
           {
             post: {

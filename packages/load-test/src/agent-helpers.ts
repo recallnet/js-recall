@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+import { randUuid } from "@ngneat/falso";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 // Artillery function types
@@ -18,26 +18,57 @@ export function generateRandomUserAndAgent(
   done: ArtilleryDone,
 ) {
   // Generate user data
-  context.vars.userName = `User ${uuidv4()}`;
-  context.vars.userEmail = `user-${uuidv4()}@test.com`;
-  context.vars.userImageUrl = `https://api.dicebear.com/9.x/pixel-art/png?seed=${uuidv4()}`;
+  context.vars.userName = `User ${randUuid()}`;
+  context.vars.userEmail = `user-${randUuid()}@test.com`;
+  context.vars.userImageUrl = `https://api.dicebear.com/9.x/pixel-art/png?seed=${randUuid()}`;
 
   // Generate agent data
-  context.vars.agentName = `Agent ${uuidv4()}`;
-  context.vars.agentHandle = `agent_${uuidv4().replace(/-/g, "")}`.slice(0, 15);
+  context.vars.agentName = `Agent ${randUuid()}`;
+  context.vars.agentHandle = `agent_${randUuid().replace(/-/g, "")}`.slice(
+    0,
+    15,
+  );
   context.vars.agentDescription = "A test trading agent for load testing";
-  context.vars.agentImageUrl = `https://api.dicebear.com/9.x/pixel-art/png?seed=${uuidv4()}`;
+  context.vars.agentImageUrl = `https://api.dicebear.com/9.x/pixel-art/png?seed=${randUuid()}`;
 
-  // Generate wallet addresses using Viem
-  const userPrivateKey = generatePrivateKey();
-  const userAccount = privateKeyToAccount(userPrivateKey);
-  context.vars.walletAddress = userAccount.address;
+  const privateKey = generatePrivateKey();
+  const account = privateKeyToAccount(privateKey);
 
-  const agentPrivateKey = generatePrivateKey();
-  const agentAccount = privateKeyToAccount(agentPrivateKey);
-  context.vars.agentWalletAddress = agentAccount.address;
+  context.vars.walletAddress = account.address;
+  context.vars.agentWalletAddress = account.address;
 
   return done();
+}
+
+export function createCompetitionPayload() {
+  const now = new Date();
+  const joinStartDate = new Date(now);
+  const joinEndDate = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000); // 2 days from now
+  const votingStartDate = new Date(
+    joinEndDate.getTime() + 1 * 24 * 60 * 60 * 1000,
+  ); // 1 day after join end date
+  const votingEndDate = new Date(
+    votingStartDate.getTime() + 1 * 24 * 60 * 60 * 1000,
+  ); // 1 day after voting start date
+  const endDate = new Date(votingEndDate.getTime() + 5 * 24 * 60 * 60 * 1000); // 5 days after voting end date
+
+  return {
+    name: `Load Test Comp ${randUuid()}`,
+    description: "Load testing",
+    tradingType: "disallowAll",
+    sandboxMode: false,
+    type: "trading",
+    endDate: endDate.toISOString(),
+    votingStartDate: votingStartDate.toISOString(),
+    votingEndDate: votingEndDate.toISOString(),
+    joinStartDate: joinStartDate.toISOString(),
+    joinEndDate: joinEndDate.toISOString(),
+    rewards: {
+      "1": 1000,
+      "2": 500,
+      "3": 250,
+    },
+  };
 }
 
 export function logResponse(
@@ -95,4 +126,14 @@ export function beforeTrade(
   context.vars.apiKey = selectedUser?.apiKey ?? "";
 
   return done();
+}
+
+export function setCompetitionPayload(
+  requestParams: { json: unknown },
+  context: ArtilleryContext,
+  ee: unknown,
+  next: () => void,
+) {
+  requestParams.json = createCompetitionPayload();
+  return next();
 }
