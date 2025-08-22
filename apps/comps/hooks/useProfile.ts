@@ -1,14 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAtom } from "jotai";
 
-import { ApiClient, UnauthorizedError } from "@/lib/api-client";
+import { UnauthorizedError, apiClient } from "@/lib/api-client";
 import { AuthStatus, useUser, userAtom } from "@/state/atoms";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 
 import { useClientCleanup } from "./useAuth";
 import { useAnalytics } from "./usePostHog";
-
-const apiClient = new ApiClient();
+import { usePrivyAuth } from "./usePrivyAuth";
 
 /**
  * Hook to fetch user profile
@@ -44,7 +43,7 @@ export const useProfile = () => {
  * @returns Mutation for updating profile
  */
 export const useUpdateProfile = () => {
-  const [_, setUser] = useAtom(userAtom);
+  const [, setUser] = useAtom(userAtom);
   const queryClient = useQueryClient();
   const { trackEvent } = useAnalytics();
 
@@ -64,6 +63,30 @@ export const useUpdateProfile = () => {
       // Invalidate profile query to get updated data
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       setUser({ user: data.user, status: "authenticated" as AuthStatus });
+    },
+  });
+};
+
+export const useLinkWallet = () => {
+  const { user } = useUser();
+  const [, setUser] = useAtom(userAtom);
+  const queryClient = useQueryClient();
+  const { trackEvent } = useAnalytics();
+  const { linkWallet } = usePrivyAuth();
+
+  return useMutation({
+    mutationFn: async () => {
+      linkWallet();
+    },
+    onSuccess: () => {
+      trackEvent("UserLinkedWallet", {
+        updatedFields: ["walletAddress"],
+      });
+      setUser({ user: user, status: "authenticated" as AuthStatus });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+    onError: (error) => {
+      console.error("Wallet linking failed:", error);
     },
   });
 };

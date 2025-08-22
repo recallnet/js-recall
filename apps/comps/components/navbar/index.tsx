@@ -10,7 +10,7 @@ import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { SIWEButton } from "@/components/siwe";
+import { PrivyAuthButton } from "@/components/privy-auth-button";
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
@@ -100,7 +100,7 @@ export const Navbar: React.FunctionComponent = () => {
               : "border-b-transparent",
           )}
         >
-          <SIWEButton />
+          <PrivyAuthButton />
         </div>
       </div>
     </nav>

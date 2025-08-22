@@ -39,11 +39,11 @@ async function handleGetAgentApiKey(request: NextRequest) {
     sessionCookie,
   );
   const { user } = profileData;
-  const { walletAddress } = user;
+  const { email } = user;
 
   // Find the agent's ID in the sandbox using its name
   const searchData = await sandboxAdminRequest<AdminSearchResult>(
-    `/admin/search?user.walletAddress=${walletAddress}&agent.name=${encodeURIComponent(agentName)}&join=true`,
+    `/admin/search?user.email=${email}&agent.name=${encodeURIComponent(agentName)}&join=true`,
   );
 
   // Check if agent exists in sandbox
