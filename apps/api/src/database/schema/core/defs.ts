@@ -100,6 +100,7 @@ export const agents = pgTable(
     description: text(),
     imageUrl: text("image_url"),
     apiKey: varchar("api_key", { length: 400 }).notNull(),
+    apiKeyHash: varchar("api_key_hash", { length: 64 }),
     metadata: jsonb(),
     isEmailVerified: boolean("is_email_verified").default(false),
     status: actorStatus("status").default("active").notNull(),
@@ -124,6 +125,7 @@ export const agents = pgTable(
     index("idx_agents_wallet_address").on(table.walletAddress),
     index("idx_agents_handle").on(table.handle),
     index("idx_agents_api_key").on(table.apiKey),
+    index("idx_agents_api_key_hash").on(table.apiKeyHash),
     foreignKey({
       columns: [table.ownerId],
       foreignColumns: [users.id],
