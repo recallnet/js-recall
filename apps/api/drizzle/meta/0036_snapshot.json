@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "id": "814bcf17-b7e2-4dc7-b4c2-4ea855fb7829",
+=======
+  "id": "cfc2c6ce-7a7a-4855-bbbc-db90a6ce0d35",
+>>>>>>> 21fe9b27 (chore(api): gen migrations)
   "prevId": "8f63d012-8a8e-4c82-adc7-1a4ee0ca47bc",
   "version": "7",
   "dialect": "postgresql",
@@ -373,12 +377,15 @@
           "primaryKey": false,
           "notNull": true
         },
+<<<<<<< HEAD
         "api_key_hash": {
           "name": "api_key_hash",
           "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false
         },
+=======
+>>>>>>> 21fe9b27 (chore(api): gen migrations)
         "metadata": {
           "name": "metadata",
           "type": "jsonb",
@@ -495,6 +502,7 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+<<<<<<< HEAD
         },
         "idx_agents_api_key_hash": {
           "name": "idx_agents_api_key_hash",
@@ -510,6 +518,8 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+=======
+>>>>>>> 21fe9b27 (chore(api): gen migrations)
         }
       },
       "foreignKeys": {
