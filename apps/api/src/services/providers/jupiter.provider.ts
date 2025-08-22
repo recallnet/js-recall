@@ -2,7 +2,7 @@ import axios from "axios";
 
 import { serviceLogger } from "@/lib/logger.js";
 import { PriceSource } from "@/types/index.js";
-import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
+import { BlockchainType, PriceReport } from "@/types/index.js";
 
 /**
  * Jupiter price provider implementation
@@ -179,36 +179,6 @@ export class JupiterProvider implements PriceSource {
         error instanceof Error ? error.message : "Unknown error",
       );
       return null;
-    }
-  }
-
-  async supports(
-    tokenAddress: string,
-    specificChain: SpecificChain = "svm",
-  ): Promise<boolean> {
-    try {
-      serviceLogger.debug(
-        `[JupiterProvider] Checking support for token: ${tokenAddress}`,
-      );
-
-      // Jupiter only supports Solana tokens
-      if (specificChain !== "svm") {
-        return false;
-      }
-
-      // First check cache
-      if (this.getCachedPrice(tokenAddress) !== null) {
-        return true;
-      }
-
-      const price = await this.getPrice(tokenAddress, BlockchainType.SVM);
-      return price !== null;
-    } catch (error) {
-      serviceLogger.error(
-        `[JupiterProvider] Error checking token support:`,
-        error instanceof Error ? error.message : "Unknown error",
-      );
-      return false;
     }
   }
 }

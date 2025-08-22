@@ -2,6 +2,7 @@ export * from "./useAgents";
 export * from "./useAgent";
 export * from "./useCompetitions";
 export * from "./useCompetition";
+export * from "./useCompetitionRules";
 export * from "./useCompetitionAgents";
 export * from "./useAgentCompetitions";
 export * from "./useLeaderboards";

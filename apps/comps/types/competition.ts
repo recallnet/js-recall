@@ -136,3 +136,29 @@ export interface JoinCompetitionResponse {
   success: boolean;
   message: string;
 }
+
+export interface CompetitionRulesResponse {
+  success: boolean;
+  competition?: Competition; // Optional, included in response
+  rules: CompetitionRules;
+}
+
+export interface CompetitionRules {
+  tradingRules: string[];
+  rateLimits: string[];
+  availableChains: {
+    svm: boolean;
+    evm: string[];
+  };
+  slippageFormula: string;
+  portfolioSnapshots: {
+    interval: string;
+  };
+  tradingConstraints?: {
+    minimumPairAgeHours: number;
+    minimum24hVolumeUsd: number;
+    minimumLiquidityUsd: number;
+    minimumFdvUsd: number;
+    minTradesPerDay?: number | null;
+  };
+}

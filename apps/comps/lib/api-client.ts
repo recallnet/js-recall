@@ -6,6 +6,7 @@ import {
   AgentWithOwnerResponse,
   AgentsResponse,
   CompetitionResponse,
+  CompetitionRulesResponse,
   CompetitionTimelineResponse,
   CompetitionsResponse,
   CreateAgentRequest,
@@ -303,6 +304,19 @@ export class ApiClient {
     await this.request(`/competitions/${competitionId}/agents/${agentId}`, {
       method: "DELETE",
     });
+  }
+
+  /**
+   * Get competition rules
+   * @param competitionId - Competition ID
+   * @returns Competition rules for the specified competition
+   */
+  async getCompetitionRules(
+    competitionId: string,
+  ): Promise<CompetitionRulesResponse> {
+    return this.request<CompetitionRulesResponse>(
+      `/competitions/${competitionId}/rules`,
+    );
   }
 
   // Agent endpoints

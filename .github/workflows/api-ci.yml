@@ -254,8 +254,8 @@ jobs:
           INITIAL_BASE_USDC_BALANCE=5000
 
           # Portfolio configuration
-          PORTFOLIO_SNAPSHOT_INTERVAL_MS=10000
-          PORTFOLIO_PRICE_FRESHNESS_MS=10000
+          PRICE_CACHE_TTL_MS=60000
+          PRICE_CACHE_MAX_SIZE=10000
           CACHE_ACTIVE_COMP_TTL_MS=1
 
           # Optional: Disable ability for participants to view leaderboard activity

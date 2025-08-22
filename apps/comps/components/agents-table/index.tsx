@@ -118,6 +118,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         cell: ({ row }) => <RankBadge rank={row.original.rank} />,
         enableSorting: true,
         size: 100,
+        sortDescFirst: false, // Start with ascending (lower ranks first)
       },
       {
         id: "name",
@@ -138,6 +139,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </div>
         ),
         enableSorting: true,
+        sortDescFirst: false, // Alphabetical order
         meta: {
           className: "flex-1",
         },
@@ -263,6 +265,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     manualFiltering: true,
     manualSorting: true,
     enableSorting: true,
+    sortDescFirst: true, // Global default - can be overridden per column
     state: {
       sorting,
       columnVisibility,

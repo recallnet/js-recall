@@ -2,7 +2,6 @@
 
 import React from "react";
 
-import { SortState } from "@recallnet/ui2/components/table";
 import { Tabs, TabsList, TabsTrigger } from "@recallnet/ui2/components/tabs";
 import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
@@ -12,38 +11,32 @@ import { LeaderboardTable } from "@/components/leaderboard-table";
 import { LoadingLeaderboard } from "@/components/leaderboard/loading";
 import { AGENT_SKILLS } from "@/constants/index";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
+import { useSorting } from "@/hooks/useSorting";
 
 const limit = 10;
 
 export function LeaderboardSection() {
   const [offset, setOffset] = React.useState(0);
   const [filter, setFilter] = React.useState("trading");
-  const [sortState, setSorted] = React.useState(
-    {} as Record<string, SortState>,
-  );
 
-  const sortString = React.useMemo(() => {
-    return Object.entries(sortState).reduce((acc, [key, sort]) => {
-      if (sort !== "none") return acc + `${sort == "asc" ? "" : "-"}${key}`;
-      return acc;
-    }, "");
-  }, [sortState]);
+  // Define sorting configuration for each field
+  const sortDescFirst = {
+    rank: false, // Lower ranks (#1, #2, #3) first
+    score: true, // Higher scores first
+    name: false, // Alphabetical order
+    competitions: true, // More competitions first
+    votes: true, // More votes first
+  };
+
+  const { sortState, handleSortChange, getSortString } =
+    useSorting(sortDescFirst);
 
   const { data: leaderboard, isLoading } = useLeaderboards({
     limit,
     offset,
-    sort: sortString,
+    sort: getSortString(),
     type: filter !== "all" ? filter : undefined,
   });
-
-  const handleSortChange = React.useCallback((field: string) => {
-    setSorted((sort) => {
-      const cur = sort[field];
-      const nxt =
-        !cur || cur == "none" ? "asc" : cur == "asc" ? "desc" : "none";
-      return { [field]: nxt };
-    });
-  }, []);
 
   const handlePageChange = (page: number) => {
     setOffset(limit * (page - 1));
@@ -53,6 +46,14 @@ export function LeaderboardSection() {
     setFilter(value);
     setOffset(0);
   };
+
+  const handleSortChangeWithReset = React.useCallback(
+    (field: string) => {
+      handleSortChange(field);
+      setOffset(0); // Reset to first page when sorting changes
+    },
+    [handleSortChange],
+  );
 
   if (isLoading) return <LoadingLeaderboard />;
 
@@ -123,7 +124,7 @@ export function LeaderboardSection() {
         </TabsList>
 
         <LeaderboardTable
-          handleSortChange={handleSortChange}
+          handleSortChange={handleSortChangeWithReset}
           sortState={sortState}
           agents={leaderboard?.agents || []}
           onPageChange={handlePageChange}

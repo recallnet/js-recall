@@ -97,6 +97,7 @@ export const looseTradingConstraints = {
   minimumFdvUsd: 50000,
   minimumLiquidityUsd: 5000,
   minimumPairAgeHours: 0,
+  minTradesPerDay: null,
 };
 
 export const noTradingConstraints = {
@@ -104,6 +105,15 @@ export const noTradingConstraints = {
   minimumFdvUsd: 0,
   minimumLiquidityUsd: 0,
   minimumPairAgeHours: 0,
+  minTradesPerDay: null,
+};
+
+export const strictTradingConstraints = {
+  minimum24hVolumeUsd: 100000,
+  minimumFdvUsd: 1000000,
+  minimumLiquidityUsd: 500000,
+  minimumPairAgeHours: 24,
+  minTradesPerDay: 10,
 };
 
 /**
@@ -252,6 +262,7 @@ export async function createTestCompetition(
   joinStartDate?: string,
   joinEndDate?: string,
   maxParticipants?: number,
+  tradingConstraints?: TradingConstraints,
 ): Promise<CreateCompetitionResponse> {
   const result = await adminClient.createCompetition(
     name,
@@ -267,6 +278,7 @@ export async function createTestCompetition(
     joinStartDate,
     joinEndDate,
     maxParticipants,
+    tradingConstraints,
   );
 
   if (!result.success) {

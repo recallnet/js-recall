@@ -109,10 +109,6 @@ export interface PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null>;
-  supports(
-    tokenAddress: string,
-    specificChain: SpecificChain,
-  ): Promise<boolean>;
 }
 
 // DexScreener API interfaces
@@ -605,6 +601,7 @@ export const TradingConstraintsSchema = z
     minimum24hVolumeUsd: z.number().min(0),
     minimumLiquidityUsd: z.number().min(0),
     minimumFdvUsd: z.number().min(0),
+    minTradesPerDay: z.number().min(0).nullable().optional(),
   })
   .optional();
 
@@ -1199,3 +1196,32 @@ export const BucketParamSchema = z.coerce
   .default(30);
 
 export type BucketParam = z.infer<typeof BucketParamSchema>;
+
+export const TimestampSchema = z.coerce.date();
+
+export const SnapshotSchema = z.object({
+  id: z.number(),
+  competitionId: UuidSchema,
+  agentId: UuidSchema,
+  timestamp: TimestampSchema,
+  totalValue: z.number(),
+});
+
+/**
+ * Snakecase version of the snapshot schema, this is convenient for parsing raw
+ * query results.
+ */
+export const SnapshotDbSchema = z.object({
+  id: z.number(),
+  competition_id: UuidSchema,
+  agent_id: UuidSchema,
+  timestamp: TimestampSchema,
+  total_value: z.coerce.number(),
+});
+
+export const BestPlacementDbSchema = z.looseObject({
+  competition_id: z.string(),
+  // Note that coerce will result in 0 for "", null, and undefined
+  rank: z.coerce.number(),
+  total_agents: z.coerce.number(),
+});

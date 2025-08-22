@@ -465,8 +465,12 @@ export interface CompetitionRulesResponse extends ApiResponse {
       evm: string[];
     };
     slippageFormula: string;
-    portfolioSnapshots: {
-      interval: string;
+    tradingConstraints?: {
+      minimumPairAgeHours: number;
+      minimum24hVolumeUsd: number;
+      minimumLiquidityUsd: number;
+      minimumFdvUsd: number;
+      minTradesPerDay?: number;
     };
   };
 }
@@ -500,6 +504,7 @@ export interface TradingConstraints {
   minimum24hVolumeUsd?: number;
   minimumLiquidityUsd?: number;
   minimumFdvUsd?: number;
+  minTradesPerDay?: number | null;
 }
 
 // Competition agents response
@@ -570,21 +575,6 @@ export interface PriceResponse extends ApiResponse {
   specificChain: SpecificChain | null;
   symbol: string;
   timestamp?: string;
-}
-
-// Price history point
-export interface PriceHistoryPoint {
-  timestamp: string;
-  price: number;
-}
-
-// Price history response
-export interface PriceHistoryResponse extends ApiResponse {
-  token: string;
-  chain: BlockchainType;
-  specificChain: SpecificChain | null;
-  interval: string;
-  history: PriceHistoryPoint[];
 }
 
 /**
