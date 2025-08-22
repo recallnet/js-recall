@@ -99,8 +99,15 @@ export class MockPrivyClient {
     // Always add embedded wallet (required by our Privy configuration)
     // Generate a valid Ethereum address from the privyId
     const hash = privyId.split(":").pop() || "default";
-    const embeddedWalletAddress =
-      `0x${hash.padEnd(40, "0").slice(0, 40)}`.toLowerCase();
+    // Convert the hash to a valid hex string by taking its char codes
+    let hexString = "";
+    for (let i = 0; i < hash.length && hexString.length < 40; i++) {
+      const charCode = hash.charCodeAt(i);
+      hexString += charCode.toString(16).padStart(2, "0");
+    }
+    // Pad with zeros if needed to reach 40 characters
+    hexString = hexString.padEnd(40, "0").slice(0, 40);
+    const embeddedWalletAddress = `0x${hexString}`.toLowerCase();
     linkedAccounts.push({
       type: "wallet",
       address: embeddedWalletAddress,

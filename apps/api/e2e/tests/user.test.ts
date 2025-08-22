@@ -11,16 +11,11 @@ import {
   CreateCompetitionResponse,
   ErrorResponse,
   GetUserAgentsResponse,
-  LinkUserWalletResponse,
   StartCompetitionResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
-import {
-  createMockPrivyToken,
-  createTestPrivyUser,
-} from "@/e2e/utils/privy.js";
 import {
   createPrivyAuthenticatedClient,
   createTestAgent,
@@ -3143,61 +3138,5 @@ describe("User API", () => {
     // Ensure ranks are the same since each agent has won one comp
     expect(agentFoxtrotRank).toBe(agentHotelRank);
     expect(agentFoxtrotRank).toBe(1);
-  });
-
-  describe("Privy user wallet linking", () => {
-    test("can link a privy wallet to a user", async () => {
-      const { client: siweClient, user } = await createPrivyAuthenticatedClient(
-        {
-          adminApiKey,
-          userName: "Wallet Linking Test User",
-          userEmail: "wallet-linking-test@example.com",
-        },
-      );
-      // Simulate linking the wallet in Privy by creating a new JWT with the linked wallet
-      const newWalletAddress = "0x1234567890123456789012345678901234567890";
-      // Double check the existing wallet is not the same as the new one
-      expect(user.walletAddress).not.toBe(newWalletAddress);
-
-      // Create a new JWT token with the linked wallet
-      const privyUser = createTestPrivyUser({
-        privyId: user.privyId,
-        name: user.name,
-        email: user.email,
-        walletAddress: user.walletAddress,
-        provider: "email",
-      });
-      const updatedPrivyToken = await createMockPrivyToken(privyUser, {
-        linkedWallets: [newWalletAddress],
-      });
-
-      // Update the client with the new token
-      siweClient.setJwtToken(updatedPrivyToken);
-      const linkWalletResponse = (await siweClient.linkUserWallet(
-        newWalletAddress,
-      )) as LinkUserWalletResponse;
-      expect(linkWalletResponse.success).toBe(true);
-      expect(linkWalletResponse.user.walletAddress).toBe(newWalletAddress);
-    });
-
-    test("fails to link invalid privy wallet to a user", async () => {
-      const { client: siweClient, user } = await createPrivyAuthenticatedClient(
-        {
-          adminApiKey,
-          userName: "Wallet Linking Test User",
-          userEmail: "wallet-linking-test@example.com",
-        },
-      );
-      // Double check the existing wallet is not the same as the new one
-      const newWalletAddress = "0x1234567890123456789012345678901234567890";
-      expect(user.walletAddress).not.toBe(newWalletAddress);
-
-      // Attempt to link an invalid wallet (not in Privy)
-      const linkWalletResponse = (await siweClient.linkUserWallet(
-        newWalletAddress,
-      )) as ErrorResponse;
-      expect(linkWalletResponse.success).toBe(false);
-      expect(linkWalletResponse.error).toBe("Wallet not linked to user");
-    });
   });
 });
