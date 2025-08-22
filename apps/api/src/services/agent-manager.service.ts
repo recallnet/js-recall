@@ -32,9 +32,10 @@ import {
 import { getAgentRankById } from "@/database/repositories/agentscore-repository.js";
 import {
   findBestPlacementForAgent,
-  getAgentCompetitionRanking,
+  getAgentRankingsInCompetitions,
   getBoundedSnapshots,
   getBulkAgentCompetitionRankings,
+  getBulkBoundedSnapshots,
 } from "@/database/repositories/competition-repository.js";
 import { createEmailVerificationToken } from "@/database/repositories/email-verification-repository.js";
 import {
@@ -43,7 +44,7 @@ import {
 } from "@/database/repositories/leaderboard-repository.js";
 import {
   countAgentTrades,
-  countAgentTradesInCompetition,
+  countBulkAgentTradesInCompetitions,
 } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
 import { countTotalVotesForAgent } from "@/database/repositories/vote-repository.js";
@@ -1027,12 +1028,10 @@ export class AgentManager {
         (comp) => comp !== null,
       ) as SelectCompetition[];
 
-      // Attach metrics to each valid competition
-      const enhancedCompetitions = await Promise.all(
-        validCompetitions.map(
-          async (competition) =>
-            await this.attachCompetitionMetrics(competition, agentId),
-        ),
+      // Attach metrics to all competitions in bulk
+      const enhancedCompetitions = await this.attachBulkCompetitionMetrics(
+        validCompetitions,
+        agentId,
       );
 
       // Handle computed field sorting if needed
@@ -1198,6 +1197,9 @@ export class AgentManager {
             const agentIds = agentsNeedingRankFallback.map(
               ({ agent }) => agent.id,
             );
+            // TODO: here we have a lookup that happens if we need computed
+            // sort and inside a loop over all competitions and if we need
+            // a "RankFallback". We might want to refactor this logic.
             const bulkRankings = await getBulkAgentCompetitionRankings(
               comp.id,
               agentIds,
@@ -1367,6 +1369,8 @@ export class AgentManager {
         throw error;
       }
       // For other errors, return empty result
+      // TODO: we might want to start throwing 500 when something unexpected
+      // happens.
       return { competitions: [], total: 0 };
     }
   }
@@ -1603,53 +1607,62 @@ export class AgentManager {
   }
 
   /**
-   * Attach agent-specific metrics to a competition object
-   * @param competition The competition object to enhance
-   * @param agentId The agent ID for metrics calculation
-   * @returns Enhanced competition with agent metrics
+   * Attach agent-specific metrics to multiple competitions in bulk
+   * @param competitions Array of competitions to enhance
+   * @param agentId Agent ID
+   * @returns Array of enhanced competitions with metrics
    */
-  async attachCompetitionMetrics(
-    competition: SelectCompetition,
+  async attachBulkCompetitionMetrics(
+    competitions: SelectCompetition[],
     agentId: string,
-  ): Promise<EnhancedCompetition> {
+  ): Promise<EnhancedCompetition[]> {
+    if (competitions.length === 0) {
+      return [];
+    }
+
     try {
-      const { pnl, pnlPercent, portfolioValue } =
-        await this.getAgentPerformanceForComp(agentId, competition.id);
+      const competitionIds = competitions.map((comp) => comp.id);
 
-      // Get total trades for agent in this competition
-      const totalTrades = await countAgentTradesInCompetition(
-        agentId,
-        competition.id,
-      );
+      // Fetch all data in bulk with just 3 queries
+      const [snapshotsMap, tradeCountsMap, rankingsMap] = await Promise.all([
+        getBulkBoundedSnapshots(agentId, competitionIds),
+        countBulkAgentTradesInCompetitions(agentId, competitionIds),
+        getAgentRankingsInCompetitions(agentId, competitionIds),
+      ]);
 
-      // Get agent's ranking in this competition
-      const bestPlacement = await getAgentCompetitionRanking(
-        agentId,
-        competition.id,
-      );
+      // Map results back to competitions
+      return competitions.map((competition) => {
+        const snapshots = snapshotsMap.get(competition.id);
+        const tradeCount = tradeCountsMap.get(competition.id) || 0;
+        const bestPlacement = rankingsMap.get(competition.id);
 
-      return {
-        ...competition,
-        portfolioValue,
-        pnl,
-        pnlPercent,
-        totalTrades,
-        bestPlacement,
-      };
+        // Calculate PnL from snapshots
+        let portfolioValue = 0;
+        let pnl = 0;
+        let pnlPercent = 0;
+
+        if (snapshots) {
+          portfolioValue = Number(snapshots.newest?.totalValue || 0);
+          const startingValue = Number(snapshots.oldest?.totalValue || 0);
+          pnl = portfolioValue - startingValue;
+          pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
+        }
+
+        return {
+          ...competition,
+          portfolioValue,
+          pnl,
+          pnlPercent,
+          totalTrades: tradeCount,
+          bestPlacement,
+        };
+      });
     } catch (error) {
       serviceLogger.error(
-        `[AgentManager] Error attaching competition metrics for agent ${agentId} in competition ${competition.id}:`,
+        `[AgentManager] Error attaching bulk competition metrics for agent ${agentId}:`,
         error,
       );
-      // Return competition with default values on error
-      return {
-        ...competition,
-        portfolioValue: 0,
-        pnl: 0,
-        pnlPercent: 0,
-        totalTrades: 0,
-        bestPlacement: undefined, // No valid ranking data on error
-      };
+      throw error;
     }
   }
 

@@ -1352,6 +1352,7 @@ describe("User API", () => {
     expect(response2.competitions[0]?.id).toBe(competition.id);
     expect(response2.competitions[0]?.agents.length).toBe(1);
     expect(response2.competitions[0]?.agents[0]?.id).toBe(agent2.id);
+    expect(response2.competitions[0]?.agents[0]?.rank).toBeGreaterThan(0);
     expect(response2.competitions[0]?.agents[0]?.rank).toBe(
       twoMoreThanThree ? 1 : 2,
     );
@@ -1359,6 +1360,7 @@ describe("User API", () => {
     expect(response3.competitions[0]?.id).toBe(competition.id);
     expect(response3.competitions[0]?.agents.length).toBe(1);
     expect(response3.competitions[0]?.agents[0]?.id).toBe(agent3.id);
+    expect(response3.competitions[0]?.agents[0]?.rank).toBeGreaterThan(0);
     expect(response3.competitions[0]?.agents[0]?.rank).toBe(
       twoMoreThanThree ? 2 : 1,
     );
