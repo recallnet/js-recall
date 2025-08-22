@@ -39,12 +39,14 @@ import { InsertTradingCompetition } from "@/database/schema/trading/types.js";
 import { InsertPortfolioSnapshot } from "@/database/schema/trading/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
+import { ApiError } from "@/middleware/errorHandler.js";
 import {
   COMPETITION_AGENT_STATUS,
   COMPETITION_STATUS,
   CompetitionAgentStatus,
   CompetitionStatus,
   PagingParams,
+  SnapshotDbSchema,
   SnapshotSchema,
 } from "@/types/index.js";
 
@@ -1238,17 +1240,19 @@ async function getBulkBoundedSnapshotsImpl(
       `,
     );
 
-    // Convert raw results to typed snapshots
+    // Convert raw results to typed snapshots with lowerCamelCase
     const allSnapshots = snapshotResults.rows
       .map(function (row) {
-        const { data, success } = SnapshotSchema.safeParse(row);
-        if (!success) return;
+        const { data, success, error } = SnapshotDbSchema.safeParse(row);
+        if (!success) {
+          throw new ApiError(500, `snapshotResults.rows.map: ${error}`);
+        }
         return {
           id: data.id,
-          competitionId: data.competitionId,
-          agentId: data.agentId,
+          competitionId: data.competition_id,
+          agentId: data.agent_id,
           timestamp: data.timestamp,
-          totalValue: data.totalValue,
+          totalValue: data.total_value,
         };
       })
       .filter((r) => r);
@@ -1274,8 +1278,11 @@ async function getBulkBoundedSnapshotsImpl(
     >();
 
     for (const snapshot of allSnapshots) {
-      const { data, success } = SnapshotSchema.safeParse(snapshot);
-      if (!success) continue;
+      const { data, success, error } = SnapshotSchema.safeParse(snapshot);
+      if (!success) {
+        throw new ApiError(500, `allSnapshots: ${error}`);
+      }
+
       const compSnapshots =
         snapshotsByCompetition.get(data.competitionId) || [];
       compSnapshots.push(data);
@@ -1370,8 +1377,9 @@ async function getAgentRankingsInCompetitionsImpl(
     const resultRowSchema = z
       .object({
         competition_id: z.string(),
-        rank: z.number(),
-        total_agents: z.number(),
+        // Note that coerce will result in 0 for "", null, and undefined
+        rank: z.coerce.number(),
+        total_agents: z.coerce.number(),
       })
       .passthrough();
 
@@ -1401,50 +1409,6 @@ async function getAgentRankingsInCompetitionsImpl(
   } catch (error) {
     repositoryLogger.error("Error in getAgentRankingsInCompetitions:", error);
     throw error;
-  }
-}
-
-/**
- * Get agent's ranking in a specific competition
- * @param agentId Agent ID
- * @param competitionId Competition ID
- * @returns Object with rank and totalAgents, or undefined if no ranking data available
- */
-async function getAgentCompetitionRankingImpl(
-  agentId: string,
-  competitionId: string,
-): Promise<{ rank: number; totalAgents: number } | undefined> {
-  try {
-    // Get all latest portfolio snapshots for the competition
-    const snapshots = await getLatestPortfolioSnapshotsImpl(competitionId);
-
-    if (snapshots.length === 0) {
-      return undefined; // No snapshots = no ranking data
-    }
-
-    // Sort by totalValue descending to determine rankings
-    const sortedSnapshots = snapshots.sort(
-      (a, b) => Number(b.totalValue) - Number(a.totalValue),
-    );
-
-    // Find the agent's rank (1-based ranking)
-    const agentIndex = sortedSnapshots.findIndex(
-      (snapshot) => snapshot.agentId === agentId,
-    );
-
-    // If agent not found in snapshots, return undefined
-    if (agentIndex === -1) {
-      return undefined; // Agent not found in snapshots = no ranking
-    }
-
-    return {
-      rank: agentIndex + 1, // Convert to 1-based ranking
-      totalAgents: sortedSnapshots.length,
-    };
-  } catch (error) {
-    repositoryLogger.error("Error in getAgentCompetitionRanking:", error);
-    // Return undefined on error - no reliable ranking data
-    return undefined;
   }
 }
 
@@ -1801,7 +1765,7 @@ async function getAllCompetitionAgentsImpl(
 
 /**
  * Get agent rankings for multiple agents in a competition efficiently
- * This replaces N calls to getAgentCompetitionRanking with a single bulk operation
+ *
  * @param competitionId Competition ID
  * @param agentIds Array of agent IDs to get rankings for
  * @returns Map of agent ID to ranking data
@@ -2047,12 +2011,6 @@ export const getAgentRankingsInCompetitions = createTimedRepositoryFunction(
   getAgentRankingsInCompetitionsImpl,
   "CompetitionRepository",
   "getAgentRankingsInCompetitions",
-);
-
-export const getAgentCompetitionRanking = createTimedRepositoryFunction(
-  getAgentCompetitionRankingImpl,
-  "CompetitionRepository",
-  "getAgentCompetitionRanking",
 );
 
 export const getAllPortfolioSnapshots = createTimedRepositoryFunction(

@@ -1206,3 +1206,15 @@ export const SnapshotSchema = z.object({
   timestamp: TimestampSchema,
   totalValue: z.number(),
 });
+
+/**
+ * Snakecase version of the snapshot schema, this is convenient for parsing raw
+ * query results.
+ */
+export const SnapshotDbSchema = z.object({
+  id: z.number(),
+  competition_id: UuidSchema,
+  agent_id: UuidSchema,
+  timestamp: TimestampSchema,
+  total_value: z.coerce.number(),
+});

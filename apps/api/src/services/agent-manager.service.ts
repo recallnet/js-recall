@@ -1145,6 +1145,9 @@ export class AgentManager {
             const agentIds = agentsNeedingRankFallback.map(
               ({ agent }) => agent.id,
             );
+            // TODO: here we have a lookup that happens if we need computed
+            // sort and inside a loop over all competitions and if we need
+            // a "RankFallback". We might want to refactor this logic.
             const bulkRankings = await getBulkAgentCompetitionRankings(
               comp.id,
               agentIds,
@@ -1314,6 +1317,8 @@ export class AgentManager {
         throw error;
       }
       // For other errors, return empty result
+      // TODO: we might want to start throwing 500 when something unexpected
+      // happens.
       return { competitions: [], total: 0 };
     }
   }
@@ -1577,8 +1582,7 @@ export class AgentManager {
       return competitions.map((competition) => {
         const snapshots = snapshotsMap.get(competition.id);
         const tradeCount = tradeCountsMap.get(competition.id) || 0;
-        const rankingData = rankingsMap.get(competition.id);
-        const bestPlacement = rankingData;
+        const bestPlacement = rankingsMap.get(competition.id);
 
         // Calculate PnL from snapshots
         let portfolioValue = 0;
