@@ -194,7 +194,6 @@ export const config = {
   },
   email: {
     apiKey: process.env.LOOPS_API_KEY || "",
-    transactionalId: process.env.LOOPS_TRANSACTIONAL_ID || "",
     mailingListId: process.env.LOOPS_MAILING_LIST_ID || "",
   },
   privy: {

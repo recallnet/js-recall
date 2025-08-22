@@ -44,9 +44,6 @@ export async function startServer(): Promise<void> {
       PRIVY_JWKS_PUBLIC_KEY:
         process.env.PRIVY_JWKS_PUBLIC_KEY ||
         "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2aUdZ7S6KPCBlrB+vNXjmIqbvww7pmx5Ozk81+rAB0vqe3A1WC2I5zUnU8EPqO2+RMsPjhUyqtzdJI9J7Sz3YA==",
-      PRIVY_JWKS_ENDPOINT:
-        process.env.PRIVY_JWKS_ENDPOINT ||
-        "https://auth.privy.test/.well-known/jwks.json",
     },
     stdio: "inherit",
     shell: true,
