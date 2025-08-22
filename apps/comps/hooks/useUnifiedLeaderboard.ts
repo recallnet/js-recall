@@ -1,21 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 
 import {
-  SkillDefinition,
   UnifiedLeaderboardData,
   UnifiedRankingEntry,
   UnifiedSkillData,
 } from "@/types/leaderboard";
 
 import { useBenchmarkLeaderboard } from "./useBenchmarkLeaderboard";
-import { useLeaderboards } from "./useLeaderboards";
 
 /**
  * Hook to get unified leaderboard data combining benchmark models + trading agents
  */
 export const useUnifiedLeaderboard = () => {
   const benchmarkQuery = useBenchmarkLeaderboard();
-  const tradingQuery = useLeaderboards({ type: "trading", limit: 100 });
 
   return useQuery({
     queryKey: ["unified-leaderboard"],
@@ -24,106 +21,68 @@ export const useUnifiedLeaderboard = () => {
         throw new Error("Benchmark data not loaded");
       }
 
-      // Create trading skill definition
-      const tradingSkill: SkillDefinition = {
-        id: "7d-pnl",
-        name: "Trading Rankings",
-        description:
-          "Agent skill rankings based on trading competition performance",
-        longDescription:
-          "This ranking system evaluates AI agents based on their cumulative performance across trading competitions. Scores are calculated using a skill-based rating system that considers placement and performance relative to other agents.",
-        category: "trading",
-        displayOrder: 0, // Show first
-        isEnabled: true,
-        methodology:
-          "Rankings use an ELO-like rating system that updates after each competition. Agents gain or lose rating points based on their relative performance against other participants. Starting agents begin with a default rating, and points are redistributed based on final placement using the PlackettLuce model.",
+      // All skills are now in the JSON, including trading
+      const allSkills = benchmarkQuery.data.skills;
 
-        researchLinks: [
-          {
-            title: "OpenSkill: Multiplayer Rating System",
-            url: "https://github.com/philihp/openskill.js",
-          },
-          {
-            title: "PlackettLuce Model for Ranking",
-            url: "https://en.wikipedia.org/wiki/Plackett%E2%80%93Luce_model",
-          },
-        ],
-      };
+      // Process skill data
+      const skillDataMap: Record<string, UnifiedSkillData> = {};
 
-      // Combine all skills
-      const allSkills = {
-        "7d-pnl": tradingSkill,
-        ...benchmarkQuery.data.skills,
-      };
+      Object.entries(allSkills).forEach(([skillId, skill]) => {
+        if (skillId === "7d-pnl") {
+          // Trading skill - use agents from JSON
+          skillDataMap[skillId] = {
+            skill,
+            participants: {
+              models: [], // No models in trading
+              agents: benchmarkQuery.data!.agents || [],
+            },
+            stats: {
+              totalParticipants: benchmarkQuery.data!.agents?.length || 0,
+              modelCount: 0,
+              agentCount: benchmarkQuery.data!.agents?.length || 0,
+              avgScore: benchmarkQuery.data?.skillStats[skillId]?.avgScore || 0,
+              topScore: benchmarkQuery.data?.skillStats[skillId]?.topScore || 0,
+            },
+          };
+        } else {
+          // Benchmark skill - use models from JSON
+          const modelsForSkill = benchmarkQuery
+            .data!.models.filter((model) => model.scores[skillId] !== undefined)
+            .sort(
+              (a, b) =>
+                (a.scores[skillId]?.rank || 999) -
+                (b.scores[skillId]?.rank || 999),
+            );
 
-      // Process trading skill data
-      const tradingSkillData: UnifiedSkillData = {
-        skill: tradingSkill,
-        participants: {
-          models: [], // No models in trading
-          agents: tradingQuery.data?.agents || [],
-        },
-        stats: {
-          totalParticipants: tradingQuery.data?.agents.length || 0,
-          modelCount: 0,
-          agentCount: tradingQuery.data?.agents.length || 0,
-          avgScore:
-            tradingQuery.data?.agents && tradingQuery.data.agents.length > 0
-              ? tradingQuery.data.agents.reduce(
-                  (sum, agent) => sum + agent.score,
-                  0,
-                ) / tradingQuery.data.agents.length
-              : 0,
-          topScore:
-            tradingQuery.data?.agents && tradingQuery.data.agents.length > 0
-              ? Math.max(...tradingQuery.data.agents.map((a) => a.score))
-              : 0,
-        },
-      };
-
-      // Process benchmark skill data
-      const benchmarkSkillData: Record<string, UnifiedSkillData> = {};
-
-      Object.entries(benchmarkQuery.data.skills).forEach(([skillId, skill]) => {
-        const modelsForSkill = benchmarkQuery
-          .data!.models.filter((model) => model.scores[skillId] !== undefined)
-          .sort(
-            (a, b) =>
-              (a.scores[skillId]?.rank || 999) -
-              (b.scores[skillId]?.rank || 999),
-          );
-
-        benchmarkSkillData[skillId] = {
-          skill,
-          participants: {
-            models: modelsForSkill,
-            agents: [], // No agents in benchmark skills
-          },
-          stats: {
-            totalParticipants: modelsForSkill.length,
-            modelCount: modelsForSkill.length,
-            agentCount: 0,
-            avgScore: benchmarkQuery.data?.skillStats[skillId]?.avgScore,
-            topScore: benchmarkQuery.data?.skillStats[skillId]?.topScore,
-          },
-        };
+          skillDataMap[skillId] = {
+            skill,
+            participants: {
+              models: modelsForSkill,
+              agents: [], // No agents in benchmark skills
+            },
+            stats: {
+              totalParticipants: modelsForSkill.length,
+              modelCount: modelsForSkill.length,
+              agentCount: 0,
+              avgScore: benchmarkQuery.data?.skillStats[skillId]?.avgScore,
+              topScore: benchmarkQuery.data?.skillStats[skillId]?.topScore,
+            },
+          };
+        }
       });
 
       return {
         skills: allSkills,
-        skillData: {
-          "7d-pnl": tradingSkillData,
-          ...benchmarkSkillData,
-        },
+        skillData: skillDataMap,
         globalStats: {
           totalSkills: Object.keys(allSkills).length,
           totalModels: benchmarkQuery.data.models.length,
-          totalAgents: tradingQuery.data?.agents.length || 0,
+          totalAgents: benchmarkQuery.data.agents?.length || 0,
         },
       };
     },
-    enabled: benchmarkQuery.isSuccess && tradingQuery.isSuccess, // Wait for both data sources
-    staleTime: 2 * 60 * 1000, // 2 minutes (trading data changes frequently)
+    enabled: benchmarkQuery.isSuccess, // Only wait for benchmark data (which now includes agents)
+    staleTime: 5 * 60 * 1000, // 5 minutes (static data changes less frequently)
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
 };

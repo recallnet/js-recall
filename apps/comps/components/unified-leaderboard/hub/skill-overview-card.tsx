@@ -73,7 +73,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
                   : "bg-blue-900 text-blue-300",
               )}
             >
-              {isTrading ? "LIVE" : "BENCHMARK"}
+              {isTrading ? "AGENT" : "MODEL"}
             </Badge>
             <ArrowRight
               size={16}

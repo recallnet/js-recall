@@ -3,6 +3,7 @@
  * Complete type system for benchmark models, trading agents, and UI components
  * Combines static JSON schema + live API data + UI-specific types
  */
+import type { LeaderboardAgent } from "./agent";
 
 // ============================================================================
 // CORE DATA TYPES (from benchmark-leaderboard-schema.ts)
@@ -185,6 +186,8 @@ export interface BenchmarkLeaderboardData {
   skills: Record<string, SkillDefinition>;
   /** Array of all evaluated models */
   models: BenchmarkModel[];
+  /** Array of all trading agents (for 7d-pnl skill) */
+  agents?: LeaderboardAgent[];
   /** Statistical summaries for each skill */
   skillStats: Record<string, SkillStats>;
 }
@@ -200,7 +203,7 @@ export interface UnifiedSkillData {
   skill: SkillDefinition;
   participants: {
     models: BenchmarkModel[];
-    agents: import("./agent").LeaderboardAgent[];
+    agents: LeaderboardAgent[];
   };
   stats: {
     totalParticipants: number;
@@ -234,7 +237,7 @@ export interface UnifiedLeaderboardData {
 export interface SkillOverviewCardProps {
   skill: SkillDefinition;
   stats: UnifiedSkillData["stats"];
-  topParticipants: Array<BenchmarkModel | import("./agent").LeaderboardAgent>;
+  topParticipants: Array<BenchmarkModel | LeaderboardAgent>;
 }
 
 /**

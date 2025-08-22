@@ -98,17 +98,6 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
             Leaderboards
           </Button>
         </Link>
-        <div className="h-6 w-px bg-gray-700" />
-        <Badge
-          className={cn(
-            "text-sm",
-            isTrading
-              ? "bg-green-900 text-green-300"
-              : "bg-blue-900 text-blue-300",
-          )}
-        >
-          {isTrading ? "LIVE" : "BENCHMARK"}
-        </Badge>
       </div>
 
       {/* Skill Info */}
@@ -133,7 +122,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                     : "bg-blue-900 text-blue-300",
                 )}
               >
-                {isTrading ? "LIVE" : "BENCHMARK"}
+                {isTrading ? "AGENT" : "MODEL"}
               </Badge>
             </div>
           </div>
