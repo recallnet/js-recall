@@ -195,6 +195,7 @@ export default function CompetitionPage({
               Voting begins in...
             </span>
             <CountdownClock
+              showDuration={true}
               targetDate={new Date(competition.votingStartDate)}
             />
           </div>
