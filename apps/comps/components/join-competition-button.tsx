@@ -12,7 +12,7 @@ import { useJoinCompetition } from "@/hooks/useJoinCompetition";
 import AgentRegisteredModal from "./modals/agent-registered";
 import { ChooseAgentModal } from "./modals/choose-agent";
 import ConfirmAgentEntryModal from "./modals/confirm-agent-entry";
-import { ConnectWalletModal } from "./modals/connect-wallet";
+import { ConnectPrivyModal } from "./modals/connect-privy";
 import { CreateAccountModal } from "./modals/create-account";
 import { SetupAgentModal } from "./modals/setup-agent";
 
@@ -24,7 +24,7 @@ interface JoinCompetitionButtonProps
 }
 
 type ModalTypes =
-  | "connectWallet"
+  | "connectAccount"
   | "chooseAgent"
   | "setupAgent"
   | "createAccount"
@@ -139,7 +139,7 @@ export function JoinCompetitionButton({
     }
 
     if (!session.isAuthenticated) {
-      setActiveModal("connectWallet");
+      setActiveModal("connectAccount");
       return;
     }
 
@@ -201,8 +201,8 @@ export function JoinCompetitionButton({
       >
         {children}
       </Button>
-      <ConnectWalletModal
-        isOpen={activeModal === "connectWallet"}
+      <ConnectPrivyModal
+        isOpen={activeModal === "connectAccount"}
         onClose={() => setActiveModal(null)}
       />
       <ChooseAgentModal

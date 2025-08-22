@@ -2,35 +2,29 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { toast } from "@recallnet/ui2/components/toast";
 
-import { ApiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { sandboxClient } from "@/lib/sandbox-client";
-
-import { useProfile } from "./useProfile";
-
-const apiClient = new ApiClient();
 
 export const useUnlockKeys = (agentName: string, agentId?: string) => {
   const queryClient = useQueryClient();
-  const { data: user } = useProfile();
-  const isEmailVerified = user?.isEmailVerified;
 
-  // Query for production API key - fetch when email verified and agent exists
+  // Query for production API key - fetch when agent exists
   const productionKeyQuery = useQuery({
     queryKey: ["agent-api-key", agentId],
     queryFn: async () => {
       if (!agentId) throw new Error("Agent ID required");
       return await apiClient.getAgentApiKey(agentId);
     },
-    enabled: !!agentId && !!isEmailVerified,
+    enabled: !!agentId,
   });
 
-  // Query for sandbox agent - fetch when email verified and agent exists
+  // Query for sandbox agent - fetch when agent exists
   const sandboxAgentQuery = useQuery({
     queryKey: ["sandbox-agent", agentName],
     queryFn: async () => {
       return await sandboxClient.getAgentApiKey(agentName);
     },
-    enabled: !!agentName && !!isEmailVerified,
+    enabled: !!agentName,
   });
 
   // Get sandbox agent id
@@ -45,7 +39,7 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
         status: "active",
       });
     },
-    enabled: !!sandboxAgentId && !!isEmailVerified,
+    enabled: !!sandboxAgentId,
     staleTime: 0, // Always consider data stale
     refetchOnMount: "always", // Always refetch when component mounts
   });
@@ -67,7 +61,7 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
         throw error;
       }
     },
-    enabled: !!agentName && !!isEmailVerified,
+    enabled: !!agentName,
     retry: (failureCount, error) => {
       // Don't retry if it's just "agent not found" - the agent might not be created yet
       if (error instanceof Error && error.message.includes("Agent not found")) {
@@ -89,11 +83,6 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!isEmailVerified) {
-        throw new Error(
-          "Email verification required to access agent API keys and join sandbox competitions",
-        );
-      }
       if (!sandboxAgentId) {
         throw new Error("Unable to find sandbox agent");
       }

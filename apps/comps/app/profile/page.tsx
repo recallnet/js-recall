@@ -12,19 +12,20 @@ import UserInfoSection from "@/components/user-info";
 import UserVotesSection from "@/components/user-votes";
 import { useUserAgents } from "@/hooks";
 import { useUserSession } from "@/hooks/useAuth";
-import { useUpdateProfile } from "@/hooks/useProfile";
+import { useLinkWallet, useUpdateProfile } from "@/hooks/useProfile";
 import { UpdateProfileRequest } from "@/types/profile";
 
 export default function ProfilePage() {
   const session = useUserSession();
   const router = useRouter();
   const updateProfile = useUpdateProfile();
+  const linkWallet = useLinkWallet();
   const { data: agents, isLoading } = useUserAgents({ limit: 100 });
 
   useEffect(() => {
     if (!session.isInitialized) return;
-    if (!session.isLoading && !session.isProfileUpdated) {
-      router.push("/profile/update");
+    if (!session.isLoading) {
+      router.push("/profile");
     }
   }, [session, router]);
 
@@ -36,6 +37,10 @@ export default function ProfilePage() {
     await updateProfile.mutateAsync(data);
   };
 
+  const handleLinkWallet = async () => {
+    linkWallet.mutate();
+  };
+
   return (
     <AuthGuard skeleton={<ProfileSkeleton />}>
       <BreadcrumbNav
@@ -44,7 +49,11 @@ export default function ProfilePage() {
           { label: "USER PROFILE" },
         ]}
       />
-      <UserInfoSection user={session.user!} onSave={handleUpdateProfile} />
+      <UserInfoSection
+        user={session.user!}
+        onSave={handleUpdateProfile}
+        onLinkWallet={handleLinkWallet}
+      />
       <UserCompetitionsSection />
       <UserAgentsSection agents={agents?.agents || []} />
       <UserVotesSection />

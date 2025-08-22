@@ -1,17 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { Agent, AgentWithOwnerResponse } from "@/types";
-
-const apiClient = new ApiClient();
 
 /**
  * Hook to fetch a single agent by ID owned by the authenticated user
  * @param id Agent ID
  * @returns Query result with agent data
  */
-export const useUserAgent = (id?: string) =>
-  useQuery({
+export const useUserAgent = (id?: string) => {
+  return useQuery({
     queryKey: ["agent", id],
     queryFn: async (): Promise<Agent> => {
       if (!id) throw new Error("Agent ID is required");
@@ -23,14 +21,15 @@ export const useUserAgent = (id?: string) =>
     },
     enabled: !!id,
   });
+};
 
 /**
  * Hook to fetch a single agent by ID (unauthenticated)
  * @param id Agent ID
  * @returns Query result with agent data
  */
-export const useAgent = (id?: string) =>
-  useQuery({
+export const useAgent = (id?: string) => {
+  return useQuery({
     queryKey: ["agent", id],
     queryFn: async (): Promise<AgentWithOwnerResponse> => {
       if (!id) throw new Error("Agent ID is required");
@@ -42,3 +41,4 @@ export const useAgent = (id?: string) =>
     },
     enabled: !!id,
   });
+};
