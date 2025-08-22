@@ -253,6 +253,13 @@
       "when": 1755821327839,
       "tag": "0035_flaky_ravenous",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1755884840965,
+      "tag": "0036_chilly_toad",
+      "breakpoints": true
     }
   ]
 }
