@@ -80,7 +80,7 @@ export class UserManager {
       }
 
       // Convert to lowercase for consistency
-      const normalizedWalletAddress = walletAddress?.toLowerCase();
+      const normalizedWalletAddress = walletAddress.toLowerCase();
       const normalizedEmbeddedWalletAddress =
         embeddedWalletAddress?.toLowerCase();
 

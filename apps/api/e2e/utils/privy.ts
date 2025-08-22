@@ -43,7 +43,6 @@ export const TEST_PRIVY_CONFIG = {
   appId: TEST_PRIVY_APP_ID,
   appSecret: TEST_PRIVY_APP_SECRET,
   jwksPublicKey: TEST_PRIVY_PUBLIC_KEY_BASE64,
-  jwksEndpoint: "https://auth.privy.test/.well-known/jwks.json",
 };
 
 /**
@@ -55,7 +54,6 @@ export function setupPrivyTestEnvironment(): void {
   process.env.PRIVY_APP_ID = TEST_PRIVY_CONFIG.appId;
   process.env.PRIVY_APP_SECRET = TEST_PRIVY_CONFIG.appSecret;
   process.env.PRIVY_JWKS_PUBLIC_KEY = TEST_PRIVY_CONFIG.jwksPublicKey;
-  process.env.PRIVY_JWKS_ENDPOINT = TEST_PRIVY_CONFIG.jwksEndpoint;
 }
 
 // Default test user data
@@ -248,15 +246,6 @@ export async function createPrivyAuthHeader(
   const token = await createMockPrivyToken(user);
   return `Bearer ${token}`;
 }
-
-const TEST_PRIVATE_KEY =
-  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-const testWallet = privateKeyToAccount(TEST_PRIVATE_KEY);
-
-/**
- * Test wallet address for backward compatibility
- */
-export const testWalletAddress = testWallet.address.toLowerCase();
 
 /**
  * Generate a unique test wallet for isolated testing

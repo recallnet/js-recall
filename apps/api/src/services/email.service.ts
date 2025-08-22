@@ -134,7 +134,7 @@ export class EmailService {
       return await this.updateContact(payload);
     } catch (error) {
       serviceLogger.error(
-        `[EmailService] Error subscribing user ${email}:`,
+        `[EmailService] Error unsubscribing user ${email}:`,
         error,
       );
       return {

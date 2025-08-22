@@ -8,6 +8,7 @@ import type {
   WalletWithMetadata,
 } from "@privy-io/server-auth";
 
+import { config } from "@/config/index.js";
 import { authLogger } from "@/lib/logger.js";
 
 /**
@@ -206,7 +207,7 @@ export class MockPrivyClient {
  * Get Privy client - returns mock client in test mode
  */
 export function getPrivyClient(appId: string, appSecret: string) {
-  if (process.env.TEST_MODE === "true") {
+  if (config.server.nodeEnv === "test") {
     authLogger.debug("[getPrivyClient] Using MockPrivyClient for testing");
     return new MockPrivyClient(appId, appSecret);
   }

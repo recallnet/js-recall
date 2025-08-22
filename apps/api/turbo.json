@@ -60,17 +60,13 @@
         "npm_package_version",
         "API_DOMAIN",
         "LOOPS_API_KEY",
-        "LOOPS_TRANSACTIONAL_ID",
         "LOOPS_MAILING_LIST_ID",
-        "CORS_ORIGINS",
         "REPOSITORY_LOG_SAMPLE_RATE",
         "HTTP_LOG_SAMPLE_RATE",
         "METRICS_PORT",
         "METRICS_HOST",
-        "ENABLE_AUTO_VERIFY_USER_EMAIL",
         "PRIVY_APP_SECRET",
         "PRIVY_APP_ID",
-        "PRIVY_JWKS_ENDPOINT",
         "PRIVY_JWKS_PUBLIC_KEY"
       ]
     }

@@ -200,7 +200,6 @@ export const config = {
   privy: {
     appId: process.env.PRIVY_APP_ID || "",
     appSecret: process.env.PRIVY_APP_SECRET || "",
-    jwksEndpoint: process.env.PRIVY_JWKS_ENDPOINT || "",
     jwksPublicKey: process.env.PRIVY_JWKS_PUBLIC_KEY || "",
   },
   // Frontend app configuration for interfacing with the server

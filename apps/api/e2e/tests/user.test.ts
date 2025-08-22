@@ -1258,7 +1258,7 @@ describe("User API", () => {
     ).toBe(5);
   });
 
-  test.only("user can get competitions for their agents with correct rank", async () => {
+  test("user can get competitions for their agents with correct rank", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
