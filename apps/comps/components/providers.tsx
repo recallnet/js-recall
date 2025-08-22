@@ -1,41 +1,14 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConnectKitProvider } from "connectkit";
 import { NavigationGuardProvider } from "next-navigation-guard";
 import React from "react";
-import { type ReactNode, useState } from "react";
-import { WagmiProvider } from "wagmi";
+import { useState } from "react";
 
 import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 
-import { clientConfig } from "@/wagmi-config";
-
 import { PostHogProviderWrapper } from "./posthog-provider";
-
-const CONFIG = clientConfig();
-
-function WalletProvider(props: { children: ReactNode }) {
-  return (
-    <WagmiProvider config={CONFIG}>
-      <ConnectKitProvider
-        mode="dark"
-        customTheme={{
-          "--ck-connectbutton-font-size": "14px",
-          "--ck-connectbutton-border-radius": "0px",
-          "--ck-connectbutton-background": "#0057AD",
-          "--ck-connectbutton-background-hover": "#0066cc",
-          "--ck-font-family": "'Trim Mono', monospace",
-        }}
-        options={{
-          initialChainId: 0, // Let it auto-detect
-        }}
-      >
-        {props.children}
-      </ConnectKitProvider>
-    </WagmiProvider>
-  );
-}
+import { PrivyProviderWrapper } from "./privy-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -61,9 +34,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <QueryClientProvider client={queryClient}>
         <PostHogProviderWrapper>
-          <WalletProvider>
+          <PrivyProviderWrapper>
             <NavigationGuardProvider>{children}</NavigationGuardProvider>
-          </WalletProvider>
+          </PrivyProviderWrapper>
         </PostHogProviderWrapper>
       </QueryClientProvider>
     </ThemeProvider>

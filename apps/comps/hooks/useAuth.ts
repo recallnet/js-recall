@@ -1,79 +1,36 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useIsClient } from "@uidotdev/usehooks";
 import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
-import { useCallback } from "react";
 import { useEffect, useMemo } from "react";
-import { useDisconnect } from "wagmi";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
-import { useAnalytics } from "@/hooks/usePostHog";
 import { useProfile } from "@/hooks/useProfile";
-import { ApiClient } from "@/lib/api-client";
 import { userAtom } from "@/state/atoms";
-import { LoginRequest, ProfileResponse } from "@/types";
+import { ProfileResponse } from "@/types";
 
-const apiClient = new ApiClient();
-
-/**
- * Hook that returns a function to get nonce
- * @returns Function to fetch nonce
- */
-export const useGetNonce = () => {
-  const queryClient = useQueryClient();
-
-  return useCallback(async () => {
-    return queryClient.fetchQuery({
-      queryKey: ["nonce"],
-      queryFn: async () => {
-        return apiClient.getNonce();
-      },
-      staleTime: 0,
-      gcTime: 1000 * 60,
-    });
-  }, [queryClient]);
-};
+import { usePrivyAuth } from "./usePrivyAuth";
 
 /**
  * Hook to login with wallet
  * @returns Mutation for logging in
  */
 export const useLogin = () => {
-  const queryClient = useQueryClient();
-  const [, setUserAtom] = useAtom(userAtom);
-  const { trackEvent } = useAnalytics();
-  const posthog = usePostHog();
+  const { login } = usePrivyAuth();
 
   return useMutation({
-    mutationFn: async (data: LoginRequest) => {
-      const result = await apiClient.login(data);
-      return result;
+    mutationFn: async () => {
+      login();
+      return { success: true };
     },
-    onSuccess: (response) => {
-      setUserAtom({ user: null, status: "authenticated" });
-
-      // Identify user in PostHog
-      posthog.identify(response.userId, { wallet: response.wallet });
-
-      trackEvent("UserLoggedIn");
-
-      // Trigger profile refetch
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-
-      // Trigger competitions refetch
-      queryClient.invalidateQueries({ queryKey: ["competitions"] });
-
-      // Trigger individual competition refetch (needed for userVotingInfo)
-      queryClient.invalidateQueries({ queryKey: ["competition"] });
-
-      // Invalidate nonce cache after successful login
-      queryClient.invalidateQueries({ queryKey: ["nonce"] });
+    onSuccess: () => {
+      return { success: true };
     },
     onError: (error) => {
       console.error(`❌ [LOGIN] Login mutation failed:`, error);
-      // Invalidate nonce cache after failed login to ensure fresh nonce on retry
-      queryClient.invalidateQueries({ queryKey: ["nonce"] });
+      return { success: false };
     },
   });
 };
@@ -101,21 +58,18 @@ export const useLogout = () => {
   const router = useRouter();
   const cleanup = useClientCleanup();
 
-  const { disconnect } = useDisconnect();
+  const { logout } = usePrivyAuth();
   const posthog = usePostHog();
 
   return useMutation({
     mutationFn: async () => {
       try {
-        // Call the logout API first
-        await apiClient.logout();
+        cleanup();
+        // Disconnect wallet to prevent auto re-authentication
+        logout();
       } catch (error) {
         // Log API error but proceed with client-side cleanup
         console.error("Logout API call failed:", error);
-      } finally {
-        cleanup();
-        // Disconnect wallet to prevent auto re-authentication
-        disconnect();
       }
     },
     onSuccess: () => {
@@ -129,7 +83,7 @@ export const useLogout = () => {
         error,
       );
       // Still disconnect wallet even if logout fails
-      disconnect();
+      logout();
       router.push(DEFAULT_REDIRECT_URL);
     },
   });

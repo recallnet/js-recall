@@ -1,15 +1,12 @@
-import { KeyRound, Mail } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
-import { toast } from "@recallnet/ui2/components/toast";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { useProfile } from "@/hooks/useProfile";
 import { useUnlockKeys } from "@/hooks/useUnlockKeys";
-import { useVerifyEmail } from "@/hooks/useVerifyEmail";
 import { Agent } from "@/types";
 
 import { CopyButton } from "../copy-button";
@@ -58,62 +55,22 @@ const ApiKeyRow = ({
 };
 
 const ApiKeyLocked = ({
-  isEmailVerified,
   unlockKeysMutation,
 }: {
-  isEmailVerified: boolean;
   unlockKeysMutation: ReturnType<typeof useUnlockKeys>["mutation"];
 }) => {
-  const { mutate: verifyEmail, isPending } = useVerifyEmail();
-  const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
-
   const unlockKeys = async () => {
     unlockKeysMutation.mutate();
   };
 
-  const onSendEmail = async () => {
-    verifyEmail(undefined, {
-      onSuccess: (res) => {
-        if (res.success) {
-          toast.success(
-            <div className="flex flex-col">
-              <span>Verification Email Sent</span>
-              <span className="text-primary-foreground font-normal">
-                An email has been sent to your inbox.
-              </span>
-            </div>,
-          );
-          setEmailVerifyClicked(true);
-          setTimeout(setEmailVerifyClicked, 60 * 1000, false); //wait 60 seconds
-        } else {
-          toast.error(res.message);
-        }
-      },
-      onError: (res) => {
-        toast.error("Failed to send verification email", {
-          description: res.message,
-        });
-      },
-    });
-  };
-
   const button = (
     <Button
-      onClick={isEmailVerified ? unlockKeys : onSendEmail}
-      disabled={isPending || emailVerifyClicked}
+      onClick={unlockKeys}
+      disabled={unlockKeysMutation.isPending}
       className="flex gap-3 bg-blue-600 px-12 py-7 text-xs"
     >
-      {isEmailVerified ? (
-        <>
-          <KeyRound className="h-6 w-6 uppercase" strokeWidth={1.3} />
-          <span>Unlock keys</span>
-        </>
-      ) : (
-        <>
-          <Mail className="h-6 w-6 uppercase" strokeWidth={1.3} />
-          <span>Verify email</span>
-        </>
-      )}
+      <KeyRound className="h-6 w-6 uppercase" strokeWidth={1.3} />
+      <span>{unlockKeysMutation.isPending ? "Loading..." : "Unlock keys"}</span>
     </Button>
   );
 
@@ -131,23 +88,12 @@ const ApiKeyLocked = ({
       </div>
 
       <div className="text-center sm:text-left">
-        {!isEmailVerified && (
-          <span className="text-secondary-foreground text-sm">
-            To access Production and Sandbox API keys, verify your email. Once
-            verified, you can unlock them.
-          </span>
-        )}
+        <span className="text-secondary-foreground text-sm">
+          Click below to unlock your Production and Sandbox API keys.
+        </span>
       </div>
 
-      <div className="flex justify-center sm:justify-end">
-        {emailVerifyClicked ? (
-          <Tooltip content="You can only send a verification each 60 seconds">
-            {button}
-          </Tooltip>
-        ) : (
-          button
-        )}
-      </div>
+      <div className="flex justify-center sm:justify-end">{button}</div>
     </div>
   );
 };
@@ -159,10 +105,8 @@ export const Credentials = ({
   agent: Agent;
   className?: string;
 }) => {
-  const { data: user } = useProfile();
   const { productionKey, sandboxKey, isLoadingKeys, isUnlocked, mutation } =
     useUnlockKeys(agent.name, agent.id);
-  const isEmailVerified = user && user.isEmailVerified;
 
   return (
     <div
@@ -177,7 +121,7 @@ export const Credentials = ({
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
         </div>
-      ) : isEmailVerified && isUnlocked ? (
+      ) : isUnlocked ? (
         <>
           <ApiKeyRow
             label="Production API Key"
@@ -195,10 +139,7 @@ export const Credentials = ({
           )}
         </>
       ) : (
-        <ApiKeyLocked
-          isEmailVerified={!!isEmailVerified}
-          unlockKeysMutation={mutation}
-        />
+        <ApiKeyLocked unlockKeysMutation={mutation} />
       )}
     </div>
   );
