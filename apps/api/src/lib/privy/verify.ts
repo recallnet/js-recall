@@ -1,5 +1,6 @@
 import type { PrivyClient } from "@privy-io/server-auth";
 import { exportJWK, importSPKI, jwtVerify } from "jose";
+import { type Hex, checksumAddress } from "viem";
 
 import { config } from "@/config/index.js";
 import { SelectUser } from "@/database/schema/core/types.js";
@@ -187,8 +188,10 @@ export async function verifyPrivyUserHasLinkedWallet(
   walletAddress: string,
 ): Promise<boolean> {
   const { customWallets } = await verifyAndGetPrivyUserInfo(idToken);
+  const checksummedWalletAddress = checksumAddress(walletAddress as Hex);
   const customWallet = customWallets.find(
-    (wallet) => wallet.address === walletAddress,
+    (wallet) =>
+      checksumAddress(wallet.address as Hex) === checksummedWalletAddress,
   );
   if (!customWallet) {
     return false;
