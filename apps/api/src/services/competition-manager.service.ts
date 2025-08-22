@@ -586,23 +586,6 @@ export class CompetitionManager {
   }
 
   /**
-   * Retrieves the saved leaderboard from the database for an ended competition
-   * @param competitionId The competition ID
-   * @returns The saved leaderboard entries or empty array if not found
-   */
-  private async getSavedLeaderboard(
-    competitionId: string,
-  ): Promise<LeaderboardEntry[]> {
-    const leaderboardEntries =
-      await findLeaderboardByTradingComp(competitionId);
-    return leaderboardEntries.map((entry) => ({
-      agentId: entry.agentId,
-      value: entry.score,
-      pnl: entry.pnl,
-    }));
-  }
-
-  /**
    * Calculates leaderboard from the latest portfolio snapshots
    * @param competitionId The competition ID
    * @returns Leaderboard entries sorted by portfolio value (descending)
@@ -710,7 +693,7 @@ export class CompetitionManager {
         case COMPETITION_STATUS.ENDED: {
           // Try saved leaderboard first
           const savedLeaderboard =
-            await this.getSavedLeaderboard(competitionId);
+            await findLeaderboardByTradingComp(competitionId);
           if (savedLeaderboard.length > 0) {
             return savedLeaderboard;
           }

@@ -1683,8 +1683,9 @@ async function findLeaderboardByTradingCompImpl(competitionId: string) {
   try {
     return await db
       .select({
-        ...getTableColumns(competitionsLeaderboard),
-        ...getTableColumns(tradingCompetitionsLeaderboard),
+        agentId: competitionsLeaderboard.agentId,
+        value: competitionsLeaderboard.score, // Alias score as value for LeaderboardEntry interface
+        pnl: tradingCompetitionsLeaderboard.pnl,
       })
       .from(competitionsLeaderboard)
       .innerJoin(
