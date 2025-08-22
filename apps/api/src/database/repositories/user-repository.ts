@@ -142,9 +142,12 @@ async function updateImpl(
   try {
     const now = new Date();
     const normalizedWalletAddress = user.walletAddress?.toLowerCase();
+    const normalizedEmbeddedWalletAddress =
+      user.embeddedWalletAddress?.toLowerCase();
     const data = {
       ...user,
       walletAddress: normalizedWalletAddress,
+      embeddedWalletAddress: normalizedEmbeddedWalletAddress,
       updatedAt: now,
     };
     const [result] = await db
