@@ -1218,3 +1218,10 @@ export const SnapshotDbSchema = z.object({
   timestamp: TimestampSchema,
   total_value: z.coerce.number(),
 });
+
+export const BestPlacementDbSchema = z.looseObject({
+  competition_id: z.string(),
+  // Note that coerce will result in 0 for "", null, and undefined
+  rank: z.coerce.number(),
+  total_agents: z.coerce.number(),
+});

@@ -13,7 +13,6 @@ import {
 } from "drizzle-orm";
 import { unionAll } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
-import { z } from "zod";
 
 import { db, dbRead } from "@/database/db.js";
 import {
@@ -41,6 +40,7 @@ import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
+  BestPlacementDbSchema,
   COMPETITION_AGENT_STATUS,
   COMPETITION_STATUS,
   CompetitionAgentStatus,
@@ -1374,14 +1374,6 @@ async function getAgentRankingsInCompetitionsImpl(
       string,
       { rank: number; totalAgents: number } | undefined
     >();
-    const resultRowSchema = z
-      .object({
-        competition_id: z.string(),
-        // Note that coerce will result in 0 for "", null, and undefined
-        rank: z.coerce.number(),
-        total_agents: z.coerce.number(),
-      })
-      .passthrough();
 
     // Initialize all competitions with undefined
     for (const competitionId of competitionIds) {
@@ -1390,9 +1382,9 @@ async function getAgentRankingsInCompetitionsImpl(
 
     // Update with actual rankings
     for (const row of rankingResults.rows) {
-      const { data, success } = resultRowSchema.safeParse(row);
+      const { data, success, error } = BestPlacementDbSchema.safeParse(row);
       if (success !== true) {
-        continue;
+        throw new ApiError(500, `${error}`);
       }
 
       rankingsMap.set(data.competition_id, {
