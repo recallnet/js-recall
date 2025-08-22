@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "test:leaderboard": "artillery run --output dist/leaderboard.json --env-file .env src/leaderboard.ts",
+    "test:agent-trading": "artillery run --output dist/agent-trading.json --env-file .env -e test src/agent-trading.ts",
     "report:leaderboard": "npx artillery@2.0.21 report dist/leaderboard.json --output dist/leaderboard.html",
     "dev": "tsc --watch",
     "build": "tsup",
@@ -15,13 +16,18 @@
     "clean": "rm -rf .turbo node_modules dist"
   },
   "dependencies": {
-    "artillery": "^2.0.24"
+    "artillery": "^2.0.24",
+    "artillery-plugin-faker": "^5.0.2",
+    "uuid": "^9.0.0",
+    "viem": "^2.34.0"
   },
   "devDependencies": {
+    "@artilleryio/types": "^0.11.0",
     "@playwright/test": "^1.54.2",
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
+    "@types/uuid": "^9.0.1",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",
