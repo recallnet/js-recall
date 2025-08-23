@@ -45,6 +45,7 @@ async function handleCreateAgent(request: NextRequest) {
     },
     agent: {
       name: agentPayload.name,
+      handle: agentPayload.handle,
       description: agentPayload.description,
       imageUrl: agentPayload.imageUrl,
       email: agentPayload.email,

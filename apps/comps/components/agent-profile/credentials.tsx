@@ -106,7 +106,7 @@ export const Credentials = ({
   className?: string;
 }) => {
   const { productionKey, sandboxKey, isLoadingKeys, isUnlocked, mutation } =
-    useUnlockKeys(agent.name, agent.id);
+    useUnlockKeys(agent.handle, agent.id);
 
   return (
     <div
