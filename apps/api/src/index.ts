@@ -153,7 +153,7 @@ app.use(userSessionRoutes, authMiddlewareInstance);
 
 // Apply rate limiting middleware AFTER authentication
 // This ensures we can properly rate limit by agent/user ID
-//app.use(rateLimiterMiddleware);
+app.use(rateLimiterMiddleware);
 
 const adminMiddleware = adminAuthMiddleware(services.adminService);
 const optionalAuth = optionalAuthMiddleware(

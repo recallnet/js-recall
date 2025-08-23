@@ -7,6 +7,7 @@ import {
 
 import { ApiError } from "@recallnet/services/types";
 
+import { config } from "@/config/index.js";
 import { middlewareLogger } from "@/lib/logger.js";
 
 // Define rate limiter configurations
@@ -110,6 +111,9 @@ export const rateLimiterMiddleware = async (
   res: Response,
   next: NextFunction,
 ) => {
+  if (config.rateLimiting.disable) {
+    return next();
+  }
   try {
     // Skip rate limiting for health check endpoint
     if (

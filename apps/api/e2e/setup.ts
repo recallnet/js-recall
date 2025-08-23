@@ -61,6 +61,12 @@ export async function setup() {
     (arg) => arg.includes("base-trades.test") || arg.includes("base-trades"),
   );
 
+  const isRateLimiterDisabledTest = args.some(
+    (arg) =>
+      arg.includes("rate-limiter-disabled.test") ||
+      arg.includes("rate-limiter-disabled"),
+  );
+
   if (envTestExists) {
     // Save original values for debugging
     const originalBaseUsdcBalance = process.env.INITIAL_BASE_USDC_BALANCE;
@@ -81,6 +87,10 @@ export async function setup() {
         ignoreProcessEnv: false,
       }),
       ...(isBaseTradingTest && {
+        //
+        ignoreProcessEnv: false,
+      }),
+      ...(isRateLimiterDisabledTest && {
         //
         ignoreProcessEnv: false,
       }),
@@ -136,6 +146,13 @@ export async function setup() {
     process.env.MAX_TRADE_PERCENTAGE = "15";
     testLogger.info(
       `MAX_TRADE_PERCENTAGE set to: ${process.env.MAX_TRADE_PERCENTAGE}`,
+    );
+  }
+
+  if (isRateLimiterDisabledTest) {
+    process.env.DISABLE_RATE_LIMITER = "true";
+    testLogger.info(
+      `DISABLE_RATE_LIMITER set to: ${process.env.DISABLE_RATE_LIMITER}`,
     );
   }
 
