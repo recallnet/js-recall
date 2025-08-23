@@ -45,6 +45,7 @@ export class SandboxClient {
    */
   async createAgent(agentData: {
     name: string;
+    handle: string;
     description?: string;
     imageUrl?: string;
     email?: string;

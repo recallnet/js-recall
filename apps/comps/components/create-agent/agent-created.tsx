@@ -66,7 +66,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
     sandboxKey,
     isLoadingKeys,
     isUnlocked,
-  } = useUnlockKeys(agent.name, agent.id);
+  } = useUnlockKeys(agent.handle, agent.id);
   const session = useUserSession();
 
   if (!session.isInitialized) return null;

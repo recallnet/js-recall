@@ -73,7 +73,7 @@ export default function AgentProfile({
 
   // Sandbox hooks for syncing agent updates
   const { data: sandboxAgentData } = useSandboxAgentApiKey(
-    isUserAgent && ENABLE_SANDBOX ? agent?.name || null : null,
+    isUserAgent && ENABLE_SANDBOX ? agent?.handle || null : null,
   );
   const updateSandboxAgent = useUpdateSandboxAgent();
 
