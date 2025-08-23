@@ -94,7 +94,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <div className="ml-5 flex cursor-pointer items-center justify-between">
-            <Avatar className="h-6 w-6">
+            <Avatar className="h-10 w-10">
               <AvatarImage
                 src={avatarUrl}
                 alt="avatar"
@@ -104,14 +104,17 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
                 <Identicon
                   className="rounded-none"
                   address={walletAddress || displayName || "User"}
-                  size={24}
                 />
               </AvatarFallback>
             </Avatar>
-            <div className="focus ml-3 text-xs font-medium text-white">
-              {displayName ||
-                walletAddress?.slice(0, 6) + "..." + walletAddress?.slice(-4) ||
-                "User"}
+            <div className="ml-3 hidden text-xs font-medium uppercase text-white sm:block">
+              {displayName && displayName.length > 15
+                ? displayName.slice(0, 15) + "..."
+                : displayName ||
+                  walletAddress?.slice(0, 6) +
+                    "..." +
+                    walletAddress?.slice(-4) ||
+                  "Account"}
             </div>
           </div>
         </DropdownMenuTrigger>
@@ -129,7 +132,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
             disabled={isLoggingOut}
           >
             <LogOut className="h-4 w-4 text-gray-600" />
-            {isLoggingOut ? "Logging Out..." : "Log-Out"}
+            Log Out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -138,15 +141,13 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
 
   // Show login button for unauthenticated users
   return (
-    <div className="flex flex-col items-center space-y-2">
-      <Button
-        onClick={handleLogin}
-        disabled={isAuthenticating}
-        variant="ghost"
-        className="h-14 rounded-none px-6 uppercase"
-      >
-        {isAuthenticating ? "Connecting..." : "Join / Sign In"}
-      </Button>
-    </div>
+    <Button
+      onClick={handleLogin}
+      disabled={isAuthenticating}
+      variant="ghost"
+      className="h-14 rounded-none px-6 uppercase"
+    >
+      Join / Sign In
+    </Button>
   );
 };

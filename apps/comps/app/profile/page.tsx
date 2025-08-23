@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import { FooterSection } from "@/components/footer-section";
 import ProfileSkeleton from "@/components/profile-skeleton";
 import UserAgentsSection from "@/components/user-agents";
 import UserCompetitionsSection from "@/components/user-competitions";
@@ -57,6 +58,7 @@ export default function ProfilePage() {
       <UserCompetitionsSection />
       <UserAgentsSection agents={agents?.agents || []} />
       <UserVotesSection />
+      <FooterSection />
     </AuthGuard>
   );
 }
