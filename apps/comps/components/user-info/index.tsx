@@ -108,7 +108,7 @@ export default function UserInfoSection({
         onSave={async (newUrl) => {
           await onSave({ imageUrl: newUrl });
         }}
-        className="w-90 my-auto"
+        className="w-90 my-auto hidden sm:block"
         fallbackData={{
           walletAddress: user?.walletAddress,
           name: user?.name,
@@ -157,11 +157,13 @@ export default function UserInfoSection({
                 </div>
               ) : (
                 <>
+                  {user.metadata?.website && (
+                    <span>{user.metadata.website}</span>
+                  )}
                   <SquarePen
                     className="h-5 w-5 cursor-pointer"
                     onClick={() => setEditField("website")}
                   />
-                  <span>{user?.metadata?.website}</span>
                 </>
               )}
             </div>

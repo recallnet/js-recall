@@ -8,35 +8,37 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 export const Clipboard = ({
   text,
+  textOnCopy,
   className,
 }: {
   text: string;
+  textOnCopy?: string;
   className?: string;
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [, copyToClipboard] = useCopyToClipboard();
 
   const handleCopy = async () => {
-    copyToClipboard(text);
+    copyToClipboard(textOnCopy || text);
     setCopied(true);
     toast.success("Wallet Address copied to clipboard");
     setTimeout(() => setCopied(false), 1500);
   };
 
-  //outer div is necesary because copy icon for some reason reduces its size because the tooltip
+  //outer div is necessary because copy icon for some reason reduces its size because the tooltip
   return (
     <div>
       <Tooltip content={copied ? "Copied!" : "Copy"}>
         <div
           className={cn(
-            "flex cursor-pointer items-center justify-between gap-2 rounded border px-3 py-2 text-sm text-gray-500",
+            "flex cursor-pointer items-center justify-between gap-2 rounded border px-3 py-2 text-sm text-gray-500 hover:text-gray-300",
             className,
           )}
           onClick={handleCopy}
         >
           <p className="truncate">{text}</p>
           <div className="relative h-4 w-10">
-            <CopyIcon className="text-muted-foreground absolute right-1 h-4 w-4 cursor-pointer" />
+            <CopyIcon className="absolute right-1 h-4 w-4 cursor-pointer" />
           </div>
         </div>
       </Tooltip>
