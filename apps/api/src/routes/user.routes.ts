@@ -192,10 +192,6 @@ export function configureUserRoutes(
    *                 type: string
    *                 description: URL to user's profile image
    *                 example: "https://example.com/avatar.jpg"
-   *               email:
-   *                 type: string
-   *                 description: User's email
-   *                 example: "john@example.com"
    *               metadata:
    *                 type: object
    *                 description: User's metadata

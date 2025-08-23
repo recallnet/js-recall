@@ -7027,11 +7027,6 @@
                     "description": "URL to user's profile image",
                     "example": "https://example.com/avatar.jpg"
                   },
-                  "email": {
-                    "type": "string",
-                    "description": "User's email",
-                    "example": "john@example.com"
-                  },
                   "metadata": {
                     "type": "object",
                     "description": "User's metadata",
@@ -7142,6 +7137,24 @@
             "PrivyCookie": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "walletAddress": {
+                    "type": "string",
+                    "description": "The wallet address to link to the user",
+                    "example": "0x1234567890abcdef1234567890abcdef12345678"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Wallet linked successfully",

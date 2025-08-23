@@ -45,13 +45,10 @@ export class EmailService {
     this.mailingListId = config.email.mailingListId;
 
     if (!this.apiKey) {
-      serviceLogger.error("[EmailService] LOOPS_API_KEY not configured");
+      serviceLogger.warn("[EmailService] LOOPS_API_KEY not configured");
     }
-
     if (!this.mailingListId) {
-      serviceLogger.error(
-        "[EmailService] LOOPS_MAILING_LIST_ID not configured",
-      );
+      serviceLogger.warn("[EmailService] LOOPS_MAILING_LIST_ID not configured");
     }
   }
 
@@ -68,7 +65,7 @@ export class EmailService {
     },
   ): Promise<{ success: boolean; error?: string } | null> {
     if (!this.isConfigured()) {
-      serviceLogger.debug(
+      serviceLogger.warn(
         "[EmailService] Loops configuration missing - API key or mailing list ID not provided",
       );
       return null;
@@ -111,7 +108,7 @@ export class EmailService {
     email: string,
   ): Promise<{ success: boolean; error?: string } | null> {
     if (!this.isConfigured()) {
-      serviceLogger.debug(
+      serviceLogger.warn(
         "[EmailService] Loops configuration missing - API key or mailing list ID not provided",
       );
       return null;
