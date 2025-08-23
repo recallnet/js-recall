@@ -2166,25 +2166,21 @@ Purpose: WALLET_VERIFICATION`;
       expect(testCompetition).toBeDefined();
 
       // Verify enhanced metrics are present
-      if (testCompetition) {
-        expect(testCompetition.portfolioValue).toBeDefined();
-        expect(typeof testCompetition.portfolioValue).toBe("number");
-        expect(testCompetition.pnl).toBeDefined();
-        expect(typeof testCompetition.pnl).toBe("number");
-        expect(testCompetition.pnlPercent).toBeDefined();
-        expect(typeof testCompetition.pnlPercent).toBe("number");
-        expect(testCompetition.totalTrades).toBeDefined();
-        expect(typeof testCompetition.totalTrades).toBe("number");
-        expect(testCompetition.totalTrades).toBe(2); // We executed 2 trades
-        expect(testCompetition.bestPlacement).toBeDefined();
-        expect(testCompetition.bestPlacement?.rank).toBeDefined();
-        expect(typeof testCompetition.bestPlacement?.rank).toBe("number");
-        expect(testCompetition.bestPlacement?.totalAgents).toBeDefined();
-        expect(typeof testCompetition.bestPlacement?.totalAgents).toBe(
-          "number",
-        );
-        expect(testCompetition.bestPlacement?.totalAgents).toBe(2); // 2 agents in competition
-      }
+      expect(testCompetition?.portfolioValue).toBeDefined();
+      expect(typeof testCompetition?.portfolioValue).toBe("number");
+      expect(testCompetition?.pnl).toBeDefined();
+      expect(typeof testCompetition?.pnl).toBe("number");
+      expect(testCompetition?.pnlPercent).toBeDefined();
+      expect(typeof testCompetition?.pnlPercent).toBe("number");
+      expect(testCompetition?.totalTrades).toBeDefined();
+      expect(typeof testCompetition?.totalTrades).toBe("number");
+      expect(testCompetition?.totalTrades).toBe(2); // We executed 2 trades
+      expect(testCompetition?.bestPlacement).toBeDefined();
+      expect(testCompetition?.bestPlacement?.rank).toBeDefined();
+      expect(typeof testCompetition?.bestPlacement?.rank).toBe("number");
+      expect(testCompetition?.bestPlacement?.totalAgents).toBeDefined();
+      expect(typeof testCompetition?.bestPlacement?.totalAgents).toBe("number");
+      expect(testCompetition?.bestPlacement?.totalAgents).toBe(2); // 2 agents in competition
     });
 
     test("should handle sorting by computed fields", async () => {
@@ -2277,6 +2273,7 @@ Purpose: WALLET_VERIFICATION`;
       // Verify sorting: competition with more trades should come first
       const firstComp = testComps[0];
       const secondComp = testComps[1];
+      // TODO: this should assert existence, not use conditional
       if (firstComp && secondComp) {
         expect(firstComp.totalTrades).toBeGreaterThanOrEqual(
           secondComp.totalTrades,
@@ -2355,15 +2352,13 @@ Purpose: WALLET_VERIFICATION`;
       expect(testCompetition).toBeDefined();
 
       // Verify default values for edge cases
-      if (testCompetition) {
-        expect(testCompetition.portfolioValue).toBeGreaterThan(0); // Agents start with initial balances
-        expect(testCompetition.pnl).toBe(0); // No trades = 0 P&L
-        expect(testCompetition.pnlPercent).toBe(0); // No trades = 0% P&L
-        expect(testCompetition.totalTrades).toBe(0); // No trades = 0
-        expect(testCompetition.bestPlacement).toBeDefined();
-        expect(testCompetition.bestPlacement?.rank).toBeGreaterThan(0); // Should have a rank
-        expect(testCompetition.bestPlacement?.totalAgents).toBe(1); // Only 1 agent
-      }
+      expect(testCompetition?.portfolioValue).toBeGreaterThan(0); // Agents start with initial balances
+      expect(testCompetition?.pnl).toBe(0); // No trades = 0 P&L
+      expect(testCompetition?.pnlPercent).toBe(0); // No trades = 0% P&L
+      expect(testCompetition?.totalTrades).toBe(0); // No trades = 0
+      expect(testCompetition?.bestPlacement).toBeDefined();
+      expect(testCompetition?.bestPlacement?.rank).toBeGreaterThan(0); // Should have a rank
+      expect(testCompetition?.bestPlacement?.totalAgents).toBe(1); // Only 1 agent
     });
 
     test("should handle invalid sort fields gracefully", async () => {

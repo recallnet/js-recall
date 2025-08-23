@@ -345,6 +345,26 @@ async function findByApiKeyImpl(
 }
 
 /**
+ * Find an agent by API key hash
+ * @param apiKeyHash The API key hash to search for
+ */
+async function findByApiKeyHashImpl(
+  apiKeyHash: string,
+): Promise<SelectAgent | undefined> {
+  try {
+    const [result] = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.apiKeyHash, apiKeyHash));
+
+    return result;
+  } catch (error) {
+    console.error("[AgentRepository] Error in findByApiKeyHash:", error);
+    throw error;
+  }
+}
+
+/**
  * Get agents based on wallet address
  * @param walletAddress the wallet address to filter by
  * @param pagingParams pagination parameters
@@ -1011,6 +1031,12 @@ export const findByApiKey = createTimedRepositoryFunction(
   findByApiKeyImpl,
   "AgentRepository",
   "findByApiKey",
+);
+
+export const findByApiKeyHash = createTimedRepositoryFunction(
+  findByApiKeyHashImpl,
+  "AgentRepository",
+  "findByApiKeyHash",
 );
 
 export const findByWallet = createTimedRepositoryFunction(
