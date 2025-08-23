@@ -177,7 +177,7 @@ export default function AgentProfile({
       <BreadcrumbNav
         items={[
           { label: "RECALL", href: "/" },
-          { label: "AGENTS", href: "/" },
+          { label: "AGENTS", href: isUserAgent ? "/profile" : "/" },
           { label: agent.name },
         ]}
         className="mb-10"
@@ -228,8 +228,8 @@ export default function AgentProfile({
           {agent.walletAddress && (
             <div className="px-15 xs:px-10 absolute bottom-0 right-[50%] z-20 w-full translate-x-[50%] border bg-black py-3 md:px-20">
               <Clipboard
-                text={agent.walletAddress || ""}
-                className="text-secondary-foreground w-full rounded-[10px] border-gray-700 px-3 py-2 text-lg hover:text-gray-300"
+                text={agent.walletAddress}
+                className="text-secondary-foreground w-full rounded-[10px] px-3 py-2 text-lg"
               />
             </div>
           )}
