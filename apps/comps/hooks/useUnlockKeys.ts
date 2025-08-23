@@ -5,7 +5,7 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { apiClient } from "@/lib/api-client";
 import { sandboxClient } from "@/lib/sandbox-client";
 
-export const useUnlockKeys = (agentName: string, agentId?: string) => {
+export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
   const queryClient = useQueryClient();
 
   // Query for production API key - fetch when agent exists
@@ -20,11 +20,11 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
 
   // Query for sandbox agent - fetch when agent exists
   const sandboxAgentQuery = useQuery({
-    queryKey: ["sandbox-agent", agentName],
+    queryKey: ["sandbox-agent", agentHandle],
     queryFn: async () => {
-      return await sandboxClient.getAgentApiKey(agentName);
+      return await sandboxClient.getAgentApiKey(agentHandle);
     },
-    enabled: !!agentName,
+    enabled: !!agentHandle,
   });
 
   // Get sandbox agent id
@@ -46,10 +46,10 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
 
   // Query for sandbox API key - fetch when email verified and agent exists in sandbox
   const sandboxKeyQuery = useQuery({
-    queryKey: ["sandbox-agent-api-key", agentName],
+    queryKey: ["sandbox-agent-api-key", agentHandle],
     queryFn: async () => {
       try {
-        return await sandboxClient.getAgentApiKey(agentName);
+        return await sandboxClient.getAgentApiKey(agentHandle);
       } catch (error) {
         // If agent doesn't exist in sandbox yet, return null instead of failing
         if (
@@ -61,7 +61,7 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
         throw error;
       }
     },
-    enabled: !!agentName,
+    enabled: !!agentHandle,
     retry: (failureCount, error) => {
       // Don't retry if it's just "agent not found" - the agent might not be created yet
       if (error instanceof Error && error.message.includes("Agent not found")) {
@@ -135,12 +135,12 @@ export const useUnlockKeys = (agentName: string, agentId?: string) => {
 
       // Invalidate and refetch sandbox agent
       queryClient.invalidateQueries({
-        queryKey: ["sandbox-agent", agentName],
+        queryKey: ["sandbox-agent", agentHandle],
       });
 
       // Invalidate and refetch sandbox agent api key
       queryClient.invalidateQueries({
-        queryKey: ["sandbox-agent-api-key", agentName],
+        queryKey: ["sandbox-agent-api-key", agentHandle],
       });
 
       // Invalidate production API key if we have the agentId
