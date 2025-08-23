@@ -5,6 +5,7 @@ import {
   RateLimiterRes,
 } from "rate-limiter-flexible";
 
+import { config } from "@/config/index.js";
 import { middlewareLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 
@@ -109,6 +110,9 @@ export const rateLimiterMiddleware = async (
   res: Response,
   next: NextFunction,
 ) => {
+  if (config.rateLimiting.disable) {
+    return next();
+  }
   try {
     // Skip rate limiting for health check endpoint
     if (
