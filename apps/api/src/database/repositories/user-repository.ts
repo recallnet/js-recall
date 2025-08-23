@@ -30,6 +30,7 @@ async function createImpl(user: InsertUser): Promise<SelectUser> {
       embeddedWalletAddress: normalizedEmbeddedWalletAddress,
       createdAt: user.createdAt || now,
       updatedAt: user.updatedAt || now,
+      lastLoginAt: user.lastLoginAt || now,
     };
     const [result] = await db.insert(users).values(data).returning();
 

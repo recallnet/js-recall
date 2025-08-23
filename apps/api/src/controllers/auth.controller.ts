@@ -58,7 +58,6 @@ export function makeAuthController(services: ServiceRegistry) {
         authLogger.debug(
           `Login successful for user '${userId}' with wallet address '${walletAddress}'`,
         );
-        req.userId = userId;
         res.status(200).json({ success: true, userId, wallet: walletAddress });
       } catch (error) {
         next(error);

@@ -955,6 +955,8 @@ export function makeAdminController(services: ServiceRegistry) {
         const formattedUsers = users.map((user) => ({
           id: user.id,
           walletAddress: user.walletAddress,
+          walletLastVerifiedAt: user.walletLastVerifiedAt,
+          embeddedWalletAddress: user.embeddedWalletAddress,
           name: user.name,
           email: user.email,
           privyId: user.privyId,
@@ -963,6 +965,7 @@ export function makeAdminController(services: ServiceRegistry) {
           metadata: user.metadata,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          lastLoginAt: user.lastLoginAt,
         }));
 
         // Return the users

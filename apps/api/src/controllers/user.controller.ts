@@ -138,11 +138,12 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Link the wallet
+        const now = new Date();
         const linkedUser = await services.userManager.updateUser({
           id: userId,
           walletAddress,
-          walletLastVerifiedAt: new Date(),
-          updatedAt: new Date(),
+          walletLastVerifiedAt: now,
+          updatedAt: now,
         });
 
         res.status(200).json({

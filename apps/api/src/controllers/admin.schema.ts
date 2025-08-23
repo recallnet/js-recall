@@ -19,16 +19,18 @@ export const AdminSetupSchema = z.object({
 });
 
 /**
+ * Wallet address schema (Ethereum hex address)
+ */
+export const WalletAddressSchema = z
+  .string()
+  .regex(/^0x[0-9a-fA-F]{40}$/, "Invalid wallet address");
+
+/**
  * Admin register user schema for creating users and optionally their first agent
  */
 export const AdminRegisterUserSchema = z.object({
-  walletAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, "Invalid wallet address"),
-  embeddedWalletAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, "Invalid embedded wallet address")
-    .optional(),
+  walletAddress: WalletAddressSchema,
+  embeddedWalletAddress: WalletAddressSchema.optional(),
   privyId: z.string().optional(),
   name: z.string().optional(),
   email: z.email().optional(),
@@ -39,10 +41,7 @@ export const AdminRegisterUserSchema = z.object({
   agentDescription: z.string().optional(),
   agentImageUrl: z.url().optional(),
   agentMetadata: AgentMetadataSchema.optional(),
-  agentWalletAddress: z
-    .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/)
-    .optional(),
+  agentWalletAddress: WalletAddressSchema.optional(),
 });
 
 /**

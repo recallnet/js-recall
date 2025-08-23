@@ -6982,6 +6982,10 @@
                         "updatedAt": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "lastLoginAt": {
+                          "type": "string",
+                          "format": "date-time"
                         }
                       }
                     }
@@ -7217,7 +7221,8 @@
                           "format": "date-time"
                         },
                         "updatedAt": {
-                          "type": "string"
+                          "type": "string",
+                          "format": "date-time"
                         },
                         "lastLoginAt": {
                           "type": "string",
@@ -7345,10 +7350,6 @@
                         "updatedAt": {
                           "type": "string",
                           "format": "date-time"
-                        },
-                        "lastLoginAt": {
-                          "type": "string",
-                          "format": "date-time"
                         }
                       }
                     }
@@ -7430,18 +7431,6 @@
                             "format": "uuid"
                           },
                           "walletAddress": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "walletLastVerifiedAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "embeddedWalletAddress": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "privyId": {
                             "type": "string",
                             "nullable": true
                           },
@@ -7566,10 +7555,6 @@
                           "updatedAt": {
                             "type": "string",
                             "format": "date-time"
-                          },
-                          "lastLoginAt": {
-                            "type": "string",
-                            "format": "date-time"
                           }
                         }
                       }
@@ -7634,18 +7619,6 @@
                           "format": "uuid"
                         },
                         "walletAddress": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "walletLastVerifiedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "embeddedWalletAddress": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "privyId": {
                           "type": "string",
                           "nullable": true
                         },
@@ -7766,10 +7739,6 @@
                           "format": "date-time"
                         },
                         "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "lastLoginAt": {
                           "type": "string",
                           "format": "date-time"
                         }

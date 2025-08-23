@@ -489,6 +489,7 @@ export interface ApiAuth {
  * Extended Request interface for authenticated requests
  */
 export interface AuthenticatedRequest extends Request {
+  privyToken?: string;
   agentId?: string;
   userId?: string;
   adminId?: string;

@@ -155,11 +155,7 @@ const voteController = makeVoteController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
-const authRoutes = configureAuthRoutes(
-  authController,
-  // privyAuthMiddleware(services.userManager),
-  authMiddlewareInstance,
-);
+const authRoutes = configureAuthRoutes(authController, authMiddlewareInstance);
 const competitionsRoutes = configureCompetitionsRoutes(
   competitionController,
   optionalAuth,

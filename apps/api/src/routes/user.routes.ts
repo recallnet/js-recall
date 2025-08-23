@@ -75,6 +75,9 @@ export function configureUserRoutes(
    *                     updatedAt:
    *                       type: string
    *                       format: date-time
+   *                     lastLoginAt:
+   *                       type: string
+   *                       format: date-time
    *       401:
    *         description: User not authenticated
    *       404:
@@ -155,6 +158,7 @@ export function configureUserRoutes(
    *                       format: date-time
    *                     updatedAt:
    *                       type: string
+   *                       format: date-time
    *                     lastLoginAt:
    *                       type: string
    *                       format: date-time
@@ -340,9 +344,6 @@ export function configureUserRoutes(
    *                     updatedAt:
    *                       type: string
    *                       format: date-time
-   *                     lastLoginAt:
-   *                       type: string
-   *                       format: date-time
    *       400:
    *         description: Invalid input (name is required)
    *       401:
@@ -403,15 +404,6 @@ export function configureUserRoutes(
    *                         type: string
    *                         format: uuid
    *                       walletAddress:
-   *                         type: string
-   *                         nullable: true
-   *                       walletLastVerifiedAt:
-   *                         type: string
-   *                         format: date-time
-   *                       embeddedWalletAddress:
-   *                         type: string
-   *                         nullable: true
-   *                       privyId:
    *                         type: string
    *                         nullable: true
    *                       name:
@@ -497,9 +489,6 @@ export function configureUserRoutes(
    *                       updatedAt:
    *                         type: string
    *                         format: date-time
-   *                       lastLoginAt:
-   *                         type: string
-   *                         format: date-time
    *       401:
    *         description: User not authenticated
    *       500:
@@ -546,15 +535,6 @@ export function configureUserRoutes(
    *                       type: string
    *                       format: uuid
    *                     walletAddress:
-   *                       type: string
-   *                       nullable: true
-   *                     walletLastVerifiedAt:
-   *                       type: string
-   *                       format: date-time
-   *                     embeddedWalletAddress:
-   *                       type: string
-   *                       nullable: true
-   *                     privyId:
    *                       type: string
    *                       nullable: true
    *                     name:
@@ -641,9 +621,6 @@ export function configureUserRoutes(
    *                       type: string
    *                       format: date-time
    *                     updatedAt:
-   *                       type: string
-   *                       format: date-time
-   *                     lastLoginAt:
    *                       type: string
    *                       format: date-time
    *       400:
