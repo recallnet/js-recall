@@ -190,7 +190,7 @@ export class BalanceManager {
       this.balanceCache.set(agentId, balanceMap);
     } catch (error) {
       serviceLogger.error(
-        `[BalanceManager] Error initializing balances for agent ${agentId}:`,
+        `[BalanceManager] Error initializing balances for agent ${agentId} in competition ${competitionId}:`,
         error,
       );
       throw error;
