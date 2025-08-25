@@ -23,7 +23,6 @@ describe("Competition Timeline API", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("should get competition timeline", async () => {
@@ -81,8 +80,6 @@ describe("Competition Timeline API", () => {
     const timelineResponse = (await agentClient1.getCompetitionTimeline(
       competition.id,
     )) as CompetitionTimelineResponse;
-
-    console.log(timelineResponse);
 
     // Verify the response
     expect(timelineResponse.success).toBe(true);

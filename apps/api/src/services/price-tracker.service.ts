@@ -252,7 +252,7 @@ export class PriceTracker {
   /**
    * Get cached token price if available
    */
-  private getCachedPrice(
+  getCachedPrice(
     tokenAddress: string,
     specificChain?: SpecificChain,
   ): PriceReport | null {

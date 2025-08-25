@@ -688,9 +688,5 @@ describe("Sandbox Mode", () => {
     // Verify the snapshot has a total value (confirming it's a complete snapshot)
     expect(latestSnapshot?.totalValue).toBeDefined();
     expect(latestSnapshot?.totalValue).toBeGreaterThan(0);
-
-    console.log(
-      `[Test] Manually added agent ${newAgent.id} successfully got portfolio snapshot with total value: $${latestSnapshot?.totalValue}`,
-    );
   });
 });
