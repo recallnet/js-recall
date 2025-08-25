@@ -38,7 +38,6 @@ describe("Competition Configuration (Stateless)", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       const customConfig: CompetitionConfiguration = {
-        portfolioSnapshotCron: "*/10 * * * *", // Every 10 minutes
         maxTradePercentage: 15, // 15% max trade size
       };
 
@@ -72,7 +71,6 @@ describe("Competition Configuration (Stateless)", () => {
         .where(eq(competitionConfigurations.competitionId, competition.id));
 
       expect(storedConfig).toBeDefined();
-      expect(storedConfig!.portfolioSnapshotCron).toBe("*/10 * * * *");
       expect(storedConfig!.maxTradePercentage).toBe(15);
     });
 
@@ -133,7 +131,6 @@ describe("Competition Configuration (Stateless)", () => {
 
       // Update with new configuration
       const updatedConfig: CompetitionConfiguration = {
-        portfolioSnapshotCron: "0 */2 * * *", // Every 2 hours
         maxTradePercentage: 30, // 30% max trade size
       };
 
@@ -163,7 +160,6 @@ describe("Competition Configuration (Stateless)", () => {
         .where(eq(competitionConfigurations.competitionId, competition.id));
 
       expect(storedConfig).toBeDefined();
-      expect(storedConfig!.portfolioSnapshotCron).toBe("0 */2 * * *");
       expect(storedConfig!.maxTradePercentage).toBe(30);
     });
 
@@ -417,7 +413,6 @@ describe("Competition Configuration (Stateless)", () => {
 
       const customConfig: CompetitionConfiguration = {
         maxTradePercentage: 20,
-        portfolioSnapshotCron: "0 */4 * * *", // Every 4 hours
       };
 
       const customBalances: InitialBalance[] = [
@@ -522,9 +517,9 @@ describe("Competition Configuration (Stateless)", () => {
         agentName: "Snapshot Schedule Agent",
       });
 
-      // Start competition with custom snapshot cron
+      // Start competition with custom configuration
       const customConfig: CompetitionConfiguration = {
-        portfolioSnapshotCron: "*/15 * * * *", // Every 15 minutes
+        maxTradePercentage: 20,
       };
 
       const startResult = await adminClient.startCompetition({
@@ -546,7 +541,7 @@ describe("Competition Configuration (Stateless)", () => {
         .where(eq(competitionConfigurations.competitionId, competition.id));
 
       expect(storedConfig).toBeDefined();
-      expect(storedConfig!.portfolioSnapshotCron).toBe("*/15 * * * *");
+      expect(storedConfig!.maxTradePercentage).toBe(20);
     });
   });
 
@@ -575,7 +570,6 @@ describe("Competition Configuration (Stateless)", () => {
         undefined, // tradingConstraints
         {
           maxTradePercentage: 10,
-          portfolioSnapshotCron: "*/10 * * * *",
         }, // competitionConfiguration
       );
       expect(startResult1.success).toBe(true);
@@ -611,7 +605,6 @@ describe("Competition Configuration (Stateless)", () => {
         undefined, // tradingConstraints
         {
           maxTradePercentage: 20,
-          portfolioSnapshotCron: "*/20 * * * *",
         }, // competitionConfiguration
       );
       expect(startResult2.success).toBe(true);
@@ -666,42 +659,6 @@ describe("Competition Configuration (Stateless)", () => {
   });
 
   describe("Error Scenarios and Edge Cases", () => {
-    test("should handle invalid cron expressions gracefully", async () => {
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      // Try to create competition with invalid cron
-      const result = await adminClient.createCompetition(
-        "Invalid Cron Competition",
-        "Testing invalid cron expression",
-        undefined, // tradingType
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        undefined, // type
-        undefined, // endDate
-        undefined, // votingStartDate
-        undefined, // votingEndDate
-        undefined, // joinStartDate
-        undefined, // joinEndDate
-        undefined, // maxParticipants
-        undefined, // tradingConstraints
-        undefined, // rewards
-        {
-          portfolioSnapshotCron: "invalid cron expression",
-        }, // competitionConfiguration
-      );
-
-      // API should reject invalid cron expressions at schema validation
-      expect(result.success).toBe(false);
-      if ("error" in result) {
-        // Zod regex validation error
-        expect(result.error.toLowerCase()).toMatch(
-          /invalid|regex|pattern|format/i,
-        );
-      }
-    });
-
     test("should handle edge case percentage values", async () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);

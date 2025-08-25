@@ -270,10 +270,6 @@ export const competitionConfigurations = tradingComps.table(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    // Portfolio configuration
-    portfolioSnapshotCron: varchar("portfolio_snapshot_cron", { length: 50 })
-      .notNull()
-      .default("*/5 * * * *"), // Default: every 5 minutes
     // Trading configuration
     maxTradePercentage: integer("max_trade_percentage").notNull().default(25), // 25% default
     createdAt: timestamp("created_at", {

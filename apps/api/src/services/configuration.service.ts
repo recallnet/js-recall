@@ -111,23 +111,6 @@ export class ConfigurationService {
   }
 
   /**
-   * Get portfolio snapshot cron expression
-   */
-  async getPortfolioSnapshotCron(competitionId?: string): Promise<string> {
-    const targetCompetitionId = competitionId || this.activeCompetitionId;
-
-    if (targetCompetitionId) {
-      const config = await this.getCompetitionConfig(targetCompetitionId);
-      if (config?.portfolioSnapshotCron) {
-        return config.portfolioSnapshotCron;
-      }
-    }
-
-    // Fall back to default cron expression
-    return "*/5 * * * *"; // Default: every 5 minutes
-  }
-
-  /**
    * Get competition configuration with caching
    */
   private async getCompetitionConfig(

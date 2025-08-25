@@ -143,9 +143,6 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Competition-specific configuration settings
    *                 properties:
-   *                   portfolioSnapshotCron:
-   *                     type: string
-   *                     description: Cron expression for portfolio snapshots
    *                   maxTradePercentage:
    *                     type: number
    *                     description: Maximum trade size as percentage of portfolio
@@ -391,9 +388,6 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Competition-specific configuration settings
    *                 properties:
-   *                   portfolioSnapshotCron:
-   *                     type: string
-   *                     description: Cron expression for portfolio snapshots
    *                   maxTradePercentage:
    *                     type: number
    *                     description: Maximum trade size as percentage of portfolio
@@ -695,9 +689,6 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Competition-specific configuration settings
    *                 properties:
-   *                   portfolioSnapshotCron:
-   *                     type: string
-   *                     description: Cron expression for portfolio snapshots
    *                   maxTradePercentage:
    *                     type: number
    *                     description: Maximum trade size as percentage of portfolio

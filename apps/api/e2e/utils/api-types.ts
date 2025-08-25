@@ -511,7 +511,6 @@ export interface TradingConstraints {
 
 // Competition configuration interface
 export interface CompetitionConfiguration {
-  portfolioSnapshotCron?: string;
   maxTradePercentage?: number;
 }
 

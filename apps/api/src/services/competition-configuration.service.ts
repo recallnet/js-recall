@@ -8,7 +8,6 @@ import { serviceLogger } from "@/lib/logger.js";
 
 export interface CompetitionConfigurationInput {
   competitionId: string;
-  portfolioSnapshotCron?: string;
   maxTradePercentage?: number;
 }
 
@@ -24,7 +23,6 @@ export class CompetitionConfigurationService {
   ): Promise<SelectCompetitionConfiguration | undefined> {
     const data: InsertCompetitionConfiguration = {
       competitionId: input.competitionId,
-      portfolioSnapshotCron: input.portfolioSnapshotCron ?? "*/5 * * * *", // Default: every 5 minutes
       maxTradePercentage: input.maxTradePercentage ?? config.maxTradePercentage,
     };
 
@@ -71,10 +69,6 @@ export class CompetitionConfigurationService {
 
     const data: InsertCompetitionConfiguration = {
       competitionId: input.competitionId,
-      portfolioSnapshotCron:
-        input.portfolioSnapshotCron ??
-        existingConfig?.portfolioSnapshotCron ??
-        "*/5 * * * *",
       maxTradePercentage:
         input.maxTradePercentage ??
         existingConfig?.maxTradePercentage ??
@@ -103,14 +97,11 @@ export class CompetitionConfigurationService {
    * Gets configuration with defaults
    */
   async getConfigurationWithDefaults(competitionId: string): Promise<{
-    portfolioSnapshotCron: string;
     maxTradePercentage: number;
   }> {
     const configuration = await this.getConfiguration(competitionId);
 
     return {
-      portfolioSnapshotCron:
-        configuration?.portfolioSnapshotCron ?? "*/5 * * * *",
       maxTradePercentage:
         configuration?.maxTradePercentage ?? config.maxTradePercentage,
     };
@@ -124,16 +115,6 @@ export class CompetitionConfigurationService {
     errors: string[];
   } {
     const errors: string[] = [];
-
-    if (input.portfolioSnapshotCron !== undefined) {
-      // Basic cron validation - could be enhanced with a proper cron parser
-      const parts = input.portfolioSnapshotCron.split(" ");
-      if (parts.length !== 5) {
-        errors.push(
-          "portfolioSnapshotCron must be a valid cron expression with 5 parts",
-        );
-      }
-    }
 
     if (input.maxTradePercentage !== undefined) {
       if (input.maxTradePercentage < 1) {
