@@ -1,6 +1,4 @@
 import { Request } from "express";
-import { IronSession } from "iron-session";
-import { SiweMessage } from "siwe";
 import { z } from "zod/v4";
 
 /**
@@ -312,13 +310,17 @@ export interface SearchAdminsParams {
 export interface User {
   id: string;
   walletAddress: string;
+  embeddedWalletAddress?: string;
+  walletLastVerifiedAt?: Date;
   name?: string;
   email?: string;
+  privyId?: string;
   imageUrl?: string;
   metadata?: UserMetadata;
   status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
+  lastLoginAt?: Date;
 }
 
 /**
@@ -487,7 +489,6 @@ export interface ApiAuth {
  * Extended Request interface for authenticated requests
  */
 export interface AuthenticatedRequest extends Request {
-  session?: IronSession<SessionData>;
   agentId?: string;
   userId?: string;
   adminId?: string;
@@ -497,18 +498,6 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     name: string;
   };
-}
-
-/**
- * Session data interface
- */
-export interface SessionData {
-  nonce?: string;
-  siwe?: SiweMessage;
-  agentId?: string;
-  userId?: string;
-  adminId?: string;
-  wallet?: string;
 }
 
 /**
@@ -771,7 +760,6 @@ export const UpdateUserProfileBodySchema = z
       .min(1, { message: "Name must be at least 1 character" })
       .optional(),
     imageUrl: z.url("Invalid image URL format").optional(),
-    email: z.email("Invalid email format").optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
@@ -1225,3 +1213,20 @@ export const BestPlacementDbSchema = z.looseObject({
   rank: z.coerce.number(),
   total_agents: z.coerce.number(),
 });
+/**
+ * Privy identity token parameter schema
+ */
+export const PrivyIdentityTokenSchema = z.string(
+  "Invalid Privy identity token",
+);
+
+export type PrivyIdentityToken = z.infer<typeof PrivyIdentityTokenSchema>;
+
+/**
+ * Link wallet request schema for custom user wallet linking
+ */
+export const LinkUserWalletSchema = z.strictObject({
+  walletAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
+});
+
+export type LinkUserWallet = z.infer<typeof LinkUserWalletSchema>;

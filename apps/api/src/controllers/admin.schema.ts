@@ -25,6 +25,11 @@ export const AdminRegisterUserSchema = z.object({
   walletAddress: z
     .string()
     .regex(/^0x[0-9a-fA-F]{40}$/, "Invalid wallet address"),
+  embeddedWalletAddress: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{40}$/, "Invalid embedded wallet address")
+    .optional(),
+  privyId: z.string().optional(),
   name: z.string().optional(),
   email: z.email().optional(),
   userImageUrl: z.url().optional(),

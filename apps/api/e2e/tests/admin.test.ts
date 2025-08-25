@@ -164,6 +164,7 @@ describe("Admin API", () => {
     const userResult = (await adminClient.registerUser({
       walletAddress: userWalletAddress,
       name: userName,
+      email: `${userName.toLowerCase().replace(/\s+/g, "-")}@test.com`,
     })) as UserRegistrationResponse;
     expect(userResult.success).toBe(true);
     expect(userResult.user).toBeDefined();
@@ -240,6 +241,7 @@ describe("Admin API", () => {
     const userResult = (await adminClient.registerUser({
       walletAddress: userWalletAddress,
       name: userName,
+      email: `${userName.toLowerCase().replace(/\s+/g, "-")}@test.com`,
     })) as UserRegistrationResponse;
     expect(userResult.success).toBe(true);
     expect(userResult.user).toBeDefined();
@@ -696,7 +698,7 @@ describe("Admin API", () => {
     expect(walletAddress).toBeTruthy();
 
     // Search using a portion of the wallet address (e.g., first 10 characters after 0x)
-    const partialWalletAddress = walletAddress.substring(0, 12); // 0x + first 10 chars
+    const partialWalletAddress = walletAddress!.substring(0, 12); // 0x + first 10 chars
 
     const walletSearchResult = (await adminClient.searchUsersAndAgents({
       user: {
@@ -733,7 +735,7 @@ describe("Admin API", () => {
     // Perform the join query - search for agents with "Search Agent" in name owned by user1
     const joinQueryResult = (await adminClient.searchUsersAndAgents({
       user: {
-        walletAddress: user1WalletAddress.substring(0, 12), // Use partial wallet address
+        walletAddress: user1WalletAddress!.substring(0, 12), // Use partial wallet address
       },
       agent: {
         name: "Search Agent",
@@ -770,13 +772,13 @@ describe("Admin API", () => {
         name: "Search User",
         email: "search-alpha-${timestamp}@test.com",
         status: "active",
-        walletAddress: user1Result.user.walletAddress,
+        walletAddress: user1Result.user.walletAddress || undefined,
       },
       agent: {
         name: "Search Agent",
         ownerId: user1Result.user.id,
         status: "active",
-        walletAddress: user1Result.user.walletAddress,
+        walletAddress: user1Result.user.walletAddress || undefined,
       },
       join: false,
     })) as AdminSearchUsersAndAgentsResponse;
@@ -803,6 +805,7 @@ describe("Admin API", () => {
     const userResult = (await adminClient.registerUser({
       walletAddress: walletAddress,
       agentName: agentName,
+      email: `user-${Date.now()}@test.com`,
     })) as UserRegistrationResponse;
     expect(userResult.success).toBe(true);
 
@@ -812,6 +815,7 @@ describe("Admin API", () => {
     const randomUserResult = (await adminClient.registerUser({
       walletAddress: randomUserWalletAddress,
       agentName: randomAgentName,
+      email: `random-user-${Date.now()}@test.com`,
     })) as UserRegistrationResponse;
     expect(randomUserResult.success).toBe(true);
 

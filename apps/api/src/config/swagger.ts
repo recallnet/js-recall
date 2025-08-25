@@ -83,6 +83,12 @@ For convenience, we provide an API client that handles authentication automatica
           description:
             "API key provided in the Authorization header using Bearer token authentication",
         },
+        PrivyCookie: {
+          type: "apiKey",
+          in: "cookie",
+          name: "privy-id-token",
+          description: "Privy ID token for authentication",
+        },
       },
       schemas: {
         Error: {
