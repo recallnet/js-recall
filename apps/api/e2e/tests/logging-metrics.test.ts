@@ -526,24 +526,12 @@ describe("Logging and Metrics API", () => {
     // CRITICAL: Ensure NO repository operations are classified as "QUERY" (the fallback)
     // This would indicate that some repository methods are not properly classified
     if (metricsText.includes('operation="QUERY"')) {
-      // Extract and log the specific metrics that are using QUERY classification
-      // const queryMetrics = metricsText
-      //   .split("\n")
-      //   .filter((line) => line.includes('operation="QUERY"'))
-      //   .slice(0, 5); // Show first 5 examples
-
       expect(false).toBe(true); // Fail the test
     }
 
     // CRITICAL: Ensure NO database operations show up as "UNKNOWN" from database logger
     // This would indicate that SQL query parsing is failing
     if (metricsText.includes('operation="UNKNOWN"')) {
-      // Extract and log the specific metrics that are using UNKNOWN classification
-      // const unknownMetrics = metricsText
-      //   .split("\n")
-      //   .filter((line) => line.includes('operation="UNKNOWN"'))
-      //   .slice(0, 5); // Show first 5 examples
-
       expect(false).toBe(true); // Fail the test
     }
 
