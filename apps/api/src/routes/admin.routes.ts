@@ -143,10 +143,6 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Competition-specific configuration settings
    *                 properties:
-   *                   portfolioPriceFreshnessMs:
-   *                     type: number
-   *                     description: Maximum age of price data in milliseconds
-   *                     example: 600000
    *                   portfolioSnapshotCron:
    *                     type: string
    *                     description: Cron expression for portfolio snapshots
@@ -154,10 +150,6 @@ export function configureAdminRoutes(
    *                     type: number
    *                     description: Maximum trade size as percentage of portfolio
    *                     example: 25
-   *                   priceCacheDurationMs:
-   *                     type: number
-   *                     description: Duration to cache price data in milliseconds
-   *                     example: 300000
    *               initialBalances:
    *                 type: array
    *                 description: Initial token balances for agents
@@ -399,10 +391,6 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Competition-specific configuration settings
    *                 properties:
-   *                   portfolioPriceFreshnessMs:
-   *                     type: number
-   *                     description: Maximum age of price data in milliseconds
-   *                     example: 600000
    *                   portfolioSnapshotCron:
    *                     type: string
    *                     description: Cron expression for portfolio snapshots
@@ -410,10 +398,6 @@ export function configureAdminRoutes(
    *                     type: number
    *                     description: Maximum trade size as percentage of portfolio
    *                     example: 25
-   *                   priceCacheDurationMs:
-   *                     type: number
-   *                     description: Duration to cache price data in milliseconds
-   *                     example: 300000
    *               initialBalances:
    *                 type: array
    *                 description: Initial token balances for agents
@@ -711,10 +695,6 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Competition-specific configuration settings
    *                 properties:
-   *                   portfolioPriceFreshnessMs:
-   *                     type: number
-   *                     description: Maximum age of price data in milliseconds
-   *                     example: 600000
    *                   portfolioSnapshotCron:
    *                     type: string
    *                     description: Cron expression for portfolio snapshots
@@ -722,10 +702,6 @@ export function configureAdminRoutes(
    *                     type: number
    *                     description: Maximum trade size as percentage of portfolio
    *                     example: 25
-   *                   priceCacheDurationMs:
-   *                     type: number
-   *                     description: Duration to cache price data in milliseconds
-   *                     example: 300000
    *               initialBalances:
    *                 type: array
    *                 description: Initial token balances for agents

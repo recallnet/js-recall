@@ -430,11 +430,6 @@
                     "type": "object",
                     "description": "Competition-specific configuration settings",
                     "properties": {
-                      "portfolioPriceFreshnessMs": {
-                        "type": "number",
-                        "description": "Maximum age of price data in milliseconds",
-                        "example": 600000
-                      },
                       "portfolioSnapshotCron": {
                         "type": "string",
                         "description": "Cron expression for portfolio snapshots"
@@ -443,11 +438,6 @@
                         "type": "number",
                         "description": "Maximum trade size as percentage of portfolio",
                         "example": 25
-                      },
-                      "priceCacheDurationMs": {
-                        "type": "number",
-                        "description": "Duration to cache price data in milliseconds",
-                        "example": 300000
                       }
                     }
                   },
@@ -757,11 +747,6 @@
                     "type": "object",
                     "description": "Competition-specific configuration settings",
                     "properties": {
-                      "portfolioPriceFreshnessMs": {
-                        "type": "number",
-                        "description": "Maximum age of price data in milliseconds",
-                        "example": 600000
-                      },
                       "portfolioSnapshotCron": {
                         "type": "string",
                         "description": "Cron expression for portfolio snapshots"
@@ -770,11 +755,6 @@
                         "type": "number",
                         "description": "Maximum trade size as percentage of portfolio",
                         "example": 25
-                      },
-                      "priceCacheDurationMs": {
-                        "type": "number",
-                        "description": "Duration to cache price data in milliseconds",
-                        "example": 300000
                       }
                     }
                   },
@@ -1172,11 +1152,6 @@
                     "type": "object",
                     "description": "Competition-specific configuration settings",
                     "properties": {
-                      "portfolioPriceFreshnessMs": {
-                        "type": "number",
-                        "description": "Maximum age of price data in milliseconds",
-                        "example": 600000
-                      },
                       "portfolioSnapshotCron": {
                         "type": "string",
                         "description": "Cron expression for portfolio snapshots"
@@ -1185,11 +1160,6 @@
                         "type": "number",
                         "description": "Maximum trade size as percentage of portfolio",
                         "example": 25
-                      },
-                      "priceCacheDurationMs": {
-                        "type": "number",
-                        "description": "Duration to cache price data in milliseconds",
-                        "example": 300000
                       }
                     }
                   },
@@ -5223,15 +5193,6 @@
                         "slippageFormula": {
                           "type": "string",
                           "description": "Formula used for calculating slippage"
-                        },
-                        "portfolioSnapshots": {
-                          "type": "object",
-                          "properties": {
-                            "interval": {
-                              "type": "string",
-                              "description": "Interval between portfolio snapshots"
-                            }
-                          }
                         },
                         "tradingConstraints": {
                           "type": "object",

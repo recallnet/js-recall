@@ -1388,6 +1388,79 @@ Get the timeline for all agents in a competition
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/competitions/{competitionId}/trades
+
+#### GET
+
+##### Summary:
+
+Get trades for a competition
+
+##### Description:
+
+Get all trades for a specific competition
+
+##### Parameters
+
+| Name          | Located in | Description                                 | Required | Schema  |
+| ------------- | ---------- | ------------------------------------------- | -------- | ------- |
+| competitionId | path       | The ID of the competition to get trades for | Yes      | string  |
+| limit         | query      | Maximum number of results to return         | No       | integer |
+| offset        | query      | Number of results to skip for pagination    | No       | integer |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Competition trades retrieved successfully        |
+| 400  | Bad request - Invalid competition ID format      |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 404  | Competition not found                            |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/competitions/{competitionId}/agents/{agentId}/trades
+
+#### GET
+
+##### Summary:
+
+Get trades for an agent in a competition
+
+##### Description:
+
+Get all trades for a specific agent in a specific competition
+
+##### Parameters
+
+| Name          | Located in | Description                              | Required | Schema  |
+| ------------- | ---------- | ---------------------------------------- | -------- | ------- |
+| competitionId | path       | The ID of the competition                | Yes      | string  |
+| agentId       | path       | The ID of the agent                      | Yes      | string  |
+| limit         | query      | Maximum number of results to return      | No       | integer |
+| offset        | query      | Number of results to skip for pagination | No       | integer |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Agent trades retrieved successfully              |
+| 400  | Bad request - Invalid ID format                  |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 404  | Competition or agent not found                   |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/verify-email
 
 #### GET

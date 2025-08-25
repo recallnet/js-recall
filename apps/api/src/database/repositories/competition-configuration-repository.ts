@@ -85,10 +85,8 @@ async function upsertImpl(
     .onConflictDoUpdate({
       target: competitionConfigurations.competitionId,
       set: {
-        portfolioPriceFreshnessMs: data.portfolioPriceFreshnessMs,
         portfolioSnapshotCron: data.portfolioSnapshotCron,
         maxTradePercentage: data.maxTradePercentage,
-        priceCacheDurationMs: data.priceCacheDurationMs,
         updatedAt: new Date(),
       },
     })
