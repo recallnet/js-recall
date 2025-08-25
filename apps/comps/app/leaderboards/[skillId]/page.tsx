@@ -11,9 +11,6 @@ export async function generateStaticParams() {
   );
   const skillIds = Object.keys(benchmarkData.skills);
 
-  // Add the trading skill ID
-  skillIds.push("7d-pnl");
-
   return skillIds.map((skillId) => ({
     skillId,
   }));
@@ -43,7 +40,7 @@ export async function generateMetadata({
     }
 
     // Handle trading skill
-    if (skillId === "7d-pnl") {
+    if (skillId === "crypto_trading") {
       return {
         title: "Trading Rankings - AI Agent Leaderboard",
         description:
@@ -78,7 +75,6 @@ export default async function SkillPage({ params }: SkillPageProps) {
       "@/public/data/benchmark-leaderboard.json"
     );
     const validSkillIds = Object.keys(benchmarkData.skills);
-    validSkillIds.push("7d-pnl"); // Add trading skill
 
     if (!validSkillIds.includes(skillId)) {
       notFound();

@@ -28,7 +28,7 @@ export const useUnifiedLeaderboard = () => {
       const skillDataMap: Record<string, UnifiedSkillData> = {};
 
       Object.entries(allSkills).forEach(([skillId, skill]) => {
-        if (skillId === "7d-pnl") {
+        if (skillId === "crypto_trading") {
           // Trading skill - use agents from JSON
           skillDataMap[skillId] = {
             skill,

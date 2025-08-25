@@ -85,7 +85,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   const isTrading = skill.category === "trading";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-16">
       {/* Header */}
       <div className="mb-6 flex items-center gap-4">
         <Link href="/leaderboards">
