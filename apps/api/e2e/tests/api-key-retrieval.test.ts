@@ -30,8 +30,6 @@ describe("API Key Retrieval", () => {
     expect(adminApiKey).toBeDefined();
 
     expect(adminId).toBeDefined();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
-    console.log(`Admin ID: ${adminId}`);
   });
 
   test("admin can retrieve an agent's API key", async () => {
@@ -129,12 +127,8 @@ describe("API Key Retrieval", () => {
       expect(result.error).toContain("admin");
     } else if (result.status === 404) {
       // This could happen if admin accounts aren't in the regular agent DB
-      console.log("Admin lookup resulted in not found error");
     } else if (result.status === 500) {
       // Server implementation may have different behavior
-      console.log(
-        `Server returned status ${result.status} with error: ${result.error}`,
-      );
     }
 
     // The key expectation is that the operation was not successful
