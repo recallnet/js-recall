@@ -68,11 +68,10 @@ class ServiceRegistry {
       this._competitionConfigurationService,
     );
 
-    // Portfolio snapshotter now depends on configuration service
+    // Initialize portfolio snapshotter
     this._portfolioSnapshotter = new PortfolioSnapshotter(
       this._balanceManager,
       this._priceTracker,
-      this._configurationService,
     );
 
     // Trade simulator depends on portfolio snapshotter
