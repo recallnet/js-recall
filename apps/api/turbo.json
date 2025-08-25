@@ -51,6 +51,7 @@
         "PRICE_CACHE_TTL_MS",
         "RATE_LIMIT_MAX_REQUESTS",
         "RATE_LIMIT_WINDOW_MS",
+        "DISABLE_RATE_LIMITER",
         "REDIS_URL",
         "ROOT_ENCRYPTION_KEY",
         "TEST_HOST",
