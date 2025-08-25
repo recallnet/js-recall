@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import config from "@/config/index.js";
 import { BalancesResponse, SnapshotResponse } from "@/e2e/utils/api-types.js";
@@ -270,30 +270,6 @@ describe("Portfolio Snapshots", () => {
 
   // Test that price freshness threshold works correctly
   test("reuses prices within freshness threshold", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agent and get client
-    const { agent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Price Freshness Agent",
-    });
-
-    // Start a competition with our agent
-    const competitionName = `Price Freshness Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
-      adminClient,
-      competitionName,
-      [agent.id],
-    );
-
-    // Get the competition ID
-    const competitionId = startResult.competition.id;
-
-    // Wait for initial snapshot to be taken
-    await wait(500);
-
     // Get the freshness threshold from config
     const freshnessThreshold = config.priceTracker.priceTTLMs;
 
@@ -304,75 +280,16 @@ describe("Portfolio Snapshots", () => {
     const priceTracker = new PriceTracker();
     await priceTracker.getPrice(usdcTokenAddress);
 
-    // Take the first snapshot - this should populate the database with prices
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    const cacheSpy = vi.spyOn(priceTracker, "getCachedPrice");
 
     // Wait a bit, but less than the freshness threshold
     const waitTime = Math.min(freshnessThreshold / 3, 3000); // Wait 1/3 the threshold or max 3 seconds
     await wait(waitTime);
 
-    // Take another snapshot immediately after - prices should be reused
-    // We'll use console.spy to capture log messages
-    const originalConsoleLog = console.log;
-    const logMessages: string[] = [];
+    // call again before cache expires
+    await priceTracker.getPrice(usdcTokenAddress);
 
-    try {
-      // Mock console.log to capture messages
-      console.log = (...args: unknown[]) => {
-        const message = args.join(" ");
-        logMessages.push(message);
-      };
-
-      // Take another snapshot - this should reuse prices from the database
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
-
-      // Check if at least one price was reused by looking for the specific log pattern
-      const priceReuseMessages = logMessages.filter(
-        (msg) =>
-          msg.includes("[CompetitionManager]") &&
-          msg.includes("Using fresh price") &&
-          msg.includes("from DB"),
-      );
-
-      // Look for DB hit messages to confirm we're finding price records
-      // const dbHitMessages = logMessages.filter(
-      //   (msg) =>
-      //     msg.includes("[CompetitionManager]") &&
-      //     msg.includes("Price DB query:") &&
-      //     msg.includes("DB hits"),
-      // );
-
-      // Check for DB hit stats
-
-      // For debugging, relaxing the assertion and printing more info instead
-      if (priceReuseMessages.length === 0) {
-        // Check for alternative log messages that might indicate reuse
-        // Check if we found any tokens in DB but didn't reuse them
-        // const specifcChainMessages = logMessages.filter(
-        //   (msg) =>
-        //     msg.includes("[CompetitionManager]") &&
-        //     msg.includes("Using specific chain info from DB"),
-        // );
-        // Check if there are messages about using chain info from DB
-      }
-
-      // Change to a softer assertion for now - we're debugging
-      // We'll log a warning instead of failing the test
-      // Verify price reuse occurred
-
-      // Extract the overall stats
-      const statsMessage = logMessages.find((msg) =>
-        msg.includes("Reused existing prices:"),
-      );
-      if (statsMessage) {
-        // Extract the reuse percentage from the log message
-        // const reusePercentage = parseFloat(
-        //   statsMessage?.match(/\((\d+\.\d+)%\)/)?.[1] || "0",
-        // );
-      }
-    } finally {
-      // Restore the original console.log
-      console.log = originalConsoleLog;
-    }
+    expect(cacheSpy).toBeCalled();
+    cacheSpy.mockReset();
   });
 });
