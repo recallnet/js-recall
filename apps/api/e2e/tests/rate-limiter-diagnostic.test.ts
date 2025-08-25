@@ -21,14 +21,12 @@ describe("Rate Limiter Diagnostics", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("properly isolates rate limits by agent", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
-    console.log("[DIAGNOSTIC] Admin client setup complete");
 
     // Register two agents
     const {
@@ -47,12 +45,6 @@ describe("Rate Limiter Diagnostics", () => {
       adminApiKey,
       agentName: "Rate Limit Diagnostic Agent 2",
     });
-    console.log(
-      `[DIAGNOSTIC] Registered Agent 1 ID: ${agent1.id}, API Key: ${agent1ApiKey.substring(0, 8)}...`,
-    );
-    console.log(
-      `[DIAGNOSTIC] Registered Agent 2 ID: ${agent2.id}, API Key: ${agent2ApiKey.substring(0, 8)}...`,
-    );
 
     // Verify the API keys are different
     expect(agent1ApiKey).not.toEqual(agent2ApiKey);
@@ -63,38 +55,25 @@ describe("Rate Limiter Diagnostics", () => {
       "Test competition for diagnosing rate limiting",
       [agent1.id, agent2.id],
     );
-    console.log("[DIAGNOSTIC] Started test competition");
 
     // Wait for competition setup to complete
     await wait(500);
 
     // Make a request with Agent 1 until we hit a rate limit
-    console.log(
-      "[DIAGNOSTIC] Making requests as Agent 1 to test rate limiting...",
-    );
 
     let agent1RateLimited = false;
-    let agent1SuccessCount = 0;
 
     // Try to make multiple requests with Agent 1, expecting to hit rate limit eventually
     // We'll try just a few requests since our rate limit is fairly low
     for (let i = 0; i < 5; i++) {
       try {
         await agent1Client.getBalance();
-        agent1SuccessCount++;
-        console.log(
-          `[DIAGNOSTIC] Agent 1: Request ${i + 1} succeeded (total: ${agent1SuccessCount})`,
-        );
       } catch (error) {
         const axiosError = error as AxiosError;
         if (axiosError.response && axiosError.response.status === 429) {
-          console.log(
-            `[DIAGNOSTIC] Agent 1 hit rate limit after ${agent1SuccessCount} successful requests`,
-          );
           agent1RateLimited = true;
           break;
         } else {
-          console.error(`[DIAGNOSTIC] Unexpected error for Agent 1:`, error);
           throw error;
         }
       }
@@ -109,58 +88,39 @@ describe("Rate Limiter Diagnostics", () => {
     let agent2RateLimited = false;
 
     try {
-      console.log("[DIAGNOSTIC] Now trying a request with Agent 2...");
       const agent2Response = await agent2Client.getBalance();
       if (agent2Response && agent2Response.success !== false) {
         agent2Success = true;
-        console.log(
-          "[DIAGNOSTIC] Agent 2 request succeeded, suggesting rate limits are properly isolated by agent",
-        );
       }
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axiosError.response && axiosError.response.status === 429) {
         agent2RateLimited = true;
-        console.log(
-          "[DIAGNOSTIC] Agent 2 also hit rate limit - this is unexpected with proper agent isolation",
-        );
       } else {
-        console.error("[DIAGNOSTIC] Unexpected error for Agent 2:", error);
         throw error;
       }
     }
 
     // CASE 1: If Agent 1 was rate limited, Agent 2 should not be
     if (agent1RateLimited) {
-      console.log(
-        "[DIAGNOSTIC] Agent 1 was rate limited, verifying Agent 2 can still make requests",
-      );
       expect(agent2Success).toBe(true);
       expect(agent2RateLimited).toBe(false);
     }
     // CASE 2: If Agent 1 wasn't rate limited, we can't draw a clear conclusion
     else {
-      console.log(
-        "[DIAGNOSTIC] Agent 1 was not rate limited during the test - consider increasing request count",
-      );
       // The test is still valuable as we verified authentication and rate limiting paths
     }
 
     // Verification of proper isolation:
     // If one agent hits a rate limit but the other agent can still make requests,
     // it proves the rate limiter is properly isolating limits by agent
+    // Final verification of rate limit isolation
     if (agent1RateLimited && agent2Success && !agent2RateLimited) {
-      console.log(
-        "[DIAGNOSTIC] SUCCESS: Rate limits are properly isolated by agent ID",
-      );
+      // SUCCESS: Rate limits are properly isolated by agent ID
     } else if (agent1RateLimited && agent2RateLimited) {
-      console.log(
-        "[DIAGNOSTIC] FAILURE: Both agents hit rate limits, suggesting rate limits are not properly isolated",
-      );
+      // FAILURE: Both agents hit rate limits, suggesting rate limits are not properly isolated
     } else {
-      console.log(
-        "[DIAGNOSTIC] INCONCLUSIVE: Could not fully verify rate limit isolation",
-      );
+      // INCONCLUSIVE: Could not fully verify rate limit isolation
     }
   });
 });

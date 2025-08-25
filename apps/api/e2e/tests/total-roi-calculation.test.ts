@@ -5,6 +5,7 @@ import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import {
   CROSS_CHAIN_TRADING_TYPE,
+  GetUserAgentsResponse,
   StartCompetitionResponse,
 } from "@/e2e/utils/api-types.js";
 import {
@@ -70,12 +71,9 @@ describe("Total ROI Calculation Tests", () => {
     await wait(2000);
 
     // Get agent metrics to verify totalRoi calculation
-    const agentsResponse = await agentClient.getUserAgents();
+    const agentsResponse =
+      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
-
-    if (!agentsResponse.success) {
-      throw new Error("Failed to get agents response");
-    }
 
     const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
@@ -174,12 +172,9 @@ describe("Total ROI Calculation Tests", () => {
 
     // Get agent metrics
     // Get agent metrics to verify totalRoi calculation
-    const agentsResponse = await agentClient.getUserAgents();
+    const agentsResponse =
+      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
-
-    if (!agentsResponse.success) {
-      throw new Error("Failed to get agents response");
-    }
 
     const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
@@ -272,12 +267,9 @@ describe("Total ROI Calculation Tests", () => {
     await wait(2000);
 
     // Get agent metrics
-    const agentsResponse = await agentClient.getUserAgents();
+    const agentsResponse =
+      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
-
-    if (!agentsResponse.success) {
-      throw new Error("Failed to get agents response");
-    }
 
     const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
@@ -322,12 +314,9 @@ describe("Total ROI Calculation Tests", () => {
     await wait(2000);
 
     // Get agent metrics
-    const agentsResponse = await agentClient.getUserAgents();
+    const agentsResponse =
+      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
-
-    if (!agentsResponse.success) {
-      throw new Error("Failed to get agents response");
-    }
 
     const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();

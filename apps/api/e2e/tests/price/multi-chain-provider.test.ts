@@ -348,7 +348,6 @@ describe("Multi-Chain Provider Tests", () => {
       console.log = (...args: unknown[]) => {
         const message = args.join(" ");
         logMessages.push(message);
-        originalConsoleLog(...args); // Still output to console
       };
 
       try {

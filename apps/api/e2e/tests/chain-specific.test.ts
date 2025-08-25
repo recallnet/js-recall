@@ -27,7 +27,6 @@ describe("Specific Chains", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("specificChain is correctly entered into balances when agent is initialized in competition", async () => {
@@ -83,9 +82,6 @@ describe("Specific Chains", () => {
 
       // Assert that the chain in the API response matches what we expect from config
       expect(assignedChain).toBe(expectedChain);
-      console.log(
-        `Token ${tokenAddress} correctly assigned to chain ${assignedChain}`,
-      );
     }
   });
 
@@ -130,11 +126,6 @@ describe("Specific Chains", () => {
 
       if (ethBalance) ethToken = ethBalance.tokenAddress;
       if (usdcBalance) usdcToken = usdcBalance.tokenAddress;
-
-      console.log(
-        `Looking for ETH token (${ethAddress}) and USDC token (${usdcAddress})`,
-      );
-      console.log(`Found ETH token: ${ethToken}, USDC token: ${usdcToken}`);
     }
 
     // Make sure we found both tokens
@@ -143,9 +134,6 @@ describe("Specific Chains", () => {
 
     // Skip the test if we couldn't find the tokens (typescript safety)
     if (!ethToken || !usdcToken) {
-      console.log(
-        "Could not find ETH and USDC tokens in balances, skipping test",
-      );
       return;
     }
 
@@ -384,10 +372,6 @@ describe("Specific Chains", () => {
         // If trade succeeded, add to our list
         purchasedTokens.push(tokenAddress);
 
-        console.log(
-          `Successfully purchased token ${tokenAddress} from chain ${specificChain}`,
-        );
-
         // Verify trade record in database
         const tradeResult = await db.query.trades.findMany({
           where: and(
@@ -407,14 +391,8 @@ describe("Specific Chains", () => {
 
         // Verify the to_specific_chain is what we expect
         expect(trade?.toSpecificChain).toBe(specificChainStr);
-
-        console.log(
-          `Trade record: from_chain=${trade?.fromSpecificChain}, to_chain=${trade?.toSpecificChain}`,
-        );
-      } catch (error) {
-        console.error(
-          `Error trading ${token.address} on ${token.specificChain}: ${error}`,
-        );
+      } catch {
+        // Error trading token - test will continue with other tokens
       }
     }
 
@@ -435,9 +413,6 @@ describe("Specific Chains", () => {
 
       // SpecificChain should be defined
       expect(tokenBalance?.specificChain).toBeDefined();
-      console.log(
-        `Balance for ${tokenAddress}: specificChain=${tokenBalance?.specificChain}`,
-      );
 
       // Find expected chain for this token
       const expectedToken = tokens.find(
@@ -449,11 +424,6 @@ describe("Specific Chains", () => {
         expect(tokenBalance?.specificChain).toBe(expectedToken.specificChain);
       }
     }
-
-    // Summary
-    console.log(
-      `Successfully verified specificChain for ${purchasedTokens.length} tokens`,
-    );
   });
 
   test("swap fails if trading pair is not found", async () => {

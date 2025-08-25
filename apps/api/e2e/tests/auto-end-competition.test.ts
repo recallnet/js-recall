@@ -18,7 +18,6 @@ describe("Competition End Date Processing", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("should automatically end competition when end date is reached", async () => {
@@ -54,10 +53,6 @@ describe("Competition End Date Processing", () => {
     const competition = (createResponse as CreateCompetitionResponse)
       .competition;
 
-    console.log(
-      `Created competition ${competition.id} with endDate ${endDate.toISOString()}`,
-    );
-
     // Start the competition
     const startResponse = await adminClient.startExistingCompetition(
       competition.id,
@@ -87,10 +82,6 @@ describe("Competition End Date Processing", () => {
     expect(
       (endedCompetition as CompetitionDetailResponse).competition.endDate,
     ).toBeDefined();
-
-    console.log(
-      `Competition ${competition.id} was automatically ended at ${(endedCompetition as CompetitionDetailResponse).competition.endDate}`,
-    );
   });
 
   test("should not end competitions before end date", async () => {
@@ -152,10 +143,6 @@ describe("Competition End Date Processing", () => {
     expect(
       (stillActiveCompetition as CompetitionDetailResponse).competition.status,
     ).toBe("active");
-
-    console.log(
-      `Competition ${competition.id} correctly remains active before end date`,
-    );
 
     // Clean up by manually ending the competition
     await adminClient.endCompetition(competition.id);
