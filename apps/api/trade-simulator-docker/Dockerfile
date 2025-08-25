@@ -8,6 +8,7 @@ COPY package.json pnpm-*.yaml .npmrc ./
 COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/typescript-config/package.json packages/typescript-config/
 COPY packages/api-sdk/package.json packages/api-sdk/
+COPY packages/staking-contracts/package.json packages/staking-contracts/
 COPY apps/api/package.json apps/api/
 
 RUN pnpm install --frozen-lockfile
@@ -16,6 +17,7 @@ COPY . .
 
 # Build the application
 RUN pnpm --filter=@recallnet/api-sdk build && \
+    pnpm --filter=@recallnet/staking-contracts build && \
     pnpm --filter=api build
 
 FROM node:22-alpine

@@ -1,0 +1,35 @@
+{
+  "name": "@recallnet/staking-contracts",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./rewards-allocator": {
+      "import": {
+        "types": "./dist/rewards-allocator.d.ts",
+        "default": "./dist/rewards-allocator.js"
+      },
+      "require": {
+        "types": "./dist/rewards-allocator.d.cts",
+        "default": "./dist/rewards-allocator.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.6.4",
+  "dependencies": {
+    "viem": "^2.7.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsup": "^8.3.6",
+    "typescript": "^5.3.0"
+  }
+}
