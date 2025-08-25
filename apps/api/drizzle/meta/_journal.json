@@ -253,6 +253,13 @@
       "when": 1755821327839,
       "tag": "0035_flaky_ravenous",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1756153308432,
+      "tag": "0036_smart_magneto",
+      "breakpoints": true
     }
   ]
 }
