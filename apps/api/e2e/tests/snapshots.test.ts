@@ -17,7 +17,6 @@ describe("get24hSnapshots Repository Function", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("should return empty arrays when no agent IDs provided", async () => {
