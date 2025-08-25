@@ -415,13 +415,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           rateLimits,
           availableChains,
           slippageFormula,
-          tradingConstraints: {
-            minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
-            minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
-            minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
-            minimumFdvUsd: tradingConstraints.minimumFdvUsd,
-            minTradesPerDay: tradingConstraints.minTradesPerDay,
-          },
+          tradingConstraints,
         };
 
         res.status(200).json({
@@ -1202,13 +1196,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           rateLimits,
           availableChains,
           slippageFormula,
-          tradingConstraints: {
-            minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
-            minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
-            minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
-            minimumFdvUsd: tradingConstraints.minimumFdvUsd,
-            minTradesPerDay: tradingConstraints.minTradesPerDay,
-          },
+          tradingConstraints,
         };
 
         res.status(200).json({

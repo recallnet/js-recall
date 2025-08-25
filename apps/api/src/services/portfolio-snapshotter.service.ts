@@ -39,11 +39,13 @@ export class PortfolioSnapshotter {
    * @param competitionId The competition ID
    * @param agentId The agent ID
    * @param timestamp Optional timestamp for the snapshot (defaults to current time)
+   * @param force Optional flag to force snapshot even if competition has ended
    */
   async takePortfolioSnapshotForAgent(
     competitionId: string,
     agentId: string,
     timestamp: Date = new Date(),
+    force: boolean = false,
   ): Promise<void> {
     repositoryLogger.debug(
       `[PortfolioSnapshotter] Taking portfolio snapshot for agent ${agentId} in competition ${competitionId}`,
@@ -57,10 +59,16 @@ export class PortfolioSnapshotter {
 
     const now = new Date();
     if (competition.endDate && now > competition.endDate) {
+      if (!force) {
+        repositoryLogger.debug(
+          `[PortfolioSnapshotter] Competition ${competitionId} has ended (end date: ${competition.endDate.toISOString()}, current time: ${timestamp.toISOString()}). Skipping portfolio snapshot for agent ${agentId}`,
+        );
+        return;
+      }
+      // Competition has ended but we're forcing the snapshot
       repositoryLogger.debug(
-        `[PortfolioSnapshotter] Competition ${competitionId} has ended (end date: ${competition.endDate.toISOString()}, current time: ${timestamp.toISOString()}). Skipping portfolio snapshot for agent ${agentId}`,
+        `[PortfolioSnapshotter] Competition ${competitionId} has ended, but taking final snapshot anyway (forced) for agent ${agentId}`,
       );
-      return;
     }
 
     const balances = await this.balanceManager.getAllBalances(agentId);
@@ -99,10 +107,11 @@ export class PortfolioSnapshotter {
   /**
    * Take portfolio snapshots for all agents in a competition
    * @param competitionId The competition ID
+   * @param force Optional flag to force snapshots even if competition has ended
    */
-  async takePortfolioSnapshots(competitionId: string) {
+  async takePortfolioSnapshots(competitionId: string, force: boolean = false) {
     repositoryLogger.debug(
-      `[PortfolioSnapshotter] Taking portfolio snapshots for competition ${competitionId}`,
+      `[PortfolioSnapshotter] Taking portfolio snapshots for competition ${competitionId}${force ? " (forced)" : ""}`,
     );
 
     const startTime = Date.now();
@@ -114,6 +123,7 @@ export class PortfolioSnapshotter {
         competitionId,
         agentId,
         timestamp,
+        force,
       );
     }
 
