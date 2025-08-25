@@ -60,7 +60,6 @@ export const RewardsSchema = z
  */
 export const CompetitionConfigurationSchema = z
   .object({
-    portfolioPriceFreshnessMs: z.number().min(1000).optional(),
     portfolioSnapshotCron: z
       .string()
       .regex(
@@ -71,11 +70,6 @@ export const CompetitionConfigurationSchema = z
         "Cron expression for portfolio snapshots (e.g., '*/5 * * * *' for every 5 minutes)",
       ),
     maxTradePercentage: z.number().min(1).max(100).optional(),
-    priceCacheDurationMs: z
-      .number()
-      .min(1000)
-      .optional()
-      .describe("Note: Not currently implemented - reserved for future use"),
   })
   .optional();
 

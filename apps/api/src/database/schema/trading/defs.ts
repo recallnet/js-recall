@@ -271,18 +271,11 @@ export const competitionConfigurations = tradingComps.table(
         onUpdate: "cascade",
       }),
     // Portfolio configuration
-    portfolioPriceFreshnessMs: integer("portfolio_price_freshness_ms")
-      .notNull()
-      .default(600000), // 10 minutes default
     portfolioSnapshotCron: varchar("portfolio_snapshot_cron", { length: 50 })
       .notNull()
       .default("*/5 * * * *"), // Default: every 5 minutes
     // Trading configuration
     maxTradePercentage: integer("max_trade_percentage").notNull().default(25), // 25% default
-    // Price configuration
-    priceCacheDurationMs: integer("price_cache_duration_ms")
-      .notNull()
-      .default(30000), // 30 seconds default
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

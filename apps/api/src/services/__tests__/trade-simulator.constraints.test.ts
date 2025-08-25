@@ -82,7 +82,6 @@ describe("TradeSimulator - Trading Constraints", () => {
 
       mockConfigurationService = {
         getMaxTradePercentage: vi.fn().mockResolvedValue(25),
-        getPortfolioPriceFreshnessMs: vi.fn().mockResolvedValue(60000),
       };
 
       // Create TradeSimulator instance with mocked dependencies

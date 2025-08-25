@@ -511,10 +511,8 @@ export interface TradingConstraints {
 
 // Competition configuration interface
 export interface CompetitionConfiguration {
-  portfolioPriceFreshnessMs?: number;
   portfolioSnapshotCron?: string;
   maxTradePercentage?: number;
-  priceCacheDurationMs?: number;
 }
 
 // Initial balance configuration

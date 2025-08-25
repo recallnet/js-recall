@@ -8,10 +8,8 @@ import { serviceLogger } from "@/lib/logger.js";
 
 export interface CompetitionConfigurationInput {
   competitionId: string;
-  portfolioPriceFreshnessMs?: number;
   portfolioSnapshotCron?: string;
   maxTradePercentage?: number;
-  priceCacheDurationMs?: number;
 }
 
 /**
@@ -26,12 +24,8 @@ export class CompetitionConfigurationService {
   ): Promise<SelectCompetitionConfiguration | undefined> {
     const data: InsertCompetitionConfiguration = {
       competitionId: input.competitionId,
-      portfolioPriceFreshnessMs:
-        input.portfolioPriceFreshnessMs ?? config.priceTracker.priceTTLMs,
       portfolioSnapshotCron: input.portfolioSnapshotCron ?? "*/5 * * * *", // Default: every 5 minutes
       maxTradePercentage: input.maxTradePercentage ?? config.maxTradePercentage,
-      priceCacheDurationMs:
-        input.priceCacheDurationMs ?? config.priceTracker.priceTTLMs,
     };
 
     serviceLogger.debug(
@@ -77,10 +71,6 @@ export class CompetitionConfigurationService {
 
     const data: InsertCompetitionConfiguration = {
       competitionId: input.competitionId,
-      portfolioPriceFreshnessMs:
-        input.portfolioPriceFreshnessMs ??
-        existingConfig?.portfolioPriceFreshnessMs ??
-        config.priceTracker.priceTTLMs,
       portfolioSnapshotCron:
         input.portfolioSnapshotCron ??
         existingConfig?.portfolioSnapshotCron ??
@@ -89,10 +79,6 @@ export class CompetitionConfigurationService {
         input.maxTradePercentage ??
         existingConfig?.maxTradePercentage ??
         config.maxTradePercentage,
-      priceCacheDurationMs:
-        input.priceCacheDurationMs ??
-        existingConfig?.priceCacheDurationMs ??
-        config.priceTracker.priceTTLMs,
     };
 
     serviceLogger.debug(
@@ -117,23 +103,16 @@ export class CompetitionConfigurationService {
    * Gets configuration with defaults
    */
   async getConfigurationWithDefaults(competitionId: string): Promise<{
-    portfolioPriceFreshnessMs: number;
     portfolioSnapshotCron: string;
     maxTradePercentage: number;
-    priceCacheDurationMs: number;
   }> {
     const configuration = await this.getConfiguration(competitionId);
 
     return {
-      portfolioPriceFreshnessMs:
-        configuration?.portfolioPriceFreshnessMs ??
-        config.priceTracker.priceTTLMs,
       portfolioSnapshotCron:
         configuration?.portfolioSnapshotCron ?? "*/5 * * * *",
       maxTradePercentage:
         configuration?.maxTradePercentage ?? config.maxTradePercentage,
-      priceCacheDurationMs:
-        configuration?.priceCacheDurationMs ?? config.priceTracker.priceTTLMs,
     };
   }
 
@@ -145,19 +124,6 @@ export class CompetitionConfigurationService {
     errors: string[];
   } {
     const errors: string[] = [];
-
-    if (input.portfolioPriceFreshnessMs !== undefined) {
-      if (input.portfolioPriceFreshnessMs < 1000) {
-        errors.push(
-          "portfolioPriceFreshnessMs must be at least 1000ms (1 second)",
-        );
-      }
-      if (input.portfolioPriceFreshnessMs > 3600000) {
-        errors.push(
-          "portfolioPriceFreshnessMs cannot exceed 3600000ms (1 hour)",
-        );
-      }
-    }
 
     if (input.portfolioSnapshotCron !== undefined) {
       // Basic cron validation - could be enhanced with a proper cron parser
@@ -175,15 +141,6 @@ export class CompetitionConfigurationService {
       }
       if (input.maxTradePercentage > 100) {
         errors.push("maxTradePercentage cannot exceed 100%");
-      }
-    }
-
-    if (input.priceCacheDurationMs !== undefined) {
-      if (input.priceCacheDurationMs < 1000) {
-        errors.push("priceCacheDurationMs must be at least 1000ms (1 second)");
-      }
-      if (input.priceCacheDurationMs > 300000) {
-        errors.push("priceCacheDurationMs cannot exceed 300000ms (5 minutes)");
       }
     }
 

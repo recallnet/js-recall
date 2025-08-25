@@ -94,23 +94,6 @@ export class ConfigurationService {
   }
 
   /**
-   * Get portfolio price freshness with competition-aware fallback
-   */
-  async getPortfolioPriceFreshnessMs(competitionId?: string): Promise<number> {
-    const targetCompetitionId = competitionId || this.activeCompetitionId;
-
-    if (targetCompetitionId) {
-      const config = await this.getCompetitionConfig(targetCompetitionId);
-      if (config?.portfolioPriceFreshnessMs !== undefined) {
-        return config.portfolioPriceFreshnessMs;
-      }
-    }
-
-    // Fall back to environment configuration
-    return config.priceTracker.priceTTLMs;
-  }
-
-  /**
    * Get max trade percentage with competition-aware fallback
    */
   async getMaxTradePercentage(competitionId?: string): Promise<number> {

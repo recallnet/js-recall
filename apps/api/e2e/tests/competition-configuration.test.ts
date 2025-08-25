@@ -38,10 +38,8 @@ describe("Competition Configuration (Stateless)", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       const customConfig: CompetitionConfiguration = {
-        portfolioPriceFreshnessMs: 300000, // 5 minutes
         portfolioSnapshotCron: "*/10 * * * *", // Every 10 minutes
         maxTradePercentage: 15, // 15% max trade size
-        priceCacheDurationMs: 60000, // 1 minute
       };
 
       const result = await adminClient.createCompetition(
@@ -74,10 +72,8 @@ describe("Competition Configuration (Stateless)", () => {
         .where(eq(competitionConfigurations.competitionId, competition.id));
 
       expect(storedConfig).toBeDefined();
-      expect(storedConfig!.portfolioPriceFreshnessMs).toBe(300000);
       expect(storedConfig!.portfolioSnapshotCron).toBe("*/10 * * * *");
       expect(storedConfig!.maxTradePercentage).toBe(15);
-      expect(storedConfig!.priceCacheDurationMs).toBe(60000);
     });
 
     test("should use default configuration when not specified", async () => {
@@ -137,10 +133,8 @@ describe("Competition Configuration (Stateless)", () => {
 
       // Update with new configuration
       const updatedConfig: CompetitionConfiguration = {
-        portfolioPriceFreshnessMs: 120000, // 2 minutes
         portfolioSnapshotCron: "0 */2 * * *", // Every 2 hours
         maxTradePercentage: 30, // 30% max trade size
-        priceCacheDurationMs: 45000, // 45 seconds
       };
 
       const updateResponse =
@@ -169,10 +163,8 @@ describe("Competition Configuration (Stateless)", () => {
         .where(eq(competitionConfigurations.competitionId, competition.id));
 
       expect(storedConfig).toBeDefined();
-      expect(storedConfig!.portfolioPriceFreshnessMs).toBe(120000);
       expect(storedConfig!.portfolioSnapshotCron).toBe("0 */2 * * *");
       expect(storedConfig!.maxTradePercentage).toBe(30);
-      expect(storedConfig!.priceCacheDurationMs).toBe(45000);
     });
 
     test("should enforce max trade percentage from competition configuration", async () => {
