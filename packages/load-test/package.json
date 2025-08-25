@@ -6,9 +6,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:leaderboard": "artillery run --output dist/leaderboard.json --env-file .env src/leaderboard.ts",
-    "test:agent-trading": "artillery run --output dist/agent-trading.json --env-file .env -e test src/agent-trading.ts",
+    "test:leaderboard": "pnpm build && artillery run --output dist/leaderboard.json --env-file .env dist/leaderboard.js",
+    "test:agent-trading": "pnpm build && artillery run --output dist/agent-trading.json --env-file .env -e test dist/agent-trading.js",
+    "test:users-api": "pnpm build && artillery run --output dist/users-api.json --env-file .env -e test dist/users-api.js",
     "report:leaderboard": "npx artillery@2.0.21 report dist/leaderboard.json --output dist/leaderboard.html",
+    "report:agent-trading": "npx artillery@2.0.21 report dist/agent-trading.json --output dist/agent-trading.html",
+    "report:users-api": "npx artillery@2.0.21 report dist/users-api.json --output dist/users-api.html",
     "dev": "tsc --watch",
     "build": "tsup",
     "lint": "eslint . --max-warnings 0",
@@ -19,6 +22,7 @@
   "dependencies": {
     "@ngneat/falso": "^8.0.2",
     "artillery": "^2.0.24",
+    "artillery-plugin-metrics-by-endpoint": "^1.18.0",
     "viem": "^2.34.0"
   },
   "devDependencies": {
@@ -27,7 +31,6 @@
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
-    "@types/uuid": "^9.0.1",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",

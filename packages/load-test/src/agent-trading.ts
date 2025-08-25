@@ -2,12 +2,13 @@ export const config = {
   target: "{{ $env.API_HOST }}",
   phases: [
     {
-      duration: "1m",
+      duration: "5m",
       arrivalCount: "{{ $env.AGENTS_COUNT }}",
       maxVusers: "{{ $env.AGENTS_COUNT }}",
+      name: "load-test",
     },
   ],
-  processor: "../src/agent-helpers.ts",
+  processor: "../dist/agent-helpers.js",
   environments: {
     test: {
       target: "{{ $env.API_HOST }}",
@@ -16,6 +17,9 @@ export const config = {
         wethToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
       },
     },
+  },
+  plugins: {
+    "metrics-by-endpoint": {},
   },
 };
 
@@ -129,7 +133,7 @@ export const scenarios = [
         log: "Starting agent trading scenario",
       },
       {
-        count: 50, // 5.000 USDC / 100 buy trades
+        count: 500, // 5.000 USDC / 10 buy trades
         loop: [
           {
             post: {
@@ -140,7 +144,7 @@ export const scenarios = [
               json: {
                 fromToken: "{{ usdcToken }}",
                 toToken: "{{ wethToken }}",
-                amount: "100",
+                amount: "10",
                 reason: "Buy WETH",
                 fromChain: "EVM",
                 toChain: "EVM",
@@ -159,7 +163,7 @@ export const scenarios = [
               json: {
                 fromToken: "{{ wethToken }}",
                 toToken: "{{ usdcToken }}",
-                amount: "0.00001",
+                amount: "0.000001",
                 reason: "Sell WETH",
                 fromChain: "EVM",
                 toChain: "EVM",
