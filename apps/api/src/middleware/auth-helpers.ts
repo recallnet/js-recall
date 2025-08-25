@@ -24,7 +24,7 @@ export function extractApiKey(req: Request): string | undefined {
 }
 
 /**
- * Check if a path is a login endpoint
+ * Check if a path is the login endpoint
  * @param path - The path to check
  * @returns True if the path is a login endpoint, false otherwise
  */

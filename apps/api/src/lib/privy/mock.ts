@@ -94,66 +94,107 @@ export class MockPrivyClient {
       : undefined;
 
     const now = new Date();
-    const linkedAccounts: LinkedAccountWithMetadata[] = [];
+    let linkedAccounts: LinkedAccountWithMetadata[] = [];
 
-    // Always add embedded wallet (required by our Privy configuration)
-    // Generate a valid Ethereum address from the privyId
+    // Always generate embedded wallet address (required by our Privy configuration)
     const hash = privyId.split(":").pop() || "default";
-    // Convert the hash to a valid hex string by taking its char codes
     let hexString = "";
     for (let i = 0; i < hash.length && hexString.length < 40; i++) {
       const charCode = hash.charCodeAt(i);
       hexString += charCode.toString(16).padStart(2, "0");
     }
-    // Pad with zeros if needed to reach 40 characters
     hexString = hexString.padEnd(40, "0").slice(0, 40);
     const embeddedWalletAddress = `0x${hexString}`.toLowerCase();
-    linkedAccounts.push({
-      type: "wallet",
-      address: embeddedWalletAddress,
-      walletClient: "privy",
-      walletClientType: "privy",
-      chainType: "ethereum",
-      chainId: "1",
-      verifiedAt: now,
-      firstVerifiedAt: now,
-      latestVerifiedAt: now,
-    } as WalletWithMetadata);
 
-    // Add email linked account if email is provided
-    if (email) {
-      linkedAccounts.push({
-        type: "email",
-        address: email,
-        verifiedAt: now,
-        firstVerifiedAt: now,
-        latestVerifiedAt: now,
-      } as LinkedAccountWithMetadata);
+    // Parse linked_accounts if it's a stringified JSON (matching real Privy JWT format)
+    if (typeof payload.linked_accounts === "string") {
+      try {
+        linkedAccounts = JSON.parse(
+          payload.linked_accounts,
+        ) as LinkedAccountWithMetadata[];
+      } catch {
+        // If parsing fails, we'll build linkedAccounts below
+        linkedAccounts = [];
+      }
+    } else if (Array.isArray(payload.linked_accounts)) {
+      // Support backward compatibility if linked_accounts is already an array
+      linkedAccounts = payload.linked_accounts as LinkedAccountWithMetadata[];
     }
 
-    // Add custom wallet if provided
-    if (walletAddress) {
+    // If linkedAccounts is empty, build it from other JWT fields
+    if (linkedAccounts.length === 0) {
+      linkedAccounts = [];
+
+      // Always add embedded wallet
       linkedAccounts.push({
         type: "wallet",
-        address: walletAddress.toLowerCase(),
-        walletClient: "metamask",
-        walletClientType: "injected",
-        chainType: walletChainType,
+        address: embeddedWalletAddress,
+        walletClient: "privy",
+        walletClientType: "privy",
+        chainType: "ethereum",
         chainId: "1",
         verifiedAt: now,
         firstVerifiedAt: now,
         latestVerifiedAt: now,
       } as WalletWithMetadata);
+
+      // Add email linked account if email is provided
+      if (email) {
+        linkedAccounts.push({
+          type: "email",
+          address: email,
+          verifiedAt: now,
+          firstVerifiedAt: now,
+          latestVerifiedAt: now,
+        } as LinkedAccountWithMetadata);
+      }
+
+      // Add custom wallet if provided
+      if (walletAddress) {
+        linkedAccounts.push({
+          type: "wallet",
+          address: walletAddress.toLowerCase(),
+          walletClient: "metamask",
+          walletClientType: "injected",
+          chainType: walletChainType,
+          chainId: "1",
+          verifiedAt: now,
+          firstVerifiedAt: now,
+          latestVerifiedAt: now,
+        } as WalletWithMetadata);
+      }
+
+      // Add provider-specific linked account
+      if (provider === "google" && email) {
+        linkedAccounts.push({
+          type: "google_oauth",
+          subject: privyId,
+          email: email,
+          name: name || null,
+          verifiedAt: now,
+          firstVerifiedAt: now,
+          latestVerifiedAt: now,
+        } as LinkedAccountWithMetadata);
+      } else if (provider === "github") {
+        linkedAccounts.push({
+          type: "github_oauth",
+          subject: privyId,
+          username: name || "testuser",
+          name: name || null,
+          verifiedAt: now,
+          firstVerifiedAt: now,
+          latestVerifiedAt: now,
+        } as LinkedAccountWithMetadata);
+      }
     }
 
-    // Add any dynamically linked wallets from JWT payload or static map
+    // Always process additional linked wallets from JWT payload or static map
     const linkedWalletsFromJWT = (payload.linked_wallets as string[]) || [];
     const linkedWalletsFromMap =
       MockPrivyClient.linkedWallets.get(privyId) || [];
     const allLinkedWallets = [
       ...new Set([...linkedWalletsFromJWT, ...linkedWalletsFromMap]),
     ];
-    let mostRecentWallet = walletAddress || embeddedWalletAddress;
 
     for (const linkedWallet of allLinkedWallets) {
       // Skip if this wallet is already in the linkedAccounts
@@ -178,34 +219,17 @@ export class MockPrivyClient {
           firstVerifiedAt: now,
           latestVerifiedAt: now,
         } as WalletWithMetadata);
-
-        // The most recent wallet is the last one added
-        mostRecentWallet = linkedWallet.toLowerCase();
       }
     }
 
-    // Add provider-specific linked account
-    if (provider === "google" && email) {
-      linkedAccounts.push({
-        type: "google_oauth",
-        subject: privyId,
-        email: email,
-        name: name || null,
-        verifiedAt: now,
-        firstVerifiedAt: now,
-        latestVerifiedAt: now,
-      } as LinkedAccountWithMetadata);
-    } else if (provider === "github") {
-      linkedAccounts.push({
-        type: "github_oauth",
-        subject: privyId,
-        username: name || "testuser",
-        name: name || null,
-        verifiedAt: now,
-        firstVerifiedAt: now,
-        latestVerifiedAt: now,
-      } as LinkedAccountWithMetadata);
-    }
+    // Determine the most recent wallet address
+    const wallets = linkedAccounts.filter(
+      (account) => account.type === "wallet",
+    ) as WalletWithMetadata[];
+    const mostRecentWallet =
+      wallets.length > 0
+        ? wallets[wallets.length - 1]!.address
+        : embeddedWalletAddress;
 
     // Build the mock user object
     const mockUser: PrivyUser = {

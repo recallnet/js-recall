@@ -55,10 +55,10 @@ export const authMiddleware = (
           );
           const user = await userManager.getUserByPrivyId(privyId);
           if (!user) {
+            // Note: we allow the `/auth/login` endpoint to be accessed if a user without Privy
+            // related data exists. This is part of a backwards compatibility measure. A user will
+            // either be queried by legacy data (wallet address or email), else, created.
             if (isLoginEndpoint(path)) {
-              authLogger.debug(
-                `[AuthMiddleware] User with Privy ID ${privyId} not found, but login endpoint is being called`,
-              );
               return next();
             }
             throw new ApiError(

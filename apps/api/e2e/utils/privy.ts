@@ -107,9 +107,83 @@ export async function createMockPrivyToken(
   } = {},
 ): Promise<string> {
   const userData = { ...defaultTestUser, ...user };
+  const now = new Date();
 
   // Import the private key for ES256 signing
   const privateKey = await importPKCS8(TEST_PRIVY_PRIVATE_KEY, "ES256");
+
+  // Build linked accounts array to match real Privy JWT format
+  const linkedAccounts = [];
+
+  // Always add embedded wallet (required by Privy)
+  const hash = userData.privyId.split(":").pop() || "default";
+  let hexString = "";
+  for (let i = 0; i < hash.length && hexString.length < 40; i++) {
+    const charCode = hash.charCodeAt(i);
+    hexString += charCode.toString(16).padStart(2, "0");
+  }
+  hexString = hexString.padEnd(40, "0").slice(0, 40);
+  const embeddedWalletAddress = `0x${hexString}`.toLowerCase();
+  linkedAccounts.push({
+    type: "wallet",
+    address: embeddedWalletAddress,
+    walletClient: "privy",
+    walletClientType: "privy",
+    chainType: "ethereum",
+    chainId: "1",
+    verifiedAt: now,
+    firstVerifiedAt: now,
+    latestVerifiedAt: now,
+  });
+
+  // Add email linked account if email is provided
+  if (userData.email) {
+    linkedAccounts.push({
+      type: "email",
+      address: userData.email,
+      verifiedAt: now,
+      firstVerifiedAt: now,
+      latestVerifiedAt: now,
+    });
+  }
+
+  // Add custom wallet if provided
+  if (userData.walletAddress) {
+    linkedAccounts.push({
+      type: "wallet",
+      address: userData.walletAddress.toLowerCase(),
+      walletClient: "metamask",
+      walletClientType: "injected",
+      chainType: userData.walletChainType || "ethereum",
+      chainId: "1",
+      verifiedAt: now,
+      firstVerifiedAt: now,
+      latestVerifiedAt: now,
+    });
+  }
+
+  // Add provider-specific linked account
+  if (userData.provider === "google" && userData.email) {
+    linkedAccounts.push({
+      type: "google_oauth",
+      subject: userData.privyId,
+      email: userData.email,
+      name: userData.name || null,
+      verifiedAt: now,
+      firstVerifiedAt: now,
+      latestVerifiedAt: now,
+    });
+  } else if (userData.provider === "github") {
+    linkedAccounts.push({
+      type: "github_oauth",
+      subject: userData.privyId,
+      username: userData.name || "testuser",
+      name: userData.name || null,
+      verifiedAt: now,
+      firstVerifiedAt: now,
+      latestVerifiedAt: now,
+    });
+  }
 
   // Build the JWT
   const jwt = new SignJWT({
@@ -119,6 +193,10 @@ export async function createMockPrivyToken(
     providerUsername: userData.name || userData.email?.split("@")[0],
     wallet_address: userData.walletAddress,
     wallet_chain_type: userData.walletChainType,
+    // Creation time
+    cr: now.toISOString(),
+    // Linked accounts as stringified JSON (matching real Privy JWT format)
+    linked_accounts: JSON.stringify(linkedAccounts),
     // Session ID
     sid: uuidv4(),
     // Additional linked wallets (custom claim for testing)
@@ -199,7 +277,6 @@ export function createGoogleTestUser(
 ): TestPrivyUser {
   return createTestPrivyUser({
     provider: "google",
-    imageUrl: "https://lh3.googleusercontent.com/test-image",
     ...overrides,
   });
 }
