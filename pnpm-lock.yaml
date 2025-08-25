@@ -993,6 +993,9 @@ importers:
       artillery:
         specifier: ^2.0.24
         version: 2.0.24(@types/node@24.3.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      artillery-plugin-metrics-by-endpoint:
+        specifier: ^1.18.0
+        version: 1.18.0
       viem:
         specifier: ^2.34.0
         version: 2.34.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
@@ -1012,9 +1015,6 @@ importers:
       '@types/node':
         specifier: ^24.3.0
         version: 24.3.0
-      '@types/uuid':
-        specifier: ^9.0.1
-        version: 9.0.8
       tsup:
         specifier: ^8.3.6
         version: 8.5.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
