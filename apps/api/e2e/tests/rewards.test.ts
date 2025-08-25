@@ -6,8 +6,8 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { db } from "@/database/db.js";
 import { insertRewards } from "@/database/repositories/rewards-repository.js";
+import { competitions } from "@/database/schema/core/defs.js";
 import {
-  epochs,
   rewards,
   rewardsRoots,
   rewardsTree,
@@ -17,24 +17,29 @@ import { RewardsService, createLeafNode } from "@/services/rewards.service.js";
 
 describe("Rewards Service", () => {
   let rewardsService: RewardsService;
-  let testEpochId: string;
+  let testCompetitionId: string;
 
   beforeEach(async () => {
     rewardsService = new RewardsService();
 
-    // Create a test epoch with UUID
-    const epochId = "756fddf2-d5a3-4d07-b769-109583469c88";
-    const [epoch] = await db
-      .insert(epochs)
+    // Create a test competition with UUID
+    const competitionId = "756fddf2-d5a3-4d07-b769-109583469c88";
+    const [competition] = await db
+      .insert(competitions)
       .values({
-        id: epochId,
-        startedAt: new Date(),
+        id: competitionId,
+        name: "Test Competition",
+        description: "A test competition for rewards",
+        status: "active",
+        type: "trading",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       })
       .returning();
 
-    expect(!epoch).toBe(false);
-    expect(epochId).toBe(epoch?.id);
-    testEpochId = epoch?.id as string;
+    expect(!competition).toBe(false);
+
+    testCompetitionId = competitionId;
   });
 
   test("allocate method creates merkle tree and stores root hash", async () => {
@@ -56,7 +61,7 @@ describe("Rewards Service", () => {
 
       testRewards.push({
         id: crypto.randomUUID(),
-        epoch: testEpochId,
+        competitionId: testCompetitionId,
         address,
         amount,
         leafHash: new Uint8Array(leafHashBuffer), // Convert Buffer to Uint8Array
@@ -68,13 +73,13 @@ describe("Rewards Service", () => {
     await insertRewards(testRewards);
 
     // Execute the allocate method
-    await rewardsService.allocate(testEpochId);
+    await rewardsService.allocate(testCompetitionId);
 
     // Verify that merkle tree nodes were created
     const treeNodes = await db
       .select()
       .from(rewardsTree)
-      .where(eq(rewardsTree.epoch, testEpochId));
+      .where(eq(rewardsTree.competitionId, testCompetitionId));
 
     expect(treeNodes.length).toBe(7);
 
@@ -86,14 +91,14 @@ describe("Rewards Service", () => {
     const rootEntries = await db
       .select()
       .from(rewardsRoots)
-      .where(eq(rewardsRoots.epoch, testEpochId));
+      .where(eq(rewardsRoots.competitionId, testCompetitionId));
 
     expect(rootEntries.length).toBe(1);
     expect(Buffer.from(rootEntries[0]!.rootHash).toString("hex")).toBe(
       "2139ba0bff060eae6c6def620e29a004f4f3c2ea869066dd258ad30959ed16b7",
     );
     expect(rootEntries[0]?.rootHash.length).toBe(32); // Should have 32 bytes
-    expect(rootEntries[0]?.epoch).toBe(testEpochId);
+    expect(rootEntries[0]?.competitionId).toBe(testCompetitionId);
 
     // Verify that leaf nodes match the number of rewards
     const leafNodes = treeNodes.filter((node) => node.level === 0);
@@ -105,9 +110,9 @@ describe("Rewards Service", () => {
     expect(rootNodes.length).toBe(1);
   });
 
-  test("allocate method throws error when no rewards exist for epoch", async () => {
-    // Try to allocate rewards for an epoch with no rewards
-    await expect(rewardsService.allocate(testEpochId)).rejects.toThrow(
+  test("allocate method throws error when no rewards exist for competition", async () => {
+    // Try to allocate rewards for a competition with no rewards
+    await expect(rewardsService.allocate(testCompetitionId)).rejects.toThrow(
       "no rewards to allocate",
     );
 
@@ -115,12 +120,12 @@ describe("Rewards Service", () => {
     const treeNodes = await db
       .select()
       .from(rewardsTree)
-      .where(eq(rewardsTree.epoch, testEpochId));
+      .where(eq(rewardsTree.competitionId, testCompetitionId));
 
     const rootEntries = await db
       .select()
       .from(rewardsRoots)
-      .where(eq(rewardsRoots.epoch, testEpochId));
+      .where(eq(rewardsRoots.competitionId, testCompetitionId));
 
     expect(treeNodes.length).toBe(0);
     expect(rootEntries.length).toBe(0);
@@ -138,7 +143,7 @@ describe("Rewards Service", () => {
     const singleReward: InsertReward[] = [
       {
         id: crypto.randomUUID(),
-        epoch: testEpochId,
+        competitionId: testCompetitionId,
         address,
         amount,
         leafHash: new Uint8Array(leafHashBuffer), // Convert Buffer to Uint8Array
@@ -150,13 +155,13 @@ describe("Rewards Service", () => {
     await insertRewards(singleReward);
 
     // Execute allocate
-    await rewardsService.allocate(testEpochId);
+    await rewardsService.allocate(testCompetitionId);
 
     // Verify tree structure for single reward
     const treeNodes = await db
       .select()
       .from(rewardsTree)
-      .where(eq(rewardsTree.epoch, testEpochId));
+      .where(eq(rewardsTree.competitionId, testCompetitionId));
 
     // Should have 3 nodes (faux, leaf, and root)
     expect(treeNodes.length).toBe(3);
@@ -165,10 +170,10 @@ describe("Rewards Service", () => {
     const rootEntries = await db
       .select()
       .from(rewardsRoots)
-      .where(eq(rewardsRoots.epoch, testEpochId));
+      .where(eq(rewardsRoots.competitionId, testCompetitionId));
 
     expect(rootEntries.length).toBe(1);
-    expect(rootEntries[0]?.epoch).toBe(testEpochId);
+    expect(rootEntries[0]?.competitionId).toBe(testCompetitionId);
   });
 
   test("retrieveProof method verifies multiple rewards", async () => {
@@ -194,7 +199,7 @@ describe("Rewards Service", () => {
         const leafHashBuffer = createLeafNode(address, amount);
         return {
           id: crypto.randomUUID(),
-          epoch: testEpochId,
+          competitionId: testCompetitionId,
           address,
           amount,
           leafHash: new Uint8Array(leafHashBuffer),
@@ -205,20 +210,20 @@ describe("Rewards Service", () => {
 
     // Insert rewards and build the Merkle tree
     await insertRewards(testRewards);
-    await rewardsService.allocate(testEpochId);
+    await rewardsService.allocate(testCompetitionId);
 
     // Create a MerkleTree instance to verify proofs
     const rewardEntries = await db
       .select()
       .from(rewards)
-      .where(eq(rewards.epoch, testEpochId));
+      .where(eq(rewards.competitionId, testCompetitionId));
 
     // Create the leaves array with the faux leaf first
     const fauxLeaf = keccak256(
       encodeAbiParameters(
         [{ type: "string" }, { type: "address" }, { type: "uint256" }],
         [
-          testEpochId,
+          testCompetitionId,
           "0x0000000000000000000000000000000000000000" as `0x${string}`,
           BigInt("0"),
         ],
@@ -244,7 +249,7 @@ describe("Rewards Service", () => {
 
       // Retrieve proof for the reward
       const proof = await rewardsService.retrieveProof(
-        testEpochId,
+        testCompetitionId,
         address,
         amount,
       );
@@ -283,7 +288,7 @@ describe("Rewards Service", () => {
     await insertRewards([
       {
         id: crypto.randomUUID(),
-        epoch: testEpochId,
+        competitionId: testCompetitionId,
         address: existingAddress,
         amount: existingAmount,
         leafHash: new Uint8Array(leafHashBuffer),
@@ -291,7 +296,7 @@ describe("Rewards Service", () => {
       },
     ]);
 
-    await rewardsService.allocate(testEpochId);
+    await rewardsService.allocate(testCompetitionId);
 
     // Try to retrieve proof for a non-existent reward
     const nonExistentAddress =
@@ -300,12 +305,12 @@ describe("Rewards Service", () => {
 
     await expect(
       rewardsService.retrieveProof(
-        testEpochId,
+        testCompetitionId,
         nonExistentAddress,
         nonExistentAmount,
       ),
     ).rejects.toThrow(
-      `No proof found for reward (address: ${nonExistentAddress}, amount: ${nonExistentAmount}) in epoch ${testEpochId}`,
+      `No proof found for reward (address: ${nonExistentAddress}, amount: ${nonExistentAmount}) in competition ${testCompetitionId}`,
     );
   });
 });
