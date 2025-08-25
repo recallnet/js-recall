@@ -98,12 +98,36 @@ export class UserManager {
       if (email) {
         const existingUserByEmail = await findByEmail(email);
         if (existingUserByEmail) {
-          throw new Error(`User with email ${email} already exists`);
+          throw new Error(
+            `User ${existingUserByEmail.id} with email already exists`,
+          );
         }
       }
 
-      // Create user record
+      // Generate user ID early for email subscription
       const id = uuidv4();
+
+      // Subscribe to email list (note: this happens before creating user to avoid an extra update)
+      let isSubscribed = false;
+      const emailSubscriptionResult = await this.emailService.subscribeUser(
+        email,
+        {
+          userId: id,
+          name: name ?? undefined,
+        },
+      );
+      // Silently fail if the email subscription fails so we don't block the user creation
+      if (emailSubscriptionResult) {
+        if (emailSubscriptionResult.success) {
+          isSubscribed = true;
+        } else {
+          serviceLogger.error(
+            `[UserManager] Error subscribing user ${id} to email list: ${emailSubscriptionResult.error}`,
+          );
+        }
+      }
+
+      // Create user record with subscription status
       const user: InsertUser = {
         id,
         walletAddress: normalizedWalletAddress,
@@ -113,6 +137,7 @@ export class UserManager {
         privyId,
         imageUrl,
         metadata,
+        isSubscribed,
         status: "active",
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -121,12 +146,6 @@ export class UserManager {
 
       // Store in database
       const savedUser = await create(user);
-
-      // Subscribe to email list
-      await this.emailService.subscribeUser(email, {
-        userId: id,
-        name: name ?? undefined,
-      });
 
       // Update cache
       this.userWalletCache.set(normalizedWalletAddress, id);

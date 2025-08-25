@@ -314,6 +314,7 @@ export interface User {
   walletLastVerifiedAt?: Date;
   name?: string;
   email?: string;
+  isSubscribed: boolean;
   privyId?: string;
   imageUrl?: string;
   metadata?: UserMetadata;

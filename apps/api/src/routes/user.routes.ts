@@ -60,6 +60,9 @@ export function configureUserRoutes(
    *                     email:
    *                       type: string
    *                       example: "john@example.com"
+   *                     isSubscribed:
+   *                       type: boolean
+   *                       example: true
    *                     imageUrl:
    *                       type: string
    *                       example: "https://example.com/avatar.jpg"
@@ -144,6 +147,9 @@ export function configureUserRoutes(
    *                     email:
    *                       type: string
    *                       example: "john@example.com"
+   *                     isSubscribed:
+   *                       type: boolean
+   *                       example: true
    *                     imageUrl:
    *                       type: string
    *                       example: "https://example.com/avatar.jpg"
@@ -235,6 +241,9 @@ export function configureUserRoutes(
    *                     email:
    *                       type: string
    *                       nullable: true
+   *                     isSubscribed:
+   *                       type: boolean
+   *                       example: true
    *                     imageUrl:
    *                       type: string
    *                       nullable: true

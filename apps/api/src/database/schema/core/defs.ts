@@ -82,6 +82,7 @@ export const users = pgTable(
     privyId: text("privy_id").unique(),
     name: varchar({ length: 100 }),
     email: varchar({ length: 100 }).unique(),
+    isSubscribed: boolean("is_subscribed").notNull().default(false),
     imageUrl: text("image_url"),
     metadata: jsonb(),
     status: actorStatus("status").default("active").notNull(),

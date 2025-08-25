@@ -94,7 +94,10 @@ export class EmailService {
       );
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown email subscription error",
       };
     }
   }
@@ -136,7 +139,10 @@ export class EmailService {
       );
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown email subscription error",
       };
     }
   }

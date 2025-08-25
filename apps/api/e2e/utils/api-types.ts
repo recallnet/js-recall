@@ -79,6 +79,7 @@ export interface User {
   privyId: string;
   name: string | null;
   email: string | null;
+  isSubscribed: boolean;
   imageUrl: string | null;
   metadata: Record<string, unknown> | null;
   status: string;

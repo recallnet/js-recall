@@ -1720,6 +1720,20 @@
                             "type": "string",
                             "description": "User wallet address"
                           },
+                          "embeddedWalletAddress": {
+                            "type": "string",
+                            "description": "User embedded wallet address",
+                            "nullable": true
+                          },
+                          "privyId": {
+                            "type": "string",
+                            "description": "User Privy ID",
+                            "nullable": true
+                          },
+                          "isSubscribed": {
+                            "type": "boolean",
+                            "description": "User subscription status"
+                          },
                           "name": {
                             "type": "string",
                             "description": "User name",
@@ -1753,6 +1767,12 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "Account update timestamp"
+                          },
+                          "lastLoginAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "User last login timestamp",
+                            "nullable": true
                           }
                         }
                       }
@@ -6961,6 +6981,10 @@
                           "type": "string",
                           "example": "john@example.com"
                         },
+                        "isSubscribed": {
+                          "type": "boolean",
+                          "example": true
+                        },
                         "imageUrl": {
                           "type": "string",
                           "example": "https://example.com/avatar.jpg"
@@ -7086,6 +7110,10 @@
                           "type": "string",
                           "nullable": true
                         },
+                        "isSubscribed": {
+                          "type": "boolean",
+                          "example": true
+                        },
                         "imageUrl": {
                           "type": "string",
                           "nullable": true
@@ -7201,6 +7229,10 @@
                         "email": {
                           "type": "string",
                           "example": "john@example.com"
+                        },
+                        "isSubscribed": {
+                          "type": "boolean",
+                          "example": true
                         },
                         "imageUrl": {
                           "type": "string",

@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "is_subscribed" boolean DEFAULT false NOT NULL;
