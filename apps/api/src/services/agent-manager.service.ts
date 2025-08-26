@@ -320,66 +320,6 @@ export class AgentManager {
   }
 
   /**
-   * Find and migrate a legacy agent without API key hash
-   * @private
-   */
-  private async findAndMigrateLegacyAgent(
-    apiKey: string,
-    apiKeyHash: string,
-  ): Promise<SelectAgent | undefined> {
-    // NOTE: The N+1 pattern during migration is unavoidable but acceptable because:
-    // 1. Temporary - only during migration period until all agents have hashes
-    // 2. Infrequent - only happens for agents without hashes making requests
-    // 3. Self-improving - each successful migration reduces future lookups
-    //
-    // TODO(REC-576): Remove this entire method once all agents have been migrated
-    const agents = await findAll();
-
-    for (const legacyAgent of agents) {
-      // Skip agents that already have a hash
-      if (legacyAgent.apiKeyHash) {
-        continue;
-      }
-
-      try {
-        const decryptedKey = decryptApiKey(
-          legacyAgent.apiKey,
-          String(config.security.rootEncryptionKey),
-        );
-
-        if (decryptedKey === apiKey) {
-          // Found matching agent - perform live migration
-          serviceLogger.info(
-            `[AgentManager] Live migrating API key hash for agent ${legacyAgent.id}`,
-          );
-
-          try {
-            // Update the agent with the hash for future lookups
-            legacyAgent.apiKeyHash = apiKeyHash;
-            return await update(legacyAgent);
-          } catch (updateError) {
-            // Log error but continue validation - don't break authentication
-            serviceLogger.error(
-              `[AgentManager] Failed to update hash for agent ${legacyAgent.id}:`,
-              updateError,
-            );
-            // Return the agent without hash update for this request
-            return legacyAgent;
-          }
-        }
-      } catch (decryptError) {
-        // Log but continue checking other agents
-        serviceLogger.error(
-          `[AgentManager] Error decrypting key for agent ${legacyAgent.id}:`,
-          decryptError,
-        );
-      }
-    }
-
-    return undefined;
-  }
-
-  /**
    * Validate agent status and update caches
    * @private
    */
@@ -423,14 +363,10 @@ export class AgentManager {
 
       // Use hash-based lookup for O(1) performance
       const apiKeyHash = hashApiKey(apiKey);
-      let agent = await findByApiKeyHash(apiKeyHash);
+      const agent = await findByApiKeyHash(apiKeyHash);
 
-      // Try legacy migration if hash lookup fails
       if (!agent) {
-        agent = await this.findAndMigrateLegacyAgent(apiKey, apiKeyHash);
-        if (!agent) {
-          return null;
-        }
+        return null;
       }
 
       // Validate agent status and update caches
