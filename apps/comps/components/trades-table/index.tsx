@@ -7,6 +7,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
+import Link from "next/link";
 import React from "react";
 
 import {
@@ -40,7 +41,10 @@ export const TradesTable: React.FC<TradesTableProps> = ({
         accessorKey: "agentName",
         header: () => "Agent",
         cell: ({ row }) => (
-          <div className="flex min-w-0 items-center gap-3">
+          <Link
+            href={`/agents/${row.original.agent.id}`}
+            className="flex min-w-0 items-center gap-3"
+          >
             <AgentAvatar agent={row.original.agent} size={32} />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight">
@@ -50,7 +54,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({
                 {row.original.agent.description}
               </span>
             </div>
-          </div>
+          </Link>
         ),
         meta: {
           className: "flex-1",
