@@ -21,12 +21,15 @@ import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { TimelineChart } from "@/components/timeline-chart/index";
+import { TradesTable } from "@/components/trades-table";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
 
-const LIMIT_AGENTS_PER_PAGE = 10; // Show 10 agents per page
+const LIMIT_AGENTS_PER_PAGE = 10;
+const LIMIT_TRADES_PER_PAGE = 10;
 
 export default function CompetitionPage({
   params,
@@ -39,7 +42,8 @@ export default function CompetitionPage({
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
-  const [offset, setOffset] = React.useState(0);
+  const [agentsOffset, setAgentsOffset] = React.useState(0);
+  const [tradesOffset, setTradesOffset] = React.useState(0);
   const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
   const {
@@ -54,30 +58,46 @@ export default function CompetitionPage({
   } = useCompetitionAgents(id, {
     filter: debouncedFilterTerm,
     sort: agentsSort,
-    offset: offset,
+    offset: agentsOffset,
     limit: LIMIT_AGENTS_PER_PAGE,
   });
+  const {
+    data: tradesData,
+    isLoading: isLoadingTrades,
+    error: tradesError,
+  } = useCompetitionTrades(id, {
+    offset: tradesOffset,
+    limit: LIMIT_TRADES_PER_PAGE,
+  });
 
-  const handlePageChange = (page: number) => {
-    setOffset(LIMIT_AGENTS_PER_PAGE * (page - 1));
+  const handleAgentsPageChange = (page: number) => {
+    setAgentsOffset(LIMIT_AGENTS_PER_PAGE * (page - 1));
   };
 
-  const isLoading = isLoadingCompetition || isLoadingAgents;
-  const error = competitionError;
+  const handleTradesPageChange = (page: number) => {
+    setTradesOffset(LIMIT_TRADES_PER_PAGE * (page - 1));
+  };
+
+  const isLoading = isLoadingCompetition || isLoadingAgents || isLoadingTrades;
+  const queryError = competitionError ?? agentsError ?? tradesError;
 
   React.useEffect(() => {
-    handlePageChange(1);
+    handleAgentsPageChange(1);
   }, [debouncedFilterTerm, agentsSort]);
 
   if (isLoading) {
     return <CompetitionSkeleton />;
   }
 
-  if (error || !competition) {
+  if (queryError || !competition) {
     return (
       <div className="container mx-auto px-12 py-20 text-center">
         <h2 className="text-2xl font-bold text-red-500">Error</h2>
-        <p className="mt-4">{error?.message || "Competition not found"}</p>
+        <p className="mt-4">
+          {queryError instanceof Error
+            ? queryError.message
+            : "Competition not found"}
+        </p>
         <Link href="/competitions" className="mt-8 inline-block underline">
           Back to competitions
         </Link>
@@ -212,6 +232,14 @@ export default function CompetitionPage({
         />
       ) : null}
 
+      {tradesData && (
+        <TradesTable
+          trades={tradesData.trades}
+          pagination={tradesData.pagination}
+          onPageChange={handleTradesPageChange}
+        />
+      )}
+
       {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
           <h2 className="text-xl font-semibold text-red-500">
@@ -232,7 +260,7 @@ export default function CompetitionPage({
             onSortChange={setAgentsSort}
             pagination={agentsData.pagination}
             totalVotes={competition.stats.totalVotes}
-            onPageChange={handlePageChange}
+            onPageChange={handleAgentsPageChange}
           />
           <TimelineChart
             ref={chartRef}
@@ -246,7 +274,7 @@ export default function CompetitionPage({
                   (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
               ) + 1
             }
-            onPageChange={handlePageChange}
+            onPageChange={handleAgentsPageChange}
           />
         </>
       )}

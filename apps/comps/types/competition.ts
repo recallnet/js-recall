@@ -162,3 +162,37 @@ export interface CompetitionRules {
     minTradesPerDay?: number | null;
   };
 }
+
+export interface Trade {
+  id: string;
+  competitionId: string;
+  agentId: string;
+  fromToken: string;
+  toToken: string;
+  fromAmount: number;
+  toAmount: number;
+  fromTokenSymbol: string;
+  toTokenSymbol: string;
+  fromSpecificChain: string;
+  toSpecificChain: string;
+  tradeAmountUsd: number;
+  timestamp: string;
+  reason?: string;
+  agent: {
+    id: string;
+    name: string;
+    imageUrl: string;
+    description: string;
+  };
+}
+
+export interface GetCompetitionTradesParams {
+  limit?: number;
+  offset?: number;
+}
+
+export interface CompetitionTradesResponse {
+  success: boolean;
+  trades: Trade[];
+  pagination: PaginationResponse;
+}
