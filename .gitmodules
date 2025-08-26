@@ -1,3 +1,7 @@
 [submodule "packages/contracts/contracts"]
 	path = packages/contracts/contracts
 	url = git@github.com:recallnet/contracts.git
+
+[submodule "packages/staking-contracts/contracts"]
+	path = packages/staking-contracts/contracts
+	url = git@github.com:recallnet/recall-staking-contracts.git

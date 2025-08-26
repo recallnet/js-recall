@@ -36,18 +36,13 @@ describe("User API", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("admin can register a user and user can authenticate", async () => {
     // Create a test client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user
     const userName = `User ${Date.now()}`;
@@ -89,11 +84,7 @@ describe("User API", () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user
     const { client: userClient } = await registerUserAndAgentAndGetClient({
@@ -920,17 +911,16 @@ describe("User API", () => {
 
     // Verify agent structure (should not include API key for security)
     const agents = (paginatedResponse as GetUserAgentsResponse).agents;
-    if (agents.length > 0) {
-      const agent = agents[0];
-      expect(agent?.id).toBeDefined();
-      expect(agent?.ownerId).toBeDefined();
-      expect(agent?.name).toBeDefined();
-      expect(agent?.status).toBeDefined();
-      expect(agent?.createdAt).toBeDefined();
-      expect(agent?.updatedAt).toBeDefined();
-      // API key should NOT be present in the response for security
-      expect(agent?.apiKey).toBeUndefined();
-    }
+    expect(agents.length).toBeGreaterThan(0);
+    const agent = agents[0];
+    expect(agent?.id).toBeDefined();
+    expect(agent?.ownerId).toBeDefined();
+    expect(agent?.name).toBeDefined();
+    expect(agent?.status).toBeDefined();
+    expect(agent?.createdAt).toBeDefined();
+    expect(agent?.updatedAt).toBeDefined();
+    // API key should NOT be present in the response for security
+    expect(agent?.apiKey).toBeUndefined();
   });
 
   test("user agents pagination handles edge cases gracefully", async () => {

@@ -50,7 +50,6 @@ describe("Competition API", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("should start a competition with registered agents", async () => {
@@ -4468,13 +4467,6 @@ describe("Competition API", () => {
       expect(agent4Trophy?.rank).toBe(4); // Participation trophy
       expect(agent4Trophy?.createdAt).toBeDefined();
       expect(typeof agent4Trophy?.imageUrl === "string").toBe(true);
-
-      console.log("Trophy test results:", {
-        agent1: { rank: agent1Trophy?.rank, name: agent1Trophy?.name },
-        agent2: { rank: agent2Trophy?.rank, name: agent2Trophy?.name },
-        agent3: { rank: agent3Trophy?.rank, name: agent3Trophy?.name },
-        agent4: { rank: agent4Trophy?.rank, name: agent4Trophy?.name },
-      });
     });
 
     test("should populate trophies correctly via user-specific endpoints (Privy)", async () => {
@@ -4631,15 +4623,6 @@ describe("Competition API", () => {
       expect(user1SpecificTrophy?.rank).toBe(1); // Gold trophy
       expect(user1SpecificTrophy?.createdAt).toBeDefined();
       expect(typeof user1SpecificTrophy?.imageUrl === "string").toBe(true);
-
-      console.log("User endpoint trophy test results:", {
-        user1AgentTrophy: { rank: user1Trophy?.rank, name: user1Trophy?.name },
-        user2AgentTrophy: { rank: user2Trophy?.rank, name: user2Trophy?.name },
-        user1SpecificTrophy: {
-          rank: user1SpecificTrophy?.rank,
-          name: user1SpecificTrophy?.name,
-        },
-      });
     });
 
     test("should handle user with no competitions via user endpoints", async () => {
@@ -5454,7 +5437,6 @@ describe("Competition API", () => {
       const ourCompetition = userCompetitionsResponse.competitions.find(
         (c) => c.id === startResponse.competition.id,
       ) as CompetitionWithAgents;
-      console.log("ourCompetition", ourCompetition);
 
       expect(ourCompetition).toBeDefined();
       expect(ourCompetition.maxParticipants).toBe(maxParticipants);

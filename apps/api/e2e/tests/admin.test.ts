@@ -40,27 +40,16 @@ describe("Admin API", () => {
   });
 
   test("should authenticate as admin", async () => {
-    console.log("TEST: Starting admin authentication test");
-
     // Create a test client
     const client = createTestClient();
-    console.log("TEST: Created test client");
 
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
     const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
     expect(loginSuccess).toBe(true);
 
     // Attempt to login with incorrect API key and assert failure
-    console.log("TEST: Attempting to login with invalid API key");
     const failedLogin = await client.loginAsAdmin("invalid_api_key");
-    console.log(`TEST: Invalid login result: ${failedLogin}`);
     expect(failedLogin).toBe(false);
-
-    console.log("TEST: Admin authentication test completed");
   });
 
   test("should register a user and agent via admin API", async () => {
@@ -932,32 +921,27 @@ describe("Admin API", () => {
       "default_encryption_key_do_not_use_in_production";
 
     const decryptApiKey = (encryptedKey: string): string => {
-      try {
-        const algorithm = "aes-256-cbc";
-        const parts = encryptedKey.split(":");
+      const algorithm = "aes-256-cbc";
+      const parts = encryptedKey.split(":");
 
-        if (parts.length !== 2) {
-          throw new Error("Invalid encrypted key format");
-        }
-
-        const iv = Buffer.from(parts[0]!, "hex");
-        const encrypted = parts[1]!;
-
-        // Create a consistently-sized key from the root encryption key
-        const cryptoKey = crypto
-          .createHash("sha256")
-          .update(defaultEncryptionKey)
-          .digest();
-
-        const decipher = crypto.createDecipheriv(algorithm, cryptoKey, iv);
-        let decrypted = decipher.update(encrypted, "hex", "utf8");
-        decrypted += decipher.final("utf8");
-
-        return decrypted;
-      } catch (error) {
-        console.error("[AdminManager] Error decrypting API key:", error);
-        throw error;
+      if (parts.length !== 2) {
+        throw new Error("Invalid encrypted key format");
       }
+
+      const iv = Buffer.from(parts[0]!, "hex");
+      const encrypted = parts[1]!;
+
+      // Create a consistently-sized key from the root encryption key
+      const cryptoKey = crypto
+        .createHash("sha256")
+        .update(defaultEncryptionKey)
+        .digest();
+
+      const decipher = crypto.createDecipheriv(algorithm, cryptoKey, iv);
+      let decrypted = decipher.update(encrypted, "hex", "utf8");
+      decrypted += decipher.final("utf8");
+
+      return decrypted;
     };
     // expect process.env.ENCRYPTION_KEY to be different from the default key
     expect(process.env.ROOT_ENCRYPTION_KEY).not.toBe(defaultEncryptionKey);
@@ -967,10 +951,6 @@ describe("Admin API", () => {
     expect(() => {
       decryptApiKey(result!.apiKey!);
     }).toThrow(); // Should throw "bad decrypt" error
-
-    console.log(
-      "TEST: ✅ Cannot decrypt admin API key with default encryption key - new key was generated!",
-    );
   });
 
   test("should update a competition as admin", async () => {
