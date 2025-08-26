@@ -101,6 +101,9 @@ export const TradesTable: React.FC<TradesTableProps> = ({
           </div>
         ),
         size: 140,
+        meta: {
+          className: "flex justify-end",
+        },
       },
     ],
     [],
