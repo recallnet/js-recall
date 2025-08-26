@@ -1,9 +1,7 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-import { ServiceRegistry } from "@/services/index.js";
-
-const services = new ServiceRegistry();
+import { findAll as findAllAgents } from "@/database/repositories/agent-repository.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -34,7 +32,12 @@ async function listAllAgents() {
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
-    const agents = await services.agentManager.getAllAgents();
+    // Get all agents - direct DB access for script
+    const agents = await findAllAgents({
+      limit: 1000000,
+      offset: 0,
+      sort: "createdAt:desc",
+    });
 
     if (agents.length === 0) {
       console.log(

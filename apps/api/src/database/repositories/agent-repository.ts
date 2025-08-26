@@ -296,6 +296,29 @@ async function findByIdImpl(id: string): Promise<SelectAgent | undefined> {
 }
 
 /**
+ * Find multiple agents by their IDs
+ * @param ids Array of agent IDs to search for
+ * @returns Array of agents matching the provided IDs
+ */
+async function findByIdsImpl(ids: string[]): Promise<SelectAgent[]> {
+  try {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const results = await db
+      .select()
+      .from(agents)
+      .where(inArray(agents.id, ids));
+
+    return results;
+  } catch (error) {
+    console.error("[AgentRepository] Error in findByIds:", error);
+    throw error;
+  }
+}
+
+/**
  * Find agents by owner ID
  * @param ownerId Owner ID to search for
  */
@@ -990,6 +1013,12 @@ export const findById = createTimedRepositoryFunction(
   findByIdImpl,
   "AgentRepository",
   "findById",
+);
+
+export const findByIds = createTimedRepositoryFunction(
+  findByIdsImpl,
+  "AgentRepository",
+  "findByIds",
 );
 
 export const findByOwnerId = createTimedRepositoryFunction(

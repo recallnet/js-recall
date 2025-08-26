@@ -103,8 +103,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
             competitionId,
           );
 
-        // Get all agents for mapping IDs to names
-        const agents = await services.agentManager.getAllAgents();
+        // Get only the agents that are in this competition
+        const competitionAgentIds = [
+          ...leaderboardData.activeAgents.map((entry) => entry.agentId),
+          ...leaderboardData.inactiveAgents.map((entry) => entry.agentId),
+        ];
+        const agents =
+          await services.agentManager.getAgentsByIds(competitionAgentIds);
         const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
 
         // Build active leaderboard with ranks

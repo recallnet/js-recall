@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
+import { findAll as findAllAgents } from "@/database/repositories/agent-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 const services = new ServiceRegistry();
@@ -42,7 +43,7 @@ const colors = {
  */
 function parseSelectionInput(
   input: string,
-  agents: Awaited<ReturnType<typeof services.agentManager.getAllAgents>>,
+  agents: Array<{ id: string; name: string; handle?: string }>,
 ) {
   try {
     const maxIndex = agents.length;
@@ -91,8 +92,12 @@ function parseSelectionInput(
  */
 async function selectAgents() {
   try {
-    // Get all agents
-    const agents = await services.agentManager.getAllAgents();
+    // Get all agents - direct DB access for script
+    const agents = await findAllAgents({
+      limit: 1000000,
+      offset: 0,
+      sort: "createdAt:desc",
+    });
 
     if (agents.length === 0) {
       console.log(
