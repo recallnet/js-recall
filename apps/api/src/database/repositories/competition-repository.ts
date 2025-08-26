@@ -919,10 +919,10 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
       total_value: number;
     }>(sql`
       SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
-      FROM competition_agents ca
+      FROM ${competitionAgents} ca
       CROSS JOIN LATERAL (
         SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
-        FROM trading_comps.portfolio_snapshots ps
+        FROM ${portfolioSnapshots} ps
         WHERE ps.agent_id = ca.agent_id
           AND ps.competition_id = ca.competition_id
         ORDER BY ps.timestamp DESC
@@ -1336,19 +1336,22 @@ async function getAgentRankingsInCompetitionsImpl(
     );
 
     // Calculate rankings directly in SQL without fetching all agents
+    // Only include active agents in ranking calculation to match competition page behavior
     const rankingResults = await db.execute(
       sql`
         WITH latest_snapshots AS (
           SELECT
-            competition_id,
-            agent_id,
-            total_value,
-            ROW_NUMBER() OVER (PARTITION BY competition_id, agent_id ORDER BY timestamp DESC) as rn
-          FROM ${portfolioSnapshots}
-          WHERE competition_id IN (${sql.join(
+            ps.competition_id,
+            ps.agent_id,
+            ps.total_value,
+            ROW_NUMBER() OVER (PARTITION BY ps.competition_id, ps.agent_id ORDER BY ps.timestamp DESC) as rn
+          FROM ${portfolioSnapshots} ps
+          INNER JOIN ${competitionAgents} ca ON ps.agent_id = ca.agent_id AND ps.competition_id = ca.competition_id
+          WHERE ps.competition_id IN (${sql.join(
             competitionIds.map((id) => sql`${id}`),
             sql`, `,
           )})
+            AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
         ),
         ranked AS (
           SELECT
