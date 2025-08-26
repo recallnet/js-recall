@@ -94,8 +94,11 @@ export default function CompetitionPage({
   }) => (
     <Button
       disabled={competition.status !== "pending" || disabled}
-      variant="ghost"
-      className={className}
+      variant="default"
+      className={cn(
+        "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500",
+        className,
+      )}
       size="lg"
       onClick={() => {
         if (agentsTableRef.current) {
