@@ -1505,13 +1505,7 @@ export class AgentManager {
         error,
       );
 
-      // Fallback to individual queries if bulk fails
-      serviceLogger.error(
-        "[AgentManager] Falling back to individual metric queries",
-      );
-      return Promise.all(
-        sanitizedAgents.map((agent) => this.attachAgentMetrics(agent)),
-      );
+      throw error;
     }
   }
 
