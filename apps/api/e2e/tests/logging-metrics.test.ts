@@ -587,8 +587,6 @@ describe("Logging and Metrics API", () => {
       { pattern: 'method="getRewardsByEpoch"', expectedOp: "SELECT" },
       { pattern: 'method="getLatestPortfolioSnapshots"', expectedOp: "SELECT" },
 
-      { pattern: 'method="countAgentTrades"', expectedOp: "SELECT" },
-      { pattern: 'method="countTotalVotes"', expectedOp: "SELECT" },
       { pattern: 'method="count"', expectedOp: "SELECT" },
 
       // These should be classified as UPDATE (state change methods)
