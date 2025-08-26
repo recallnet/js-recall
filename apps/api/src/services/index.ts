@@ -64,8 +64,6 @@ class ServiceRegistry {
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
 
-    // Initialize Loops mailing list service (no dependencies)
-
     // Initialize user and agent managers (require email service)
     this._userManager = new UserManager(this._emailService);
     this._agentManager = new AgentManager(this._emailService);

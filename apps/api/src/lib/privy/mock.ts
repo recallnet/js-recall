@@ -272,6 +272,15 @@ export class MockPrivyClient {
       };
     }
 
+    // Store the name in customMetadata for email providers
+    // This simulates how Privy might store additional user profile data
+    if (provider === "email" && name) {
+      mockUser.customMetadata = {
+        ...mockUser.customMetadata,
+        name: name,
+      };
+    }
+
     // Add provider-specific objects
     if (provider === "google" && email) {
       mockUser.google = {

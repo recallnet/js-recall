@@ -15,13 +15,17 @@ describe("Email Subscription", () => {
       name: "Alice Test",
       email: "alice@example.com",
     });
-
+    const { name, email, privyId } = testUser;
     const authResult = await client.authenticateWithPrivy(testUser);
     expect(authResult.success).toBe(true);
 
-    const user = (await client.getUserProfile()) as UserProfileResponse;
-    expect(user.success).toBe(true);
+    const { user, success } =
+      (await client.getUserProfile()) as UserProfileResponse;
+    expect(success).toBe(true);
+    expect(user.name).toBe(name);
+    expect(user.email).toBe(email);
+    expect(user.privyId).toBe(privyId);
     // TODO: ideally, this is `true` but tests cannot currently override the behavior of the email service
-    expect(user.user.isSubscribed).toBe(false);
+    expect(user.isSubscribed).toBe(false);
   });
 });

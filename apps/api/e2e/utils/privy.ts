@@ -307,29 +307,3 @@ export function createEmailOnlyTestUser(
     ...overrides,
   });
 }
-
-/**
- * Extract profile sync data from a test user (matches API endpoint format)
- */
-export function extractProfileSyncData(user: TestPrivyUser) {
-  return {
-    name: user.name,
-    email: user.email,
-    imageUrl: user.imageUrl,
-    provider: user.provider,
-    walletAddress: user.walletAddress,
-    walletChainType: user.walletChainType,
-  };
-}
-
-/**
- * Create authorization header with mock Privy token
- * @param user User data for the token
- * @returns Authorization header value
- */
-export async function createPrivyAuthHeader(
-  user: Partial<TestPrivyUser> = {},
-): Promise<string> {
-  const token = await createMockPrivyToken(user);
-  return `Bearer ${token}`;
-}
