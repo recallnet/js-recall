@@ -366,7 +366,7 @@ export class AgentManager {
       const agent = await findByApiKeyHash(apiKeyHash);
 
       if (!agent) {
-        throw new ApiError(404, "no agent found for api key");
+        return null;
       }
 
       // Validate agent status and update caches
