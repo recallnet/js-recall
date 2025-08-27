@@ -243,8 +243,8 @@ export class DexScreenerProvider implements PriceSource {
               })
               // For stablecoins, sort by closest price to $1
               .sort((a, b) => {
-                const aPriceDiff = Math.abs(parseFloat(a.priceNative) - 1);
-                const bPriceDiff = Math.abs(parseFloat(b.priceNative) - 1);
+                const aPriceDiff = Math.abs(Number(a.priceNative) - 1);
+                const bPriceDiff = Math.abs(Number(b.priceNative) - 1);
                 return aPriceDiff - bPriceDiff;
               });
 
