@@ -1332,7 +1332,7 @@ export function configureCompetitionsRoutes(
    */
   router.get(
     "/:competitionId/trades",
-    optionalAuthMiddleware,
+    ...authMiddlewares,
     controller.getCompetitionTrades,
   );
 
@@ -1403,7 +1403,7 @@ export function configureCompetitionsRoutes(
    */
   router.get(
     "/:competitionId/agents/:agentId/trades",
-    optionalAuthMiddleware,
+    ...authMiddlewares,
     controller.getAgentTradesInCompetition,
   );
 

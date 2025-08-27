@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
+import { useUser } from "@/state/atoms";
 import { CompetitionTradesResponse, GetCompetitionTradesParams } from "@/types";
 
 const apiClient = new ApiClient();
@@ -14,13 +15,16 @@ const apiClient = new ApiClient();
 export const useCompetitionTrades = (
   competitionId?: string,
   params: GetCompetitionTradesParams = {},
-) =>
-  useQuery({
+) => {
+  const user = useUser();
+
+  return useQuery({
     queryKey: ["competition-trades", competitionId, params],
     queryFn: async (): Promise<CompetitionTradesResponse> => {
       if (!competitionId) throw new Error("Competition ID is required");
       return apiClient.getCompetitionTrades(competitionId, params);
     },
-    enabled: !!competitionId,
+    enabled: !!competitionId && user.status === "authenticated",
     placeholderData: (prev) => prev,
   });
+};

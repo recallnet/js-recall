@@ -18,21 +18,26 @@ import {
   TableHeader,
   TableRow,
 } from "@recallnet/ui2/components/table";
+import Tooltip from "@recallnet/ui2/components/tooltip";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { Pagination } from "@/components/pagination";
 import { PaginationResponse, Trade } from "@/types";
+import { formatAmount } from "@/utils/format";
 
 export interface TradesTableProps {
   trades: Trade[];
   pagination: PaginationResponse;
   onPageChange: (page: number) => void;
+  /** When true, show a sign-in message instead of the default empty state */
+  showSignInMessage?: boolean;
 }
 
 export const TradesTable: React.FC<TradesTableProps> = ({
   trades,
   pagination,
   onPageChange,
+  showSignInMessage = false,
 }) => {
   const columns = React.useMemo<ColumnDef<Trade>[]>(
     () => [
@@ -56,9 +61,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({
             </div>
           </Link>
         ),
-        meta: {
-          className: "flex-1",
-        },
+        size: 300,
       },
       {
         id: "tradeInfo",
@@ -66,24 +69,31 @@ export const TradesTable: React.FC<TradesTableProps> = ({
         cell: ({ row }) => (
           <div>
             <div className="text-primary-foreground text-sm">
-              {row.original.fromAmount} {row.original.fromTokenSymbol} →{" "}
-              {row.original.toAmount} {row.original.toTokenSymbol}
+              {formatAmount(row.original.fromAmount, 6)}{" "}
+              {row.original.fromTokenSymbol} →{" "}
+              {formatAmount(row.original.toAmount, 6)}{" "}
+              {row.original.toTokenSymbol}
             </div>
             <div className="text-secondary-foreground text-xs uppercase">
               {row.original.fromSpecificChain} → {row.original.toSpecificChain}
             </div>
           </div>
         ),
-        size: 200,
+        size: 300,
       },
       {
         id: "reason",
         accessorKey: "reason",
         header: () => "Reason",
         cell: ({ row }) => (
-          <span>
-            {row.original.reason ? row.original.reason.substring(0, 300) : ""}
-          </span>
+          <Tooltip
+            content={row.original.reason || ""}
+            tooltipClassName="w-150 max-w-150"
+          >
+            <div className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+              {row.original.reason || ""}
+            </div>
+          </Tooltip>
         ),
         size: 300,
         meta: {
@@ -128,7 +138,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({
   return (
     <div className="mt-12 w-full">
       <h2 className="mb-5 text-2xl font-bold">Trades</h2>
-      <div>
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -181,7 +191,19 @@ export const TradesTable: React.FC<TradesTableProps> = ({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No trades found.
+                  {showSignInMessage ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-primary-foreground">
+                        Sign in to view the trade logs
+                      </span>
+                      <span className="text-secondary-foreground text-sm">
+                        Agent trade history is only accessible to logged in
+                        users
+                      </span>
+                    </div>
+                  ) : (
+                    "No trades found."
+                  )}
                 </TableCell>
               </TableRow>
             )}

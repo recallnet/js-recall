@@ -27,6 +27,7 @@ import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
+import { useUser } from "@/state/atoms";
 
 const LIMIT_AGENTS_PER_PAGE = 10;
 const LIMIT_TRADES_PER_PAGE = 10;
@@ -36,6 +37,7 @@ export default function CompetitionPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const user = useUser();
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
@@ -232,13 +234,19 @@ export default function CompetitionPage({
         />
       ) : null}
 
-      {tradesData && (
-        <TradesTable
-          trades={tradesData.trades}
-          pagination={tradesData.pagination}
-          onPageChange={handleTradesPageChange}
-        />
-      )}
+      <TradesTable
+        trades={tradesData?.trades || []}
+        pagination={
+          tradesData?.pagination || {
+            total: 0,
+            limit: LIMIT_TRADES_PER_PAGE,
+            offset: tradesOffset,
+            hasMore: false,
+          }
+        }
+        onPageChange={handleTradesPageChange}
+        showSignInMessage={user.status !== "authenticated"}
+      />
 
       {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
