@@ -4,6 +4,7 @@
   "globalEnv": [
     "NEXT_PUBLIC_TS_SITE_KEY",
     "NEXT_PUBLIC_CHAIN_NAME",
+    "ALCHEMY_API_KEY",
     "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID",
     "PRIVATE_FONTS",
     "FONTS_REPO_ACCESS_TOKEN",
@@ -12,15 +13,28 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**"
+      ]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": [
+        "^lint"
+      ]
     },
     "format": {
-      "dependsOn": ["^format"],
+      "dependsOn": [
+        "^format"
+      ],
       "inputs": [
         "**/*.{js,jsx,ts,tsx,json,md,mdx,yml,yaml}",
         ".prettierrc*",
@@ -30,7 +44,9 @@
       "cache": false
     },
     "format:check": {
-      "dependsOn": ["^format:check"],
+      "dependsOn": [
+        "^format:check"
+      ],
       "inputs": [
         "**/*.{js,jsx,ts,tsx,json,md,mdx,yml,yaml}",
         ".prettierrc*",
@@ -40,25 +56,41 @@
       "cache": false
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": [
+        "^check-types"
+      ]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "clean": {
-      "dependsOn": ["^clean"],
+      "dependsOn": [
+        "^clean"
+      ],
       "cache": false
     },
     "docs:build": {
-      "dependsOn": ["^docs:build"],
-      "outputs": ["docs/**"],
-      "inputs": ["src/**/*.ts", "typedoc.json"],
+      "dependsOn": [
+        "^docs:build"
+      ],
+      "outputs": [
+        "docs/**"
+      ],
+      "inputs": [
+        "src/**/*.ts",
+        "typedoc.json"
+      ],
       "cache": true
     },
     "docs:check": {
-      "dependsOn": ["^docs:check"],
-      "inputs": ["src/**/*.ts", "typedoc.json"],
+      "dependsOn": [
+        "^docs:check"
+      ],
+      "inputs": [
+        "src/**/*.ts",
+        "typedoc.json"
+      ],
       "cache": true
     }
   }

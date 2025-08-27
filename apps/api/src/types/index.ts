@@ -1226,3 +1226,6 @@ export const BestPlacementDbSchema = z.looseObject({
   rank: z.coerce.number(),
   total_agents: z.coerce.number(),
 });
+
+// Export blockchain types
+export * from "./blockchain.types.js";

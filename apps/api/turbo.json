@@ -66,7 +66,15 @@
         "HTTP_LOG_SAMPLE_RATE",
         "METRICS_PORT",
         "METRICS_HOST",
-        "ENABLE_AUTO_VERIFY_USER_EMAIL"
+        "ENABLE_AUTO_VERIFY_USER_EMAIL",
+        "ALCHEMY_API_KEY",
+        "ETH_RPC_URL",
+        "BASE_RPC_URL",
+        "ARBITRUM_RPC_URL",
+        "OPTIMISM_RPC_URL",
+        "POLYGON_RPC_URL",
+        "RPC_MAX_RETRIES",
+        "RPC_RETRY_DELAY_MS"
       ]
     }
   }

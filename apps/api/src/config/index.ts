@@ -276,6 +276,10 @@ export const config = {
       apiKey: process.env.NOVES_API_KEY || "",
       enabled: !!process.env.NOVES_API_KEY,
     },
+    alchemy: {
+      apiKey: process.env.ALCHEMY_API_KEY || "",
+      enabled: !!process.env.ALCHEMY_API_KEY,
+    },
     // Domain for API authentication and verification purposes
     domain:
       process.env.API_DOMAIN || "https://api.competitions.recall.network/",
@@ -338,6 +342,20 @@ export const config = {
       process.env.CACHE_ACTIVE_COMP_TTL_MS || "3000",
       10,
     ),
+  },
+
+  // Blockchain RPC configuration for live trading
+  rpc: {
+    // RPC URLs for each supported chain
+    // These can be Alchemy endpoints or any other RPC provider
+    ethereum: process.env.ETH_RPC_URL || "",
+    base: process.env.BASE_RPC_URL || "",
+    arbitrum: process.env.ARBITRUM_RPC_URL || "",
+    optimism: process.env.OPTIMISM_RPC_URL || "",
+    polygon: process.env.POLYGON_RPC_URL || "",
+    // Additional configuration
+    maxRetries: parseInt(process.env.RPC_MAX_RETRIES || "3", 10),
+    retryDelayMs: parseInt(process.env.RPC_RETRY_DELAY_MS || "1000", 10),
   },
 };
 

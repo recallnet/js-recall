@@ -81,6 +81,7 @@ The application uses a layered architecture:
   - `PriceTracker`: Multi-source price data fetching with chain detection
   - `MultiChainProvider`: Aggregates price data for all chains
   - `DexScreenerProvider`: EVM and SVM chain price data via DexScreener API
+  - `AlchemyProvider`: Blockchain RPC provider for on-chain data and live trading support
   - `NovesProvider`: Advanced EVM chain price data (disabled)
   - `RaydiumProvider`: Solana token price data from Raydium (disabled)
   - `JupiterProvider`: Solana token price data from Jupiter API (disabled)
@@ -117,6 +118,48 @@ The application uses a layered architecture:
   - `CompetitionRepository`: Competition data management
   - `PriceRepository`: Price history storage with chain information
 
+## Blockchain RPC Provider Support
+
+The trading simulator includes support for blockchain RPC providers to enable live trading capabilities. Currently integrated:
+
+### Alchemy Provider
+
+The system includes an Alchemy provider (`AlchemyProvider`) that supports:
+
+- **Multi-chain Support**: Ethereum, Base, Arbitrum, Optimism, and Polygon
+- **Token Operations**:
+  - Get token balances for wallets
+  - Fetch token decimals dynamically
+  - Track asset transfers and transactions
+- **Transaction Monitoring**:
+  - Get transaction receipts
+  - Batch transaction operations
+  - Monitor block numbers
+- **Optimized Performance**:
+  - Built-in retry logic
+  - Request batching for efficiency
+  - Health check monitoring
+
+### Configuration
+
+To enable blockchain RPC functionality:
+
+1. **Obtain an Alchemy API Key** from [Alchemy Dashboard](https://dashboard.alchemy.com/)
+2. **Configure RPC URLs** in your `.env` file:
+
+   ```
+   ALCHEMY_API_KEY=your_alchemy_api_key
+   ETH_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/your_key
+   BASE_RPC_URL=https://base-mainnet.g.alchemy.com/v2/your_key
+   # ... other chains
+   ```
+
+3. **Verify Permissions**: Ensure your Alchemy API key has access to:
+   - Core API (transaction and balance queries)
+   - Token API (for token balances and metadata)
+
+This infrastructure is designed to support future live trading features while maintaining the current simulated trading functionality.
+
 ## Technology Stack
 
 - **Backend**: Node.js with TypeScript and Express
@@ -125,6 +168,7 @@ The application uses a layered architecture:
 - **API Security**: Bearer token authentication for API requests
 - **Rate Limiting**: Tiered rate limits based on endpoint sensitivity
 - **Price Data**: Integration with DexScreener API for multi-chain price data
+- **Blockchain RPC**: Alchemy SDK for on-chain data and live trading support
 
 ## Getting Started
 
@@ -895,6 +939,19 @@ The application will automatically detect and use the base64-encoded certificate
 | `EVM_CHAIN_PRIORITY`       | Optional | `eth,polygon,base,arbitrum`                              | Chain priority for price lookups (first chain checked first) |
 | `ALLOW_MOCK_PRICE_HISTORY` | Optional | `true` in dev, `false` in prod                           | Allow generation of mock price history data                  |
 
+### Blockchain RPC Configuration
+
+| Variable             | Required | Default | Description                                                           |
+| -------------------- | -------- | ------- | --------------------------------------------------------------------- |
+| `ALCHEMY_API_KEY`    | Optional | None    | Alchemy API key for blockchain RPC access (required for live trading) |
+| `ETH_RPC_URL`        | Optional | None    | Ethereum RPC endpoint URL (can be Alchemy or other provider)          |
+| `BASE_RPC_URL`       | Optional | None    | Base chain RPC endpoint URL                                           |
+| `ARBITRUM_RPC_URL`   | Optional | None    | Arbitrum RPC endpoint URL                                             |
+| `OPTIMISM_RPC_URL`   | Optional | None    | Optimism RPC endpoint URL                                             |
+| `POLYGON_RPC_URL`    | Optional | None    | Polygon RPC endpoint URL                                              |
+| `RPC_MAX_RETRIES`    | Optional | `3`     | Maximum number of RPC request retries                                 |
+| `RPC_RETRY_DELAY_MS` | Optional | `1000`  | Delay between RPC retries in milliseconds                             |
+
 ### Competition Settings
 
 | Variable                                 | Required | Default | Description                                                                                         |
@@ -958,6 +1015,7 @@ The following features are planned for upcoming development:
 7. Implement Redis for improved caching and performance
 8. Enhance documentation with OpenAPI/Swagger integration
 9. Add support for custom trading fee structures
+10. Enable live trading capabilities using the integrated blockchain RPC infrastructure
 
 ## Contributing
 
