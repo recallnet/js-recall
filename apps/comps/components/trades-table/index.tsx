@@ -69,7 +69,10 @@ export const TradesTable: React.FC<TradesTableProps> = ({
         cell: ({ row }) => (
           <div>
             <div className="text-primary-foreground text-sm">
-              {formatAmount(row.original.fromAmount, 6)}{" "}
+              {formatAmount(row.original.fromAmount)}{" "}
+              {"$" + row.original.fromTokenSymbol} →{" "}
+              {formatAmount(row.original.toAmount)}{" "}
+              {"$" + row.original.toTokenSymbol}
               {row.original.fromTokenSymbol} →{" "}
               {formatAmount(row.original.toAmount, 6)}{" "}
               {row.original.toTokenSymbol}
