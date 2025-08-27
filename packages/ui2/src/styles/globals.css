@@ -35,7 +35,7 @@
   --hero-red: oklch(0.6538 0.2342 33.367); /* #FF3D0C */
   --hero-yellow: var(--color-yellow-500); /* #F9B700 */
   --hero-green: var(--color-green-500); /* #38A430 */
-  --hero-blue: oklch(51.383% 0.17311 255.646); /* #0064C7 */
+  --hero-blue: oklch(0.51383 0.17311 255.646); /* #0064C7 */
   --hero-black: oklch(0 0 0); /* #000000 */
 
   /* Trophy and rank colors */
