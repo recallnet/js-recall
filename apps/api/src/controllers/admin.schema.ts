@@ -266,7 +266,7 @@ export const AdminListAllAgentsQuerySchema = z.object({
     .describe("Number of agents to skip for pagination"),
   sort: z
     .string()
-    .default("createdAt:desc")
+    .default("-createdAt")
     .optional()
-    .describe("Sort order (e.g., 'createdAt:desc', 'name:asc')"),
+    .describe("Sort order (e.g., '-createdAt' for desc, 'name' for asc)"),
 });

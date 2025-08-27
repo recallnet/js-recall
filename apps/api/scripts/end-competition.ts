@@ -99,7 +99,7 @@ async function endCompetition() {
     const agents = await findAllAgents({
       limit: 1000000,
       offset: 0,
-      sort: "createdAt:desc",
+      sort: "-createdAt",
     });
 
     // Map agent IDs to names

@@ -44,7 +44,7 @@ async function listAllAgents() {
     const agents = await findAllAgents({
       limit: 1000000,
       offset: 0,
-      sort: "createdAt:desc",
+      sort: "-createdAt",
     });
 
     if (agents.length === 0) {

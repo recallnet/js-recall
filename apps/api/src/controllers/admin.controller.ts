@@ -1170,7 +1170,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const {
           limit = 50,
           offset = 0,
-          sort = "createdAt:desc",
+          sort = "-createdAt",
         } = queryResult.data;
 
         // Get agents from the database with pagination

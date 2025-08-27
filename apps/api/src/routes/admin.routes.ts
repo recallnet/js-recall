@@ -1190,9 +1190,9 @@ export function configureAdminRoutes(
    *         name: sort
    *         schema:
    *           type: string
-   *           default: createdAt:desc
+   *           default: -createdAt
    *         required: false
-   *         description: Sort order (e.g., 'createdAt:desc', 'name:asc')
+   *         description: Sort order (e.g., '-createdAt' for desc, 'name' for asc)
    *     responses:
    *       200:
    *         description: List of agents

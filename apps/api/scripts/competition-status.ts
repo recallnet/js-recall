@@ -132,7 +132,7 @@ async function showCompetitionStatus() {
     const allAgents = await findAllAgents({
       limit: 1000000,
       offset: 0,
-      sort: "createdAt:desc",
+      sort: "-createdAt",
     });
     const agentMap = new Map(allAgents.map((agent) => [agent.id, agent]));
 
