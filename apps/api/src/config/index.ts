@@ -377,9 +377,11 @@ stakingIndex: {
     environment:
       process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
     enabled: !!process.env.SENTRY_DSN,
+    // Database monitoring only works when Sentry is enabled
     dbMonitoringEnabled:
-      process.env.ENABLE_SENTRY_DB_MONITORING === "true" ||
-      process.env.NODE_ENV === "production",
+      !!process.env.SENTRY_DSN &&
+      (process.env.ENABLE_SENTRY_DB_MONITORING === "true" ||
+        process.env.NODE_ENV === "production"),
   },
 };
 
