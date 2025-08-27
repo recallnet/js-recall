@@ -616,7 +616,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        const trades =
+        const tradesResponse =
           await services.tradeSimulator.getCompetitionTrades(competitionId);
 
         // Get vote counts for this competition
@@ -629,16 +629,16 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get stats for this competition
         const stats = {
-          totalTrades: trades.length,
+          totalTrades: tradesResponse.total,
           totalAgents: competition.registeredParticipants,
-          totalVolume: trades.reduce(
+          totalVolume: tradesResponse.trades.reduce<number>(
             (acc, trade) => acc + trade.tradeAmountUsd,
             0,
           ),
           totalVotes,
           uniqueTokens: new Set([
-            ...trades.map((trade) => trade.fromToken),
-            ...trades.map((trade) => trade.toToken),
+            ...tradesResponse.trades.map((trade) => trade.fromToken),
+            ...tradesResponse.trades.map((trade) => trade.toToken),
           ]).size,
         };
 
@@ -1199,15 +1199,21 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Get trades
-        const trades = await services.tradeSimulator.getCompetitionTrades(
-          competitionId,
-          pagingParams.limit,
-          pagingParams.offset,
-        );
+        const { trades, total } =
+          await services.tradeSimulator.getCompetitionTrades(
+            competitionId,
+            pagingParams.limit,
+            pagingParams.offset,
+          );
 
         res.status(200).json({
           success: true,
           trades,
+          pagination: buildPaginationResponse(
+            total,
+            pagingParams.limit,
+            pagingParams.offset,
+          ),
         });
       } catch (error) {
         next(error);
@@ -1246,7 +1252,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Get trades
-        const trades =
+        const { trades, total } =
           await services.tradeSimulator.getAgentTradesInCompetition(
             competitionId,
             agentId,
@@ -1257,6 +1263,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           trades,
+          pagination: buildPaginationResponse(
+            total,
+            pagingParams.limit,
+            pagingParams.offset,
+          ),
         });
       } catch (error) {
         next(error);
