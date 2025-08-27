@@ -359,7 +359,7 @@ export const config = {
       },
     },
   },
-  stakingIndex: {
+stakingIndex: {
     isEnabled: process.env.INDEXING_ENABLED === "true",
     recallContract: process.env.INDEXING_STAKING_CONTRACT,
     startBlock: process.env.INDEXING_START_BLOCK
@@ -371,11 +371,11 @@ export const config = {
       ? parseInt(process.env.INDEXING_DELAY, 10)
       : 3000,
   },
-
   // Sentry configuration
   sentry: {
     dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
+    environment:
+      process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
     enabled: !!process.env.SENTRY_DSN,
   },
 };

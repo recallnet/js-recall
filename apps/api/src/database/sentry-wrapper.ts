@@ -3,13 +3,16 @@ import * as Sentry from "@sentry/node";
 
 /**
  * Wraps a Drizzle database instance with Sentry performance monitoring
- * 
+ *
  * This wrapper intercepts database queries and creates Sentry spans
  * to track query performance in production.
  */
 export function wrapDatabaseWithSentry<T extends object>(db: T): T {
   // Only wrap in production or when explicitly enabled
-  if (process.env.NODE_ENV !== "production" && !process.env.ENABLE_SENTRY_DB_MONITORING) {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    !process.env.ENABLE_SENTRY_DB_MONITORING
+  ) {
     return db;
   }
 
@@ -17,20 +20,25 @@ export function wrapDatabaseWithSentry<T extends object>(db: T): T {
   return new Proxy(db, {
     get(target, prop, receiver) {
       const value = Reflect.get(target, prop, receiver);
-      
+
       // Special handling for core database methods
-      if (prop === "select" || prop === "insert" || prop === "update" || prop === "delete") {
+      if (
+        prop === "select" ||
+        prop === "insert" ||
+        prop === "update" ||
+        prop === "delete"
+      ) {
         return wrapQueryBuilder(value, prop as string);
       }
-      
+
       // Special handling for the execute method
       if (prop === "execute") {
         return wrapExecute(value);
       }
-      
+
       // Return the original value for everything else
       return value;
-    }
+    },
   }) as T;
 }
 
@@ -41,10 +49,10 @@ function wrapQueryBuilder(originalMethod: any, operation: string) {
   return new Proxy(originalMethod, {
     apply(target, thisArg, args) {
       const result = Reflect.apply(target, thisArg, args);
-      
+
       // The result is typically a query builder, wrap its execution
       return wrapQueryExecution(result, operation);
-    }
+    },
   });
 }
 
@@ -63,9 +71,9 @@ function wrapExecute(originalMethod: any) {
             "db.operation": "EXECUTE",
           },
         },
-        () => Reflect.apply(target, thisArg, args)
+        () => Reflect.apply(target, thisArg, args),
       );
-    }
+    },
   });
 }
 
@@ -74,20 +82,20 @@ function wrapExecute(originalMethod: any) {
  */
 function wrapQueryExecution(queryBuilder: any, operation: string): any {
   // Extract table name if available
-  const tableName = queryBuilder?.config?.table?.name || 
-                    queryBuilder?.table?.name || 
-                    "unknown";
+  const tableName =
+    queryBuilder?.config?.table?.name || queryBuilder?.table?.name || "unknown";
 
   return new Proxy(queryBuilder, {
     get(target, prop, receiver) {
       const value = Reflect.get(target, prop, receiver);
-      
+
       // Intercept the then method (which triggers execution)
       if (prop === "then") {
-        return function(onFulfilled?: any, onRejected?: any) {
-          const spanName = tableName !== "unknown" 
-            ? `db.${operation}.${tableName}`
-            : `db.${operation}`;
+        return function (onFulfilled?: any, onRejected?: any) {
+          const spanName =
+            tableName !== "unknown"
+              ? `db.${operation}.${tableName}`
+              : `db.${operation}`;
 
           return Sentry.startSpan(
             {
@@ -101,11 +109,11 @@ function wrapQueryExecution(queryBuilder: any, operation: string): any {
             },
             async () => {
               return value.call(target, onFulfilled, onRejected);
-            }
+            },
           );
         };
       }
-      
+
       // For chained methods, continue wrapping
       if (typeof value === "function") {
         return new Proxy(value, {
@@ -116,11 +124,11 @@ function wrapQueryExecution(queryBuilder: any, operation: string): any {
               return wrapQueryExecution(result, operation);
             }
             return result;
-          }
+          },
         });
       }
-      
+
       return value;
-    }
+    },
   });
 }
