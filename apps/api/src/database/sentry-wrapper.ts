@@ -1,4 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * This file uses `any` types because it creates generic Proxy wrappers for Drizzle ORM database instances.
+ * Drizzle's query builders have complex, deeply nested generic types that vary based on the schema.
+ * Using `any` here is necessary to create a universal wrapper that works with any Drizzle database
+ * configuration without requiring specific type imports from every possible schema definition.
+ * The wrapper preserves the original types through the Proxy, so type safety is maintained at the call site.
+ */
 import * as Sentry from "@sentry/node";
 
 import { config } from "@/config/index.js";
