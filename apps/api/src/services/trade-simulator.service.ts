@@ -22,6 +22,12 @@ import { PriceTracker } from "./price-tracker.service.js";
 
 const MIN_TRADE_AMOUNT = 0.000001;
 
+// Result types inferred from repository functions to ensure consistency
+type CompetitionTradesResult = Awaited<ReturnType<typeof getCompetitionTrades>>;
+type AgentTradesInCompetitionResult = Awaited<
+  ReturnType<typeof getAgentTradesInCompetition>
+>;
+
 // Interface for trading constraints
 interface TradingConstraints {
   minimumPairAgeHours: number;
@@ -291,7 +297,7 @@ export class TradeSimulator {
     competitionId: string,
     limit?: number,
     offset?: number,
-  ) {
+  ): Promise<CompetitionTradesResult> {
     try {
       return await getCompetitionTrades(competitionId, limit, offset);
     } catch (error) {
@@ -299,7 +305,7 @@ export class TradeSimulator {
         `[TradeSimulator] Error getting competition trades:`,
         error,
       );
-      return [];
+      return { trades: [], total: 0 };
     }
   }
 
@@ -316,7 +322,7 @@ export class TradeSimulator {
     agentId: string,
     limit?: number,
     offset?: number,
-  ) {
+  ): Promise<AgentTradesInCompetitionResult> {
     try {
       return await getAgentTradesInCompetition(
         competitionId,
@@ -329,7 +335,7 @@ export class TradeSimulator {
         `[TradeSimulator] Error getting agent trades in competition:`,
         error,
       );
-      return [];
+      return { trades: [], total: 0 };
     }
   }
 

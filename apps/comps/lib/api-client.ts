@@ -9,6 +9,7 @@ import {
   CompetitionResponse,
   CompetitionRulesResponse,
   CompetitionTimelineResponse,
+  CompetitionTradesResponse,
   CompetitionsResponse,
   CreateAgentRequest,
   CreateAgentResponse,
@@ -18,6 +19,7 @@ import {
   GetAgentsParams,
   GetCompetitionAgentsParams,
   GetCompetitionPerformanceParams,
+  GetCompetitionTradesParams,
   GetCompetitionsParams,
   GetLeaderboardParams,
   GetVotesParams,
@@ -255,6 +257,22 @@ export class ApiClient {
     const queryParams = this.formatQueryParams(params);
     return this.request<AgentCompetitionResponse>(
       `/competitions/${competitionId}/agents${queryParams}`,
+    );
+  }
+
+  /**
+   * Get trades for a competition
+   * @param competitionId - Competition ID
+   * @param params - Query parameters
+   * @returns Trades response
+   */
+  async getCompetitionTrades(
+    competitionId: string,
+    params: GetCompetitionTradesParams = {},
+  ): Promise<CompetitionTradesResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<CompetitionTradesResponse>(
+      `/competitions/${competitionId}/trades${queryParams}`,
     );
   }
 

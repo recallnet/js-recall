@@ -63,3 +63,20 @@ export const formatDate = (
 
   return format(parsedDate, `MMMM do${year ? " yyyy" : ""}`);
 };
+
+/**
+ * Formats a number for display, showing up to a specified number of decimal places
+ * without adding unnecessary trailing zeros.
+ * @param amount - The number to format.
+ * @param maxDecimals - The maximum number of decimal places to show (default: 2).
+ * @returns A formatted number string.
+ */
+export const formatAmount = (
+  amount: number,
+  maxDecimals: number = 2,
+): string => {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: maxDecimals,
+    useGrouping: false,
+  }).format(amount);
+};
