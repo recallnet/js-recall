@@ -500,44 +500,45 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
         </div>
       ) : (
         <>
-          {competition.status !== CompetitionStatus.Ended && (
-            <div className="flex w-full items-center justify-end px-6 py-4">
-              <div className="text-secondary-foreground flex items-center gap-3 text-sm">
-                <Button
-                  onClick={handlePrevRange}
-                  disabled={dateRangeIndex <= 0}
-                  variant="outline"
-                  className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-                >
-                  <ChevronLeft strokeWidth={1.5} />
-                </Button>
-                <div className="flex items-center gap-2">
-                  <span>
-                    {filteredData[0]?.originalTimestamp
-                      ? formatDateShort(filteredData[0].originalTimestamp)
-                      : formatDateShort(filteredData[0]?.timestamp as string)}
-                  </span>
-                  <span className="text-secondary-foreground">/</span>
-                  <span>
-                    {(() => {
-                      const lastItem = filteredData[filteredData.length - 1];
-                      return lastItem?.originalTimestamp
-                        ? formatDateShort(lastItem.originalTimestamp)
-                        : formatDateShort(lastItem?.timestamp as string);
-                    })()}
-                  </span>
+          {competition.status !== CompetitionStatus.Ended &&
+            filteredData.length > 0 && (
+              <div className="flex w-full items-center justify-end px-6 py-4">
+                <div className="text-secondary-foreground flex items-center gap-3 text-sm">
+                  <Button
+                    onClick={handlePrevRange}
+                    disabled={dateRangeIndex <= 0}
+                    variant="outline"
+                    className="hover:text-primary-foreground border-none p-0 hover:bg-black"
+                  >
+                    <ChevronLeft strokeWidth={1.5} />
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <span>
+                      {filteredData[0]?.originalTimestamp
+                        ? formatDateShort(filteredData[0].originalTimestamp)
+                        : formatDateShort(filteredData[0]?.timestamp as string)}
+                    </span>
+                    <span className="text-secondary-foreground">/</span>
+                    <span>
+                      {(() => {
+                        const lastItem = filteredData[filteredData.length - 1];
+                        return lastItem?.originalTimestamp
+                          ? formatDateShort(lastItem.originalTimestamp)
+                          : formatDateShort(lastItem?.timestamp as string);
+                      })()}
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleNextRange}
+                    disabled={dateRangeIndex >= parsedData.length - 1}
+                    variant="outline"
+                    className="hover:text-primary-foreground border-none p-0 hover:bg-black"
+                  >
+                    <ChevronRight strokeWidth={1.5} />
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleNextRange}
-                  disabled={dateRangeIndex >= parsedData.length - 1}
-                  variant="outline"
-                  className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-                >
-                  <ChevronRight strokeWidth={1.5} />
-                </Button>
               </div>
-            </div>
-          )}
+            )}
 
           <div className="h-120 relative">
             <HoverContext.Provider
