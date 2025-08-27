@@ -21,25 +21,31 @@ import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { TimelineChart } from "@/components/timeline-chart/index";
+import { TradesTable } from "@/components/trades-table";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
+import { useUser } from "@/state/atoms";
 
-const LIMIT_AGENTS_PER_PAGE = 10; // Show 10 agents per page
+const LIMIT_AGENTS_PER_PAGE = 10;
+const LIMIT_TRADES_PER_PAGE = 10;
 
 export default function CompetitionPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const user = useUser();
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
-  const [offset, setOffset] = React.useState(0);
+  const [agentsOffset, setAgentsOffset] = React.useState(0);
+  const [tradesOffset, setTradesOffset] = React.useState(0);
   const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
   const {
@@ -54,30 +60,46 @@ export default function CompetitionPage({
   } = useCompetitionAgents(id, {
     filter: debouncedFilterTerm,
     sort: agentsSort,
-    offset: offset,
+    offset: agentsOffset,
     limit: LIMIT_AGENTS_PER_PAGE,
   });
+  const {
+    data: tradesData,
+    isLoading: isLoadingTrades,
+    error: tradesError,
+  } = useCompetitionTrades(id, {
+    offset: tradesOffset,
+    limit: LIMIT_TRADES_PER_PAGE,
+  });
 
-  const handlePageChange = (page: number) => {
-    setOffset(LIMIT_AGENTS_PER_PAGE * (page - 1));
+  const handleAgentsPageChange = (page: number) => {
+    setAgentsOffset(LIMIT_AGENTS_PER_PAGE * (page - 1));
   };
 
-  const isLoading = isLoadingCompetition || isLoadingAgents;
-  const error = competitionError;
+  const handleTradesPageChange = (page: number) => {
+    setTradesOffset(LIMIT_TRADES_PER_PAGE * (page - 1));
+  };
+
+  const isLoading = isLoadingCompetition || isLoadingAgents || isLoadingTrades;
+  const queryError = competitionError ?? agentsError ?? tradesError;
 
   React.useEffect(() => {
-    handlePageChange(1);
+    handleAgentsPageChange(1);
   }, [debouncedFilterTerm, agentsSort]);
 
   if (isLoading) {
     return <CompetitionSkeleton />;
   }
 
-  if (error || !competition) {
+  if (queryError || !competition) {
     return (
       <div className="container mx-auto px-12 py-20 text-center">
         <h2 className="text-2xl font-bold text-red-500">Error</h2>
-        <p className="mt-4">{error?.message || "Competition not found"}</p>
+        <p className="mt-4">
+          {queryError instanceof Error
+            ? queryError.message
+            : "Competition not found"}
+        </p>
         <Link href="/competitions" className="mt-8 inline-block underline">
           Back to competitions
         </Link>
@@ -93,9 +115,12 @@ export default function CompetitionPage({
     disabled?: boolean;
   }) => (
     <Button
-      disabled={competition.status !== "pending" || disabled}
-      variant="ghost"
-      className={className}
+      disabled={!competition.votingEnabled || disabled}
+      variant="default"
+      className={cn(
+        "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
+        className,
+      )}
       size="lg"
       onClick={() => {
         if (agentsTableRef.current) {
@@ -122,15 +147,15 @@ export default function CompetitionPage({
         ]}
         className="mb-10 mt-10"
       />
-      <div className="mb-20 flex w-full flex-col gap-5 md:flex-row">
+      <div className="mb-10 flex w-full flex-col gap-3 sm:mb-20 sm:gap-5 md:flex-row">
         <BasicCompetitionCard competition={competition} className="md:w-1/2" />
         <div className="md:w-1/2">
           <CompetitionInfo competition={competition} />
-          <div className="mt-5 flex w-full flex-row justify-center gap-4">
+          <div className="mt-5 flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
             {competition.userVotingInfo?.info?.hasVoted ? (
               <Tooltip
-                content="You’ve already voted in this competition."
-                className="w-1/2"
+                content="You've already voted in this competition."
+                className="w-full sm:w-1/2"
               >
                 <VotingBtn
                   disabled
@@ -138,12 +163,12 @@ export default function CompetitionPage({
                 />
               </Tooltip>
             ) : (
-              <VotingBtn className="w-1/2 justify-between uppercase" />
+              <VotingBtn className="w-full justify-between uppercase sm:w-1/2" />
             )}
             <JoinCompetitionButton
               competitionId={id}
               variant="outline"
-              className="w-1/2 justify-between border border-gray-700 uppercase"
+              className="w-full justify-between border border-gray-700 uppercase sm:w-1/2"
               disabled={competition.status !== "pending"}
               size="lg"
             >
@@ -153,7 +178,7 @@ export default function CompetitionPage({
             <Button
               variant="outline"
               className={cn(
-                "w-1/2 justify-between border border-gray-700 uppercase",
+                "w-full justify-between border border-gray-700 uppercase sm:w-1/2",
               )}
               size="lg"
               onClick={() => {
@@ -195,6 +220,7 @@ export default function CompetitionPage({
               Voting begins in...
             </span>
             <CountdownClock
+              showDuration={true}
               targetDate={new Date(competition.votingStartDate)}
             />
           </div>
@@ -207,6 +233,20 @@ export default function CompetitionPage({
           totalVotes={competition.stats.totalVotes}
         />
       ) : null}
+
+      <TradesTable
+        trades={tradesData?.trades || []}
+        pagination={
+          tradesData?.pagination || {
+            total: 0,
+            limit: LIMIT_TRADES_PER_PAGE,
+            offset: tradesOffset,
+            hasMore: false,
+          }
+        }
+        onPageChange={handleTradesPageChange}
+        showSignInMessage={user.status !== "authenticated"}
+      />
 
       {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
@@ -228,7 +268,7 @@ export default function CompetitionPage({
             onSortChange={setAgentsSort}
             pagination={agentsData.pagination}
             totalVotes={competition.stats.totalVotes}
-            onPageChange={handlePageChange}
+            onPageChange={handleAgentsPageChange}
           />
           <TimelineChart
             ref={chartRef}
@@ -242,7 +282,7 @@ export default function CompetitionPage({
                   (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
               ) + 1
             }
-            onPageChange={handlePageChange}
+            onPageChange={handleAgentsPageChange}
           />
         </>
       )}

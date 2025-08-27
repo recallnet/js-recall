@@ -35,7 +35,7 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[700px]">
+      <DialogContent className="w-full max-w-[700px] p-4 sm:p-6">
         <DialogHeader className="text-start">
           <DialogTitle className="flex items-center justify-start gap-4 text-xl font-bold text-white">
             <CircleCheckBig className="size-6 text-gray-700" />

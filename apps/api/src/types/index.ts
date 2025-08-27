@@ -255,6 +255,7 @@ export const AgentStatsSchema = z.object({
   rank: z.number().optional(),
   score: z.number().optional(),
   totalRoi: z.number().optional(),
+  bestPnl: z.number().optional(),
 });
 
 export type AgentStats = z.infer<typeof AgentStatsSchema>;
