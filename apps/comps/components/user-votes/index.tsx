@@ -40,7 +40,7 @@ export default function UserVotesSection() {
   }, [data?.votes, isFetching, offset]);
 
   return (
-    <Collapsible defaultOpen={!votes.length} className="mt-7">
+    <Collapsible defaultOpen={!votes.length} className="my-7">
       <CollapsibleTrigger>
         <div className="flex w-full items-center justify-between">
           <div className="ml-2 flex items-center gap-2">

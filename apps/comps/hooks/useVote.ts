@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { ApiClient, UnauthorizedError } from "@/lib/api-client";
+import { UnauthorizedError, apiClient } from "@/lib/api-client";
 import { useUser } from "@/state/atoms";
 import {
   CreateVoteRequest,
@@ -11,8 +11,6 @@ import {
 } from "@/types/vote";
 
 import { useClientCleanup } from "./useAuth";
-
-const apiClient = new ApiClient();
 
 /**
  * Hook to create a vote
@@ -25,7 +23,7 @@ export const useVote = () => {
     mutationFn: async (data: CreateVoteRequest) => {
       return apiClient.createVote(data);
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["votes"] });
       queryClient.invalidateQueries({

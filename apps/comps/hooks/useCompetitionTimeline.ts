@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { CompetitionStatus, CompetitionTimelineResponse } from "@/types";
-
-const apiClient = new ApiClient();
 
 /**
  * Hook to fetch a single competition by ID
