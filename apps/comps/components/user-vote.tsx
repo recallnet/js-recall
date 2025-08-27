@@ -123,6 +123,7 @@ export const UserVote: React.FC<UserVoteProps> = ({
               <TableCell className="flex w-[70px] items-center">
                 <IconButton
                   className="text-blue-500 [&:disabled]:opacity-100"
+                  iconClassName="h-8 w-8"
                   Icon={ArrowUp}
                   disabled
                 />

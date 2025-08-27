@@ -1,4 +1,4 @@
-import { and, desc, count as drizzleCount, eq } from "drizzle-orm";
+import { and, desc, count as drizzleCount, eq, sql } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import {
@@ -167,47 +167,65 @@ async function getCompetitionTradesImpl(
 }
 
 /**
- * Count trades for an agent
+ * Count trades for an agent across multiple competitions in bulk
  * @param agentId Agent ID
+ * @param competitionIds Array of competition IDs
+ * @returns Map of competition ID to trade count
  */
-async function countAgentTradesImpl(agentId: string) {
-  try {
-    const [result] = await db
-      .select({ count: drizzleCount() })
-      .from(trades)
-      .where(eq(trades.agentId, agentId));
-
-    return result?.count ?? 0;
-  } catch (error) {
-    repositoryLogger.error("Error in countAgentTrades:", error);
-    throw error;
-  }
-}
-
-/**
- * Count trades for an agent in a specific competition
- * @param agentId Agent ID
- * @param competitionId Competition ID
- * @returns Number of trades for the agent in the competition
- */
-async function countAgentTradesInCompetitionImpl(
+async function countBulkAgentTradesInCompetitionsImpl(
   agentId: string,
-  competitionId: string,
-): Promise<number> {
+  competitionIds: string[],
+): Promise<Map<string, number>> {
+  if (competitionIds.length === 0) {
+    return new Map();
+  }
+
   try {
-    const [result] = await db
-      .select({ count: drizzleCount() })
+    repositoryLogger.debug(
+      `countBulkAgentTradesInCompetitions called for agent ${agentId} in ${competitionIds.length} competitions`,
+    );
+
+    // Get trade counts for all competitions in one query
+    const results = await db
+      .select({
+        competitionId: trades.competitionId,
+        count: drizzleCount(),
+      })
       .from(trades)
       .where(
         and(
           eq(trades.agentId, agentId),
-          eq(trades.competitionId, competitionId),
+          sql`${trades.competitionId} IN (${sql.join(
+            competitionIds.map((id) => sql`${id}`),
+            sql`, `,
+          )})`,
         ),
-      );
+      )
+      .groupBy(trades.competitionId);
 
-    return result?.count ?? 0;
+    // Create map with results
+    const countMap = new Map<string, number>();
+
+    // Initialize all competitions with 0
+    for (const competitionId of competitionIds) {
+      countMap.set(competitionId, 0);
+    }
+
+    // Update with actual counts
+    for (const result of results) {
+      countMap.set(result.competitionId, result.count);
+    }
+
+    repositoryLogger.debug(
+      `Found trades in ${results.length}/${competitionIds.length} competitions`,
+    );
+
+    return countMap;
   } catch (error) {
-    repositoryLogger.error("Error in countAgentTradesInCompetition:", error);
+    repositoryLogger.error(
+      "Error in countBulkAgentTradesInCompetitions:",
+      error,
+    );
     throw error;
   }
 }
@@ -313,16 +331,10 @@ export const getCompetitionTrades = createTimedRepositoryFunction(
   "getCompetitionTrades",
 );
 
-export const countAgentTrades = createTimedRepositoryFunction(
-  countAgentTradesImpl,
+export const countBulkAgentTradesInCompetitions = createTimedRepositoryFunction(
+  countBulkAgentTradesInCompetitionsImpl,
   "TradeRepository",
-  "countAgentTrades",
-);
-
-export const countAgentTradesInCompetition = createTimedRepositoryFunction(
-  countAgentTradesInCompetitionImpl,
-  "TradeRepository",
-  "countAgentTradesInCompetition",
+  "countBulkAgentTradesInCompetitions",
 );
 
 export const count = createTimedRepositoryFunction(

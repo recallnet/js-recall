@@ -257,6 +257,7 @@ export const AgentStatsSchema = z.object({
   rank: z.number().optional(),
   score: z.number().optional(),
   totalRoi: z.number().optional(),
+  bestPnl: z.number().optional(),
 });
 
 export type AgentStats = z.infer<typeof AgentStatsSchema>;
@@ -1196,3 +1197,32 @@ export const BucketParamSchema = z.coerce
   .default(30);
 
 export type BucketParam = z.infer<typeof BucketParamSchema>;
+
+export const TimestampSchema = z.coerce.date();
+
+export const SnapshotSchema = z.object({
+  id: z.number(),
+  competitionId: UuidSchema,
+  agentId: UuidSchema,
+  timestamp: TimestampSchema,
+  totalValue: z.number(),
+});
+
+/**
+ * Snakecase version of the snapshot schema, this is convenient for parsing raw
+ * query results.
+ */
+export const SnapshotDbSchema = z.object({
+  id: z.number(),
+  competition_id: UuidSchema,
+  agent_id: UuidSchema,
+  timestamp: TimestampSchema,
+  total_value: z.coerce.number(),
+});
+
+export const BestPlacementDbSchema = z.looseObject({
+  competition_id: z.string(),
+  // Note that coerce will result in 0 for "", null, and undefined
+  rank: z.coerce.number(),
+  total_agents: z.coerce.number(),
+});

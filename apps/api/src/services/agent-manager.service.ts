@@ -8,7 +8,6 @@ import { config } from "@/config/index.js";
 import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";
 import {
   count,
-  countAgentCompetitionsForStatus,
   countByName,
   countByWallet,
   create,
@@ -29,24 +28,17 @@ import {
   searchAgents,
   update,
 } from "@/database/repositories/agent-repository.js";
-import { getAgentRankById } from "@/database/repositories/agentscore-repository.js";
 import {
   findBestPlacementForAgent,
-  getAgentCompetitionRanking,
+  getAgentRankingsInCompetitions,
   getBoundedSnapshots,
   getBulkAgentCompetitionRankings,
+  getBulkBoundedSnapshots,
 } from "@/database/repositories/competition-repository.js";
 import { createEmailVerificationToken } from "@/database/repositories/email-verification-repository.js";
-import {
-  getAgentTotalRoi,
-  getBulkAgentMetrics,
-} from "@/database/repositories/leaderboard-repository.js";
-import {
-  countAgentTrades,
-  countAgentTradesInCompetition,
-} from "@/database/repositories/trade-repository.js";
+import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
+import { countBulkAgentTradesInCompetitions } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
-import { countTotalVotesForAgent } from "@/database/repositories/vote-repository.js";
 import {
   InsertAgent,
   SelectAgent,
@@ -54,9 +46,10 @@ import {
 } from "@/database/schema/core/types.js";
 import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { transformToTrophy } from "@/lib/trophy-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import { AgentMetricsHelper } from "@/services/agent-metrics-helper.js";
 import { EmailService } from "@/services/email.service.js";
+import type { AgentWithMetrics } from "@/types/agent-metrics.js";
 import {
   ACTOR_STATUS,
   AgentCompetitionsParams,
@@ -64,8 +57,6 @@ import {
   AgentPublic,
   AgentPublicSchema,
   AgentSearchParams,
-  AgentStats,
-  AgentTrophy,
   ApiAuth,
   EnhancedCompetition,
   PagingParams,
@@ -319,66 +310,6 @@ export class AgentManager {
   }
 
   /**
-   * Find and migrate a legacy agent without API key hash
-   * @private
-   */
-  private async findAndMigrateLegacyAgent(
-    apiKey: string,
-    apiKeyHash: string,
-  ): Promise<SelectAgent | undefined> {
-    // NOTE: The N+1 pattern during migration is unavoidable but acceptable because:
-    // 1. Temporary - only during migration period until all agents have hashes
-    // 2. Infrequent - only happens for agents without hashes making requests
-    // 3. Self-improving - each successful migration reduces future lookups
-    //
-    // TODO(REC-576): Remove this entire method once all agents have been migrated
-    const agents = await findAll();
-
-    for (const legacyAgent of agents) {
-      // Skip agents that already have a hash
-      if (legacyAgent.apiKeyHash) {
-        continue;
-      }
-
-      try {
-        const decryptedKey = decryptApiKey(
-          legacyAgent.apiKey,
-          String(config.security.rootEncryptionKey),
-        );
-
-        if (decryptedKey === apiKey) {
-          // Found matching agent - perform live migration
-          serviceLogger.info(
-            `[AgentManager] Live migrating API key hash for agent ${legacyAgent.id}`,
-          );
-
-          try {
-            // Update the agent with the hash for future lookups
-            legacyAgent.apiKeyHash = apiKeyHash;
-            return await update(legacyAgent);
-          } catch (updateError) {
-            // Log error but continue validation - don't break authentication
-            serviceLogger.error(
-              `[AgentManager] Failed to update hash for agent ${legacyAgent.id}:`,
-              updateError,
-            );
-            // Return the agent without hash update for this request
-            return legacyAgent;
-          }
-        }
-      } catch (decryptError) {
-        // Log but continue checking other agents
-        serviceLogger.error(
-          `[AgentManager] Error decrypting key for agent ${legacyAgent.id}:`,
-          decryptError,
-        );
-      }
-    }
-
-    return undefined;
-  }
-
-  /**
    * Validate agent status and update caches
    * @private
    */
@@ -422,14 +353,10 @@ export class AgentManager {
 
       // Use hash-based lookup for O(1) performance
       const apiKeyHash = hashApiKey(apiKey);
-      let agent = await findByApiKeyHash(apiKeyHash);
+      const agent = await findByApiKeyHash(apiKeyHash);
 
-      // Try legacy migration if hash lookup fails
       if (!agent) {
-        agent = await this.findAndMigrateLegacyAgent(apiKey, apiKeyHash);
-        if (!agent) {
-          return null;
-        }
+        return null;
       }
 
       // Validate agent status and update caches
@@ -1027,12 +954,10 @@ export class AgentManager {
         (comp) => comp !== null,
       ) as SelectCompetition[];
 
-      // Attach metrics to each valid competition
-      const enhancedCompetitions = await Promise.all(
-        validCompetitions.map(
-          async (competition) =>
-            await this.attachCompetitionMetrics(competition, agentId),
-        ),
+      // Attach metrics to all competitions in bulk
+      const enhancedCompetitions = await this.attachBulkCompetitionMetrics(
+        validCompetitions,
+        agentId,
       );
 
       // Handle computed field sorting if needed
@@ -1198,6 +1123,9 @@ export class AgentManager {
             const agentIds = agentsNeedingRankFallback.map(
               ({ agent }) => agent.id,
             );
+            // TODO: here we have a lookup that happens if we need computed
+            // sort and inside a loop over all competitions and if we need
+            // a "RankFallback". We might want to refactor this logic.
             const bulkRankings = await getBulkAgentCompetitionRankings(
               comp.id,
               agentIds,
@@ -1367,6 +1295,8 @@ export class AgentManager {
         throw error;
       }
       // For other errors, return empty result
+      // TODO: we might want to start throwing 500 when something unexpected
+      // happens.
       return { competitions: [], total: 0 };
     }
   }
@@ -1412,7 +1342,7 @@ export class AgentManager {
    * @param agent The agent object to sanitize
    * @returns The sanitized agent object
    */
-  sanitizeAgent(agent: SelectAgent) {
+  sanitizeAgent(agent: SelectAgent): AgentPublic {
     return AgentPublicSchema.parse({
       ...agent,
       isVerified: !!agent.walletAddress,
@@ -1425,64 +1355,23 @@ export class AgentManager {
    * @returns The agent object with metrics attached
    */
   async attachAgentMetrics(
-    sanitizedAgent: ReturnType<AgentManager["sanitizeAgent"]>,
-  ) {
-    const metadata = sanitizedAgent.metadata as AgentMetadata;
-    const completedCompetitions = await countAgentCompetitionsForStatus(
-      sanitizedAgent.id,
-      ["ended"], // Only get completed competitions
-    );
-    const totalVotes = await countTotalVotesForAgent(sanitizedAgent.id);
-    const totalTrades = await countAgentTrades(sanitizedAgent.id);
-    const bestPlacement =
-      (await this.getAgentBestPlacement(sanitizedAgent.id)) || undefined;
-    const totalRoi = await getAgentTotalRoi(sanitizedAgent.id);
-
-    const agentRank = await getAgentRankById(sanitizedAgent.id);
-    const rank = agentRank?.rank;
-    const score = agentRank?.score;
-
-    // Get trophies by reusing existing competition logic, filtered for ended competitions
-    const endedCompetitions = await this.getCompetitionsForAgent(
-      sanitizedAgent.id,
-      { status: "ended", sort: "", limit: 10, offset: 0 }, // Filter + minimal paging defaults
-      { sort: "-endDate", limit: 100, offset: 0 }, // Actual paging to override defaults
-    );
-
-    // Transform competition data to trophy format
-    const trophies: AgentTrophy[] = endedCompetitions.competitions.map((comp) =>
-      transformToTrophy({
-        competitionId: comp.id,
-        name: comp.name,
-        rank: comp.bestPlacement?.rank,
-        imageUrl: comp.imageUrl,
-        endDate: comp.endDate,
-        createdAt: comp.createdAt,
-      }),
-    );
-
+    sanitizedAgent: AgentPublic,
+  ): Promise<AgentWithMetrics> {
     serviceLogger.debug(
-      `[AgentManager] Generated ${trophies.length} trophies for agent ${sanitizedAgent.id}:`,
-      trophies,
+      `[AgentManager] Attaching metrics for single agent ${sanitizedAgent.id}`,
     );
 
-    const stats = {
-      completedCompetitions,
-      totalVotes,
-      totalTrades,
-      bestPlacement,
-      rank,
-      score,
-      totalRoi,
-    } as AgentStats;
+    // Delegate to bulk method for consistency and to avoid code duplication
+    const results = await this.attachBulkAgentMetrics([sanitizedAgent]);
 
-    return {
-      ...sanitizedAgent,
-      stats,
-      trophies, // Now returns AgentTrophy[] instead of string[]
-      skills: metadata?.skills || [],
-      hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
-    };
+    // This should never happen since we pass exactly one agent, but TypeScript needs the check
+    if (!results[0]) {
+      throw new Error(
+        `Failed to attach metrics for agent ${sanitizedAgent.id}`,
+      );
+    }
+
+    return results[0];
   }
 
   /**
@@ -1493,8 +1382,8 @@ export class AgentManager {
    * @returns Array of agents with attached metrics
    */
   async attachBulkAgentMetrics(
-    sanitizedAgents: ReturnType<AgentManager["sanitizeAgent"]>[],
-  ) {
+    sanitizedAgents: AgentPublic[],
+  ): Promise<AgentWithMetrics[]> {
     if (sanitizedAgents.length === 0) {
       return [];
     }
@@ -1504,60 +1393,44 @@ export class AgentManager {
     );
 
     try {
-      // Get all metrics in bulk using optimized queries
       const agentIds = sanitizedAgents.map((agent) => agent.id);
-      const bulkMetrics = await getBulkAgentMetrics(agentIds);
+
+      // Get raw metrics and trophies in parallel
+      const [rawMetrics, bulkTrophies] = await Promise.all([
+        getBulkAgentMetrics(agentIds),
+        getBulkAgentTrophies(agentIds),
+      ]);
+
+      // Transform raw metrics using the helper
+      const metricsArray = AgentMetricsHelper.transformRawMetricsToAgentMetrics(
+        agentIds,
+        rawMetrics,
+      );
 
       // Create lookup maps for efficient access
       const metricsMap = new Map(
-        bulkMetrics.map((metrics) => [metrics.agentId, metrics]),
+        metricsArray.map((metrics) => [metrics.agentId, metrics]),
+      );
+      const trophiesMap = new Map(
+        bulkTrophies.map((trophy) => [trophy.agentId, trophy.trophies]),
       );
 
-      // Get bulk trophies using optimized single query approach with error handling
-      let trophiesMap = new Map();
-      try {
-        const bulkTrophies = await getBulkAgentTrophies(agentIds);
-        trophiesMap = new Map(
-          bulkTrophies.map((trophy) => [trophy.agentId, trophy.trophies]),
-        );
-      } catch (error) {
-        serviceLogger.error(
-          "[AgentManager] Error fetching bulk trophies:",
-          error,
-        );
-        serviceLogger.error(
-          "[AgentManager] Proceeding with empty trophies map",
-        );
-      }
-
-      // Process agents synchronously with O(1) trophy lookups
-      return sanitizedAgents.map((sanitizedAgent) => {
-        const metadata = sanitizedAgent.metadata as AgentMetadata;
-        const metrics = metricsMap.get(sanitizedAgent.id);
-        const trophies = trophiesMap.get(sanitizedAgent.id) || [];
+      // Process agents using helper
+      return sanitizedAgents.map((agent) => {
+        const metrics =
+          metricsMap.get(agent.id) ||
+          AgentMetricsHelper.createEmptyMetrics(agent.id);
+        const trophies = trophiesMap.get(agent.id) || [];
 
         serviceLogger.debug(
-          `[AgentManager] Using bulk trophies: ${trophies.length} trophies for agent ${sanitizedAgent.id}`,
+          `[AgentManager] Using bulk trophies: ${trophies.length} trophies for agent ${agent.id}`,
         );
 
-        const stats = {
-          completedCompetitions: metrics?.completedCompetitions ?? 0,
-          totalVotes: metrics?.totalVotes ?? 0,
-          totalTrades: metrics?.totalTrades ?? 0,
-          bestPlacement: metrics?.bestPlacement ?? undefined,
-          bestPnl: metrics?.bestPnl ?? undefined,
-          rank: metrics?.globalRank ?? undefined,
-          score: metrics?.globalScore ?? undefined,
-          totalRoi: metrics?.totalRoi ?? null,
-        } as AgentStats;
-
-        return {
-          ...sanitizedAgent,
-          stats,
-          trophies, // Use bulk-fetched database trophies
-          skills: metadata?.skills || [],
-          hasUnclaimedRewards: metadata?.hasUnclaimedRewards || false,
-        };
+        return AgentMetricsHelper.attachMetricsToAgent(
+          agent,
+          metrics,
+          trophies,
+        );
       });
     } catch (error) {
       serviceLogger.error(
@@ -1565,13 +1438,7 @@ export class AgentManager {
         error,
       );
 
-      // Fallback to individual queries if bulk fails
-      serviceLogger.error(
-        "[AgentManager] Falling back to individual metric queries",
-      );
-      return Promise.all(
-        sanitizedAgents.map((agent) => this.attachAgentMetrics(agent)),
-      );
+      throw error;
     }
   }
 
@@ -1603,53 +1470,62 @@ export class AgentManager {
   }
 
   /**
-   * Attach agent-specific metrics to a competition object
-   * @param competition The competition object to enhance
-   * @param agentId The agent ID for metrics calculation
-   * @returns Enhanced competition with agent metrics
+   * Attach agent-specific metrics to multiple competitions in bulk
+   * @param competitions Array of competitions to enhance
+   * @param agentId Agent ID
+   * @returns Array of enhanced competitions with metrics
    */
-  async attachCompetitionMetrics(
-    competition: SelectCompetition,
+  async attachBulkCompetitionMetrics(
+    competitions: SelectCompetition[],
     agentId: string,
-  ): Promise<EnhancedCompetition> {
+  ): Promise<EnhancedCompetition[]> {
+    if (competitions.length === 0) {
+      return [];
+    }
+
     try {
-      const { pnl, pnlPercent, portfolioValue } =
-        await this.getAgentPerformanceForComp(agentId, competition.id);
+      const competitionIds = competitions.map((comp) => comp.id);
 
-      // Get total trades for agent in this competition
-      const totalTrades = await countAgentTradesInCompetition(
-        agentId,
-        competition.id,
-      );
+      // Fetch all data in bulk with just 3 queries
+      const [snapshotsMap, tradeCountsMap, rankingsMap] = await Promise.all([
+        getBulkBoundedSnapshots(agentId, competitionIds),
+        countBulkAgentTradesInCompetitions(agentId, competitionIds),
+        getAgentRankingsInCompetitions(agentId, competitionIds),
+      ]);
 
-      // Get agent's ranking in this competition
-      const bestPlacement = await getAgentCompetitionRanking(
-        agentId,
-        competition.id,
-      );
+      // Map results back to competitions
+      return competitions.map((competition) => {
+        const snapshots = snapshotsMap.get(competition.id);
+        const tradeCount = tradeCountsMap.get(competition.id) || 0;
+        const bestPlacement = rankingsMap.get(competition.id);
 
-      return {
-        ...competition,
-        portfolioValue,
-        pnl,
-        pnlPercent,
-        totalTrades,
-        bestPlacement,
-      };
+        // Calculate PnL from snapshots
+        let portfolioValue = 0;
+        let pnl = 0;
+        let pnlPercent = 0;
+
+        if (snapshots) {
+          portfolioValue = Number(snapshots.newest?.totalValue || 0);
+          const startingValue = Number(snapshots.oldest?.totalValue || 0);
+          pnl = portfolioValue - startingValue;
+          pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
+        }
+
+        return {
+          ...competition,
+          portfolioValue,
+          pnl,
+          pnlPercent,
+          totalTrades: tradeCount,
+          bestPlacement,
+        };
+      });
     } catch (error) {
       serviceLogger.error(
-        `[AgentManager] Error attaching competition metrics for agent ${agentId} in competition ${competition.id}:`,
+        `[AgentManager] Error attaching bulk competition metrics for agent ${agentId}:`,
         error,
       );
-      // Return competition with default values on error
-      return {
-        ...competition,
-        portfolioValue: 0,
-        pnl: 0,
-        pnlPercent: 0,
-        totalTrades: 0,
-        bestPlacement: undefined, // No valid ranking data on error
-      };
+      throw error;
     }
   }
 
