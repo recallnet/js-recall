@@ -31,6 +31,13 @@
   --color-red-500: oklch(0.6032 0.214 28.67);
   --color-yellow-500: oklch(0.8188 0.1686 82.31);
 
+  /* Hero graphic colors */
+  --hero-red: oklch(0.653 0.257 29.2346);
+  --hero-yellow: oklch(0.893 0.136 109.647);
+  --hero-green: oklch(0.695 0.201 142.5);
+  --hero-blue: oklch(0.452 0.313 251.235);
+  --hero-black: oklch(0 0 0);
+
   /* Trophy and rank colors */
   --trophy-first: oklch(0.8799 0.1379 89.79);
   --trophy-second: oklch(0.7149 0.0368 252.35);
