@@ -60,34 +60,32 @@ export class AlchemyProvider {
       return;
     }
 
-    // Initialize providers for chains we have RPC URLs for
-    const chainConfigs = [
-      { chain: "eth" as LiveTradingChain, rpcUrl: config.rpc.ethereum },
-      { chain: "base" as LiveTradingChain, rpcUrl: config.rpc.base },
-      { chain: "arbitrum" as LiveTradingChain, rpcUrl: config.rpc.arbitrum },
-      { chain: "optimism" as LiveTradingChain, rpcUrl: config.rpc.optimism },
-      { chain: "polygon" as LiveTradingChain, rpcUrl: config.rpc.polygon },
+    // Initialize providers for supported chains
+    const supportedChains: LiveTradingChain[] = [
+      "eth",
+      "base",
+      "arbitrum",
+      "optimism",
+      "polygon",
     ];
 
-    for (const { chain, rpcUrl } of chainConfigs) {
-      if (rpcUrl) {
-        try {
-          const network = this.chainToNetwork[chain];
-          if (network) {
-            this.alchemyInstances[chain] = new Alchemy({
-              apiKey,
-              network,
-              maxRetries: this.maxRetries,
-            });
-            serviceLogger.debug(
-              `[AlchemyProvider] Initialized provider for ${chain}`,
-            );
-          }
-        } catch {
-          serviceLogger.error(
-            `[AlchemyProvider] Failed to initialize ${chain} provider`,
+    for (const chain of supportedChains) {
+      try {
+        const network = this.chainToNetwork[chain];
+        if (network) {
+          this.alchemyInstances[chain] = new Alchemy({
+            apiKey,
+            network,
+            maxRetries: this.maxRetries,
+          });
+          serviceLogger.debug(
+            `[AlchemyProvider] Initialized provider for ${chain}`,
           );
         }
+      } catch {
+        serviceLogger.error(
+          `[AlchemyProvider] Failed to initialize ${chain} provider`,
+        );
       }
     }
 

@@ -62,6 +62,7 @@ jobs:
           ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters
           EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
           TEST_MODE=true
+          ALCHEMY_API_KEY=${{ secrets.ALCHEMY_API_KEY }}
           EOF
 
           # Create a wrapper script to ensure proper test execution
@@ -266,6 +267,9 @@ jobs:
 
           # Enable auto-verify user email
           ENABLE_AUTO_VERIFY_USER_EMAIL=true
+
+          # Blockchain RPC Configuration (for future live trading tests)
+          ALCHEMY_API_KEY=${{ secrets.ALCHEMY_API_KEY }}
           EOF
 
       - name: Run E2E tests
