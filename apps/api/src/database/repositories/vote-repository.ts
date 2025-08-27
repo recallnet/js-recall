@@ -2,11 +2,10 @@ import { and, count as drizzleCount, eq, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
-import { competitions, votes } from "@/database/schema/core/defs.js";
+import { votes } from "@/database/schema/core/defs.js";
 import { InsertVote, SelectVote } from "@/database/schema/core/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
-import { COMPETITION_STATUS } from "@/types/index.js";
 
 /**
  * Vote Repository
@@ -160,26 +159,6 @@ async function countVotesByAgentImpl(
 }
 
 /**
- * Count votes for a specific agent in a competition
- * @param agentId The agent ID
- * @param competitionId The competition ID
- * @returns Number of votes for the agent in the competition
- */
-async function countTotalVotesForAgentImpl(agentId: string): Promise<number> {
-  try {
-    const [result] = await db
-      .select({ count: drizzleCount() })
-      .from(votes)
-      .where(eq(votes.agentId, agentId));
-
-    return result?.count || 0;
-  } catch (error) {
-    console.error("[VoteRepository] Error in countTotalVotesForAgent:", error);
-    throw error;
-  }
-}
-
-/**
  * Get vote counts for all agents in a competition
  * @param competitionId The competition ID
  * @returns Array of objects with agentId and voteCount
@@ -313,31 +292,6 @@ async function countImpl(): Promise<number> {
   }
 }
 
-/**
- * Count the total number of votes an agent received across all finished competitions
- * @param agentId The agent ID
- * @returns Total number of votes for the agent across all finished competitions
- */
-async function countTotalVotesByAgentImpl(agentId: string): Promise<number> {
-  try {
-    const [result] = await db
-      .select({ count: drizzleCount() })
-      .from(votes)
-      .innerJoin(competitions, eq(votes.competitionId, competitions.id))
-      .where(
-        and(
-          eq(votes.agentId, agentId),
-          eq(competitions.status, COMPETITION_STATUS.ENDED),
-        ),
-      );
-
-    return result?.count || 0;
-  } catch (error) {
-    console.error("[VoteRepository] Error in countTotalVotesByAgent:", error);
-    throw error;
-  }
-}
-
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -377,12 +331,6 @@ export const countVotesByAgent = createTimedRepositoryFunction(
   "countVotesByAgent",
 );
 
-export const countTotalVotesForAgent = createTimedRepositoryFunction(
-  countTotalVotesForAgentImpl,
-  "VoteRepository",
-  "countTotalVotesForAgent",
-);
-
 export const getVoteCountsByCompetition = createTimedRepositoryFunction(
   getVoteCountsByCompetitionImpl,
   "VoteRepository",
@@ -411,10 +359,4 @@ export const count = createTimedRepositoryFunction(
   countImpl,
   "VoteRepository",
   "count",
-);
-
-export const countTotalVotesByAgent = createTimedRepositoryFunction(
-  countTotalVotesByAgentImpl,
-  "VoteRepository",
-  "countTotalVotesByAgent",
 );
