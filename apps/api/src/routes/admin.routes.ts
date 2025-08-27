@@ -1124,6 +1124,17 @@ export function configureAdminRoutes(
    *                       walletAddress:
    *                         type: string
    *                         description: User wallet address
+   *                       embeddedWalletAddress:
+   *                         type: string
+   *                         description: User embedded wallet address
+   *                         nullable: true
+   *                       privyId:
+   *                         type: string
+   *                         description: User Privy ID
+   *                         nullable: true
+   *                       isSubscribed:
+   *                         type: boolean
+   *                         description: User subscription status
    *                       name:
    *                         type: string
    *                         description: User name
@@ -1151,6 +1162,11 @@ export function configureAdminRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: Account update timestamp
+   *                       lastLoginAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: User last login timestamp
+   *                         nullable: true
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       500:

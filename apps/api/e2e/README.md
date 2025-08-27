@@ -34,7 +34,10 @@ e2e/
     ├── log-reporter.ts                  # Log reporter for tests
     ├── server.ts                        # Server startup/shutdown utilities
     ├── setup-admin.ts                   # Setup admin for tests
-    ├── siwe-utils.ts                    # SIWE utilities for tests
+    ├── privy/                           # Privy authentication utilities for tests
+    │   ├── config.ts                    # Privy configuration
+    │   ├── mock.ts                      # Privy mock
+    │   ├── utils.ts                     # Privy utilities
     ├── test-helpers.ts                  # Common test helper functions
     └── test-setup.ts                    # Setup that runs before each test
 ```

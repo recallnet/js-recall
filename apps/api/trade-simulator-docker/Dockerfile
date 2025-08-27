@@ -16,8 +16,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build the application
-RUN pnpm --filter=@recallnet/api-sdk build && \
-    pnpm --filter=@recallnet/staking-contracts build && \
+RUN pnpm --filter=@recallnet/staking-contracts build && \
     pnpm --filter=api build
 
 FROM node:22-alpine

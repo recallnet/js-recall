@@ -26,7 +26,7 @@ import { dbManager } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   createAgentVerificationSignature,
-  createSiweAuthenticatedClient,
+  createPrivyAuthenticatedClient,
   createTestClient,
   generateRandomEthAddress,
   getAdminApiKey,
@@ -1447,7 +1447,7 @@ describe("Agent API", () => {
       expect(nonceResponse).toEqual({
         success: false,
         error:
-          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
 
@@ -1474,7 +1474,7 @@ Purpose: WALLET_VERIFICATION`;
       expect(verifyResponse).toEqual({
         success: false,
         error:
-          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
     });
@@ -1645,7 +1645,7 @@ Purpose: WALLET_VERIFICATION`;
       expect(response).toEqual({
         success: false,
         error:
-          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
     });
@@ -2799,8 +2799,8 @@ Purpose: WALLET_VERIFICATION`;
 
   describe("Agent handles", () => {
     test("should reject duplicate handles or invalid format", async () => {
-      // Create a SIWE-authenticated client
-      const { client: siweClient } = await createSiweAuthenticatedClient({
+      // Create a Privy-authenticated client
+      const { client: siweClient } = await createPrivyAuthenticatedClient({
         adminApiKey,
         userName: "Handle Test User",
         userEmail: "handle-test@example.com",
@@ -2911,8 +2911,8 @@ Purpose: WALLET_VERIFICATION`;
     });
 
     test("should update agent handle", async () => {
-      // Create a SIWE-authenticated client
-      const { client: siweClient } = await createSiweAuthenticatedClient({
+      // Create a Privy-authenticated client
+      const { client: siweClient } = await createPrivyAuthenticatedClient({
         adminApiKey,
         userName: "Handle Update Test User",
         userEmail: "handle-update@example.com",
