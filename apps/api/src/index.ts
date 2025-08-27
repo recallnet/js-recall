@@ -1,9 +1,8 @@
+import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express from "express";
 
 import { config } from "@/config/index.js";
-import { initSentry } from "@/lib/sentry.js";
-import * as Sentry from "@sentry/node";
 import { makeAdminController } from "@/controllers/admin.controller.js";
 import { makeAgentController } from "@/controllers/agent.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
@@ -18,6 +17,7 @@ import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
 import { closeDb, migrateDb } from "@/database/db.js";
 import { apiLogger } from "@/lib/logger.js";
+import { initSentry } from "@/lib/sentry.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
