@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as Sentry from "@sentry/node";
 
+import { config } from "@/config/index.js";
+
 /**
  * Wraps a Drizzle database instance with Sentry performance monitoring
  *
@@ -8,11 +10,8 @@ import * as Sentry from "@sentry/node";
  * to track query performance in production.
  */
 export function wrapDatabaseWithSentry<T extends object>(db: T): T {
-  // Only wrap in production or when explicitly enabled
-  if (
-    process.env.NODE_ENV !== "production" &&
-    !process.env.ENABLE_SENTRY_DB_MONITORING
-  ) {
+  // Only wrap if Sentry DB monitoring is enabled in config
+  if (!config.sentry?.dbMonitoringEnabled) {
     return db;
   }
 

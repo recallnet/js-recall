@@ -346,6 +346,9 @@ export const config = {
     environment:
       process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
     enabled: !!process.env.SENTRY_DSN,
+    dbMonitoringEnabled:
+      process.env.ENABLE_SENTRY_DB_MONITORING === "true" ||
+      process.env.NODE_ENV === "production",
   },
 };
 
