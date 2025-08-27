@@ -7,7 +7,16 @@ import { Agent, AgentCompetition } from "@/types/agent";
 import { UserAgentCompetition } from "@/types/competition";
 
 interface AgentAvatarProps {
-  agent: Agent | UserAgentCompetition | AgentCompetition;
+  agent:
+    | {
+        id: string;
+        name: string;
+        imageUrl: string;
+        description: string;
+      }
+    | Agent
+    | UserAgentCompetition
+    | AgentCompetition;
   imageUrl?: string;
   showRank?: boolean;
   showBorder?: boolean;
