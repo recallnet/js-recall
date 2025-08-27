@@ -161,7 +161,7 @@ export class DexScreenerProvider implements PriceSource {
         await this.enforceRateLimit();
 
         // Make the API request
-        const response = await axios.get(url);
+        const response = await axios.get<DexScreenerResponse>(url);
 
         // Check if response has data
         if (
@@ -241,8 +241,18 @@ export class DexScreenerProvider implements PriceSource {
 
                 return false;
               })
-              // And get max price
-              .sort((a, b) => Number(b.priceNative) - Number(a.priceNative));
+              // For stablecoins, sort by closest price to $1
+              .sort((a, b) => {
+                const aPriceDiff = Math.abs(parseFloat(a.priceNative) - 1);
+                const bPriceDiff = Math.abs(parseFloat(b.priceNative) - 1);
+                return aPriceDiff - bPriceDiff;
+              });
+
+            if (stablecoinPairs.length > 1) {
+              serviceLogger.debug(
+                `[DexScreenerProvider] Using stablecoin ${tokenAddress} price: $${stablecoinPairs[0]?.priceUsd} (chosen over price: $${stablecoinPairs[1]?.priceUsd})`,
+              );
+            }
 
             const stablecoinPair = stablecoinPairs[0];
 
@@ -281,9 +291,6 @@ export class DexScreenerProvider implements PriceSource {
                 if (stablecoinPair.priceNative) {
                   const inversePrice =
                     1 / parseFloat(stablecoinPair.priceNative);
-                  serviceLogger.debug(
-                    `[DexScreenerProvider] Calculated inverse price for stablecoin as quote token: $${inversePrice}`,
-                  );
                   return {
                     price: inversePrice,
                     symbol: stablecoinPair.quoteToken?.symbol || "",
