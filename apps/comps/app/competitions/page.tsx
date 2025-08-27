@@ -36,7 +36,7 @@ export default function CompetitionsPage() {
     useLeaderboards({
       limit: 25,
     });
-  const { authenticated: isAuthenticated } = usePrivyAuth();
+  const { authenticated: isAuthenticated, ready } = usePrivyAuth();
 
   // Track landing page view
   useEffect(() => {
@@ -98,6 +98,7 @@ export default function CompetitionsPage() {
   ];
 
   if (
+    !ready ||
     isLoadingActiveCompetitions ||
     isLoadingUpcomingCompetitions ||
     isLoadingEndedCompetitions ||

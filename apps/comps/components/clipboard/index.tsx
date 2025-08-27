@@ -25,7 +25,7 @@ export const Clipboard = ({
     setTimeout(() => setCopied(false), 1500);
   };
 
-  //outer div is necessary because copy icon for some reason reduces its size because the tooltip
+  // Outer div is necessary because copy icon for some reason reduces its size because the tooltip
   return (
     <div>
       <Tooltip content={copied ? "Copied!" : "Copy"}>

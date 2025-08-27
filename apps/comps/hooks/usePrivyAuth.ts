@@ -23,6 +23,9 @@ enum PrivyErrorCode {
   CANNOT_LINK_MORE_OF_TYPE = "cannot_link_more_of_type",
 }
 
+// Module-scoped guard to serialize backend login across multiple hook instances
+let loginInFlight: Promise<unknown> | null = null;
+
 /**
  * Check if a Privy user is set up with a custom linked wallet. Custom linked wallets are linked
  * accounts with a wallet client type that is not "privy" (i.e., not an embedded wallet).
@@ -131,8 +134,16 @@ export function usePrivyAuth() {
   const { login: privyLogin } = useLogin({
     onComplete: async ({ user: privyUser }) => {
       try {
-        // Now that Privy authentication is complete, call backend to sync user
-        const result = await apiClient.login();
+        // Serialize backend login/backfill to ensure only one POST reaches the server
+        if (!loginInFlight) {
+          loginInFlight = (async () => {
+            const result = await apiClient.login();
+            // Identify user in analytics once per login
+            posthog.identify(result.userId, { wallet: result.wallet });
+            trackEvent("UserLoggedIn");
+          })();
+        }
+        await loginInFlight;
 
         // Fetch profile data immediately to avoid race conditions
         const profileResult = await apiClient.getProfile();
@@ -163,10 +174,6 @@ export function usePrivyAuth() {
         setIsAuthenticating(false);
         setAuthError(null);
 
-        // Track successful login in PostHog
-        posthog.identify(result.userId, { wallet: result.wallet });
-        trackEvent("UserLoggedIn");
-
         return true;
       } catch (error) {
         console.error("Backend authentication failed:", error);
@@ -179,6 +186,9 @@ export function usePrivyAuth() {
 
         // Reset to unauthenticated on error
         setUserAtom({ user: null, status: "unauthenticated" });
+      } finally {
+        // Allow subsequent explicit login attempts after completion
+        loginInFlight = null;
       }
     },
     onError: (error) => {

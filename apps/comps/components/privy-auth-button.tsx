@@ -26,7 +26,6 @@ import { Identicon } from "./identicon/index";
 
 /**
  * Privy Authentication Button component
- * Replaces the SIWE button with Privy authentication
  */
 export const PrivyAuthButton: React.FunctionComponent = () => {
   const router = useRouter();

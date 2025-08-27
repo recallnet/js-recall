@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
@@ -19,16 +19,22 @@ import { UpdateProfileRequest } from "@/types/profile";
 export default function ProfilePage() {
   const session = useUserSession();
   const router = useRouter();
+  const pathname = usePathname();
   const updateProfile = useUpdateProfile();
   const linkWallet = useLinkWallet();
   const { data: agents, isLoading } = useUserAgents({ limit: 100 });
 
   useEffect(() => {
     if (!session.isInitialized) return;
-    if (!session.isLoading) {
-      router.push("/profile");
+    // Only redirect when necessary; avoid pushing to the same route
+    if (
+      !session.isLoading &&
+      !session.isProfileUpdated &&
+      pathname !== "/profile/update"
+    ) {
+      router.push("/profile/update");
     }
-  }, [session, router]);
+  }, [session, pathname, router]);
 
   if (!session.isInitialized || isLoading) {
     return <ProfileSkeleton />;
