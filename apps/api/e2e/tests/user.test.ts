@@ -12,7 +12,6 @@ import {
   ErrorResponse,
   GetUserAgentsResponse,
   StartCompetitionResponse,
-  TradeResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
   UserProfileResponse,
@@ -37,18 +36,13 @@ describe("User API", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("admin can register a user and user can authenticate", async () => {
     // Create a test client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user
     const userName = `User ${Date.now()}`;
@@ -85,11 +79,7 @@ describe("User API", () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user
     const { client: userClient } = await registerUserAndAgentAndGetClient({
@@ -931,17 +921,16 @@ describe("User API", () => {
 
     // Verify agent structure (should not include API key for security)
     const agents = (paginatedResponse as GetUserAgentsResponse).agents;
-    if (agents.length > 0) {
-      const agent = agents[0];
-      expect(agent?.id).toBeDefined();
-      expect(agent?.ownerId).toBeDefined();
-      expect(agent?.name).toBeDefined();
-      expect(agent?.status).toBeDefined();
-      expect(agent?.createdAt).toBeDefined();
-      expect(agent?.updatedAt).toBeDefined();
-      // API key should NOT be present in the response for security
-      expect(agent?.apiKey).toBeUndefined();
-    }
+    expect(agents.length).toBeGreaterThan(0);
+    const agent = agents[0];
+    expect(agent?.id).toBeDefined();
+    expect(agent?.ownerId).toBeDefined();
+    expect(agent?.name).toBeDefined();
+    expect(agent?.status).toBeDefined();
+    expect(agent?.createdAt).toBeDefined();
+    expect(agent?.updatedAt).toBeDefined();
+    // API key should NOT be present in the response for security
+    expect(agent?.apiKey).toBeUndefined();
   });
 
   test("user agents pagination handles edge cases gracefully", async () => {
@@ -1307,33 +1296,29 @@ describe("User API", () => {
     expect(competition).toBeDefined();
 
     // Make trades with different outcomes to create distinct rankings
-    // Agent 1: Bad trade (loses money) - should be ranked 3rd (worst)
+    // Agent 1: Bad trade (loses most money) - should be ranked 3rd (worst)
     await client1.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000", // Zero address trade
-      amount: "100",
+      amount: "1000",
       reason: "Bad trade for Agent 1",
     });
 
-    // Agent 2: Good trade (USDC to USDT) - should be ranked 1st (best)
-    const tradeResult2 = (await client2.executeTrade({
+    // Agent 2: Good trade (loses least money) - should be ranked 1st (best)
+    await client2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
-      amount: "50",
-      reason: "Good trade for Agent 2",
-    })) as TradeResponse;
-
-    // Agent 3: Medium trade (smaller amount) - should be ranked 2nd (middle)
-    await client3.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x0000000000000000000000000000000000000000",
       amount: "10",
-      reason: "Medium trade for Agent 3",
+      reason: "Good trade for Agent 2",
     });
 
-    // In order to correctly assert the rankings we need to know if the
-    // usdc -> usdt trade is positive or negative as of the latest snapshot
-    const twoMoreThanThree = tradeResult2.transaction.price > 1;
+    // Agent 3: Medium trade (loses some money) - should be ranked 2nd (middle)
+    await client3.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: "0x0000000000000000000000000000000000000000",
+      amount: "100",
+      reason: "Medium trade for Agent 3",
+    });
 
     // Trigger portfolio snapshots
     const services = new ServiceRegistry();
@@ -1352,18 +1337,12 @@ describe("User API", () => {
     expect(response2.competitions[0]?.id).toBe(competition.id);
     expect(response2.competitions[0]?.agents.length).toBe(1);
     expect(response2.competitions[0]?.agents[0]?.id).toBe(agent2.id);
-    expect(response2.competitions[0]?.agents[0]?.rank).toBeGreaterThan(0);
-    expect(response2.competitions[0]?.agents[0]?.rank).toBe(
-      twoMoreThanThree ? 1 : 2,
-    );
+    expect(response2.competitions[0]?.agents[0]?.rank).toBe(1);
 
     expect(response3.competitions[0]?.id).toBe(competition.id);
     expect(response3.competitions[0]?.agents.length).toBe(1);
     expect(response3.competitions[0]?.agents[0]?.id).toBe(agent3.id);
-    expect(response3.competitions[0]?.agents[0]?.rank).toBeGreaterThan(0);
-    expect(response3.competitions[0]?.agents[0]?.rank).toBe(
-      twoMoreThanThree ? 2 : 1,
-    );
+    expect(response3.competitions[0]?.agents[0]?.rank).toBe(2);
 
     expect(response1.competitions[0]?.id).toBe(competition.id);
     expect(response1.competitions[0]?.agents.length).toBe(1);
@@ -3185,20 +3164,10 @@ describe("User API", () => {
 
       // Verify response structure regardless of success/failure
       expect(response).toHaveProperty("success");
-      expect(typeof response.success).toBe("boolean");
-
-      if (response.success) {
-        // Success response structure
-        expect(response).toHaveProperty("message");
-        expect(typeof response.message).toBe("string");
-      } else {
-        // Error response structure
-        const errorResponse = response as ErrorResponse;
-        expect(errorResponse).toHaveProperty("error");
-        expect(errorResponse).toHaveProperty("status");
-        expect(typeof errorResponse.error).toBe("string");
-        expect(typeof errorResponse.status).toBe("number");
-      }
+      expect(response.success).toBe(true);
+      expect(response.message).toBe(
+        "Email verification initiated successfully",
+      );
     });
   });
 });

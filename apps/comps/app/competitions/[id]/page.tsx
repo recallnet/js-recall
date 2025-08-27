@@ -93,9 +93,12 @@ export default function CompetitionPage({
     disabled?: boolean;
   }) => (
     <Button
-      disabled={competition.status !== "pending" || disabled}
-      variant="ghost"
-      className={className}
+      disabled={!competition.votingEnabled || disabled}
+      variant="default"
+      className={cn(
+        "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
+        className,
+      )}
       size="lg"
       onClick={() => {
         if (agentsTableRef.current) {
@@ -122,15 +125,15 @@ export default function CompetitionPage({
         ]}
         className="mb-10 mt-10"
       />
-      <div className="mb-20 flex w-full flex-col gap-5 md:flex-row">
+      <div className="mb-10 flex w-full flex-col gap-3 sm:mb-20 sm:gap-5 md:flex-row">
         <BasicCompetitionCard competition={competition} className="md:w-1/2" />
         <div className="md:w-1/2">
           <CompetitionInfo competition={competition} />
-          <div className="mt-5 flex w-full flex-row justify-center gap-4">
+          <div className="mt-5 flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
             {competition.userVotingInfo?.info?.hasVoted ? (
               <Tooltip
-                content="You’ve already voted in this competition."
-                className="w-1/2"
+                content="You've already voted in this competition."
+                className="w-full sm:w-1/2"
               >
                 <VotingBtn
                   disabled
@@ -138,12 +141,12 @@ export default function CompetitionPage({
                 />
               </Tooltip>
             ) : (
-              <VotingBtn className="w-1/2 justify-between uppercase" />
+              <VotingBtn className="w-full justify-between uppercase sm:w-1/2" />
             )}
             <JoinCompetitionButton
               competitionId={id}
               variant="outline"
-              className="w-1/2 justify-between border border-gray-700 uppercase"
+              className="w-full justify-between border border-gray-700 uppercase sm:w-1/2"
               disabled={competition.status !== "pending"}
               size="lg"
             >
@@ -153,7 +156,7 @@ export default function CompetitionPage({
             <Button
               variant="outline"
               className={cn(
-                "w-1/2 justify-between border border-gray-700 uppercase",
+                "w-full justify-between border border-gray-700 uppercase sm:w-1/2",
               )}
               size="lg"
               onClick={() => {
@@ -195,6 +198,7 @@ export default function CompetitionPage({
               Voting begins in...
             </span>
             <CountdownClock
+              showDuration={true}
               targetDate={new Date(competition.votingStartDate)}
             />
           </div>

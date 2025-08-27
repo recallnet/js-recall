@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import config from "@/config/index.js";
 import { BalancesResponse, SnapshotResponse } from "@/e2e/utils/api-types.js";
@@ -24,7 +24,6 @@ describe("Portfolio Snapshots", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   // Test that a snapshot is taken when a competition starts
@@ -59,7 +58,6 @@ describe("Portfolio Snapshots", () => {
       `/api/admin/competition/${competitionId}/snapshots`,
     );
     const typedResponse = snapshotsResponse as SnapshotResponse;
-    console.log(JSON.stringify(typedResponse), "typedResponse");
     expect(typedResponse.success).toBe(true);
     expect(typedResponse.snapshots).toBeDefined();
     expect(typedResponse.snapshots.length).toBeGreaterThan(0);
@@ -272,164 +270,26 @@ describe("Portfolio Snapshots", () => {
 
   // Test that price freshness threshold works correctly
   test("reuses prices within freshness threshold", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agent and get client
-    const { agent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Price Freshness Agent",
-    });
-
-    // Start a competition with our agent
-    const competitionName = `Price Freshness Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
-      adminClient,
-      competitionName,
-      [agent.id],
-    );
-
-    // Get the competition ID
-    const competitionId = startResult.competition.id;
-
-    // Wait for initial snapshot to be taken
-    await wait(500);
-
     // Get the freshness threshold from config
     const freshnessThreshold = config.priceTracker.priceTTLMs;
 
-    console.log(
-      `[Test] Using price freshness threshold of ${freshnessThreshold}ms`,
-    );
-    console.log(
-      `[Test] Price freshness setting from config: `,
-      config.priceTracker.priceTTLMs,
-    );
-
     // Ensure we have a token priced in the database first by querying the price directly
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-    console.log(
-      `[Test] Getting price for token ${usdcTokenAddress} to ensure it exists in DB`,
-    );
 
     // Use direct service call instead of API
     const priceTracker = new PriceTracker();
-    const price = await priceTracker.getPrice(usdcTokenAddress);
-    console.log(`[Test] Direct price lookup result: ${price}`);
+    await priceTracker.getPrice(usdcTokenAddress);
 
-    // Take the first snapshot - this should populate the database with prices
-    console.log(`[Test] Taking first snapshot to populate price database`);
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    const cacheSpy = vi.spyOn(priceTracker, "getCachedPrice");
 
     // Wait a bit, but less than the freshness threshold
     const waitTime = Math.min(freshnessThreshold / 3, 3000); // Wait 1/3 the threshold or max 3 seconds
-    console.log(`[Test] Waiting ${waitTime}ms before taking second snapshot`);
     await wait(waitTime);
 
-    // Take another snapshot immediately after - prices should be reused
-    // We'll use console.spy to capture log messages
-    const originalConsoleLog = console.log;
-    const logMessages: string[] = [];
+    // call again before cache expires
+    await priceTracker.getPrice(usdcTokenAddress);
 
-    try {
-      // Mock console.log to capture messages
-      console.log = (...args: unknown[]) => {
-        const message = args.join(" ");
-        logMessages.push(message);
-        originalConsoleLog(...args);
-      };
-
-      // Take another snapshot - this should reuse prices from the database
-      console.log(`[Test] Taking second snapshot, expecting price reuse`);
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
-
-      // Output all CompetitionManager logs for debugging
-      console.log(`[Test] ---- Log messages from second snapshot ----`);
-      logMessages
-        .filter((msg) => msg.includes("[CompetitionManager]"))
-        .forEach((msg) => console.log(`[Debug] ${msg}`));
-      console.log(`[Test] ---- End log messages ----`);
-
-      // Check if at least one price was reused by looking for the specific log pattern
-      const priceReuseMessages = logMessages.filter(
-        (msg) =>
-          msg.includes("[CompetitionManager]") &&
-          msg.includes("Using fresh price") &&
-          msg.includes("from DB"),
-      );
-
-      console.log(
-        `[Test] Found ${priceReuseMessages.length} instances of price reuse`,
-      );
-
-      // Look for DB hit messages to confirm we're finding price records
-      const dbHitMessages = logMessages.filter(
-        (msg) =>
-          msg.includes("[CompetitionManager]") &&
-          msg.includes("Price lookup stats") &&
-          msg.includes("DB hits"),
-      );
-
-      if (dbHitMessages.length > 0) {
-        console.log(`[Test] DB hit stats: ${dbHitMessages[0]}`);
-      }
-
-      // For debugging, relaxing the assertion and printing more info instead
-      if (priceReuseMessages.length === 0) {
-        console.log(
-          `[Test] WARNING: No price reuse detected. This could be because:`,
-        );
-        console.log(
-          `[Test] 1. The price freshness threshold might not be working`,
-        );
-        console.log(`[Test] 2. No prices were found in the database`);
-        console.log(
-          `[Test] 3. The log message format differs from what we're looking for`,
-        );
-
-        // Check if we found any tokens in DB but didn't reuse them
-        const specifcChainMessages = logMessages.filter(
-          (msg) =>
-            msg.includes("[CompetitionManager]") &&
-            msg.includes("Using specific chain info from DB"),
-        );
-
-        if (specifcChainMessages.length > 0) {
-          console.log(
-            `[Test] Found ${specifcChainMessages.length} messages about using chain info from DB but not price`,
-          );
-          console.log(`[Test] Example: ${specifcChainMessages[0]}`);
-        }
-      }
-
-      // Change to a softer assertion for now - we're debugging
-      // We'll log a warning instead of failing the test
-      if (priceReuseMessages.length === 0) {
-        console.warn(
-          `[Test] Expected to find price reuse messages but none were found`,
-        );
-      }
-
-      // Extract the overall stats
-      const statsMessage = logMessages.find((msg) =>
-        msg.includes("Reused existing prices:"),
-      );
-      if (statsMessage) {
-        console.log(`[Test] Stats: ${statsMessage}`);
-
-        // Extract the reuse percentage from the log message
-        const reusePercentage = parseFloat(
-          statsMessage?.match(/\((\d+\.\d+)%\)/)?.[1] || "0",
-        );
-
-        console.log(`[Test] Reuse percentage: ${reusePercentage}%`);
-      } else {
-        console.log(`[Test] No reuse statistics found in logs`);
-      }
-    } finally {
-      // Restore the original console.log
-      console.log = originalConsoleLog;
-    }
+    expect(cacheSpy).toBeCalled();
+    cacheSpy.mockReset();
   });
 });

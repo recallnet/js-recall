@@ -32,11 +32,9 @@ describe("Rewards Service", () => {
       })
       .returning();
 
-    if (!epoch) {
-      throw new Error("Failed to create test epoch");
-    }
-
-    testEpochId = epoch.id;
+    expect(!epoch).toBe(false);
+    expect(epochId).toBe(epoch?.id);
+    testEpochId = epoch?.id as string;
   });
 
   test("allocate method creates merkle tree and stores root hash", async () => {
@@ -79,9 +77,6 @@ describe("Rewards Service", () => {
       .where(eq(rewardsTree.epoch, testEpochId));
 
     expect(treeNodes.length).toBe(7);
-    console.log(
-      `Created ${treeNodes.length} tree nodes for epoch ${testEpochId}`,
-    );
 
     // Verify that different levels exist (leaf level 0 and at least one parent level)
     const levels = [...new Set(treeNodes.map((node) => node.level))].sort();
@@ -99,10 +94,6 @@ describe("Rewards Service", () => {
     );
     expect(rootEntries[0]?.rootHash.length).toBe(32); // Should have 32 bytes
     expect(rootEntries[0]?.epoch).toBe(testEpochId);
-
-    console.log(
-      `Root hash stored: ${Buffer.from(rootEntries[0]!.rootHash).toString("hex")}`,
-    );
 
     // Verify that leaf nodes match the number of rewards
     const leafNodes = treeNodes.filter((node) => node.level === 0);
@@ -178,10 +169,6 @@ describe("Rewards Service", () => {
 
     expect(rootEntries.length).toBe(1);
     expect(rootEntries[0]?.epoch).toBe(testEpochId);
-
-    console.log(
-      `Single reward tree created with root: ${Buffer.from(rootEntries[0]!.rootHash).toString("hex")}`,
-    );
   });
 
   test("retrieveProof method verifies multiple rewards", async () => {
@@ -282,14 +269,7 @@ describe("Rewards Service", () => {
       );
 
       expect(isValid).toBe(true);
-      console.log(
-        `Verified proof for address ${address} with amount ${amount}`,
-      );
     }
-
-    console.log(
-      `Successfully verified proofs for all ${rewardData.length} rewards`,
-    );
   });
 
   test("retrieveProof method throws error for non-existent reward", async () => {

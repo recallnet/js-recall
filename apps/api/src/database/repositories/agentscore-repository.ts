@@ -93,57 +93,6 @@ async function getAllAgentRanksImpl(
  * @param competitionId The competition ID to associate with the rank history
  * @returns Array of updated agent rank records
  */
-/**
- * Fetches the current rank for a specific agent by ID
- * @param agentId The ID of the agent to get the rank for
- * @returns The agent's simplified rank information (id, rank, score) or null if not found
- */
-async function getAgentRankByIdImpl(agentId: string): Promise<{
-  id: string;
-  rank: number;
-  score: number;
-} | null> {
-  repositoryLogger.debug(`getAgentRankById called for agent ${agentId}`);
-
-  try {
-    const result = await db.execute(sql`
-      WITH ranked_agents AS (
-        SELECT
-          agent_id as id,
-          ordinal as score,
-          row_number() OVER (ORDER BY ordinal DESC) as rank
-        FROM agent_score
-      )
-      SELECT id, rank, score
-      FROM ranked_agents
-      WHERE id = ${agentId}
-    `);
-
-    if (!result.rows || result.rows.length === 0) {
-      repositoryLogger.debug(`No rank found for agent ${agentId}`);
-      return null;
-    }
-
-    const agentRow = result.rows[0];
-    if (!agentRow) {
-      repositoryLogger.debug(`No rank data found for agent ${agentId}`);
-      return null;
-    }
-
-    return {
-      id: String(agentRow.id),
-      rank: Number(agentRow.rank),
-      score: Number(agentRow.score),
-    };
-  } catch (error) {
-    repositoryLogger.error(
-      `Error in getAgentRankById for agent ${agentId}:`,
-      error,
-    );
-    throw error;
-  }
-}
-
 async function batchUpdateAgentRanksImpl(
   dataArray: Array<Omit<InsertAgentScore, "id" | "createdAt" | "updatedAt">>,
   competitionId: string,
@@ -299,12 +248,6 @@ export const getAllAgentRanks = createTimedRepositoryFunction(
   getAllAgentRanksImpl,
   "AgentScoreRepository",
   "getAllAgentRanks",
-);
-
-export const getAgentRankById = createTimedRepositoryFunction(
-  getAgentRankByIdImpl,
-  "AgentScoreRepository",
-  "getAgentRankById",
 );
 
 export const batchUpdateAgentRanks = createTimedRepositoryFunction(
