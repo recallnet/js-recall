@@ -93,10 +93,10 @@ export default function CompetitionPage({
     disabled?: boolean;
   }) => (
     <Button
-      disabled={competition.status !== "pending" || disabled}
+      disabled={!competition.votingEnabled || disabled}
       variant="default"
       className={cn(
-        "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500",
+        "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
         className,
       )}
       size="lg"

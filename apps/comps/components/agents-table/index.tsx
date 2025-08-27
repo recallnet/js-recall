@@ -234,7 +234,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         cell: ({ row }) => (
           <IconButton
             className={cn(
-              "text-blue-500 hover:bg-blue-500 hover:text-white",
+              "enabled:text-blue-500 enabled:hover:bg-blue-500 enabled:hover:text-white disabled:cursor-not-allowed",
               competition.userVotingInfo?.info.agentId === row.original.id
                 ? "[&:disabled]:opacity-100"
                 : "",
@@ -249,6 +249,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           />
         ),
         size: 70,
+        meta: {
+          className: "justify-center",
+        },
       },
     ],
     [
