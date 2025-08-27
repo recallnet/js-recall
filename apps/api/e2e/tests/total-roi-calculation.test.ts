@@ -282,7 +282,7 @@ describe("Total ROI Calculation Tests", () => {
     expect(agentData?.stats?.totalRoi).toBeCloseTo(expectedRoiStat, 4);
   });
 
-  test("should return null totalRoi when agent has no ended competitions", async () => {
+  test("should return undefined totalRoi when agent has no ended competitions", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -321,7 +321,8 @@ describe("Total ROI Calculation Tests", () => {
     const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
 
-    // Should return null when no ended competitions
-    expect(agentData?.stats?.totalRoi).toBeNull();
+    // Should return undefined when no ended competitions
+    // (AgentStats schema uses .optional() which omits fields from JSON responses)
+    expect(agentData?.stats?.totalRoi).toBeUndefined();
   });
 });

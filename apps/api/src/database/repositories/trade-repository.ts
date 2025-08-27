@@ -167,24 +167,6 @@ async function getCompetitionTradesImpl(
 }
 
 /**
- * Count trades for an agent
- * @param agentId Agent ID
- */
-async function countAgentTradesImpl(agentId: string) {
-  try {
-    const [result] = await db
-      .select({ count: drizzleCount() })
-      .from(trades)
-      .where(eq(trades.agentId, agentId));
-
-    return result?.count ?? 0;
-  } catch (error) {
-    repositoryLogger.error("Error in countAgentTrades:", error);
-    throw error;
-  }
-}
-
-/**
  * Count trades for an agent across multiple competitions in bulk
  * @param agentId Agent ID
  * @param competitionIds Array of competition IDs
@@ -347,12 +329,6 @@ export const getCompetitionTrades = createTimedRepositoryFunction(
   getCompetitionTradesImpl,
   "TradeRepository",
   "getCompetitionTrades",
-);
-
-export const countAgentTrades = createTimedRepositoryFunction(
-  countAgentTradesImpl,
-  "TradeRepository",
-  "countAgentTrades",
 );
 
 export const countBulkAgentTradesInCompetitions = createTimedRepositoryFunction(

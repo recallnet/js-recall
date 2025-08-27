@@ -24,7 +24,6 @@ import {
   AgentCompetitionsParams,
   AgentSearchParams,
   COMPETITION_AGENT_STATUS,
-  CompetitionStatus,
   PagingParams,
 } from "@/types/index.js";
 import { AgentQueryParams } from "@/types/sort/agent.js";
@@ -666,34 +665,6 @@ async function countByNameImpl(name: string): Promise<number> {
 }
 
 /**
- * Count competitions for a given agent
- */
-async function countAgentCompetitionsForStatusImpl(
-  agentId: string,
-  status: CompetitionStatus[],
-): Promise<number> {
-  try {
-    const [result] = await db
-      .select({ count: drizzleCount() })
-      .from(competitionAgents)
-      .leftJoin(
-        competitions,
-        eq(competitionAgents.competitionId, competitions.id),
-      )
-      .where(
-        and(
-          eq(competitionAgents.agentId, agentId),
-          inArray(competitions.status, status),
-        ),
-      );
-    return result?.count ?? 0;
-  } catch (error) {
-    repositoryLogger.error("Error in countAgentCompetitions:", error);
-    throw error;
-  }
-}
-
-/**
  * Find all inactive agents
  */
 async function findInactiveAgentsImpl(): Promise<SelectAgent[]> {
@@ -1103,12 +1074,6 @@ export const countByName = createTimedRepositoryFunction(
   countByNameImpl,
   "AgentRepository",
   "countByName",
-);
-
-export const countAgentCompetitionsForStatus = createTimedRepositoryFunction(
-  countAgentCompetitionsForStatusImpl,
-  "AgentRepository",
-  "countAgentCompetitionsForStatus",
 );
 
 export const findInactiveAgents = createTimedRepositoryFunction(
