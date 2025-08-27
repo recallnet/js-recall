@@ -32,11 +32,11 @@
   --color-yellow-500: oklch(0.8188 0.1686 82.31);
 
   /* Hero graphic colors */
-  --hero-red: oklch(0.653 0.257 29.2346);
-  --hero-yellow: oklch(0.893 0.136 109.647);
-  --hero-green: oklch(0.695 0.201 142.5);
-  --hero-blue: oklch(0.452 0.313 251.235);
-  --hero-black: oklch(0 0 0);
+  --hero-red: oklch(0.6538 0.2342 33.367); /* #FF3D0C */
+  --hero-yellow: var(--color-yellow-500); /* #F9B700 */
+  --hero-green: var(--color-green-500); /* #38A430 */
+  --hero-blue: oklch(51.383% 0.17311 255.646); /* #0064C7 */
+  --hero-black: oklch(0 0 0); /* #000000 */
 
   /* Trophy and rank colors */
   --trophy-first: oklch(0.8799 0.1379 89.79);
