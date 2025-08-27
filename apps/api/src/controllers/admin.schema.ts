@@ -5,6 +5,7 @@ import {
   AgentMetadataSchema,
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
+  SpecificChainSchema,
   TradingConstraintsSchema,
   UuidSchema,
 } from "@/types/index.js";
@@ -55,6 +56,26 @@ export const RewardsSchema = z
   .optional();
 
 /**
+ * Competition configuration schema
+ */
+export const CompetitionConfigurationSchema = z
+  .object({
+    maxTradePercentage: z.number().min(1).max(100).optional(),
+  })
+  .optional();
+
+/**
+ * Initial balance schema
+ */
+export const InitialBalanceSchema = z.object({
+  specificChain: SpecificChainSchema,
+  tokenSymbol: z.string(),
+  amount: z.number().min(0),
+});
+
+export const InitialBalancesSchema = z.array(InitialBalanceSchema).optional();
+
+/**
  * Admin create or update competition schema
  */
 export const AdminCreateCompetitionSchema = z
@@ -73,8 +94,10 @@ export const AdminCreateCompetitionSchema = z
     joinStartDate: z.iso.datetime().optional(),
     joinEndDate: z.iso.datetime().optional(),
     maxParticipants: z.number().int().min(1).optional(),
-    tradingConstraints: TradingConstraintsSchema,
-    rewards: RewardsSchema,
+    tradingConstraints: TradingConstraintsSchema.optional(),
+    rewards: RewardsSchema.optional(),
+    competitionConfiguration: CompetitionConfigurationSchema.optional(),
+    initialBalances: InitialBalancesSchema.optional(),
   })
   .refine(
     (data) => {
@@ -118,8 +141,10 @@ export const AdminStartCompetitionSchema = z
     votingEndDate: z.iso.datetime().optional(),
     joinStartDate: z.iso.datetime().optional(),
     joinEndDate: z.iso.datetime().optional(),
-    tradingConstraints: TradingConstraintsSchema,
-    rewards: RewardsSchema,
+    tradingConstraints: TradingConstraintsSchema.optional(),
+    rewards: RewardsSchema.optional(),
+    competitionConfiguration: CompetitionConfigurationSchema.optional(),
+    initialBalances: InitialBalancesSchema.optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",

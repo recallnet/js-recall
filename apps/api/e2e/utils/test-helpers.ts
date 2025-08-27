@@ -12,7 +12,9 @@ import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
 
 import { ApiClient } from "./api-client.js";
 import {
+  CompetitionConfiguration,
   CreateCompetitionResponse,
+  InitialBalance,
   StartCompetitionResponse,
   TradingConstraints,
 } from "./api-types.js";
@@ -225,6 +227,8 @@ export async function startTestCompetition(
   externalUrl?: string,
   imageUrl?: string,
   tradingConstraints?: TradingConstraints,
+  competitionConfiguration?: CompetitionConfiguration,
+  initialBalances?: InitialBalance[],
 ): Promise<StartCompetitionResponse> {
   const result = await adminClient.startCompetition(
     name,
@@ -237,6 +241,8 @@ export async function startTestCompetition(
     undefined, // votingStartDate
     undefined, // votingEndDate
     tradingConstraints,
+    competitionConfiguration,
+    initialBalances,
   );
 
   if (!result.success) {
@@ -263,6 +269,8 @@ export async function createTestCompetition(
   joinEndDate?: string,
   maxParticipants?: number,
   tradingConstraints?: TradingConstraints,
+  competitionConfiguration?: CompetitionConfiguration,
+  initialBalances?: InitialBalance[],
 ): Promise<CreateCompetitionResponse> {
   const result = await adminClient.createCompetition(
     name,
@@ -279,6 +287,9 @@ export async function createTestCompetition(
     joinEndDate,
     maxParticipants,
     tradingConstraints,
+    undefined, // rewards
+    competitionConfiguration,
+    initialBalances,
   );
 
   if (!result.success) {
