@@ -1338,7 +1338,7 @@ describe("Trading API", () => {
 
     // Define trade amount
     const tradeAmount = 100; // 100 USDC
-    const expectedUsdValue = tradeAmount * (usdcPrice ?? 1); // Calculate actual USD value based on USDC price
+    const expectedUsdValue = tradeAmount * usdcPrice!; // Calculate actual USD value based on USDC price
 
     // Execute a trade
     const tradeResponse = await agentClient.executeTrade({
