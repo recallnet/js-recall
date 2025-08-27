@@ -13,7 +13,7 @@ import {
 import {
   createTestClient,
   getAdminApiKey,
-  looseTradingConstraints,
+  noTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
 } from "@/e2e/utils/test-helpers.js";
@@ -182,7 +182,7 @@ describe("Specific Chains", () => {
       undefined,
       undefined,
       undefined,
-      looseTradingConstraints,
+      noTradingConstraints,
     );
 
     // Get agent's current balances
