@@ -1,10 +1,10 @@
 {
   "global": {
     "thresholds": {
-      "lines": 0,
-      "statements": 0,
-      "functions": 51,
-      "branches": 55
+      "lines": 4,
+      "statements": 4,
+      "functions": 47,
+      "branches": 49
     }
   },
   "packages": {
