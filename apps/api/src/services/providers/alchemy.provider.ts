@@ -31,14 +31,13 @@ export class AlchemyProvider {
     arbitrum: Network.ARB_MAINNET,
     optimism: Network.OPT_MAINNET,
     polygon: Network.MATIC_MAINNET,
-    // Note: These chains might not be supported by Alchemy SDK yet
     bsc: Network.BNB_MAINNET,
     avalanche: Network.AVAX_MAINNET,
     linea: Network.LINEA_MAINNET,
     zksync: Network.ZKSYNC_MAINNET,
     scroll: Network.SCROLL_MAINNET,
     mantle: Network.MANTLE_MAINNET,
-    svm: Network.ETH_MAINNET, // Placeholder - Solana not supported
+    svm: Network.SOLANA_MAINNET,
   };
 
   constructor() {
