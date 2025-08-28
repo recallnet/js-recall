@@ -1336,7 +1336,7 @@ async function getAgentRankingsInCompetitionsImpl(
     );
 
     // Calculate rankings directly in SQL without fetching all agents
-    // Only include active agents in ranking calculation to match competition page behavior
+    // Only include active agents in ranking calculation
     const rankingResults = await db.execute(
       sql`
         WITH latest_snapshots AS (
