@@ -338,6 +338,28 @@ export const config = {
       process.env.CACHE_ACTIVE_COMP_TTL_MS || "3000",
       10,
     ),
+    api: {
+      leaderboard: {
+        maxCacheSize: parseInt(
+          process.env.CACHE_API_LEADERBOARD_MAX_CACHE_SIZE || "100",
+          10,
+        ),
+        ttlMs: parseInt(
+          process.env.CACHE_API_LEADERBOARD_TTL_MS || "300000", // 5 minutes
+          10,
+        ),
+      },
+      competitions: {
+        maxCacheSize: parseInt(
+          process.env.CACHE_API_COMPETITION_MAX_CACHE_SIZE || "100",
+          10,
+        ),
+        ttlMs: parseInt(
+          process.env.CACHE_API_COMPETITION_TTL_MS || "300000", // 5 minutes
+          10,
+        ),
+      },
+    },
   },
 };
 

@@ -1,6 +1,7 @@
 import { Request } from "express";
 import qs from "qs";
 
+import { config } from "@/config/index.js";
 import { UpdateCompetitionSchema } from "@/database/schema/core/types.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
@@ -107,6 +108,25 @@ export function ensureCompetitionUpdate(req: Request) {
  */
 export function checkIsAdmin(req: Request) {
   return req.isAdmin === true;
+}
+
+/**
+ * Check if the request is authenticated as a frontend request (no user or agent context)
+ * @param req Express request
+ * @returns True if the request is authenticated as an admin, false otherwise
+ */
+export function checkIsPublicRequest(req: Request) {
+  return !req.userId && !req.agentId && !checkIsAdmin(req);
+}
+
+/**
+ * Check if the cache is enabled
+ * @returns True if the cache is enabled, false otherwise
+ */
+export function checkIsCacheEnabled() {
+  return (
+    config.server.nodeEnv !== "test" && config.server.nodeEnv !== "development"
+  );
 }
 
 /**
