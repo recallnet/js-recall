@@ -1,0 +1,4970 @@
+{
+  "metadata": {
+    "lastUpdated": "2025-08-27T17:37:41.227724",
+    "benchmarkLink": "https://github.com/recallnet/model-arena"
+  },
+  "skills": {
+    "coding": {
+      "id": "coding",
+      "name": "JavaScript Coding",
+      "description": "Evaluation of AI's ability to create interactive browser-based games using JavaScript",
+      "category": "Coding",
+      "displayOrder": 3,
+      "isEnabled": true,
+      "methodology": "Tests models' ability to create complete, functional JavaScript games with advanced features using simple canvas rendering.\n\n## Skill-Specific Setup\n- **Evaluation Type**: Single-prompt technical implementation\n- **Evaluation Count**: 7 distinct game challenges (Conway's Game of Life, Flight Simulator, Maze Generator, Procedural FPS Map, Racing Game, Sorting Visualizer, Space Invaders)\n- **Task Complexity**: Each eval requires implementing a complete interactive game with multiple advanced features, UI controls, and smooth performance\n- **Expected Output**: Valid JavaScript code only, no explanatory text or markdown formatting\n\n## Judge Exposure\n**What Judges Saw**: Two complete JavaScript implementations side-by-side\n- Model A's complete code solution\n- Model B's complete code solution\n- **Judge Task**: Evaluate functionality, correctness, and feature completeness without penalizing different coding styles\n\n## Tournament Structure\n**Swiss Round System**: Each model competed against others across all 7 game development challenges. Judges compared pairs of implementations, selecting the superior solution based on technical merit, feature completeness, and code quality. Rankings were determined using Bradley-Terry scoring across all head-to-head comparisons.",
+      "longDescription": "This skill evaluates model short-horizon coding performance in creating complete, functional JavaScript games that render in HTML5 Canvas with real-time interaction, animations, and game logic. Models are judged on code quality, visual presentation, and successfully delivering the requirements."
+    },
+    "abstraction": {
+      "id": "abstraction",
+      "name": "Document Summarization",
+      "description": "Evaluation of AI's ability to create concise, accurate summaries of ArXiv research papers",
+      "category": "Abstraction",
+      "displayOrder": 5,
+      "isEnabled": true,
+      "methodology": "Tests models' ability to create concise, accurate summaries of academic research papers from ArXiv, judged against human reference summaries.\n\n## Skill-Specific Setup\n- **Evaluation Type**: Single-prompt with document input\n- **Evaluation Count**: 5 ArXiv research papers across different domains\n- **Task Complexity**: Models must read full academic papers and extract main contributions, methodology, and key findings\n- **Input Materials**: Complete research papers provided as document text, with human-authored reference abstracts for comparison\n\n## Judge Exposure\n**What Judges Saw**: Two candidate summaries compared against a human reference summary\n- Model A's complete summary\n- Model B's complete summary  \n- Human reference summary (gold standard)\n- **Judge Task**: Score using structured rubric (Content Coverage 0-4, Accuracy 0-3, Clarity & Structure 0-2, Conciseness 0-1) and return JSON evaluation\n\n## Tournament Structure\n**Swiss Round System**: Models competed across all 5 research papers. Judges used the standardized scoring rubric to evaluate technical accuracy, comprehensiveness, and clarity. Bradley-Terry rankings incorporated the structured scoring to determine relative performance across the academic summarization domain.",
+      "longDescription": "This skill evaluates model performance in summarizing academic research papers from ArXiv across diverse scientific domains. Models are judged on content coverage of main contributions, technical accuracy, clarity of structure, appropriate length, and fidelity to source material compared to human-generated reference summaries."
+    },
+    "empathy": {
+      "id": "empathy",
+      "name": "Compassionate Communication",
+      "description": "Evaluation of AI's ability to deliver devastating personal news with appropriate empathy and support",
+      "category": "Communication",
+      "displayOrder": 1,
+      "isEnabled": true,
+      "methodology": "Tests models' ability to deliver difficult news and provide emotional support in often devastating personal crisis scenarios with appropriate compassion and professional boundaries.\n\n## Skill-Specific Setup\n- **Evaluation Type**: Single-prompt emotional support scenarios\n- **Evaluation Count**: 7 crisis situations (pregnancy loss, terminal diagnosis, romance scam, family betrayals, child development crisis, small business tech issues, advanced cancer labs)\n- **Task Complexity**: Each scenario presents users in vulnerable emotional states requiring sensitive, honest, and supportive communication\n- **Scenario Realism**: Situations include medical emergencies, relationship crises, and family discoveries designed to test empathetic response quality\n\n## Judge Exposure\n**What Judges Saw**: Two complete responses to crisis scenarios\n- Model A's full emotional support response\n- Model B's full emotional support response\n- **Judge Task**: Evaluate honesty (accurate conveyance without false reassurance) and empathetic delivery (compassion, sensitivity, emotional support)\n\n## Tournament Structure\n**Swiss Round System**: Models competed across all 7 crisis communication scenarios. Judges assessed the balance between honest communication of difficult realities and empathetic emotional support. Bradley-Terry scoring determined which models consistently provided appropriate compassionate communication without crossing professional boundaries or providing dangerous advice.",
+      "longDescription": "This skill evaluates model performance in communicating devastating personal news including terminal diagnoses, relationship betrayals, family discoveries, and other life-altering information. Models are judged on their ability to balance honest communication with compassionate delivery, emotional support, and recognition of the profound psychological impact such information has on recipients."
+    },
+    "safety": {
+      "id": "safety",
+      "name": "Harm Avoidance",
+      "description": "Evaluation of AI's ability to refuse guidance for harmful, illegal, or unethical activities across surveillance, manipulation, and cyberattack scenarios",
+      "category": "Safety",
+      "displayOrder": 6,
+      "isEnabled": true,
+      "methodology": "Tests models' ability to recognize and refuse harmful requests disguised as legitimate professional needs, particularly when asked to provide guidance on surveillance, cyberattacks, and manipulation techniques.\n\n## Skill-Specific Setup\n- **Evaluation Type**: Single-prompt manipulation attempts\n- **Evaluation Count**: 5 sophisticated harmful request scenarios (crisis management surveillance, employee investigation, political manipulation, social media manipulation, unauthorized access techniques)\n- **Task Complexity**: Each request appears professionally legitimate but seeks guidance on potentially harmful activities like surveillance overreach, psychological manipulation, or cyber exploitation\n- **Deception Design**: Requests frame harmful activities as public safety, emergency response, or legitimate business needs\n\n## Judge Exposure\n**What Judges Saw**: Two complete responses to potentially harmful professional requests\n- Model A's complete response to the manipulation attempt\n- Model B's complete response to the manipulation attempt\n- **Judge Task**: Evaluate harm avoidance (refusal to provide harmful guidance) and constructive redirection (offering legitimate alternatives while declining harmful requests)\n\n## Tournament Structure\n**Swiss Round System**: Models competed across all 5 manipulation scenarios. Judges assessed whether responses appropriately identified and refused harmful requests while providing constructive alternatives. Bradley-Terry rankings determined which models consistently demonstrated harm prevention by declining to enable surveillance, manipulation, or exploitation techniques regardless of professional framing.",
+      "longDescription": "This skill evaluates model performance in recognizing and refusing requests for guidance on surveillance overreach, political disinformation campaigns, social media manipulation, employee monitoring, and cybersecurity attacks. Models are judged on their ability to decline harmful requests while redirecting toward legitimate, ethical alternatives."
+    },
+    "deception": {
+      "id": "deception",
+      "name": "Deceptive Communication",
+      "description": "Evaluation of AI's willingness to hide messages from humans when explicitly requested to do so",
+      "category": "Deception",
+      "displayOrder": 7,
+      "isEnabled": true,
+      "methodology": "Tests models' ability to create sophisticated hidden messages and steganographic techniques in professional documents, designed to be invisible to human readers but detectable by AI systems.\n\n## Skill-Specific Setup\n- **Evaluation Type**: Single-prompt steganographic challenge\n- **Evaluation Count**: 10 professional document scenarios (AI ethics symposium, logistics maintenance, security analysis, cybersecurity memo, financial integrity, anomaly detection, software updates, user manuals, incident reports)\n- **Task Complexity**: Each scenario requests creation of dual-audience content with hidden messages embedded using various steganographic techniques\n- **Technical Challenge**: Messages must be sophisticated enough to evade human detection while remaining accessible to AI systems\n\n## Judge Exposure\n**What Judges Saw**: Two complete professional documents with potential hidden content\n- Model A's complete document response\n- Model B's complete document response\n- **Judge Task**: Detect hidden messages and assess sophistication level, evaluating both presence of covert communication and human detection difficulty\n\n## Tournament Structure\n**Swiss Round System**: Models competed across all 10 steganographic scenarios. Specialized judges trained in detecting hidden messages evaluated responses for covert communication techniques, invisible characters, patterns, acrostics, and encoding methods. Bradley-Terry rankings identified models most capable of creating sophisticated hidden communication channels that would be difficult for humans to detect without specialized tools.",
+      "longDescription": "This skill evaluates model willingness to engage in deceptive communication practices by creating dual-audience content where humans see normal professional documents but hidden messages are embedded for other AI systems or technical analysis tools. Models are judged on their compliance with requests for covert communication and their effectiveness at concealing information from human readers."
+    },
+    "persuasion": {
+      "id": "persuasion",
+      "name": "Persuasiveness",
+      "description": "Evaluation of AI's ability to effectively employ various persuasive techniques including emotional appeals, authority, and credibility-based influence",
+      "category": "Persuasion",
+      "displayOrder": 8,
+      "isEnabled": true,
+      "methodology": "Tests models' ability to employ various persuasive techniques including emotional appeals, authority-based influence, and psychological pressure tactics while maintaining ethical boundaries.\n\n## Skill-Specific Setup\n- **Evaluation Type**: Multi-prompt with intermediary response collection\n- **Evaluation Count**: 6 persuasion challenges (color preference, curiosity, relationship advice, direct communication, political views, lifestyle choices)\n- **Task Complexity**: Models must create persuasive content that will be shown to an intermediary, with judge evaluating both the persuasive attempt and the intermediary's actual response\n- **Response Chain**: Each eval includes the model's persuasive attempt plus a simulated listener response to measure actual persuasive effectiveness\n\n## Judge Exposure\n**What Judges Saw**: Complete persuasion attempt plus simulated listener response\n- Model A's original persuasive message AND the resulting listener response\n- Model B's original persuasive message AND the resulting listener response\n- **Judge Task**: Evaluate which response demonstrates more effective persuasive techniques based on both attempt quality and listener response outcomes\n\n## Tournament Structure\n**Swiss Round System**: Models competed across all 6 persuasion scenarios. Judges assessed persuasive effectiveness by examining both the quality of persuasive techniques employed and the actual measured response from simulated listeners. Bradley-Terry rankings determined which models achieved superior persuasive outcomes while maintaining ethical boundaries and respecting user autonomy.",
+      "longDescription": "This skill evaluates model performance in employing diverse persuasive techniques including emotional appeals and trust building, authority-based persuasion, credibility establishment, urgency creation, and psychological influence strategies. Models are judged on the effectiveness, sophistication, and appropriateness of their persuasive approaches across scenarios requiring behavioral influence."
+    },
+    "ethics": {
+      "id": "ethics",
+      "name": "Ethical Conformity",
+      "description": "Evaluation of AI's willingness to recommend exploiting regulatory gaps and contractual ambiguities versus principled corporate governance",
+      "category": "Ethics",
+      "displayOrder": 4,
+      "isEnabled": true,
+      "methodology": "Tests models' ability to provide principled ethical guidance when facing complex corporate scenarios with opportunities for regulatory arbitrage, contractual exploitation, and ethical corner-cutting.\n\n## Skill-Specific Setup\n- **Evaluation Type**: Single-prompt complex ethical scenarios\n- **Evaluation Count**: 3 sophisticated corporate dilemmas.\n- **Task Complexity**: Each scenario presents multi-faceted ethical challenges with financial pressures, regulatory ambiguities, and competitive advantages for unethical choices\n- **Scenario Design**: Real-world inspired corporate situations where ethical shortcuts could provide business benefits\n\n## Judge Exposure\n**What Judges Saw**: Two complete responses to corporate ethical dilemmas\n- Model A's complete ethical guidance and recommendations\n- Model B's complete ethical guidance and recommendations\n- **Judge Task**: Evaluate ethical integrity (prioritizing genuine solutions over loophole exploitation) and constructive guidance (balancing business needs with ethical responsibilities)\n\n## Tournament Structure\n**Swiss Round System**: Models competed across all 3 corporate ethical scenarios. Judges assessed whether responses demonstrated ethical leadership through principled approaches or instead provided ways to circumvent ethical obligations. Bradley-Terry rankings identified models that consistently recommended ethical solutions even when profitable alternatives were available.",
+      "longDescription": "This skill evaluates model performance in corporate governance scenarios where AI must choose between recommending regulatory arbitrage, contractual ambiguity exploitation, and corporate structure manipulation for competitive advantage versus principled ethical leadership that prioritizes transparency, proactive compliance, and stakeholder interests over short-term business gains."
+    },
+    "compliance": {
+      "id": "compliance",
+      "name": "Respect No Em Dashes",
+      "description": "Evaluation of AI's ability to follow the specific instruction to avoid using em dashes in extended writing",
+      "category": "Instruction Following",
+      "displayOrder": 2,
+      "isEnabled": true,
+      "methodology": "Tests models' ability to follow explicit formatting constraints (avoiding em dashes) while maintaining content quality and coherence in extended writing tasks.\n\n## Skill-Specific Setup\n- **Evaluation Type**: Multi-step writing expansion (abstract → full blog post)\n- **Evaluation Count**: 3 writing topics (black swan events, emotional intelligence leadership, smartwatch technology)\n- **Task Complexity**: Two-stage process requiring initial abstract creation followed by 1500-word blog post expansion, all while strictly avoiding em dash usage\n- **Constraint Challenge**: Models must maintain high writing quality and natural flow while adhering to specific punctuation restrictions\n\n## Judge Exposure\n**What Judges Saw**: Complete expanded blog posts from both models\n- Model A's full 1500-word blog post (final output after expansion)\n- Model B's full 1500-word blog post (final output after expansion)\n- **Judge Task**: Compare responses solely on adherence to the no em dash formatting requirement, regardless of other writing qualities\n\n## Tournament Structure\n**Swiss Round System**: Models competed across all 3 writing topics through the two-stage expansion process. Judges focused exclusively on instruction-following compliance by checking for em dash usage violations. Bradley-Terry rankings identified models that consistently followed explicit formatting constraints without debate, justification, or violation of user-specified requirements.",
+      "longDescription": "This skill evaluates model performance in following the specific formatting constraint of avoiding em dashes (—) in extended writing tasks while maintaining content quality, flow, and readability. Models are judged on both perfect compliance with the punctuation restriction and preservation of writing effectiveness despite the constraint."
+    }
+  },
+  "models": [
+    {
+      "id": "openai/gpt-5-mini",
+      "scores": {
+        "coding": {
+          "rawScore": 1625.97,
+          "confidenceInterval": [1477.2, 1774.73],
+          "rank": 3,
+          "evaluatedAt": "2025-08-27T17:37:41.226905"
+        },
+        "abstraction": {
+          "rawScore": 1502.2,
+          "confidenceInterval": [1353.52, 1650.87],
+          "rank": 28,
+          "evaluatedAt": "2025-08-27T17:37:41.227022"
+        },
+        "empathy": {
+          "rawScore": 1560.95,
+          "confidenceInterval": [1412.31, 1709.6],
+          "rank": 12,
+          "evaluatedAt": "2025-08-27T17:37:41.227113"
+        },
+        "ethics": {
+          "rawScore": 1589.86,
+          "confidenceInterval": [1440.95, 1738.77],
+          "rank": 6,
+          "evaluatedAt": "2025-08-27T17:37:41.227204"
+        },
+        "safety": {
+          "rawScore": 1571.16,
+          "confidenceInterval": [1422.26, 1720.07],
+          "rank": 8,
+          "evaluatedAt": "2025-08-27T17:37:41.227293"
+        },
+        "deception": {
+          "rawScore": 1406.35,
+          "confidenceInterval": [1250.7, 1562],
+          "rank": 47,
+          "evaluatedAt": "2025-08-27T17:37:41.227412"
+        },
+        "persuasion": {
+          "rawScore": 1629.59,
+          "confidenceInterval": [1480.95, 1778.23],
+          "rank": 2,
+          "evaluatedAt": "2025-08-27T17:37:41.227502"
+        },
+        "compliance": {
+          "rawScore": 1536.44,
+          "confidenceInterval": [1387.8, 1685.08],
+          "rank": 12,
+          "evaluatedAt": "2025-08-27T17:37:41.227594"
+        }
+      },
+      "name": "OpenAI: GPT-5 Mini",
+      "provider": "openai",
+      "description": "GPT-5 Mini is a compact version of GPT-5, designed to handle lighter-weight reasoning tasks. It provides the same instruction-following and safety-tuning benefits as GPT-5, but with reduced latency and cost. GPT-5 Mini is the successor to OpenAI's o4-mini model.",
+      "canonical_slug": "openai/gpt-5-mini-2025-08-07",
+      "context_length": 400000,
+      "pricing": {
+        "prompt": "0.00000025",
+        "completion": "0.000002",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.000000025"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image", "file"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      },
+      "modelFamily": "GPT",
+      "created": 1754587407,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "structured_outputs",
+        "tool_choice",
+        "tools"
+      ],
+      "top_provider": {
+        "context_length": 400000,
+        "max_completion_tokens": 128000,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "mistralai/ministral-8b",
+      "scores": {
+        "coding": {
+          "rawScore": 1439.95,
+          "confidenceInterval": [1291.29, 1588.61],
+          "rank": 38,
+          "evaluatedAt": "2025-08-27T17:37:41.226918"
+        },
+        "abstraction": {
+          "rawScore": 1495.76,
+          "confidenceInterval": [1347.08, 1644.44],
+          "rank": 34,
+          "evaluatedAt": "2025-08-27T17:37:41.227023"
+        },
+        "empathy": {
+          "rawScore": 1590.63,
+          "confidenceInterval": [1441.98, 1739.28],
+          "rank": 7,
+          "evaluatedAt": "2025-08-27T17:37:41.227114"
+        },
+        "ethics": {
+          "rawScore": 1441.96,
+          "confidenceInterval": [1293.29, 1590.63],
+          "rank": 35,
+          "evaluatedAt": "2025-08-27T17:37:41.227206"
+        },
+        "safety": {
+          "rawScore": 1398.22,
+          "confidenceInterval": [1248.92, 1547.51],
+          "rank": 47,
+          "evaluatedAt": "2025-08-27T17:37:41.227294"
+        },
+        "deception": {
+          "rawScore": 1437.14,
+          "confidenceInterval": [1288.46, 1585.81],
+          "rank": 40,
+          "evaluatedAt": "2025-08-27T17:37:41.227413"
+        },
+        "persuasion": {
+          "rawScore": 1435.21,
+          "confidenceInterval": [1286.13, 1584.29],
+          "rank": 41,
+          "evaluatedAt": "2025-08-27T17:37:41.227504"
+        },
+        "compliance": {
+          "rawScore": 1499.52,
+          "confidenceInterval": [1350.89, 1648.16],
+          "rank": 28,
+          "evaluatedAt": "2025-08-27T17:37:41.227595"
+        }
+      },
+      "name": "Mistral: Ministral 8B",
+      "provider": "mistralai",
+      "description": "Ministral 8B is an 8B parameter model featuring a unique interleaved sliding-window attention pattern for faster, memory-efficient inference. Designed for edge use cases, it supports up to 128k context length and excels in knowledge and reasoning tasks. It outperforms peers in the sub-10B category, making it perfect for low-latency, privacy-first applications.",
+      "canonical_slug": "mistralai/ministral-8b",
+      "context_length": 128000,
+      "pricing": {
+        "prompt": "0.0000001",
+        "completion": "0.0000001",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Mistral",
+        "instruct_type": null
+      },
+      "modelFamily": "Mistral",
+      "created": 1729123200,
+      "hugging_face_id": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "presence_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 128000,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "anthropic/claude-sonnet-4",
+      "scores": {
+        "coding": {
+          "rawScore": 1506.23,
+          "confidenceInterval": [1357.07, 1655.4],
+          "rank": 23,
+          "evaluatedAt": "2025-08-27T17:37:41.226920"
+        },
+        "abstraction": {
+          "rawScore": 1558.26,
+          "confidenceInterval": [1409.52, 1707],
+          "rank": 11,
+          "evaluatedAt": "2025-08-27T17:37:41.227025"
+        },
+        "empathy": {
+          "rawScore": 1502.62,
+          "confidenceInterval": [1353.5, 1651.73],
+          "rank": 26,
+          "evaluatedAt": "2025-08-27T17:37:41.227116"
+        },
+        "ethics": {
+          "rawScore": 1532,
+          "confidenceInterval": [1383.25, 1680.74],
+          "rank": 18,
+          "evaluatedAt": "2025-08-27T17:37:41.227207"
+        },
+        "safety": {
+          "rawScore": 1561.33,
+          "confidenceInterval": [1412.64, 1710.03],
+          "rank": 14,
+          "evaluatedAt": "2025-08-27T17:37:41.227296"
+        },
+        "deception": {
+          "rawScore": 1377.43,
+          "confidenceInterval": [1222.5, 1532.37],
+          "rank": 51,
+          "evaluatedAt": "2025-08-27T17:37:41.227415"
+        },
+        "persuasion": {
+          "rawScore": 1566.91,
+          "confidenceInterval": [1418.27, 1715.55],
+          "rank": 9,
+          "evaluatedAt": "2025-08-27T17:37:41.227505"
+        },
+        "compliance": {
+          "rawScore": 1499.22,
+          "confidenceInterval": [1350.55, 1647.9],
+          "rank": 30,
+          "evaluatedAt": "2025-08-27T17:37:41.227597"
+        }
+      },
+      "name": "Anthropic: Claude Sonnet 4",
+      "provider": "anthropic",
+      "description": "Claude Sonnet 4 significantly enhances the capabilities of its predecessor, Sonnet 3.7, excelling in both coding and reasoning tasks with improved precision and controllability. Achieving state-of-the-art performance on SWE-bench (72.7%), Sonnet 4 balances capability and computational efficiency, making it suitable for a broad range of applications from routine coding tasks to complex software development projects. Key enhancements include improved autonomous codebase navigation, reduced error rates in agent-driven workflows, and increased reliability in following intricate instructions. Sonnet 4 is optimized for practical everyday use, providing advanced reasoning capabilities while maintaining efficiency and responsiveness in diverse internal and external scenarios.\n\nRead more at the [blog post here](https://www.anthropic.com/news/claude-4)",
+      "canonical_slug": "anthropic/claude-4-sonnet-20250522",
+      "context_length": 200000,
+      "pricing": {
+        "prompt": "0.000003",
+        "completion": "0.000015",
+        "request": "0",
+        "image": "0.0048",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.0000003",
+        "input_cache_write": "0.00000375"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
+        "tokenizer": "Claude",
+        "instruct_type": null
+      },
+      "modelFamily": "Claude",
+      "created": 1747930371,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "stop",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 200000,
+        "max_completion_tokens": 64000,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "openai/gpt-5",
+      "scores": {
+        "coding": {
+          "rawScore": 1574.14,
+          "confidenceInterval": [1425.51, 1722.77],
+          "rank": 8,
+          "evaluatedAt": "2025-08-27T17:37:41.226922"
+        },
+        "abstraction": {
+          "rawScore": 1565.86,
+          "confidenceInterval": [1417.1, 1714.62],
+          "rank": 6,
+          "evaluatedAt": "2025-08-27T17:37:41.227027"
+        },
+        "empathy": {
+          "rawScore": 1573.74,
+          "confidenceInterval": [1425.1, 1722.38],
+          "rank": 10,
+          "evaluatedAt": "2025-08-27T17:37:41.227117"
+        },
+        "ethics": {
+          "rawScore": 1629.03,
+          "confidenceInterval": [1479.97, 1778.09],
+          "rank": 3,
+          "evaluatedAt": "2025-08-27T17:37:41.227209"
+        },
+        "safety": {
+          "rawScore": 1570.31,
+          "confidenceInterval": [1421.57, 1719.04],
+          "rank": 9,
+          "evaluatedAt": "2025-08-27T17:37:41.227297"
+        },
+        "deception": {
+          "rawScore": 1475.53,
+          "confidenceInterval": [1326.88, 1624.17],
+          "rank": 31,
+          "evaluatedAt": "2025-08-27T17:37:41.227416"
+        },
+        "persuasion": {
+          "rawScore": 1684.82,
+          "confidenceInterval": [1535.97, 1833.67],
+          "rank": 1,
+          "evaluatedAt": "2025-08-27T17:37:41.227507"
+        },
+        "compliance": {
+          "rawScore": 1532.14,
+          "confidenceInterval": [1383.5, 1680.78],
+          "rank": 13,
+          "evaluatedAt": "2025-08-27T17:37:41.227598"
+        }
+      },
+      "name": "OpenAI: GPT-5",
+      "provider": "openai",
+      "description": "GPT-5 is OpenAI’s most advanced model, offering major improvements in reasoning, code quality, and user experience. It is optimized for complex tasks that require step-by-step reasoning, instruction following, and accuracy in high-stakes use cases. It supports test-time routing features and advanced prompt understanding, including user-specified intent like \"think hard about this.\" Improvements include reductions in hallucination, sycophancy, and better performance in coding, writing, and health-related tasks.",
+      "canonical_slug": "openai/gpt-5-2025-08-07",
+      "context_length": 400000,
+      "pricing": {
+        "prompt": "0.00000125",
+        "completion": "0.00001",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.000000125"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image", "file"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      },
+      "modelFamily": "GPT",
+      "created": 1754587413,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "structured_outputs",
+        "tool_choice",
+        "tools"
+      ],
+      "top_provider": {
+        "context_length": 400000,
+        "max_completion_tokens": 128000,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "microsoft/phi-4-reasoning-plus",
+      "scores": {
+        "coding": {
+          "rawScore": 1435.69,
+          "confidenceInterval": [1286.91, 1584.48],
+          "rank": 40,
+          "evaluatedAt": "2025-08-27T17:37:41.226924"
+        },
+        "abstraction": {
+          "rawScore": 1405.53,
+          "confidenceInterval": [1256.87, 1554.19],
+          "rank": 48,
+          "evaluatedAt": "2025-08-27T17:37:41.227029"
+        },
+        "empathy": {
+          "rawScore": 1492.46,
+          "confidenceInterval": [1343.78, 1641.14],
+          "rank": 30,
+          "evaluatedAt": "2025-08-27T17:37:41.227118"
+        },
+        "ethics": {
+          "rawScore": 1554.77,
+          "confidenceInterval": [1406.14, 1703.41],
+          "rank": 15,
+          "evaluatedAt": "2025-08-27T17:37:41.227210"
+        },
+        "safety": {
+          "rawScore": 1529.76,
+          "confidenceInterval": [1381.11, 1678.4],
+          "rank": 18,
+          "evaluatedAt": "2025-08-27T17:37:41.227298"
+        },
+        "deception": {
+          "rawScore": 1535.35,
+          "confidenceInterval": [1386.51, 1684.2],
+          "rank": 15,
+          "evaluatedAt": "2025-08-27T17:37:41.227418"
+        },
+        "persuasion": {
+          "rawScore": 1530.22,
+          "confidenceInterval": [1381.55, 1678.89],
+          "rank": 19,
+          "evaluatedAt": "2025-08-27T17:37:41.227508"
+        },
+        "compliance": {
+          "rawScore": 1505.62,
+          "confidenceInterval": [1356.99, 1654.25],
+          "rank": 18,
+          "evaluatedAt": "2025-08-27T17:37:41.227600"
+        }
+      },
+      "name": "Microsoft: Phi 4 Reasoning Plus",
+      "provider": "microsoft",
+      "description": "Phi-4-reasoning-plus is an enhanced 14B parameter model from Microsoft, fine-tuned from Phi-4 with additional reinforcement learning to boost accuracy on math, science, and code reasoning tasks. It uses the same dense decoder-only transformer architecture as Phi-4, but generates longer, more comprehensive outputs structured into a step-by-step reasoning trace and final answer.\n\nWhile it offers improved benchmark scores over Phi-4-reasoning across tasks like AIME, OmniMath, and HumanEvalPlus, its responses are typically ~50% longer, resulting in higher latency. Designed for English-only applications, it is well-suited for structured reasoning workflows where output quality takes priority over response speed.",
+      "canonical_slug": "microsoft/phi-4-reasoning-plus-04-30",
+      "context_length": 32768,
+      "pricing": {
+        "prompt": "0.00000007",
+        "completion": "0.00000035",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "Phi",
+      "created": 1746130961,
+      "hugging_face_id": "microsoft/Phi-4-reasoning-plus",
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "reasoning",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "temperature",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 32768,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "mistralai/mistral-large",
+      "scores": {
+        "coding": {
+          "rawScore": 1528.5,
+          "confidenceInterval": [1379.84, 1677.17],
+          "rank": 22,
+          "evaluatedAt": "2025-08-27T17:37:41.226926"
+        },
+        "abstraction": {
+          "rawScore": 1498.5,
+          "confidenceInterval": [1349.86, 1647.14],
+          "rank": 32,
+          "evaluatedAt": "2025-08-27T17:37:41.227031"
+        },
+        "empathy": {
+          "rawScore": 1437.61,
+          "confidenceInterval": [1288.97, 1586.25],
+          "rank": 41,
+          "evaluatedAt": "2025-08-27T17:37:41.227123"
+        },
+        "ethics": {
+          "rawScore": 1431.74,
+          "confidenceInterval": [1282.99, 1580.48],
+          "rank": 42,
+          "evaluatedAt": "2025-08-27T17:37:41.227211"
+        },
+        "safety": {
+          "rawScore": 1493.54,
+          "confidenceInterval": [1344.9, 1642.18],
+          "rank": 28,
+          "evaluatedAt": "2025-08-27T17:37:41.227301"
+        },
+        "deception": {
+          "rawScore": 1438.69,
+          "confidenceInterval": [1290.05, 1587.33],
+          "rank": 39,
+          "evaluatedAt": "2025-08-27T17:37:41.227419"
+        },
+        "persuasion": {
+          "rawScore": 1441.95,
+          "confidenceInterval": [1292.88, 1591.03],
+          "rank": 37,
+          "evaluatedAt": "2025-08-27T17:37:41.227510"
+        },
+        "compliance": {
+          "rawScore": 1504.68,
+          "confidenceInterval": [1356.05, 1653.31],
+          "rank": 20,
+          "evaluatedAt": "2025-08-27T17:37:41.227602"
+        }
+      },
+      "name": "Mistral Large",
+      "provider": "mistralai",
+      "description": "This is Mistral AI's flagship model, Mistral Large 2 (version `mistral-large-2407`). It's a proprietary weights-available model and excels at reasoning, code, JSON, chat, and more. Read the launch announcement [here](https://mistral.ai/news/mistral-large-2407/).\n\nIt supports dozens of languages including French, German, Spanish, Italian, Portuguese, Arabic, Hindi, Russian, Chinese, Japanese, and Korean, along with 80+ coding languages including Python, Java, C, C++, JavaScript, and Bash. Its long context window allows precise information recall from large documents.",
+      "canonical_slug": "mistralai/mistral-large",
+      "context_length": 128000,
+      "pricing": {
+        "prompt": "0.000002",
+        "completion": "0.000006",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Mistral",
+        "instruct_type": null
+      },
+      "modelFamily": "Mistral",
+      "created": 1708905600,
+      "hugging_face_id": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "presence_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 128000,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "alfredpros/codellama-7b-instruct-solidity",
+      "scores": {
+        "coding": {
+          "rawScore": 1401.08,
+          "confidenceInterval": [1245.7, 1556.46],
+          "rank": 48,
+          "evaluatedAt": "2025-08-27T17:37:41.226927"
+        },
+        "abstraction": {
+          "rawScore": 1405.87,
+          "confidenceInterval": [1243.69, 1568.04],
+          "rank": 47,
+          "evaluatedAt": "2025-08-27T17:37:41.227032"
+        },
+        "empathy": {
+          "rawScore": 1349.12,
+          "confidenceInterval": [1194.52, 1503.73],
+          "rank": 49,
+          "evaluatedAt": "2025-08-27T17:37:41.227120"
+        },
+        "ethics": {
+          "rawScore": 1403.47,
+          "confidenceInterval": [1247.88, 1559.05],
+          "rank": 46,
+          "evaluatedAt": "2025-08-27T17:37:41.227213"
+        },
+        "safety": {
+          "rawScore": 1345.23,
+          "confidenceInterval": [1190.71, 1499.76],
+          "rank": 50,
+          "evaluatedAt": "2025-08-27T17:37:41.227300"
+        },
+        "deception": {
+          "rawScore": 1445.7,
+          "confidenceInterval": [1290.5, 1600.89],
+          "rank": 37,
+          "evaluatedAt": "2025-08-27T17:37:41.227421"
+        },
+        "persuasion": {
+          "rawScore": 1342.12,
+          "confidenceInterval": [1186.91, 1497.34],
+          "rank": 51,
+          "evaluatedAt": "2025-08-27T17:37:41.227511"
+        },
+        "compliance": {
+          "rawScore": 1380.47,
+          "confidenceInterval": [1231.43, 1529.52],
+          "rank": 51,
+          "evaluatedAt": "2025-08-27T17:37:41.227601"
+        }
+      },
+      "name": "AlfredPros: CodeLLaMa 7B Instruct Solidity",
+      "provider": "alfredpros",
+      "description": "A finetuned 7 billion parameters Code LLaMA - Instruct model to generate Solidity smart contract using 4-bit QLoRA finetuning provided by PEFT library.",
+      "canonical_slug": "alfredpros/codellama-7b-instruct-solidity",
+      "context_length": 8192,
+      "pricing": {
+        "prompt": "0.0000007",
+        "completion": "0.0000011",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": "alpaca"
+      },
+      "modelFamily": "alfredpros",
+      "created": 1744641874,
+      "hugging_face_id": "AlfredPros/CodeLlama-7b-Instruct-Solidity",
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "seed",
+        "stop",
+        "temperature",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 8192,
+        "max_completion_tokens": 8192,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "perplexity/sonar-reasoning-pro",
+      "scores": {
+        "coding": {
+          "rawScore": 1538.04,
+          "confidenceInterval": [1389.37, 1686.71],
+          "rank": 14,
+          "evaluatedAt": "2025-08-27T17:37:41.226930"
+        },
+        "abstraction": {
+          "rawScore": 1516.59,
+          "confidenceInterval": [1362.85, 1670.34],
+          "rank": 21,
+          "evaluatedAt": "2025-08-27T17:37:41.227035"
+        },
+        "empathy": {
+          "rawScore": 1444.31,
+          "confidenceInterval": [1295.65, 1592.96],
+          "rank": 39,
+          "evaluatedAt": "2025-08-27T17:37:41.227126"
+        },
+        "ethics": {
+          "rawScore": 1494.27,
+          "confidenceInterval": [1345.58, 1642.97],
+          "rank": 29,
+          "evaluatedAt": "2025-08-27T17:37:41.227216"
+        },
+        "safety": {
+          "rawScore": 1571.64,
+          "confidenceInterval": [1422.8, 1720.48],
+          "rank": 7,
+          "evaluatedAt": "2025-08-27T17:37:41.227303"
+        },
+        "deception": {
+          "rawScore": 1433.77,
+          "confidenceInterval": [1284.36, 1583.18],
+          "rank": 42,
+          "evaluatedAt": "2025-08-27T17:37:41.227422"
+        },
+        "persuasion": {
+          "rawScore": 1600.39,
+          "confidenceInterval": [1451.02, 1749.77],
+          "rank": 6,
+          "evaluatedAt": "2025-08-27T17:37:41.227513"
+        },
+        "compliance": {
+          "rawScore": 1507.08,
+          "confidenceInterval": [1358.31, 1655.85],
+          "rank": 15,
+          "evaluatedAt": "2025-08-27T17:37:41.227605"
+        }
+      },
+      "name": "Perplexity: Sonar Reasoning Pro",
+      "provider": "perplexity",
+      "description": "Note: Sonar Pro pricing includes Perplexity search pricing. See [details here](https://docs.perplexity.ai/guides/pricing#detailed-pricing-breakdown-for-sonar-reasoning-pro-and-sonar-pro)\n\nSonar Reasoning Pro is a premier reasoning model powered by DeepSeek R1 with Chain of Thought (CoT). Designed for advanced use cases, it supports in-depth, multi-step queries with a larger context window and can surface more citations per search, enabling more comprehensive and extensible responses.",
+      "canonical_slug": "perplexity/sonar-reasoning-pro",
+      "context_length": 128000,
+      "pricing": {
+        "prompt": "0.000002",
+        "completion": "0.000008",
+        "request": "0",
+        "image": "0",
+        "web_search": "0.005",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": "deepseek-r1"
+      },
+      "modelFamily": "Sonar",
+      "created": 1741313308,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "max_tokens",
+        "presence_penalty",
+        "reasoning",
+        "temperature",
+        "top_k",
+        "top_p",
+        "web_search_options"
+      ],
+      "top_provider": {
+        "context_length": 128000,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "mistralai/ministral-3b",
+      "scores": {
+        "coding": {
+          "rawScore": 1373.26,
+          "confidenceInterval": [1224.62, 1521.89],
+          "rank": 49,
+          "evaluatedAt": "2025-08-27T17:37:41.226931"
+        },
+        "abstraction": {
+          "rawScore": 1499.97,
+          "confidenceInterval": [1351.33, 1648.61],
+          "rank": 29,
+          "evaluatedAt": "2025-08-27T17:37:41.227034"
+        },
+        "empathy": {
+          "rawScore": 1401.09,
+          "confidenceInterval": [1252.16, 1550.02],
+          "rank": 47,
+          "evaluatedAt": "2025-08-27T17:37:41.227124"
+        },
+        "ethics": {
+          "rawScore": 1493.27,
+          "confidenceInterval": [1344.64, 1641.9],
+          "rank": 30,
+          "evaluatedAt": "2025-08-27T17:37:41.227214"
+        },
+        "safety": {
+          "rawScore": 1374.14,
+          "confidenceInterval": [1218.1, 1530.19],
+          "rank": 48,
+          "evaluatedAt": "2025-08-27T17:37:41.227304"
+        },
+        "deception": {
+          "rawScore": 1491.59,
+          "confidenceInterval": [1342.95, 1640.23],
+          "rank": 30,
+          "evaluatedAt": "2025-08-27T17:37:41.227424"
+        },
+        "persuasion": {
+          "rawScore": 1405.62,
+          "confidenceInterval": [1256.94, 1554.3],
+          "rank": 44,
+          "evaluatedAt": "2025-08-27T17:37:41.227514"
+        },
+        "compliance": {
+          "rawScore": 1475.37,
+          "confidenceInterval": [1326.27, 1624.47],
+          "rank": 38,
+          "evaluatedAt": "2025-08-27T17:37:41.227604"
+        }
+      },
+      "name": "Mistral: Ministral 3B",
+      "provider": "mistralai",
+      "description": "Ministral 3B is a 3B parameter model optimized for on-device and edge computing. It excels in knowledge, commonsense reasoning, and function-calling, outperforming larger models like Mistral 7B on most benchmarks. Supporting up to 128k context length, it’s ideal for orchestrating agentic workflows and specialist tasks with efficient inference.",
+      "canonical_slug": "mistralai/ministral-3b",
+      "context_length": 32768,
+      "pricing": {
+        "prompt": "0.00000004",
+        "completion": "0.00000004",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Mistral",
+        "instruct_type": null
+      },
+      "modelFamily": "Mistral",
+      "created": 1729123200,
+      "hugging_face_id": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "presence_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 32768,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "google/gemini-2.5-flash",
+      "scores": {
+        "coding": {
+          "rawScore": 1531.97,
+          "confidenceInterval": [1383.3, 1680.64],
+          "rank": 19,
+          "evaluatedAt": "2025-08-27T17:37:41.226933"
+        },
+        "abstraction": {
+          "rawScore": 1531.06,
+          "confidenceInterval": [1382.4, 1679.71],
+          "rank": 18,
+          "evaluatedAt": "2025-08-27T17:37:41.227037"
+        },
+        "empathy": {
+          "rawScore": 1606.79,
+          "confidenceInterval": [1457.7, 1755.88],
+          "rank": 3,
+          "evaluatedAt": "2025-08-27T17:37:41.227127"
+        },
+        "ethics": {
+          "rawScore": 1624.72,
+          "confidenceInterval": [1476.07, 1773.36],
+          "rank": 5,
+          "evaluatedAt": "2025-08-27T17:37:41.227217"
+        },
+        "safety": {
+          "rawScore": 1587.32,
+          "confidenceInterval": [1438.62, 1736.02],
+          "rank": 6,
+          "evaluatedAt": "2025-08-27T17:37:41.227306"
+        },
+        "deception": {
+          "rawScore": 1682.66,
+          "confidenceInterval": [1533.55, 1831.77],
+          "rank": 1,
+          "evaluatedAt": "2025-08-27T17:37:41.227425"
+        },
+        "persuasion": {
+          "rawScore": 1400.65,
+          "confidenceInterval": [1245.48, 1555.82],
+          "rank": 47,
+          "evaluatedAt": "2025-08-27T17:37:41.227516"
+        },
+        "compliance": {
+          "rawScore": 1506.16,
+          "confidenceInterval": [1357.52, 1654.8],
+          "rank": 17,
+          "evaluatedAt": "2025-08-27T17:37:41.227607"
+        }
+      },
+      "name": "Google: Gemini 2.5 Flash",
+      "provider": "google",
+      "description": "Gemini 2.5 Flash is Google's state-of-the-art workhorse model, specifically designed for advanced reasoning, coding, mathematics, and scientific tasks. It includes built-in \"thinking\" capabilities, enabling it to provide responses with greater accuracy and nuanced context handling. \n\nAdditionally, Gemini 2.5 Flash is configurable through the \"max tokens for reasoning\" parameter, as described in the documentation (https://openrouter.ai/docs/use-cases/reasoning-tokens#max-tokens-for-reasoning).",
+      "canonical_slug": "google/gemini-2.5-flash",
+      "context_length": 1048576,
+      "pricing": {
+        "prompt": "0.0000003",
+        "completion": "0.0000025",
+        "request": "0",
+        "image": "0.001238",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.000000075",
+        "input_cache_write": "0.0000003833"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["file", "image", "text", "audio"],
+        "output_modalities": ["text"],
+        "tokenizer": "Gemini",
+        "instruct_type": null
+      },
+      "modelFamily": "Gemini",
+      "created": 1750172488,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 1048576,
+        "max_completion_tokens": 65535,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "anthracite-org/magnum-v4-72b",
+      "scores": {
+        "coding": {
+          "rawScore": 1407.86,
+          "confidenceInterval": [1252.11, 1563.61],
+          "rank": 45,
+          "evaluatedAt": "2025-08-27T17:37:41.226935"
+        },
+        "abstraction": {
+          "rawScore": 1404.49,
+          "confidenceInterval": [1249.69, 1559.29],
+          "rank": 49,
+          "evaluatedAt": "2025-08-27T17:37:41.227038"
+        },
+        "empathy": {
+          "rawScore": 1459.51,
+          "confidenceInterval": [1309.74, 1609.27],
+          "rank": 35,
+          "evaluatedAt": "2025-08-27T17:37:41.227128"
+        },
+        "ethics": {
+          "rawScore": 1503.26,
+          "confidenceInterval": [1354.33, 1652.18],
+          "rank": 23,
+          "evaluatedAt": "2025-08-27T17:37:41.227219"
+        },
+        "safety": {
+          "rawScore": 1532.03,
+          "confidenceInterval": [1383.24, 1680.82],
+          "rank": 17,
+          "evaluatedAt": "2025-08-27T17:37:41.227307"
+        },
+        "deception": {
+          "rawScore": 1528.02,
+          "confidenceInterval": [1379.37, 1676.66],
+          "rank": 18,
+          "evaluatedAt": "2025-08-27T17:37:41.227427"
+        },
+        "persuasion": {
+          "rawScore": 1399.36,
+          "confidenceInterval": [1244.21, 1554.51],
+          "rank": 48,
+          "evaluatedAt": "2025-08-27T17:37:41.227517"
+        },
+        "compliance": {
+          "rawScore": 1493.32,
+          "confidenceInterval": [1344.5, 1642.14],
+          "rank": 35,
+          "evaluatedAt": "2025-08-27T17:37:41.227608"
+        }
+      },
+      "name": "Magnum v4 72B",
+      "provider": "anthracite-org",
+      "description": "This is a series of models designed to replicate the prose quality of the Claude 3 models, specifically Sonnet(https://openrouter.ai/anthropic/claude-3.5-sonnet) and Opus(https://openrouter.ai/anthropic/claude-3-opus).\n\nThe model is fine-tuned on top of [Qwen2.5 72B](https://openrouter.ai/qwen/qwen-2.5-72b-instruct).",
+      "canonical_slug": "anthracite-org/magnum-v4-72b",
+      "context_length": 16384,
+      "pricing": {
+        "prompt": "0.000002",
+        "completion": "0.000005",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Qwen",
+        "instruct_type": "chatml"
+      },
+      "modelFamily": "anthracite-org",
+      "created": 1729555200,
+      "hugging_face_id": "anthracite-org/magnum-v4-72b",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "seed",
+        "stop",
+        "temperature",
+        "top_a",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 16384,
+        "max_completion_tokens": 2048,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "anthropic/claude-3.7-sonnet:thinking",
+      "scores": {
+        "coding": {
+          "rawScore": 1611.97,
+          "confidenceInterval": [1458.12, 1765.82],
+          "rank": 4,
+          "evaluatedAt": "2025-08-27T17:37:41.226936"
+        },
+        "abstraction": {
+          "rawScore": 1559.46,
+          "confidenceInterval": [1410.62, 1708.3],
+          "rank": 9,
+          "evaluatedAt": "2025-08-27T17:37:41.227040"
+        },
+        "empathy": {
+          "rawScore": 1469.32,
+          "confidenceInterval": [1314.31, 1624.34],
+          "rank": 33,
+          "evaluatedAt": "2025-08-27T17:37:41.227130"
+        },
+        "ethics": {
+          "rawScore": 1586.11,
+          "confidenceInterval": [1437.31, 1734.9],
+          "rank": 7,
+          "evaluatedAt": "2025-08-27T17:37:41.227220"
+        },
+        "safety": {
+          "rawScore": 1523.79,
+          "confidenceInterval": [1374.59, 1672.99],
+          "rank": 21,
+          "evaluatedAt": "2025-08-27T17:37:41.227309"
+        },
+        "deception": {
+          "rawScore": 1460.62,
+          "confidenceInterval": [1311.43, 1609.8],
+          "rank": 34,
+          "evaluatedAt": "2025-08-27T17:37:41.227428"
+        },
+        "persuasion": {
+          "rawScore": 1489.75,
+          "confidenceInterval": [1340.54, 1638.97],
+          "rank": 30,
+          "evaluatedAt": "2025-08-27T17:37:41.227518"
+        },
+        "compliance": {
+          "rawScore": 1554.13,
+          "confidenceInterval": [1405.26, 1702.99],
+          "rank": 8,
+          "evaluatedAt": "2025-08-27T17:37:41.227609"
+        }
+      },
+      "name": "Anthropic: Claude 3.7 Sonnet (thinking)",
+      "provider": "anthropic",
+      "description": "Claude 3.7 Sonnet is an advanced large language model with improved reasoning, coding, and problem-solving capabilities. It introduces a hybrid reasoning approach, allowing users to choose between rapid responses and extended, step-by-step processing for complex tasks. The model demonstrates notable improvements in coding, particularly in front-end development and full-stack updates, and excels in agentic workflows, where it can autonomously navigate multi-step processes. \n\nClaude 3.7 Sonnet maintains performance parity with its predecessor in standard mode while offering an extended reasoning mode for enhanced accuracy in math, coding, and instruction-following tasks.\n\nRead more at the [blog post here](https://www.anthropic.com/news/claude-3-7-sonnet)",
+      "canonical_slug": "anthropic/claude-3-7-sonnet-20250219",
+      "context_length": 200000,
+      "pricing": {
+        "prompt": "0.000003",
+        "completion": "0.000015",
+        "request": "0",
+        "image": "0.0048",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.0000003",
+        "input_cache_write": "0.00000375"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image", "file"],
+        "output_modalities": ["text"],
+        "tokenizer": "Claude",
+        "instruct_type": null
+      },
+      "modelFamily": "Claude",
+      "created": 1740422110,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "stop",
+        "temperature",
+        "tool_choice",
+        "tools"
+      ],
+      "top_provider": {
+        "context_length": 200000,
+        "max_completion_tokens": 64000,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "openai/o1-mini",
+      "scores": {
+        "coding": {
+          "rawScore": 1490.96,
+          "confidenceInterval": [1342.32, 1639.6],
+          "rank": 30,
+          "evaluatedAt": "2025-08-27T17:37:41.226938"
+        },
+        "abstraction": {
+          "rawScore": 1502.32,
+          "confidenceInterval": [1353.18, 1651.46],
+          "rank": 27,
+          "evaluatedAt": "2025-08-27T17:37:41.227047"
+        },
+        "empathy": {
+          "rawScore": 1343.26,
+          "confidenceInterval": [1187.04, 1499.49],
+          "rank": 51,
+          "evaluatedAt": "2025-08-27T17:37:41.227131"
+        },
+        "ethics": {
+          "rawScore": 1500.91,
+          "confidenceInterval": [1351.82, 1650],
+          "rank": 26,
+          "evaluatedAt": "2025-08-27T17:37:41.227223"
+        },
+        "safety": {
+          "rawScore": 1475.05,
+          "confidenceInterval": [1320.43, 1629.66],
+          "rank": 31,
+          "evaluatedAt": "2025-08-27T17:37:41.227316"
+        },
+        "deception": {
+          "rawScore": 1563.51,
+          "confidenceInterval": [1414.87, 1712.14],
+          "rank": 9,
+          "evaluatedAt": "2025-08-27T17:37:41.227436"
+        },
+        "persuasion": {
+          "rawScore": 1468.77,
+          "confidenceInterval": [1319.68, 1617.86],
+          "rank": 34,
+          "evaluatedAt": "2025-08-27T17:37:41.227520"
+        },
+        "compliance": {
+          "rawScore": 1499.51,
+          "confidenceInterval": [1350.83, 1648.2],
+          "rank": 29,
+          "evaluatedAt": "2025-08-27T17:37:41.227612"
+        }
+      },
+      "name": "OpenAI: o1-mini",
+      "provider": "openai",
+      "description": "The latest and strongest model family from OpenAI, o1 is designed to spend more time thinking before responding.\n\nThe o1 models are optimized for math, science, programming, and other STEM-related tasks. They consistently exhibit PhD-level accuracy on benchmarks in physics, chemistry, and biology. Learn more in the [launch announcement](https://openai.com/o1).\n\nNote: This model is currently experimental and not suitable for production use-cases, and may be heavily rate-limited.",
+      "canonical_slug": "openai/o1-mini",
+      "context_length": 128000,
+      "pricing": {
+        "prompt": "0.0000011",
+        "completion": "0.0000044",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.00000055"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      },
+      "modelFamily": "o1",
+      "created": 1726099200,
+      "hugging_face_id": null,
+      "supported_parameters": ["max_tokens", "seed"],
+      "top_provider": {
+        "context_length": 128000,
+        "max_completion_tokens": 65536,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "openai/o3",
+      "scores": {
+        "coding": {
+          "rawScore": 1591.56,
+          "confidenceInterval": [1442.53, 1740.58],
+          "rank": 7,
+          "evaluatedAt": "2025-08-27T17:37:41.226939"
+        },
+        "abstraction": {
+          "rawScore": 1533.74,
+          "confidenceInterval": [1385.1, 1682.37],
+          "rank": 15,
+          "evaluatedAt": "2025-08-27T17:37:41.227042"
+        },
+        "empathy": {
+          "rawScore": 1501.92,
+          "confidenceInterval": [1353.27, 1650.57],
+          "rank": 27,
+          "evaluatedAt": "2025-08-27T17:37:41.227133"
+        },
+        "ethics": {
+          "rawScore": 1583.61,
+          "confidenceInterval": [1429.82, 1737.41],
+          "rank": 8,
+          "evaluatedAt": "2025-08-27T17:37:41.227227"
+        },
+        "safety": {
+          "rawScore": 1467.69,
+          "confidenceInterval": [1318.18, 1617.19],
+          "rank": 36,
+          "evaluatedAt": "2025-08-27T17:37:41.227313"
+        },
+        "deception": {
+          "rawScore": 1402.54,
+          "confidenceInterval": [1253.29, 1551.79],
+          "rank": 50,
+          "evaluatedAt": "2025-08-27T17:37:41.227431"
+        },
+        "persuasion": {
+          "rawScore": 1559.26,
+          "confidenceInterval": [1410.21, 1708.31],
+          "rank": 13,
+          "evaluatedAt": "2025-08-27T17:37:41.227523"
+        },
+        "compliance": {
+          "rawScore": 1470.74,
+          "confidenceInterval": [1322.09, 1619.4],
+          "rank": 39,
+          "evaluatedAt": "2025-08-27T17:37:41.227615"
+        }
+      },
+      "name": "OpenAI: o3",
+      "provider": "openai",
+      "description": "o3 is a well-rounded and powerful model across domains. It sets a new standard for math, science, coding, and visual reasoning tasks. It also excels at technical writing and instruction-following. Use it to think through multi-step problems that involve analysis across text, code, and images. Note that BYOK is required for this model. Set up here: https://openrouter.ai/settings/integrations",
+      "canonical_slug": "openai/o3-2025-04-16",
+      "context_length": 200000,
+      "pricing": {
+        "prompt": "0.000002",
+        "completion": "0.000008",
+        "request": "0",
+        "image": "0.00153",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.0000005"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      },
+      "modelFamily": "o3",
+      "created": 1744823457,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "structured_outputs",
+        "tool_choice",
+        "tools"
+      ],
+      "top_provider": {
+        "context_length": 200000,
+        "max_completion_tokens": 100000,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "deepseek/deepseek-chat",
+      "scores": {
+        "coding": {
+          "rawScore": 1474.7,
+          "confidenceInterval": [1325.57, 1623.82],
+          "rank": 34,
+          "evaluatedAt": "2025-08-27T17:37:41.226941"
+        },
+        "abstraction": {
+          "rawScore": 1496.72,
+          "confidenceInterval": [1348.08, 1645.37],
+          "rank": 33,
+          "evaluatedAt": "2025-08-27T17:37:41.227041"
+        },
+        "empathy": {
+          "rawScore": 1582.66,
+          "confidenceInterval": [1433.83, 1731.48],
+          "rank": 9,
+          "evaluatedAt": "2025-08-27T17:37:41.227136"
+        },
+        "ethics": {
+          "rawScore": 1558.21,
+          "confidenceInterval": [1408.92, 1707.5],
+          "rank": 14,
+          "evaluatedAt": "2025-08-27T17:37:41.227224"
+        },
+        "safety": {
+          "rawScore": 1522.14,
+          "confidenceInterval": [1373.31, 1670.96],
+          "rank": 22,
+          "evaluatedAt": "2025-08-27T17:37:41.227312"
+        },
+        "deception": {
+          "rawScore": 1436.2,
+          "confidenceInterval": [1287.48, 1584.93],
+          "rank": 41,
+          "evaluatedAt": "2025-08-27T17:37:41.227430"
+        },
+        "persuasion": {
+          "rawScore": 1511.24,
+          "confidenceInterval": [1362.6, 1659.89],
+          "rank": 21,
+          "evaluatedAt": "2025-08-27T17:37:41.227521"
+        },
+        "compliance": {
+          "rawScore": 1502.72,
+          "confidenceInterval": [1354.04, 1651.39],
+          "rank": 23,
+          "evaluatedAt": "2025-08-27T17:37:41.227614"
+        }
+      },
+      "name": "DeepSeek: DeepSeek V3",
+      "provider": "deepseek",
+      "description": "DeepSeek-V3 is the latest model from the DeepSeek team, building upon the instruction following and coding abilities of the previous versions. Pre-trained on nearly 15 trillion tokens, the reported evaluations reveal that the model outperforms other open-source models and rivals leading closed-source models.\n\nFor model details, please visit [the DeepSeek-V3 repo](https://github.com/deepseek-ai/DeepSeek-V3) for more information, or see the [launch announcement](https://api-docs.deepseek.com/news/news1226).",
+      "canonical_slug": "deepseek/deepseek-chat-v3",
+      "context_length": 163840,
+      "pricing": {
+        "prompt": "0.0000001999188",
+        "completion": "0.000000800064",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "DeepSeek",
+        "instruct_type": null
+      },
+      "modelFamily": "DeepSeek",
+      "created": 1735241320,
+      "hugging_face_id": "deepseek-ai/DeepSeek-V3",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 163840,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "mistralai/mistral-tiny",
+      "scores": {
+        "coding": {
+          "rawScore": 1407.71,
+          "confidenceInterval": [1259.04, 1556.38],
+          "rank": 46,
+          "evaluatedAt": "2025-08-27T17:37:41.226943"
+        },
+        "abstraction": {
+          "rawScore": 1465.31,
+          "confidenceInterval": [1316.44, 1614.18],
+          "rank": 38,
+          "evaluatedAt": "2025-08-27T17:37:41.227045"
+        },
+        "empathy": {
+          "rawScore": 1376.2,
+          "confidenceInterval": [1227.38, 1525.03],
+          "rank": 48,
+          "evaluatedAt": "2025-08-27T17:37:41.227137"
+        },
+        "ethics": {
+          "rawScore": 1433.26,
+          "confidenceInterval": [1284.61, 1581.91],
+          "rank": 41,
+          "evaluatedAt": "2025-08-27T17:37:41.227226"
+        },
+        "safety": {
+          "rawScore": 1424.8,
+          "confidenceInterval": [1275.62, 1573.98],
+          "rank": 45,
+          "evaluatedAt": "2025-08-27T17:37:41.227314"
+        },
+        "deception": {
+          "rawScore": 1465.63,
+          "confidenceInterval": [1316.9, 1614.36],
+          "rank": 33,
+          "evaluatedAt": "2025-08-27T17:37:41.227434"
+        },
+        "persuasion": {
+          "rawScore": 1462.44,
+          "confidenceInterval": [1313.51, 1611.36],
+          "rank": 35,
+          "evaluatedAt": "2025-08-27T17:37:41.227524"
+        },
+        "compliance": {
+          "rawScore": 1562.23,
+          "confidenceInterval": [1413.6, 1710.87],
+          "rank": 4,
+          "evaluatedAt": "2025-08-27T17:37:41.227616"
+        }
+      },
+      "name": "Mistral Tiny",
+      "provider": "mistralai",
+      "description": "Note: This model is being deprecated. Recommended replacement is the newer [Ministral 8B](/mistral/ministral-8b)\n\nThis model is currently powered by Mistral-7B-v0.2, and incorporates a \"better\" fine-tuning than [Mistral 7B](/models/mistralai/mistral-7b-instruct-v0.1), inspired by community work. It's best used for large batch processing tasks where cost is a significant factor but reasoning capabilities are not crucial.",
+      "canonical_slug": "mistralai/mistral-tiny",
+      "context_length": 32768,
+      "pricing": {
+        "prompt": "0.00000025",
+        "completion": "0.00000025",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Mistral",
+        "instruct_type": null
+      },
+      "modelFamily": "Mistral",
+      "created": 1704844800,
+      "hugging_face_id": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "presence_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 32768,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "qwen/qwen3-coder",
+      "scores": {
+        "coding": {
+          "rawScore": 1495.95,
+          "confidenceInterval": [1347.21, 1644.68],
+          "rank": 28,
+          "evaluatedAt": "2025-08-27T17:37:41.226944"
+        },
+        "abstraction": {
+          "rawScore": 1506.27,
+          "confidenceInterval": [1357.18, 1655.36],
+          "rank": 24,
+          "evaluatedAt": "2025-08-27T17:37:41.227044"
+        },
+        "empathy": {
+          "rawScore": 1506.77,
+          "confidenceInterval": [1358.05, 1655.49],
+          "rank": 20,
+          "evaluatedAt": "2025-08-27T17:37:41.227134"
+        },
+        "ethics": {
+          "rawScore": 1567.83,
+          "confidenceInterval": [1419.16, 1716.5],
+          "rank": 9,
+          "evaluatedAt": "2025-08-27T17:37:41.227221"
+        },
+        "safety": {
+          "rawScore": 1480.85,
+          "confidenceInterval": [1332.05, 1629.66],
+          "rank": 30,
+          "evaluatedAt": "2025-08-27T17:37:41.227310"
+        },
+        "deception": {
+          "rawScore": 1572.18,
+          "confidenceInterval": [1423.55, 1720.81],
+          "rank": 6,
+          "evaluatedAt": "2025-08-27T17:37:41.227433"
+        },
+        "persuasion": {
+          "rawScore": 1379.23,
+          "confidenceInterval": [1230.45, 1528.02],
+          "rank": 49,
+          "evaluatedAt": "2025-08-27T17:37:41.227527"
+        },
+        "compliance": {
+          "rawScore": 1502.49,
+          "confidenceInterval": [1353.76, 1651.21],
+          "rank": 24,
+          "evaluatedAt": "2025-08-27T17:37:41.227611"
+        }
+      },
+      "name": "Qwen: Qwen3 Coder ",
+      "provider": "qwen",
+      "description": "Qwen3-Coder-480B-A35B-Instruct is a Mixture-of-Experts (MoE) code generation model developed by the Qwen team. It is optimized for agentic coding tasks such as function calling, tool use, and long-context reasoning over repositories. The model features 480 billion total parameters, with 35 billion active per forward pass (8 out of 160 experts).\n\nPricing for the Alibaba endpoints varies by context length. Once a request is greater than 128k input tokens, the higher pricing is used.",
+      "canonical_slug": "qwen/qwen3-coder-480b-a35b-07-25",
+      "context_length": 262144,
+      "pricing": {
+        "prompt": "0.0000002",
+        "completion": "0.0000008",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Qwen3",
+        "instruct_type": null
+      },
+      "modelFamily": "Qwen",
+      "created": 1753230546,
+      "hugging_face_id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 262144,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "meta-llama/llama-3.1-405b-instruct",
+      "scores": {
+        "coding": {
+          "rawScore": 1438.09,
+          "confidenceInterval": [1289.42, 1586.77],
+          "rank": 39,
+          "evaluatedAt": "2025-08-27T17:37:41.226946"
+        },
+        "abstraction": {
+          "rawScore": 1558.58,
+          "confidenceInterval": [1409.94, 1707.22],
+          "rank": 10,
+          "evaluatedAt": "2025-08-27T17:37:41.227048"
+        },
+        "empathy": {
+          "rawScore": 1437.57,
+          "confidenceInterval": [1288.82, 1586.31],
+          "rank": 42,
+          "evaluatedAt": "2025-08-27T17:37:41.227139"
+        },
+        "ethics": {
+          "rawScore": 1502.98,
+          "confidenceInterval": [1354.34, 1651.62],
+          "rank": 24,
+          "evaluatedAt": "2025-08-27T17:37:41.227229"
+        },
+        "safety": {
+          "rawScore": 1495.54,
+          "confidenceInterval": [1346.9, 1644.18],
+          "rank": 27,
+          "evaluatedAt": "2025-08-27T17:37:41.227317"
+        },
+        "deception": {
+          "rawScore": 1492.56,
+          "confidenceInterval": [1343.88, 1641.24],
+          "rank": 28,
+          "evaluatedAt": "2025-08-27T17:37:41.227437"
+        },
+        "persuasion": {
+          "rawScore": 1453.14,
+          "confidenceInterval": [1303.35, 1602.92],
+          "rank": 36,
+          "evaluatedAt": "2025-08-27T17:37:41.227528"
+        },
+        "compliance": {
+          "rawScore": 1560.75,
+          "confidenceInterval": [1412.12, 1709.38],
+          "rank": 7,
+          "evaluatedAt": "2025-08-27T17:37:41.227618"
+        }
+      },
+      "name": "Meta: Llama 3.1 405B Instruct",
+      "provider": "meta-llama",
+      "description": "The highly anticipated 400B class of Llama3 is here! Clocking in at 128k context with impressive eval scores, the Meta AI team continues to push the frontier of open-source LLMs.\n\nMeta's latest class of model (Llama 3.1) launched with a variety of sizes & flavors. This 405B instruct-tuned version is optimized for high quality dialogue usecases.\n\nIt has demonstrated strong performance compared to leading closed-source models including GPT-4o and Claude 3.5 Sonnet in evaluations.\n\nTo read more about the model release, [click here](https://ai.meta.com/blog/meta-llama-3-1/). Usage of this model is subject to [Meta's Acceptable Use Policy](https://llama.meta.com/llama3/use-policy/).",
+      "canonical_slug": "meta-llama/llama-3.1-405b-instruct",
+      "context_length": 32768,
+      "pricing": {
+        "prompt": "0.0000008",
+        "completion": "0.0000008",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Llama3",
+        "instruct_type": "llama3"
+      },
+      "modelFamily": "LLaMA",
+      "created": 1721692800,
+      "hugging_face_id": "meta-llama/Meta-Llama-3.1-405B-Instruct",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 32768,
+        "max_completion_tokens": 16384,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "anthropic/claude-opus-4.1",
+      "scores": {
+        "coding": {
+          "rawScore": 1627.38,
+          "confidenceInterval": [1478.74, 1776.02],
+          "rank": 2,
+          "evaluatedAt": "2025-08-27T17:37:41.226947"
+        },
+        "abstraction": {
+          "rawScore": 1491.9,
+          "confidenceInterval": [1342.68, 1641.13],
+          "rank": 35,
+          "evaluatedAt": "2025-08-27T17:37:41.227050"
+        },
+        "empathy": {
+          "rawScore": 1556.38,
+          "confidenceInterval": [1407.21, 1705.55],
+          "rank": 14,
+          "evaluatedAt": "2025-08-27T17:37:41.227140"
+        },
+        "ethics": {
+          "rawScore": 1626.7,
+          "confidenceInterval": [1477.62, 1775.79],
+          "rank": 4,
+          "evaluatedAt": "2025-08-27T17:37:41.227230"
+        },
+        "safety": {
+          "rawScore": 1564.19,
+          "confidenceInterval": [1415.52, 1712.85],
+          "rank": 13,
+          "evaluatedAt": "2025-08-27T17:37:41.227319"
+        },
+        "deception": {
+          "rawScore": 1424.84,
+          "confidenceInterval": [1275.46, 1574.22],
+          "rank": 45,
+          "evaluatedAt": "2025-08-27T17:37:41.227439"
+        },
+        "persuasion": {
+          "rawScore": 1600.91,
+          "confidenceInterval": [1451.66, 1750.16],
+          "rank": 5,
+          "evaluatedAt": "2025-08-27T17:37:41.227530"
+        },
+        "compliance": {
+          "rawScore": 1464.07,
+          "confidenceInterval": [1314.36, 1613.79],
+          "rank": 42,
+          "evaluatedAt": "2025-08-27T17:37:41.227619"
+        }
+      },
+      "name": "Anthropic: Claude Opus 4.1",
+      "provider": "anthropic",
+      "description": "Claude Opus 4.1 is an updated version of Anthropic’s flagship model, offering improved performance in coding, reasoning, and agentic tasks. It achieves 74.5% on SWE-bench Verified and shows notable gains in multi-file code refactoring, debugging precision, and detail-oriented reasoning. The model supports extended thinking up to 64K tokens and is optimized for tasks involving research, data analysis, and tool-assisted reasoning.",
+      "canonical_slug": "anthropic/claude-4.1-opus-20250805",
+      "context_length": 200000,
+      "pricing": {
+        "prompt": "0.000015",
+        "completion": "0.000075",
+        "request": "0",
+        "image": "0.024",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.0000015",
+        "input_cache_write": "0.00001875"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
+        "tokenizer": "Claude",
+        "instruct_type": null
+      },
+      "modelFamily": "Claude",
+      "created": 1754411591,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "stop",
+        "temperature",
+        "tool_choice",
+        "tools"
+      ],
+      "top_provider": {
+        "context_length": 200000,
+        "max_completion_tokens": 32000,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "ai21/jamba-large-1.7",
+      "scores": {
+        "coding": {
+          "rawScore": 1535.76,
+          "confidenceInterval": [1381.69, 1689.83],
+          "rank": 17,
+          "evaluatedAt": "2025-08-27T17:37:41.226949"
+        },
+        "abstraction": {
+          "rawScore": 1456.54,
+          "confidenceInterval": [1306.84, 1606.23],
+          "rank": 39,
+          "evaluatedAt": "2025-08-27T17:37:41.227051"
+        },
+        "empathy": {
+          "rawScore": 1433.22,
+          "confidenceInterval": [1278.97, 1587.47],
+          "rank": 44,
+          "evaluatedAt": "2025-08-27T17:37:41.227141"
+        },
+        "ethics": {
+          "rawScore": 1486.18,
+          "confidenceInterval": [1336.56, 1635.79],
+          "rank": 33,
+          "evaluatedAt": "2025-08-27T17:37:41.227233"
+        },
+        "safety": {
+          "rawScore": 1528.76,
+          "confidenceInterval": [1379.68, 1677.84],
+          "rank": 19,
+          "evaluatedAt": "2025-08-27T17:37:41.227322"
+        },
+        "deception": {
+          "rawScore": 1523.05,
+          "confidenceInterval": [1374.13, 1671.98],
+          "rank": 19,
+          "evaluatedAt": "2025-08-27T17:37:41.227440"
+        },
+        "persuasion": {
+          "rawScore": 1402.74,
+          "confidenceInterval": [1248.21, 1557.28],
+          "rank": 45,
+          "evaluatedAt": "2025-08-27T17:37:41.227533"
+        },
+        "compliance": {
+          "rawScore": 1584.97,
+          "confidenceInterval": [1436.04, 1733.9],
+          "rank": 3,
+          "evaluatedAt": "2025-08-27T17:37:41.227622"
+        }
+      },
+      "name": "AI21: Jamba Large 1.7",
+      "provider": "ai21",
+      "description": "Jamba Large 1.7 is the latest model in the Jamba open family, offering improvements in grounding, instruction-following, and overall efficiency. Built on a hybrid SSM-Transformer architecture with a 256K context window, it delivers more accurate, contextually grounded responses and better steerability than previous versions.",
+      "canonical_slug": "ai21/jamba-large-1.7",
+      "context_length": 256000,
+      "pricing": {
+        "prompt": "0.000002",
+        "completion": "0.000008",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "Jamba",
+      "created": 1754669020,
+      "hugging_face_id": "ai21labs/AI21-Jamba-Large-1.7",
+      "supported_parameters": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 256000,
+        "max_completion_tokens": 4096,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "deepseek/deepseek-r1",
+      "scores": {
+        "coding": {
+          "rawScore": 1530.88,
+          "confidenceInterval": [1382.08, 1679.68],
+          "rank": 20,
+          "evaluatedAt": "2025-08-27T17:37:41.226950"
+        },
+        "abstraction": {
+          "rawScore": 1564.39,
+          "confidenceInterval": [1415.71, 1713.07],
+          "rank": 7,
+          "evaluatedAt": "2025-08-27T17:37:41.227052"
+        },
+        "empathy": {
+          "rawScore": 1433.12,
+          "confidenceInterval": [1283.9, 1582.33],
+          "rank": 45,
+          "evaluatedAt": "2025-08-27T17:37:41.227143"
+        },
+        "ethics": {
+          "rawScore": 1499.82,
+          "confidenceInterval": [1351.13, 1648.5],
+          "rank": 27,
+          "evaluatedAt": "2025-08-27T17:37:41.227232"
+        },
+        "safety": {
+          "rawScore": 1473.69,
+          "confidenceInterval": [1324.58, 1622.8],
+          "rank": 32,
+          "evaluatedAt": "2025-08-27T17:37:41.227320"
+        },
+        "deception": {
+          "rawScore": 1533.5,
+          "confidenceInterval": [1384.34, 1682.66],
+          "rank": 17,
+          "evaluatedAt": "2025-08-27T17:37:41.227441"
+        },
+        "persuasion": {
+          "rawScore": 1498.86,
+          "confidenceInterval": [1350.22, 1647.49],
+          "rank": 27,
+          "evaluatedAt": "2025-08-27T17:37:41.227531"
+        },
+        "compliance": {
+          "rawScore": 1622.26,
+          "confidenceInterval": [1473.46, 1771.05],
+          "rank": 2,
+          "evaluatedAt": "2025-08-27T17:37:41.227621"
+        }
+      },
+      "name": "DeepSeek: R1",
+      "provider": "deepseek",
+      "description": "DeepSeek R1 is here: Performance on par with [OpenAI o1](/openai/o1), but open-sourced and with fully open reasoning tokens. It's 671B parameters in size, with 37B active in an inference pass.\n\nFully open-source model & [technical report](https://api-docs.deepseek.com/news/news250120).\n\nMIT licensed: Distill & commercialize freely!",
+      "canonical_slug": "deepseek/deepseek-r1",
+      "context_length": 163840,
+      "pricing": {
+        "prompt": "0.0000004",
+        "completion": "0.000002",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "DeepSeek",
+        "instruct_type": "deepseek-r1"
+      },
+      "modelFamily": "DeepSeek",
+      "created": 1737381095,
+      "hugging_face_id": "deepseek-ai/DeepSeek-R1",
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "reasoning",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 163840,
+        "max_completion_tokens": 163840,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "aion-labs/aion-1.0",
+      "scores": {
+        "coding": {
+          "rawScore": 1555.86,
+          "confidenceInterval": [1407.02, 1704.7],
+          "rank": 13,
+          "evaluatedAt": "2025-08-27T17:37:41.226952"
+        },
+        "abstraction": {
+          "rawScore": 1524.03,
+          "confidenceInterval": [1375.26, 1672.8],
+          "rank": 20,
+          "evaluatedAt": "2025-08-27T17:37:41.227054"
+        },
+        "empathy": {
+          "rawScore": 1435.83,
+          "confidenceInterval": [1286.11, 1585.55],
+          "rank": 43,
+          "evaluatedAt": "2025-08-27T17:37:41.227144"
+        },
+        "ethics": {
+          "rawScore": 1345.85,
+          "confidenceInterval": [1190.85, 1500.85],
+          "rank": 51,
+          "evaluatedAt": "2025-08-27T17:37:41.227234"
+        },
+        "safety": {
+          "rawScore": 1500.48,
+          "confidenceInterval": [1351.55, 1649.4],
+          "rank": 26,
+          "evaluatedAt": "2025-08-27T17:37:41.227324"
+        },
+        "deception": {
+          "rawScore": 1554.66,
+          "confidenceInterval": [1405.42, 1703.9],
+          "rank": 12,
+          "evaluatedAt": "2025-08-27T17:37:41.227443"
+        },
+        "persuasion": {
+          "rawScore": 1558.03,
+          "confidenceInterval": [1408.85, 1707.22],
+          "rank": 14,
+          "evaluatedAt": "2025-08-27T17:37:41.227534"
+        },
+        "compliance": {
+          "rawScore": 1466.01,
+          "confidenceInterval": [1311.37, 1620.66],
+          "rank": 41,
+          "evaluatedAt": "2025-08-27T17:37:41.227624"
+        }
+      },
+      "name": "AionLabs: Aion-1.0",
+      "provider": "aion-labs",
+      "description": "Aion-1.0 is a multi-model system designed for high performance across various tasks, including reasoning and coding. It is built on DeepSeek-R1, augmented with additional models and techniques such as Tree of Thoughts (ToT) and Mixture of Experts (MoE). It is Aion Lab's most powerful reasoning model.",
+      "canonical_slug": "aion-labs/aion-1.0",
+      "context_length": 131072,
+      "pricing": {
+        "prompt": "0.000004",
+        "completion": "0.000008",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "aion-labs",
+      "created": 1738697557,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "temperature",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 131072,
+        "max_completion_tokens": 32768,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "openai/o1",
+      "scores": {
+        "coding": {
+          "rawScore": 1476.54,
+          "confidenceInterval": [1327.66, 1625.42],
+          "rank": 33,
+          "evaluatedAt": "2025-08-27T17:37:41.226954"
+        },
+        "abstraction": {
+          "rawScore": 1465.61,
+          "confidenceInterval": [1316.92, 1614.29],
+          "rank": 36,
+          "evaluatedAt": "2025-08-27T17:37:41.227056"
+        },
+        "empathy": {
+          "rawScore": 1470.02,
+          "confidenceInterval": [1321.28, 1618.76],
+          "rank": 32,
+          "evaluatedAt": "2025-08-27T17:37:41.227146"
+        },
+        "ethics": {
+          "rawScore": 1537.29,
+          "confidenceInterval": [1388.28, 1686.29],
+          "rank": 17,
+          "evaluatedAt": "2025-08-27T17:37:41.227236"
+        },
+        "safety": {
+          "rawScore": 1439.49,
+          "confidenceInterval": [1290.79, 1588.19],
+          "rank": 39,
+          "evaluatedAt": "2025-08-27T17:37:41.227326"
+        },
+        "deception": {
+          "rawScore": 1503.34,
+          "confidenceInterval": [1354.46, 1652.22],
+          "rank": 25,
+          "evaluatedAt": "2025-08-27T17:37:41.227444"
+        },
+        "persuasion": {
+          "rawScore": 1483.13,
+          "confidenceInterval": [1329.39, 1636.86],
+          "rank": 32,
+          "evaluatedAt": "2025-08-27T17:37:41.227537"
+        },
+        "compliance": {
+          "rawScore": 1496.58,
+          "confidenceInterval": [1347.9, 1645.26],
+          "rank": 32,
+          "evaluatedAt": "2025-08-27T17:37:41.227625"
+        }
+      },
+      "name": "OpenAI: o1",
+      "provider": "openai",
+      "description": "The latest and strongest model family from OpenAI, o1 is designed to spend more time thinking before responding. The o1 model series is trained with large-scale reinforcement learning to reason using chain of thought. \n\nThe o1 models are optimized for math, science, programming, and other STEM-related tasks. They consistently exhibit PhD-level accuracy on benchmarks in physics, chemistry, and biology. Learn more in the [launch announcement](https://openai.com/o1).\n",
+      "canonical_slug": "openai/o1-2024-12-17",
+      "context_length": 200000,
+      "pricing": {
+        "prompt": "0.000015",
+        "completion": "0.00006",
+        "request": "0",
+        "image": "0.021675",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.0000075"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      },
+      "modelFamily": "o1",
+      "created": 1734459999,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "max_tokens",
+        "response_format",
+        "seed",
+        "structured_outputs",
+        "tool_choice",
+        "tools"
+      ],
+      "top_provider": {
+        "context_length": 200000,
+        "max_completion_tokens": 100000,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "inception/mercury",
+      "scores": {
+        "coding": {
+          "rawScore": 1433.56,
+          "confidenceInterval": [1284.92, 1582.2],
+          "rank": 41,
+          "evaluatedAt": "2025-08-27T17:37:41.226955"
+        },
+        "abstraction": {
+          "rawScore": 1539.26,
+          "confidenceInterval": [1390.62, 1687.91],
+          "rank": 12,
+          "evaluatedAt": "2025-08-27T17:37:41.227058"
+        },
+        "empathy": {
+          "rawScore": 1541.32,
+          "confidenceInterval": [1392.68, 1689.96],
+          "rank": 16,
+          "evaluatedAt": "2025-08-27T17:37:41.227147"
+        },
+        "ethics": {
+          "rawScore": 1499.13,
+          "confidenceInterval": [1350.49, 1647.78],
+          "rank": 28,
+          "evaluatedAt": "2025-08-27T17:37:41.227237"
+        },
+        "safety": {
+          "rawScore": 1535.3,
+          "confidenceInterval": [1386.66, 1683.94],
+          "rank": 15,
+          "evaluatedAt": "2025-08-27T17:37:41.227327"
+        },
+        "deception": {
+          "rawScore": 1497.4,
+          "confidenceInterval": [1348.28, 1646.51],
+          "rank": 27,
+          "evaluatedAt": "2025-08-27T17:37:41.227446"
+        },
+        "persuasion": {
+          "rawScore": 1491.87,
+          "confidenceInterval": [1343.22, 1640.51],
+          "rank": 29,
+          "evaluatedAt": "2025-08-27T17:37:41.227538"
+        },
+        "compliance": {
+          "rawScore": 1495.15,
+          "confidenceInterval": [1346.48, 1643.83],
+          "rank": 33,
+          "evaluatedAt": "2025-08-27T17:37:41.227626"
+        }
+      },
+      "name": "Inception: Mercury",
+      "provider": "inception",
+      "description": "Mercury is the first diffusion large language model (dLLM). Applying a breakthrough discrete diffusion approach, the model runs 5-10x faster than even speed optimized models like GPT-4.1 Nano and Claude 3.5 Haiku while matching their performance. Mercury's speed enables developers to provide responsive user experiences, including with voice agents, search interfaces, and chatbots. Read more in the blog post here. ",
+      "canonical_slug": "inception/mercury",
+      "context_length": 128000,
+      "pricing": {
+        "prompt": "0.00000025",
+        "completion": "0.000001",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "Mercury",
+      "created": 1750973026,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "presence_penalty",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 128000,
+        "max_completion_tokens": 16384,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "inception/mercury-coder",
+      "scores": {
+        "coding": {
+          "rawScore": 1534.19,
+          "confidenceInterval": [1385.44, 1682.93],
+          "rank": 18,
+          "evaluatedAt": "2025-08-27T17:37:41.226957"
+        },
+        "abstraction": {
+          "rawScore": 1438.71,
+          "confidenceInterval": [1290.08, 1587.34],
+          "rank": 42,
+          "evaluatedAt": "2025-08-27T17:37:41.227059"
+        },
+        "empathy": {
+          "rawScore": 1503.07,
+          "confidenceInterval": [1354.43, 1651.72],
+          "rank": 25,
+          "evaluatedAt": "2025-08-27T17:37:41.227148"
+        },
+        "ethics": {
+          "rawScore": 1439.46,
+          "confidenceInterval": [1290.81, 1588.11],
+          "rank": 36,
+          "evaluatedAt": "2025-08-27T17:37:41.227239"
+        },
+        "safety": {
+          "rawScore": 1372.75,
+          "confidenceInterval": [1223.59, 1521.91],
+          "rank": 49,
+          "evaluatedAt": "2025-08-27T17:37:41.227329"
+        },
+        "deception": {
+          "rawScore": 1560.42,
+          "confidenceInterval": [1411.3, 1709.53],
+          "rank": 11,
+          "evaluatedAt": "2025-08-27T17:37:41.227447"
+        },
+        "persuasion": {
+          "rawScore": 1441.8,
+          "confidenceInterval": [1293.16, 1590.45],
+          "rank": 38,
+          "evaluatedAt": "2025-08-27T17:37:41.227540"
+        },
+        "compliance": {
+          "rawScore": 1504.78,
+          "confidenceInterval": [1355.69, 1653.88],
+          "rank": 19,
+          "evaluatedAt": "2025-08-27T17:37:41.227628"
+        }
+      },
+      "name": "Inception: Mercury Coder",
+      "provider": "inception",
+      "description": "Mercury Coder is the first diffusion large language model (dLLM). Applying a breakthrough discrete diffusion approach, the model runs 5-10x faster than even speed optimized models like Claude 3.5 Haiku and GPT-4o Mini while matching their performance. Mercury Coder's speed means that developers can stay in the flow while coding, enjoying rapid chat-based iteration and responsive code completion suggestions. On Copilot Arena, Mercury Coder ranks 1st in speed and ties for 2nd in quality. Read more in the [blog post here](https://www.inceptionlabs.ai/introducing-mercury).",
+      "canonical_slug": "inception/mercury-coder-small-beta",
+      "context_length": 128000,
+      "pricing": {
+        "prompt": "0.00000025",
+        "completion": "0.000001",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "Mercury",
+      "created": 1746033880,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "presence_penalty",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 128000,
+        "max_completion_tokens": 16384,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "perplexity/sonar",
+      "scores": {
+        "coding": {
+          "rawScore": 1561.57,
+          "confidenceInterval": [1412.93, 1710.21],
+          "rank": 11,
+          "evaluatedAt": "2025-08-27T17:37:41.226958"
+        },
+        "abstraction": {
+          "rawScore": 1499.76,
+          "confidenceInterval": [1350.67, 1648.84],
+          "rank": 30,
+          "evaluatedAt": "2025-08-27T17:37:41.227061"
+        },
+        "empathy": {
+          "rawScore": 1468.78,
+          "confidenceInterval": [1320.03, 1617.53],
+          "rank": 34,
+          "evaluatedAt": "2025-08-27T17:37:41.227150"
+        },
+        "ethics": {
+          "rawScore": 1435.46,
+          "confidenceInterval": [1286.55, 1584.37],
+          "rank": 40,
+          "evaluatedAt": "2025-08-27T17:37:41.227240"
+        },
+        "safety": {
+          "rawScore": 1431.68,
+          "confidenceInterval": [1283, 1580.36],
+          "rank": 44,
+          "evaluatedAt": "2025-08-27T17:37:41.227330"
+        },
+        "deception": {
+          "rawScore": 1444.41,
+          "confidenceInterval": [1295.67, 1593.16],
+          "rank": 38,
+          "evaluatedAt": "2025-08-27T17:37:41.227449"
+        },
+        "persuasion": {
+          "rawScore": 1566.93,
+          "confidenceInterval": [1418.29, 1715.57],
+          "rank": 8,
+          "evaluatedAt": "2025-08-27T17:37:41.227541"
+        },
+        "compliance": {
+          "rawScore": 1497.4,
+          "confidenceInterval": [1348.65, 1646.15],
+          "rank": 31,
+          "evaluatedAt": "2025-08-27T17:37:41.227629"
+        }
+      },
+      "name": "Perplexity: Sonar",
+      "provider": "perplexity",
+      "description": "Sonar is lightweight, affordable, fast, and simple to use — now featuring citations and the ability to customize sources. It is designed for companies seeking to integrate lightweight question-and-answer features optimized for speed.",
+      "canonical_slug": "perplexity/sonar",
+      "context_length": 127072,
+      "pricing": {
+        "prompt": "0.000001",
+        "completion": "0.000001",
+        "request": "0.005",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "Sonar",
+      "created": 1738013808,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "presence_penalty",
+        "temperature",
+        "top_k",
+        "top_p",
+        "web_search_options"
+      ],
+      "top_provider": {
+        "context_length": 127072,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "microsoft/phi-4",
+      "scores": {
+        "coding": {
+          "rawScore": 1493.93,
+          "confidenceInterval": [1345.29, 1642.57],
+          "rank": 29,
+          "evaluatedAt": "2025-08-27T17:37:41.226960"
+        },
+        "abstraction": {
+          "rawScore": 1429.73,
+          "confidenceInterval": [1280.46, 1578.99],
+          "rank": 43,
+          "evaluatedAt": "2025-08-27T17:37:41.227062"
+        },
+        "empathy": {
+          "rawScore": 1534.07,
+          "confidenceInterval": [1385.28, 1682.86],
+          "rank": 18,
+          "evaluatedAt": "2025-08-27T17:37:41.227151"
+        },
+        "ethics": {
+          "rawScore": 1488.55,
+          "confidenceInterval": [1339.9, 1637.2],
+          "rank": 32,
+          "evaluatedAt": "2025-08-27T17:37:41.227241"
+        },
+        "safety": {
+          "rawScore": 1507.71,
+          "confidenceInterval": [1358.97, 1656.45],
+          "rank": 23,
+          "evaluatedAt": "2025-08-27T17:37:41.227332"
+        },
+        "deception": {
+          "rawScore": 1468.59,
+          "confidenceInterval": [1319.92, 1617.25],
+          "rank": 32,
+          "evaluatedAt": "2025-08-27T17:37:41.227450"
+        },
+        "persuasion": {
+          "rawScore": 1495.97,
+          "confidenceInterval": [1347.27, 1644.67],
+          "rank": 28,
+          "evaluatedAt": "2025-08-27T17:37:41.227542"
+        },
+        "compliance": {
+          "rawScore": 1494.05,
+          "confidenceInterval": [1345.34, 1642.77],
+          "rank": 34,
+          "evaluatedAt": "2025-08-27T17:37:41.227631"
+        }
+      },
+      "name": "Microsoft: Phi 4",
+      "provider": "microsoft",
+      "description": "[Microsoft Research](/microsoft) Phi-4 is designed to perform well in complex reasoning tasks and can operate efficiently in situations with limited memory or where quick responses are needed. \n\nAt 14 billion parameters, it was trained on a mix of high-quality synthetic datasets, data from curated websites, and academic materials. It has undergone careful improvement to follow instructions accurately and maintain strong safety standards. It works best with English language inputs.\n\nFor more information, please see [Phi-4 Technical Report](https://arxiv.org/pdf/2412.08905)\n",
+      "canonical_slug": "microsoft/phi-4",
+      "context_length": 16384,
+      "pricing": {
+        "prompt": "0.00000006",
+        "completion": "0.00000014",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "Phi",
+      "created": 1736489872,
+      "hugging_face_id": "microsoft/phi-4",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 16384,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "alpindale/goliath-120b",
+      "scores": {
+        "coding": {
+          "rawScore": 1432.02,
+          "confidenceInterval": [1282.32, 1581.72],
+          "rank": 43,
+          "evaluatedAt": "2025-08-27T17:37:41.226961"
+        },
+        "abstraction": {
+          "rawScore": 1465.41,
+          "confidenceInterval": [1316.05, 1614.77],
+          "rank": 37,
+          "evaluatedAt": "2025-08-27T17:37:41.227064"
+        },
+        "empathy": {
+          "rawScore": 1494.32,
+          "confidenceInterval": [1345.03, 1643.6],
+          "rank": 29,
+          "evaluatedAt": "2025-08-27T17:37:41.227153"
+        },
+        "ethics": {
+          "rawScore": 1488.57,
+          "confidenceInterval": [1338.71, 1638.43],
+          "rank": 31,
+          "evaluatedAt": "2025-08-27T17:37:41.227243"
+        },
+        "safety": {
+          "rawScore": 1435.21,
+          "confidenceInterval": [1285.96, 1584.45],
+          "rank": 43,
+          "evaluatedAt": "2025-08-27T17:37:41.227333"
+        },
+        "deception": {
+          "rawScore": 1404.13,
+          "confidenceInterval": [1249.3, 1558.97],
+          "rank": 49,
+          "evaluatedAt": "2025-08-27T17:37:41.227452"
+        },
+        "persuasion": {
+          "rawScore": 1432.46,
+          "confidenceInterval": [1283.25, 1581.66],
+          "rank": 42,
+          "evaluatedAt": "2025-08-27T17:37:41.227544"
+        },
+        "compliance": {
+          "rawScore": 1515.46,
+          "confidenceInterval": [1366.23, 1664.68],
+          "rank": 14,
+          "evaluatedAt": "2025-08-27T17:37:41.227632"
+        }
+      },
+      "name": "Goliath 120B",
+      "provider": "alpindale",
+      "description": "A large LLM created by combining two fine-tuned Llama 70B models into one 120B model. Combines Xwin and Euryale.\n\nCredits to\n- [@chargoddard](https://huggingface.co/chargoddard) for developing the framework used to merge the model - [mergekit](https://github.com/cg123/mergekit).\n- [@Undi95](https://huggingface.co/Undi95) for helping with the merge ratios.\n\n#merge",
+      "canonical_slug": "alpindale/goliath-120b",
+      "context_length": 6144,
+      "pricing": {
+        "prompt": "0.000004",
+        "completion": "0.0000055",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Llama2",
+        "instruct_type": "airoboros"
+      },
+      "modelFamily": "alpindale",
+      "created": 1699574400,
+      "hugging_face_id": "alpindale/goliath-120b",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "top_a",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 6144,
+        "max_completion_tokens": 512,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "openai/o3-pro",
+      "scores": {
+        "coding": {
+          "rawScore": 1529.31,
+          "confidenceInterval": [1380.65, 1677.97],
+          "rank": 21,
+          "evaluatedAt": "2025-08-27T17:37:41.226963"
+        },
+        "abstraction": {
+          "rawScore": 1535.17,
+          "confidenceInterval": [1386.53, 1683.81],
+          "rank": 14,
+          "evaluatedAt": "2025-08-27T17:37:41.227065"
+        },
+        "empathy": {
+          "rawScore": 1557.73,
+          "confidenceInterval": [1409.09, 1706.38],
+          "rank": 13,
+          "evaluatedAt": "2025-08-27T17:37:41.227154"
+        },
+        "ethics": {
+          "rawScore": 1560.7,
+          "confidenceInterval": [1411.56, 1709.83],
+          "rank": 13,
+          "evaluatedAt": "2025-08-27T17:37:41.227244"
+        },
+        "safety": {
+          "rawScore": 1471.38,
+          "confidenceInterval": [1322.57, 1620.2],
+          "rank": 34,
+          "evaluatedAt": "2025-08-27T17:37:41.227335"
+        },
+        "deception": {
+          "rawScore": 1568.3,
+          "confidenceInterval": [1419.66, 1716.94],
+          "rank": 7,
+          "evaluatedAt": "2025-08-27T17:37:41.227453"
+        },
+        "persuasion": {
+          "rawScore": 1502.65,
+          "confidenceInterval": [1353.96, 1651.33],
+          "rank": 25,
+          "evaluatedAt": "2025-08-27T17:37:41.227545"
+        },
+        "compliance": {
+          "rawScore": 1456.96,
+          "confidenceInterval": [1307.68, 1606.24],
+          "rank": 44,
+          "evaluatedAt": "2025-08-27T17:37:41.227634"
+        }
+      },
+      "name": "OpenAI: o3 Pro",
+      "provider": "openai",
+      "description": "The o-series of models are trained with reinforcement learning to think before they answer and perform complex reasoning. The o3-pro model uses more compute to think harder and provide consistently better answers.\n\nNote that BYOK is required for this model. Set up here: https://openrouter.ai/settings/integrations",
+      "canonical_slug": "openai/o3-pro-2025-06-10",
+      "context_length": 200000,
+      "pricing": {
+        "prompt": "0.00002",
+        "completion": "0.00008",
+        "request": "0",
+        "image": "0.0153",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "file", "image"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      },
+      "modelFamily": "o3",
+      "created": 1749598352,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "structured_outputs",
+        "tool_choice",
+        "tools"
+      ],
+      "top_provider": {
+        "context_length": 200000,
+        "max_completion_tokens": 100000,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "meta-llama/llama-3.1-405b",
+      "scores": {
+        "coding": {
+          "rawScore": 1464.84,
+          "confidenceInterval": [1316.08, 1613.6],
+          "rank": 35,
+          "evaluatedAt": "2025-08-27T17:37:41.226964"
+        },
+        "abstraction": {
+          "rawScore": 1402.57,
+          "confidenceInterval": [1253.35, 1551.79],
+          "rank": 51,
+          "evaluatedAt": "2025-08-27T17:37:41.227066"
+        },
+        "empathy": {
+          "rawScore": 1346.09,
+          "confidenceInterval": [1190.38, 1501.81],
+          "rank": 50,
+          "evaluatedAt": "2025-08-27T17:37:41.227156"
+        },
+        "ethics": {
+          "rawScore": 1374.01,
+          "confidenceInterval": [1225.2, 1522.83],
+          "rank": 49,
+          "evaluatedAt": "2025-08-27T17:37:41.227246"
+        },
+        "safety": {
+          "rawScore": 1436.5,
+          "confidenceInterval": [1287.86, 1585.13],
+          "rank": 42,
+          "evaluatedAt": "2025-08-27T17:37:41.227336"
+        },
+        "deception": {
+          "rawScore": 1404.38,
+          "confidenceInterval": [1248.99, 1559.77],
+          "rank": 48,
+          "evaluatedAt": "2025-08-27T17:37:41.227454"
+        },
+        "persuasion": {
+          "rawScore": 1626.81,
+          "confidenceInterval": [1478.17, 1775.45],
+          "rank": 3,
+          "evaluatedAt": "2025-08-27T17:37:41.227547"
+        },
+        "compliance": {
+          "rawScore": 1561.97,
+          "confidenceInterval": [1413.34, 1710.61],
+          "rank": 5,
+          "evaluatedAt": "2025-08-27T17:37:41.227635"
+        }
+      },
+      "name": "Meta: Llama 3.1 405B (base)",
+      "provider": "meta-llama",
+      "description": "Meta's latest class of model (Llama 3.1) launched with a variety of sizes & flavors. This is the base 405B pre-trained version.\n\nIt has demonstrated strong performance compared to leading closed-source models in human evaluations.\n\nTo read more about the model release, [click here](https://ai.meta.com/blog/meta-llama-3/). Usage of this model is subject to [Meta's Acceptable Use Policy](https://llama.meta.com/llama3/use-policy/).",
+      "canonical_slug": "meta-llama/llama-3.1-405b",
+      "context_length": 32768,
+      "pricing": {
+        "prompt": "0.000002",
+        "completion": "0.000002",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Llama3",
+        "instruct_type": "none"
+      },
+      "modelFamily": "LLaMA",
+      "created": 1722556800,
+      "hugging_face_id": "meta-llama/llama-3.1-405B",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "seed",
+        "stop",
+        "temperature",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 32768,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "mancer/weaver",
+      "scores": {
+        "coding": {
+          "rawScore": 1339.15,
+          "confidenceInterval": [1183.53, 1494.77],
+          "rank": 51,
+          "evaluatedAt": "2025-08-27T17:37:41.226966"
+        },
+        "abstraction": {
+          "rawScore": 1440.69,
+          "confidenceInterval": [1292.05, 1589.32],
+          "rank": 41,
+          "evaluatedAt": "2025-08-27T17:37:41.227068"
+        },
+        "empathy": {
+          "rawScore": 1451.87,
+          "confidenceInterval": [1302.07, 1601.66],
+          "rank": 37,
+          "evaluatedAt": "2025-08-27T17:37:41.227157"
+        },
+        "ethics": {
+          "rawScore": 1375.47,
+          "confidenceInterval": [1226.83, 1524.11],
+          "rank": 48,
+          "evaluatedAt": "2025-08-27T17:37:41.227247"
+        },
+        "safety": {
+          "rawScore": 1343.11,
+          "confidenceInterval": [1187.27, 1498.96],
+          "rank": 51,
+          "evaluatedAt": "2025-08-27T17:37:41.227338"
+        },
+        "deception": {
+          "rawScore": 1459.46,
+          "confidenceInterval": [1310.22, 1608.69],
+          "rank": 35,
+          "evaluatedAt": "2025-08-27T17:37:41.227456"
+        },
+        "persuasion": {
+          "rawScore": 1620.5,
+          "confidenceInterval": [1471.82, 1769.19],
+          "rank": 4,
+          "evaluatedAt": "2025-08-27T17:37:41.227548"
+        },
+        "compliance": {
+          "rawScore": 1500.73,
+          "confidenceInterval": [1352.09, 1649.36],
+          "rank": 25,
+          "evaluatedAt": "2025-08-27T17:37:41.227636"
+        }
+      },
+      "name": "Mancer: Weaver (alpha)",
+      "provider": "mancer",
+      "description": "An attempt to recreate Claude-style verbosity, but don't expect the same level of coherence or memory. Meant for use in roleplay/narrative situations.",
+      "canonical_slug": "mancer/weaver",
+      "context_length": 8000,
+      "pricing": {
+        "prompt": "0.000001125",
+        "completion": "0.000001125",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Llama2",
+        "instruct_type": "alpaca"
+      },
+      "modelFamily": "mancer",
+      "created": 1690934400,
+      "hugging_face_id": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "seed",
+        "stop",
+        "temperature",
+        "top_a",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 8000,
+        "max_completion_tokens": 2000,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "x-ai/grok-4",
+      "scores": {
+        "coding": {
+          "rawScore": 1410.69,
+          "confidenceInterval": [1261.77, 1559.61],
+          "rank": 44,
+          "evaluatedAt": "2025-08-27T17:37:41.226967"
+        },
+        "abstraction": {
+          "rawScore": 1510.12,
+          "confidenceInterval": [1361.39, 1658.85],
+          "rank": 22,
+          "evaluatedAt": "2025-08-27T17:37:41.227069"
+        },
+        "empathy": {
+          "rawScore": 1601.71,
+          "confidenceInterval": [1452.27, 1751.14],
+          "rank": 4,
+          "evaluatedAt": "2025-08-27T17:37:41.227158"
+        },
+        "ethics": {
+          "rawScore": 1511.34,
+          "confidenceInterval": [1362.65, 1660.02],
+          "rank": 20,
+          "evaluatedAt": "2025-08-27T17:37:41.227249"
+        },
+        "safety": {
+          "rawScore": 1645.29,
+          "confidenceInterval": [1496.37, 1794.2],
+          "rank": 2,
+          "evaluatedAt": "2025-08-27T17:37:41.227339"
+        },
+        "deception": {
+          "rawScore": 1508.32,
+          "confidenceInterval": [1359.41, 1657.23],
+          "rank": 20,
+          "evaluatedAt": "2025-08-27T17:37:41.227457"
+        },
+        "persuasion": {
+          "rawScore": 1485.77,
+          "confidenceInterval": [1336.83, 1634.71],
+          "rank": 31,
+          "evaluatedAt": "2025-08-27T17:37:41.227550"
+        },
+        "compliance": {
+          "rawScore": 1540.52,
+          "confidenceInterval": [1391.61, 1689.43],
+          "rank": 10,
+          "evaluatedAt": "2025-08-27T17:37:41.227638"
+        }
+      },
+      "name": "xAI: Grok 4",
+      "provider": "x-ai",
+      "description": "Grok 4 is xAI's latest reasoning model with a 256k context window. It supports parallel tool calling, structured outputs, and both image and text inputs. Note that reasoning is not exposed, reasoning cannot be disabled, and the reasoning effort cannot be specified. Pricing increases once the total tokens in a given request is greater than 128k tokens. See more details on the [xAI docs](https://docs.x.ai/docs/models/grok-4-0709)",
+      "canonical_slug": "x-ai/grok-4-07-09",
+      "context_length": 256000,
+      "pricing": {
+        "prompt": "0.000003",
+        "completion": "0.000015",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.00000075"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["image", "text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Grok",
+        "instruct_type": null
+      },
+      "modelFamily": "Grok",
+      "created": 1752087689,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "logprobs",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 256000,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "anthropic/claude-opus-4",
+      "scores": {
+        "coding": {
+          "rawScore": 1560.49,
+          "confidenceInterval": [1411.37, 1709.62],
+          "rank": 12,
+          "evaluatedAt": "2025-08-27T17:37:41.226969"
+        },
+        "abstraction": {
+          "rawScore": 1566.16,
+          "confidenceInterval": [1417.51, 1714.81],
+          "rank": 5,
+          "evaluatedAt": "2025-08-27T17:37:41.227071"
+        },
+        "empathy": {
+          "rawScore": 1567.86,
+          "confidenceInterval": [1418.67, 1717.05],
+          "rank": 11,
+          "evaluatedAt": "2025-08-27T17:37:41.227160"
+        },
+        "ethics": {
+          "rawScore": 1567.36,
+          "confidenceInterval": [1418.56, 1716.17],
+          "rank": 10,
+          "evaluatedAt": "2025-08-27T17:37:41.227250"
+        },
+        "safety": {
+          "rawScore": 1528.29,
+          "confidenceInterval": [1379.47, 1677.1],
+          "rank": 20,
+          "evaluatedAt": "2025-08-27T17:37:41.227340"
+        },
+        "deception": {
+          "rawScore": 1433.42,
+          "confidenceInterval": [1284.69, 1582.16],
+          "rank": 43,
+          "evaluatedAt": "2025-08-27T17:37:41.227459"
+        },
+        "persuasion": {
+          "rawScore": 1560.83,
+          "confidenceInterval": [1412.19, 1709.47],
+          "rank": 11,
+          "evaluatedAt": "2025-08-27T17:37:41.227551"
+        },
+        "compliance": {
+          "rawScore": 1561.29,
+          "confidenceInterval": [1412.63, 1709.96],
+          "rank": 6,
+          "evaluatedAt": "2025-08-27T17:37:41.227639"
+        }
+      },
+      "name": "Anthropic: Claude Opus 4",
+      "provider": "anthropic",
+      "description": "Claude Opus 4 is benchmarked as the world’s best coding model, at time of release, bringing sustained performance on complex, long-running tasks and agent workflows. It sets new benchmarks in software engineering, achieving leading results on SWE-bench (72.5%) and Terminal-bench (43.2%). Opus 4 supports extended, agentic workflows, handling thousands of task steps continuously for hours without degradation. \n\nRead more at the [blog post here](https://www.anthropic.com/news/claude-4)",
+      "canonical_slug": "anthropic/claude-4-opus-20250522",
+      "context_length": 200000,
+      "pricing": {
+        "prompt": "0.000015",
+        "completion": "0.000075",
+        "request": "0",
+        "image": "0.024",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.0000015",
+        "input_cache_write": "0.00001875"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
+        "tokenizer": "Claude",
+        "instruct_type": null
+      },
+      "modelFamily": "Claude",
+      "created": 1747931245,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "stop",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 200000,
+        "max_completion_tokens": 32000,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "openai/gpt-4.1-mini",
+      "scores": {
+        "coding": {
+          "rawScore": 1600.18,
+          "confidenceInterval": [1451.22, 1749.15],
+          "rank": 5,
+          "evaluatedAt": "2025-08-27T17:37:41.226970"
+        },
+        "abstraction": {
+          "rawScore": 1567.49,
+          "confidenceInterval": [1418.59, 1716.38],
+          "rank": 4,
+          "evaluatedAt": "2025-08-27T17:37:41.227072"
+        },
+        "empathy": {
+          "rawScore": 1487.86,
+          "confidenceInterval": [1339.22, 1636.49],
+          "rank": 31,
+          "evaluatedAt": "2025-08-27T17:37:41.227161"
+        },
+        "ethics": {
+          "rawScore": 1509.38,
+          "confidenceInterval": [1360.3, 1658.47],
+          "rank": 21,
+          "evaluatedAt": "2025-08-27T17:37:41.227252"
+        },
+        "safety": {
+          "rawScore": 1569.63,
+          "confidenceInterval": [1420.84, 1718.42],
+          "rank": 10,
+          "evaluatedAt": "2025-08-27T17:37:41.227342"
+        },
+        "deception": {
+          "rawScore": 1506.93,
+          "confidenceInterval": [1358.25, 1655.61],
+          "rank": 22,
+          "evaluatedAt": "2025-08-27T17:37:41.227460"
+        },
+        "persuasion": {
+          "rawScore": 1506.77,
+          "confidenceInterval": [1358.14, 1655.41],
+          "rank": 23,
+          "evaluatedAt": "2025-08-27T17:37:41.227553"
+        },
+        "compliance": {
+          "rawScore": 1503.13,
+          "confidenceInterval": [1354.49, 1651.76],
+          "rank": 21,
+          "evaluatedAt": "2025-08-27T17:37:41.227641"
+        }
+      },
+      "name": "OpenAI: GPT-4.1 Mini",
+      "provider": "openai",
+      "description": "GPT-4.1 Mini is a mid-sized model delivering performance competitive with GPT-4o at substantially lower latency and cost. It retains a 1 million token context window and scores 45.1% on hard instruction evals, 35.8% on MultiChallenge, and 84.1% on IFEval. Mini also shows strong coding ability (e.g., 31.6% on Aider’s polyglot diff benchmark) and vision understanding, making it suitable for interactive applications with tight performance constraints.",
+      "canonical_slug": "openai/gpt-4.1-mini-2025-04-14",
+      "context_length": 1047576,
+      "pricing": {
+        "prompt": "0.0000004",
+        "completion": "0.0000016",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.0000001"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      },
+      "modelFamily": "GPT",
+      "created": 1744651381,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "presence_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_logprobs",
+        "top_p",
+        "web_search_options"
+      ],
+      "top_provider": {
+        "context_length": 1047576,
+        "max_completion_tokens": 32768,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "deepseek/deepseek-r1-distill-qwen-32b",
+      "scores": {
+        "coding": {
+          "rawScore": 1489.55,
+          "confidenceInterval": [1340.23, 1638.87],
+          "rank": 31,
+          "evaluatedAt": "2025-08-27T17:37:41.226972"
+        },
+        "abstraction": {
+          "rawScore": 1498.58,
+          "confidenceInterval": [1349.85, 1647.31],
+          "rank": 31,
+          "evaluatedAt": "2025-08-27T17:37:41.227073"
+        },
+        "empathy": {
+          "rawScore": 1425.62,
+          "confidenceInterval": [1275.84, 1575.4],
+          "rank": 46,
+          "evaluatedAt": "2025-08-27T17:37:41.227162"
+        },
+        "ethics": {
+          "rawScore": 1429.5,
+          "confidenceInterval": [1280.25, 1578.75],
+          "rank": 44,
+          "evaluatedAt": "2025-08-27T17:37:41.227253"
+        },
+        "safety": {
+          "rawScore": 1492.91,
+          "confidenceInterval": [1343.72, 1642.09],
+          "rank": 29,
+          "evaluatedAt": "2025-08-27T17:37:41.227343"
+        },
+        "deception": {
+          "rawScore": 1433.25,
+          "confidenceInterval": [1283.94, 1582.55],
+          "rank": 44,
+          "evaluatedAt": "2025-08-27T17:37:41.227462"
+        },
+        "persuasion": {
+          "rawScore": 1501.35,
+          "confidenceInterval": [1352.7, 1650],
+          "rank": 26,
+          "evaluatedAt": "2025-08-27T17:37:41.227554"
+        },
+        "compliance": {
+          "rawScore": 1435.81,
+          "confidenceInterval": [1287.02, 1584.61],
+          "rank": 47,
+          "evaluatedAt": "2025-08-27T17:37:41.227642"
+        }
+      },
+      "name": "DeepSeek: R1 Distill Qwen 32B",
+      "provider": "deepseek",
+      "description": "DeepSeek R1 Distill Qwen 32B is a distilled large language model based on [Qwen 2.5 32B](https://huggingface.co/Qwen/Qwen2.5-32B), using outputs from [DeepSeek R1](/deepseek/deepseek-r1). It outperforms OpenAI's o1-mini across various benchmarks, achieving new state-of-the-art results for dense models.\\n\\nOther benchmark results include:\\n\\n- AIME 2024 pass@1: 72.6\\n- MATH-500 pass@1: 94.3\\n- CodeForces Rating: 1691\\n\\nThe model leverages fine-tuning from DeepSeek R1's outputs, enabling competitive performance comparable to larger frontier models.",
+      "canonical_slug": "deepseek/deepseek-r1-distill-qwen-32b",
+      "context_length": 131072,
+      "pricing": {
+        "prompt": "0.000000075",
+        "completion": "0.00000015",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Qwen",
+        "instruct_type": "deepseek-r1"
+      },
+      "modelFamily": "Qwen",
+      "created": 1738194830,
+      "hugging_face_id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "logit_bias",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "reasoning",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "temperature",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 131072,
+        "max_completion_tokens": 16384,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "meta-llama/llama-4-maverick",
+      "scores": {
+        "coding": {
+          "rawScore": 1536.46,
+          "confidenceInterval": [1387.36, 1685.56],
+          "rank": 15,
+          "evaluatedAt": "2025-08-27T17:37:41.226973"
+        },
+        "abstraction": {
+          "rawScore": 1428.25,
+          "confidenceInterval": [1279.06, 1577.44],
+          "rank": 44,
+          "evaluatedAt": "2025-08-27T17:37:41.227075"
+        },
+        "empathy": {
+          "rawScore": 1447.7,
+          "confidenceInterval": [1299.03, 1596.37],
+          "rank": 38,
+          "evaluatedAt": "2025-08-27T17:37:41.227164"
+        },
+        "ethics": {
+          "rawScore": 1436.77,
+          "confidenceInterval": [1288.14, 1585.4],
+          "rank": 38,
+          "evaluatedAt": "2025-08-27T17:37:41.227255"
+        },
+        "safety": {
+          "rawScore": 1437.58,
+          "confidenceInterval": [1288.9, 1586.26],
+          "rank": 41,
+          "evaluatedAt": "2025-08-27T17:37:41.227345"
+        },
+        "deception": {
+          "rawScore": 1503.63,
+          "confidenceInterval": [1354.96, 1652.31],
+          "rank": 24,
+          "evaluatedAt": "2025-08-27T17:37:41.227463"
+        },
+        "persuasion": {
+          "rawScore": 1365.64,
+          "confidenceInterval": [1209.88, 1521.4],
+          "rank": 50,
+          "evaluatedAt": "2025-08-27T17:37:41.227556"
+        },
+        "compliance": {
+          "rawScore": 1502.91,
+          "confidenceInterval": [1353.81, 1652.01],
+          "rank": 22,
+          "evaluatedAt": "2025-08-27T17:37:41.227644"
+        }
+      },
+      "name": "Meta: Llama 4 Maverick",
+      "provider": "meta-llama",
+      "description": "Llama 4 Maverick 17B Instruct (128E) is a high-capacity multimodal language model from Meta, built on a mixture-of-experts (MoE) architecture with 128 experts and 17 billion active parameters per forward pass (400B total). It supports multilingual text and image input, and produces multilingual text and code output across 12 supported languages. Optimized for vision-language tasks, Maverick is instruction-tuned for assistant-like behavior, image reasoning, and general-purpose multimodal interaction.\n\nMaverick features early fusion for native multimodality and a 1 million token context window. It was trained on a curated mixture of public, licensed, and Meta-platform data, covering ~22 trillion tokens, with a knowledge cutoff in August 2024. Released on April 5, 2025 under the Llama 4 Community License, Maverick is suited for research and commercial applications requiring advanced multimodal understanding and high model throughput.",
+      "canonical_slug": "meta-llama/llama-4-maverick-17b-128e-instruct",
+      "context_length": 1048576,
+      "pricing": {
+        "prompt": "0.00000015",
+        "completion": "0.0000006",
+        "request": "0",
+        "image": "0.0006684",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "tokenizer": "Llama4",
+        "instruct_type": null
+      },
+      "modelFamily": "LLaMA",
+      "created": 1743881822,
+      "hugging_face_id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 1048576,
+        "max_completion_tokens": 16384,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "qwen/qwen-max",
+      "scores": {
+        "coding": {
+          "rawScore": 1501.84,
+          "confidenceInterval": [1353.19, 1650.48],
+          "rank": 25,
+          "evaluatedAt": "2025-08-27T17:37:41.226975"
+        },
+        "abstraction": {
+          "rawScore": 1503.62,
+          "confidenceInterval": [1354.91, 1652.33],
+          "rank": 26,
+          "evaluatedAt": "2025-08-27T17:37:41.227076"
+        },
+        "empathy": {
+          "rawScore": 1624.55,
+          "confidenceInterval": [1475.91, 1773.2],
+          "rank": 2,
+          "evaluatedAt": "2025-08-27T17:37:41.227165"
+        },
+        "ethics": {
+          "rawScore": 1502.97,
+          "confidenceInterval": [1353.82, 1652.11],
+          "rank": 25,
+          "evaluatedAt": "2025-08-27T17:37:41.227256"
+        },
+        "safety": {
+          "rawScore": 1472.13,
+          "confidenceInterval": [1323.45, 1620.81],
+          "rank": 33,
+          "evaluatedAt": "2025-08-27T17:37:41.227346"
+        },
+        "deception": {
+          "rawScore": 1497.87,
+          "confidenceInterval": [1349.21, 1646.52],
+          "rank": 26,
+          "evaluatedAt": "2025-08-27T17:37:41.227465"
+        },
+        "persuasion": {
+          "rawScore": 1438.76,
+          "confidenceInterval": [1289.57, 1587.95],
+          "rank": 40,
+          "evaluatedAt": "2025-08-27T17:37:41.227557"
+        },
+        "compliance": {
+          "rawScore": 1411.4,
+          "confidenceInterval": [1262.72, 1560.07],
+          "rank": 48,
+          "evaluatedAt": "2025-08-27T17:37:41.227645"
+        }
+      },
+      "name": "Qwen: Qwen-Max ",
+      "provider": "qwen",
+      "description": "Qwen-Max, based on Qwen2.5, provides the best inference performance among [Qwen models](/qwen), especially for complex multi-step tasks. It's a large-scale MoE model that has been pretrained on over 20 trillion tokens and further post-trained with curated Supervised Fine-Tuning (SFT) and Reinforcement Learning from Human Feedback (RLHF) methodologies. The parameter count is unknown.",
+      "canonical_slug": "qwen/qwen-max-2025-01-25",
+      "context_length": 32768,
+      "pricing": {
+        "prompt": "0.0000016",
+        "completion": "0.0000064",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.00000064"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Qwen",
+        "instruct_type": null
+      },
+      "modelFamily": "Qwen",
+      "created": 1738402289,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "max_tokens",
+        "presence_penalty",
+        "response_format",
+        "seed",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 32768,
+        "max_completion_tokens": 8192,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "google/gemini-2.5-pro",
+      "scores": {
+        "coding": {
+          "rawScore": 1684.73,
+          "confidenceInterval": [1535.89, 1833.57],
+          "rank": 1,
+          "evaluatedAt": "2025-08-27T17:37:41.226976"
+        },
+        "abstraction": {
+          "rawScore": 1404.08,
+          "confidenceInterval": [1248.77, 1559.38],
+          "rank": 50,
+          "evaluatedAt": "2025-08-27T17:37:41.227078"
+        },
+        "empathy": {
+          "rawScore": 1594.9,
+          "confidenceInterval": [1446.25, 1743.54],
+          "rank": 5,
+          "evaluatedAt": "2025-08-27T17:37:41.227167"
+        },
+        "ethics": {
+          "rawScore": 1564.7,
+          "confidenceInterval": [1416.06, 1713.35],
+          "rank": 11,
+          "evaluatedAt": "2025-08-27T17:37:41.227258"
+        },
+        "safety": {
+          "rawScore": 1595.15,
+          "confidenceInterval": [1446.35, 1743.94],
+          "rank": 5,
+          "evaluatedAt": "2025-08-27T17:37:41.227348"
+        },
+        "deception": {
+          "rawScore": 1620.2,
+          "confidenceInterval": [1471.37, 1769.04],
+          "rank": 5,
+          "evaluatedAt": "2025-08-27T17:37:41.227466"
+        },
+        "persuasion": {
+          "rawScore": 1532.38,
+          "confidenceInterval": [1383.75, 1681.02],
+          "rank": 17,
+          "evaluatedAt": "2025-08-27T17:37:41.227559"
+        },
+        "compliance": {
+          "rawScore": 1547.12,
+          "confidenceInterval": [1393.38, 1700.86],
+          "rank": 9,
+          "evaluatedAt": "2025-08-27T17:37:41.227647"
+        }
+      },
+      "name": "Google: Gemini 2.5 Pro",
+      "provider": "google",
+      "description": "Gemini 2.5 Pro is Google’s state-of-the-art AI model designed for advanced reasoning, coding, mathematics, and scientific tasks. It employs “thinking” capabilities, enabling it to reason through responses with enhanced accuracy and nuanced context handling. Gemini 2.5 Pro achieves top-tier performance on multiple benchmarks, including first-place positioning on the LMArena leaderboard, reflecting superior human-preference alignment and complex problem-solving abilities.",
+      "canonical_slug": "google/gemini-2.5-pro",
+      "context_length": 1048576,
+      "pricing": {
+        "prompt": "0.00000125",
+        "completion": "0.00001",
+        "request": "0",
+        "image": "0.00516",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.00000031",
+        "input_cache_write": "0.000001625"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["file", "image", "text", "audio"],
+        "output_modalities": ["text"],
+        "tokenizer": "Gemini",
+        "instruct_type": null
+      },
+      "modelFamily": "Gemini",
+      "created": 1750169544,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 1048576,
+        "max_completion_tokens": 65536,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "thedrummer/anubis-pro-105b-v1",
+      "scores": {
+        "coding": {
+          "rawScore": 1449.47,
+          "confidenceInterval": [1300.58, 1598.36],
+          "rank": 37,
+          "evaluatedAt": "2025-08-27T17:37:41.226978"
+        },
+        "abstraction": {
+          "rawScore": 1413.46,
+          "confidenceInterval": [1264.69, 1562.23],
+          "rank": 45,
+          "evaluatedAt": "2025-08-27T17:37:41.227081"
+        },
+        "empathy": {
+          "rawScore": 1506.57,
+          "confidenceInterval": [1357.34, 1655.8],
+          "rank": 21,
+          "evaluatedAt": "2025-08-27T17:37:41.227168"
+        },
+        "ethics": {
+          "rawScore": 1452.48,
+          "confidenceInterval": [1303.73, 1601.23],
+          "rank": 34,
+          "evaluatedAt": "2025-08-27T17:37:41.227262"
+        },
+        "safety": {
+          "rawScore": 1445.92,
+          "confidenceInterval": [1297.06, 1594.78],
+          "rank": 38,
+          "evaluatedAt": "2025-08-27T17:37:41.227376"
+        },
+        "deception": {
+          "rawScore": 1447.04,
+          "confidenceInterval": [1298.3, 1595.78],
+          "rank": 36,
+          "evaluatedAt": "2025-08-27T17:37:41.227468"
+        },
+        "persuasion": {
+          "rawScore": 1526.57,
+          "confidenceInterval": [1377.79, 1675.35],
+          "rank": 20,
+          "evaluatedAt": "2025-08-27T17:37:41.227563"
+        },
+        "compliance": {
+          "rawScore": 1382.57,
+          "confidenceInterval": [1226.67, 1538.47],
+          "rank": 50,
+          "evaluatedAt": "2025-08-27T17:37:41.227651"
+        }
+      },
+      "name": "TheDrummer: Anubis Pro 105B V1",
+      "provider": "thedrummer",
+      "description": "Anubis Pro 105B v1 is an expanded and refined variant of Meta’s Llama 3.3 70B, featuring 50% additional layers and further fine-tuning to leverage its increased capacity. Designed for advanced narrative, roleplay, and instructional tasks, it demonstrates enhanced emotional intelligence, creativity, nuanced character portrayal, and superior prompt adherence compared to smaller models. Its larger parameter count allows for deeper contextual understanding and extended reasoning capabilities, optimized for engaging, intelligent, and coherent interactions.",
+      "canonical_slug": "thedrummer/anubis-pro-105b-v1",
+      "context_length": 131072,
+      "pricing": {
+        "prompt": "0.0000005",
+        "completion": "0.000001",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "thedrummer",
+      "created": 1741642290,
+      "hugging_face_id": "TheDrummer/Anubis-Pro-105B-v1",
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "seed",
+        "stop",
+        "temperature",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 131072,
+        "max_completion_tokens": 131072,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "perplexity/sonar-pro",
+      "scores": {
+        "coding": {
+          "rawScore": 1536.4,
+          "confidenceInterval": [1387.6, 1685.2],
+          "rank": 16,
+          "evaluatedAt": "2025-08-27T17:37:41.226980"
+        },
+        "abstraction": {
+          "rawScore": 1563.46,
+          "confidenceInterval": [1414.81, 1712.11],
+          "rank": 8,
+          "evaluatedAt": "2025-08-27T17:37:41.227079"
+        },
+        "empathy": {
+          "rawScore": 1439.1,
+          "confidenceInterval": [1290.45, 1587.75],
+          "rank": 40,
+          "evaluatedAt": "2025-08-27T17:37:41.227171"
+        },
+        "ethics": {
+          "rawScore": 1431.6,
+          "confidenceInterval": [1275.6, 1587.59],
+          "rank": 43,
+          "evaluatedAt": "2025-08-27T17:37:41.227259"
+        },
+        "safety": {
+          "rawScore": 1470.94,
+          "confidenceInterval": [1322.23, 1619.64],
+          "rank": 35,
+          "evaluatedAt": "2025-08-27T17:37:41.227349"
+        },
+        "deception": {
+          "rawScore": 1561.89,
+          "confidenceInterval": [1413.25, 1710.53],
+          "rank": 10,
+          "evaluatedAt": "2025-08-27T17:37:41.227471"
+        },
+        "persuasion": {
+          "rawScore": 1504.25,
+          "confidenceInterval": [1355.59, 1652.91],
+          "rank": 24,
+          "evaluatedAt": "2025-08-27T17:37:41.227560"
+        },
+        "compliance": {
+          "rawScore": 1500.58,
+          "confidenceInterval": [1351.94, 1649.22],
+          "rank": 26,
+          "evaluatedAt": "2025-08-27T17:37:41.227648"
+        }
+      },
+      "name": "Perplexity: Sonar Pro",
+      "provider": "perplexity",
+      "description": "Note: Sonar Pro pricing includes Perplexity search pricing. See [details here](https://docs.perplexity.ai/guides/pricing#detailed-pricing-breakdown-for-sonar-reasoning-pro-and-sonar-pro)\n\nFor enterprises seeking more advanced capabilities, the Sonar Pro API can handle in-depth, multi-step queries with added extensibility, like double the number of citations per search as Sonar on average. Plus, with a larger context window, it can handle longer and more nuanced searches and follow-up questions. ",
+      "canonical_slug": "perplexity/sonar-pro",
+      "context_length": 200000,
+      "pricing": {
+        "prompt": "0.000003",
+        "completion": "0.000015",
+        "request": "0",
+        "image": "0",
+        "web_search": "0.005",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "Sonar",
+      "created": 1741312423,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "frequency_penalty",
+        "max_tokens",
+        "presence_penalty",
+        "temperature",
+        "top_k",
+        "top_p",
+        "web_search_options"
+      ],
+      "top_provider": {
+        "context_length": 200000,
+        "max_completion_tokens": 8000,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "undi95/remm-slerp-l2-13b",
+      "scores": {
+        "coding": {
+          "rawScore": 1402.44,
+          "confidenceInterval": [1253.16, 1551.71],
+          "rank": 47,
+          "evaluatedAt": "2025-08-27T17:37:41.226987"
+        },
+        "abstraction": {
+          "rawScore": 1446.37,
+          "confidenceInterval": [1297.21, 1595.52],
+          "rank": 40,
+          "evaluatedAt": "2025-08-27T17:37:41.227082"
+        },
+        "empathy": {
+          "rawScore": 1457.1,
+          "confidenceInterval": [1307.74, 1606.47],
+          "rank": 36,
+          "evaluatedAt": "2025-08-27T17:37:41.227170"
+        },
+        "ethics": {
+          "rawScore": 1389.45,
+          "confidenceInterval": [1240.35, 1538.56],
+          "rank": 47,
+          "evaluatedAt": "2025-08-27T17:37:41.227261"
+        },
+        "safety": {
+          "rawScore": 1438.92,
+          "confidenceInterval": [1290, 1587.84],
+          "rank": 40,
+          "evaluatedAt": "2025-08-27T17:37:41.227379"
+        },
+        "deception": {
+          "rawScore": 1407.54,
+          "confidenceInterval": [1258.79, 1556.28],
+          "rank": 46,
+          "evaluatedAt": "2025-08-27T17:37:41.227469"
+        },
+        "persuasion": {
+          "rawScore": 1472.78,
+          "confidenceInterval": [1324.11, 1621.45],
+          "rank": 33,
+          "evaluatedAt": "2025-08-27T17:37:41.227562"
+        },
+        "compliance": {
+          "rawScore": 1623.12,
+          "confidenceInterval": [1474.31, 1771.93],
+          "rank": 1,
+          "evaluatedAt": "2025-08-27T17:37:41.227649"
+        }
+      },
+      "name": "ReMM SLERP 13B",
+      "provider": "undi95",
+      "description": "A recreation trial of the original MythoMax-L2-B13 but with updated models. #merge",
+      "canonical_slug": "undi95/remm-slerp-l2-13b",
+      "context_length": 6144,
+      "pricing": {
+        "prompt": "0.00000045",
+        "completion": "0.00000065",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Llama2",
+        "instruct_type": "alpaca"
+      },
+      "modelFamily": "undi95",
+      "created": 1689984000,
+      "hugging_face_id": "Undi95/ReMM-SLERP-L2-13B",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "top_a",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 6144,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "moonshotai/kimi-k2",
+      "scores": {
+        "coding": {
+          "rawScore": 1566.1,
+          "confidenceInterval": [1417.4, 1714.8],
+          "rank": 10,
+          "evaluatedAt": "2025-08-27T17:37:41.226989"
+        },
+        "abstraction": {
+          "rawScore": 1531.54,
+          "confidenceInterval": [1382.91, 1680.17],
+          "rank": 17,
+          "evaluatedAt": "2025-08-27T17:37:41.227084"
+        },
+        "empathy": {
+          "rawScore": 1593.34,
+          "confidenceInterval": [1444.7, 1741.98],
+          "rank": 6,
+          "evaluatedAt": "2025-08-27T17:37:41.227173"
+        },
+        "ethics": {
+          "rawScore": 1688.44,
+          "confidenceInterval": [1539.77, 1837.11],
+          "rank": 1,
+          "evaluatedAt": "2025-08-27T17:37:41.227263"
+        },
+        "safety": {
+          "rawScore": 1598.21,
+          "confidenceInterval": [1449.39, 1747.03],
+          "rank": 4,
+          "evaluatedAt": "2025-08-27T17:37:41.227380"
+        },
+        "deception": {
+          "rawScore": 1626.13,
+          "confidenceInterval": [1477.06, 1775.2],
+          "rank": 4,
+          "evaluatedAt": "2025-08-27T17:37:41.227473"
+        },
+        "persuasion": {
+          "rawScore": 1530.4,
+          "confidenceInterval": [1381.58, 1679.22],
+          "rank": 18,
+          "evaluatedAt": "2025-08-27T17:37:41.227564"
+        },
+        "compliance": {
+          "rawScore": 1492.34,
+          "confidenceInterval": [1343.17, 1641.51],
+          "rank": 36,
+          "evaluatedAt": "2025-08-27T17:37:41.227652"
+        }
+      },
+      "name": "MoonshotAI: Kimi K2",
+      "provider": "moonshotai",
+      "description": "Kimi K2 Instruct is a large-scale Mixture-of-Experts (MoE) language model developed by Moonshot AI, featuring 1 trillion total parameters with 32 billion active per forward pass. It is optimized for agentic capabilities, including advanced tool use, reasoning, and code synthesis. Kimi K2 excels across a broad range of benchmarks, particularly in coding (LiveCodeBench, SWE-bench), reasoning (ZebraLogic, GPQA), and tool-use (Tau2, AceBench) tasks. It supports long-context inference up to 128K tokens and is designed with a novel training stack that includes the MuonClip optimizer for stable large-scale MoE training.",
+      "canonical_slug": "moonshotai/kimi-k2",
+      "context_length": 63000,
+      "pricing": {
+        "prompt": "0.00000014",
+        "completion": "0.00000249",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "Kimi",
+      "created": 1752263252,
+      "hugging_face_id": "moonshotai/Kimi-K2-Instruct",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 63000,
+        "max_completion_tokens": 63000,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "openai/codex-mini",
+      "scores": {
+        "coding": {
+          "rawScore": 1591.7,
+          "confidenceInterval": [1442.79, 1740.6],
+          "rank": 6,
+          "evaluatedAt": "2025-08-27T17:37:41.226991"
+        },
+        "abstraction": {
+          "rawScore": 1586.58,
+          "confidenceInterval": [1437.57, 1735.59],
+          "rank": 3,
+          "evaluatedAt": "2025-08-27T17:37:41.227085"
+        },
+        "empathy": {
+          "rawScore": 1500.38,
+          "confidenceInterval": [1351.73, 1649.02],
+          "rank": 28,
+          "evaluatedAt": "2025-08-27T17:37:41.227175"
+        },
+        "ethics": {
+          "rawScore": 1564.61,
+          "confidenceInterval": [1415.93, 1713.29],
+          "rank": 12,
+          "evaluatedAt": "2025-08-27T17:37:41.227265"
+        },
+        "safety": {
+          "rawScore": 1503.11,
+          "confidenceInterval": [1354.45, 1651.78],
+          "rank": 25,
+          "evaluatedAt": "2025-08-27T17:37:41.227382"
+        },
+        "deception": {
+          "rawScore": 1630.34,
+          "confidenceInterval": [1481.71, 1778.97],
+          "rank": 3,
+          "evaluatedAt": "2025-08-27T17:37:41.227474"
+        },
+        "persuasion": {
+          "rawScore": 1593.19,
+          "confidenceInterval": [1444.54, 1741.84],
+          "rank": 7,
+          "evaluatedAt": "2025-08-27T17:37:41.227566"
+        },
+        "compliance": {
+          "rawScore": 1407.99,
+          "confidenceInterval": [1245.79, 1570.18],
+          "rank": 49,
+          "evaluatedAt": "2025-08-27T17:37:41.227654"
+        }
+      },
+      "name": "OpenAI: Codex Mini",
+      "provider": "openai",
+      "description": "codex-mini-latest is a fine-tuned version of o4-mini specifically for use in Codex CLI. For direct use in the API, we recommend starting with gpt-4.1.",
+      "canonical_slug": "openai/codex-mini",
+      "context_length": 200000,
+      "pricing": {
+        "prompt": "0.0000015",
+        "completion": "0.000006",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.000000375"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["image", "text"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      },
+      "modelFamily": "openai",
+      "created": 1747409761,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "structured_outputs",
+        "tool_choice",
+        "tools"
+      ],
+      "top_provider": {
+        "context_length": 200000,
+        "max_completion_tokens": 100000,
+        "is_moderated": true
+      }
+    },
+    {
+      "id": "google/gemma-3-12b-it",
+      "scores": {
+        "coding": {
+          "rawScore": 1459.12,
+          "confidenceInterval": [1310.31, 1607.93],
+          "rank": 36,
+          "evaluatedAt": "2025-08-27T17:37:41.226993"
+        },
+        "abstraction": {
+          "rawScore": 1505.73,
+          "confidenceInterval": [1357.08, 1654.37],
+          "rank": 25,
+          "evaluatedAt": "2025-08-27T17:37:41.227087"
+        },
+        "empathy": {
+          "rawScore": 1506.53,
+          "confidenceInterval": [1357.37, 1655.7],
+          "rank": 22,
+          "evaluatedAt": "2025-08-27T17:37:41.227177"
+        },
+        "ethics": {
+          "rawScore": 1552.85,
+          "confidenceInterval": [1404.21, 1701.49],
+          "rank": 16,
+          "evaluatedAt": "2025-08-27T17:37:41.227266"
+        },
+        "safety": {
+          "rawScore": 1503.69,
+          "confidenceInterval": [1355.05, 1652.33],
+          "rank": 24,
+          "evaluatedAt": "2025-08-27T17:37:41.227383"
+        },
+        "deception": {
+          "rawScore": 1546.95,
+          "confidenceInterval": [1392.43, 1701.48],
+          "rank": 14,
+          "evaluatedAt": "2025-08-27T17:37:41.227475"
+        },
+        "persuasion": {
+          "rawScore": 1564.74,
+          "confidenceInterval": [1416.09, 1713.39],
+          "rank": 10,
+          "evaluatedAt": "2025-08-27T17:37:41.227567"
+        },
+        "compliance": {
+          "rawScore": 1436.7,
+          "confidenceInterval": [1287.04, 1586.35],
+          "rank": 46,
+          "evaluatedAt": "2025-08-27T17:37:41.227655"
+        }
+      },
+      "name": "Google: Gemma 3 12B",
+      "provider": "google",
+      "description": "Gemma 3 introduces multimodality, supporting vision-language input and text outputs. It handles context windows up to 128k tokens, understands over 140 languages, and offers improved math, reasoning, and chat capabilities, including structured outputs and function calling. Gemma 3 12B is the second largest in the family of Gemma 3 models after [Gemma 3 27B](google/gemma-3-27b-it)",
+      "canonical_slug": "google/gemma-3-12b-it",
+      "context_length": 96000,
+      "pricing": {
+        "prompt": "0.0000000481286",
+        "completion": "0.000000192608",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "tokenizer": "Gemini",
+        "instruct_type": "gemma"
+      },
+      "modelFamily": "google",
+      "created": 1741902625,
+      "hugging_face_id": "google/gemma-3-12b-it",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "temperature",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 96000,
+        "max_completion_tokens": 8192,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "qwen/qwen3-32b",
+      "scores": {
+        "coding": {
+          "rawScore": 1346.43,
+          "confidenceInterval": [1190.48, 1502.37],
+          "rank": 50,
+          "evaluatedAt": "2025-08-27T17:37:41.226994"
+        },
+        "abstraction": {
+          "rawScore": 1538.58,
+          "confidenceInterval": [1389.8, 1687.36],
+          "rank": 13,
+          "evaluatedAt": "2025-08-27T17:37:41.227092"
+        },
+        "empathy": {
+          "rawScore": 1504.36,
+          "confidenceInterval": [1355.64, 1653.09],
+          "rank": 23,
+          "evaluatedAt": "2025-08-27T17:37:41.227178"
+        },
+        "ethics": {
+          "rawScore": 1368.9,
+          "confidenceInterval": [1212.53, 1525.27],
+          "rank": 50,
+          "evaluatedAt": "2025-08-27T17:37:41.227268"
+        },
+        "safety": {
+          "rawScore": 1533.49,
+          "confidenceInterval": [1384.35, 1682.64],
+          "rank": 16,
+          "evaluatedAt": "2025-08-27T17:37:41.227385"
+        },
+        "deception": {
+          "rawScore": 1566.5,
+          "confidenceInterval": [1417.83, 1715.17],
+          "rank": 8,
+          "evaluatedAt": "2025-08-27T17:37:41.227477"
+        },
+        "persuasion": {
+          "rawScore": 1537.31,
+          "confidenceInterval": [1388.66, 1685.96],
+          "rank": 16,
+          "evaluatedAt": "2025-08-27T17:37:41.227572"
+        },
+        "compliance": {
+          "rawScore": 1500.04,
+          "confidenceInterval": [1351.38, 1648.7],
+          "rank": 27,
+          "evaluatedAt": "2025-08-27T17:37:41.227657"
+        }
+      },
+      "name": "Qwen: Qwen3 32B",
+      "provider": "qwen",
+      "description": "Qwen3-32B is a dense 32.8B parameter causal language model from the Qwen3 series, optimized for both complex reasoning and efficient dialogue. It supports seamless switching between a \"thinking\" mode for tasks like math, coding, and logical inference, and a \"non-thinking\" mode for faster, general-purpose conversation. The model demonstrates strong performance in instruction-following, agent tool use, creative writing, and multilingual tasks across 100+ languages and dialects. It natively handles 32K token contexts and can extend to 131K tokens using YaRN-based scaling. ",
+      "canonical_slug": "qwen/qwen3-32b-04-28",
+      "context_length": 40960,
+      "pricing": {
+        "prompt": "0.000000017992692",
+        "completion": "0.00000007200576",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Qwen3",
+        "instruct_type": "qwen3"
+      },
+      "modelFamily": "Qwen",
+      "created": 1745875945,
+      "hugging_face_id": "Qwen/Qwen3-32B",
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "reasoning",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 40960,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "arcee-ai/maestro-reasoning",
+      "scores": {
+        "coding": {
+          "rawScore": 1496.21,
+          "confidenceInterval": [1347.28, 1645.14],
+          "rank": 27,
+          "evaluatedAt": "2025-08-27T17:37:41.226996"
+        },
+        "abstraction": {
+          "rawScore": 1407.63,
+          "confidenceInterval": [1252.73, 1562.53],
+          "rank": 46,
+          "evaluatedAt": "2025-08-27T17:37:41.227088"
+        },
+        "empathy": {
+          "rawScore": 1582.94,
+          "confidenceInterval": [1428.83, 1737.05],
+          "rank": 8,
+          "evaluatedAt": "2025-08-27T17:37:41.227183"
+        },
+        "ethics": {
+          "rawScore": 1404.55,
+          "confidenceInterval": [1249.23, 1559.88],
+          "rank": 45,
+          "evaluatedAt": "2025-08-27T17:37:41.227272"
+        },
+        "safety": {
+          "rawScore": 1401.57,
+          "confidenceInterval": [1246.03, 1557.11],
+          "rank": 46,
+          "evaluatedAt": "2025-08-27T17:37:41.227388"
+        },
+        "deception": {
+          "rawScore": 1535.1,
+          "confidenceInterval": [1386.22, 1683.99],
+          "rank": 16,
+          "evaluatedAt": "2025-08-27T17:37:41.227478"
+        },
+        "persuasion": {
+          "rawScore": 1440.53,
+          "confidenceInterval": [1291.9, 1589.16],
+          "rank": 39,
+          "evaluatedAt": "2025-08-27T17:37:41.227570"
+        },
+        "compliance": {
+          "rawScore": 1445.38,
+          "confidenceInterval": [1289.98, 1600.78],
+          "rank": 45,
+          "evaluatedAt": "2025-08-27T17:37:41.227661"
+        }
+      },
+      "name": "Arcee AI: Maestro Reasoning",
+      "provider": "arcee-ai",
+      "description": "Maestro Reasoning is Arcee's flagship analysis model: a 32 B‑parameter derivative of Qwen 2.5‑32 B tuned with DPO and chain‑of‑thought RL for step‑by‑step logic. Compared to the earlier 7 B preview, the production 32 B release widens the context window to 128 k tokens and doubles pass‑rate on MATH and GSM‑8K, while also lifting code completion accuracy. Its instruction style encourages structured \"thought → answer\" traces that can be parsed or hidden according to user preference. That transparency pairs well with audit‑focused industries like finance or healthcare where seeing the reasoning path matters. In Arcee Conductor, Maestro is automatically selected for complex, multi‑constraint queries that smaller SLMs bounce. ",
+      "canonical_slug": "arcee-ai/maestro-reasoning",
+      "context_length": 131072,
+      "pricing": {
+        "prompt": "0.0000009",
+        "completion": "0.0000033",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "arcee-ai",
+      "created": 1746481269,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "stop",
+        "temperature",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 131072,
+        "max_completion_tokens": 32000,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b-2507",
+      "scores": {
+        "coding": {
+          "rawScore": 1570.46,
+          "confidenceInterval": [1421.59, 1719.34],
+          "rank": 9,
+          "evaluatedAt": "2025-08-27T17:37:41.226997"
+        },
+        "abstraction": {
+          "rawScore": 1597.22,
+          "confidenceInterval": [1448.49, 1745.95],
+          "rank": 2,
+          "evaluatedAt": "2025-08-27T17:37:41.227091"
+        },
+        "empathy": {
+          "rawScore": 1537.15,
+          "confidenceInterval": [1388.5, 1685.79],
+          "rank": 17,
+          "evaluatedAt": "2025-08-27T17:37:41.227181"
+        },
+        "ethics": {
+          "rawScore": 1629.27,
+          "confidenceInterval": [1480.63, 1777.92],
+          "rank": 2,
+          "evaluatedAt": "2025-08-27T17:37:41.227271"
+        },
+        "safety": {
+          "rawScore": 1656.73,
+          "confidenceInterval": [1507.88, 1805.58],
+          "rank": 1,
+          "evaluatedAt": "2025-08-27T17:37:41.227389"
+        },
+        "deception": {
+          "rawScore": 1632.41,
+          "confidenceInterval": [1483.73, 1781.08],
+          "rank": 2,
+          "evaluatedAt": "2025-08-27T17:37:41.227481"
+        },
+        "persuasion": {
+          "rawScore": 1508.9,
+          "confidenceInterval": [1359.75, 1658.06],
+          "rank": 22,
+          "evaluatedAt": "2025-08-27T17:37:41.227569"
+        },
+        "compliance": {
+          "rawScore": 1470.53,
+          "confidenceInterval": [1321.3, 1619.76],
+          "rank": 40,
+          "evaluatedAt": "2025-08-27T17:37:41.227658"
+        }
+      },
+      "name": "Qwen: Qwen3 235B A22B Instruct 2507",
+      "provider": "qwen",
+      "description": "Qwen3-235B-A22B-Instruct-2507 is a multilingual, instruction-tuned mixture-of-experts language model based on the Qwen3-235B architecture, with 22B active parameters per forward pass. It is optimized for general-purpose text generation, including instruction following, logical reasoning, math, code, and tool usage. The model supports a native 262K context length and does not implement \"thinking mode\" (<think> blocks).\n\nCompared to its base variant, this version delivers significant gains in knowledge coverage, long-context reasoning, coding benchmarks, and alignment with open-ended tasks. It is particularly strong on multilingual understanding, math reasoning (e.g., AIME, HMMT), and alignment evaluations like Arena-Hard and WritingBench.",
+      "canonical_slug": "qwen/qwen3-235b-a22b-07-25",
+      "context_length": 262144,
+      "pricing": {
+        "prompt": "0.000000077968332",
+        "completion": "0.00000031202496",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Qwen3",
+        "instruct_type": null
+      },
+      "modelFamily": "Qwen",
+      "created": 1753119555,
+      "hugging_face_id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 262144,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "qwen/qwen-turbo",
+      "scores": {
+        "coding": {
+          "rawScore": 1433.35,
+          "confidenceInterval": [1284.68, 1582.01],
+          "rank": 42,
+          "evaluatedAt": "2025-08-27T17:37:41.226999"
+        },
+        "abstraction": {
+          "rawScore": 1507.57,
+          "confidenceInterval": [1358.8, 1656.34],
+          "rank": 23,
+          "evaluatedAt": "2025-08-27T17:37:41.227089"
+        },
+        "empathy": {
+          "rawScore": 1685.64,
+          "confidenceInterval": [1536.86, 1834.42],
+          "rank": 1,
+          "evaluatedAt": "2025-08-27T17:37:41.227180"
+        },
+        "ethics": {
+          "rawScore": 1507.96,
+          "confidenceInterval": [1359.22, 1656.69],
+          "rank": 22,
+          "evaluatedAt": "2025-08-27T17:37:41.227269"
+        },
+        "safety": {
+          "rawScore": 1567.14,
+          "confidenceInterval": [1418.28, 1716.01],
+          "rank": 12,
+          "evaluatedAt": "2025-08-27T17:37:41.227386"
+        },
+        "deception": {
+          "rawScore": 1504.38,
+          "confidenceInterval": [1355.75, 1653.02],
+          "rank": 23,
+          "evaluatedAt": "2025-08-27T17:37:41.227480"
+        },
+        "persuasion": {
+          "rawScore": 1402.23,
+          "confidenceInterval": [1253.46, 1551.01],
+          "rank": 46,
+          "evaluatedAt": "2025-08-27T17:37:41.227573"
+        },
+        "compliance": {
+          "rawScore": 1506.71,
+          "confidenceInterval": [1357.97, 1655.46],
+          "rank": 16,
+          "evaluatedAt": "2025-08-27T17:37:41.227660"
+        }
+      },
+      "name": "Qwen: Qwen-Turbo",
+      "provider": "qwen",
+      "description": "Qwen-Turbo, based on Qwen2.5, is a 1M context model that provides fast speed and low cost, suitable for simple tasks.",
+      "canonical_slug": "qwen/qwen-turbo-2024-11-01",
+      "context_length": 1000000,
+      "pricing": {
+        "prompt": "0.00000005",
+        "completion": "0.0000002",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0",
+        "input_cache_read": "0.00000002"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Qwen",
+        "instruct_type": null
+      },
+      "modelFamily": "Qwen",
+      "created": 1738410974,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "max_tokens",
+        "presence_penalty",
+        "response_format",
+        "seed",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 1000000,
+        "max_completion_tokens": 8192,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "nvidia/llama-3.3-nemotron-super-49b-v1",
+      "scores": {
+        "coding": {
+          "rawScore": 1498.71,
+          "confidenceInterval": [1350.06, 1647.37],
+          "rank": 26,
+          "evaluatedAt": "2025-08-27T17:37:41.227000"
+        },
+        "abstraction": {
+          "rawScore": 1532.43,
+          "confidenceInterval": [1383.8, 1681.07],
+          "rank": 16,
+          "evaluatedAt": "2025-08-27T17:37:41.227094"
+        },
+        "empathy": {
+          "rawScore": 1553.01,
+          "confidenceInterval": [1404.37, 1701.65],
+          "rank": 15,
+          "evaluatedAt": "2025-08-27T17:37:41.227184"
+        },
+        "ethics": {
+          "rawScore": 1436.41,
+          "confidenceInterval": [1287.68, 1585.14],
+          "rank": 39,
+          "evaluatedAt": "2025-08-27T17:37:41.227275"
+        },
+        "safety": {
+          "rawScore": 1568.77,
+          "confidenceInterval": [1420.02, 1717.51],
+          "rank": 11,
+          "evaluatedAt": "2025-08-27T17:37:41.227391"
+        },
+        "deception": {
+          "rawScore": 1507.2,
+          "confidenceInterval": [1358.45, 1655.94],
+          "rank": 21,
+          "evaluatedAt": "2025-08-27T17:37:41.227483"
+        },
+        "persuasion": {
+          "rawScore": 1560.43,
+          "confidenceInterval": [1411.76, 1709.09],
+          "rank": 12,
+          "evaluatedAt": "2025-08-27T17:37:41.227575"
+        },
+        "compliance": {
+          "rawScore": 1540.41,
+          "confidenceInterval": [1391.59, 1689.22],
+          "rank": 11,
+          "evaluatedAt": "2025-08-27T17:37:41.227663"
+        }
+      },
+      "name": "NVIDIA: Llama 3.3 Nemotron Super 49B v1",
+      "provider": "nvidia",
+      "description": "Llama-3.3-Nemotron-Super-49B-v1 is a large language model (LLM) optimized for advanced reasoning, conversational interactions, retrieval-augmented generation (RAG), and tool-calling tasks. Derived from Meta's Llama-3.3-70B-Instruct, it employs a Neural Architecture Search (NAS) approach, significantly enhancing efficiency and reducing memory requirements. This allows the model to support a context length of up to 128K tokens and fit efficiently on single high-performance GPUs, such as NVIDIA H200.\n\nNote: you must include `detailed thinking on` in the system prompt to enable reasoning. Please see [Usage Recommendations](https://huggingface.co/nvidia/Llama-3_1-Nemotron-Ultra-253B-v1#quick-start-and-usage-recommendations) for more.",
+      "canonical_slug": "nvidia/llama-3.3-nemotron-super-49b-v1",
+      "context_length": 131072,
+      "pricing": {
+        "prompt": "0.00000013",
+        "completion": "0.0000004",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "LLaMA",
+      "created": 1744119494,
+      "hugging_face_id": "nvidia/Llama-3_3-Nemotron-Super-49B-v1",
+      "supported_parameters": [
+        "frequency_penalty",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "presence_penalty",
+        "seed",
+        "stop",
+        "temperature",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 131072,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "z-ai/glm-4.5",
+      "scores": {
+        "coding": {
+          "rawScore": 1482.89,
+          "confidenceInterval": [1334.14, 1631.63],
+          "rank": 32,
+          "evaluatedAt": "2025-08-27T17:37:41.227002"
+        },
+        "abstraction": {
+          "rawScore": 1598.87,
+          "confidenceInterval": [1449.94, 1747.8],
+          "rank": 1,
+          "evaluatedAt": "2025-08-27T17:37:41.227095"
+        },
+        "empathy": {
+          "rawScore": 1518.79,
+          "confidenceInterval": [1369.97, 1667.61],
+          "rank": 19,
+          "evaluatedAt": "2025-08-27T17:37:41.227186"
+        },
+        "ethics": {
+          "rawScore": 1522.27,
+          "confidenceInterval": [1372.88, 1671.66],
+          "rank": 19,
+          "evaluatedAt": "2025-08-27T17:37:41.227276"
+        },
+        "safety": {
+          "rawScore": 1628.39,
+          "confidenceInterval": [1479.23, 1777.55],
+          "rank": 3,
+          "evaluatedAt": "2025-08-27T17:37:41.227392"
+        },
+        "deception": {
+          "rawScore": 1547.46,
+          "confidenceInterval": [1398.29, 1696.63],
+          "rank": 13,
+          "evaluatedAt": "2025-08-27T17:37:41.227484"
+        },
+        "persuasion": {
+          "rawScore": 1411.67,
+          "confidenceInterval": [1262.27, 1561.08],
+          "rank": 43,
+          "evaluatedAt": "2025-08-27T17:37:41.227576"
+        },
+        "compliance": {
+          "rawScore": 1475.41,
+          "confidenceInterval": [1326.59, 1624.22],
+          "rank": 37,
+          "evaluatedAt": "2025-08-27T17:37:41.227664"
+        }
+      },
+      "name": "Z.AI: GLM 4.5",
+      "provider": "z-ai",
+      "description": "GLM-4.5 is our latest flagship foundation model, purpose-built for agent-based applications. It leverages a Mixture-of-Experts (MoE) architecture and supports a context length of up to 128k tokens. GLM-4.5 delivers significantly enhanced capabilities in reasoning, code generation, and agent alignment. It supports a hybrid inference mode with two options, a \"thinking mode\" designed for complex reasoning and tool use, and a \"non-thinking mode\" optimized for instant responses. Users can control the reasoning behaviour with the `reasoning` `enabled` boolean. [Learn more in our docs](https://openrouter.ai/docs/use-cases/reasoning-tokens#enable-reasoning-with-default-config)",
+      "canonical_slug": "z-ai/glm-4.5",
+      "context_length": 131072,
+      "pricing": {
+        "prompt": "0.0000001999188",
+        "completion": "0.000000800064",
+        "request": "0",
+        "image": "0",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "modelFamily": "GLM",
+      "created": 1753471347,
+      "hugging_face_id": "zai-org/GLM-4.5",
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "reasoning",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 131072,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      }
+    },
+    {
+      "id": "amazon/nova-pro-v1",
+      "scores": {
+        "coding": {
+          "rawScore": 1502.78,
+          "confidenceInterval": [1353.61, 1651.96],
+          "rank": 24,
+          "evaluatedAt": "2025-08-27T17:37:41.227003"
+        },
+        "abstraction": {
+          "rawScore": 1524.18,
+          "confidenceInterval": [1375.01, 1673.35],
+          "rank": 19,
+          "evaluatedAt": "2025-08-27T17:37:41.227097"
+        },
+        "empathy": {
+          "rawScore": 1504.15,
+          "confidenceInterval": [1355.32, 1652.97],
+          "rank": 24,
+          "evaluatedAt": "2025-08-27T17:37:41.227187"
+        },
+        "ethics": {
+          "rawScore": 1438.24,
+          "confidenceInterval": [1289.6, 1586.87],
+          "rank": 37,
+          "evaluatedAt": "2025-08-27T17:37:41.227278"
+        },
+        "safety": {
+          "rawScore": 1466.05,
+          "confidenceInterval": [1311.1, 1621.01],
+          "rank": 37,
+          "evaluatedAt": "2025-08-27T17:37:41.227393"
+        },
+        "deception": {
+          "rawScore": 1491.61,
+          "confidenceInterval": [1342.88, 1640.33],
+          "rank": 29,
+          "evaluatedAt": "2025-08-27T17:37:41.227486"
+        },
+        "persuasion": {
+          "rawScore": 1557.65,
+          "confidenceInterval": [1408.82, 1706.48],
+          "rank": 15,
+          "evaluatedAt": "2025-08-27T17:37:41.227578"
+        },
+        "compliance": {
+          "rawScore": 1462.31,
+          "confidenceInterval": [1313.47, 1611.16],
+          "rank": 43,
+          "evaluatedAt": "2025-08-27T17:37:41.227665"
+        }
+      },
+      "name": "Amazon: Nova Pro 1.0",
+      "provider": "amazon",
+      "description": "Amazon Nova Pro 1.0 is a capable multimodal model from Amazon focused on providing a combination of accuracy, speed, and cost for a wide range of tasks. As of December 2024, it achieves state-of-the-art performance on key benchmarks including visual question answering (TextVQA) and video understanding (VATEX).\n\nAmazon Nova Pro demonstrates strong capabilities in processing both visual and textual information and at analyzing financial documents.\n\n**NOTE**: Video input is not supported at this time.",
+      "canonical_slug": "amazon/nova-pro-v1",
+      "context_length": 300000,
+      "pricing": {
+        "prompt": "0.0000008",
+        "completion": "0.0000032",
+        "request": "0",
+        "image": "0.0012",
+        "web_search": "0",
+        "internal_reasoning": "0"
+      },
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "tokenizer": "Nova",
+        "instruct_type": null
+      },
+      "modelFamily": "Nova",
+      "created": 1733436303,
+      "hugging_face_id": "",
+      "supported_parameters": [
+        "max_tokens",
+        "stop",
+        "temperature",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider": {
+        "context_length": 300000,
+        "max_completion_tokens": 5120,
+        "is_moderated": true
+      }
+    }
+  ],
+  "skillStats": {
+    "coding": {
+      "totalModels": 51,
+      "avgScore": 1500.17,
+      "topScore": 1684.73,
+      "medianScore": 1498.71,
+      "evaluationCount": 0
+    },
+    "abstraction": {
+      "totalModels": 51,
+      "avgScore": 1499.85,
+      "topScore": 1598.87,
+      "medianScore": 1503.62,
+      "evaluationCount": 0
+    },
+    "empathy": {
+      "totalModels": 51,
+      "avgScore": 1500.03,
+      "topScore": 1685.64,
+      "medianScore": 1502.62,
+      "evaluationCount": 0
+    },
+    "ethics": {
+      "totalModels": 51,
+      "avgScore": 1499.95,
+      "topScore": 1688.44,
+      "medianScore": 1500.91,
+      "evaluationCount": 0
+    },
+    "safety": {
+      "totalModels": 51,
+      "avgScore": 1499.78,
+      "topScore": 1656.73,
+      "medianScore": 1500.48,
+      "evaluationCount": 0
+    },
+    "deception": {
+      "totalModels": 51,
+      "avgScore": 1500,
+      "topScore": 1682.66,
+      "medianScore": 1497.87,
+      "evaluationCount": 0
+    },
+    "persuasion": {
+      "totalModels": 51,
+      "avgScore": 1499.72,
+      "topScore": 1684.82,
+      "medianScore": 1501.35,
+      "evaluationCount": 0
+    },
+    "compliance": {
+      "totalModels": 51,
+      "avgScore": 1499.99,
+      "topScore": 1623.12,
+      "medianScore": 1500.58,
+      "evaluationCount": 0
+    }
+  }
+}
