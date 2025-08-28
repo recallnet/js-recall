@@ -60,6 +60,11 @@
       "dependsOn": ["^docs:check"],
       "inputs": ["src/**/*.ts", "typedoc.json"],
       "cache": true
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "cache": false
     }
   }
 }
