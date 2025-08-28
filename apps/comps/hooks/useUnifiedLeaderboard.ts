@@ -1,0 +1,158 @@
+import { useQuery } from "@tanstack/react-query";
+
+import {
+  UnifiedLeaderboardData,
+  UnifiedRankingEntry,
+  UnifiedSkillData,
+} from "@/types/leaderboard";
+
+import { useBenchmarkLeaderboard } from "./useBenchmarkLeaderboard";
+
+/**
+ * Hook to get unified leaderboard data combining benchmark models + trading agents
+ */
+export const useUnifiedLeaderboard = () => {
+  const benchmarkQuery = useBenchmarkLeaderboard();
+
+  return useQuery({
+    queryKey: ["unified-leaderboard"],
+    queryFn: async (): Promise<UnifiedLeaderboardData> => {
+      if (!benchmarkQuery.data) {
+        throw new Error("Benchmark data not loaded");
+      }
+
+      // All skills are now in the JSON, including trading
+      const allSkills = benchmarkQuery.data.skills;
+
+      // Process skill data
+      const skillDataMap: Record<string, UnifiedSkillData> = {};
+
+      Object.entries(allSkills).forEach(([skillId, skill]) => {
+        if (skillId === "crypto_trading") {
+          // Trading skill - use agents from JSON
+          skillDataMap[skillId] = {
+            skill,
+            participants: {
+              models: [], // No models in trading
+              agents: benchmarkQuery.data!.agents || [],
+            },
+            stats: {
+              totalParticipants: benchmarkQuery.data!.agents?.length || 0,
+              modelCount: 0,
+              agentCount: benchmarkQuery.data!.agents?.length || 0,
+              avgScore: benchmarkQuery.data?.skillStats[skillId]?.avgScore || 0,
+              topScore: benchmarkQuery.data?.skillStats[skillId]?.topScore || 0,
+            },
+          };
+        } else {
+          // Benchmark skill - use models from JSON
+          const modelsForSkill = benchmarkQuery
+            .data!.models.filter((model) => model.scores[skillId] !== undefined)
+            .sort(
+              (a, b) =>
+                (a.scores[skillId]?.rank || 999) -
+                (b.scores[skillId]?.rank || 999),
+            );
+
+          skillDataMap[skillId] = {
+            skill,
+            participants: {
+              models: modelsForSkill,
+              agents: [], // No agents in benchmark skills
+            },
+            stats: {
+              totalParticipants: modelsForSkill.length,
+              modelCount: modelsForSkill.length,
+              agentCount: 0,
+              avgScore: benchmarkQuery.data?.skillStats[skillId]?.avgScore,
+              topScore: benchmarkQuery.data?.skillStats[skillId]?.topScore,
+            },
+          };
+        }
+      });
+
+      return {
+        skills: allSkills,
+        skillData: skillDataMap,
+        globalStats: {
+          totalSkills: Object.keys(allSkills).length,
+          totalModels: benchmarkQuery.data.models.length,
+          totalAgents: benchmarkQuery.data.agents?.length || 0,
+        },
+      };
+    },
+    enabled: benchmarkQuery.isSuccess, // Only wait for benchmark data (which now includes agents)
+    staleTime: 5 * 60 * 1000, // 5 minutes (static data changes less frequently)
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+/**
+ * Hook to get data for a specific skill (either benchmark or trading)
+ */
+export const useUnifiedSkillData = (skillId: string) => {
+  const unifiedQuery = useUnifiedLeaderboard();
+
+  return {
+    ...unifiedQuery,
+    data: unifiedQuery.data?.skillData[skillId],
+  };
+};
+
+/**
+ * Hook to get unified ranking entries for a specific skill
+ * Converts both models and agents into a common format
+ */
+export const useSkillRankings = (skillId: string) => {
+  const { data: skillData, ...rest } = useUnifiedSkillData(skillId);
+
+  return {
+    ...rest,
+    data: skillData ? createUnifiedRankings(skillData, skillId) : undefined,
+  };
+};
+
+/**
+ * Helper function to create unified ranking entries
+ */
+function createUnifiedRankings(
+  skillData: UnifiedSkillData,
+  skillId: string,
+): UnifiedRankingEntry[] {
+  const rankings: UnifiedRankingEntry[] = [];
+
+  // Add model rankings
+  skillData.participants.models.forEach((model) => {
+    const score = model.scores[skillId];
+    if (score) {
+      rankings.push({
+        id: model.id,
+        name: model.name,
+        type: "model",
+        rank: score.rank,
+        score: score.rawScore,
+        provider: model.provider,
+        metadata: model, // Full model object since metadata is now flattened
+      });
+    }
+  });
+
+  // Add agent rankings
+  skillData.participants.agents.forEach((agent) => {
+    rankings.push({
+      id: agent.id,
+      name: agent.name,
+      type: "agent",
+      rank: agent.rank,
+      score: agent.score,
+      imageUrl: agent.imageUrl,
+      additionalMetrics: {
+        trades: agent.numCompetitions, // Using available data
+        competitions: agent.numCompetitions,
+      },
+    });
+  });
+
+  // Sort by rank
+  return rankings.sort((a, b) => a.rank - b.rank);
+}
