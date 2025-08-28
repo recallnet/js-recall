@@ -2972,8 +2972,6 @@ Purpose: WALLET_VERIFICATION`;
       expect(activeAgent2Result).toBeDefined();
       expect(disqualifiedAgent3Result).toBeDefined();
 
-
-
       // Active agents should see only 2 total agents (excluding disqualified agent 3)
       expect(activeAgent1Result?.totalAgents).toBe(2);
       expect(activeAgent2Result?.totalAgents).toBe(2);
