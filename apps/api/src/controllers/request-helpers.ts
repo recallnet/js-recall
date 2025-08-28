@@ -8,6 +8,7 @@ import {
   AdminSearchUsersAndAgentsQuery,
   AdminSearchUsersAndAgentsQuerySchema,
   AgentCompetitionsParamsSchema,
+  AuthenticatedRequest,
   CompetitionAllowedUpdateSchema,
   PagingParamsSchema,
   UuidSchema,
@@ -111,25 +112,6 @@ export function checkIsAdmin(req: Request) {
 }
 
 /**
- * Check if the request is authenticated as a frontend request (no user or agent context)
- * @param req Express request
- * @returns True if the request is authenticated as an admin, false otherwise
- */
-export function checkIsPublicRequest(req: Request) {
-  return !req.userId && !req.agentId && !checkIsAdmin(req);
-}
-
-/**
- * Check if the cache is enabled
- * @returns True if the cache is enabled, false otherwise
- */
-export function checkIsCacheEnabled() {
-  return (
-    config.server.nodeEnv !== "test" && config.server.nodeEnv !== "development"
-  );
-}
-
-/**
  * Build a pagination response object
  * @param total The total number of items
  * @param limit The number of items to return
@@ -179,4 +161,54 @@ export function parseAdminSearchQuery(
     throw new ApiError(400, `Invalid request format: ${error.message}`);
   }
   return data;
+}
+
+/**
+ * Check if the request is an unauthenticated *or* user authenticated (frontend) request
+ * @param req Express request
+ * @returns True if the request is authenticated as an admin, false otherwise
+ */
+export function checkIsPublicOrUserRequest(req: Request) {
+  return !req.agentId && !checkIsAdmin(req);
+}
+
+/**
+ * Check if the cache is enabled
+ * @returns True if the cache is enabled, false otherwise
+ */
+export function checkIsCacheEnabled() {
+  return !config.cache.api.disableCaching;
+}
+
+/**
+ * Check if the cache should be created for the request
+ * @param req Express request
+ * @returns True if the cache should be created, false otherwise
+ */
+export function checkShouldCacheResponse(req: Request) {
+  return checkIsCacheEnabled() && checkIsPublicOrUserRequest(req);
+}
+
+/**
+ * Generate a cache key for the request in the format:
+ * `<name>:<visibility>:<params>`
+ *
+ * - `<name>`: The name of the cache
+ * - `<visibility>`: The visibility of the cache (either "user" or "anon")
+ * - `<params>`: The parameters to include in the cache key (note: will be JSON stringified)
+ *
+ * @param req Express request
+ * @param name The name of the cache
+ * @param params (Optional) arbitrary parameters to include in the cache key as a JSON string
+ * @returns The cache key
+ */
+export function generateCacheKey(
+  req: AuthenticatedRequest,
+  name: string,
+  params?: Record<string, unknown>,
+) {
+  const visibility = req.userId ? "user" : "anon";
+  return params
+    ? `${name}:${visibility}:${JSON.stringify(params)}`
+    : `${name}:${visibility}`;
 }

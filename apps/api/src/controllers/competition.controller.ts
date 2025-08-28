@@ -25,38 +25,57 @@ import { AgentQuerySchema } from "@/types/sort/agent.js";
 import {
   buildPaginationResponse,
   checkIsAdmin,
-  checkIsCacheEnabled,
-  checkIsPublicRequest,
+  checkShouldCacheResponse,
   ensureUuid,
+  generateCacheKey,
 } from "./request-helpers.js";
+
+/**
+ * Cache for the `/competitions` endpoints (unauthenticated or authenticated user requests)
+ */
+const caches = {
+  // Used for: `/competitions`
+  list: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/agents`
+  agents: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/agents/:agentId/trades`
+  agentTrades: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id`
+  byId: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/rules`
+  rules: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/timeline`
+  timeline: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/trades`
+  trades: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+} as const;
 
 export function makeCompetitionController(services: ServiceRegistry) {
   /**
    * Competition Controller
    * Handles competition-related operations
    */
-
-  // Simple in-memory caches for public/unauthenticated reads used by landing page
-  const competitionsCache = new LRUCache<string, object>({
-    max: config.cache.api.competitions.maxCacheSize,
-    ttl: config.cache.api.competitions.ttlMs,
-  });
-  const competitionByIdCache = new LRUCache<string, object>({
-    max: config.cache.api.competitions.maxCacheSize,
-    ttl: config.cache.api.competitions.ttlMs,
-  });
-  const competitionTimelineCache = new LRUCache<string, object>({
-    max: config.cache.api.competitions.maxCacheSize,
-    ttl: config.cache.api.competitions.ttlMs,
-  });
-  const competitionTradesCache = new LRUCache<string, object>({
-    max: config.cache.api.competitions.maxCacheSize,
-    ttl: config.cache.api.competitions.ttlMs,
-  });
-  const competitionAgentsCache = new LRUCache<string, object>({
-    max: config.cache.api.competitions.maxCacheSize,
-    ttl: config.cache.api.competitions.ttlMs,
-  });
 
   return {
     /**
@@ -511,18 +530,15 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ? CompetitionStatusSchema.parse(req.query.status)
           : undefined;
         const pagingParams = PagingParamsSchema.parse(req.query);
-        // Only cache frontend requests (no user or agent context)
-        const isPublicRequest = checkIsPublicRequest(req);
 
-        // Build a cache key off stable query params for public requests, only if cache is enabled
-        const isCacheEnabled = checkIsCacheEnabled();
-        const cacheKey =
-          isPublicRequest && isCacheEnabled
-            ? `competitions:${JSON.stringify({ status, ...pagingParams })}`
-            : null;
-
-        if (cacheKey) {
-          const cached = competitionsCache.get(cacheKey);
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitions", {
+          status,
+          ...pagingParams,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.list.get(cacheKey);
           if (cached) {
             return res.status(200).json(cached);
           }
@@ -609,8 +625,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
           },
         } as const;
 
-        if (cacheKey) {
-          competitionsCache.set(cacheKey, responseBody);
+        if (shouldCacheResponse) {
+          caches.list.set(cacheKey, responseBody);
         }
 
         res.status(200).json(responseBody);
@@ -658,15 +674,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(400, "Competition ID is required");
         }
 
-        // Cache only public unauthenticated requests (landing page) and only when cache is enabled
-        const isPublicRequest = checkIsPublicRequest(req);
-        const isCacheEnabled = checkIsCacheEnabled();
-        const cacheKey =
-          isPublicRequest && isCacheEnabled
-            ? `competition:${competitionId}`
-            : null;
-        if (cacheKey) {
-          const cached = competitionByIdCache.get(cacheKey);
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionById", {
+          competitionId,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.byId.get(cacheKey);
           if (cached) {
             return res.status(200).json(cached);
           }
@@ -755,8 +769,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
           },
         } as const;
 
-        if (cacheKey) {
-          competitionByIdCache.set(cacheKey, responseBody);
+        if (shouldCacheResponse) {
+          caches.byId.set(cacheKey, responseBody);
         }
 
         res.status(200).json(responseBody);
@@ -816,15 +830,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Cache only public unauthenticated requests, and never in test env
-        const isPublicRequest = checkIsPublicRequest(req);
-        const isCacheEnabled = checkIsCacheEnabled();
-        const cacheKey =
-          isPublicRequest && isCacheEnabled
-            ? `agents:${competitionId}:${JSON.stringify(queryParams)}`
-            : null;
-        if (cacheKey) {
-          const cached = competitionAgentsCache.get(cacheKey);
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionAgents", {
+          competitionId,
+          ...queryParams,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.agents.get(cacheKey);
           if (cached) {
             return res.status(200).json(cached);
           }
@@ -851,8 +864,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ),
         } as const;
 
-        if (cacheKey) {
-          competitionAgentsCache.set(cacheKey, responseBody);
+        if (shouldCacheResponse) {
+          caches.agents.set(cacheKey, responseBody);
         }
 
         res.status(200).json(responseBody);
@@ -921,7 +934,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         );
 
         // Invalidate public cache for competition agents to avoid stale reads
-        competitionAgentsCache.clear();
+        caches.agents.clear();
 
         res.status(200).json({
           success: true,
@@ -1045,7 +1058,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         );
 
         // Invalidate public cache for competition agents to avoid stale reads
-        competitionAgentsCache.clear();
+        caches.agents.clear();
 
         res.status(200).json({
           success: true,
@@ -1103,15 +1116,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Cache only public unauthenticated requests and only when cache is enabled
-        const isPublicRequest = checkIsPublicRequest(req);
-        const isCacheEnabled = checkIsCacheEnabled();
-        const cacheKey =
-          isPublicRequest && isCacheEnabled
-            ? `timeline:${competitionId}:${bucket}`
-            : null;
-        if (cacheKey) {
-          const cached = competitionTimelineCache.get(cacheKey);
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionTimeline", {
+          competitionId,
+          bucket,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.timeline.get(cacheKey);
           if (cached) {
             return res.status(200).json(cached);
           }
@@ -1155,13 +1167,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
           timeline: Array.from(agentsMap.values()),
         };
 
-        if (cacheKey) {
-          competitionTimelineCache.set(cacheKey, transformedData);
+        if (shouldCacheResponse) {
+          caches.timeline.set(cacheKey, transformedData);
         }
 
         res.status(200).json(transformedData);
       } catch (error) {
-        console.error("OIII", error);
         next(error);
       }
     },
@@ -1183,6 +1194,18 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const competitionId = req.params.competitionId;
         if (!competitionId) {
           throw new ApiError(400, "Competition ID is required");
+        }
+
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionRules", {
+          competitionId,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.rules.get(cacheKey);
+          if (cached) {
+            return res.status(200).json(cached);
+          }
         }
 
         // Get competition details
@@ -1278,11 +1301,17 @@ export function makeCompetitionController(services: ServiceRegistry) {
           tradingConstraints,
         };
 
-        res.status(200).json({
+        const responseBody = {
           success: true,
           competition,
           rules: allRules,
-        });
+        } as const;
+
+        if (shouldCacheResponse) {
+          caches.rules.set(cacheKey, responseBody);
+        }
+
+        res.status(200).json(responseBody);
       } catch (error) {
         next(error);
       }
@@ -1311,15 +1340,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Cache only public unauthenticated requests and only when cache is enabled
-        const isPublicRequest = checkIsPublicRequest(req);
-        const isCacheEnabled = checkIsCacheEnabled();
-        const cacheKey =
-          isPublicRequest && isCacheEnabled
-            ? `trades:${competitionId}:${pagingParams.limit}:${pagingParams.offset}`
-            : null;
-        if (cacheKey) {
-          const cached = competitionTradesCache.get(cacheKey);
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionTrades", {
+          competitionId,
+          ...pagingParams,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.trades.get(cacheKey);
           if (cached) {
             return res.status(200).json(cached);
           }
@@ -1343,8 +1371,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ),
         } as const;
 
-        if (cacheKey) {
-          competitionTradesCache.set(cacheKey, responseBody);
+        if (shouldCacheResponse) {
+          caches.trades.set(cacheKey, responseBody);
         }
 
         res.status(200).json(responseBody);
@@ -1384,15 +1412,15 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Agent not found");
         }
 
-        // Cache only public unauthenticated requests and only when cache is enabled
-        const isPublicRequest = checkIsPublicRequest(req);
-        const isCacheEnabled = checkIsCacheEnabled();
-        const cacheKey =
-          isPublicRequest && isCacheEnabled
-            ? `trades:${competitionId}:${agentId}:${pagingParams.limit}:${pagingParams.offset}`
-            : null;
-        if (cacheKey) {
-          const cached = competitionAgentsCache.get(cacheKey);
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionAgentTrades", {
+          competitionId,
+          agentId,
+          ...pagingParams,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.agentTrades.get(cacheKey);
           if (cached) {
             return res.status(200).json(cached);
           }
@@ -1417,8 +1445,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ),
         } as const;
 
-        if (cacheKey) {
-          competitionAgentsCache.set(cacheKey, responseBody);
+        if (shouldCacheResponse) {
+          caches.agentTrades.set(cacheKey, responseBody);
         }
 
         res.status(200).json(responseBody);
@@ -1432,3 +1460,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
 export type CompetitionController = ReturnType<
   typeof makeCompetitionController
 >;
+
+/**
+ * Clear all competition APIs caches
+ */
+export function clearCompetitionsApiCaches() {
+  for (const cache of Object.values(caches)) cache.clear();
+}

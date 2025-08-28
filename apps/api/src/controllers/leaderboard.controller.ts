@@ -6,19 +6,27 @@ import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { LeaderboardParamsSchema } from "@/types/index.js";
 
-import { checkIsCacheEnabled } from "./request-helpers.js";
+import {
+  checkShouldCacheResponse,
+  generateCacheKey,
+} from "./request-helpers.js";
+
+/**
+ * Cache for the `/leaderboard` endpoint (unauthenticated or authenticated user requests)
+ */
+const caches = {
+  // Used for: `/leaderboard` (global leaderboard)
+  global: new LRUCache<string, object>({
+    max: config.cache.api.leaderboard.maxCacheSize,
+    ttl: config.cache.api.leaderboard.ttlMs,
+  }),
+};
 
 export function makeLeaderboardController(services: ServiceRegistry) {
   /**
    * Leaderboard Controller
    * Handles global leaderboard operations.
    */
-
-  // Simple in-memory cache for public/unauthenticated reads used by landing page
-  const leaderboardCache = new LRUCache<string, object>({
-    max: config.cache.api.leaderboard.maxCacheSize,
-    ttl: config.cache.api.leaderboard.ttlMs,
-  });
 
   return {
     /**
@@ -42,14 +50,13 @@ export function makeLeaderboardController(services: ServiceRegistry) {
           throw new ApiError(400, `Invalid request format: ${error.message}`);
         }
 
-        // Build cache key from query params, only when cache is enabled
-        const isCacheEnabled = checkIsCacheEnabled();
-        const cacheKey = isCacheEnabled
-          ? `global:${JSON.stringify(data)}`
-          : null;
-
-        if (cacheKey) {
-          const cached = leaderboardCache.get(cacheKey);
+        // Cache only public (unauthenticated or authenticated user) requests
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "globalLeaderboard", {
+          ...data,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.global.get(cacheKey);
           if (cached) {
             return res.status(200).json(cached);
           }
@@ -66,9 +73,8 @@ export function makeLeaderboardController(services: ServiceRegistry) {
           ...result,
         } as const;
 
-        // Cache the response for a short duration
-        if (cacheKey) {
-          leaderboardCache.set(cacheKey, responseBody);
+        if (shouldCacheResponse) {
+          caches.global.set(cacheKey, responseBody);
         }
 
         res.status(200).json(responseBody);
@@ -82,3 +88,10 @@ export function makeLeaderboardController(services: ServiceRegistry) {
 export type LeaderboardController = ReturnType<
   typeof makeLeaderboardController
 >;
+
+/**
+ * Clear all leaderboard API caches
+ */
+export function clearLeaderboardApiCaches() {
+  for (const cache of Object.values(caches)) cache.clear();
+}

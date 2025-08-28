@@ -333,19 +333,21 @@ export const config = {
 
   // Cache configuration
   cache: {
-    // Active competition cache TTL in milliseconds (default: 3 seconds)
+    // Middleware: Active competition cache TTL in milliseconds (default: 3 seconds)
     activeCompetitionTtlMs: parseInt(
       process.env.CACHE_ACTIVE_COMP_TTL_MS || "3000",
       10,
     ),
+    // Cache settings on individual API endpoints (see controllers for the specific routes)
     api: {
+      disableCaching: process.env.DISABLE_CACHE_API === "true",
       leaderboard: {
         maxCacheSize: parseInt(
           process.env.CACHE_API_LEADERBOARD_MAX_CACHE_SIZE || "100",
           10,
         ),
         ttlMs: parseInt(
-          process.env.CACHE_API_LEADERBOARD_TTL_MS || "300000", // 5 minutes
+          process.env.CACHE_API_LEADERBOARD_TTL_MS || "1800000", // 30 minutes
           10,
         ),
       },
