@@ -230,8 +230,8 @@ app.get(`${apiBasePath}`, (_req, res) => {
 // Apply error handler
 app.use(errorHandler);
 
-const indexingService = new IndexingService(indexingLogger)
-indexingService.start()
+const indexingService = new IndexingService(indexingLogger);
+indexingService.start();
 
 // Start HTTP server
 const mainServer = app.listen(PORT, "0.0.0.0", () => {
@@ -257,7 +257,7 @@ const gracefulShutdown = async (signal: string) => {
     `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
   );
 
-  await indexingService.close()
+  await indexingService.close();
 
   // Close both servers
   mainServer.close(async () => {

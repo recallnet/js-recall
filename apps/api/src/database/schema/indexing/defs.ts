@@ -88,7 +88,7 @@ const stakeChanges = pgTable(
       .references(() => stakes.id),
     wallet: varchar("wallet", { length: 64 }).notNull(),
     // delta — signed: +stake, 0 for relock, -move from staked to withdrawable, -withdraw, etc.
-    deltaAmount: bigint("delta_amount", { mode: 'bigint' }).notNull(),
+    deltaAmount: bigint("delta_amount", { mode: "bigint" }).notNull(),
     kind: varchar("kind", { length: 24 }).notNull(), // See EventType for possible values
     // chain idempotency
     txHash: varchar("tx_hash", { length: 66 }).notNull(),
@@ -98,10 +98,7 @@ const stakeChanges = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
-    uniqEvent: uniqueIndex("stake_changes_event_uq").on(
-      t.txHash,
-      t.logIndex,
-    ),
+    uniqEvent: uniqueIndex("stake_changes_event_uq").on(t.txHash, t.logIndex),
     stakeIdx: index("stake_changes_stake_idx").on(t.stakeId),
     walletIdx: index("stake_changes_wallet_idx").on(t.wallet),
     blockIdx: index("stake_changes_block_idx").on(t.blockNumber),

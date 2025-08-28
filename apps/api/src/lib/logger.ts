@@ -60,4 +60,4 @@ export const repositoryLogger = createLogger("Repository");
 export const middlewareLogger = createLogger("Middleware");
 export const serviceLogger = createLogger("Service");
 export const configLogger = createLogger("Config");
-export const indexingLogger = createLogger('Indexing');
+export const indexingLogger = createLogger("Indexing");

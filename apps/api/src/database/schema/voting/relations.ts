@@ -1,10 +1,8 @@
 import { relations } from "drizzle-orm/relations";
+
 import { competitions } from "@/database/schema/core/defs.js";
-import {
-  rewards,
-  rewardsRoots,
-  rewardsTree,
-} from "./defs.js";
+
+import { rewards, rewardsRoots, rewardsTree } from "./defs.js";
 
 export const rewardsRelations = relations(rewards, ({ one }) => ({
   competition: one(competitions, {

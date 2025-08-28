@@ -8,7 +8,7 @@ export type RawLog = {
   logIndex?: number;
   topics: [signature: `0x${string}`, ...args: `0x${string}`[]];
   data: `0x${string}`;
-}
+};
 
 // Raw event data structure (new model)
 export type EventData = {
@@ -20,14 +20,14 @@ export type EventData = {
   logIndex: number;
   // Raw event payload (stored without parsing)
   raw: {
-    topics: [signature: `0x${string}`, ...args: `0x${string}`[]]
+    topics: [signature: `0x${string}`, ...args: `0x${string}`[]];
     data: `0x${string}`;
     address: `0x${string}`;
   };
   type: EventType;
   // Indexer metadata
   createdAt: Date;
-}
+};
 
 // Blockchain event types
-export type EventType = 'stake' | 'unstake' | 'relock' | 'withdraw' | 'unknown';
+export type EventType = "stake" | "unstake" | "relock" | "withdraw" | "unknown";
