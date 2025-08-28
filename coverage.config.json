@@ -48,6 +48,15 @@
       },
       "testFramework": "vitest"
     },
+    "apps/faucet": {
+      "thresholds": {
+        "lines": 0,
+        "statements": 0,
+        "functions": 0,
+        "branches": 0
+      },
+      "testFramework": "vitest"
+    },
     "packages/sdk": {
       "thresholds": {
         "lines": 0,
