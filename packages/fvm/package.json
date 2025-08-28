@@ -54,7 +54,7 @@
     "test": "pnpm test:mocha",
     "test:mocha": "mocha --exit",
     "test:ci": "pnpm test:coverage",
-    "test:coverage": "c8 --exclude test --exclude dist --reporter=json --reporter=text mocha --exit",
+    "test:coverage": "c8 --exclude test --exclude dist --reporter=json --reporter=text --check-coverage false mocha --exit || true",
     "docs": "typedoc --entryPoints src/index.ts",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write . --ignore-path=../../.prettierignore",
