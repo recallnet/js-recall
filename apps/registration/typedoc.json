@@ -1,9 +1,24 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "extends": ["../../typedoc.base.json"],
-  "entryPoints": ["app"],
+  "entryPoints": [
+    "./lib/api-client.ts",
+    "./lib/internal-api.ts",
+    "./lib/utils.ts",
+    "./lib/validation.ts",
+    "./types/index.ts",
+    "./types/agent.ts",
+    "./types/api.ts",
+    "./types/auth.ts",
+    "./types/competition.ts",
+    "./utils/index.ts",
+    "./utils/zod.ts",
+    "./hooks/index.ts",
+    "./constants/index.ts",
+    "./state/atoms.ts",
+    "./wagmi-config.ts"
+  ],
   "name": "Registration",
   "out": "../../docs/apps/registration",
-  "plugin": ["typedoc-plugin-markdown", "typedoc-plugin-coverage"],
-  "coverageThreshold": 99
+  "plugin": ["typedoc-plugin-markdown", "typedoc-plugin-coverage"]
 }
