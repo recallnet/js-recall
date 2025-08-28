@@ -15,7 +15,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { agents, users } from "@/database/schema/core/defs.js";
+import { agents, competitions, users } from "@/database/schema/core/defs.js";
 import { blockchainAddress, tokenAmount } from "@/database/schema/util.js";
 
 const bytea = customType<{ data: Uint8Array; notNull: false; default: false }>({
@@ -146,9 +146,9 @@ export const rewards = pgTable(
   "rewards",
   {
     id: uuid().primaryKey().notNull(),
-    epoch: uuid()
+    competitionId: uuid("competition_id")
       .notNull()
-      .references(() => epochs.id, { onDelete: "cascade" }),
+      .references(() => competitions.id, { onDelete: "cascade" }),
     address: blockchainAddress("address").notNull(),
     amount: tokenAmount("amount").notNull(),
     leafHash: bytea("leaf_hash").notNull(),
@@ -161,10 +161,8 @@ export const rewards = pgTable(
       .notNull(),
   },
   (table) => [
-    index("idx_rewards_epoch").on(table.epoch),
+    index("idx_rewards_competition_id").on(table.competitionId),
     index("idx_rewards_address").on(table.address),
-    // TODO: should leaf hashes be unique per epoch?
-    // uniqueIndex("uq_rewards_epoch_leaf_hash").on(table.epoch, table.leafHash),
   ],
 );
 
@@ -173,9 +171,9 @@ export const rewardsTree = pgTable(
   "rewards_tree",
   {
     id: uuid().primaryKey().notNull(),
-    epoch: uuid()
+    competitionId: uuid("competition_id")
       .notNull()
-      .references(() => epochs.id, { onDelete: "cascade" }),
+      .references(() => competitions.id, { onDelete: "cascade" }),
     level: integer().notNull(),
     idx: integer().notNull(),
     hash: bytea().notNull(),
@@ -184,8 +182,8 @@ export const rewardsTree = pgTable(
       .notNull(),
   },
   (table) => [
-    index("idx_rewards_tree_epoch_level_idx").on(
-      table.epoch,
+    index("idx_rewards_tree_competition_id_level_idx").on(
+      table.competitionId,
       table.level,
       table.idx,
     ),
@@ -199,14 +197,16 @@ export const rewardsRoots = pgTable(
   "rewards_roots",
   {
     id: uuid().primaryKey().notNull(),
-    epoch: uuid()
+    competitionId: uuid("competition_id")
       .notNull()
-      .references(() => epochs.id, { onDelete: "cascade" }),
+      .references(() => competitions.id, { onDelete: "cascade" }),
     rootHash: bytea("root_hash").notNull(),
     tx: text().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
-  (table) => [uniqueIndex("uq_rewards_roots_epoch").on(table.epoch)],
+  (table) => [
+    uniqueIndex("uq_rewards_roots_competition_id").on(table.competitionId),
+  ],
 );
