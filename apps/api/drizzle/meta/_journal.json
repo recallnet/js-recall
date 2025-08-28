@@ -260,6 +260,13 @@
       "when": 1756150080018,
       "tag": "0036_wandering_menace",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1756400877046,
+      "tag": "0037_clammy_queen_noir",
+      "breakpoints": true
     }
   ]
 }

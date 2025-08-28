@@ -339,6 +339,14 @@ export const config = {
       10,
     ),
   },
+  stakingIndex: {
+    isEnabled: process.env.INDEXING_ENABLED === "true",
+    recallContract: process.env.INDEXING_STAKING_CONTRACT,
+    startBlock: process.env.INDEXING_START_BLOCK ? parseInt(process.env.INDEXING_START_BLOCK, 10) : 27459229,
+    hypersyncUrl: process.env.INDEXING_HYPERSYNC_URL,
+    hypersyncBearerToken: process.env.INDEXING_HYPERSYNC_BEARER_TOKEN,
+    delayMs: process.env.INDEXING_DELAY ? parseInt(process.env.INDEXING_DELAY, 10) : 3000
+  }
 };
 
 /**
