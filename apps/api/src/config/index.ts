@@ -338,6 +338,16 @@ export const config = {
       process.env.CACHE_ACTIVE_COMP_TTL_MS || "3000",
       10,
     ),
+    // Competition agents cache TTL in milliseconds (default: 30 seconds)
+    competitionAgentsTtlMs: parseInt(
+      process.env.CACHE_COMPETITION_AGENTS_TTL_MS || "30000",
+      10,
+    ),
+    // Max cache size for competition data
+    competitionCacheSize: parseInt(
+      process.env.CACHE_COMPETITION_SIZE || "100",
+      10,
+    ),
   },
 };
 

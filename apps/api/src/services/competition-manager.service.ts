@@ -1,5 +1,7 @@
+import { LRUCache } from "lru-cache";
 import { v4 as uuidv4 } from "uuid";
 
+import { config } from "@/config/index.js";
 import {
   findById as findAgentById,
   findByCompetition,
@@ -81,6 +83,24 @@ interface LeaderboardEntry {
   pnl: number; // Profit/Loss amount (0 if not calculated)
 }
 
+interface CompetitionAgentWithMetrics {
+  id: string;
+  name: string;
+  handle: string;
+  description: string | null;
+  imageUrl: string | null;
+  score: number;
+  active: boolean;
+  deactivationReason: string | null;
+  rank: number;
+  portfolioValue: number;
+  pnl: number;
+  pnlPercent: number;
+  change24h: number;
+  change24hPercent: number;
+  voteCount: number;
+}
+
 /**
  * Competition Manager Service
  * Manages trading competitions with agent-based participation
@@ -95,6 +115,16 @@ export class CompetitionManager {
   private voteManager: VoteManager;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
+
+  // Cache for competition agents with metrics to reduce database load
+  private competitionAgentsCache: LRUCache<
+    string,
+    {
+      agents: CompetitionAgentWithMetrics[];
+      total: number;
+      timestamp: number;
+    }
+  >;
 
   constructor(
     balanceManager: BalanceManager,
@@ -116,6 +146,12 @@ export class CompetitionManager {
     this.voteManager = voteManager;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
+
+    // Initialize the competition agents cache
+    this.competitionAgentsCache = new LRUCache({
+      max: config.cache.competitionCacheSize,
+      ttl: config.cache.competitionAgentsTtlMs,
+    });
   }
 
   /**
@@ -489,6 +525,25 @@ export class CompetitionManager {
     competitionId: string,
     queryParams: AgentQueryParams,
   ) {
+    // Create cache key from competitionId and query params
+    const cacheKey = `${competitionId}:${JSON.stringify(queryParams)}`;
+
+    // Check cache first
+    const cached = this.competitionAgentsCache.get(cacheKey);
+    if (cached) {
+      serviceLogger.debug(
+        `[CompetitionManager] Returning cached agents for competition ${competitionId}`,
+      );
+      return {
+        agents: cached.agents,
+        total: cached.total,
+      };
+    }
+
+    serviceLogger.debug(
+      `[CompetitionManager] Cache miss for competition ${competitionId}, fetching fresh data`,
+    );
+
     const { sort: originalSort, limit, offset } = queryParams;
     const { dbSort, computedSort } = splitSortField(
       originalSort,
@@ -579,10 +634,51 @@ export class CompetitionManager {
         )
       : competitionAgents;
 
-    return {
+    // Cache the result
+    const result = {
       agents: finalCompetitionAgents,
       total,
     };
+
+    this.competitionAgentsCache.set(cacheKey, {
+      agents: result.agents,
+      total: result.total,
+      timestamp: Date.now(),
+    });
+
+    serviceLogger.debug(
+      `[CompetitionManager] Cached agents for competition ${competitionId} (${result.agents.length} agents)`,
+    );
+
+    return result;
+  }
+
+  /**
+   * Clear the competition agents cache for a specific competition
+   * Called when data changes (e.g., after a trade)
+   * @param competitionId Competition ID to clear cache for (optional - clears all if not provided)
+   */
+  clearCompetitionAgentsCache(competitionId?: string) {
+    if (competitionId) {
+      // Clear all entries for this competition
+      let cleared = 0;
+      for (const key of this.competitionAgentsCache.keys()) {
+        if (key.startsWith(`${competitionId}:`)) {
+          this.competitionAgentsCache.delete(key);
+          cleared++;
+        }
+      }
+      serviceLogger.debug(
+        `[CompetitionManager] Cleared ${cleared} cache entries for competition ${competitionId}`,
+      );
+    } else {
+      // Clear entire cache
+      const size = this.competitionAgentsCache.size;
+      this.competitionAgentsCache.clear();
+      serviceLogger.debug(
+        `[CompetitionManager] Cleared entire competition agents cache (${size} entries)`,
+      );
+    }
   }
 
   /**

@@ -126,6 +126,12 @@ export function makeTradeController(services: ServiceRegistry) {
           chainOptions,
         );
 
+        // Clear competition agents cache since portfolio values have changed
+        services.competitionManager.clearCompetitionAgentsCache(competitionId);
+        tradeLogger.debug(
+          `Cleared competition agents cache for competition ${competitionId} after trade`,
+        );
+
         // Return successful trade result
         res.status(200).json({
           success: true,

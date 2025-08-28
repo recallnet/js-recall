@@ -1307,6 +1307,10 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
+        // Clear all competition caches since agent status affects visibility
+        // This clears cache for all competitions (when competitionId is undefined)
+        services.competitionManager.clearCompetitionAgentsCache();
+
         // Return the updated agent info
         res.status(200).json({
           success: true,
@@ -1616,6 +1620,9 @@ export function makeAdminController(services: ServiceRegistry) {
           `Admin removal: ${reason}`,
         );
 
+        // Clear the competition agents cache since membership changed
+        services.competitionManager.clearCompetitionAgentsCache(competitionId);
+
         // Return success response
         res.status(200).json({
           success: true,
@@ -1707,6 +1714,9 @@ export function makeAdminController(services: ServiceRegistry) {
           competitionId,
           agentId,
         );
+
+        // Clear the competition agents cache since membership changed
+        services.competitionManager.clearCompetitionAgentsCache(competitionId);
 
         // Return success response
         res.status(200).json({
@@ -1854,6 +1864,9 @@ export function makeAdminController(services: ServiceRegistry) {
 
           adminLogger.info(`Sandbox mode logic completed for agent ${agentId}`);
         }
+
+        // Clear the competition agents cache since membership changed
+        services.competitionManager.clearCompetitionAgentsCache(competitionId);
 
         // Return success response
         res.status(200).json({
