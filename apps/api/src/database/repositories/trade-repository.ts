@@ -346,6 +346,175 @@ async function getAllTradesImpl(competitionId?: string) {
   }
 }
 
+/**
+ * Check if a transaction has already been indexed
+ * Used by the on-chain indexer to avoid duplicate processing
+ */
+async function isTransactionIndexedImpl(txHash: string): Promise<boolean> {
+  try {
+    const [result] = await db
+      .select({ id: trades.id })
+      .from(trades)
+      .where(eq(trades.onChainTxHash, txHash))
+      .limit(1);
+
+    return !!result;
+  } catch (error) {
+    repositoryLogger.error("Error in isTransactionIndexed:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create an on-chain trade record without updating balances
+ * Used by the indexer since balance tracking happens separately via wallet scanning
+ */
+async function createOnChainTradeImpl(
+  trade: InsertTrade,
+): Promise<typeof trades.$inferSelect> {
+  try {
+    // Ensure this is marked as an on-chain trade
+    const onChainTrade = {
+      ...trade,
+      tradeType: "on_chain" as const,
+    };
+
+    const [result] = await db.insert(trades).values(onChainTrade).returning();
+
+    if (!result) {
+      throw new Error("Failed to create on-chain trade");
+    }
+
+    repositoryLogger.info(
+      `[TradeRepository] Created on-chain trade: agent=${trade.agentId}, tx=${trade.onChainTxHash}`,
+    );
+
+    return result;
+  } catch (error) {
+    repositoryLogger.error("Error in createOnChainTrade:", error);
+    throw error;
+  }
+}
+
+/**
+ * Batch create on-chain trades for efficiency
+ * Used by the indexer when processing multiple transactions
+ */
+async function batchCreateOnChainTradesImpl(
+  tradesToInsert: InsertTrade[],
+): Promise<(typeof trades.$inferSelect)[]> {
+  if (tradesToInsert.length === 0) {
+    return [];
+  }
+
+  try {
+    // Ensure all trades are marked as on-chain
+    const onChainTrades = tradesToInsert.map((trade) => ({
+      ...trade,
+      tradeType: "on_chain" as const,
+    }));
+
+    const results = await db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(trades)
+        .values(onChainTrades)
+        .returning();
+
+      repositoryLogger.info(
+        `[TradeRepository] Batch created ${inserted.length} on-chain trades`,
+      );
+
+      return inserted;
+    });
+
+    return results;
+  } catch (error) {
+    repositoryLogger.error("Error in batchCreateOnChainTrades:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get trades by type (simulated or on_chain)
+ * Useful for separating live trades from simulated ones
+ */
+async function getTradesByTypeImpl(
+  competitionId: string,
+  tradeType: "simulated" | "on_chain",
+  params?: {
+    limit?: number;
+    offset?: number;
+  },
+): Promise<{
+  trades: (typeof trades.$inferSelect)[];
+  total: number;
+}> {
+  try {
+    const { limit = 100, offset = 0 } = params || {};
+
+    const whereCondition = and(
+      eq(trades.competitionId, competitionId),
+      eq(trades.tradeType, tradeType),
+    );
+
+    const tradesQuery = db
+      .select()
+      .from(trades)
+      .where(whereCondition)
+      .orderBy(desc(trades.timestamp))
+      .limit(limit)
+      .offset(offset);
+
+    const totalQuery = db
+      .select({ count: drizzleCount() })
+      .from(trades)
+      .where(whereCondition);
+
+    const [tradeResults, totalResult] = await Promise.all([
+      tradesQuery,
+      totalQuery,
+    ]);
+
+    return {
+      trades: tradeResults,
+      total: totalResult[0]?.count || 0,
+    };
+  } catch (error) {
+    repositoryLogger.error("Error in getTradesByType:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get on-chain trades for gas cost analysis
+ * Used by chain exit detector for reconciliation
+ */
+async function getOnChainTradesInWindowImpl(
+  agentId: string,
+  competitionId: string,
+  startTime: Date,
+  endTime: Date,
+): Promise<(typeof trades.$inferSelect)[]> {
+  try {
+    return await db
+      .select()
+      .from(trades)
+      .where(
+        and(
+          eq(trades.agentId, agentId),
+          eq(trades.competitionId, competitionId),
+          eq(trades.tradeType, "on_chain"),
+          sql`${trades.timestamp} >= ${startTime}`,
+          sql`${trades.timestamp} <= ${endTime}`,
+        ),
+      )
+      .orderBy(trades.timestamp);
+  } catch (error) {
+    repositoryLogger.error("Error in getOnChainTradesInWindow:", error);
+    throw error;
+  }
+}
+
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -390,4 +559,34 @@ export const getAllTrades = createTimedRepositoryFunction(
   getAllTradesImpl,
   "TradeRepository",
   "getAllTrades",
+);
+
+export const isTransactionIndexed = createTimedRepositoryFunction(
+  isTransactionIndexedImpl,
+  "TradeRepository",
+  "isTransactionIndexed",
+);
+
+export const createOnChainTrade = createTimedRepositoryFunction(
+  createOnChainTradeImpl,
+  "TradeRepository",
+  "createOnChainTrade",
+);
+
+export const batchCreateOnChainTrades = createTimedRepositoryFunction(
+  batchCreateOnChainTradesImpl,
+  "TradeRepository",
+  "batchCreateOnChainTrades",
+);
+
+export const getTradesByType = createTimedRepositoryFunction(
+  getTradesByTypeImpl,
+  "TradeRepository",
+  "getTradesByType",
+);
+
+export const getOnChainTradesInWindow = createTimedRepositoryFunction(
+  getOnChainTradesInWindowImpl,
+  "TradeRepository",
+  "getOnChainTradesInWindow",
 );
