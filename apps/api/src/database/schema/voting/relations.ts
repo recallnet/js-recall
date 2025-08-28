@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm/relations";
 
-import { agents, users } from "@/database/schema/core/defs.js";
+import { agents, competitions, users } from "@/database/schema/core/defs.js";
 
 import {
   epochs,
@@ -18,9 +18,6 @@ export const epochsRelations = relations(epochs, ({ many }) => ({
   voteAssignments: many(voteAssignments),
   votesAvailable: many(votesAvailable),
   votesPerformed: many(votesPerformed),
-  rewards: many(rewards),
-  rewardsTree: many(rewardsTree),
-  rewardsRoots: many(rewardsRoots),
 }));
 
 export const agentsRelations = relations(agents, ({ many }) => ({
@@ -84,22 +81,22 @@ export const votesPerformedRelations = relations(votesPerformed, ({ one }) => ({
 }));
 
 export const rewardsRelations = relations(rewards, ({ one }) => ({
-  epoch: one(epochs, {
-    fields: [rewards.epoch],
-    references: [epochs.id],
+  competition: one(competitions, {
+    fields: [rewards.competitionId],
+    references: [competitions.id],
   }),
 }));
 
 export const rewardsTreeRelations = relations(rewardsTree, ({ one }) => ({
-  epoch: one(epochs, {
-    fields: [rewardsTree.epoch],
-    references: [epochs.id],
+  competition: one(competitions, {
+    fields: [rewardsTree.competitionId],
+    references: [competitions.id],
   }),
 }));
 
 export const rewardsRootsRelations = relations(rewardsRoots, ({ one }) => ({
-  epoch: one(epochs, {
-    fields: [rewardsRoots.epoch],
-    references: [epochs.id],
+  competition: one(competitions, {
+    fields: [rewardsRoots.competitionId],
+    references: [competitions.id],
   }),
 }));

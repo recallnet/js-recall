@@ -1,6 +1,9 @@
 import { relations } from "drizzle-orm/relations";
 
 import {
+  rewards,
+  rewardsRoots,
+  rewardsTree,
   stakes,
   voteAssignments,
   votesAvailable,
@@ -52,6 +55,9 @@ export const competitionsRelations = relations(
     portfolioSnapshots: many(portfolioSnapshots),
     competitionAgents: many(competitionAgents),
     votes: many(votes),
+    rewards: many(rewards),
+    rewardsTree: many(rewardsTree),
+    rewardsRoots: many(rewardsRoots),
   }),
 );
 
