@@ -126,6 +126,9 @@ export class CompetitionManager {
     }
   >;
 
+  // Secondary index for O(1) cache clearing by competition ID
+  private competitionCacheKeys: Map<string, Set<string>>;
+
   constructor(
     balanceManager: BalanceManager,
     tradeSimulator: TradeSimulator,
@@ -151,7 +154,25 @@ export class CompetitionManager {
     this.competitionAgentsCache = new LRUCache({
       max: config.cache.competitionCacheSize,
       ttl: config.cache.competitionAgentsTtlMs,
+      // Clean up secondary index when entries are evicted
+      dispose: (value, key) => {
+        if (!key) return;
+        // Extract competitionId from cache key (format: "competitionId:limit:offset:sort")
+        const competitionId = key.split(":")[0];
+        if (!competitionId) return;
+
+        const cacheKeys = this.competitionCacheKeys.get(competitionId);
+        if (cacheKeys) {
+          cacheKeys.delete(key);
+          if (cacheKeys.size === 0) {
+            this.competitionCacheKeys.delete(competitionId);
+          }
+        }
+      },
     });
+
+    // Initialize the secondary index for O(1) cache clearing
+    this.competitionCacheKeys = new Map();
   }
 
   /**
@@ -525,8 +546,8 @@ export class CompetitionManager {
     competitionId: string,
     queryParams: AgentQueryParams,
   ) {
-    // Create cache key from competitionId and query params
-    const cacheKey = `${competitionId}:${JSON.stringify(queryParams)}`;
+    // Create deterministic cache key from competitionId and query params
+    const cacheKey = `${competitionId}:${queryParams.limit}:${queryParams.offset}:${queryParams.sort || "default"}`;
 
     // Check cache first
     const cached = this.competitionAgentsCache.get(cacheKey);
@@ -627,11 +648,11 @@ export class CompetitionManager {
     // Apply post-processing sorting and pagination, if needed
     const finalCompetitionAgents = isComputedSort
       ? applySortingAndPagination(
-          competitionAgents,
-          computedSort,
-          limit,
-          offset,
-        )
+        competitionAgents,
+        computedSort,
+        limit,
+        offset,
+      )
       : competitionAgents;
 
     // Cache the result
@@ -645,6 +666,12 @@ export class CompetitionManager {
       total: result.total,
       timestamp: Date.now(),
     });
+
+    // Update secondary index for O(1) cache clearing
+    if (!this.competitionCacheKeys.has(competitionId)) {
+      this.competitionCacheKeys.set(competitionId, new Set());
+    }
+    this.competitionCacheKeys.get(competitionId)!.add(cacheKey);
 
     serviceLogger.debug(
       `[CompetitionManager] Cached agents for competition ${competitionId} (${result.agents.length} agents)`,
@@ -660,21 +687,30 @@ export class CompetitionManager {
    */
   clearCompetitionAgentsCache(competitionId?: string) {
     if (competitionId) {
-      // Clear all entries for this competition
-      let cleared = 0;
-      for (const key of this.competitionAgentsCache.keys()) {
-        if (key.startsWith(`${competitionId}:`)) {
+      // Use secondary index for O(1) cache clearing
+      const cacheKeys = this.competitionCacheKeys.get(competitionId);
+      if (cacheKeys) {
+        let cleared = 0;
+        for (const key of cacheKeys) {
           this.competitionAgentsCache.delete(key);
           cleared++;
         }
+        // Clean up the secondary index
+        this.competitionCacheKeys.delete(competitionId);
+
+        serviceLogger.debug(
+          `[CompetitionManager] Cleared ${cleared} cache entries for competition ${competitionId}`,
+        );
+      } else {
+        serviceLogger.debug(
+          `[CompetitionManager] No cache entries found for competition ${competitionId}`,
+        );
       }
-      serviceLogger.debug(
-        `[CompetitionManager] Cleared ${cleared} cache entries for competition ${competitionId}`,
-      );
     } else {
-      // Clear entire cache
+      // Clear entire cache and secondary index
       const size = this.competitionAgentsCache.size;
       this.competitionAgentsCache.clear();
+      this.competitionCacheKeys.clear();
       serviceLogger.debug(
         `[CompetitionManager] Cleared entire competition agents cache (${size} entries)`,
       );
@@ -944,7 +980,7 @@ export class CompetitionManager {
       if (
         !currentLatestSnapshot ||
         (snapshot.timestamp?.getTime() ?? 0) >
-          (currentLatestSnapshot.timestamp?.getTime() ?? 0)
+        (currentLatestSnapshot.timestamp?.getTime() ?? 0)
       ) {
         latestSnapshotsByAgent.set(snapshot.agentId, snapshot);
       }
