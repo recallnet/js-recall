@@ -13,7 +13,10 @@
     "version-packages": "changeset version",
     "publish-packages": "changeset publish",
     "docs:build": "turbo docs:build",
-    "docs:check": "turbo docs:check"
+    "docs:check": "turbo docs:check",
+    "test:coverage": "turbo test:coverage",
+    "coverage:report": "node scripts/coverage-report.js",
+    "coverage:all": "pnpm test:coverage && pnpm coverage:report"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.0",

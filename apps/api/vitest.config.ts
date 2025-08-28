@@ -4,6 +4,19 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "json-summary"],
+      exclude: [
+        "node_modules/**",
+        "dist/**",
+        "e2e/**",
+        "**/*.d.ts",
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "**/test/**"
+      ]
+    },
     reporters: ["default", "e2e/utils/log-reporter.ts"],
     workspace: [
       {
