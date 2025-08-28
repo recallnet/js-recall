@@ -1,0 +1,111 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm turbo build --filter="./packages/*"
+
+      - name: Run tests with coverage
+        run: pnpm turbo test:coverage
+
+      - name: Download previous coverage report (for main branch)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-reports
+        continue-on-error: true
+
+      - name: Generate coverage report
+        run: |
+          if [ -f "coverage-reports/coverage-total.latest.json" ]; then
+            node scripts/coverage-report.js coverage-reports/coverage-total.latest.json
+          else
+            node scripts/coverage-report.js
+          fi
+
+      - name: Upload coverage report
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-reports/coverage-total.latest.json
+          retention-days: 30
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverageReport = fs.readFileSync('coverage-reports/coverage-total.latest.json', 'utf8');
+            const coverage = JSON.parse(coverageReport);
+
+            // Format coverage table for PR comment
+            let comment = '## 📊 Test Coverage Report\n\n';
+            comment += '| Package | Lines | Statements | Functions | Branches |\n';
+            comment += '|---------|-------|------------|-----------|----------|\n';
+
+            Object.entries(coverage).forEach(([pkg, metrics]) => {
+              comment += `| ${pkg} | ${metrics.lines.pct.toFixed(2)}% | ${metrics.statements.pct.toFixed(2)}% | ${metrics.functions.pct.toFixed(2)}% | ${metrics.branches.pct.toFixed(2)}% |\n`;
+            });
+
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Test Coverage Report')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+      - name: Coverage Quality Gate
+        run: node scripts/coverage-report.js
+        env:
+          CI: true
