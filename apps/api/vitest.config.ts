@@ -14,8 +14,8 @@ export default defineConfig({
         "**/*.d.ts",
         "**/*.test.ts",
         "**/*.spec.ts",
-        "**/test/**"
-      ]
+        "**/test/**",
+      ],
     },
     reporters: ["default", "e2e/utils/log-reporter.ts"],
     workspace: [
