@@ -396,6 +396,17 @@ export type SkillId<T extends BenchmarkLeaderboardData> = keyof T["skills"];
 export type ProviderName = BenchmarkModel["provider"];
 
 /**
+ * Helper function to extract model ID from unknown object for error messages
+ */
+function getModelIdForError(model: unknown): string {
+  if (typeof model === "object" && model !== null && "id" in model) {
+    const id = (model as { id: unknown }).id;
+    return typeof id === "string" ? id : String(id);
+  }
+  return "unknown";
+}
+
+/**
  * Validation class with comprehensive data checking
  */
 export class BenchmarkDataValidator {
@@ -428,9 +439,7 @@ export class BenchmarkDataValidator {
     // Validate models
     for (const model of data.models) {
       if (!isBenchmarkModel(model)) {
-        errors.push(
-          `Invalid model structure: ${typeof model === "object" && model !== null && "id" in model ? (model as { id: unknown }).id : "unknown"}`,
-        );
+        errors.push(`Invalid model structure: ${getModelIdForError(model)}`);
         continue;
       }
 

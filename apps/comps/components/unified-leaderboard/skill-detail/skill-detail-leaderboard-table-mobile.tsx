@@ -5,6 +5,12 @@ import { useState } from "react";
 
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@recallnet/ui2/components/dialog";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -52,6 +58,9 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
   SkillDetailLeaderboardTableMobileProps
 > = ({ skill, skillData }) => {
   const [showType, setShowType] = useState<"all" | "models" | "agents">("all");
+  const [selectedModel, setSelectedModel] = useState<BenchmarkModel | null>(
+    null,
+  );
 
   // Combine and rank all participants
   const allParticipants: ParticipantEntry[] = [
@@ -192,60 +201,25 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
 
                 {/* Icons Row */}
                 <div className="flex items-center gap-2">
-                  {/* Model Statistics Icon */}
-                  {isModel && (
-                    <Tooltip
-                      content={
-                        <div className="max-w-xs space-y-2 p-3">
-                          <div className="border-b border-gray-700 pb-2">
-                            <h4 className="text-sm font-medium text-white">
-                              Statistics
-                            </h4>
-                          </div>
-                          <div className="space-y-1 text-xs">
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Provider:</span>
-                              <span className="text-white">
-                                {(participant as BenchmarkModel).provider}
-                              </span>
-                            </div>
-                            {(participant as BenchmarkModel).context_length && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-400">Context:</span>
-                                <span className="text-white">
-                                  {(
-                                    participant as BenchmarkModel
-                                  ).context_length!.toLocaleString()}{" "}
-                                  tokens
-                                </span>
-                              </div>
-                            )}
-                            {(participant as BenchmarkModel).pricing && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-400">Price:</span>
-                                <span className="text-green-400">
-                                  $
-                                  {
-                                    (participant as BenchmarkModel).pricing!
-                                      .prompt
-                                  }
-                                  /1M
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      }
-                    >
+                  {/* Model Stats Button (Mobile-friendly) */}
+                  {isModel &&
+                    (participant as BenchmarkModel).context_length && (
                       <button
-                        className="flex h-4 w-4 cursor-help touch-manipulation items-center justify-center rounded-full bg-gray-700/50 text-gray-400 transition-colors hover:bg-gray-600/50 hover:text-gray-300 active:bg-gray-600"
-                        aria-label={`View statistics for ${(participant as BenchmarkModel).name}`}
-                        type="button"
+                        onClick={() =>
+                          setSelectedModel(participant as BenchmarkModel)
+                        }
+                        className="flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 transition-colors hover:bg-gray-200"
                       >
-                        <BarChart3 size={10} />
+                        <BarChart3 size={12} className="text-gray-600" />
+                        <span className="text-[10px] font-medium text-gray-700">
+                          {Math.round(
+                            (participant as BenchmarkModel).context_length! /
+                              1000,
+                          )}
+                          k
+                        </span>
                       </button>
-                    </Tooltip>
-                  )}
+                    )}
 
                   {/* NEW Badge */}
                   {isModel &&
@@ -335,6 +309,76 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
           );
         })}
       </div>
+
+      {/* Model Stats Modal */}
+      <Dialog
+        open={!!selectedModel}
+        onOpenChange={(open) => !open && setSelectedModel(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 size={16} />
+              Model Statistics
+            </DialogTitle>
+          </DialogHeader>
+          {selectedModel && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-600">Model</h4>
+                <p className="text-sm">{selectedModel.name}</p>
+              </div>
+
+              {selectedModel.context_length && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-600">
+                    Context Length
+                  </h4>
+                  <p className="text-sm">
+                    {selectedModel.context_length.toLocaleString()} tokens
+                  </p>
+                </div>
+              )}
+
+              {selectedModel.pricing && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-600">Pricing</h4>
+                  <div className="space-y-1 text-sm">
+                    <p>Input: ${selectedModel.pricing.prompt} per M tokens</p>
+                    <p>
+                      Output: ${selectedModel.pricing.completion} per M tokens
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {selectedModel.created && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-600">
+                    Released
+                  </h4>
+                  <p className="text-sm">
+                    {new Date(
+                      selectedModel.created * 1000,
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+
+              {selectedModel.description && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-600">
+                    Description
+                  </h4>
+                  <p className="text-sm text-gray-700">
+                    {selectedModel.description}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

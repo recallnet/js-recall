@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, ExternalLink, Info } from "lucide-react";
+import { BarChart3, Info } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@recallnet/ui2/components/badge";
@@ -52,7 +52,6 @@ type ParticipantEntry = (BenchmarkModel | LeaderboardAgent) & {
 export const SkillDetailLeaderboardTable: React.FC<
   SkillDetailLeaderboardTableProps
 > = ({ skill, skillData }) => {
-  const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [showType, setShowType] = useState<"all" | "models" | "agents">("all");
 
   // Combine and rank all participants
@@ -127,7 +126,6 @@ export const SkillDetailLeaderboardTable: React.FC<
           </h3>
           <div className="space-y-3">
             {filteredParticipants.map((participant, index) => {
-              const isExpanded = expandedRow === participant.id;
               const metrics = getParticipantMetrics(participant, skill.id);
               const isModel = metrics.isModel;
               const confidenceInterval = metrics.confidenceInterval;
@@ -367,21 +365,6 @@ export const SkillDetailLeaderboardTable: React.FC<
                                 </div>
                               </Tooltip>
                             )}
-                          {/* Info button for expandable details */}
-                          {isModel && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setExpandedRow(
-                                  isExpanded ? null : participant.id,
-                                )
-                              }
-                              className="h-5 w-5 p-0 opacity-0"
-                            >
-                              <Info size={12} className="text-gray-400" />
-                            </Button>
-                          )}
                         </div>
                         {isModel && (
                           <div className="text-xs text-gray-400">
@@ -456,167 +439,6 @@ export const SkillDetailLeaderboardTable: React.FC<
             })}
           </div>
         </div>
-
-        {/* Expanded Model Details */}
-        {expandedRow && (
-          <div className="border-t border-gray-800 bg-gray-950/50 p-6">
-            {(() => {
-              const expandedParticipant = filteredParticipants.find(
-                (p) => p.id === expandedRow,
-              );
-              if (!expandedParticipant || expandedParticipant.type !== "model")
-                return null;
-
-              const model = expandedParticipant as BenchmarkModel;
-              const benchmark = model.scores[skill.id];
-
-              return (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <Info size={20} className="text-blue-400" />
-                    <h4 className="text-lg font-semibold text-white">
-                      {model.name} Details
-                    </h4>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {/* Model Specs */}
-                    <div className="space-y-3">
-                      <h5 className="font-medium text-gray-300">
-                        Model Specifications
-                      </h5>
-                      <div className="space-y-2 text-sm">
-                        {model.description && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Description:</span>
-                            <span className="text-sm text-white">
-                              {model.description.substring(0, 100)}...
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Context Length:</span>
-                          <span className="text-white">
-                            {model.context_length?.toLocaleString() || "N/A"}
-                          </span>
-                        </div>
-                        {model.architecture?.tokenizer && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Tokenizer:</span>
-                            <span className="text-white">
-                              {model.architecture.tokenizer}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Pricing */}
-                    <div className="space-y-3">
-                      <h5 className="font-medium text-gray-300">
-                        Pricing (per 1M tokens)
-                      </h5>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Input:</span>
-                          <span className="text-white">
-                            ${model.pricing?.prompt || "0"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Output:</span>
-                          <span className="text-white">
-                            ${model.pricing?.completion || "0"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Benchmark Details */}
-                    {benchmark && (
-                      <div className="space-y-3">
-                        <h5 className="font-medium text-gray-300">
-                          Evaluation Details
-                        </h5>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Sample Size:</span>
-                            <span className="text-white">
-                              {benchmark.sampleSize || "N/A"}
-                            </span>
-                          </div>
-                          {benchmark.contamination && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">
-                                Contamination:
-                              </span>
-                              <Badge
-                                variant={
-                                  benchmark.contamination === "none"
-                                    ? "green"
-                                    : "gray"
-                                }
-                                className={cn(
-                                  "text-xs",
-                                  benchmark.contamination !== "none" &&
-                                    "bg-yellow-900 text-yellow-300",
-                                )}
-                              >
-                                {benchmark.contamination}
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Capabilities */}
-                  <div className="space-y-3">
-                    <h5 className="font-medium text-gray-300">Capabilities</h5>
-                    <div className="flex flex-wrap gap-2">
-                      {model.architecture?.input_modalities.map(
-                        (modality: string) => (
-                          <Badge
-                            key={modality}
-                            variant="blue"
-                            className="text-xs"
-                          >
-                            Input: {modality}
-                          </Badge>
-                        ),
-                      )}
-                      {model.architecture?.output_modalities.map(
-                        (modality: string) => (
-                          <Badge
-                            key={modality}
-                            variant="green"
-                            className="text-xs"
-                          >
-                            Output: {modality}
-                          </Badge>
-                        ),
-                      )}
-                    </div>
-                  </div>
-
-                  {/* OpenRouter Link */}
-                  <div>
-                    <a
-                      href={`https://openrouter.ai/models/${model.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300"
-                    >
-                      <ExternalLink size={14} />
-                      View on OpenRouter
-                    </a>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        )}
       </Card>
     </div>
   );
