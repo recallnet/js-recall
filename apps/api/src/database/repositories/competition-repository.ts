@@ -24,7 +24,6 @@ import {
 // Import for enrichment functionality
 import { votes } from "@/database/schema/core/defs.js";
 import {
-  InsertAgent,
   InsertCompetition,
   InsertCompetitionAgent,
   InsertCompetitionsLeaderboard,
