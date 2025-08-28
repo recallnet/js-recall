@@ -81,10 +81,16 @@ export class AlchemyProvider {
             `[AlchemyProvider] Initialized provider for ${chain}`,
           );
         }
-      } catch {
+      } catch (error) {
         serviceLogger.error(
           `[AlchemyProvider] Failed to initialize ${chain} provider`,
         );
+        // Log error details without exposing sensitive information
+        if (error instanceof Error) {
+          serviceLogger.debug(
+            `[AlchemyProvider] Initialization error for ${chain}: ${error.message}`,
+          );
+        }
       }
     }
 
@@ -374,8 +380,14 @@ export class AlchemyProvider {
       }
 
       return false;
-    } catch {
+    } catch (error) {
       serviceLogger.error("[AlchemyProvider] Health check failed");
+      // Log error details without exposing sensitive information
+      if (error instanceof Error) {
+        serviceLogger.debug(
+          `[AlchemyProvider] Health check error: ${error.message}`,
+        );
+      }
       return false;
     }
   }
@@ -407,10 +419,16 @@ export class AlchemyProvider {
 
       // Default to 18 if call fails (common for ETH/WETH)
       return 18;
-    } catch {
+    } catch (error) {
       serviceLogger.warn(
         `[AlchemyProvider] Failed to fetch decimals for token ${tokenAddress} on ${chain}, defaulting to 18`,
       );
+      // Log error details without exposing sensitive information
+      if (error instanceof Error) {
+        serviceLogger.debug(
+          `[AlchemyProvider] Decimals fetch error: ${error.message}`,
+        );
+      }
       return 18;
     }
   }

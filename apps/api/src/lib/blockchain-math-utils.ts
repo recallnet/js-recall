@@ -146,6 +146,16 @@ export function calculatePercentageChange(
   if (oldBig === 0n) return newBig > 0n ? 100 : 0;
 
   const change = ((newBig - oldBig) * 10000n) / oldBig; // Multiply by 10000 for precision
+
+  // Check if change is within safe bounds for Number conversion
+  const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
+  const MIN_SAFE = BigInt(Number.MIN_SAFE_INTEGER);
+
+  if (change > MAX_SAFE || change < MIN_SAFE) {
+    // Return Infinity or -Infinity to indicate overflow
+    return change > 0n ? Infinity : -Infinity;
+  }
+
   return Number(change) / 100; // Divide by 100 to get percentage
 }
 
