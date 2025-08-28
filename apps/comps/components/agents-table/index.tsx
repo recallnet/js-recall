@@ -368,12 +368,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              position: "relative",
-            }}
-          >
+          <TableBody>
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const row = table.getRowModel().rows[virtualRow.index];
               if (!row) return null;
@@ -381,11 +376,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 <TableRow
                   key={row.id}
                   style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    transform: `translateY(${virtualRow.start}px)`,
                     display: "flex",
                     cursor: "pointer",
                   }}
