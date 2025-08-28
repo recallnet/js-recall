@@ -1,11 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 
-import {
-  CROSS_CHAIN_TRADING_TYPE,
-  CrossChainTradingType,
-  SpecificChain,
-} from "@/types/index.js";
+import { CrossChainTradingType, SpecificChain } from "@/types/index.js";
 
 // Simple console logging for config initialization (before full logger setup)
 const configLogger = {
@@ -351,7 +347,7 @@ export const features: {
   // Enable or disable cross-chain trading functionality
   // When set to false, trades can only occur between tokens on the same chain
   // Defaults to false for security, must be explicitly enabled
-  CROSS_CHAIN_TRADING_TYPE: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+  CROSS_CHAIN_TRADING_TYPE: "disallowAll",
   // Enable or disable sandbox mode for auto-joining newly registered agents
   // When set to true, newly registered agents are automatically joined to active competitions
   // Defaults to false, overridden by active competition configuration

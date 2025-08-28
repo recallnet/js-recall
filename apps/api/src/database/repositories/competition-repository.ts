@@ -24,7 +24,9 @@ import {
 // Import for enrichment functionality
 import { votes } from "@/database/schema/core/defs.js";
 import {
+  InsertAgent,
   InsertCompetition,
+  InsertCompetitionAgent,
   InsertCompetitionsLeaderboard,
   UpdateCompetition,
 } from "@/database/schema/core/types.js";
@@ -41,8 +43,6 @@ import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
   BestPlacementDbSchema,
-  COMPETITION_AGENT_STATUS,
-  COMPETITION_STATUS,
   CompetitionAgentStatus,
   CompetitionStatus,
   PagingParams,
@@ -331,7 +331,7 @@ async function addAgentToCompetitionImpl(
         .values({
           competitionId,
           agentId,
-          status: COMPETITION_AGENT_STATUS.ACTIVE,
+          status: "active",
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -375,7 +375,7 @@ async function removeAgentFromCompetitionImpl(
       const result = await tx
         .update(competitionAgents)
         .set({
-          status: COMPETITION_AGENT_STATUS.DISQUALIFIED,
+          status: "disqualified",
           deactivationReason: reason || "Disqualified from competition",
           deactivatedAt: new Date(),
           updatedAt: new Date(),
@@ -384,7 +384,7 @@ async function removeAgentFromCompetitionImpl(
           and(
             eq(competitionAgents.competitionId, competitionId),
             eq(competitionAgents.agentId, agentId),
-            eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+            eq(competitionAgents.status, "active"),
           ),
         )
         .returning();
@@ -459,10 +459,10 @@ async function addAgentsImpl(competitionId: string, agentIds: string[]) {
       }
 
       const now = new Date();
-      const values = agentIds.map((agentId) => ({
+      const values: InsertCompetitionAgent[] = agentIds.map((agentId) => ({
         competitionId,
         agentId,
-        status: COMPETITION_AGENT_STATUS.ACTIVE,
+        status: "active",
         createdAt: now,
         updatedAt: now,
       }));
@@ -504,7 +504,7 @@ async function addAgentsImpl(competitionId: string, agentIds: string[]) {
  */
 async function getAgentsImpl(
   competitionId: string,
-  status: CompetitionAgentStatus = COMPETITION_AGENT_STATUS.ACTIVE,
+  status: CompetitionAgentStatus = "active",
 ) {
   try {
     const result = await db
@@ -554,7 +554,7 @@ async function isAgentActiveInCompetitionImpl(
         and(
           eq(competitionAgents.competitionId, competitionId),
           eq(competitionAgents.agentId, agentId),
-          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+          eq(competitionAgents.status, "active"),
         ),
       )
       .limit(1);
@@ -738,7 +738,7 @@ async function updateAgentCompetitionStatusImpl(
 
       // Add deactivation fields when moving to inactive status, clear them when reactivating
       const updateData =
-        status !== COMPETITION_AGENT_STATUS.ACTIVE
+        status !== "active"
           ? {
               ...baseUpdateData,
               deactivationReason: reason || `Status changed to ${status}`,
@@ -765,9 +765,8 @@ async function updateAgentCompetitionStatusImpl(
 
       // Update the registered participants counter if the status change affects it
       if (wasUpdated) {
-        const wasActive =
-          currentStatus.status === COMPETITION_AGENT_STATUS.ACTIVE;
-        const isNowActive = status === COMPETITION_AGENT_STATUS.ACTIVE;
+        const wasActive = currentStatus.status === "active";
+        const isNowActive = status === "active";
 
         if (wasActive && !isNowActive) {
           // Decrement counter: ACTIVE -> non-ACTIVE
@@ -848,7 +847,7 @@ async function markAgentAsWithdrawnImpl(
   return updateAgentCompetitionStatusImpl(
     competitionId,
     agentId,
-    COMPETITION_AGENT_STATUS.WITHDRAWN,
+    "withdrawn",
     reason || "Agent withdrew from competition voluntarily",
   );
 }
@@ -868,7 +867,7 @@ async function findActiveImpl() {
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
       )
-      .where(eq(competitions.status, COMPETITION_STATUS.ACTIVE))
+      .where(eq(competitions.status, "active"))
       .limit(1);
 
     return result;
@@ -929,7 +928,7 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
         LIMIT 1
       ) ps
       WHERE ca.competition_id = ${competitionId}
-        AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
+        AND ca.status = ${"active"}
     `);
 
     // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
@@ -1023,7 +1022,7 @@ async function get24hSnapshotsImpl(
       .from(competitions)
       .where(
         and(
-          eq(competitions.status, COMPETITION_STATUS.ENDED),
+          eq(competitions.status, "ended"),
           eq(competitions.id, competitionId),
         ),
       );
@@ -1462,7 +1461,7 @@ async function countAgentCompetitionsImpl(agentId: string): Promise<number> {
       .where(
         and(
           eq(competitionAgents.agentId, agentId),
-          eq(competitions.status, COMPETITION_STATUS.ENDED),
+          eq(competitions.status, "ended"),
         ),
       );
 
@@ -1847,7 +1846,7 @@ async function findActiveCompetitionsPastEndDateImpl() {
       )
       .where(
         and(
-          eq(competitions.status, COMPETITION_STATUS.ACTIVE),
+          eq(competitions.status, "active"),
           isNotNull(competitions.endDate),
           lte(competitions.endDate, now),
         ),
@@ -2123,7 +2122,7 @@ async function getAgentPortfolioTimelineImpl(
         JOIN agents a ON a.id = ca.agent_id
         JOIN competitions c ON c.id = ca.competition_id
         WHERE ca.competition_id = ${competitionId}
-          AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
+          AND ca.status = ${"active"}
       ) AS ranked_snapshots
       WHERE rn = 1
     `);

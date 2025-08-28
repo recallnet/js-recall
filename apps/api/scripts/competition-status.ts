@@ -7,7 +7,6 @@ import {
   getCompetitionAgents,
 } from "@/database/repositories/competition-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { COMPETITION_STATUS } from "@/types/index.js";
 
 const services = new ServiceRegistry();
 
@@ -94,7 +93,7 @@ async function showCompetitionStatus() {
       // Check if there are any previous competitions
       const pastCompetitions = await findAll();
       const completedCompetitions = pastCompetitions.filter(
-        (c) => c.status === COMPETITION_STATUS.ENDED,
+        (c) => c.status === "ended",
       );
 
       if (completedCompetitions.length > 0) {

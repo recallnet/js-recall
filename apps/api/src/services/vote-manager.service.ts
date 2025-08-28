@@ -18,7 +18,6 @@ import {
 } from "@/database/schema/core/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import {
-  COMPETITION_STATUS,
   CompetitionVotingStatus,
   UserVoteInfo,
   VOTE_ERROR_TYPES,
@@ -328,8 +327,8 @@ export class VoteManager {
     competition: SelectCompetition,
   ): boolean {
     const votingEnabledStatuses: Array<SelectCompetition["status"]> = [
-      COMPETITION_STATUS.PENDING,
-      COMPETITION_STATUS.ACTIVE,
+      "pending",
+      "active",
     ];
 
     return votingEnabledStatuses.includes(competition.status);
