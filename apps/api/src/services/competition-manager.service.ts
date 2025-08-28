@@ -648,11 +648,11 @@ export class CompetitionManager {
     // Apply post-processing sorting and pagination, if needed
     const finalCompetitionAgents = isComputedSort
       ? applySortingAndPagination(
-        competitionAgents,
-        computedSort,
-        limit,
-        offset,
-      )
+          competitionAgents,
+          computedSort,
+          limit,
+          offset,
+        )
       : competitionAgents;
 
     // Cache the result
@@ -980,7 +980,7 @@ export class CompetitionManager {
       if (
         !currentLatestSnapshot ||
         (snapshot.timestamp?.getTime() ?? 0) >
-        (currentLatestSnapshot.timestamp?.getTime() ?? 0)
+          (currentLatestSnapshot.timestamp?.getTime() ?? 0)
       ) {
         latestSnapshotsByAgent.set(snapshot.agentId, snapshot);
       }
