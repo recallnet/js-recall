@@ -378,43 +378,26 @@ export const liveCompetitionConfig = tradingComps.table(
 );
 
 /**
- * Table for tracking blockchain scanning progress.
- * Critical for efficient scanning - prevents re-scanning old blocks.
+ * Table for tracking sync progress with Envio indexer.
+ * Stores the last synced timestamp per competition to avoid re-querying old data.
  */
-export const scanProgress = tradingComps.table(
-  "scan_progress",
+export const indexerSyncProgress = tradingComps.table(
+  "indexer_sync_progress",
   {
     id: uuid().primaryKey(),
-    agentId: uuid("agent_id")
-      .notNull()
-      .references(() => agents.id),
     competitionId: uuid("competition_id")
       .notNull()
       .references(() => competitions.id),
-    chain: liveTradingChains("chain").notNull(),
-    lastScannedBlock: bigint("last_scanned_block", {
+    lastSyncedTimestamp: bigint("last_synced_timestamp", {
       mode: "number",
     }).notNull(),
-    lastScanTime: timestamp("last_scan_time", { withTimezone: true }).notNull(),
+    lastSyncTime: timestamp("last_sync_time", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
-    // Unique constraint to ensure one record per agent/competition/chain
-    unique("scan_progress_unique").on(
-      table.agentId,
-      table.competitionId,
-      table.chain,
-    ),
-    // Indexes for efficient queries
-    index("idx_scan_progress_competition").on(table.competitionId),
-    index("idx_scan_progress_agent").on(table.agentId),
-    index("idx_scan_progress_chain").on(table.chain),
-    // Compound index for the most common query pattern
-    index("idx_scan_progress_competition_agent_chain").on(
-      table.competitionId,
-      table.agentId,
-      table.chain,
-    ),
+    // One record per competition - much simpler than per-agent/per-chain tracking
+    unique("indexer_sync_progress_competition_unique").on(table.competitionId),
+    index("idx_indexer_sync_progress_competition").on(table.competitionId),
   ],
 );
