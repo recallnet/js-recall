@@ -1349,7 +1349,7 @@ async function getAgentRankingsInCompetitionsImpl(
             competitionIds.map((id) => sql`${id}`),
             sql`, `,
           )})
-            AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
+            AND ca.status = ${"active"}
         ),
         ranked AS (
           SELECT
