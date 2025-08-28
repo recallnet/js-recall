@@ -1,24 +1,24 @@
 {
   "total": {
     "lines": {
-      "total": 50042,
-      "covered": 4828,
-      "pct": 9.65
+      "total": 45669,
+      "covered": 1860,
+      "pct": 4.07
     },
     "statements": {
-      "total": 50042,
-      "covered": 4828,
-      "pct": 9.65
+      "total": 45669,
+      "covered": 1860,
+      "pct": 4.07
     },
     "functions": {
-      "total": 718,
-      "covered": 386,
-      "pct": 53.76
+      "total": 511,
+      "covered": 254,
+      "pct": 49.71
     },
     "branches": {
-      "total": 1123,
-      "covered": 622,
-      "pct": 55.39
+      "total": 761,
+      "covered": 387,
+      "pct": 50.85
     }
   },
   "apps/api": {
@@ -141,114 +141,6 @@
       "covered": 28,
       "skipped": 0,
       "pct": 53.84
-    },
-    "branchesTrue": {
-      "total": 0,
-      "covered": 0,
-      "skipped": 0,
-      "pct": 100
-    }
-  },
-  "packages/agent-toolkit": {
-    "lines": {
-      "total": 0,
-      "covered": 0,
-      "pct": 0
-    },
-    "statements": {
-      "total": 0,
-      "covered": 0,
-      "pct": 0
-    },
-    "functions": {
-      "total": 0,
-      "covered": 0,
-      "pct": 0
-    },
-    "branches": {
-      "total": 0,
-      "covered": 0,
-      "pct": 0
-    }
-  },
-  "packages/api-sdk": {
-    "lines": {
-      "total": 0,
-      "covered": 0,
-      "pct": 0
-    },
-    "statements": {
-      "total": 0,
-      "covered": 0,
-      "pct": 0
-    },
-    "functions": {
-      "total": 0,
-      "covered": 0,
-      "pct": 0
-    },
-    "branches": {
-      "total": 0,
-      "covered": 0,
-      "pct": 0
-    }
-  },
-  "packages/fvm": {
-    "lines": {
-      "total": 1615,
-      "covered": 1494,
-      "skipped": 0,
-      "pct": 92.5
-    },
-    "statements": {
-      "total": 1615,
-      "covered": 1494,
-      "skipped": 0,
-      "pct": 92.5
-    },
-    "functions": {
-      "total": 95,
-      "covered": 78,
-      "skipped": 0,
-      "pct": 82.1
-    },
-    "branches": {
-      "total": 223,
-      "covered": 157,
-      "skipped": 0,
-      "pct": 70.4
-    },
-    "branchesTrue": {
-      "total": 0,
-      "covered": 0,
-      "skipped": 0,
-      "pct": 100
-    }
-  },
-  "packages/sdk": {
-    "lines": {
-      "total": 2758,
-      "covered": 1474,
-      "skipped": 0,
-      "pct": 53.44
-    },
-    "statements": {
-      "total": 2758,
-      "covered": 1474,
-      "skipped": 0,
-      "pct": 53.44
-    },
-    "functions": {
-      "total": 112,
-      "covered": 54,
-      "skipped": 0,
-      "pct": 48.21
-    },
-    "branches": {
-      "total": 139,
-      "covered": 78,
-      "skipped": 0,
-      "pct": 56.11
     },
     "branchesTrue": {
       "total": 0,
