@@ -2,14 +2,15 @@ import keccak256 from "keccak256";
 import { MerkleTree } from "merkletreejs";
 import { encodeAbiParameters } from "viem";
 
+import { rewardsRoots, rewardsTree } from "@recallnet/db-schema/voting/defs";
+import { InsertReward } from "@recallnet/db-schema/voting/types";
+
 import { db } from "@/database/db.js";
 import {
   getRewardsByCompetition,
   getRewardsTreeByCompetition,
   insertRewards,
 } from "@/database/repositories/rewards-repository.js";
-import { rewardsRoots, rewardsTree } from "@/database/schema/voting/defs.js";
-import { InsertReward } from "@/database/schema/voting/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 
 /**

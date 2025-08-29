@@ -4,15 +4,16 @@ import { MerkleTree } from "merkletreejs";
 import { encodeAbiParameters } from "viem";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { db } from "@/database/db.js";
-import { insertRewards } from "@/database/repositories/rewards-repository.js";
-import { competitions } from "@/database/schema/core/defs.js";
+import { competitions } from "@recallnet/db-schema/core/defs";
 import {
   rewards,
   rewardsRoots,
   rewardsTree,
-} from "@/database/schema/voting/defs.js";
-import { InsertReward } from "@/database/schema/voting/types.js";
+} from "@recallnet/db-schema/voting/defs";
+import { InsertReward } from "@recallnet/db-schema/voting/types";
+
+import { db } from "@/database/db.js";
+import { insertRewards } from "@/database/repositories/rewards-repository.js";
 import { RewardsService, createLeafNode } from "@/services/rewards.service.js";
 
 describe("Rewards Service", () => {

@@ -1,9 +1,10 @@
 import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
+import { users } from "@recallnet/db-schema/core/defs";
+import { InsertUser, SelectUser } from "@recallnet/db-schema/core/types";
+
 import { db } from "@/database/db.js";
-import { users } from "@/database/schema/core/defs.js";
-import { InsertUser, SelectUser } from "@/database/schema/core/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { UserSearchParams } from "@/types/index.js";

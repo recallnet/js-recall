@@ -1,12 +1,13 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
-import { db } from "@/database/db.js";
-import { competitionRewards } from "@/database/schema/core/defs.js";
+import { competitionRewards } from "@recallnet/db-schema/core/defs";
 import {
   InsertCompetitionReward,
   SelectCompetitionReward,
-} from "@/database/schema/core/types.js";
+} from "@recallnet/db-schema/core/types";
+
+import { db } from "@/database/db.js";
 import { competitionRewardsLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 

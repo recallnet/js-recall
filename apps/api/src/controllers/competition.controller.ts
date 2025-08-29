@@ -1,12 +1,13 @@
 import { NextFunction, Response } from "express";
 import { LRUCache } from "lru-cache";
 
+import { SelectCompetitionReward } from "@recallnet/db-schema/core/types";
+
 import { config } from "@/config/index.js";
 import {
   getBatchVoteCounts,
   getEnrichedCompetitions,
 } from "@/database/repositories/competition-repository.js";
-import { SelectCompetitionReward } from "@/database/schema/core/types.js";
 import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";

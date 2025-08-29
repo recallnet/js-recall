@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 
+import { InsertTrade, SelectTrade } from "@recallnet/db-schema/trading/types";
+
 import { config, features } from "@/config/index.js";
 import {
   count,
@@ -10,7 +12,6 @@ import {
   getCompetitionTrades,
 } from "@/database/repositories/trade-repository.js";
 import { findByCompetitionId } from "@/database/repositories/trading-constraints-repository.js";
-import { InsertTrade, SelectTrade } from "@/database/schema/trading/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { EXEMPT_TOKENS, calculateSlippage } from "@/lib/trade-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";

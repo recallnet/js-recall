@@ -1,17 +1,18 @@
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
-import { db } from "@/database/db.js";
-import { agents } from "@/database/schema/core/defs.js";
+import { agents } from "@recallnet/db-schema/core/defs";
 import {
   agentScore,
   agentScoreHistory,
-} from "@/database/schema/ranking/defs.js";
+} from "@recallnet/db-schema/ranking/defs";
 import {
   InsertAgentScore,
   InsertAgentScoreHistory,
   SelectAgentScore,
-} from "@/database/schema/ranking/types.js";
+} from "@recallnet/db-schema/ranking/types";
+
+import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { AgentMetadata } from "@/types/index.js";

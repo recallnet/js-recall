@@ -1,7 +1,6 @@
 import { relations } from "drizzle-orm/relations";
 
-import { agents, competitions, users } from "@/database/schema/core/defs.js";
-
+import { agents, competitions, users } from "../core/defs.js";
 import {
   epochs,
   rewards,

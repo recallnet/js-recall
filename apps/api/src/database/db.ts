@@ -9,8 +9,9 @@ import { Pool } from "pg";
 import client from "prom-client";
 import { fileURLToPath } from "url";
 
+import schema from "@recallnet/db-schema";
+
 import { config } from "@/config/index.js";
-import schema from "@/database/schema/index.js";
 import { dbLogger as pinoDbLogger } from "@/lib/logger.js";
 import { getTraceId } from "@/lib/trace-context.js";
 

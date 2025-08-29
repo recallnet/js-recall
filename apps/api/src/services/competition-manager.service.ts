@@ -1,6 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 
 import {
+  SelectCompetitionReward,
+  UpdateCompetition,
+} from "@recallnet/db-schema/core/types";
+
+import {
   findById as findAgentById,
   findByCompetition,
 } from "@/database/repositories/agent-repository.js";
@@ -27,10 +32,6 @@ import {
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
-import {
-  SelectCompetitionReward,
-  UpdateCompetition,
-} from "@/database/schema/core/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";

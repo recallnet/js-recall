@@ -1,8 +1,9 @@
 import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
 
+import { admins } from "@recallnet/db-schema/core/defs";
+import { InsertAdmin, SelectAdmin } from "@recallnet/db-schema/core/types";
+
 import { db } from "@/database/db.js";
-import { admins } from "@/database/schema/core/defs.js";
-import { InsertAdmin, SelectAdmin } from "@/database/schema/core/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SearchAdminsParams } from "@/types/index.js";

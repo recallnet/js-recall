@@ -1,8 +1,9 @@
 import { and, count as drizzleCount, eq, inArray, sql } from "drizzle-orm";
 
+import { balances } from "@recallnet/db-schema/trading/defs";
+
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { balances } from "@/database/schema/trading/defs.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChain } from "@/types/index.js";

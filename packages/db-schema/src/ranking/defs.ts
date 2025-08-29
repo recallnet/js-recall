@@ -8,7 +8,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { agents, competitions } from "@/database/schema/core/defs.js";
+import { agents, competitions } from "../core/defs.js";
 
 /**
  * Stores the current agent rank for an agent

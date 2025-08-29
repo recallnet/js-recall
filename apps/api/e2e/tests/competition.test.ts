@@ -2,9 +2,10 @@ import axios from "axios";
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { agents, competitionAgents } from "@recallnet/db-schema/core/defs";
+
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { agents, competitionAgents } from "@/database/schema/core/defs.js";
 import {
   AgentCompetitionsResponse,
   AgentProfileResponse,

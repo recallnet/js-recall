@@ -1,8 +1,9 @@
 import { Request } from "express";
 import qs from "qs";
 
+import { UpdateCompetitionSchema } from "@recallnet/db-schema/core/types";
+
 import { config } from "@/config/index.js";
-import { UpdateCompetitionSchema } from "@/database/schema/core/types.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AdminSearchUsersAndAgentsQuery,

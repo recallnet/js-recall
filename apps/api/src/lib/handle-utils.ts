@@ -1,4 +1,5 @@
-import { MAX_HANDLE_LENGTH } from "@/database/schema/core/defs.js";
+import { MAX_HANDLE_LENGTH } from "@recallnet/db-schema/core/defs";
+
 import { AgentHandleSchema, MIN_HANDLE_LENGTH } from "@/types/index.js";
 
 /**

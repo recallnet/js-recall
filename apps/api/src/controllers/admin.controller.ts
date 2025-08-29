@@ -3,12 +3,13 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { config, reloadSecurityConfig } from "@/config/index.js";
-import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import {
   SelectCompetitionReward,
   UpdateCompetition,
-} from "@/database/schema/core/types.js";
+} from "@recallnet/db-schema/core/types";
+
+import { config, reloadSecurityConfig } from "@/config/index.js";
+import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { adminLogger } from "@/lib/logger.js";

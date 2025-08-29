@@ -3,8 +3,9 @@ import * as crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { admins } from "@recallnet/db-schema/core/defs";
+
 import { db } from "@/database/db.js";
-import { admins } from "@/database/schema/core/defs.js";
 import {
   AdminAgentResponse,
   AdminAgentsListResponse,

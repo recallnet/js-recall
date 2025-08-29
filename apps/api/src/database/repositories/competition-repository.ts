@@ -14,29 +14,30 @@ import {
 import { unionAll } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
 
-import { db, dbRead } from "@/database/db.js";
 import {
   competitionAgents,
   competitionRewards,
   competitions,
   competitionsLeaderboard,
-} from "@/database/schema/core/defs.js";
+} from "@recallnet/db-schema/core/defs";
 // Import for enrichment functionality
-import { votes } from "@/database/schema/core/defs.js";
+import { votes } from "@recallnet/db-schema/core/defs";
 import {
   InsertCompetition,
   InsertCompetitionAgent,
   InsertCompetitionsLeaderboard,
   UpdateCompetition,
-} from "@/database/schema/core/types.js";
+} from "@recallnet/db-schema/core/types";
 import {
   portfolioSnapshots,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
-} from "@/database/schema/trading/defs.js";
-import { tradingConstraints } from "@/database/schema/trading/defs.js";
-import { InsertTradingCompetition } from "@/database/schema/trading/types.js";
-import { InsertPortfolioSnapshot } from "@/database/schema/trading/types.js";
+} from "@recallnet/db-schema/trading/defs";
+import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
+import { InsertTradingCompetition } from "@recallnet/db-schema/trading/types";
+import { InsertPortfolioSnapshot } from "@recallnet/db-schema/trading/types";
+
+import { db, dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { ApiError } from "@/middleware/errorHandler.js";
