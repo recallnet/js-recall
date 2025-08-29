@@ -18,20 +18,20 @@ const colors = {
 };
 
 /**
- * Allocate rewards for a specific epoch
+ * Allocate rewards for a specific competition
  * This script instantiates the RewardsService and calls the allocate method
- * on the provided epochId
+ * on the provided competitionId
  */
 async function allocateRewards() {
-  // Get the epochId from command line arguments
-  const epochId = process.argv[2];
+  // Get the competitionId from command line arguments
+  const competitionId = process.argv[2];
 
-  if (!epochId) {
+  if (!competitionId) {
     console.error(
       `${colors.red}Error: Missing required parameter.${colors.reset}`,
     );
     console.log(
-      `${colors.yellow}Usage: pnpm rewards:allocate <epochId>${colors.reset}`,
+      `${colors.yellow}Usage: pnpm rewards:allocate <competitionId>${colors.reset}`,
     );
     process.exit(1);
   }
@@ -48,17 +48,17 @@ async function allocateRewards() {
     );
 
     console.log(
-      `\n${colors.blue}Allocating rewards for epoch: ${colors.yellow}${epochId}${colors.reset}`,
+      `\n${colors.blue}Allocating rewards for competition: ${colors.yellow}${competitionId}${colors.reset}`,
     );
 
     // Instantiate the RewardsService
     const rewardsService = new RewardsService();
 
     // Call the allocate method
-    await rewardsService.allocate(epochId);
+    await rewardsService.allocate(competitionId);
 
     console.log(
-      `\n${colors.green}Successfully allocated rewards for epoch: ${colors.yellow}${epochId}${colors.reset}`,
+      `\n${colors.green}Successfully allocated rewards for competition: ${colors.yellow}${competitionId}${colors.reset}`,
     );
     console.log(
       `${colors.green}Merkle tree has been built and stored in the database.${colors.reset}`,

@@ -1934,9 +1934,16 @@ describe("Competition API", () => {
       reason: "Test trade 3",
     });
     expect(trades3.success).toBe(true);
+    const trades4 = await client2.executeTrade({
+      fromToken: config.specificChainTokens.eth.eth,
+      toToken: config.specificChainTokens.eth.usdc,
+      amount: "0.001",
+      reason: "Test trade 4",
+    });
+    expect(trades4.success).toBe(true);
 
     // Get the total trade values
-    const allTrades = [trades1, trades2, trades3] as TradeResponse[];
+    const allTrades = [trades1, trades2, trades3, trades4] as TradeResponse[];
     const totalVolume = allTrades.reduce(
       (acc, trade) => acc + (trade.transaction.tradeAmountUsd ?? 0),
       0,
@@ -1946,7 +1953,7 @@ describe("Competition API", () => {
     )) as CompetitionDetailResponse;
     const stats = competition.stats;
     expect(stats).toBeDefined();
-    expect(stats?.totalTrades).toBe(3);
+    expect(stats?.totalTrades).toBe(4);
     expect(stats?.totalAgents).toBe(2);
     expect(stats?.totalVolume).toBe(totalVolume);
     expect(stats?.uniqueTokens).toBe(3);

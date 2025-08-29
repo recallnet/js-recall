@@ -264,6 +264,8 @@ jobs:
           # Metrics server configuration
           METRICS_PORT=3003
 
+          # Disable cache API
+          DISABLE_CACHE_API=true
           EOF
 
       - name: Run E2E tests

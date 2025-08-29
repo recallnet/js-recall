@@ -6,6 +6,7 @@ import {
   createTradeWithBalances,
   getAgentTrades,
   getAgentTradesInCompetition,
+  getCompetitionTradeMetrics,
   getCompetitionTrades,
 } from "@/database/repositories/trade-repository.js";
 import { findByCompetitionId } from "@/database/repositories/trading-constraints-repository.js";
@@ -306,6 +307,27 @@ export class TradeSimulator {
         error,
       );
       return { trades: [], total: 0 };
+    }
+  }
+
+  /**
+   * Get trade metrics for a competition
+   * @param competitionId Competition ID
+   * @returns Count of trades, total volume, and number of unique tokens
+   */
+  async getCompetitionTradeMetrics(competitionId: string): Promise<{
+    totalTrades: number;
+    totalVolume: number;
+    uniqueTokens: number;
+  }> {
+    try {
+      return await getCompetitionTradeMetrics(competitionId);
+    } catch (error) {
+      serviceLogger.error(
+        `[TradeSimulator] Error getting competition trade metrics:`,
+        error,
+      );
+      return { totalTrades: 0, totalVolume: 0, uniqueTokens: 0 };
     }
   }
 

@@ -1181,9 +1181,34 @@ export function configureAdminRoutes(
    *     tags:
    *       - Admin
    *     summary: List all agents
-   *     description: Get a list of all agents in the system
+   *     description: Get a paginated list of all agents in the system
    *     security:
    *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 1000
+   *           default: 50
+   *         required: false
+   *         description: Number of agents to return (default 50, max 1000)
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         required: false
+   *         description: Number of agents to skip for pagination
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           default: -createdAt
+   *         required: false
+   *         description: Sort order (e.g., '-createdAt' for desc, 'name' for asc)
    *     responses:
    *       200:
    *         description: List of agents
@@ -1239,6 +1264,22 @@ export function configureAdminRoutes(
    *                         type: string
    *                         format: date-time
    *                         description: Agent update timestamp
+   *                 pagination:
+   *                   type: object
+   *                   description: Pagination metadata
+   *                   properties:
+   *                     limit:
+   *                       type: integer
+   *                       description: Number of items per page
+   *                     offset:
+   *                       type: integer
+   *                       description: Number of items skipped
+   *                     total:
+   *                       type: integer
+   *                       description: Total number of agents
+   *                     hasMore:
+   *                       type: boolean
+   *                       description: Whether more agents are available
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       500:

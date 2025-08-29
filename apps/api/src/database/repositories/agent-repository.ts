@@ -23,7 +23,6 @@ import { transformToTrophy } from "@/lib/trophy-utils.js";
 import {
   AgentCompetitionsParams,
   AgentSearchParams,
-  COMPETITION_AGENT_STATUS,
   PagingParams,
 } from "@/types/index.js";
 import { AgentQueryParams } from "@/types/sort/agent.js";
@@ -222,7 +221,7 @@ async function findByCompetitionImpl(
     // Build where conditions
     const whereConditions = [
       eq(competitionAgents.competitionId, competitionId),
-      eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE), // Only show active agents in competition
+      eq(competitionAgents.status, "active"), // Only show active agents in competition
     ];
 
     if (filter) {
@@ -291,6 +290,29 @@ async function findByIdImpl(id: string): Promise<SelectAgent | undefined> {
     return result;
   } catch (error) {
     console.error("[AgentRepository] Error in findById:", error);
+    throw error;
+  }
+}
+
+/**
+ * Find multiple agents by their IDs
+ * @param ids Array of agent IDs to search for
+ * @returns Array of agents matching the provided IDs
+ */
+async function findByIdsImpl(ids: string[]): Promise<SelectAgent[]> {
+  try {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const results = await db
+      .select()
+      .from(agents)
+      .where(inArray(agents.id, ids));
+
+    return results;
+  } catch (error) {
+    console.error("[AgentRepository] Error in findByIds:", error);
     throw error;
   }
 }
@@ -902,7 +924,7 @@ async function getBulkAgentTrophiesImpl(agentIds: string[]): Promise<
         and(
           inArray(competitionAgents.agentId, agentIds),
           eq(competitions.status, "ended"), // Only ended competitions award trophies
-          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE), // Only active participations
+          eq(competitionAgents.status, "active"), // Only active participations
         ),
       )
       .orderBy(desc(competitions.endDate)); // Most recent competitions first
@@ -990,6 +1012,12 @@ export const findById = createTimedRepositoryFunction(
   findByIdImpl,
   "AgentRepository",
   "findById",
+);
+
+export const findByIds = createTimedRepositoryFunction(
+  findByIdsImpl,
+  "AgentRepository",
+  "findByIds",
 );
 
 export const findByOwnerId = createTimedRepositoryFunction(
