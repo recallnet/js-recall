@@ -339,6 +339,24 @@ export const config = {
       10,
     ),
   },
+  // Envio indexer configuration
+  envio: {
+    // GraphQL endpoint for querying indexed on-chain data
+    graphqlEndpoint:
+      process.env.ENVIO_GRAPHQL_ENDPOINT || "http://localhost:8080/v1/graphql",
+    // Number of records to fetch per GraphQL query
+    syncBatchSize: parseInt(process.env.ENVIO_SYNC_BATCH_SIZE || "1000", 10),
+    // Time window for each sync iteration (in minutes)
+    syncIntervalMinutes: parseInt(
+      process.env.ENVIO_SYNC_INTERVAL_MINUTES || "5",
+      10,
+    ),
+    // Maximum concurrent sync operations
+    maxConcurrentSyncs: parseInt(
+      process.env.ENVIO_MAX_CONCURRENT_SYNCS || "3",
+      10,
+    ),
+  },
 };
 
 /**

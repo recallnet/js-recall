@@ -1,0 +1,34 @@
+{
+  "name": "@recall/envio-indexer",
+  "version": "0.1.0",
+  "scripts": {
+    "clean": "tsc --clean",
+    "build": "tsc --build",
+    "watch": "tsc --watch",
+    "mocha": "ts-mocha test/**/*.ts",
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "start": "envio start",
+    "test": "pnpm mocha",
+    "install:local": "pnpm install --ignore-workspace",
+    "postinstall": "cd generated 2>/dev/null && pnpm install --ignore-workspace || true"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "10.0.6",
+    "@types/node": "20.8.8",
+    "ts-mocha": "^10.0.0",
+    "typescript": "5.2.2",
+    "chai": "4.3.10",
+    "mocha": "10.2.0"
+  },
+  "dependencies": {
+    "envio": "2.27.6"
+  },
+  "optionalDependencies": {
+    "generated": "./generated"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

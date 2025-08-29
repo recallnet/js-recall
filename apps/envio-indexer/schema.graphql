@@ -1,0 +1,31 @@
+# Simple schema - we just store raw trades and transfers
+# Competition filtering happens in our sync service
+
+type Trade @entity {
+  id: ID! # chain_txHash_logIndex
+  sender: String! @index
+  recipient: String! @index
+  chain: String! @index
+  transactionHash: String! @index
+  blockNumber: BigInt!
+  timestamp: BigInt! @index
+  tokenIn: String!
+  tokenOut: String!
+  amountIn: BigInt!
+  amountOut: BigInt!
+  gasUsed: BigInt!
+  gasPrice: BigInt!
+  protocol: String! # DEX protocol name (e.g., "uniswap-v3", "curve", "balancer-v2")
+}
+
+type Transfer @entity {
+  id: ID! # chain_txHash_logIndex
+  from: String! @index
+  to: String! @index
+  chain: String! @index
+  transactionHash: String! @index
+  blockNumber: BigInt!
+  timestamp: BigInt! @index
+  token: String! @index # Token contract address
+  value: BigInt! # Transfer amount
+}
