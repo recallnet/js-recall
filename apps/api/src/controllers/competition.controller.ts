@@ -697,8 +697,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        const tradesResponse =
-          await services.tradeSimulator.getCompetitionTrades(competitionId);
+        // Get trade metrics for this competition
+        const { totalTrades, totalVolume, uniqueTokens } =
+          await services.tradeSimulator.getCompetitionTradeMetrics(
+            competitionId,
+          );
 
         // Get vote counts for this competition
         const voteCountsMap =
@@ -710,17 +713,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get stats for this competition
         const stats = {
-          totalTrades: tradesResponse.total,
+          totalTrades,
           totalAgents: competition.registeredParticipants,
-          totalVolume: tradesResponse.trades.reduce<number>(
-            (acc, trade) => acc + trade.tradeAmountUsd,
-            0,
-          ),
+          totalVolume,
           totalVotes,
-          uniqueTokens: new Set([
-            ...tradesResponse.trades.map((trade) => trade.fromToken),
-            ...tradesResponse.trades.map((trade) => trade.toToken),
-          ]).size,
+          uniqueTokens,
         };
 
         const rewards =
