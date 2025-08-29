@@ -20,7 +20,7 @@ export const useProfile = () => {
 
   return useQuery({
     queryKey: ["profile"],
-    staleTime: 1000,
+    staleTime: 30 * 1000, // 30 seconds - shorter cache for real-time updates
     queryFn: async (): Promise<ProfileResponse["user"]> => {
       try {
         if (user && user.name && status === "authenticated") return user;
