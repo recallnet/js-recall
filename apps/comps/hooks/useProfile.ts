@@ -14,16 +14,17 @@ import { usePrivyAuth } from "./usePrivyAuth";
  * @returns Query result with profile data
  */
 export const useProfile = () => {
-  const { status, user } = useUser();
+  const { status } = useUser();
   const cleanup = useClientCleanup();
 
   return useQuery({
     queryKey: ["profile"],
     staleTime: 1000,
+    refetchOnMount: false, // Don't refetch on mount if we already have data
+    refetchOnWindowFocus: false,
     queryFn: async (): Promise<ProfileResponse["user"]> => {
       try {
-        if (user && user.name && status === "authenticated") return user;
-
+        // Always fetch fresh data from the backend when authenticated
         const res = await apiClient.getProfile();
         if (!res.success) throw new Error("Error when fetching profile");
         return res.user;

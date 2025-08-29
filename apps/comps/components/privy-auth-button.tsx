@@ -1,5 +1,6 @@
 "use client";
 
+import { useAtom } from "jotai";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -21,6 +22,7 @@ import { toast } from "@recallnet/ui2/components/toast";
 
 import { useLogout, useUserSession } from "@/hooks";
 import { usePrivyAuth } from "@/hooks/usePrivyAuth";
+import { userAtom } from "@/state/atoms";
 
 import { Identicon } from "./identicon/index";
 
@@ -30,15 +32,22 @@ import { Identicon } from "./identicon/index";
 export const PrivyAuthButton: React.FunctionComponent = () => {
   const router = useRouter();
   const session = useUserSession();
+  const [authState] = useAtom(userAtom); // Direct atom access to ensure re-renders
   const { ready, login, logout, isAuthenticating, authError, clearError } =
     usePrivyAuth();
   const { mutateAsync: logoutBackend } = useLogout();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setIsLoggingOut(false);
   }, [logout]);
+
+  // Set mounted state after component mounts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Track error display to avoid multiple toasts
   const errorDisplayedRef = useRef<string | null>(null);
@@ -73,18 +82,26 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
     }
   };
 
-  if (!ready) {
-    return null;
-  }
+  // Force re-render when authentication state changes
+  useEffect(() => {
+    // This effect will run whenever session or auth state changes
+    // The dependency on both ensures the component re-renders when auth changes
+  }, [session, authState]);
 
-  if (!session.isInitialized) {
-    return null;
-  }
+  // Always check the auth atom first for the most up-to-date state
+  const isAuthenticated =
+    authState.status === "authenticated" && authState.user;
+  const user = authState.user || (session.isInitialized ? session.user : null);
 
-  const { user } = session;
+  // Show loading state until mounted to prevent hydration mismatch
+  if (!mounted || (!ready && !isAuthenticated)) {
+    return (
+      <div className="h-14 w-[140px] animate-pulse rounded-none bg-white/10" />
+    );
+  }
 
   // Show authenticated state with dropdown
-  if (user && session.isInitialized && session.isAuthenticated) {
+  if (user && isAuthenticated) {
     const displayName = user.name;
     const walletAddress = user.walletAddress;
     const avatarUrl = user.imageUrl;

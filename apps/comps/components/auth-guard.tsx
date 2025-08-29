@@ -1,8 +1,9 @@
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
 import { useUserSession } from "@/hooks/useAuth";
+import { usePrivyAuth } from "@/hooks/usePrivyAuth";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -17,24 +18,39 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 }) => {
   const session = useUserSession();
   const router = useRouter();
+  const { ready } = usePrivyAuth();
+  const lastWasAuthedRef = useRef(false);
+
+  // Track last authenticated state to avoid tearing down UI during transient loading
+  useEffect(() => {
+    if (session.isInitialized) {
+      lastWasAuthedRef.current = session.isAuthenticated;
+    }
+  }, [session]);
 
   useEffect(() => {
-    if (!session.isInitialized) {
+    if (!session.isInitialized || !ready) {
       return;
     }
 
     if (!session.isLoading && !session.isAuthenticated) {
       router.push(redirectTo);
     }
-  }, [session, router, redirectTo]);
+  }, [session, ready, router, redirectTo]);
 
-  if (!session.isInitialized || session.isLoading) {
+  if (!session.isInitialized) {
     return skeleton;
+  }
+
+  // While loading, keep previous authed content mounted to avoid flicker
+  if (session.isLoading) {
+    return lastWasAuthedRef.current ? <>{children}</> : skeleton;
   }
 
   if (session.isAuthenticated) {
     return <>{children}</>;
   }
 
-  return null;
+  // When unauthenticated, show skeleton while redirecting to avoid a blank frame
+  return skeleton;
 };

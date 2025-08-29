@@ -127,7 +127,6 @@ export const useUserSession = (): UserSessionState => {
   } = useProfile();
 
   const isAuthenticated = authState.status === "authenticated";
-  const isProfileUpdated = isAuthenticated && !!profileData?.name;
 
   useEffect(() => {
     if (profileIsSuccess && profileData) {
@@ -136,22 +135,25 @@ export const useUserSession = (): UserSessionState => {
   }, [profileIsSuccess, profileData, setAuthState]);
 
   const sessionState = useMemo<UserSessionState>(() => {
-    if (!isClient) {
+    // For SSR, only return uninitialized if we truly have no auth state
+    // If we have auth state (even on server), we should use it
+    if (!isClient && !authState.user && authState.status !== "authenticated") {
       return { isInitialized: false };
     }
 
+    // Return current auth state immediately
     return {
       isInitialized: true,
       user: authState.user,
       isAuthenticated,
-      isProfileUpdated,
+      isProfileUpdated: isAuthenticated && !!authState.user?.name,
       isLoading: profileIsLoading,
     };
   }, [
     isClient,
     authState.user,
+    authState.status,
     isAuthenticated,
-    isProfileUpdated,
     profileIsLoading,
   ]);
 

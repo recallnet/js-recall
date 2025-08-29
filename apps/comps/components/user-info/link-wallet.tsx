@@ -46,18 +46,20 @@ export default function LinkWallet({
         textOnCopy={user.walletAddress}
         className="text-secondary-foreground text-md w-full rounded-[10px] hover:text-gray-300"
       />
-      {walletLastVerifiedAt && (
+      {/* If a user has a custom wallet address stored in the db, we need them to officially
+         verify/link it. If it's already been verified, we show a badge. */}
+      {walletLastVerifiedAt ? (
         <Tooltip content="Wallet connected">
           <BadgeCheckIcon
             className="text-green-500 hover:text-green-700"
             strokeWidth={1}
           />
         </Tooltip>
+      ) : customWalletAddress !== embeddedWalletAddress ? (
+        <Button onClick={onLinkWallet}>Verify wallet</Button>
+      ) : (
+        <Button onClick={onLinkWallet}>Connect wallet</Button>
       )}
-      {!walletLastVerifiedAt &&
-        customWalletAddress !== embeddedWalletAddress && (
-          <Button onClick={onLinkWallet}>Connect wallet</Button>
-        )}
     </>
   );
 }
