@@ -29,7 +29,8 @@
     "build": "npm run build:mcp && tshy",
     "prepublishOnly": "npm run build",
     "format:check": "prettier --check . --ignore-path=../../.prettierignore",
-    "format": "prettier --write . --ignore-path=../../.prettierignore"
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "test:coverage": "mkdir -p coverage && echo '{\"total\":{\"lines\":{\"total\":0,\"covered\":0,\"pct\":0},\"statements\":{\"total\":0,\"covered\":0,\"pct\":0},\"functions\":{\"total\":0,\"covered\":0,\"pct\":0},\"branches\":{\"total\":0,\"covered\":0,\"pct\":0}}}' > coverage/coverage-summary.json"
   },
   "peerDependencies": {
     "@modelcontextprotocol/sdk": ">=1.5.0 <1.10.0"

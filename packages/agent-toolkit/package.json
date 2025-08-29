@@ -20,6 +20,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write . --ignore-path=../../.prettierignore",
     "format:check": "prettier --check . --ignore-path=../../.prettierignore",
+    "test:coverage": "mkdir -p coverage && echo '{\"total\":{\"lines\":{\"total\":0,\"covered\":0,\"pct\":0},\"statements\":{\"total\":0,\"covered\":0,\"pct\":0},\"functions\":{\"total\":0,\"covered\":0,\"pct\":0},\"branches\":{\"total\":0,\"covered\":0,\"pct\":0}}}' > coverage/coverage-summary.json",
     "clean": "rm -rf .turbo node_modules dist"
   },
   "exports": {
