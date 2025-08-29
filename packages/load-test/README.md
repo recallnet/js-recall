@@ -17,6 +17,7 @@ The following variables are read by the test scripts (from `.env` via `--env-fil
 - `HOST`: Base URL used by the Playwright scenario target (e.g., `http://localhost:3000`).
 - `USERS_COUNT`: Max concurrent virtual users for the Users API load test.
 - `AGENTS_COUNT`: Number of agents to create/drive and the max vusers for Agent Trading.
+- `TRADES_COUNT`: Number of trades each agent will execute.
 - `ADMIN_API_KEY`: Admin API key used only by the Agent Trading setup/trading flows.
 
 Create `.env` in this folder with values appropriate for your environment. Example:
@@ -31,6 +32,7 @@ HOST=http://localhost:3001
 # Concurrency controls
 USERS_COUNT=100
 AGENTS_COUNT=20
+TRADES_COUNT=100
 
 # Admin (required for agent-trading only)
 ADMIN_API_KEY=replace-with-admin-key
@@ -51,8 +53,8 @@ pnpm --filter @recallnet/load-test report:users-api
 
 Artifacts:
 
-- JSON report: `packages/load-test/dist/users-api.json`
-- HTML report: `packages/load-test/dist/users-api.html`
+- JSON report: `packages/load-test/reports/users-api.json`
+- HTML report: `packages/load-test/reports/users-api.html`
 
 ### 2) Agent Trading (admin setup + trade execution)
 
@@ -65,8 +67,8 @@ pnpm --filter @recallnet/load-test report:agent-trading
 
 Artifacts:
 
-- JSON report: `packages/load-test/dist/agent-trading.json`
-- HTML report: `packages/load-test/dist/agent-trading.html`
+- JSON report: `packages/load-test/reports/agent-trading.json`
+- HTML report: `packages/load-test/reports/agent-trading.html`
 
 Notes:
 
@@ -84,8 +86,8 @@ pnpm --filter @recallnet/load-test report:leaderboard
 
 Artifacts:
 
-- JSON report: `packages/load-test/dist/leaderboard.json`
-- HTML report: `packages/load-test/dist/leaderboard.html`
+- JSON report: `packages/load-test/reports/leaderboard.json`
+- HTML report: `packages/load-test/reports/leaderboard.html`
 
 Notes:
 
@@ -130,7 +132,7 @@ register them into a competition, start it, and then simulate trading for each a
     - POST `/api/admin/competitions/{competitionId}/agents/{agentId}` to register.
   - POST `/api/admin/competition/start` (admin auth).
 - Trading (`scenarios`):
-  - Repeat looped POST `/api/trade/execute` buy/sell requests per agent with bearer `apiKey`.
+  - Each of the `AGENTS_COUNT` agents executes `TRADES_COUNT` trades. A trade consists of fetching balances and then executing a buy/sell POST request to `/api/trade/execute`.
 - Traffic model: `arrivalCount: ${AGENTS_COUNT}`, `maxVusers: ${AGENTS_COUNT}`.
 
 ### Leaderboard (Playwright) (`src/leaderboard.ts`)
@@ -144,7 +146,7 @@ End-to-end UI flow against the web app:
 
 ## Reports
 
-Each `test:*` script creates a JSON report under `dist/`. Use the matching `report:*` script
+Each `test:*` script creates a JSON report under `reports/`. Use the matching `report:*` script
 to convert it into an HTML report for easier analysis.
 
 Example:
@@ -152,7 +154,7 @@ Example:
 ```bash
 pnpm --filter @recallnet/load-test test:users-api
 pnpm --filter @recallnet/load-test report:users-api
-open packages/load-test/dist/users-api.html
+open packages/load-test/reports/users-api.html
 ```
 
 ## Tips
@@ -161,3 +163,9 @@ open packages/load-test/dist/users-api.html
 - For debugging HTTP requests, you may set `DEBUG=http*` when running Artillery.
 - Refer to the OpenAPI spec under `apps/api/openapi/openapi.json` for exact endpoint
   shapes and query parameters used by these scenarios.
+
+## CI/CD
+
+A GitHub Actions workflow is configured to run the `test:agent-trading` and `test:users-api` tests daily at midnight. See [`.github/workflows/load-testing.yml`](../../.github/workflows/load-testing.yml) for details.
+
+The reports are uploaded as artifacts to each workflow run.
