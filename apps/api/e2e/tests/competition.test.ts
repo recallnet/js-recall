@@ -5663,4 +5663,163 @@ describe("Competition API", () => {
       expect(ourCompetition3.registeredParticipants).toBe(0);
     });
   });
+
+  describe("Competition Caching", () => {
+    const services = new ServiceRegistry();
+
+    test("should return cache headers for competition agents endpoint", async () => {
+      // Setup: Create competition with agents via admin
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Cache Test Agent",
+      });
+
+      const { competition } = await startTestCompetition(
+        adminClient,
+        "Cache Test Competition",
+        [agent.id],
+      );
+
+      // Test: Direct axios call to check cache headers
+      const response = await axios.get(
+        `${getBaseUrl()}/api/competitions/${competition.id}/agents`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers["cache-control"]).toBe(
+        "public, max-age=30, s-maxage=30, stale-while-revalidate=60",
+      );
+      expect(response.headers["vary"]).toBe("Accept-Encoding, Authorization");
+    });
+
+    test("should return cache headers for competition detail endpoint", async () => {
+      // Setup: Create test competition via admin
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+      const { competition } = await createTestCompetition(
+        adminClient,
+        "Cache Test Competition Details",
+      );
+
+      // Test: Direct axios call to check cache headers
+      const response = await axios.get(
+        `${getBaseUrl()}/api/competitions/${competition.id}`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers["cache-control"]).toBe(
+        "public, max-age=30, s-maxage=30, stale-while-revalidate=60",
+      );
+      expect(response.headers["vary"]).toBe("Accept-Encoding, Authorization");
+    });
+
+    test("should serve cached response for repeated requests", async () => {
+      // Setup: Create competition with multiple agents
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const agents = [];
+      for (let i = 0; i < 3; i++) {
+        const { agent } = await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: `Cache Performance Agent ${i}`,
+        });
+        agents.push(agent.id);
+      }
+
+      const { competition } = await startTestCompetition(
+        adminClient,
+        "Cache Performance Test Competition",
+        agents,
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        looseTradingConstraints,
+      );
+
+      // First request (cache miss)
+      const startTime1 = Date.now();
+      const response1 = await axios.get(
+        `${getBaseUrl()}/api/competitions/${competition.id}/agents`,
+      );
+      const duration1 = Date.now() - startTime1;
+
+      expect(response1.status).toBe(200);
+      expect(response1.data.agents.length).toBe(3);
+
+      // Second request (should be cached)
+      const startTime2 = Date.now();
+      const response2 = await axios.get(
+        `${getBaseUrl()}/api/competitions/${competition.id}/agents`,
+      );
+      const duration2 = Date.now() - startTime2;
+
+      expect(response2.status).toBe(200);
+      expect(response2.data.agents.length).toBe(3);
+
+      // Cached response should be significantly faster
+      console.log(
+        `First request: ${duration1}ms, Second request: ${duration2}ms`,
+      );
+      expect(duration2).toBeLessThan(duration1 * 0.5); // Should be at least 50% faster
+    });
+
+    test("should clear cache after trade execution", async () => {
+      // Setup: Create competition with agent
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Cache Clear Test Agent",
+        });
+
+      const { competition } = await startTestCompetition(
+        adminClient,
+        "Cache Clear Test Competition",
+        [agent.id],
+        undefined, // sandboxMode
+        undefined, // externalUrl
+        undefined, // imageUrl
+        looseTradingConstraints,
+      );
+
+      // First request to populate cache
+      const response1 = await axios.get(
+        `${getBaseUrl()}/api/competitions/${competition.id}/agents`,
+      );
+      const initialPortfolioValue = response1.data.agents[0].portfolioValue;
+
+      // Execute a trade to a dead address to burn tokens and force portfolio value change
+      const solanaDeadAddress = "1nc1nerator11111111111111111111111111111111";
+      const tradeResponse = await agentClient.executeTrade({
+        fromToken: config.specificChainTokens.svm.usdc,
+        toToken: solanaDeadAddress,
+        amount: "100", // Burn 100 USDC
+        reason: "Cache test trade - burning tokens",
+        fromChain: BlockchainType.SVM,
+        toChain: BlockchainType.SVM,
+      });
+      expect(tradeResponse.success).toBe(true);
+
+      // Trigger portfolio snapshot to update values after trade
+      await services.portfolioSnapshotter.takePortfolioSnapshots(
+        competition.id,
+      );
+      await wait(100);
+
+      // Request again - should get fresh data with updated portfolio value
+      const response2 = await axios.get(
+        `${getBaseUrl()}/api/competitions/${competition.id}/agents`,
+      );
+      const updatedPortfolioValue = response2.data.agents[0].portfolioValue;
+
+      // Portfolio value should have decreased after burning tokens
+      expect(updatedPortfolioValue).toBeLessThan(initialPortfolioValue);
+    });
+  });
 });

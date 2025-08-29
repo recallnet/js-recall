@@ -672,6 +672,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
             competitionId,
           );
 
+        // Set cache headers for browser and CDN caching
+        res.set({
+          "Cache-Control":
+            "public, max-age=30, s-maxage=30, stale-while-revalidate=60",
+          Vary: "Accept-Encoding, Authorization",
+        });
+
         // Return the competition details
         res.status(200).json({
           success: true,
@@ -753,6 +760,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
             queryParams,
           );
 
+        // Set cache headers for browser and CDN caching
+        res.set({
+          "Cache-Control":
+            "public, max-age=30, s-maxage=30, stale-while-revalidate=60",
+          Vary: "Accept-Encoding, Authorization",
+        });
+
         // Return the competition agents with pagination metadata
         res.status(200).json({
           success: true,
@@ -829,6 +843,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
           agentId,
           validatedUserId,
         );
+
+        // Clear the competition agents cache since membership changed
+        services.competitionManager.clearCompetitionAgentsCache(competitionId);
 
         res.status(200).json({
           success: true,
@@ -950,6 +967,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
           agentId,
           validatedUserId,
         );
+
+        // Clear the competition agents cache since membership changed
+        services.competitionManager.clearCompetitionAgentsCache(competitionId);
 
         res.status(200).json({
           success: true,
