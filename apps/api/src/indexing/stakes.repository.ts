@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/database/db.js";
 import * as schema from "@/database/schema/indexing/defs.js";
-import { StakeRow } from "@/database/schema/indexing/defs.js";
+import type { StakeRow } from "@/database/schema/indexing/types.js";
 import {
   BlockHashCoder,
   BlockchainAddressAsU8A,

@@ -1,4 +1,4 @@
-import { type InferInsertModel, type InferSelectModel, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   bigint,
   customType,
@@ -12,10 +12,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import type { EventType } from "@/indexing/blockchain-types.js";
-
 export { indexingEvents, stakes, stakeChanges };
-export type { IndexingEvent, StakeChangeRow, StakeChangeInsert, StakeRow };
 
 const bytea = customType<{
   data: Uint8Array | Buffer; // what your app uses
@@ -205,13 +202,3 @@ const stakeChanges = pgTable(
     blockHashLenChk: sql`CHECK (octet_length(${t.blockHash}) = 32)`,
   }),
 );
-
-// Export types for use in TypeScript
-type StakeRow = InferSelectModel<typeof stakes>;
-type IndexingEvent = InferSelectModel<typeof indexingEvents>;
-type StakeChangeRow = Omit<InferSelectModel<typeof stakeChanges>, "kind"> & {
-  kind: EventType;
-};
-type StakeChangeInsert = Omit<InferInsertModel<typeof stakeChanges>, "kind"> & {
-  kind: EventType;
-};
