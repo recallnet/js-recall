@@ -141,32 +141,35 @@ async function getAgentTradesImpl(
  */
 async function getCompetitionTradeMetricsImpl(competitionId: string) {
   try {
-    const [row] = await db
-      .select({
-        totalTrades: sql<number>`COUNT(*)`,
-        totalVolume: sql<number>`COALESCE(SUM(${trades.tradeAmountUsd}), 0)`,
-        uniqueTokens: sql<number>`
-      (
-        SELECT COUNT(*) FROM (
-          SELECT ${trades.fromToken} AS token
-          FROM ${trades}
-          WHERE ${trades.competitionId} = ${competitionId}
-          UNION
-          SELECT ${trades.toToken} AS token
-          FROM ${trades}
-          WHERE ${trades.competitionId} = ${competitionId}
-        ) t
+    const query = await db.execute(sql`
+      WITH base AS (
+        SELECT
+          ${trades.id}               AS id,
+          ${trades.tradeAmountUsd}   AS trade_amount_usd,
+          ${trades.fromToken}        AS from_token,
+          ${trades.toToken}          AS to_token
+        FROM ${trades}
+        WHERE ${trades.competitionId} = ${competitionId}
       )
-    `,
-      })
-      .from(trades)
-      .where(eq(trades.competitionId, competitionId))
-      .limit(1);
+      SELECT
+        (COUNT(*) FILTER (WHERE u.ord = 1))::bigint                            AS total_trades,
+        (COALESCE(SUM(b.trade_amount_usd) FILTER (WHERE u.ord = 1), 0))::float8 AS total_volume,
+        (COUNT(DISTINCT u.token))::bigint                                      AS unique_tokens
+      FROM base b
+      CROSS JOIN LATERAL
+        unnest(ARRAY[b.from_token, b.to_token]) WITH ORDINALITY AS u(token, ord);
+    `);
+
+    const r = query.rows[0] ?? {
+      total_trades: 0,
+      total_volume: 0,
+      unique_tokens: 0,
+    };
 
     return {
-      totalTrades: Number(row?.totalTrades) || 0,
-      totalVolume: Number(row?.totalVolume) || 0,
-      uniqueTokens: Number(row?.uniqueTokens) || 0,
+      totalTrades: Number(r.total_trades), // bigint → number (OK unless > 2^53)
+      totalVolume: Number(r.total_volume), // float8 already a number in many drivers
+      uniqueTokens: Number(r.unique_tokens),
     };
   } catch (error) {
     repositoryLogger.error("Error in getCompetitionTradeMetrics:", error);
