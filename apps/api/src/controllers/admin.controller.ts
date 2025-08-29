@@ -14,12 +14,7 @@ import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import {
-  ACTOR_STATUS,
-  ActorStatus,
-  AdminCreateAgentSchema,
-  COMPETITION_STATUS,
-} from "@/types/index.js";
+import { ActorStatus, AdminCreateAgentSchema } from "@/types/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
@@ -620,7 +615,7 @@ export function makeAdminController(services: ServiceRegistry) {
             continue;
           }
 
-          if (agent.status !== ACTOR_STATUS.ACTIVE) {
+          if (agent.status !== "active") {
             invalidAgentIds.push(agentId);
             continue;
           }
@@ -680,7 +675,7 @@ export function makeAdminController(services: ServiceRegistry) {
           }
 
           // Verify competition is in PENDING state
-          if (competition.status !== COMPETITION_STATUS.PENDING) {
+          if (competition.status !== "pending") {
             throw new ApiError(
               400,
               `Competition is already in ${competition.status} state and cannot be started`,
@@ -1682,7 +1677,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if competition is still active
-        if (competition.status === COMPETITION_STATUS.ENDED) {
+        if (competition.status === "ended") {
           return res.status(400).json({
             success: false,
             error: "Cannot reactivate agent in ended competition",
@@ -1812,7 +1807,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if competition is ended
-        if (competition.status === COMPETITION_STATUS.ENDED) {
+        if (competition.status === "ended") {
           return res.status(400).json({
             success: false,
             error: "Cannot add agent to ended competition",
@@ -1820,10 +1815,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // HARD RULE: Cannot add agents to active non-sandbox competitions
-        if (
-          competition.status === COMPETITION_STATUS.ACTIVE &&
-          !competition.sandboxMode
-        ) {
+        if (competition.status === "active" && !competition.sandboxMode) {
           return res.status(400).json({
             success: false,
             error:

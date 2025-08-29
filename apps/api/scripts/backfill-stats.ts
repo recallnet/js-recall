@@ -8,7 +8,6 @@ import {
   getBulkAgentCompetitionRankings,
 } from "@/database/repositories/competition-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { COMPETITION_AGENT_STATUS, COMPETITION_STATUS } from "@/types/index.js";
 
 const services = new ServiceRegistry();
 
@@ -79,7 +78,7 @@ async function calculateBulkAgentStats(
         agentId,
       );
 
-      if (agent?.status !== COMPETITION_AGENT_STATUS.ACTIVE) {
+      if (agent?.status !== "active") {
         console.log(`Agent ${agentId} was deactivated, skipping`);
         continue;
       }
@@ -155,9 +154,7 @@ async function backfillCompetitionPnl() {
     );
 
     const competitions = await services.competitionManager.getAllCompetitions();
-    const endedCompetitions = competitions.filter(
-      (c) => c.status === COMPETITION_STATUS.ENDED,
-    );
+    const endedCompetitions = competitions.filter((c) => c.status === "ended");
     console.log(
       `${colors.magenta}----------------------------------------${colors.reset}`,
     );

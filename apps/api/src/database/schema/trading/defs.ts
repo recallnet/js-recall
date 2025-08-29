@@ -13,8 +13,6 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { CROSS_CHAIN_TRADING_TYPE_VALUES } from "@/types/index.js";
-
 import { agents, competitions, competitionsLeaderboard } from "../core/defs.js";
 
 /**
@@ -27,7 +25,7 @@ export const tradingComps = pgSchema("trading_comps");
  */
 export const crossChainTradingType = tradingComps.enum(
   "cross_chain_trading_type",
-  CROSS_CHAIN_TRADING_TYPE_VALUES,
+  ["disallowAll", "disallowXParent", "allow"],
 );
 
 /**

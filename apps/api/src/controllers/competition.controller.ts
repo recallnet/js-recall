@@ -13,7 +13,6 @@ import {
   AuthenticatedRequest,
   BucketParamSchema,
   COMPETITION_JOIN_ERROR_TYPES,
-  COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
   CompetitionJoinError,
   CompetitionStatusSchema,
@@ -297,7 +296,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             );
           }
           // AgentId is present, verify participation in the active competition
-          if (activeCompetition.status !== COMPETITION_STATUS.ACTIVE) {
+          if (activeCompetition.status !== "active") {
             // This check might be redundant if getActiveCompetition already ensures this,
             // but keeping for safety to ensure agent is not trying to get rules for a non-active comp.
             throw new ApiError(

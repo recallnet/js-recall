@@ -23,7 +23,6 @@ import { transformToTrophy } from "@/lib/trophy-utils.js";
 import {
   AgentCompetitionsParams,
   AgentSearchParams,
-  COMPETITION_AGENT_STATUS,
   PagingParams,
 } from "@/types/index.js";
 import { AgentQueryParams } from "@/types/sort/agent.js";
@@ -222,7 +221,7 @@ async function findByCompetitionImpl(
     // Build where conditions
     const whereConditions = [
       eq(competitionAgents.competitionId, competitionId),
-      eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE), // Only show active agents in competition
+      eq(competitionAgents.status, "active"), // Only show active agents in competition
     ];
 
     if (filter) {
@@ -902,7 +901,7 @@ async function getBulkAgentTrophiesImpl(agentIds: string[]): Promise<
         and(
           inArray(competitionAgents.agentId, agentIds),
           eq(competitions.status, "ended"), // Only ended competitions award trophies
-          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE), // Only active participations
+          eq(competitionAgents.status, "active"), // Only active participations
         ),
       )
       .orderBy(desc(competitions.endDate)); // Most recent competitions first
