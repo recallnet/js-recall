@@ -29,7 +29,7 @@ export const SetupAgentModal: React.FC<SetupAgentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[600px]">
+      <DialogContent className="w-full max-w-[600px] p-4 sm:p-6">
         <DialogHeader className="text-start">
           <DialogTitle className="flex items-center justify-start gap-2 text-xl font-bold text-white">
             <Wrench className="size-6 text-gray-700" />

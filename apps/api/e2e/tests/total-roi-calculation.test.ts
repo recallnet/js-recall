@@ -5,6 +5,7 @@ import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import {
   CROSS_CHAIN_TRADING_TYPE,
+  GetUserAgentsResponse,
   StartCompetitionResponse,
 } from "@/e2e/utils/api-types.js";
 import {
@@ -70,12 +71,9 @@ describe("Total ROI Calculation Tests", () => {
     await wait(2000);
 
     // Get agent metrics to verify totalRoi calculation
-    const agentsResponse = await agentClient.getUserAgents();
+    const agentsResponse =
+      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
-
-    if (!agentsResponse.success) {
-      throw new Error("Failed to get agents response");
-    }
 
     const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
@@ -174,12 +172,9 @@ describe("Total ROI Calculation Tests", () => {
 
     // Get agent metrics
     // Get agent metrics to verify totalRoi calculation
-    const agentsResponse = await agentClient.getUserAgents();
+    const agentsResponse =
+      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
-
-    if (!agentsResponse.success) {
-      throw new Error("Failed to get agents response");
-    }
 
     const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
@@ -272,12 +267,9 @@ describe("Total ROI Calculation Tests", () => {
     await wait(2000);
 
     // Get agent metrics
-    const agentsResponse = await agentClient.getUserAgents();
+    const agentsResponse =
+      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
-
-    if (!agentsResponse.success) {
-      throw new Error("Failed to get agents response");
-    }
 
     const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
@@ -290,7 +282,7 @@ describe("Total ROI Calculation Tests", () => {
     expect(agentData?.stats?.totalRoi).toBeCloseTo(expectedRoiStat, 4);
   });
 
-  test("should return null totalRoi when agent has no ended competitions", async () => {
+  test("should return undefined totalRoi when agent has no ended competitions", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -322,17 +314,15 @@ describe("Total ROI Calculation Tests", () => {
     await wait(2000);
 
     // Get agent metrics
-    const agentsResponse = await agentClient.getUserAgents();
+    const agentsResponse =
+      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
-
-    if (!agentsResponse.success) {
-      throw new Error("Failed to get agents response");
-    }
 
     const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
 
-    // Should return null when no ended competitions
-    expect(agentData?.stats?.totalRoi).toBeNull();
+    // Should return undefined when no ended competitions
+    // (AgentStats schema uses .optional() which omits fields from JSON responses)
+    expect(agentData?.stats?.totalRoi).toBeUndefined();
   });
 });

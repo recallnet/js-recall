@@ -1,11 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 
-import {
-  CROSS_CHAIN_TRADING_TYPE,
-  CrossChainTradingType,
-  SpecificChain,
-} from "@/types/index.js";
+import { CrossChainTradingType, SpecificChain } from "@/types/index.js";
 
 // Simple console logging for config initialization (before full logger setup)
 const configLogger = {
@@ -334,11 +330,35 @@ export const config = {
 
   // Cache configuration
   cache: {
-    // Active competition cache TTL in milliseconds (default: 3 seconds)
+    // Middleware: Active competition cache TTL in milliseconds (default: 3 seconds)
     activeCompetitionTtlMs: parseInt(
       process.env.CACHE_ACTIVE_COMP_TTL_MS || "3000",
       10,
     ),
+    // Cache settings on individual API endpoints (see controllers for the specific routes)
+    api: {
+      disableCaching: process.env.DISABLE_CACHE_API === "true",
+      leaderboard: {
+        maxCacheSize: parseInt(
+          process.env.CACHE_API_LEADERBOARD_MAX_CACHE_SIZE || "100",
+          10,
+        ),
+        ttlMs: parseInt(
+          process.env.CACHE_API_LEADERBOARD_TTL_MS || "1800000", // 30 minutes
+          10,
+        ),
+      },
+      competitions: {
+        maxCacheSize: parseInt(
+          process.env.CACHE_API_COMPETITION_MAX_CACHE_SIZE || "100",
+          10,
+        ),
+        ttlMs: parseInt(
+          process.env.CACHE_API_COMPETITION_TTL_MS || "300000", // 5 minutes
+          10,
+        ),
+      },
+    },
   },
 };
 
@@ -352,7 +372,7 @@ export const features: {
   // Enable or disable cross-chain trading functionality
   // When set to false, trades can only occur between tokens on the same chain
   // Defaults to false for security, must be explicitly enabled
-  CROSS_CHAIN_TRADING_TYPE: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+  CROSS_CHAIN_TRADING_TYPE: "disallowAll",
   // Enable or disable sandbox mode for auto-joining newly registered agents
   // When set to true, newly registered agents are automatically joined to active competitions
   // Defaults to false, overridden by active competition configuration

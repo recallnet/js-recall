@@ -4,8 +4,8 @@ import { encodeAbiParameters } from "viem";
 
 import { db } from "@/database/db.js";
 import {
-  getRewardsByEpoch,
-  getRewardsTreeByEpoch,
+  getRewardsByCompetition,
+  getRewardsTreeByCompetition,
   insertRewards,
 } from "@/database/repositories/rewards-repository.js";
 import { rewardsRoots, rewardsTree } from "@/database/schema/voting/defs.js";
@@ -30,20 +30,20 @@ export class RewardsService {
   }
 
   /**
-   * Allocates rewards for a given epoch by building a Merkle Tree and storing it in the database
+   * Allocates rewards for a given competition by building a Merkle Tree and storing it in the database
    *
    * This method:
-   * 1. Retrieves all rewards for the specified epoch
+   * 1. Retrieves all rewards for the specified competition
    * 2. Builds a Merkle tree from the rewards (including a special "faux" leaf node)
    * 3. Stores all tree nodes and the root hash in the database
    * 4. Will eventually publish the root hash to the blockchain (TODO)
    *
-   * @param epochId The epoch ID (UUID) to allocate rewards for
-   * @throws Error if no rewards exist for the specified epoch
+   * @param competitionId The competition ID (UUID) to allocate rewards for
+   * @throws Error if no rewards exist for the specified competition
    */
-  public async allocate(epochId: string): Promise<void> {
+  public async allocate(competitionId: string): Promise<void> {
     try {
-      const rewards = await getRewardsByEpoch(epochId);
+      const rewards = await getRewardsByCompetition(competitionId);
 
       // Build Merkle tree if we have rewards
       if (rewards.length == 0) {
@@ -52,7 +52,7 @@ export class RewardsService {
 
       // Prepend a faux leaf
       const leaves = [
-        createFauxLeafNode(epochId),
+        createFauxLeafNode(competitionId),
         ...rewards.map((reward) => reward.leafHash),
       ];
       const merkleTree = new MerkleTree(leaves, keccak256, {
@@ -64,7 +64,7 @@ export class RewardsService {
       const layers = merkleTree.getLayers();
       const treeNodes: {
         id: string;
-        epoch: string;
+        competitionId: string;
         level: number;
         idx: number;
         hash: Uint8Array;
@@ -80,7 +80,7 @@ export class RewardsService {
             if (hash) {
               treeNodes.push({
                 id: crypto.randomUUID(),
-                epoch: epochId,
+                competitionId: competitionId,
                 level,
                 idx,
                 hash: new Uint8Array(hash),
@@ -98,14 +98,14 @@ export class RewardsService {
         await tx.insert(rewardsTree).values(treeNodes);
         await tx.insert(rewardsRoots).values({
           id: crypto.randomUUID(),
-          epoch: epochId,
+          competitionId: competitionId,
           rootHash: new Uint8Array(rootHash),
           tx: "", // TODO: This should be set when the root is published to blockchain
         });
       });
 
       serviceLogger.debug(
-        `[RewardsService] Built Merkle tree for epoch ${epochId} with ${treeNodes.length} nodes and root hash: ${rootHash.toString("hex")}`,
+        `[RewardsService] Built Merkle tree for competition ${competitionId} with ${treeNodes.length} nodes and root hash: ${rootHash.toString("hex")}`,
       );
     } catch (error) {
       if (error instanceof Error) {
@@ -122,22 +122,22 @@ export class RewardsService {
   }
 
   /**
-   * Retrieves a Merkle proof for a specific reward in an epoch
-   * @param epochId The epoch ID (UUID) containing the reward
+   * Retrieves a Merkle proof for a specific reward in a competition
+   * @param competitionId The competition ID (UUID) containing the reward
    * @param address The recipient's Ethereum address
    * @param amount The reward amount as a bigint
    * @returns Array of proof hashes as Uint8Array
    * @throws Error if the proof cannot be generated or the reward doesn't exist
    */
   public async retrieveProof(
-    epochId: string,
+    competitionId: string,
     address: `0x${string}`,
     amount: bigint,
   ): Promise<Uint8Array[]> {
     try {
       const leafHash = createLeafNode(address, amount);
 
-      const tree = await getRewardsTreeByEpoch(epochId);
+      const tree = await getRewardsTreeByCompetition(competitionId);
 
       const treeNodes: { [level: number]: { [idx: number]: Uint8Array } } = {};
       for (const { level, idx, hash } of tree) {
@@ -159,7 +159,7 @@ export class RewardsService {
 
       if (leafIdx === null) {
         throw new Error(
-          `No proof found for reward (address: ${address}, amount: ${amount}) in epoch ${epochId}`,
+          `No proof found for reward (address: ${address}, amount: ${amount}) in competition ${competitionId}`,
         );
       }
 
@@ -218,17 +218,17 @@ export function createLeafNode(address: `0x${string}`, amount: bigint): Buffer {
 }
 
 /**
- * Creates a special "faux" leaf node for an epoch
- * @param epochId The UUID of the epoch
+ * Creates a special "faux" leaf node for a competition
+ * @param competitionId The UUID of the competition
  * @returns Buffer containing the keccak256 hash of the encoded parameters with zero address and amount
  * @remarks This node is used as the first leaf in the Merkle tree to ensure unique tree structure
  */
-function createFauxLeafNode(epochId: string): Buffer {
+function createFauxLeafNode(competitionId: string): Buffer {
   return keccak256(
     encodeAbiParameters(
       [{ type: "string" }, { type: "address" }, { type: "uint256" }],
       [
-        epochId,
+        competitionId,
         "0x0000000000000000000000000000000000000000" as `0x${string}`,
         BigInt("0"),
       ],

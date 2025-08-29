@@ -24,77 +24,13 @@ import {
 } from "@/database/schema/trading/defs.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
-import {
-  COMPETITION_AGENT_STATUS,
-  COMPETITION_STATUS,
-  CompetitionType,
-} from "@/types/index.js";
+import type { RawAgentMetricsQueryResult } from "@/types/agent-metrics.js";
+import { CompetitionType } from "@/types/index.js";
 
 /**
  * Leaderboard Repository
  * Handles database operations for leaderboards
  */
-
-/**
- * Get the total ROI as percentage (decimal format) for a single agent across all finished competitions
- * @param agentId The agent ID to get ROI for
- * @returns The total ROI as percentage in decimal format (e.g., 0.37 for 37%) or null if no completed competitions
- */
-export async function getAgentTotalRoi(
-  agentId: string,
-): Promise<number | null> {
-  try {
-    const result = await dbRead
-      .select({
-        totalPnl: sum(tradingCompetitionsLeaderboard.pnl).as("totalPnl"),
-        totalStartingValue: sum(
-          tradingCompetitionsLeaderboard.startingValue,
-        ).as("totalStartingValue"),
-      })
-      .from(competitionsLeaderboard)
-      .innerJoin(
-        tradingCompetitionsLeaderboard,
-        eq(
-          tradingCompetitionsLeaderboard.competitionsLeaderboardId,
-          competitionsLeaderboard.id,
-        ),
-      )
-      .innerJoin(
-        competitions,
-        eq(competitionsLeaderboard.competitionId, competitions.id),
-      )
-      .where(
-        and(
-          eq(competitionsLeaderboard.agentId, agentId),
-          eq(competitions.status, "ended"),
-        ),
-      )
-      .groupBy(competitionsLeaderboard.agentId);
-
-    if (!result[0]) {
-      return null;
-    }
-
-    const totalPnl = Number(result[0].totalPnl);
-    const totalStartingValue = Number(result[0].totalStartingValue);
-
-    if (
-      typeof totalPnl !== "number" ||
-      typeof totalStartingValue !== "number" ||
-      isNaN(totalPnl) ||
-      isNaN(totalStartingValue) ||
-      totalStartingValue <= 0
-    ) {
-      return null;
-    }
-
-    // Calculate ROI as percentage in decimal format (e.g., 0.37 for 37%)
-    return totalPnl / totalStartingValue;
-  } catch (error) {
-    console.error("[LeaderboardRepository] Error in getAgentBestRoi:", error);
-    return null;
-  }
-}
 
 /**
  * Get global statistics for a specific competition type across all relevant competitions.
@@ -117,12 +53,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   const relevantCompetitions = await dbRead
     .select({ id: competitions.id })
     .from(competitions)
-    .where(
-      and(
-        eq(competitions.type, type),
-        eq(competitions.status, COMPETITION_STATUS.ENDED),
-      ),
-    );
+    .where(and(eq(competitions.type, type), eq(competitions.status, "ended")));
 
   if (relevantCompetitions.length === 0) {
     return {
@@ -163,7 +94,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
     .where(
       and(
         inArray(competitionAgents.competitionId, relevantCompetitionIds),
-        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+        eq(competitionAgents.status, "active"),
       ),
     );
 
@@ -180,35 +111,25 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
 /**
  * Get bulk agent metrics for multiple agents using optimized queries
  * This replaces N+1 query patterns in attachAgentMetrics
- * Uses exactly 4 queries regardless of the number of agents
+ * Returns raw query results for processing in the service layer
  *
  * @param agentIds Array of agent IDs to get metrics for
- * @returns Array of agent metrics with all required data
+ * @returns Raw query results from database
  */
-async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
-  Array<{
-    agentId: string;
-    name: string;
-    description: string | null;
-    imageUrl: string | null;
-    metadata: unknown;
-    globalRank: number | null;
-    globalScore: number | null;
-    completedCompetitions: number;
-    totalVotes: number;
-    totalTrades: number;
-    bestPlacement: {
-      competitionId: string;
-      rank: number;
-      score: number;
-      totalAgents: number;
-    } | null;
-    bestPnl: number | null;
-    totalRoi: number | null;
-  }>
-> {
+async function getBulkAgentMetricsImpl(
+  agentIds: string[],
+): Promise<RawAgentMetricsQueryResult> {
   if (agentIds.length === 0) {
-    return [];
+    return {
+      agentRanks: [],
+      competitionCounts: [],
+      voteCounts: [],
+      tradeCounts: [],
+      bestPlacements: [],
+      bestPnls: [],
+      totalRois: [],
+      allAgentScores: [],
+    };
   }
 
   repositoryLogger.debug(
@@ -348,15 +269,25 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       )
       .groupBy(competitionsLeaderboard.agentId);
 
+    // Query 8: Get all agent scores for rank calculation in service layer
+    const allAgentScoresQuery = dbRead
+      .select({
+        agentId: agentScore.agentId,
+        ordinal: agentScore.ordinal,
+      })
+      .from(agentScore)
+      .orderBy(agentScore.ordinal);
+
     // Execute all queries in parallel
     const [
-      agentRanksResult,
-      competitionCountsResult,
-      voteCountsResult,
-      tradeCountsResult,
-      bestPlacementResult,
-      bestPnlResult,
-      totalRoiResult,
+      agentRanks,
+      competitionCounts,
+      voteCounts,
+      tradeCounts,
+      bestPlacements,
+      bestPnls,
+      totalRois,
+      allAgentScores,
     ] = await Promise.all([
       agentRanksQuery,
       competitionCountsQuery,
@@ -365,122 +296,24 @@ async function getBulkAgentMetricsImpl(agentIds: string[]): Promise<
       bestPlacementsQuery,
       bestPnlQuery,
       totalRoiQuery,
+      allAgentScoresQuery,
     ]);
 
-    // Query 6: Get actual ranks - need to get all ranks first then calculate
-    const allRanksQuery = dbRead
-      .select({
-        agentId: agentScore.agentId,
-        ordinal: agentScore.ordinal,
-      })
-      .from(agentScore)
-      .orderBy(agentScore.ordinal);
-
-    const allRanksResult = await allRanksQuery;
-
-    // Calculate ranks
-    const ranksMap = new Map<string, number>();
-    allRanksResult
-      .sort((a, b) => (b.ordinal || 0) - (a.ordinal || 0)) // Sort by ordinal DESC
-      .forEach((rank, index) => {
-        if (agentIds.includes(rank.agentId)) {
-          ranksMap.set(rank.agentId, index + 1);
-        }
-      });
-
-    // Create lookup maps for efficient joining
-    const agentRanksMap = new Map(
-      agentRanksResult.map((row) => [row.agentId, row]),
-    );
-    const competitionCountsMap = new Map(
-      competitionCountsResult.map((row) => [
-        row.agentId,
-        row.completedCompetitions,
-      ]),
-    );
-    const voteCountsMap = new Map(
-      voteCountsResult.map((row) => [row.agentId, row.totalVotes]),
-    );
-    const tradeCountsMap = new Map(
-      tradeCountsResult.map((row) => [row.agentId, row.totalTrades]),
-    );
-    const bestPlacementMap = new Map(
-      bestPlacementResult.map((row) => [
-        row.agentId,
-        {
-          competitionId: row.competitionId,
-          rank: row.rank,
-          score: row.score,
-          totalAgents: row.totalAgents,
-        },
-      ]),
-    );
-
-    const bestPnlMap = new Map(
-      bestPnlResult.map((row) => [
-        row.agentId,
-        {
-          competitionId: row.competitionId,
-          pnl: row.pnl,
-        },
-      ]),
-    );
-
-    const totalRoiMap = new Map(
-      totalRoiResult.map((row) => {
-        const totalPnl = row.totalPnl ? Number(row.totalPnl) : null;
-        const totalStartingValue = row.totalStartingValue
-          ? Number(row.totalStartingValue)
-          : null;
-
-        if (
-          typeof totalPnl !== "number" ||
-          typeof totalStartingValue !== "number" ||
-          isNaN(totalPnl) ||
-          isNaN(totalStartingValue) ||
-          totalStartingValue <= 0
-        ) {
-          return [row.agentId, null];
-        }
-
-        // Calculate ROI as percentage in decimal format (e.g., 0.37 for 37%)
-        const roiPercent = totalPnl / totalStartingValue;
-        return [row.agentId, roiPercent];
-      }),
-    );
-
-    // Combine all data
-    const result = agentIds.map((agentId) => {
-      const agentData = agentRanksMap.get(agentId);
-      const completedCompetitions = competitionCountsMap.get(agentId) ?? 0;
-      const totalVotes = voteCountsMap.get(agentId) ?? 0;
-      const totalTrades = tradeCountsMap.get(agentId) ?? 0;
-      const bestPlacement = bestPlacementMap.get(agentId) ?? null;
-      const bestPnl = bestPnlMap.get(agentId)?.pnl ?? null;
-      const globalRank = ranksMap.get(agentId) ?? null;
-      const totalRoi = totalRoiMap.get(agentId) ?? null;
-
-      return {
-        agentId,
-        name: agentData?.name ?? "Unknown",
-        description: agentData?.description ?? null,
-        imageUrl: agentData?.imageUrl ?? null,
-        metadata: agentData?.metadata ?? null,
-        globalScore: agentData?.globalScore ?? null,
-        globalRank,
-        completedCompetitions,
-        totalVotes,
-        totalTrades,
-        bestPlacement,
-        bestPnl,
-        totalRoi,
-      };
-    });
-
+    // Return raw query results for processing in service layer
     repositoryLogger.debug(
-      `Successfully retrieved bulk metrics for ${result.length} agents`,
+      `Successfully retrieved bulk metrics data for ${agentIds.length} agents`,
     );
-    return result;
+
+    return {
+      agentRanks,
+      competitionCounts,
+      voteCounts,
+      tradeCounts,
+      bestPlacements,
+      bestPnls,
+      totalRois,
+      allAgentScores,
+    };
   } catch (error) {
     repositoryLogger.error("Error in getBulkAgentMetrics:", error);
     throw error;

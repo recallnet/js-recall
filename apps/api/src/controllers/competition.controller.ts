@@ -1,4 +1,5 @@
 import { NextFunction, Response } from "express";
+import { LRUCache } from "lru-cache";
 
 import { config } from "@/config/index.js";
 import {
@@ -13,7 +14,6 @@ import {
   AuthenticatedRequest,
   BucketParamSchema,
   COMPETITION_JOIN_ERROR_TYPES,
-  COMPETITION_STATUS,
   CompetitionAgentParamsSchema,
   CompetitionJoinError,
   CompetitionStatusSchema,
@@ -24,14 +24,58 @@ import { AgentQuerySchema } from "@/types/sort/agent.js";
 import {
   buildPaginationResponse,
   checkIsAdmin,
+  checkShouldCacheResponse,
   ensureUuid,
+  generateCacheKey,
 } from "./request-helpers.js";
+
+/**
+ * Cache for the `/competitions` endpoints (unauthenticated or authenticated user requests)
+ */
+const caches = {
+  // Used for: `/competitions`
+  list: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/agents`
+  agents: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/agents/:agentId/trades`
+  agentTrades: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id`
+  byId: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/rules`
+  rules: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/timeline`
+  timeline: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+  // Used for: `/competitions/:id/trades`
+  trades: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
+} as const;
 
 export function makeCompetitionController(services: ServiceRegistry) {
   /**
    * Competition Controller
    * Handles competition-related operations
    */
+
   return {
     /**
      * Get competition leaderboard
@@ -297,7 +341,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             );
           }
           // AgentId is present, verify participation in the active competition
-          if (activeCompetition.status !== COMPETITION_STATUS.ACTIVE) {
+          if (activeCompetition.status !== "active") {
             // This check might be redundant if getActiveCompetition already ensures this,
             // but keeping for safety to ensure agent is not trying to get rules for a non-active comp.
             throw new ApiError(
@@ -485,6 +529,20 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ? CompetitionStatusSchema.parse(req.query.status)
           : undefined;
         const pagingParams = PagingParamsSchema.parse(req.query);
+
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitions", {
+          status,
+          ...pagingParams,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.list.get(cacheKey);
+          if (cached) {
+            return res.status(200).json(cached);
+          }
+        }
+
         const { competitions, total } =
           await services.competitionManager.getCompetitions(
             status,
@@ -555,7 +613,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const hasMore = pagingParams.offset + pagingParams.limit < total;
 
         // Return the competitions with metadata
-        res.status(200).json({
+        const responseBody = {
           success: true,
           competitions: enrichedCompetitions,
           pagination: {
@@ -564,7 +622,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
             offset: pagingParams.offset,
             hasMore: hasMore,
           },
-        });
+        } as const;
+
+        if (shouldCacheResponse) {
+          caches.list.set(cacheKey, responseBody);
+        }
+
+        res.status(200).json(responseBody);
       } catch (error) {
         next(error);
       }
@@ -609,6 +673,18 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(400, "Competition ID is required");
         }
 
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionById", {
+          competitionId,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.byId.get(cacheKey);
+          if (cached) {
+            return res.status(200).json(cached);
+          }
+        }
+
         // Get competition details
         const competition =
           await services.competitionManager.getCompetition(competitionId);
@@ -616,7 +692,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        const trades =
+        const tradesResponse =
           await services.tradeSimulator.getCompetitionTrades(competitionId);
 
         // Get vote counts for this competition
@@ -629,16 +705,16 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get stats for this competition
         const stats = {
-          totalTrades: trades.length,
+          totalTrades: tradesResponse.total,
           totalAgents: competition.registeredParticipants,
-          totalVolume: trades.reduce(
+          totalVolume: tradesResponse.trades.reduce<number>(
             (acc, trade) => acc + trade.tradeAmountUsd,
             0,
           ),
           totalVotes,
           uniqueTokens: new Set([
-            ...trades.map((trade) => trade.fromToken),
-            ...trades.map((trade) => trade.toToken),
+            ...tradesResponse.trades.map((trade) => trade.fromToken),
+            ...tradesResponse.trades.map((trade) => trade.toToken),
           ]).size,
         };
 
@@ -674,7 +750,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           );
 
         // Return the competition details
-        res.status(200).json({
+        const responseBody = {
           success: true,
           competition: {
             ...competition,
@@ -690,7 +766,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
             votingEnabled,
             userVotingInfo,
           },
-        });
+        } as const;
+
+        if (shouldCacheResponse) {
+          caches.byId.set(cacheKey, responseBody);
+        }
+
+        res.status(200).json(responseBody);
       } catch (error) {
         next(error);
       }
@@ -747,6 +829,19 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionAgents", {
+          competitionId,
+          ...queryParams,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.agents.get(cacheKey);
+          if (cached) {
+            return res.status(200).json(cached);
+          }
+        }
+
         // Get agents for the competition with pagination
         const { agents, total } =
           await services.competitionManager.getCompetitionAgentsWithMetrics(
@@ -755,7 +850,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           );
 
         // Return the competition agents with pagination metadata
-        res.status(200).json({
+        const responseBody = {
           success: true,
           competitionId,
           registeredParticipants: competition.registeredParticipants,
@@ -766,7 +861,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
             queryParams.limit,
             queryParams.offset,
           ),
-        });
+        } as const;
+
+        if (shouldCacheResponse) {
+          caches.agents.set(cacheKey, responseBody);
+        }
+
+        res.status(200).json(responseBody);
       } catch (error) {
         next(error);
       }
@@ -830,6 +931,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
           agentId,
           validatedUserId,
         );
+
+        // Invalidate public cache for competition agents to avoid stale reads
+        caches.agents.clear();
 
         res.status(200).json({
           success: true,
@@ -952,6 +1056,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
           validatedUserId,
         );
 
+        // Invalidate public cache for competition agents to avoid stale reads
+        caches.agents.clear();
+
         res.status(200).json({
           success: true,
           message: "Successfully left competition",
@@ -1008,6 +1115,19 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionTimeline", {
+          competitionId,
+          bucket,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.timeline.get(cacheKey);
+          if (cached) {
+            return res.status(200).json(cached);
+          }
+        }
+
         // Get timeline data
         const rawData =
           await services.portfolioSnapshotter.getAgentPortfolioTimeline(
@@ -1046,9 +1166,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
           timeline: Array.from(agentsMap.values()),
         };
 
+        if (shouldCacheResponse) {
+          caches.timeline.set(cacheKey, transformedData);
+        }
+
         res.status(200).json(transformedData);
       } catch (error) {
-        console.error("OIII", error);
         next(error);
       }
     },
@@ -1070,6 +1193,18 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const competitionId = req.params.competitionId;
         if (!competitionId) {
           throw new ApiError(400, "Competition ID is required");
+        }
+
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionRules", {
+          competitionId,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.rules.get(cacheKey);
+          if (cached) {
+            return res.status(200).json(cached);
+          }
         }
 
         // Get competition details
@@ -1165,11 +1300,17 @@ export function makeCompetitionController(services: ServiceRegistry) {
           tradingConstraints,
         };
 
-        res.status(200).json({
+        const responseBody = {
           success: true,
           competition,
           rules: allRules,
-        });
+        } as const;
+
+        if (shouldCacheResponse) {
+          caches.rules.set(cacheKey, responseBody);
+        }
+
+        res.status(200).json(responseBody);
       } catch (error) {
         next(error);
       }
@@ -1198,17 +1339,42 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Get trades
-        const trades = await services.tradeSimulator.getCompetitionTrades(
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionTrades", {
           competitionId,
-          pagingParams.limit,
-          pagingParams.offset,
-        );
+          ...pagingParams,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.trades.get(cacheKey);
+          if (cached) {
+            return res.status(200).json(cached);
+          }
+        }
 
-        res.status(200).json({
+        // Get trades
+        const { trades, total } =
+          await services.tradeSimulator.getCompetitionTrades(
+            competitionId,
+            pagingParams.limit,
+            pagingParams.offset,
+          );
+
+        const responseBody = {
           success: true,
           trades,
-        });
+          pagination: buildPaginationResponse(
+            total,
+            pagingParams.limit,
+            pagingParams.offset,
+          ),
+        } as const;
+
+        if (shouldCacheResponse) {
+          caches.trades.set(cacheKey, responseBody);
+        }
+
+        res.status(200).json(responseBody);
       } catch (error) {
         next(error);
       }
@@ -1245,8 +1411,22 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Agent not found");
         }
 
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionAgentTrades", {
+          competitionId,
+          agentId,
+          ...pagingParams,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.agentTrades.get(cacheKey);
+          if (cached) {
+            return res.status(200).json(cached);
+          }
+        }
+
         // Get trades
-        const trades =
+        const { trades, total } =
           await services.tradeSimulator.getAgentTradesInCompetition(
             competitionId,
             agentId,
@@ -1254,10 +1434,21 @@ export function makeCompetitionController(services: ServiceRegistry) {
             pagingParams.offset,
           );
 
-        res.status(200).json({
+        const responseBody = {
           success: true,
           trades,
-        });
+          pagination: buildPaginationResponse(
+            total,
+            pagingParams.limit,
+            pagingParams.offset,
+          ),
+        } as const;
+
+        if (shouldCacheResponse) {
+          caches.agentTrades.set(cacheKey, responseBody);
+        }
+
+        res.status(200).json(responseBody);
       } catch (error) {
         next(error);
       }
@@ -1268,3 +1459,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
 export type CompetitionController = ReturnType<
   typeof makeCompetitionController
 >;
+
+/**
+ * Clear all competition APIs caches
+ */
+export function clearCompetitionsApiCaches() {
+  for (const cache of Object.values(caches)) cache.clear();
+}

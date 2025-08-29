@@ -48,11 +48,7 @@ describe("Agent API", () => {
     // Create a test client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user and agent
     const userName = `User ${Date.now()}`;
@@ -102,11 +98,7 @@ describe("Agent API", () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user and agent
     const { client: agentClient } = await registerUserAndAgentAndGetClient({
@@ -136,11 +128,7 @@ describe("Agent API", () => {
   test("agents can update their profile with description and imageUrl", async () => {
     // Setup admin client
     const client = createTestClient();
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user and agent
     const { client: agentClient } = await registerUserAndAgentAndGetClient({
@@ -181,11 +169,7 @@ describe("Agent API", () => {
     // Setup admin client
     const client = createTestClient();
     // Attempt to login as admin with correct API key
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Register a user and agent
     await registerUserAndAgentAndGetClient({ adminApiKey });
@@ -351,11 +335,7 @@ describe("Agent API", () => {
   test("agent can retrieve profile with metadata", async () => {
     // Setup admin client
     const client = createTestClient();
-    console.log(
-      `TEST: Attempting to login with admin API key: ${adminApiKey.substring(0, 8)}...`,
-    );
-    const loginSuccess = await client.loginAsAdmin(adminApiKey);
-    console.log(`TEST: Login result: ${loginSuccess}`);
+    await client.loginAsAdmin(adminApiKey);
 
     // Define metadata for the agent
     const metadata: AgentMetadata = {
@@ -2606,9 +2586,6 @@ Purpose: WALLET_VERIFICATION`;
         .filter((rank): rank is number => rank !== undefined);
       expect(ranks.every((rank) => rank >= 1 && rank <= 4)).toBe(true);
       expect(new Set(ranks).size).toBe(4); // All ranks should be unique
-
-      // Log results for debugging
-      console.log("Multi-agent ranking results:", rankingResults);
     });
 
     test("should handle cross-competition metrics correctly (2 ended + 1 active)", async () => {
@@ -2815,18 +2792,204 @@ Purpose: WALLET_VERIFICATION`;
         }
       });
 
-      console.log("Cross-competition test results:", {
-        agent1Comps: agent1CompsSorted.map((c) => ({
-          id: c.id,
-          trades: c.totalTrades,
-          portfolio: c.portfolioValue,
-        })),
-        agent2Comps: agent2CompsSorted.map((c) => ({
-          id: c.id,
-          trades: c.totalTrades,
-          portfolio: c.portfolioValue,
-        })),
+      // Verify cross-competition metrics were calculated correctly
+      // Both agents should have metrics from all 3 competitions
+    });
+
+    test("should only include active agents in ranking calculations", async () => {
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register 3 agents for testing active/withdrawn agent ranking behavior
+      const { client: agentClient1, agent: agent1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Active Agent 1",
+        });
+
+      const { client: agentClient2, agent: agent2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Active Agent 2",
+        });
+
+      const { client: agentClient3, agent: agent3 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Disqualified Agent 3",
+        });
+
+      // Create a competition with all 3 agents
+      const compName = `Active-Disqualified Ranking Test ${Date.now()}`;
+      const createCompResult = await adminClient.createCompetition(
+        compName,
+        "Competition for testing active vs disqualified agent ranking behavior",
+      );
+      expect(createCompResult.success).toBe(true);
+      const competitionId = (createCompResult as CreateCompetitionResponse)
+        .competition.id;
+
+      // Start competition with all agents
+      await adminClient.startExistingCompetition(competitionId, [
+        agent1.id,
+        agent2.id,
+        agent3.id,
+      ]);
+
+      // Execute trades to create different performance levels
+      // Agent 1: Good performance (buys ETH)
+      await agentClient1.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "100",
+        reason: "Agent 1 good trade - buying ETH",
       });
+
+      // Agent 2: Medium performance (mixed strategy)
+      await agentClient2.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "50",
+        reason: "Agent 2 medium trade - buying ETH",
+      });
+
+      // Agent 3: Poor performance (burns tokens)
+      await agentClient3.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "200",
+        reason: "Agent 3 bad trade - burning tokens",
+      });
+
+      // Trigger portfolio snapshots
+      const services = new ServiceRegistry();
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+
+      // Get initial rankings with all agents active
+      const initialRankings = [];
+      const agentPairs = [
+        { client: agentClient1, agent: agent1 },
+        { client: agentClient2, agent: agent2 },
+        { client: agentClient3, agent: agent3 },
+      ];
+
+      for (const { client, agent } of agentPairs) {
+        const competitionsResponse = await client.getAgentCompetitions(
+          agent.id,
+          {
+            limit: 10,
+            offset: 0,
+          },
+        );
+
+        expect(competitionsResponse.success).toBe(true);
+        const response = competitionsResponse as AgentCompetitionsResponse;
+
+        const testCompetition = response.competitions.find(
+          (comp: EnhancedCompetition) => comp.id === competitionId,
+        );
+        expect(testCompetition).toBeDefined();
+
+        if (testCompetition) {
+          initialRankings.push({
+            agentId: agent.id,
+            agentName: agent.name,
+            rank: testCompetition.bestPlacement?.rank,
+            totalAgents: testCompetition.bestPlacement?.totalAgents,
+            portfolioValue: testCompetition.portfolioValue,
+          });
+        }
+      }
+
+      // Verify initial state: all 3 agents should be ranked
+      expect(initialRankings.length).toBe(3);
+      initialRankings.forEach((result) => {
+        expect(result.totalAgents).toBe(3);
+        expect(result.rank).toBeGreaterThanOrEqual(1);
+        expect(result.rank).toBeLessThanOrEqual(3);
+      });
+
+      // Disqualify agent 3 from the competition (this updates competition_agents table status)
+      await adminClient.removeAgentFromCompetition(
+        competitionId,
+        agent3.id,
+        "Agent disqualified for ranking test",
+      );
+
+      // Wait a bit for the disqualification to be processed
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Trigger portfolio snapshots again to ensure data is updated
+      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+
+      // Wait a bit more for snapshots to be processed
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Get rankings after disqualifying agent 3
+      const finalRankings = [];
+      for (const { client, agent } of agentPairs) {
+        const competitionsResponse = await client.getAgentCompetitions(
+          agent.id,
+          {
+            limit: 10,
+            offset: 0,
+          },
+        );
+
+        expect(competitionsResponse.success).toBe(true);
+        const response = competitionsResponse as AgentCompetitionsResponse;
+
+        const testCompetition = response.competitions.find(
+          (comp: EnhancedCompetition) => comp.id === competitionId,
+        );
+        expect(testCompetition).toBeDefined();
+
+        if (testCompetition) {
+          finalRankings.push({
+            agentId: agent.id,
+            agentName: agent.name,
+            rank: testCompetition.bestPlacement?.rank,
+            totalAgents: testCompetition.bestPlacement?.totalAgents,
+            portfolioValue: testCompetition.portfolioValue,
+          });
+        }
+      }
+
+      // Verify the fix: only active agents should be included in ranking calculations
+      // Active agents (1 and 2) should now see only 2 total agents
+      const activeAgent1Result = finalRankings.find(
+        (r) => r.agentId === agent1.id,
+      );
+      const activeAgent2Result = finalRankings.find(
+        (r) => r.agentId === agent2.id,
+      );
+      const disqualifiedAgent3Result = finalRankings.find(
+        (r) => r.agentId === agent3.id,
+      );
+
+      expect(activeAgent1Result).toBeDefined();
+      expect(activeAgent2Result).toBeDefined();
+      expect(disqualifiedAgent3Result).toBeDefined();
+
+      // Active agents should see only 2 total agents (excluding disqualified agent 3)
+      expect(activeAgent1Result?.totalAgents).toBe(2);
+      expect(activeAgent2Result?.totalAgents).toBe(2);
+
+      // Disqualified agent should not have a rank (undefined) since it's not included in calculations
+      expect(disqualifiedAgent3Result?.rank).toBeUndefined();
+      expect(disqualifiedAgent3Result?.totalAgents).toBeUndefined();
+
+      // Active agents should have valid ranks (1 or 2)
+      expect(activeAgent1Result?.rank).toBeGreaterThanOrEqual(1);
+      expect(activeAgent1Result?.rank).toBeLessThanOrEqual(2);
+      expect(activeAgent2Result?.rank).toBeGreaterThanOrEqual(1);
+      expect(activeAgent2Result?.rank).toBeLessThanOrEqual(2);
+
+      // Verify that the ranking logic is consistent between leaderboard and agent table
+      // Both should only consider active agents in their calculations
+      // This test specifically verifies the fix for app-194 where agent table rankings
+      // now match leaderboard rankings by excluding disqualified agents
     });
   });
 

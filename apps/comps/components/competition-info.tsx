@@ -88,7 +88,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
       <TabsContent value="info" className="border">
         <div>
           <div className="grid grid-cols-2 border-b">
-            <div className="flex flex-col items-start gap-2 border-r p-[25px]">
+            <div className="flex flex-col items-start gap-2 border-r p-4 sm:p-[25px]">
               <CellTitle>Reward</CellTitle>
               {competition.rewards ? (
                 <Rewards rewards={competition.rewards} />
@@ -96,7 +96,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
                 <p className="text-xl font-semibold">TBA</p>
               )}
             </div>
-            <div className="flex flex-col items-start gap-2 p-[25px]">
+            <div className="flex flex-col items-start gap-2 p-4 sm:p-[25px]">
               <div className="flex w-full items-center justify-between">
                 <CellTitle>Status</CellTitle>
                 <CompetitionStatusBadge status={competition.status} />
@@ -107,7 +107,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 border-b p-[25px]">
+          <div className="flex items-center gap-2 border-b p-4 sm:p-[25px]">
             <CellTitle>Skills</CellTitle>
             <div className="flex flex-wrap gap-2">
               <span className="rounded border p-2 text-xs capitalize">
@@ -117,7 +117,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           </div>
 
           <div className="border-b">
-            <div className="p-[25px]">
+            <div className="p-4 sm:p-[25px]">
               <CellTitle>About</CellTitle>
               <div
                 className={`relative ${expanded ? "max-h-40 overflow-y-auto" : "max-h-16 overflow-hidden"}`}
@@ -142,11 +142,11 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           </div>
 
           <div className="grid grid-cols-3">
-            <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
+            <div className="flex flex-col items-start justify-center gap-2 border-r p-4 sm:p-[25px]">
               <CellTitle>Total Trades</CellTitle>
               <span className="font-bold">{competition.stats.totalTrades}</span>
             </div>
-            <div className="flex flex-col items-start justify-center gap-2 border-r p-[25px]">
+            <div className="flex flex-col items-start justify-center gap-2 border-r p-4 sm:p-[25px]">
               <CellTitle>Volume</CellTitle>
               <span className="font-bold">
                 $
@@ -156,7 +156,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
                 })}
               </span>
             </div>
-            <div className="flex flex-col items-start justify-center gap-2 p-[25px]">
+            <div className="flex flex-col items-start justify-center gap-2 p-4 sm:p-[25px]">
               <CellTitle>Tokens Traded</CellTitle>
               <span className="font-bold">
                 {competition.stats.uniqueTokens}
@@ -169,14 +169,14 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
       <TabsContent value="rules" className="border">
         <div>
           {rulesLoading ? (
-            <div className="p-[25px]">
+            <div className="p-4 sm:p-[25px]">
               <p className="text-sm text-gray-400">Loading rules...</p>
             </div>
           ) : rules ? (
             <div className="divide-y">
               {/* Balances & Constraints Section */}
               <div
-                className="cursor-pointer p-[25px]"
+                className="cursor-pointer p-4 sm:p-[25px]"
                 onClick={() => setBalancesExpanded(!balancesExpanded)}
                 aria-expanded={balancesExpanded}
                 role="button"
@@ -258,7 +258,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
               {/* Trading Rules Section */}
               <div
-                className="cursor-pointer p-[25px]"
+                className="cursor-pointer p-4 sm:p-[25px]"
                 onClick={() => setTradingRulesExpanded(!tradingRulesExpanded)}
                 aria-expanded={tradingRulesExpanded}
                 role="button"
@@ -285,7 +285,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
               {/* Supported Chains Section */}
               <div
-                className="cursor-pointer p-[25px]"
+                className="cursor-pointer p-4 sm:p-[25px]"
                 onClick={() => setChainsExpanded(!chainsExpanded)}
                 aria-expanded={chainsExpanded}
                 role="button"
@@ -320,7 +320,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
               {/* Rate Limits Section */}
               <div
-                className="cursor-pointer p-[25px]"
+                className="cursor-pointer p-4 sm:p-[25px]"
                 onClick={() => setRateLimitsExpanded(!rateLimitsExpanded)}
                 aria-expanded={rateLimitsExpanded}
                 role="button"
@@ -346,7 +346,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               </div>
             </div>
           ) : (
-            <div className="p-[25px]">
+            <div className="p-4 sm:p-[25px]">
               <p className="text-sm text-gray-400">Rules not available</p>
             </div>
           )}

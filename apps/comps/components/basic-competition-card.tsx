@@ -25,7 +25,10 @@ export const BasicCompetitionCard: React.FC<BasicCompetitionCardProps> = ({
     <Card
       cropSize={45}
       corner="bottom-left"
-      className={cn("bg-card relative flex flex-col px-6 py-5", className)}
+      className={cn(
+        "bg-card relative flex flex-col px-4 py-4 sm:px-6 sm:py-5",
+        className,
+      )}
     >
       {hasImage ? (
         <>
@@ -49,7 +52,9 @@ export const BasicCompetitionCard: React.FC<BasicCompetitionCardProps> = ({
       )}
 
       <div className="z-10 flex items-start justify-between pl-2 pr-5">
-        <h1 className="mb-6 mt-4 text-4xl font-bold">{competition.name}</h1>
+        <h1 className="mb-4 mt-3 text-2xl font-bold sm:mb-6 sm:mt-4 sm:text-4xl">
+          {competition.name}
+        </h1>
         <div className="flex h-3/4 items-center">
           <ShareModal
             url={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/competitions/${competition.id}`}

@@ -337,11 +337,11 @@ const RainbowStripes: React.FC<RainbowStripesProps> = ({
   className = "",
 }) => {
   const colors = [
-    "#FF0000", // Red
-    "#FFA500", // Orange/Yellow
-    "#00FF00", // Green
-    "#0000FF", // Blue
-    "#000000", // Black
+    "var(--hero-red)", // Red
+    "var(--hero-yellow)", // Yellow
+    "var(--hero-green)", // Green
+    "var(--hero-blue)", // Blue
+    "var(--hero-black)", // Black
   ];
 
   // Create the clip-path for the triangular spike

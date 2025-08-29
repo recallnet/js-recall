@@ -21,7 +21,6 @@ describe("Leaderboard API", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
-    console.log(`Admin API key created: ${adminApiKey.substring(0, 8)}...`);
   });
 
   test("should get global leaderboard with scores and ranks", async () => {

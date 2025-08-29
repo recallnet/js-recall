@@ -3,7 +3,8 @@ import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
-import { epochs, rewards } from "@/database/schema/voting/defs.js";
+import { competitions } from "@/database/schema/core/defs.js";
+import { rewards } from "@/database/schema/voting/defs.js";
 import { createLeafNode } from "@/services/rewards.service.js";
 
 // Load environment variables
@@ -21,31 +22,35 @@ const colors = {
 };
 
 /**
- * Insert one epoch and three rewards into the database
+ * Insert one competition and three rewards into the database
  */
-async function insertEpochAndRewards() {
+async function insertCompetitionAndRewards() {
   try {
     console.log(
       `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
     );
     console.log(
-      `${colors.cyan}║                INSERTING EPOCH AND REWARDS                    ║${colors.reset}`,
+      `${colors.cyan}║              INSERTING COMPETITION AND REWARDS                 ║${colors.reset}`,
     );
     console.log(
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
-    // Insert epoch
-    const epochId = uuidv4();
+    // Insert competition
+    const competitionId = uuidv4();
 
     console.log(
-      `\n${colors.blue}Inserting epoch with ID: ${colors.yellow}${epochId}${colors.reset}`,
+      `\n${colors.blue}Inserting competition with ID: ${colors.yellow}${competitionId}${colors.reset}`,
     );
 
-    await db.insert(epochs).values({
-      id: epochId,
-      startedAt: new Date(),
-      endedAt: null,
+    await db.insert(competitions).values({
+      id: competitionId,
+      name: "Test Competition",
+      description: "A test competition for rewards",
+      status: "active",
+      type: "trading",
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     });
 
     // Define reward data
@@ -65,7 +70,7 @@ async function insertEpochAndRewards() {
     ];
 
     console.log(
-      `\n${colors.blue}Inserting rewards for epoch: ${colors.yellow}${epochId}${colors.reset}`,
+      `\n${colors.blue}Inserting rewards for competition: ${colors.yellow}${competitionId}${colors.reset}`,
     );
 
     // Insert rewards
@@ -74,7 +79,7 @@ async function insertEpochAndRewards() {
 
       await db.insert(rewards).values({
         id: uuidv4(),
-        epoch: epochId,
+        competitionId: competitionId,
         address: reward.address,
         amount: reward.amount,
         leafHash: new Uint8Array(leafHash),
@@ -87,17 +92,17 @@ async function insertEpochAndRewards() {
     }
 
     console.log(
-      `\n${colors.green}Successfully inserted epoch and rewards.${colors.reset}`,
+      `\n${colors.green}Successfully inserted competition and rewards.${colors.reset}`,
     );
     console.log(
-      `${colors.green}Epoch ID: ${colors.yellow}${epochId}${colors.reset}`,
+      `${colors.green}Competition ID: ${colors.yellow}${competitionId}${colors.reset}`,
     );
     console.log(
-      `${colors.green}You can now run: ${colors.yellow}pnpm rewards:allocate ${epochId}${colors.reset}`,
+      `${colors.green}You can now run: ${colors.yellow}pnpm rewards:allocate ${competitionId}${colors.reset}`,
     );
   } catch (error) {
     console.error(
-      `\n${colors.red}Error inserting epoch and rewards:${colors.reset}`,
+      `\n${colors.red}Error inserting competition and rewards:${colors.reset}`,
       error instanceof Error ? error.message : error,
     );
     process.exit(1);
@@ -108,4 +113,4 @@ async function insertEpochAndRewards() {
 }
 
 // Run the function
-insertEpochAndRewards();
+insertCompetitionAndRewards();
