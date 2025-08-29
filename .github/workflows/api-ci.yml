@@ -266,6 +266,9 @@ jobs:
 
           # Enable auto-verify user email
           ENABLE_AUTO_VERIFY_USER_EMAIL=true
+
+          # Disable cache API
+          DISABLE_CACHE_API=true
           EOF
 
       - name: Run E2E tests

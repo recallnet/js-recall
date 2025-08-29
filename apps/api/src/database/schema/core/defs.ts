@@ -16,42 +16,40 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import {
-  ACTOR_STATUS_VALUES,
-  COMPETITION_AGENT_STATUS_VALUES,
-  COMPETITION_STATUS_VALUES,
-  COMPETITION_TYPE_VALUES,
-  MAX_HANDLE_LENGTH,
-} from "@/types/index.js";
+export const MAX_HANDLE_LENGTH = 15;
 
 /**
  * Statuses for users, agents, and admins.
  */
-export const actorStatus = pgEnum("actor_status", ACTOR_STATUS_VALUES);
+export const actorStatus = pgEnum("actor_status", [
+  "active",
+  "inactive",
+  "suspended",
+  "deleted",
+]);
 
 /**
  * Defines the possible statuses for competitions.
  */
-export const competitionStatus = pgEnum(
-  "competition_status",
-  COMPETITION_STATUS_VALUES,
-);
+export const competitionStatus = pgEnum("competition_status", [
+  "pending",
+  "active",
+  "ended",
+]);
 
 /**
  * Defines the possible types for competitions.
  */
-export const competitionType = pgEnum(
-  "competition_type",
-  COMPETITION_TYPE_VALUES,
-);
+export const competitionType = pgEnum("competition_type", ["trading"]);
 
 /**
  * Defines the possible statuses for agents within competitions.
  */
-export const competitionAgentStatus = pgEnum(
-  "competition_agent_status",
-  COMPETITION_AGENT_STATUS_VALUES,
-);
+export const competitionAgentStatus = pgEnum("competition_agent_status", [
+  "active",
+  "withdrawn",
+  "disqualified",
+]);
 
 /**
  * Users represent the human owners of agents
