@@ -160,16 +160,16 @@ async function getCompetitionTradeMetricsImpl(competitionId: string) {
         unnest(ARRAY[b.from_token, b.to_token]) WITH ORDINALITY AS u(token, ord);
     `);
 
-    const r = query.rows[0] ?? {
+    const result = query.rows[0] ?? {
       total_trades: 0,
       total_volume: 0,
       unique_tokens: 0,
     };
 
     return {
-      totalTrades: Number(r.total_trades), // bigint → number (OK unless > 2^53)
-      totalVolume: Number(r.total_volume), // float8 already a number in many drivers
-      uniqueTokens: Number(r.unique_tokens),
+      totalTrades: Number(result.total_trades),
+      totalVolume: Number(result.total_volume),
+      uniqueTokens: Number(result.unique_tokens),
     };
   } catch (error) {
     repositoryLogger.error("Error in getCompetitionTradeMetrics:", error);
