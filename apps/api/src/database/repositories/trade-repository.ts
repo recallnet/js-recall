@@ -143,23 +143,22 @@ async function getCompetitionTradeMetricsImpl(competitionId: string) {
   try {
     const query = await db.execute(sql`
       WITH base AS (
-        SELECT
-          ${trades.id}               AS id,
-          ${trades.tradeAmountUsd}   AS trade_amount_usd,
-          ${trades.fromToken}        AS from_token,
-          ${trades.toToken}          AS to_token
-        FROM ${trades}
-        WHERE ${trades.competitionId} = ${competitionId}
-      )
       SELECT
-        (COUNT(*) FILTER (WHERE u.ord = 1))::bigint                            AS total_trades,
-        (COALESCE(SUM(b.trade_amount_usd) FILTER (WHERE u.ord = 1), 0))::float8 AS total_volume,
-        (COUNT(DISTINCT u.token))::bigint                                      AS unique_tokens
-      FROM base b
-      CROSS JOIN LATERAL
-        unnest(ARRAY[b.from_token, b.to_token]) WITH ORDINALITY AS u(token, ord);
+        ${trades.id}             AS id,
+        ${trades.tradeAmountUsd} AS trade_amount_usd,
+        ${trades.fromToken}      AS from_token,
+        ${trades.toToken}        AS to_token
+      FROM ${trades}
+      WHERE ${trades.competitionId} = ${competitionId}
+    )
+    SELECT
+      COUNT(*) FILTER (WHERE u.ord = 1)                                       AS total_trades,
+      COALESCE(SUM(b.trade_amount_usd) FILTER (WHERE u.ord = 1), 0)::numeric  AS total_volume,
+      COUNT(DISTINCT u.token)                                                 AS unique_tokens
+    FROM base b
+    CROSS JOIN LATERAL
+      unnest(ARRAY[b.from_token, b.to_token]) WITH ORDINALITY AS u(token, ord);
     `);
-
     const result = query.rows[0] ?? {
       total_trades: 0,
       total_volume: 0,
