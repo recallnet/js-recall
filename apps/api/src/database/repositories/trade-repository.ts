@@ -135,6 +135,46 @@ async function getAgentTradesImpl(
 }
 
 /**
+ * Get the count of trades for a competition (count, total volume, unique tokens)
+ * @param competitionId Competition ID
+ * @returns Count of trades
+ */
+async function getCompetitionTradeMetricsImpl(competitionId: string) {
+  try {
+    const [row] = await db
+      .select({
+        totalTrades: sql<number>`COUNT(*)`,
+        totalVolume: sql<number>`COALESCE(SUM(${trades.tradeAmountUsd}), 0)`,
+        uniqueTokens: sql<number>`
+      (
+        SELECT COUNT(*) FROM (
+          SELECT ${trades.fromToken} AS token
+          FROM ${trades}
+          WHERE ${trades.competitionId} = ${competitionId}
+          UNION
+          SELECT ${trades.toToken} AS token
+          FROM ${trades}
+          WHERE ${trades.competitionId} = ${competitionId}
+        ) t
+      )
+    `,
+      })
+      .from(trades)
+      .where(eq(trades.competitionId, competitionId))
+      .limit(1);
+
+    return {
+      totalTrades: Number(row?.totalTrades) || 0,
+      totalVolume: Number(row?.totalVolume) || 0,
+      uniqueTokens: Number(row?.uniqueTokens) || 0,
+    };
+  } catch (error) {
+    repositoryLogger.error("Error in getCompetitionTradeMetrics:", error);
+    throw error;
+  }
+}
+
+/**
  * Get trades for a competition
  * @param competitionId Competition ID
  * @param limit Optional result limit
@@ -390,4 +430,10 @@ export const getAllTrades = createTimedRepositoryFunction(
   getAllTradesImpl,
   "TradeRepository",
   "getAllTrades",
+);
+
+export const getCompetitionTradeMetrics = createTimedRepositoryFunction(
+  getCompetitionTradeMetricsImpl,
+  "TradeRepository",
+  "getCompetitionTradeMetrics",
 );
