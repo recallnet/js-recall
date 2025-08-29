@@ -2,26 +2,30 @@ export const config = {
   target: "{{ $env.API_HOST }}",
   phases: [
     {
-      duration: "5m",
+      duration: "1m",
       arrivalCount: "{{ $env.AGENTS_COUNT }}",
       maxVusers: "{{ $env.AGENTS_COUNT }}",
       name: "load-test",
     },
   ],
-  processor: "../dist/agent-helpers.js",
-  environments: {
-    test: {
-      target: "{{ $env.API_HOST }}",
-      variables: {
-        usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-        wethToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-      },
-    },
-  },
-  plugins: {
-    "metrics-by-endpoint": {},
+  processor: "processors/agent-trading-processor.ts",
+  variables: {
+    usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    wethToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
   },
 };
+
+/* Before hook: prepares a fresh competition and test agents for the load test.
+ Sequence:
+ - Fetch current competition status; end it if one is active.
+ - Create a new competition (payload via "setCompetitionPayload").
+ - For each of $env.AGENTS_COUNT:
+ - Create a random user and agent ("generateRandomUserAndAgent").
+ - Store identifiers (via "extractUserAndAgentInfo").
+ - Register the agent to the new competition.
+ - Start the competition.
+ Uses $env.ADMIN_API_KEY for admin endpoints and captures "competitionId" (and per-agent "agentId").
+*/
 
 export const before = {
   flow: [
@@ -126,48 +130,35 @@ export const before = {
 
 export const scenarios = [
   {
-    name: "Agent Trading",
+    name: "trade",
     beforeScenario: "beforeTrade",
     flow: [
       {
         log: "Starting agent trading scenario",
       },
       {
-        count: 500, // 5.000 USDC / 10 buy trades
+        count: "{{ $env.TRADES_COUNT }}",
         loop: [
           {
-            post: {
-              url: "/api/trade/execute",
+            get: {
+              url: "/api/agent/balances",
               headers: {
                 Authorization: "Bearer {{ apiKey }}",
               },
-              json: {
-                fromToken: "{{ usdcToken }}",
-                toToken: "{{ wethToken }}",
-                amount: "10",
-                reason: "Buy WETH",
-                fromChain: "EVM",
-                toChain: "EVM",
+              capture: {
+                json: "$.balances",
+                as: "balances",
               },
             },
           },
           {
-            think: 1,
-          },
-          {
             post: {
               url: "/api/trade/execute",
               headers: {
                 Authorization: "Bearer {{ apiKey }}",
               },
-              json: {
-                fromToken: "{{ wethToken }}",
-                toToken: "{{ usdcToken }}",
-                amount: "0.000001",
-                reason: "Sell WETH",
-                fromChain: "EVM",
-                toChain: "EVM",
-              },
+              beforeRequest: "decideTradeFromBalances",
+              json: {},
             },
           },
           {

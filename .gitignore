@@ -55,3 +55,6 @@ apps/api/baseline/*.sql
 # Misc
 .DS_Store
 *.pem
+
+# Artillery reports
+reports/
