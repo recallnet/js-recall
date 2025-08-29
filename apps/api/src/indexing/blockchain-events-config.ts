@@ -8,6 +8,23 @@ import { encodeEventTopics } from "viem";
 
 import config from "@/config/index.js";
 
+/**
+ * EVENT ABIs we care about from the Recall staking contract.
+ *
+ * Each entry:
+ * - `name` = canonical Solidity event name.
+ * - `type` = internal discriminator we use in DB (`stake`, `unstake`, …).
+ * - `abi` = ABI fragment for viem / Hypersync decoding.
+ *
+ * Covered events:
+ * - Stake(staker, tokenId, amount, startTime, lockupEndTime)
+ * - Unstake(staker, tokenId, amountToUnstake, withdrawAllowedTime)
+ * - Relock(staker, tokenId, updatedOldStakeAmount)
+ * - Withdraw(staker, tokenId, amount)
+ *
+ * NOTE: These are the only on-chain events that drive the off-chain
+ *       `stakes` / `stake_changes` state machine and subsequent Boost awards.
+ */
 export const EVENTS = {
   Stake: {
     name: "Stake",
@@ -153,7 +170,15 @@ export const EVENTS = {
   },
 } as const;
 
-// Create mapping from topic0 (event hash) to event name
+/**
+ * Mapping from event `topic0` → event name.
+ *
+ * Used so Hypersync log filters can be specified by topic hash,
+ * and later decoded back to the event name.
+ *
+ * Example:
+ *   EVENT_HASH_NAMES["0xddf252..."] === "Stake"
+ */
 export const EVENT_HASH_NAMES: Record<string, string> = Object.fromEntries(
   Object.values(EVENTS).map((event) => {
     const topic0 = encodeEventTopics({
@@ -164,7 +189,19 @@ export const EVENT_HASH_NAMES: Record<string, string> = Object.fromEntries(
   }),
 );
 
-// Configuration for Hypersync query
+/**
+ * Type definition for a Hypersync query config.
+ *
+ * Fields:
+ * - fromBlock: block height to start indexing from.
+ * - logs: array of { address[], topics[][] } filters.
+ * - fieldSelection:
+ *     * block: which block fields Hypersync should fetch.
+ *     * log: which log fields.
+ *     * transaction: which tx fields.
+ * - joinMode: how Hypersync joins block/log/tx payloads (JoinAll here).
+ * - delayMs: backoff delay between polling iterations.
+ */
 export type HypersyncQuery = {
   fromBlock: number;
   logs: Array<{
@@ -180,6 +217,7 @@ export type HypersyncQuery = {
   delayMs: number;
 };
 
+// Internal builder var; do not export directly.
 let query_: HypersyncQuery | undefined = undefined;
 const isIndexingEnabled = config.stakingIndex.isEnabled;
 if (isIndexingEnabled) {
@@ -224,5 +262,30 @@ if (isIndexingEnabled) {
   };
 }
 
-// Hypersync Query
+/**
+ * Hypersync query definition for Recall staking events.
+ *
+ * Purpose:
+ * - Retrieve staking-related events from the Recall staking contract.
+ *
+ * Built from config:
+ * - startBlock (`config.stakingIndex.startBlock`) — required
+ * - recallContract (`config.stakingIndex.recallContract`) — required
+ * - delayMs (`config.stakingIndex.delayMs`) — polling backoff
+ *
+ * Filters:
+ * - Logs only from the Recall staking contract.
+ * - topic0 must match one of the known `EVENT_HASH_NAMES`.
+ *
+ * Field selection:
+ * - Block: number, hash, timestamp
+ * - Log: blockNumber, blockHash, logIndex, txHash, data, address, topic0–3
+ * - Tx: from, to, hash
+ *
+ * Join mode:
+ * - JoinAll → block + tx metadata attached to each log row.
+ *
+ * Disabled case:
+ * - If `config.stakingIndex.isEnabled` is false, this is `undefined`.
+ */
 export const INDEXING_HYPERSYNC_QUERY: HypersyncQuery | undefined = query_;

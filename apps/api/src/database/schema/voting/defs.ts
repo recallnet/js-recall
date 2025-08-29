@@ -101,11 +101,31 @@ export const rewardsRoots = pgTable(
   ],
 );
 
-/** Wallet balances (canonicalized wallet string is the PK) */
+/**
+ * Canonical view of each wallet’s Boost balance.
+ *
+ * Purpose:
+ * - Tracks the *current available balance* of Boost.
+ * - One row per wallet; the primary key is the canonicalized EVM address string.
+ *
+ * Invariants / notes:
+ * - Balance is always ≥ 0 (enforced by CHECK).
+ * - `wallet` must be lowercased before insert/update.
+ * - `updatedAt` should be bumped on every change.
+ * - Rows are mutable — this is the live ledger state.
+ *
+ * Coupling:
+ * - Every update to `boost_balances` must have a matching immutable entry
+ *   in `boost_changes` (same transaction) for auditability/idempotency.
+ *
+ * Typical queries:
+ * - Get balance by wallet (PK lookup).
+ * - List wallets with recent activity (order by updated_at).
+ */
 export const boostBalances = pgTable(
   "boost_balances",
   {
-    wallet: varchar("wallet", { length: 64 }).primaryKey().notNull(),
+    wallet: varchar("wallet", { length: 42 }).primaryKey().notNull(),
     balance: bigint("balance", { mode: "bigint" })
       .notNull()
       .default(sql`0`),
@@ -122,12 +142,35 @@ export const boostBalances = pgTable(
   }),
 );
 
-/** Immutable change log (idempotent via (wallet, idem_key)) */
+/**
+ * boost_changes
+ *
+ * Immutable journal of all Boost mutations.
+ *
+ * Purpose:
+ * - Append-only log of “earn” (+X) and “spend” (−X) operations.
+ * - Provides audit trail, idempotency, and replay capability.
+ *
+ * Invariants / notes:
+ * - (wallet, idem_key) is unique → an operation is applied at most once per wallet.
+ * - `delta_amount` is signed: positive for earn, negative for spend.
+ * - `meta` holds structured context (competition id, reason, etc).
+ * - Rows are never updated or deleted.
+ *
+ * Coupling:
+ * - Insert into `boost_changes` and update `boost_balances` in the same transaction.
+ * - If the insert is skipped due to the unique constraint, skip the balance mutation
+ *   (idempotent replay).
+ *
+ * Typical queries:
+ * - Fetch wallet history ordered by created_at.
+ * - Check if a given idem_key has already been applied.
+ */
 export const boostChanges = pgTable(
   "boost_changes",
   {
     id: uuid("id").primaryKey().notNull(),
-    wallet: varchar("wallet", { length: 64 }).notNull(),
+    wallet: varchar("wallet", { length: 42 }).notNull(),
     deltaAmount: bigint("delta_amount", { mode: "bigint" }).notNull(), // earn:+X, spend:-X
     meta: jsonb("meta")
       .notNull()

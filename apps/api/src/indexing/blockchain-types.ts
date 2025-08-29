@@ -1,4 +1,14 @@
-// Raw log from blockchain
+/**
+ * Raw log shape as returned by an RPC / Hypersync client before normalization.
+ *
+ * Notes:
+ * - Values may arrive as hex strings or numbers (`blockNumber`, `blockTimestamp`).
+ * - `topics[0]` is always the event signature (topic0).
+ * - Other fields may be missing depending on provider / subscription mode.
+ *
+ * This type is only used transiently inside the indexer pipeline
+ * before conversion into the normalized `EventData` model.
+ */
 export type RawLog = {
   address: `0x${string}`;
   blockNumber?: string | number;
@@ -10,7 +20,19 @@ export type RawLog = {
   data: `0x${string}`;
 };
 
-// Raw event data structure (new model)
+/**
+ * Normalized event data structure used by our indexer.
+ *
+ * Purpose:
+ * - Converts a `RawLog` into a consistent, strongly-typed record.
+ *
+ * Fields:
+ * - blockNumber / blockHash / blockTimestamp: canonical chain coordinates.
+ * - transactionHash / logIndex: unique identifier within the block.
+ * - raw: untouched payload (topics + data + address) for re-decoding or audits.
+ * - type: internal event type (`stake` / `unstake` / …).
+ * - createdAt: indexer ingestion timestamp (when _we_ created the entry).
+ */
 export type EventData = {
   // Blockchain metadata (stored immediately during indexing)
   blockNumber: bigint;
@@ -29,5 +51,15 @@ export type EventData = {
   createdAt: Date;
 };
 
-// Blockchain event types
+/**
+ * Known blockchain event categories.
+ *
+ * - "stake"    → Stake(staker, tokenId, amount, startTime, lockupEndTime)
+ * - "unstake"  → Unstake(staker, tokenId, amountToUnstake, withdrawAllowedTime)
+ * - "relock"   → Relock(staker, tokenId, updatedOldStakeAmount)
+ * - "withdraw" → Withdraw(staker, tokenId, amount)
+ * - "unknown"  → Fallback when topic0 doesn’t match our ABI set.
+ *
+ * This is the discriminator used throughout the indexer / DB schema.
+ */
 export type EventType = "stake" | "unstake" | "relock" | "withdraw" | "unknown";

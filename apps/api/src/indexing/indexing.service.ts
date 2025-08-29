@@ -15,6 +15,29 @@ import { StakesRepository } from "@/indexing/stakes.repository.js";
 import { type Defer, defer } from "@/lib/defer.js";
 import { delay } from "@/lib/delay.js";
 
+/**
+ * IndexingService
+ *
+ * The main long-running process that pulls on-chain logs via Hypersync and
+ * feeds them into our persistence pipeline.
+ *
+ * Responsibilities:
+ * - Manage Hypersync client connection and polling loop.
+ * - Resume from the last processed block (via EventProcessor.lastBlockNumber()).
+ * - Normalize logs into `EventData` and delegate to EventProcessor
+ *   (which writes into `indexing_events`, `stakes`, and `stake_changes`).
+ *
+ * Lifecycle:
+ * - start(): begins the indexing loop (no-op if indexing disabled in config).
+ * - loop(): pulls batches from Hypersync until stopped; applies backoff (delayMs).
+ * - processLog(): wraps a single raw log → `EventData` → EventProcessor.
+ * - close(): stops the loop gracefully (abort + await outstanding work).
+ *
+ * Guarantees:
+ * - At-most-once application of chain events is enforced downstream by DB
+ *   uniqueness on (tx_hash, log_index).
+ * - AbortError is silenced for clean shutdown; all other errors bubble up.
+ */
 export class IndexingService {
   readonly #indexingQuery: HypersyncQuery | undefined;
   readonly #client: HypersyncClient;
@@ -52,10 +75,27 @@ export class IndexingService {
     this.#abortController = undefined;
   }
 
+  /**
+   * Whether the service is currently running.
+   *
+   * True if an AbortController has been created (i.e. start() was called
+   * and not yet closed). False otherwise.
+   */
   get isRunning(): boolean {
     return Boolean(this.#abortController);
   }
 
+  /**
+   * Start the indexing loop.
+   *
+   * - No-op if indexing is disabled via config or if already running.
+   * - Creates an AbortController for lifecycle control.
+   * - Spawns the main loop() as a background task.
+   *
+   * Side effects:
+   * - Logs startup messages.
+   * - Will resume from last processed block number on first iteration.
+   */
   start(): void {
     const query = this.#indexingQuery;
     if (!query) {
@@ -70,12 +110,29 @@ export class IndexingService {
     void this.loop(query);
   }
 
+  /**
+   * Main indexing loop (long-running).
+   *
+   * - Streams logs from Hypersync starting at `fromBlock`.
+   * - Resumes from last known block number (`eventProcessor.lastBlockNumber()`).
+   * - Enhances logs with block timestamps (blocks[].timestamp → logs).
+   * - For each log, calls processLog().
+   * - Advances fromBlock using `res.nextBlock`.
+   *
+   * Loop behavior:
+   * - Sleeps `delayMs` between iterations.
+   * - If tip of chain reached → sleeps, then retries.
+   * - Stops gracefully on AbortError (thrown when closed).
+   * - All other errors are logged and re-thrown.
+   *
+   * @internal
+   */
   async loop(query: HypersyncQuery): Promise<void> {
     const effectiveQuery = {
       ...query,
     };
     const lastBlockNumber = await this.#eventProcessor.lastBlockNumber();
-    effectiveQuery.fromBlock = Number(lastBlockNumber) + 1;
+    effectiveQuery.fromBlock = Number(lastBlockNumber);
     this.#logger.info(
       `Starting indexing from block ${effectiveQuery.fromBlock}`,
     );
@@ -148,6 +205,19 @@ export class IndexingService {
     this.#deferStop?.resolve();
   }
 
+  /**
+   * Handle a single raw log from Hypersync.
+   *
+   * - Extracts `topic0` and maps it to a known event name via EVENT_HASH_NAMES.
+   * - Skips unknown events.
+   * - Builds an EventData record (createEventData).
+   * - Delegates to EventProcessor.processEvent() to persist into DB.
+   *
+   * Logging:
+   * - Debug logs show event name, block number, tx hash.
+   *
+   * @internal
+   */
   async processLog(rawLog: RawLog): Promise<void> {
     const eventHash = rawLog.topics ? rawLog.topics[0] : null;
     if (!eventHash) {
@@ -164,20 +234,29 @@ export class IndexingService {
     // Only process relevant events
     if (eventHash in this.#eventHashNames) {
       // Create raw event data
-      const rawEventData = createRawEventData(eventName, rawLog);
+      const event = createEventData(eventName, rawLog);
 
       this.#logger.debug("Preparing to store raw event with metadata:", {
         eventName,
-        blockNumber: rawEventData.blockNumber.toString(),
-        transactionHash: rawEventData.transactionHash,
+        blockNumber: event.blockNumber.toString(),
+        transactionHash: event.transactionHash,
       });
 
-      await this.#eventProcessor.processEvent(rawEventData, eventName);
+      await this.#eventProcessor.processEvent(event, eventName);
     } else {
       this.#logger.debug(`Skipped non-relevant event type: ${eventName}`);
     }
   }
 
+  /**
+   * Stop the indexing loop gracefully.
+   *
+   * - Aborts the AbortController.
+   * - Waits for the current loop iteration to complete via #deferStop.
+   * - Resets internal state so isRunning becomes false.
+   *
+   * After close() resolves, start() can be called again to restart indexing.
+   */
   async close(): Promise<void> {
     this.#abortController?.abort();
     await this.#deferStop?.promise;
@@ -187,12 +266,14 @@ export class IndexingService {
 }
 
 /**
- * Create raw event data from log - only store raw data
+ * Helper: normalize a raw blockchain log into our internal `EventData` format.
+ *
+ * - Copies chain metadata (block number, hash, tx hash, log index).
+ * - Converts blockTimestamp (seconds → JS Date).
+ * - Preserves raw payload (topics + data + address) for replay/audit.
+ * - Classifies into EventType using EVENTS config; defaults to "unknown".
  */
-export function createRawEventData(
-  eventName: string,
-  rawLog: RawLog,
-): EventData {
+export function createEventData(eventName: string, rawLog: RawLog): EventData {
   const eventConfig = EVENTS[eventName as keyof typeof EVENTS];
 
   const blockTimestamp =

@@ -5,6 +5,27 @@ import { db } from "@/database/db.js";
 import { indexingEvents } from "@/database/schema/indexing/defs.js";
 import { EventData } from "@/indexing/blockchain-types.js";
 
+/**
+ * EventsRepository
+ *
+ * Persistence layer for the **raw intake** table `indexing_events`.
+ * This repository is the idempotency gate for the indexing pipeline:
+ *   - `isEventPresent()` lets callers short-circuit duplicate logs
+ *     using the natural chain key (block_number, tx_hash, log_index).
+ *   - `save()` inserts the normalized raw event payload (append-only),
+ *     relying on a UNIQUE (tx_hash, log_index) in the schema to enforce
+ *     at-most-once writes even under races.
+ *   - `lastBlockNumber()` returns the resume point for the indexer,
+ *     falling back to configured `startBlock` if the table is empty.
+ *
+ * Relationships:
+ * - Called by `EventProcessor.processEvent()` *after* stake mutations succeed.
+ * - Read by `IndexingService.loop()` to set `fromBlock = last + 1`.
+ *
+ * Conventions:
+ * - Hashes and addresses must be lower-cased before insert (done here).
+ * - Timestamps are UTC (`timestamp` without time zone).
+ */
 export class EventsRepository {
   readonly #db: typeof db;
 
@@ -12,6 +33,20 @@ export class EventsRepository {
     this.#db = database;
   }
 
+  /**
+   * Check if a chain log has already been recorded in `indexing_events`.
+   *
+   * Idempotency key:
+   * - (block_number, transaction_hash, log_index)
+   *
+   * Returns:
+   * - true  → already present (caller should skip processing)
+   * - false → new event (caller may proceed)
+   *
+   * Notes:
+   * - `transactionHash` is normalized to lowercase to match storage convention.
+   * - Fast due to index on (tx_hash, log_index) and/or block_number.
+   */
   async isEventPresent(
     blockNumber: bigint,
     transactionHash: string,
@@ -31,7 +66,24 @@ export class EventsRepository {
     return rows.length > 0;
   }
 
-  async save(event: EventData): Promise<boolean> {
+  /**
+   * Append a normalized raw event into `indexing_events`.
+   *
+   * Behavior:
+   * - Inserts the event with all chain coordinates + untouched `raw` payload.
+   * - Uses `onConflictDoNothing()` so duplicate inserts are safely ignored
+   *   (race-proof w.r.t. concurrent indexer workers).
+   *
+   * Returns:
+   * - true  → row inserted (first time we see this log)
+   * - false → insert was skipped by the unique constraint (already present)
+   *
+   * Caller contract:
+   * - Should only be called **after** domain mutations (stakes/stake_changes)
+   *   have succeeded; this preserves “apply state, then record intake” semantics.
+   * - All hashes are lower-cased here; upstream code can pass mixed case.
+   */
+  async append(event: EventData): Promise<boolean> {
     const rows = await this.#db
       .insert(indexingEvents)
       .values({
@@ -50,6 +102,22 @@ export class EventsRepository {
     return rows.length > 0;
   }
 
+  /**
+   * Get the highest block number recorded in `indexing_events`.
+   *
+   * Usage:
+   * - `IndexingService.loop()` uses this to resume with `fromBlock = last`.
+   *
+   * Fallback:
+   * - If no rows exist, falls back to `config.stakingIndex.startBlock`.
+   *
+   * Returns:
+   * - bigint block number (never undefined).
+   *
+   * Performance:
+   * - Uses ORDER BY block_number DESC LIMIT 1; ensure an index on block_number
+   *   exists (present in schema) for O(log N) retrieval.
+   */
   async lastBlockNumber(): Promise<bigint> {
     const [row] = await this.#db
       .select({ blockNumber: indexingEvents.blockNumber })
