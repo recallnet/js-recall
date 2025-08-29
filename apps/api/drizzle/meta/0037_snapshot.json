@@ -1,5 +1,5 @@
 {
-  "id": "55500b72-345f-47cd-84b4-7992d107ccb2",
+  "id": "6c629d3f-6880-42ab-95c6-2ceb0c005ae5",
   "prevId": "b2c53a9b-3c94-43ca-b0f8-a33b110d4c5c",
   "version": "7",
   "dialect": "postgresql",
@@ -1519,7 +1519,7 @@
         },
         "block_hash": {
           "name": "block_hash",
-          "type": "varchar(66)",
+          "type": "bytea",
           "primaryKey": false,
           "notNull": true
         },
@@ -1531,7 +1531,7 @@
         },
         "transaction_hash": {
           "name": "transaction_hash",
-          "type": "varchar(66)",
+          "type": "bytea",
           "primaryKey": false,
           "notNull": true
         },
@@ -1571,26 +1571,17 @@
           "method": "btree",
           "with": {}
         },
-        "events_block_number_idx": {
-          "name": "events_block_number_idx",
+        "events_blocknum_logindex_idx": {
+          "name": "events_blocknum_logindex_idx",
           "columns": [
             {
               "expression": "block_number",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "events_block_timestamp_idx": {
-          "name": "events_block_timestamp_idx",
-          "columns": [
+            },
             {
-              "expression": "block_timestamp",
+              "expression": "log_index",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1601,11 +1592,53 @@
           "method": "btree",
           "with": {}
         },
-        "events_type_idx": {
-          "name": "events_type_idx",
+        "events_blocktime_logindex_idx": {
+          "name": "events_blocktime_logindex_idx",
+          "columns": [
+            {
+              "expression": "block_timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "log_index",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "events_type_blocknum_idx": {
+          "name": "events_type_blocknum_idx",
           "columns": [
             {
               "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "\"block_number\" DESC",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "events_block_number_idx": {
+          "name": "events_block_number_idx",
+          "columns": [
+            {
+              "expression": "block_number",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1672,7 +1705,7 @@
         },
         "wallet": {
           "name": "wallet",
-          "type": "varchar(64)",
+          "type": "bytea",
           "primaryKey": false,
           "notNull": true
         },
@@ -1690,7 +1723,7 @@
         },
         "tx_hash": {
           "name": "tx_hash",
-          "type": "varchar(66)",
+          "type": "bytea",
           "primaryKey": false,
           "notNull": true
         },
@@ -1708,7 +1741,7 @@
         },
         "block_hash": {
           "name": "block_hash",
-          "type": "varchar(66)",
+          "type": "bytea",
           "primaryKey": false,
           "notNull": true
         },
@@ -1764,6 +1797,27 @@
               "expression": "wallet",
               "isExpression": false,
               "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "stake_changes_wallet_created_idx": {
+          "name": "stake_changes_wallet_created_idx",
+          "columns": [
+            {
+              "expression": "wallet",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "\"created_at\" DESC",
+              "asc": true,
+              "isExpression": true,
               "nulls": "last"
             }
           ],
@@ -1832,7 +1886,7 @@
         },
         "wallet": {
           "name": "wallet",
-          "type": "varchar(42)",
+          "type": "bytea",
           "primaryKey": false,
           "notNull": true
         },
@@ -2908,7 +2962,7 @@
       "columns": {
         "wallet": {
           "name": "wallet",
-          "type": "varchar(64)",
+          "type": "bytea",
           "primaryKey": true,
           "notNull": true
         },
@@ -2935,21 +2989,6 @@
         }
       },
       "indexes": {
-        "boost_balances_wallet_idx": {
-          "name": "boost_balances_wallet_idx",
-          "columns": [
-            {
-              "expression": "wallet",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "boost_balances_updated_at_idx": {
           "name": "boost_balances_updated_at_idx",
           "columns": [
@@ -3000,7 +3039,7 @@
         },
         "wallet": {
           "name": "wallet",
-          "type": "varchar(64)",
+          "type": "bytea",
           "primaryKey": false,
           "notNull": true
         },
@@ -3019,7 +3058,7 @@
         },
         "idem_key": {
           "name": "idem_key",
-          "type": "varchar(256)",
+          "type": "bytea",
           "primaryKey": false,
           "notNull": true
         },
@@ -3049,6 +3088,27 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "boost_changes_wallet_created_idx": {
+          "name": "boost_changes_wallet_created_idx",
+          "columns": [
+            {
+              "expression": "wallet",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "\"created_at\" DESC",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}

@@ -1,8 +1,10 @@
 import { and, eq, sql } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import { db } from "@/database/db.js";
 import * as schema from "@/database/schema/voting/defs.js";
+import { BlockchainAddressAsU8A } from "@/lib/coders.js";
 
 export { BoostRepository, BoostChangeMetaSchema };
 export type { BoostDiffArgs, BoostDiffResult, BoostChangeMeta };
@@ -37,7 +39,7 @@ type BoostDiffArgs = {
    * Idempotency key (unique per wallet).
    * Reusing the same key makes the call safe to retry.
    */
-  idemKey?: string;
+  idemKey?: Uint8Array;
 };
 
 /**
@@ -48,8 +50,8 @@ type BoostDiffArgs = {
  * - Idempotent no-op: returns existing balance when the same idemKey was seen.
  */
 type BoostDiffResult =
-  | { changeId: string; balanceAfter: bigint; idemKey: string } // change applied
-  | { balance: bigint; idemKey: string }; // noop (already applied)
+  | { changeId: string; balanceAfter: bigint; idemKey: Uint8Array } // change applied
+  | { balance: bigint; idemKey: Uint8Array }; // noop (already applied)
 
 /**
  * BoostRepository
@@ -146,8 +148,8 @@ class BoostRepository {
     if (amount < 0n) {
       throw new Error("amount must be non-negative");
     }
-    const idemKey = args.idemKey ?? crypto.randomUUID();
-    const wallet = args.wallet.toLowerCase();
+    const idemKey = args.idemKey ?? randomBytes(32);
+    const wallet = BlockchainAddressAsU8A.encode(args.wallet);
     const meta = args.meta || DEFAULT_META;
 
     return this.#db.transaction(async (tx) => {
@@ -237,8 +239,8 @@ class BoostRepository {
     if (amount <= 0n) {
       throw new Error("amount must be positive");
     }
-    const idemKey = args.idemKey ?? crypto.randomUUID();
-    const wallet = args.wallet.toLowerCase();
+    const idemKey = args.idemKey ?? randomBytes(32);
+    const wallet = BlockchainAddressAsU8A.encode(args.wallet);
     const meta = args.meta || DEFAULT_META;
 
     return this.#db.transaction(async (tx) => {

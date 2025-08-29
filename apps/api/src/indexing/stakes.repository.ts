@@ -3,6 +3,11 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/database/db.js";
 import * as schema from "@/database/schema/indexing/defs.js";
 import { StakeRow } from "@/database/schema/indexing/defs.js";
+import {
+  BlockHashCoder,
+  BlockchainAddressAsU8A,
+  TxHashCoder,
+} from "@/lib/coders.js";
 
 export { StakesRepository };
 export type { Tx, StakeArgs, UnstakeArgs, RelockArgs, WithdrawArgs };
@@ -30,13 +35,15 @@ type Tx = {
 type StakeArgs = {
   /** On-chain stake/receipt ID (NFT token id). */
   stakeId: bigint;
-  /** Staker’s EVM wallet address (lowercased before DB insert). */
+  /** Staker’s EVM wallet address. */
   wallet: string;
   /** Amount of tokens initially staked (U256 integer, no decimals). */
   amount: bigint;
   /** Lockup duration in seconds (used to compute canUnstakeAfter). */
   duration: number;
 } & Tx;
+
+// FIXME Remove lowercase **
 
 /**
  * Arguments for handling an Unstake event (reduces or fully ends a stake position).
@@ -125,12 +132,13 @@ class StakesRepository {
    * - `false` if it already existed (no journal row is written in that case).
    */
   stake(args: StakeArgs): Promise<boolean> {
+    const wallet = BlockchainAddressAsU8A.encode(args.wallet);
     return this.#db.transaction(async (tx) => {
       const insertedRows = await tx
         .insert(schema.stakes)
         .values({
           id: args.stakeId,
-          wallet: args.wallet.toLowerCase(),
+          wallet: wallet,
           amount: args.amount,
           stakedAt: args.blockTimestamp,
           canUnstakeAfter: new Date(
@@ -147,18 +155,20 @@ class StakesRepository {
       if (insertedRows.length == 0) {
         return false;
       }
+      const txHash = TxHashCoder.encode(args.txHash);
+      const blockHash = BlockHashCoder.encode(args.blockHash);
       await tx
         .insert(schema.stakeChanges)
         .values({
           id: crypto.randomUUID(),
           stakeId: args.stakeId,
-          wallet: args.wallet.toLowerCase(),
+          wallet: wallet,
           deltaAmount: args.amount,
           kind: "stake",
-          txHash: args.txHash.toLowerCase(),
+          txHash: txHash,
           logIndex: args.logIndex,
           blockNumber: args.blockNumber,
-          blockHash: args.blockHash.toLowerCase(),
+          blockHash: blockHash,
           createdAt: args.blockTimestamp,
         })
         .onConflictDoNothing();
@@ -248,16 +258,18 @@ class StakesRepository {
       if (!wallet) {
         throw new Error("Stake not found or stale amount (concurrent update)");
       }
+      const txHash = TxHashCoder.encode(args.txHash);
+      const blockHash = BlockHashCoder.encode(args.blockHash);
       await tx.insert(schema.stakeChanges).values({
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
-        wallet: wallet.toLowerCase(),
+        wallet: wallet,
         deltaAmount: deltaAmount,
         kind: "stake",
-        txHash: args.txHash.toLowerCase(),
+        txHash: txHash,
         logIndex: args.logIndex,
         blockNumber: args.blockNumber,
-        blockHash: args.blockHash.toLowerCase(),
+        blockHash: blockHash,
         createdAt: args.blockTimestamp,
       });
     });
@@ -298,16 +310,18 @@ class StakesRepository {
       if (!wallet) {
         throw new Error("Stake not found or stale amount (concurrent update)");
       }
+      const txHash = TxHashCoder.encode(args.txHash);
+      const blockHash = BlockHashCoder.encode(args.blockHash);
       await tx.insert(schema.stakeChanges).values({
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
-        wallet: wallet.toLowerCase(),
+        wallet: wallet,
         deltaAmount: deltaAmount,
         kind: "unstake",
-        txHash: args.txHash.toLowerCase(),
+        txHash: txHash,
         logIndex: args.logIndex,
         blockNumber: args.blockNumber,
-        blockHash: args.blockHash.toLowerCase(),
+        blockHash: blockHash,
         createdAt: args.blockTimestamp,
       });
     });
@@ -368,16 +382,18 @@ class StakesRepository {
       if (!wallet || !amount) {
         throw new Error("Stake not found or stale (concurrent update)");
       }
+      const txHash = TxHashCoder.encode(args.txHash);
+      const blockHash = BlockHashCoder.encode(args.blockHash);
       await tx.insert(schema.stakeChanges).values({
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
-        wallet: wallet.toLowerCase(),
+        wallet: wallet,
         deltaAmount: -amount,
         kind: "relock",
-        txHash: args.txHash.toLowerCase(),
+        txHash: txHash,
         logIndex: args.logIndex,
         blockNumber: args.blockNumber,
-        blockHash: args.blockHash.toLowerCase(),
+        blockHash: blockHash,
         createdAt: args.blockTimestamp,
       });
     });
@@ -437,16 +453,18 @@ class StakesRepository {
       const wallet = row.wallet;
       const amountAfter = row.amount;
       const delta = amountAfter - amountBefore; // should be negative
+      const txHash = TxHashCoder.encode(args.txHash);
+      const blockHash = BlockHashCoder.encode(args.blockHash);
       await tx.insert(schema.stakeChanges).values({
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
-        wallet: wallet.toLowerCase(),
+        wallet: wallet,
         deltaAmount: delta,
         kind: "relock",
-        txHash: args.txHash.toLowerCase(),
+        txHash: txHash,
         logIndex: args.logIndex,
         blockNumber: args.blockNumber,
-        blockHash: args.blockHash.toLowerCase(),
+        blockHash: blockHash,
         createdAt: args.blockTimestamp,
       });
     });
@@ -482,16 +500,18 @@ class StakesRepository {
         throw new Error("Stake not found or stale (concurrent update)");
       }
       const wallet = row.wallet;
+      const txHash = TxHashCoder.encode(args.txHash);
+      const blockHash = BlockHashCoder.encode(args.blockHash);
       await tx.insert(schema.stakeChanges).values({
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
-        wallet: wallet.toLowerCase(),
+        wallet: wallet,
         deltaAmount: 0n,
         kind: "withdraw",
-        txHash: args.txHash.toLowerCase(),
+        txHash: txHash,
         logIndex: args.logIndex,
         blockNumber: args.blockNumber,
-        blockHash: args.blockHash.toLowerCase(),
+        blockHash: blockHash,
         createdAt: args.blockTimestamp,
       });
     });

@@ -12,16 +12,20 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
 
 import { competitions } from "@/database/schema/core/defs.js";
 import { blockchainAddress, tokenAmount } from "@/database/schema/util.js";
 
-const bytea = customType<{ data: Uint8Array; notNull: false; default: false }>({
-  dataType() {
-    return "bytea";
-  },
+const bytea = customType<{
+  data: Uint8Array | Buffer; // what your app uses
+  driverData: Buffer; // what node-postgres returns
+  notNull: false;
+  default: false;
+}>({
+  dataType: () => "bytea",
+  toDriver: (v) => (v instanceof Buffer ? v : Buffer.from(v)),
+  fromDriver: (v) => v, // Buffer
 });
 
 export const epochs = pgTable("epochs", {
@@ -125,7 +129,7 @@ export const rewardsRoots = pgTable(
 export const boostBalances = pgTable(
   "boost_balances",
   {
-    wallet: varchar("wallet", { length: 42 }).primaryKey().notNull(),
+    wallet: bytea("wallet").primaryKey().notNull(),
     balance: bigint("balance", { mode: "bigint" })
       .notNull()
       .default(sql`0`),
@@ -133,10 +137,10 @@ export const boostBalances = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
+    // address must be exactly 20 bytes
+    walletLenChk: sql`CHECK (octet_length(${t.wallet}) = 20)`,
     // balance must never be negative
     balanceNonNegative: sql`CHECK (${t.balance} >= 0)`,
-    // handy for housekeeping & lookups
-    walletIdx: index("boost_balances_wallet_idx").on(t.wallet),
     updatedIdx: index("boost_balances_updated_at_idx").on(t.updatedAt),
     createdIdx: index("boost_balances_created_at_idx").on(t.createdAt),
   }),
@@ -170,19 +174,25 @@ export const boostChanges = pgTable(
   "boost_changes",
   {
     id: uuid("id").primaryKey().notNull(),
-    wallet: varchar("wallet", { length: 42 }).notNull(),
+    wallet: bytea("wallet").notNull(),
     deltaAmount: bigint("delta_amount", { mode: "bigint" }).notNull(), // earn:+X, spend:-X
     meta: jsonb("meta")
       .notNull()
       .default(sql`'{}'::jsonb`),
-    idemKey: varchar("idem_key", { length: 256 }).notNull(),
+    idemKey: bytea("idem_key").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
+    walletLenChk: sql`CHECK (octet_length(${t.wallet}) = 20)`,
     // enforce idempotency per wallet
     uniqWalletIdem: uniqueIndex("boost_changes_wallet_idem_uq").on(
       t.wallet,
       t.idemKey,
+    ),
+    // Query pattern: history-by-wallet in time order
+    walletCreatedIdx: index("boost_changes_wallet_created_idx").on(
+      t.wallet,
+      sql`${t.createdAt} DESC`,
     ),
     walletIdx: index("boost_changes_wallet_idx").on(t.wallet),
     createdIdx: index("boost_changes_created_at_idx").on(t.createdAt),

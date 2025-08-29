@@ -4,6 +4,7 @@ import config from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { indexingEvents } from "@/database/schema/indexing/defs.js";
 import { EventData } from "@/indexing/blockchain-types.js";
+import { BlockHashCoder, TxHashCoder } from "@/lib/coders.js";
 
 /**
  * EventsRepository
@@ -52,13 +53,14 @@ export class EventsRepository {
     transactionHash: string,
     logIndex: number,
   ): Promise<boolean> {
+    const txHash = TxHashCoder.encode(transactionHash);
     const rows = await this.#db
       .select({ id: indexingEvents.blockNumber })
       .from(indexingEvents)
       .where(
         and(
           eq(indexingEvents.blockNumber, blockNumber),
-          eq(indexingEvents.transactionHash, transactionHash.toLowerCase()),
+          eq(indexingEvents.transactionHash, txHash),
           eq(indexingEvents.logIndex, logIndex),
         ),
       )
@@ -84,6 +86,8 @@ export class EventsRepository {
    * - All hashes are lower-cased here; upstream code can pass mixed case.
    */
   async append(event: EventData): Promise<boolean> {
+    const txHash = TxHashCoder.encode(event.transactionHash);
+    const blockHash = BlockHashCoder.encode(event.blockHash);
     const rows = await this.#db
       .insert(indexingEvents)
       .values({
@@ -91,9 +95,9 @@ export class EventsRepository {
         rawEventData: event.raw,
         type: event.type,
         blockNumber: event.blockNumber,
-        blockHash: event.blockHash.toLowerCase(),
+        blockHash: blockHash,
         blockTimestamp: event.blockTimestamp,
-        transactionHash: event.transactionHash.toLowerCase(),
+        transactionHash: txHash,
         logIndex: event.logIndex,
         createdAt: event.createdAt,
       })

@@ -1,6 +1,7 @@
 import { type InferInsertModel, type InferSelectModel, sql } from "drizzle-orm";
 import {
   bigint,
+  customType,
   index,
   integer,
   jsonb,
@@ -16,7 +17,16 @@ import type { EventType } from "@/indexing/blockchain-types.js";
 export { indexingEvents, stakes, stakeChanges };
 export type { IndexingEvent, StakeChangeRow, StakeChangeInsert, StakeRow };
 
-const walletDef = varchar("wallet", { length: 42 });
+const bytea = customType<{
+  data: Uint8Array | Buffer; // what your app uses
+  driverData: Buffer; // what node-postgres returns
+  notNull: false;
+  default: false;
+}>({
+  dataType: () => "bytea",
+  toDriver: (v) => (v instanceof Buffer ? v : Buffer.from(v)),
+  fromDriver: (v) => v, // Buffer
+});
 
 /**
  * Source-of-truth feed of *raw on-chain events* we indexed (stake/unstake/relock/withdraw).
@@ -40,23 +50,38 @@ const indexingEvents = pgTable(
     type: varchar("type", { length: 50 }).notNull(),
     // Chain metadata for ordering, reorg checks and idempotency.
     blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
-    blockHash: varchar("block_hash", { length: 66 }).notNull(),
+    blockHash: bytea("block_hash").notNull(),
     blockTimestamp: timestamp("block_timestamp").notNull(),
-    transactionHash: varchar("transaction_hash", { length: 66 }).notNull(),
+    transactionHash: bytea("transaction_hash").notNull(),
     logIndex: integer("log_index").notNull(),
     // Indexer metadata
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
+    // ---- Invariants / checks ----
+    blockHashLenChk: sql`CHECK (octet_length(${t.blockHash}) = 32)`,
+    txHashLenChk: sql`CHECK (octet_length(${t.transactionHash}) = 32)`,
     // Prevent duplicates from the same tx log
     txLogUnique: uniqueIndex("events_txhash_logindex_uq").on(
       t.transactionHash,
       t.logIndex,
     ),
     // Common query patterns
+    // Stream in canonical chain order:
+    blockNumLogIdx: index("events_blocknum_logindex_idx").on(
+      t.blockNumber,
+      t.logIndex,
+    ),
+    blockTimeLogIdx: index("events_blocktime_logindex_idx").on(
+      t.blockTimestamp,
+      t.logIndex,
+    ),
+    // Filter by type over time:
+    typeBlocknumIdx: index("events_type_blocknum_idx").on(
+      t.type,
+      sql`${t.blockNumber} DESC`,
+    ),
     blockNumberIdx: index("events_block_number_idx").on(t.blockNumber),
-    blockTimeIdx: index("events_block_timestamp_idx").on(t.blockTimestamp),
-    typeIdx: index("events_type_idx").on(t.type),
     // Helpful for exact block lookups / reorg checks
     blockHashIdx: index("events_block_hash_idx").on(t.blockHash),
     // Housekeeping / retention jobs
@@ -106,7 +131,7 @@ const stakes = pgTable(
   "stakes",
   {
     id: bigint("id", { mode: "bigint" }).primaryKey().notNull(), // on-chain receipt / NFT id
-    wallet: walletDef.notNull(), // canonicalized EVM addr
+    wallet: bytea("wallet").notNull(), // canonicalized EVM addr
     amount: bigint("amount", { mode: "bigint" }).notNull(),
     // lifecycle
     stakedAt: timestamp("staked_at").notNull(),
@@ -122,7 +147,8 @@ const stakes = pgTable(
     walletIdx: index("stakes_wallet_idx").on(t.wallet),
     statusIdx: index("stakes_status_idx").on(t.unstakedAt, t.withdrawnAt),
     createdIdx: index("stakes_created_at_idx").on(t.createdAt),
-    // CHECK (amount >= 0)
+    // ---- Invariants / checks ----
+    walletLenChk: sql`CHECK (octet_length(${t.wallet}) = 20)`,
     amountNonNegative: sql`CHECK (${t.amount} >= 0)`,
   }),
 );
@@ -152,23 +178,31 @@ const stakeChanges = pgTable(
     stakeId: bigint("stake_id", { mode: "bigint" })
       .notNull()
       .references(() => stakes.id),
-    wallet: walletDef.notNull(),
+    wallet: bytea("wallet").notNull(),
     // delta — signed: +stake, 0 for relock, -move from staked to withdrawable, -withdraw, etc.
     deltaAmount: bigint("delta_amount", { mode: "bigint" }).notNull(),
     kind: varchar("kind", { length: 24 }).notNull(), // See EventType for possible values
     // chain idempotency
-    txHash: varchar("tx_hash", { length: 66 }).notNull(),
+    txHash: bytea("tx_hash").notNull(),
     logIndex: integer("log_index").notNull(),
     blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
-    blockHash: varchar("block_hash", { length: 66 }).notNull(),
+    blockHash: bytea("block_hash").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
     uniqEvent: uniqueIndex("stake_changes_event_uq").on(t.txHash, t.logIndex),
     stakeIdx: index("stake_changes_stake_idx").on(t.stakeId),
     walletIdx: index("stake_changes_wallet_idx").on(t.wallet),
+    walletCreatedIdx: index("stake_changes_wallet_created_idx").on(
+      t.wallet,
+      sql`${t.createdAt} DESC`,
+    ),
     blockIdx: index("stake_changes_block_idx").on(t.blockNumber),
     txHashIdx: index("stake_changes_tx_hash_idx").on(t.txHash),
+    // ---- invariants ----
+    walletLenChk: sql`CHECK (octet_length(${t.wallet}) = 20)`,
+    txHashLenChk: sql`CHECK (octet_length(${t.txHash}) = 32)`,
+    blockHashLenChk: sql`CHECK (octet_length(${t.blockHash}) = 32)`,
   }),
 );
 
