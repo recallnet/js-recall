@@ -1,14 +1,71 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * This file uses `any` types because it creates generic Proxy wrappers for Drizzle ORM database instances.
- * Drizzle's query builders have complex, deeply nested generic types that vary based on the schema.
- * Using `any` here is necessary to create a universal wrapper that works with any Drizzle database
- * configuration without requiring specific type imports from every possible schema definition.
- * The wrapper preserves the original types through the Proxy, so type safety is maintained at the call site.
+ * @file Sentry Database Wrapper
+ * @description Extends DrizzleQueryInterceptor to add Sentry APM monitoring
+ *
+ * Uses the shared DrizzleQueryInterceptor base class for consistent proxy wrapping
+ * logic across both Sentry monitoring and performance profiling.
  */
 import * as Sentry from "@sentry/node";
 
 import { config } from "@/config/index.js";
+import {
+  DrizzleQueryInterceptor,
+  type QueryMetadata,
+} from "@/lib/performance/drizzle-query-interceptor.js";
+
+/**
+ * Sentry wrapper for Drizzle database operations
+ * Adds performance monitoring spans for database queries
+ */
+class SentryDatabaseWrapper extends DrizzleQueryInterceptor {
+  /**
+   * Handle query execution by wrapping it in a Sentry span
+   */
+  protected handleExecution(
+    originalMethod: (...args: unknown[]) => unknown,
+    metadata: QueryMetadata,
+  ): (...args: unknown[]) => unknown {
+    // For execute method, wrap the function call directly
+    if (metadata.operation === "execute") {
+      return (...args: unknown[]) => {
+        return Sentry.startSpan(
+          {
+            name: "db.execute",
+            op: "db.query",
+            attributes: {
+              "db.system": "postgresql",
+              "db.operation": "EXECUTE",
+            },
+          },
+          () => originalMethod(...args),
+        );
+      };
+    }
+
+    // For query builders, wrap the 'then' method
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    return function (this: any, onFulfilled?: any, onRejected?: any) {
+      const spanName = metadata.tableName
+        ? `db.${metadata.operation}.${metadata.tableName}`
+        : `db.${metadata.operation}`;
+
+      return Sentry.startSpan(
+        {
+          name: spanName,
+          op: "db.query",
+          attributes: {
+            "db.system": "postgresql",
+            "db.operation": metadata.operation.toUpperCase(),
+            ...(metadata.tableName && { "db.table": metadata.tableName }),
+          },
+        },
+        async () => {
+          return originalMethod.call(this, onFulfilled, onRejected);
+        },
+      );
+    };
+  }
+}
 
 /**
  * Wraps a Drizzle database instance with Sentry performance monitoring
@@ -22,119 +79,6 @@ export function wrapDatabaseWithSentry<T extends object>(db: T): T {
     return db;
   }
 
-  // Create a proxy that intercepts all property access
-  return new Proxy(db, {
-    get(target, prop, receiver) {
-      const value = Reflect.get(target, prop, receiver);
-
-      // Special handling for core database methods
-      if (
-        prop === "select" ||
-        prop === "insert" ||
-        prop === "update" ||
-        prop === "delete"
-      ) {
-        return wrapQueryBuilder(value, prop as string);
-      }
-
-      // Special handling for the execute method
-      if (prop === "execute") {
-        return wrapExecute(value);
-      }
-
-      // Return the original value for everything else
-      return value;
-    },
-  }) as T;
-}
-
-/**
- * Wraps query builder methods (select, insert, update, delete)
- */
-function wrapQueryBuilder(originalMethod: any, operation: string) {
-  return new Proxy(originalMethod, {
-    apply(target, thisArg, args) {
-      const result = Reflect.apply(target, thisArg, args);
-
-      // The result is typically a query builder, wrap its execution
-      return wrapQueryExecution(result, operation);
-    },
-  });
-}
-
-/**
- * Wraps the execute method for raw SQL queries
- */
-function wrapExecute(originalMethod: any) {
-  return new Proxy(originalMethod, {
-    apply(target, thisArg, args) {
-      return Sentry.startSpan(
-        {
-          name: "db.execute",
-          op: "db.query",
-          attributes: {
-            "db.system": "postgresql",
-            "db.operation": "EXECUTE",
-          },
-        },
-        () => Reflect.apply(target, thisArg, args),
-      );
-    },
-  });
-}
-
-/**
- * Wraps query execution to create Sentry spans
- */
-function wrapQueryExecution(queryBuilder: any, operation: string): any {
-  // Extract table name if available
-  const tableName =
-    queryBuilder?.config?.table?.name || queryBuilder?.table?.name || "unknown";
-
-  return new Proxy(queryBuilder, {
-    get(target, prop, receiver) {
-      const value = Reflect.get(target, prop, receiver);
-
-      // Intercept the then method (which triggers execution)
-      if (prop === "then") {
-        return function (onFulfilled?: any, onRejected?: any) {
-          const spanName =
-            tableName !== "unknown"
-              ? `db.${operation}.${tableName}`
-              : `db.${operation}`;
-
-          return Sentry.startSpan(
-            {
-              name: spanName,
-              op: "db.query",
-              attributes: {
-                "db.system": "postgresql",
-                "db.operation": operation.toUpperCase(),
-                "db.table": tableName,
-              },
-            },
-            async () => {
-              return value.call(target, onFulfilled, onRejected);
-            },
-          );
-        };
-      }
-
-      // For chained methods, continue wrapping
-      if (typeof value === "function") {
-        return new Proxy(value, {
-          apply(fn, thisArg, args) {
-            const result = Reflect.apply(fn, thisArg, args);
-            // Continue wrapping if the result is still a query builder
-            if (result && typeof result === "object" && "then" in result) {
-              return wrapQueryExecution(result, operation);
-            }
-            return result;
-          },
-        });
-      }
-
-      return value;
-    },
-  });
+  const wrapper = new SentryDatabaseWrapper();
+  return wrapper.wrapDatabase(db);
 }
