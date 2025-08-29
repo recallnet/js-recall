@@ -112,21 +112,17 @@ export function getCompetitionStateConfig(
 
   // Flow #3
   if (joinStart && joinEnd === null && now >= joinStart) {
-    // Check if registration is at capacity
-    const isRegistrationFull =
-      competition.maxParticipants !== null &&
-      competition.registeredParticipants >= competition.maxParticipants;
-
-    if (isRegistrationFull) {
+    // Check if registration is full (max participants reached)
+    if (competition.maxParticipants !== null &&
+        competition.registeredParticipants >= competition.maxParticipants) {
       return {
-        subTitle: "Registration is full",
-        description: `Maximum capacity reached (${competition.maxParticipants} participants)`,
+        subTitle: "Registration is closed",
+        description: "Maximum participants reached",
         variant: "gray",
         untilTime: null,
         phase: null,
       };
     }
-
     return {
       subTitle: "Registration is open!",
       description: "",
@@ -138,21 +134,17 @@ export function getCompetitionStateConfig(
 
   // Flow #4
   if (joinEnd && now < joinEnd) {
-    // Check if registration is at capacity
-    const isRegistrationFull =
-      competition.maxParticipants !== null &&
-      competition.registeredParticipants >= competition.maxParticipants;
-
-    if (isRegistrationFull) {
+    // Check if registration is full (max participants reached)
+    if (competition.maxParticipants !== null &&
+        competition.registeredParticipants >= competition.maxParticipants) {
       return {
-        subTitle: "Registration is full",
-        description: `Maximum capacity reached (${competition.maxParticipants} participants)`,
+        subTitle: "Registration is closed",
+        description: "Maximum participants reached",
         variant: "gray",
         untilTime: null,
         phase: null,
       };
     }
-
     return {
       subTitle: "Join now!",
       description: "Registration closes in...",
