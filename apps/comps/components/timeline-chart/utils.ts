@@ -7,18 +7,11 @@ import { DateArr } from "./types";
 /**
  * Format date to "Month dayth" style (e.g., "Jun 1st", "May 23rd")
  */
-export const formatDateShort = (dateStr: string | Date) => {
-  // Return fallback for null/undefined input
-  if (!dateStr) {
-    return "Loading...";
-  }
+export const formatDateShort = (dateStr: string | Date): string => {
+  if (!dateStr) return "";
 
   const date = new Date(dateStr);
-
-  // Check if the date is valid
-  if (isNaN(date.getTime())) {
-    return "Invalid Date";
-  }
+  if (isNaN(date.getTime())) return "";
 
   const month = date.toLocaleDateString("en-US", { month: "short" });
   const day = date.getDate();
