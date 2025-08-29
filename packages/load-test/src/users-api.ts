@@ -13,14 +13,6 @@ export const config = {
       name: "load-test",
     },
   ],
-  environments: {
-    test: {
-      target: "{{ $env.API_HOST }}",
-    },
-  },
-  plugins: {
-    "metrics-by-endpoint": {},
-  },
 };
 
 export const scenarios = [
