@@ -257,15 +257,8 @@
     {
       "idx": 36,
       "version": "7",
-      "when": 1755884840965,
-      "tag": "0036_chilly_toad",
-      "breakpoints": true
-    },
-    {
-      "idx": 37,
-      "version": "7",
-      "when": 1756152355492,
-      "tag": "0037_high_ultragirl",
+      "when": 1756150080018,
+      "tag": "0036_wandering_menace",
       "breakpoints": true
     }
   ]
