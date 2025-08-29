@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
+import { findAll as findAllAgents } from "@/database/repositories/agent-repository.js";
 import {
   findAll,
   getAgentPortfolioSnapshots,
@@ -126,8 +127,12 @@ async function showCompetitionStatus() {
     // Get agents participating in the competition
     const participatingAgentIds = await getCompetitionAgents(competition.id);
 
-    // Get all agents (for mapping IDs to names)
-    const allAgents = await services.agentManager.getAllAgents();
+    // Get all agents (for mapping IDs to names) - direct DB access for script
+    const allAgents = await findAllAgents({
+      limit: 1000000,
+      offset: 0,
+      sort: "-createdAt",
+    });
     const agentMap = new Map(allAgents.map((agent) => [agent.id, agent]));
 
     // Map participating agent IDs to agent objects

@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
+import { findAll as findAllAgents } from "@/database/repositories/agent-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 const services = new ServiceRegistry();
@@ -94,8 +95,12 @@ async function endCompetition() {
       activeCompetition.id,
     );
 
-    // Get all agents
-    const agents = await services.agentManager.getAllAgents();
+    // Get all agents - direct DB access for script
+    const agents = await findAllAgents({
+      limit: 1000000,
+      offset: 0,
+      sort: "-createdAt",
+    });
 
     // Map agent IDs to names
     const agentMap = new Map(agents.map((agent) => [agent.id, agent.name]));

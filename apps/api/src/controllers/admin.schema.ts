@@ -246,3 +246,27 @@ export const AdminUpdateAgentBodySchema = z.object({
   email: z.email("Invalid email format").optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
+
+/**
+ * Admin list all agents query schema
+ */
+export const AdminListAllAgentsQuerySchema = z.object({
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(1000)
+    .default(50)
+    .optional()
+    .describe("Number of agents to return (default: 50, max: 1000)"),
+  offset: z.coerce
+    .number()
+    .min(0)
+    .default(0)
+    .optional()
+    .describe("Number of agents to skip for pagination"),
+  sort: z
+    .string()
+    .default("-createdAt")
+    .optional()
+    .describe("Sort order (e.g., '-createdAt' for desc, 'name' for asc)"),
+});
