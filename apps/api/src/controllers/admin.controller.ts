@@ -47,7 +47,10 @@ import {
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
 } from "./admin.schema.js";
-import { parseAdminSearchQuery } from "./request-helpers.js";
+import {
+  checkUserUniqueConstraintViolation,
+  parseAdminSearchQuery,
+} from "./request-helpers.js";
 
 // TODO: need user deactivation logic
 
@@ -261,19 +264,6 @@ export function makeAdminController(services: ServiceRegistry) {
           agentWalletAddress,
         } = result.data;
 
-        // Check if a user with this wallet address already exists
-        const existingUser =
-          await services.userManager.getUserByWalletAddress(walletAddress);
-
-        if (existingUser) {
-          const errorMessage = `A user with wallet address ${walletAddress} already exists`;
-          adminLogger.warn("Duplicate wallet address error:", errorMessage);
-          return res.status(409).json({
-            success: false,
-            error: errorMessage,
-          });
-        }
-
         try {
           // Create the user
           const user = await services.userManager.registerUser(
@@ -374,17 +364,6 @@ export function makeAdminController(services: ServiceRegistry) {
         } catch (error) {
           adminLogger.error("Error registering user:", error);
 
-          // Check if this is a duplicate wallet address error that somehow got here
-          if (
-            error instanceof Error &&
-            error.message.includes("already exists")
-          ) {
-            return res.status(409).json({
-              success: false,
-              error: error.message,
-            });
-          }
-
           // Check if this is an invalid wallet address error
           if (
             error instanceof Error &&
@@ -394,6 +373,15 @@ export function makeAdminController(services: ServiceRegistry) {
             return res.status(400).json({
               success: false,
               error: error.message,
+            });
+          }
+
+          // Unique constraint violations → 409 Conflict with friendly message
+          const violatedField = checkUserUniqueConstraintViolation(error);
+          if (violatedField) {
+            return res.status(409).json({
+              success: false,
+              error: `A user with this ${violatedField} already exists`,
             });
           }
 

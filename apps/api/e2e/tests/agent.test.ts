@@ -2801,7 +2801,6 @@ Purpose: WALLET_VERIFICATION`;
     test("should reject duplicate handles or invalid format", async () => {
       // Create a Privy-authenticated client
       const { client: siweClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Handle Test User",
         userEmail: "handle-test@example.com",
       });
@@ -2913,7 +2912,6 @@ Purpose: WALLET_VERIFICATION`;
     test("should update agent handle", async () => {
       // Create a Privy-authenticated client
       const { client: siweClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Handle Update Test User",
         userEmail: "handle-update@example.com",
       });

@@ -4,6 +4,8 @@ import { authLogger } from "@/lib/logger.js";
 import { verifyPrivyIdentityTokenAndUpdateUser } from "@/lib/privy/verify.js";
 import { ServiceRegistry } from "@/services/index.js";
 
+import { checkUserUniqueConstraintViolation } from "./request-helpers.js";
+
 export function makeAuthController(services: ServiceRegistry) {
   /**
    * Auth Controller
@@ -60,6 +62,14 @@ export function makeAuthController(services: ServiceRegistry) {
         );
         res.status(200).json({ success: true, userId, wallet: walletAddress });
       } catch (error) {
+        // Unique constraint violations → 409 Conflict with friendly message
+        const violatedField = checkUserUniqueConstraintViolation(error);
+        if (violatedField) {
+          return res.status(409).json({
+            success: false,
+            error: `A user with this ${violatedField} already exists`,
+          });
+        }
         next(error);
       }
     },

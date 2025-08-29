@@ -18,6 +18,7 @@ import {
   LeaderboardResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
+import { generateRandomPrivyId } from "@/e2e/utils/privy.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -301,34 +302,112 @@ describe("Admin API", () => {
     expect(result.success).toBe(false);
   });
 
-  test("should not allow registration of users with duplicate email", async () => {
+  test("should update existing user on duplicate email", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register first user
-    const userEmail = `same-email-${Date.now()}@test.com`;
-    const firstResult = await adminClient.registerUser({
-      walletAddress: generateRandomEthAddress(),
-      name: `First User ${Date.now()}`,
-      email: userEmail,
+    const email = `same-email-${Date.now()}@test.com`;
+    const originalUserName = `First User ${Date.now()}`;
+    const originalWalletAddress = generateRandomEthAddress();
+    const firstResult = (await adminClient.registerUser({
+      walletAddress: originalWalletAddress,
+      name: originalUserName,
+      email,
       agentName: `First Agent ${Date.now()}`,
-    });
+    })) as UserRegistrationResponse;
 
     // Assert first registration success
     expect(firstResult.success).toBe(true);
+    const originalUser = firstResult.user!;
 
     // Try to register second user with the same email
+    const newName = `Second User ${Date.now()}`;
     const secondResult = (await adminClient.registerUser({
-      walletAddress: generateRandomEthAddress(),
-      name: `Second User ${Date.now()}`,
-      email: userEmail,
+      walletAddress: originalWalletAddress,
+      name: newName,
+      email,
       agentName: `Second Agent ${Date.now()}`,
-    })) as ErrorResponse;
+    })) as UserRegistrationResponse;
 
-    // Assert second registration failure due to duplicate email
-    expect(secondResult.success).toBe(false);
-    expect(secondResult.error).toContain("email");
+    // Assert second registration success
+    expect(secondResult.success).toBe(true);
+    expect(secondResult.user).toBeDefined();
+    expect(secondResult.user.email).toBe(email);
+    expect(secondResult.user.name).toBe(newName);
+    expect(secondResult.user.walletAddress).toBe(originalUser.walletAddress);
+    expect(secondResult.user.walletLastVerifiedAt).toBe(
+      originalUser.walletLastVerifiedAt,
+    );
+    expect(secondResult.user.embeddedWalletAddress).toBe(
+      originalUser.embeddedWalletAddress,
+    );
+    expect(secondResult.user.privyId).toBe(originalUser.privyId);
+    expect(secondResult.user.status).toBe(originalUser.status);
+    expect(secondResult.user.metadata).toBe(originalUser.metadata);
+    expect(secondResult.user.createdAt).toBe(originalUser.createdAt);
+    expect(secondResult.user.updatedAt).not.toBe(originalUser.updatedAt);
+    expect(secondResult.user.lastLoginAt).not.toBe(originalUser.lastLoginAt);
+  });
+
+  test("should not allow user registration with duplicate wallet address", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a Privy-authenticated client
+    const originalWalletAddress = generateRandomEthAddress();
+    const user1Email = `user1@example.com`;
+    const { user: originalUser } = (await adminClient.registerUser({
+      walletAddress: originalWalletAddress,
+      name: "First User",
+      email: user1Email,
+    })) as UserRegistrationResponse;
+    expect(originalUser).toBeDefined();
+
+    // Try to create a user with the same wallet address - should fail
+    const user2Email = `user2@example.com`;
+    const user2Result = (await adminClient.registerUser({
+      walletAddress: originalWalletAddress,
+      name: "Second User",
+      email: user2Email,
+    })) as ErrorResponse;
+    expect(user2Result.success).toBe(false);
+    expect(user2Result.error).toContain(
+      "A user with this walletAddress already exists",
+    );
+  });
+
+  test("should not allow user registration with duplicate privyId", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a Privy-authenticated client
+    const originalPrivyId = generateRandomPrivyId();
+    const originalWalletAddress = generateRandomEthAddress();
+    const originalUserEmail = `user1@example.com`;
+    const { user: originalUser } = (await adminClient.registerUser({
+      walletAddress: originalWalletAddress,
+      privyId: originalPrivyId,
+      name: "First User",
+      email: originalUserEmail,
+    })) as UserRegistrationResponse;
+    expect(originalUser).toBeDefined();
+
+    // Try to create a user with the same privyId - should fail
+    const user2Email = `user2@example.com`;
+    const user2Result = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      privyId: originalPrivyId,
+      name: "Second User",
+      email: user2Email, // Use a different email else it'll update on conflict
+    })) as ErrorResponse;
+    expect(user2Result.success).toBe(false);
+    expect(user2Result.error).toContain(
+      "A user with this privyId already exists",
+    );
   });
 
   test("should list agents and users as admin", async () => {

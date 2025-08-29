@@ -1,4 +1,5 @@
-import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
+import { and, count as drizzleCount, eq, ilike, sql } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/database/db.js";
 import { users } from "@/database/schema/core/defs.js";
@@ -26,19 +27,43 @@ async function createImpl(user: InsertUser): Promise<SelectUser> {
       user.embeddedWalletAddress?.toLowerCase();
     const data = {
       ...user,
+      id: user.id ?? uuidv4(),
       walletAddress: normalizedWalletAddress,
       embeddedWalletAddress: normalizedEmbeddedWalletAddress,
       createdAt: user.createdAt || now,
       updatedAt: user.updatedAt || now,
       lastLoginAt: user.lastLoginAt || now,
     };
-    const [result] = await db.insert(users).values(data).returning();
+    // Idempotent create: on email conflict, update existing record with new data
+    const [row] = await db
+      .insert(users)
+      .values(data)
+      .onConflictDoUpdate({
+        target: users.email,
+        set: {
+          // Backfill fields if they don't exist, but preserve existing values when present
+          walletAddress: sql`COALESCE(${users.walletAddress}, EXCLUDED.wallet_address)`,
+          walletLastVerifiedAt: sql`COALESCE(${users.walletLastVerifiedAt}, EXCLUDED.wallet_last_verified_at )`,
+          embeddedWalletAddress: sql`COALESCE(${users.embeddedWalletAddress}, EXCLUDED.embedded_wallet_address)`,
+          privyId: sql`COALESCE(${users.privyId}, EXCLUDED.privy_id)`,
+          name: sql`COALESCE(${users.name}, EXCLUDED.name)`,
+          imageUrl: sql`COALESCE(${users.imageUrl}, EXCLUDED.image_url)`,
+          metadata: sql`COALESCE(${users.metadata}, EXCLUDED.metadata)`,
+          isSubscribed: sql`COALESCE(EXCLUDED.is_subscribed, ${users.isSubscribed})`,
 
-    if (!result) {
-      throw new Error("Failed to create user - no result returned");
+          // Prefer new values for timestamp fields
+          updatedAt: sql`GREATEST(${users.updatedAt}, EXCLUDED.updated_at)`,
+          lastLoginAt: sql`GREATEST(${users.lastLoginAt}, EXCLUDED.last_login_at)`,
+        },
+      })
+      .returning();
+
+    if (!row) {
+      throw new Error(
+        "Failed to create or retrieve existing user after conflict",
+      );
     }
-
-    return result;
+    return row;
   } catch (error) {
     repositoryLogger.error("[UserRepository] Error in create:", error);
     throw error;

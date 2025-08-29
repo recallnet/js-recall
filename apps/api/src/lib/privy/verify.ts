@@ -22,7 +22,7 @@ import { PRIVY_ISSUER, PrivyUserInfo, extractPrivyUserInfo } from "./utils.js";
  * - `sub`: Subject (Privy user DID)
  * - `exp`: Expiration time
  */
-type PrivyJwtPayload = JWTPayload & {
+export type PrivyJwtPayload = JWTPayload & {
   cr: string;
   // Note: the raw payload includes a string of linked accounts (google, wallet, etc.) that must
   // be parsed—and these match the Privy SDK's `LinkedAccountWithMetadata` type.
@@ -34,7 +34,7 @@ type PrivyJwtPayload = JWTPayload & {
  * - `privyId`: The Privy user DID
  * - `claims`: Parsed Privy JWT payload
  */
-type PrivyIdWithClaims = {
+export type PrivyIdWithClaims = {
   privyId: string;
   claims: PrivyJwtPayload;
 };
@@ -178,17 +178,8 @@ export async function verifyPrivyIdentityTokenAndUpdateUser(
   }
 
   // 2. Handle post-legacy but pre-Privy users (an `email` always exists via legacy Loops emails)
-  const existingUserWithEmail = await userManager.getUserByEmail(email);
-  if (existingUserWithEmail) {
-    return await userManager.updateUser({
-      id: existingUserWithEmail.id,
-      privyId,
-      name: existingUserWithEmail.name ?? name,
-      embeddedWalletAddress,
-      updatedAt: now,
-      lastLoginAt: now,
-    });
-  }
+  // Note: we skip the explicit email branch and rely on repository UPSERT (email idempotency)
+  // in `registerUser` (called in the fallback below) to handle this case.
 
   // 3. Handle legacy users (only a `walletAddress` exists, but it might not be connected to Privy)
   // This is an edge case where a user never logged in nor set up an email, so our best guess is to
@@ -208,7 +199,6 @@ export async function verifyPrivyIdentityTokenAndUpdateUser(
         email,
         privyId,
         embeddedWalletAddress,
-        updatedAt: now,
         lastLoginAt: now,
       });
     }

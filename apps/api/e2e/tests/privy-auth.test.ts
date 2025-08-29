@@ -1,26 +1,21 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { v4 as uuidv4 } from "uuid";
+import { afterEach, beforeAll, describe, expect, test } from "vitest";
 
+import { users } from "@/database/schema/core/defs.js";
 import {
   ErrorResponse,
   LinkUserWalletResponse,
   LoginResponse,
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
+import { connectToDb } from "@/e2e/utils/db-manager.js";
 
 import { ApiClient } from "../utils/api-client.js";
 import { createMockPrivyToken, createTestPrivyUser } from "../utils/privy.js";
-import {
-  createPrivyAuthenticatedClient,
-  getAdminApiKey,
-} from "../utils/test-helpers.js";
+import { createPrivyAuthenticatedClient } from "../utils/test-helpers.js";
+import { generateRandomEthAddress } from "../utils/test-helpers.js";
 
 describe("Privy Authentication", () => {
-  let adminApiKey: string;
-
-  beforeEach(async () => {
-    adminApiKey = await getAdminApiKey();
-  });
-
   test("should authenticate user with Privy JWT and sync profile", async () => {
     // Create a test client
     const client = new ApiClient();
@@ -129,7 +124,6 @@ describe("Privy Authentication", () => {
 
   test("can link a privy wallet to a user", async () => {
     const { client: siweClient, user } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Wallet Linking Test User",
       userEmail: "wallet-linking-test@example.com",
     });
@@ -147,7 +141,7 @@ describe("Privy Authentication", () => {
       provider: "email",
     });
     const updatedPrivyToken = await createMockPrivyToken(privyUser, {
-      linkedWallets: [newWalletAddress],
+      newLinkedWallets: [newWalletAddress],
     });
 
     // Update the client with the new token
@@ -161,7 +155,6 @@ describe("Privy Authentication", () => {
 
   test("fails to link invalid privy wallet to a user", async () => {
     const { client: siweClient, user } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Wallet Linking Test User",
       userEmail: "wallet-linking-test@example.com",
     });
@@ -175,5 +168,93 @@ describe("Privy Authentication", () => {
     )) as ErrorResponse;
     expect(linkWalletResponse.success).toBe(false);
     expect(linkWalletResponse.error).toBe("Wallet not linked to user");
+  });
+
+  // Our middleware calls the `verifyPrivyIdentityTokenAndUpdateUser` function, which is used to
+  // backfill users to Privy. This function is used to handle the following cases:
+  // 1. Brand new users, which will have Privy-related information included from the get-go
+  // 2. Users who have not logged in with Privy, which includes:
+  //    - Users with wallet + email (i.e., they completed their legacy Loops signup)
+  //    - Users with wallet but no email (i.e., they never verified their email, pre-Privy)
+  describe("Backfilling users with Privy data", () => {
+    let db: Awaited<ReturnType<typeof connectToDb>>;
+
+    beforeAll(async () => {
+      db = await connectToDb();
+    });
+
+    afterEach(async () => {
+      await db.delete(users);
+    });
+
+    test("should create a new user with privy information", async () => {
+      const { user } = await createPrivyAuthenticatedClient({
+        userName: "New Privy User",
+        userEmail: "new-privy-user@example.com",
+      });
+      expect(user.privyId).toBeDefined();
+      expect(user.name).toBe("New Privy User");
+      expect(user.email).toBe("new-privy-user@example.com");
+      expect(user.walletAddress).toBe(user.embeddedWalletAddress);
+      expect(user.walletLastVerifiedAt).toBeDefined();
+      expect(user.embeddedWalletAddress).toBeDefined();
+    });
+
+    test("should backfill pre-existing user with both a wallet and email", async () => {
+      const walletAddress = generateRandomEthAddress();
+      const email = "backfilled-privy-user@example.com";
+      const name = "Backfilled Privy User";
+      const id = uuidv4();
+      const [row] = await db
+        .insert(users)
+        .values({
+          id,
+          name,
+          email,
+          walletAddress,
+        })
+        .returning();
+      expect(row).toBeDefined();
+
+      const { user } = await createPrivyAuthenticatedClient({
+        userEmail: email,
+        walletAddress,
+      });
+      expect(user.privyId).toBeDefined();
+      expect(user.name).toBe(name);
+      expect(user.email).toBe(email);
+      expect(user.walletAddress).toBe(walletAddress);
+      // Wallet address is not verified yet, so we don't set it as verified
+      expect(user.walletLastVerifiedAt).toBeNull();
+      expect(user.embeddedWalletAddress).toBeDefined();
+    });
+
+    test("should backfill pre-existing user with only a wallet", async () => {
+      const walletAddress = generateRandomEthAddress();
+      const name = "Backfilled Privy User";
+      const id = uuidv4();
+      const [row] = await db
+        .insert(users)
+        .values({
+          id,
+          name,
+          walletAddress,
+        })
+        .returning();
+      expect(row).toBeDefined();
+
+      const email = "user-with-only-wallet@example.com";
+      const { user } = await createPrivyAuthenticatedClient({
+        userEmail: email, // Privy auth will always set an email
+        walletAddress,
+      });
+      expect(user.privyId).toBeDefined();
+      expect(user.name).toBe(name);
+      expect(user.email).toBe(email);
+      expect(user.walletAddress).toBe(walletAddress);
+      // Wallet address is not verified yet, so we don't set it as verified
+      expect(user.walletLastVerifiedAt).toBeNull();
+      expect(user.embeddedWalletAddress).toBeDefined();
+    });
   });
 });

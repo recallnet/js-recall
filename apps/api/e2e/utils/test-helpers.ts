@@ -11,8 +11,10 @@ import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
 import { ApiClient } from "./api-client.js";
 import {
   CreateCompetitionResponse,
+  ErrorResponse,
   StartCompetitionResponse,
   TradingConstraints,
+  UserProfileResponse,
 } from "./api-types.js";
 import {
   createMockPrivyToken,
@@ -355,7 +357,7 @@ export function generateRandomEthAddress(): string {
   }
 
   // Convert to proper EIP-55 checksum format using viem
-  return getAddress(result);
+  return getAddress(result).toLowerCase();
 }
 
 /**
@@ -363,79 +365,62 @@ export function generateRandomEthAddress(): string {
  * This generates a unique test user and returns a client with an active Privy session
  */
 export async function createPrivyAuthenticatedClient({
-  adminApiKey,
   userName,
   userEmail,
-  userImageUrl,
   walletAddress,
   embeddedWalletAddress,
+  privyId,
 }: {
-  adminApiKey: string;
   userName?: string;
   userEmail?: string;
-  userImageUrl?: string;
   walletAddress?: string;
   embeddedWalletAddress?: string;
+  privyId?: string;
 }) {
-  const sdk = new ApiClient(adminApiKey);
-
   // Generate a unique wallet for this test
-  const testWallet = walletAddress || generateRandomEthAddress();
   const testEmbeddedWallet =
     embeddedWalletAddress || generateRandomEthAddress();
 
   // Use unique names/emails for this test
   const timestamp = Date.now();
-  const uniqueUserName = userName || `Privy User ${timestamp}`;
   const uniqueUserEmail = userEmail || `privy-user-${timestamp}@test.com`;
 
   // Generate a unique privyId for the user
-  const privyId = generateRandomPrivyId();
-
-  // Register a new user
-  const result = await sdk.registerUser({
-    walletAddress: testWallet,
-    embeddedWalletAddress: testEmbeddedWallet,
-    privyId,
-    name: uniqueUserName,
-    email: uniqueUserEmail,
-    userImageUrl,
-    // Don't create an agent automatically - user can create one via SIWE session if needed
-  });
-
-  if (!result.success || !result.user) {
-    // Propagate the original error with status code if available
-    if ("status" in result && result.status) {
-      const error = new Error(
-        result.error || "Failed to register user",
-      ) as Error & { statusCode: number };
-      error.statusCode = result.status;
-      throw error;
-    }
-    throw new Error("Failed to register user for SIWE authentication");
-  }
+  const uniquePrivyId = privyId || generateRandomPrivyId();
 
   // Create a session client (without API key)
   const privyUser = createTestPrivyUser({
-    privyId: result.user.privyId, // Use the actual privyId from the registered user
-    name: uniqueUserName,
+    privyId: uniquePrivyId, // Use the actual privyId from the registered user
+    name: userName ?? undefined,
     email: uniqueUserEmail,
-    walletAddress: testWallet,
+    walletAddress: walletAddress || testEmbeddedWallet,
     provider: "email",
   });
   const privyToken = await createMockPrivyToken(privyUser);
   const sessionClient = new ApiClient(undefined, getBaseUrl());
   sessionClient.setJwtToken(privyToken);
 
-  // Login with Privy
+  // Login will create (or backfill/update) a user with Privy-related information
   const loginResponse = await sessionClient.login();
-  if (!loginResponse.success) {
-    throw new Error(`Failed to login with Privy: ${loginResponse.error}`);
+  if (!loginResponse.success || !loginResponse.userId) {
+    throw new Error(
+      `Failed to login with Privy: ${(loginResponse as ErrorResponse).error}`,
+    );
   }
-
-  // Ensure we have a valid user ID
-  if (!loginResponse.userId) {
-    throw new Error("Failed to login with Privy: No userId returned");
+  const userResponse = await sessionClient.getUserProfile();
+  if (!userResponse.success) {
+    throw new Error(
+      `Failed to get user profile: ${(userResponse as ErrorResponse).error}`,
+    );
+  }
+  let { user } = userResponse;
+  // For convenience, we auto-update the user name. A "first time" login is
+  // unaware of the user's name and infers it based on Google, email, etc.,
+  // but we simulate a manual update to help with testing
+  if (userName) {
+    ({ user } = (await sessionClient.updateUserProfile({
+      name: userName,
+    })) as UserProfileResponse);
   }
 
   // Add a small delay to ensure session is properly saved
@@ -444,21 +429,22 @@ export async function createPrivyAuthenticatedClient({
   return {
     client: sessionClient,
     user: {
-      id: result.user.id,
-      walletAddress: result.user.walletAddress || testWallet,
-      embeddedWalletAddress:
-        result.user.embeddedWalletAddress || testEmbeddedWallet,
-      privyId: result.user.privyId,
-      name: result.user.name || uniqueUserName,
-      email: result.user.email || uniqueUserEmail,
-      imageUrl: result.user.imageUrl || null,
-      status: result.user.status || "active",
-      metadata: result.user.metadata || null,
-      createdAt: result.user.createdAt || new Date().toISOString(),
-      updatedAt: result.user.updatedAt || new Date().toISOString(),
-      lastLoginAt: result.user.lastLoginAt || new Date().toISOString(),
+      id: user.id,
+      walletAddress: user.walletAddress || testEmbeddedWallet,
+      embeddedWalletAddress: user.embeddedWalletAddress || testEmbeddedWallet,
+      walletLastVerifiedAt: user.walletLastVerifiedAt || null,
+      privyId: user.privyId,
+      name: user.name || userName,
+      email: user.email || uniqueUserEmail,
+      imageUrl: user.imageUrl || null,
+      status: user.status || "active",
+      metadata: user.metadata || null,
+      createdAt: user.createdAt || new Date().toISOString(),
+      updatedAt: user.updatedAt || new Date().toISOString(),
+      lastLoginAt: user.lastLoginAt || new Date().toISOString(),
     },
-    wallet: testWallet, // Include wallet info for potential future use
+    // Include wallet info for potential future use
+    wallet: user.walletAddress || testEmbeddedWallet,
     loginData: loginResponse,
   };
 }

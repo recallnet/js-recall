@@ -84,52 +84,12 @@ export class UserManager {
       const normalizedEmbeddedWalletAddress =
         embeddedWalletAddress?.toLowerCase();
 
-      // Check if user already exists with this wallet address
-      if (normalizedWalletAddress) {
-        const existingUser = await findByWalletAddress(normalizedWalletAddress);
-        if (existingUser) {
-          throw new Error(
-            `User with wallet address ${normalizedWalletAddress} already exists`,
-          );
-        }
-      }
-
-      // Check email uniqueness if provided
-      if (email) {
-        const existingUserByEmail = await findByEmail(email);
-        if (existingUserByEmail) {
-          throw new Error(
-            `User ${existingUserByEmail.id} with email already exists`,
-          );
-        }
-      }
-
-      // Generate user ID early for email subscription
-      const id = uuidv4();
-
-      // Subscribe to email list (note: this happens before creating user to avoid an extra update)
-      let isSubscribed = false;
-      const emailSubscriptionResult = await this.emailService.subscribeUser(
-        email,
-        {
-          userId: id,
-          name: name ?? undefined,
-        },
-      );
-      // Silently fail if the email subscription fails so we don't block the user creation
-      if (emailSubscriptionResult) {
-        if (emailSubscriptionResult.success) {
-          isSubscribed = true;
-        } else {
-          serviceLogger.error(
-            `[UserManager] Error subscribing user ${id} to email list: ${emailSubscriptionResult.error}`,
-          );
-        }
-      }
-
       // Create user record with subscription status
+      // Note: the `newUserId` could be different than the `savedUserId` because registering a new
+      // user will update on conflict—so the `id` will be original `user.id` in the database.
+      const newUserId = uuidv4();
       const user: InsertUser = {
-        id,
+        id: newUserId,
         walletAddress: normalizedWalletAddress,
         embeddedWalletAddress: normalizedEmbeddedWalletAddress,
         name,
@@ -137,7 +97,6 @@ export class UserManager {
         privyId,
         imageUrl,
         metadata,
-        isSubscribed,
         status: "active",
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -145,14 +104,45 @@ export class UserManager {
       };
 
       // Store in database
-      const savedUser = await create(user);
+      let savedUser = await create(user);
+      const savedUserId = savedUser.id;
+
+      // Attempt to subscribe to the email list after persistence
+      try {
+        const emailSubscriptionResult = await this.emailService.subscribeUser(
+          email,
+          {
+            userId: savedUserId,
+            name: name ?? undefined,
+          },
+        );
+        if (
+          emailSubscriptionResult?.success &&
+          savedUser.isSubscribed !== true
+        ) {
+          // Persist subscription status to DB
+          savedUser = await update({ id: savedUserId, isSubscribed: true });
+        } else if (
+          emailSubscriptionResult &&
+          !emailSubscriptionResult.success
+        ) {
+          serviceLogger.error(
+            `[UserManager] Error subscribing user ${savedUser.id} to email list: ${emailSubscriptionResult.error}`,
+          );
+        }
+      } catch (subErr) {
+        serviceLogger.error(
+          `[UserManager] Unexpected error during email subscription for ${savedUser.id}:`,
+          subErr,
+        );
+      }
 
       // Update cache
-      this.userWalletCache.set(normalizedWalletAddress, id);
-      this.userProfileCache.set(id, savedUser);
+      this.userWalletCache.set(normalizedWalletAddress, savedUserId);
+      this.userProfileCache.set(savedUserId, savedUser);
 
       serviceLogger.debug(
-        `[UserManager] Registered user: ${name || "Unknown"} (${id}) with wallet ${normalizedWalletAddress}`,
+        `[UserManager] Registered user: ${name || "Unknown"} (${savedUserId}) with wallet ${normalizedWalletAddress}`,
       );
 
       return savedUser;
@@ -239,10 +229,8 @@ export class UserManager {
         throw new Error(`User with ID ${user.id} not found`);
       }
 
-      const now = new Date();
       const updatedUser = await update({
         ...user,
-        updatedAt: now,
       });
 
       // Update cache

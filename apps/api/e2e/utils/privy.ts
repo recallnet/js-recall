@@ -1,3 +1,4 @@
+import { LinkedAccountWithMetadata } from "@privy-io/server-auth";
 import { SignJWT, importPKCS8 } from "jose";
 import { v4 as uuidv4 } from "uuid";
 
@@ -92,6 +93,104 @@ export interface TestPrivyUser {
 }
 
 /**
+ * Format linked accounts for a test user
+ * @param user - The test user
+ * @param provider - The authentication provider of the user
+ * @param email - The email address of the user
+ * @param walletAddress - The wallet address of the user
+ * @param embeddedWalletAddress - The embedded wallet address of the user
+ */
+export function formatLinkedAccounts({
+  user,
+  embeddedWalletAddress,
+  newLinkedWallets,
+}: {
+  user: TestPrivyUser;
+  embeddedWalletAddress?: string;
+  newLinkedWallets?: string[];
+}): LinkedAccountWithMetadata[] {
+  const linkedAccounts: LinkedAccountWithMetadata[] = [];
+  const { email, walletAddress, provider } = user;
+  if (email) {
+    linkedAccounts.push({
+      type: "email",
+      address: email,
+      verifiedAt: new Date(),
+      firstVerifiedAt: new Date(),
+      latestVerifiedAt: new Date(),
+    });
+  }
+
+  if (embeddedWalletAddress) {
+    linkedAccounts.push({
+      type: "wallet",
+      address: embeddedWalletAddress,
+      walletClientType: "privy",
+      chainType: "ethereum",
+      chainId: "1",
+      verifiedAt: new Date(),
+      firstVerifiedAt: new Date(),
+      latestVerifiedAt: new Date(),
+    });
+  }
+
+  if (walletAddress) {
+    linkedAccounts.push({
+      type: "wallet",
+      address: walletAddress,
+      walletClientType: "injected",
+      chainType: "ethereum",
+      chainId: "1",
+      verifiedAt: new Date(),
+      firstVerifiedAt: new Date(),
+      latestVerifiedAt: new Date(),
+    });
+  }
+
+  if (newLinkedWallets) {
+    newLinkedWallets.forEach((walletAddress) => {
+      linkedAccounts.push({
+        type: "wallet",
+        address: walletAddress,
+        walletClientType: "injected",
+        chainType: "ethereum",
+        chainId: "1",
+        verifiedAt: new Date(),
+        firstVerifiedAt: new Date(),
+        latestVerifiedAt: new Date(),
+      });
+    });
+  }
+
+  if (provider === "google" && email) {
+    linkedAccounts.push({
+      type: "google_oauth",
+      subject: user.privyId,
+      email: email,
+      name: user.name || null,
+      verifiedAt: new Date(),
+      firstVerifiedAt: new Date(),
+      latestVerifiedAt: new Date(),
+    });
+  }
+
+  if (provider === "github") {
+    linkedAccounts.push({
+      type: "github_oauth",
+      subject: user.privyId,
+      email: user.email || null,
+      username: user.name || null,
+      name: user.name || null,
+      verifiedAt: new Date(),
+      firstVerifiedAt: new Date(),
+      latestVerifiedAt: new Date(),
+    });
+  }
+
+  return linkedAccounts;
+}
+
+/**
  * Create a mock Privy JWT token for testing
  * @param user User data to include in the token
  * @param options Additional JWT options
@@ -103,7 +202,7 @@ export async function createMockPrivyToken(
     expiresIn?: string | number;
     issuer?: string;
     audience?: string;
-    linkedWallets?: string[];
+    newLinkedWallets?: string[];
   } = {},
 ): Promise<string> {
   const userData = { ...defaultTestUser, ...user };
@@ -111,9 +210,6 @@ export async function createMockPrivyToken(
 
   // Import the private key for ES256 signing
   const privateKey = await importPKCS8(TEST_PRIVY_PRIVATE_KEY, "ES256");
-
-  // Build linked accounts array to match real Privy JWT format
-  const linkedAccounts = [];
 
   // Always add embedded wallet (required by Privy)
   const hash = userData.privyId.split(":").pop() || "default";
@@ -124,83 +220,23 @@ export async function createMockPrivyToken(
   }
   hexString = hexString.padEnd(40, "0").slice(0, 40);
   const embeddedWalletAddress = `0x${hexString}`.toLowerCase();
-  linkedAccounts.push({
-    type: "wallet",
-    address: embeddedWalletAddress,
-    walletClient: "privy",
-    walletClientType: "privy",
-    chainType: "ethereum",
-    chainId: "1",
-    verifiedAt: now,
-    firstVerifiedAt: now,
-    latestVerifiedAt: now,
+
+  // Build linked accounts array to match real Privy JWT format
+  const linkedAccounts = formatLinkedAccounts({
+    user: userData,
+    embeddedWalletAddress,
+    newLinkedWallets: options.newLinkedWallets,
   });
-
-  // Add email linked account if email is provided
-  if (userData.email) {
-    linkedAccounts.push({
-      type: "email",
-      address: userData.email,
-      verifiedAt: now,
-      firstVerifiedAt: now,
-      latestVerifiedAt: now,
-    });
-  }
-
-  // Add custom wallet if provided
-  if (userData.walletAddress) {
-    linkedAccounts.push({
-      type: "wallet",
-      address: userData.walletAddress.toLowerCase(),
-      walletClient: "metamask",
-      walletClientType: "injected",
-      chainType: userData.walletChainType || "ethereum",
-      chainId: "1",
-      verifiedAt: now,
-      firstVerifiedAt: now,
-      latestVerifiedAt: now,
-    });
-  }
-
-  // Add provider-specific linked account
-  if (userData.provider === "google" && userData.email) {
-    linkedAccounts.push({
-      type: "google_oauth",
-      subject: userData.privyId,
-      email: userData.email,
-      name: userData.name || null,
-      verifiedAt: now,
-      firstVerifiedAt: now,
-      latestVerifiedAt: now,
-    });
-  } else if (userData.provider === "github") {
-    linkedAccounts.push({
-      type: "github_oauth",
-      subject: userData.privyId,
-      username: userData.name || "testuser",
-      name: userData.name || null,
-      verifiedAt: now,
-      firstVerifiedAt: now,
-      latestVerifiedAt: now,
-    });
-  }
 
   // Build the JWT
   const jwt = new SignJWT({
-    // Privy-specific claims at top level (matching PrivyJWTPayload interface)
-    email: userData.email,
-    provider: userData.provider,
-    providerUsername: userData.name || userData.email?.split("@")[0],
-    wallet_address: userData.walletAddress,
-    wallet_chain_type: userData.walletChainType,
-    // Creation time
-    cr: now.toISOString(),
-    // Linked accounts as stringified JSON (matching real Privy JWT format)
+    // Only include claims that are used by our mock Privy client:
+    // - linked_accounts as string (real format)
+    // - cr (created_at) as ISO string (real format)
+    // - Below: sub, aud, iss, iat, exp
     linked_accounts: JSON.stringify(linkedAccounts),
-    // Session ID
-    sid: uuidv4(),
-    // Additional linked wallets (custom claim for testing)
-    linked_wallets: options.linkedWallets,
+    // Keep cr for parity with some tests that read it
+    cr: now.toISOString(),
   })
     .setProtectedHeader({ alg: "ES256" })
     .setIssuedAt()
