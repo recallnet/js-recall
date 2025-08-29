@@ -1,10 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 
-import * as competitionRewardsRepository from "@/database/repositories/competition-rewards-repository.js";
 import {
   InsertCompetitionReward,
   SelectCompetitionReward,
-} from "@/database/schema/core/types.js";
+} from "@recallnet/db-schema/core/types";
+
+import * as competitionRewardsRepository from "@/database/repositories/competition-rewards-repository.js";
 
 /**
  * CompetitionRewardService

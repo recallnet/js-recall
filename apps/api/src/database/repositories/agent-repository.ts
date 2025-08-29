@@ -9,14 +9,15 @@ import {
   sql,
 } from "drizzle-orm";
 
-import { db } from "@/database/db.js";
 import {
   agents,
   competitionAgents,
   competitions,
   competitionsLeaderboard,
-} from "@/database/schema/core/defs.js";
-import { InsertAgent, SelectAgent } from "@/database/schema/core/types.js";
+} from "@recallnet/db-schema/core/defs";
+import { InsertAgent, SelectAgent } from "@recallnet/db-schema/core/types";
+
+import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { transformToTrophy } from "@/lib/trophy-utils.js";

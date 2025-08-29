@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
 
-import { db } from "@/database/db.js";
-import { emailVerificationTokens } from "@/database/schema/core/defs.js";
+import { emailVerificationTokens } from "@recallnet/db-schema/core/defs";
 import {
   InsertEmailVerificationToken,
   SelectEmailVerificationToken,
-} from "@/database/schema/core/types.js";
+} from "@recallnet/db-schema/core/types";
+
+import { db } from "@/database/db.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 /**

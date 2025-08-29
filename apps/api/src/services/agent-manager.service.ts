@@ -4,6 +4,12 @@ import { generateNonce } from "siwe";
 import { v4 as uuidv4 } from "uuid";
 import { recoverMessageAddress } from "viem";
 
+import {
+  InsertAgent,
+  SelectAgent,
+  SelectCompetition,
+} from "@recallnet/db-schema/core/types";
+
 import { config } from "@/config/index.js";
 import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";
 import {
@@ -40,11 +46,6 @@ import { createEmailVerificationToken } from "@/database/repositories/email-veri
 import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
 import { countBulkAgentTradesInCompetitions } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
-import {
-  InsertAgent,
-  SelectAgent,
-  SelectCompetition,
-} from "@/database/schema/core/types.js";
 import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";

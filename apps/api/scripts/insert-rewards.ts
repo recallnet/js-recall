@@ -2,9 +2,10 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
+import { competitions } from "@recallnet/db-schema/core/defs";
+import { rewards } from "@recallnet/db-schema/voting/defs";
+
 import { db } from "@/database/db.js";
-import { competitions } from "@/database/schema/core/defs.js";
-import { rewards } from "@/database/schema/voting/defs.js";
 import { createLeafNode } from "@/services/rewards.service.js";
 
 // Load environment variables

@@ -1,6 +1,12 @@
 import { relations } from "drizzle-orm/relations";
 
 import {
+  balances,
+  portfolioSnapshots,
+  trades,
+  tradingCompetitions,
+} from "../trading/defs.js";
+import {
   rewards,
   rewardsRoots,
   rewardsTree,
@@ -8,14 +14,7 @@ import {
   voteAssignments,
   votesAvailable,
   votesPerformed,
-} from "@/database/schema/voting/defs.js";
-
-import {
-  balances,
-  portfolioSnapshots,
-  trades,
-  tradingCompetitions,
-} from "../trading/defs.js";
+} from "../voting/defs.js";
 import {
   agents,
   competitionAgents,

@@ -1,6 +1,8 @@
 import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 
+import { InsertAdmin, SelectAdmin } from "@recallnet/db-schema/core/types";
+
 import { config } from "@/config/index.js";
 import {
   count,
@@ -16,7 +18,6 @@ import {
   updateLastLogin,
   updatePassword,
 } from "@/database/repositories/admin-repository.js";
-import { InsertAdmin, SelectAdmin } from "@/database/schema/core/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { AdminMetadata, SearchAdminsParams } from "@/types/index.js";
 

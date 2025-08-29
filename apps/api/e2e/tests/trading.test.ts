@@ -1,10 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { trades as tradesDef } from "@recallnet/db-schema/trading/defs";
+import { InsertTrade } from "@recallnet/db-schema/trading/types";
+
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { trades as tradesDef } from "@/database/schema/trading/defs.js";
-import { InsertTrade } from "@/database/schema/trading/types.js";
 import {
   BalancesResponse,
   BlockchainType,
