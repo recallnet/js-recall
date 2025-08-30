@@ -4,10 +4,6 @@ import {
   rewards,
   rewardsRoots,
   rewardsTree,
-  stakes,
-  voteAssignments,
-  votesAvailable,
-  votesPerformed,
 } from "@/database/schema/voting/defs.js";
 
 import {
@@ -28,10 +24,6 @@ import {
 
 export const usersRelations = relations(users, ({ many }) => ({
   agents: many(agents),
-  stakes: many(stakes),
-  voteAssignments: many(voteAssignments),
-  votesAvailable: many(votesAvailable),
-  votesPerformed: many(votesPerformed),
   votes: many(votes),
 }));
 
