@@ -1,0 +1,31 @@
+{
+  "extends": "@recallnet/typescript-config/base.json",
+  "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false,
+    "outDir": "./dist",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/scripts/*": ["./scripts/*"]
+    },
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "sourceMap": true,
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "strict": true
+  },
+  "include": [
+    "src",
+    "scripts",
+    "tsup.config.ts",
+    "eslint.config.js",
+    "tsconfig.json"
+  ],
+  "exclude": ["node_modules", "dist"]
+}
