@@ -26,7 +26,6 @@
   "scripts": {
     "lint": "eslint --cache --max-warnings=0 src",
     "build:mcp": "bun src/mcp-server/build.mts",
-    "build": "npm run build:mcp && tshy",
     "prepublishOnly": "npm run build",
     "format:check": "prettier --check . --ignore-path=../../.prettierignore",
     "format": "prettier --write . --ignore-path=../../.prettierignore"

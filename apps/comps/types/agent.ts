@@ -126,6 +126,7 @@ export interface AgentCompetition {
   change24h: number;
   change24hPercent: number;
   voteCount: number;
+  userVotes?: number; // Number of votes the current user has placed for this agent
 }
 
 export interface CreateAgentRequest {
