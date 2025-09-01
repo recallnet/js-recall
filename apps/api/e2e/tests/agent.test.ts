@@ -3,8 +3,9 @@ import { eq } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { agents } from "@recallnet/db-schema/core/defs";
+
 import { config } from "@/config/index.js";
-import { agents } from "@/database/schema/core/defs.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentsListResponse,
