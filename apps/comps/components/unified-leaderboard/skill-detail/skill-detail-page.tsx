@@ -19,6 +19,7 @@ import ReactMarkdown from "react-markdown";
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Button } from "@recallnet/ui2/components/button";
 import { Card } from "@recallnet/ui2/components/card";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
@@ -257,9 +258,23 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                 {skillData.stats.modelCount + skillData.stats.agentCount}
               </span>
             </div>
-            <div className="text-sm text-gray-400">
-              {skillData.stats.modelCount}M + {skillData.stats.agentCount}A
-            </div>
+            <Tooltip
+              content={
+                <div className="space-y-1">
+                  <div>
+                    <span className="font-semibold">M</span> = Models
+                  </div>
+                  <div>
+                    <span className="font-semibold">A</span> = Agents
+                  </div>
+                </div>
+              }
+              position="bottom"
+            >
+              <div className="cursor-help text-sm text-gray-400">
+                {skillData.stats.modelCount}M + {skillData.stats.agentCount}A
+              </div>
+            </Tooltip>
           </Card>
         </div>
 

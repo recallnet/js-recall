@@ -46,12 +46,7 @@ import {
   VoteManager,
 } from "@/services/index.js";
 import {
-  ACTOR_STATUS,
-  COMPETITION_AGENT_STATUS,
   COMPETITION_JOIN_ERROR_TYPES,
-  COMPETITION_STATUS,
-  COMPETITION_TYPE,
-  CROSS_CHAIN_TRADING_TYPE,
   CompetitionAgentStatus,
   CompetitionJoinError,
   CompetitionStatus,
@@ -174,7 +169,8 @@ export class CompetitionManager {
     rewards?: Record<number, number>;
   }) {
     const id = uuidv4();
-    const competition = {
+
+    const competition: Parameters<typeof createCompetition>[0] = {
       id,
       name,
       description,
@@ -187,11 +183,10 @@ export class CompetitionManager {
       joinStartDate: joinStartDate ?? null,
       joinEndDate: joinEndDate ?? null,
       maxParticipants: maxParticipants ?? null,
-      status: COMPETITION_STATUS.PENDING,
-      crossChainTradingType:
-        tradingType ?? CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      status: "pending",
+      crossChainTradingType: tradingType ?? "disallowAll",
       sandboxMode: sandboxMode ?? false,
-      type: type ?? COMPETITION_TYPE.TRADING,
+      type: type ?? "trading",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -272,7 +267,7 @@ export class CompetitionManager {
       throw new Error(`Competition not found: ${competitionId}`);
     }
 
-    if (competition.status !== COMPETITION_STATUS.PENDING) {
+    if (competition.status !== "pending") {
       throw new Error(`Competition cannot be started: ${competition.status}`);
     }
 
@@ -294,7 +289,7 @@ export class CompetitionManager {
         throw new Error(`Agent not found: ${agentId}`);
       }
 
-      if (agent.status !== ACTOR_STATUS.ACTIVE) {
+      if (agent.status !== "active") {
         throw new Error(
           `Cannot start competition with agent ${agentId}: agent status is ${agent.status}`,
         );
@@ -311,7 +306,7 @@ export class CompetitionManager {
     // Update the competition, and use this latest response to have accurate `registeredParticipants`
     const finalCompetition = await updateCompetition({
       id: competitionId,
-      status: COMPETITION_STATUS.ACTIVE,
+      status: "active",
       startDate: new Date(),
       updatedAt: new Date(),
     });
@@ -421,14 +416,14 @@ export class CompetitionManager {
       throw new Error(`Competition not found: ${competitionId}`);
     }
 
-    if (competition.status !== COMPETITION_STATUS.ACTIVE) {
+    if (competition.status !== "active") {
       throw new Error(`Competition is not active: ${competition.status}`);
     }
 
     // Update the competition status FIRST to prevent new trades from being processed
     const finalCompetition = await updateCompetition({
       id: competitionId,
-      status: COMPETITION_STATUS.ENDED,
+      status: "ended",
       endDate: new Date(),
       updatedAt: new Date(),
     });
@@ -469,7 +464,7 @@ export class CompetitionManager {
    */
   async isCompetitionActive(competitionId: string) {
     const competition = await findById(competitionId);
-    return competition?.status === COMPETITION_STATUS.ACTIVE;
+    return competition?.status === "active";
   }
 
   /**
@@ -685,12 +680,12 @@ export class CompetitionManager {
       }
 
       switch (competition.status) {
-        case COMPETITION_STATUS.PENDING:
+        case "pending":
           return await this.calculatePendingCompetitionLeaderboard(
             competitionId,
           );
 
-        case COMPETITION_STATUS.ENDED: {
+        case "ended": {
           // Try saved leaderboard first
           const savedLeaderboard =
             await findLeaderboardByTradingComp(competitionId);
@@ -704,7 +699,7 @@ export class CompetitionManager {
           // Fall through to calculate from snapshots
         }
 
-        case COMPETITION_STATUS.ACTIVE: {
+        case "active": {
           // Try snapshots first
           const snapshotLeaderboard =
             await this.calculateLeaderboardFromSnapshots(competitionId);
@@ -987,7 +982,7 @@ export class CompetitionManager {
    */
   async getUpcomingCompetitions() {
     return findByStatus({
-      status: COMPETITION_STATUS.PENDING,
+      status: "pending",
       params: {
         sort: "",
         limit: 100,
@@ -1089,15 +1084,12 @@ export class CompetitionManager {
     }
 
     // 5. Check agent status is eligible
-    if (
-      agent.status === ACTOR_STATUS.DELETED ||
-      agent.status === ACTOR_STATUS.SUSPENDED
-    ) {
+    if (agent.status === "deleted" || agent.status === "suspended") {
       throw new Error("Agent is not eligible to join competitions");
     }
 
     // 6. Check if competition status is pending
-    if (competition.status !== COMPETITION_STATUS.PENDING) {
+    if (competition.status !== "pending") {
       throw new Error("Cannot join competition that has already started/ended");
     }
 
@@ -1180,25 +1172,25 @@ export class CompetitionManager {
     }
 
     // 5. Handle based on competition status
-    if (competition.status === COMPETITION_STATUS.ENDED) {
+    if (competition.status === "ended") {
       throw new Error("Cannot leave competition that has already ended");
-    } else if (competition.status === COMPETITION_STATUS.ACTIVE) {
+    } else if (competition.status === "active") {
       // During active competition: mark agent as withdrawn from this competition
       await updateAgentCompetitionStatus(
         competitionId,
         agentId,
-        COMPETITION_AGENT_STATUS.WITHDRAWN,
+        "withdrawn",
         `Withdrew from competition ${competition.name}`,
       );
       serviceLogger.debug(
         `[CompetitionManager] Marked agent ${agentId} as withdrawn from active competition ${competitionId}`,
       );
-    } else if (competition.status === COMPETITION_STATUS.PENDING) {
+    } else if (competition.status === "pending") {
       // During pending competition: mark as withdrawn (preserving history)
       await updateAgentCompetitionStatus(
         competitionId,
         agentId,
-        COMPETITION_AGENT_STATUS.WITHDRAWN,
+        "withdrawn",
         `Withdrew from competition ${competition.name} before it started`,
       );
       serviceLogger.debug(
@@ -1256,7 +1248,7 @@ export class CompetitionManager {
     await updateAgentCompetitionStatus(
       competitionId,
       agentId,
-      COMPETITION_AGENT_STATUS.DISQUALIFIED,
+      "disqualified",
       reason || "Disqualified by admin",
     );
 
@@ -1293,7 +1285,7 @@ export class CompetitionManager {
     await updateAgentCompetitionStatus(
       competitionId,
       agentId,
-      COMPETITION_AGENT_STATUS.ACTIVE,
+      "active",
       "Reactivated by admin",
     );
 
@@ -1369,7 +1361,7 @@ export class CompetitionManager {
         return;
       }
 
-      if (agent.status !== ACTOR_STATUS.ACTIVE) {
+      if (agent.status !== "active") {
         serviceLogger.debug(
           `[CompetitionManager] Agent ${agentId} is not active (status: ${agent.status}), skipping auto-join`,
         );

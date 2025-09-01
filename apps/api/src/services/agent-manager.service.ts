@@ -18,6 +18,7 @@ import {
   findByApiKeyHash,
   findByCompetition,
   findById,
+  findByIds,
   findByName,
   findByOwnerId,
   findByWallet,
@@ -51,7 +52,6 @@ import { AgentMetricsHelper } from "@/services/agent-metrics-helper.js";
 import { EmailService } from "@/services/email.service.js";
 import type { AgentWithMetrics } from "@/types/agent-metrics.js";
 import {
-  ACTOR_STATUS,
   AgentCompetitionsParams,
   AgentMetadata,
   AgentPublic,
@@ -276,14 +276,21 @@ export class AgentManager {
   }
 
   /**
-   * Get all agents
-   * @returns Array of all agents
+   * Get multiple agents by their IDs
+   * @param agentIds Array of agent IDs to retrieve
+   * @returns Array of agents matching the provided IDs
    */
-  async getAllAgents() {
+  async getAgentsByIds(agentIds: string[]) {
     try {
-      return await findAll();
+      if (agentIds.length === 0) {
+        return [];
+      }
+      return await findByIds(agentIds);
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error retrieving all agents:", error);
+      serviceLogger.error(
+        "[AgentManager] Error retrieving agents by IDs:",
+        error,
+      );
       return [];
     }
   }
@@ -316,10 +323,7 @@ export class AgentManager {
   private validateAgentStatus(agent: SelectAgent, apiKey: string): void {
     // Check if globally suspended/deleted
     // Note: We now allow "inactive" agents to authenticate for non-competition operations
-    if (
-      agent.status === ACTOR_STATUS.SUSPENDED ||
-      agent.status === ACTOR_STATUS.DELETED
-    ) {
+    if (agent.status === "suspended" || agent.status === "deleted") {
       // Cache the deactivation info
       this.inactiveAgentsCache.set(agent.id, {
         reason: agent.deactivationReason || "No reason provided",
