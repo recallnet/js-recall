@@ -18,6 +18,7 @@ import {
   findByApiKeyHash,
   findByCompetition,
   findById,
+  findByIds,
   findByName,
   findByOwnerId,
   findByWallet,
@@ -275,14 +276,21 @@ export class AgentManager {
   }
 
   /**
-   * Get all agents
-   * @returns Array of all agents
+   * Get multiple agents by their IDs
+   * @param agentIds Array of agent IDs to retrieve
+   * @returns Array of agents matching the provided IDs
    */
-  async getAllAgents() {
+  async getAgentsByIds(agentIds: string[]) {
     try {
-      return await findAll();
+      if (agentIds.length === 0) {
+        return [];
+      }
+      return await findByIds(agentIds);
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error retrieving all agents:", error);
+      serviceLogger.error(
+        "[AgentManager] Error retrieving agents by IDs:",
+        error,
+      );
       return [];
     }
   }

@@ -7,8 +7,12 @@ import { DateArr } from "./types";
 /**
  * Format date to "Month dayth" style (e.g., "Jun 1st", "May 23rd")
  */
-export const formatDateShort = (dateStr: string | Date) => {
+export const formatDateShort = (dateStr: string | Date): string => {
+  if (!dateStr) return "";
+
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+
   const month = date.toLocaleDateString("en-US", { month: "short" });
   const day = date.getDate();
 
