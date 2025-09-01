@@ -18,7 +18,7 @@
     "test:watch": "vitest watch --project unit",
     "test:e2e": "vitest run --project e2e",
     "rewards:allocate": "tsx scripts/rewards-allocate.ts",
-    "rewards:insert-test-data": "tsx scripts/insert-rewards.ts",
+    "rewards:insert-test-data": "tsx scripts/rewards-insert-test-data.ts",
     "db:gen-migrations": "NODE_OPTIONS='--import tsx' drizzle-kit generate",
     "db:custom-migration": "NODE_OPTIONS='--import tsx' drizzle-kit generate --custom",
     "db:check": "NODE_OPTIONS='--import tsx' drizzle-kit check",

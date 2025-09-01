@@ -58,15 +58,15 @@ async function insertCompetitionAndRewards() {
     const rewardsData = [
       {
         address: "0x1234567890123456789012345678901234567890" as `0x${string}`,
-        amount: BigInt("100000000000000000000"), // 100 tokens with 18 decimals
+        amount: BigInt("1000000000000000000"), // 1 token with 18 decimals
       },
       {
         address: "0x2345678901234567890123456789012345678901" as `0x${string}`,
-        amount: BigInt("200000000000000000000"), // 200 tokens with 18 decimals
+        amount: BigInt("2000000000000000000"), // 2 tokens with 18 decimals
       },
       {
         address: "0x3456789012345678901234567890123456789012" as `0x${string}`,
-        amount: BigInt("300000000000000000000"), // 300 tokens with 18 decimals
+        amount: BigInt("3000000000000000000"), // 3 tokens with 18 decimals
       },
     ];
 
