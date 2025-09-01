@@ -9,19 +9,20 @@ import {
   sum,
 } from "drizzle-orm";
 
-import { dbRead } from "@/database/db.js";
 import {
   agents,
   competitionAgents,
   competitions,
   competitionsLeaderboard,
   votes,
-} from "@/database/schema/core/defs.js";
-import { agentScore } from "@/database/schema/ranking/defs.js";
+} from "@recallnet/db-schema/core/defs";
+import { agentScore } from "@recallnet/db-schema/ranking/defs";
 import {
   trades,
   tradingCompetitionsLeaderboard,
-} from "@/database/schema/trading/defs.js";
+} from "@recallnet/db-schema/trading/defs";
+
+import { dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import type { RawAgentMetricsQueryResult } from "@/types/agent-metrics.js";

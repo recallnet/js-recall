@@ -1,18 +1,19 @@
 import { eq } from "drizzle-orm";
 
-import { db } from "@/database/db.js";
 import {
   rewards,
   rewardsRoots,
   rewardsTree,
-} from "@/database/schema/voting/defs.js";
+} from "@recallnet/db-schema/voting/defs";
 import {
   InsertReward,
   InsertRewardsRoot,
   SelectReward,
   SelectRewardsRoot,
   SelectRewardsTree,
-} from "@/database/schema/voting/types.js";
+} from "@recallnet/db-schema/voting/types";
+
+import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 

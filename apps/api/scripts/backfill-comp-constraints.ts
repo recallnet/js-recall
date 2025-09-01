@@ -1,9 +1,10 @@
 import chalk from "chalk";
 import * as readline from "readline";
 
+import { competitions } from "@recallnet/db-schema/core/defs";
+import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
+
 import { db } from "@/database/db.js";
-import { competitions } from "@/database/schema/core/defs.js";
-import { tradingConstraints } from "@/database/schema/trading/defs.js";
 
 const JULY_23_COMP = "99a8f533-b745-48c6-afb3-252a0c02e25b";
 

@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { emailVerificationTokens } from "@recallnet/db-schema/core/defs";
+
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { findById as findAgentById } from "@/database/repositories/agent-repository.js";
@@ -11,7 +13,6 @@ import {
   markTokenAsUsed,
 } from "@/database/repositories/email-verification-repository.js";
 import { findById as findUserById } from "@/database/repositories/user-repository.js";
-import { emailVerificationTokens } from "@/database/schema/core/defs.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   getAdminApiKey,
