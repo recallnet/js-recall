@@ -2,8 +2,9 @@ import { and, eq, sql } from "drizzle-orm";
 import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 
+import * as schema from "@recallnet/db-schema/voting/defs";
+
 import { db } from "@/database/db.js";
-import * as schema from "@/database/schema/voting/defs.js";
 import { BlockchainAddressAsU8A } from "@/lib/coders.js";
 
 export { BoostRepository, BoostChangeMetaSchema };
