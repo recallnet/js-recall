@@ -153,7 +153,7 @@ export async function setup() {
     log("📦 Initializing database...");
     await dbManager.initialize();
 
-    // Optionally start Envio indexer for live trading tests
+    // Start Envio indexer for live trading tests
     if (process.env.TEST_LIVE_TRADING === "true") {
       log("🔥 Starting Envio indexer for live trading tests...");
       await envioManager.start();

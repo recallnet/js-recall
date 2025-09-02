@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestHelpers, Trade, Transfer } from "generated";
-const { MockDb, ERC20Transfers, UniswapV2, UniswapV3, Curve, BalancerV1, BalancerV2, ZeroEx, Bancor, Addresses } = TestHelpers;
+const { MockDb, ERC20Transfers, UniswapV2, UniswapV3, Curve, BalancerV1, BalancerV2, Bancor, Addresses } = TestHelpers;
 
 describe("ERC20 Transfer Events", () => {
   it("should track token transfers correctly", async () => {

@@ -1,70 +1,37 @@
-# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
 name: recall-live-trading-indexer
 description: Shared live trading indexer for all competitions
-
-# Global contract definition for multichain indexing
 contracts:
-  # Track all ERC20 transfers for self-funding and exit detection
   - name: ERC20Transfers
     handler: src/EventHandlers.ts
     events:
-    - event: "Transfer(address indexed from, address indexed to, uint256 value)"
-  
-  # Uniswap V2 and forks (SushiSwap, PancakeSwap, QuickSwap, Velodrome, Aerodrome, etc.)
-  # This signature covers ~40% of all DEX volume including Optimism/Base native DEXes
+      - event: Transfer(address indexed from, address indexed to, uint256 value)
   - name: UniswapV2
     handler: src/EventHandlers.ts
     events:
-    - event: "Swap(address indexed sender, uint256 amount0In, uint256 amount1In, uint256 amount0Out, uint256 amount1Out, address indexed to)"
-    
-  # Uniswap V3 - Second largest DEX by volume
-  # Note: amount0 and amount1 are int256 (can be negative)
+      - event: Swap(address indexed sender, uint256 amount0In, uint256 amount1In, uint256 amount0Out, uint256 amount1Out, address indexed to)
   - name: UniswapV3
     handler: src/EventHandlers.ts
     events:
-    - event: "Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)"
-    
-  # Curve Finance - Popular for stablecoin swaps
-  # Uses token indices instead of addresses
+      - event: Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
   - name: Curve
     handler: src/EventHandlers.ts
     events:
-    - event: "TokenExchange(address indexed buyer, int128 sold_id, uint256 tokens_sold, int128 bought_id, uint256 tokens_bought)"
-    
-  # Balancer V1 - Multi-asset pools
+      - event: TokenExchange(address indexed buyer, int128 sold_id, uint256 tokens_sold, int128 bought_id, uint256 tokens_bought)
   - name: BalancerV1
     handler: src/EventHandlers.ts
     events:
-    - event: "LOG_SWAP(address indexed caller, address indexed tokenIn, address indexed tokenOut, uint256 tokenAmountIn, uint256 tokenAmountOut)"
-    
-  # NOTE: 1inch AggregationRouter V4/V5 does NOT emit swap events
-  # As an aggregator, it routes through other DEXes which emit their own events
-  # 1inch trades are captured via the underlying DEX events (Uniswap, Curve, etc.)
-    
-  # NOTE: 0x Protocol removed for MVP - Complex asset data encoding makes token identification difficult
-    
-  # Balancer V2 - All swaps go through the Vault contract
-  # Different from V1, uses poolId instead of separate pool contracts
+      - event: LOG_SWAP(address indexed caller, address indexed tokenIn, address indexed tokenOut, uint256 tokenAmountIn, uint256 tokenAmountOut)
   - name: BalancerV2
     handler: src/EventHandlers.ts
     events:
-    - event: "Swap(bytes32 indexed poolId, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut)"
-    
-  # Bancor V3 - Uses BNT as intermediary token
-  # Note: bntAmount and bntFee track the BNT token involvement
+      - event: Swap(bytes32 indexed poolId, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut)
   - name: Bancor
     handler: src/EventHandlers.ts
     events:
-    - event: "TokensTraded(address indexed trader, address sourceToken, address targetToken, uint256 sourceAmount, uint256 targetAmount, uint256 bntAmount, uint256 bntFee)"
-    
-    # NOT INCLUDED but notable (need exact signatures):
-    # - CoW Swap: Uses batch auctions with Trade events
-    # - Kyber DMM: Dynamic fees
-    # Together these represent <1% of volume
-
+      - event: TokensTraded(address indexed trader, address indexed sourceToken, address indexed targetToken, uint256 sourceAmount, uint256 targetAmount, uint256 bntAmount, uint256 bntFee)
 networks:
-  - id: 1 # Ethereum
-    start_block: 23247973 # Current block as of Aug 2025
+  - id: 1
+    start_block: 23246973
     contracts:
       - name: ERC20Transfers
       - name: UniswapV2
@@ -72,11 +39,9 @@ networks:
       - name: Curve
       - name: BalancerV1
       - name: BalancerV2
-      - name: ZeroEx
       - name: Bancor
-
-  - id: 137 # Polygon
-    start_block: 75806701 # Current block as of Aug 2025
+  - id: 137
+    start_block: 75972301
     contracts:
       - name: ERC20Transfers
       - name: UniswapV2
@@ -84,10 +49,8 @@ networks:
       - name: Curve
       - name: BalancerV1
       - name: BalancerV2
-      - name: ZeroEx
-
-  - id: 42161 # Arbitrum
-    start_block: 373586330 # Current block as of Aug 2025
+  - id: 42161
+    start_block: 375000375
     contracts:
       - name: ERC20Transfers
       - name: UniswapV2
@@ -95,10 +58,8 @@ networks:
       - name: Curve
       - name: BalancerV1
       - name: BalancerV2
-      - name: ZeroEx
-
-  - id: 10 # Optimism
-    start_block: 140443472 # Current block as of Aug 2025
+  - id: 10
+    start_block: 140619962
     contracts:
       - name: ERC20Transfers
       - name: UniswapV2
@@ -106,10 +67,8 @@ networks:
       - name: Curve
       - name: BalancerV1
       - name: BalancerV2
-      - name: ZeroEx
-
-  - id: 8453 # Base
-    start_block: 34847769 # Current block as of Aug 2025
+  - id: 8453
+    start_block: 35024677
     contracts:
       - name: ERC20Transfers
       - name: UniswapV2
@@ -117,18 +76,8 @@ networks:
       - name: Curve
       - name: BalancerV1
       - name: BalancerV2
-      - name: ZeroEx
-
-# Unordered multichain mode allows you to index events from multiple chains
-# in realtime but doesn't guarentee ordering between chains
-# https://docs.envio.dev/docs/HyperIndex/multichain-indexing#unordered-multichain-mode
 unordered_multichain_mode: true
-# Preload optimisation makes your indexer much faster.
-# But be aware that your handlers will run twice,
-# so make sure to use Effect API for external calls.
 preload_handlers: true
-
-# Field selection for transaction data we need
 field_selection:
   transaction_fields:
     - hash

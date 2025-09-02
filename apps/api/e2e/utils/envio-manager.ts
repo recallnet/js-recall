@@ -190,7 +190,9 @@ export class EnvioManager {
    */
   private async startIndexer(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.envioProcess = spawn("pnpm", ["dev"], {
+      // The update-generated-start-blocks.ts script loads its own .env file
+      // We just need to spawn the process with the correct working directory
+      this.envioProcess = spawn("pnpm", ["dev:latest"], {
         cwd: this.indexerPath,
         stdio: ["pipe", "pipe", "pipe"], // Changed from inherit to avoid blocking terminal
         env: {

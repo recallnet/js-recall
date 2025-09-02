@@ -172,14 +172,41 @@ export class LiveTradeProcessor {
         return [];
       }
 
-      serviceLogger.debug(
-        `[LiveTradeProcessor] Filtered to ${relevantTrades.length} relevant trades`,
+      // 3. Check for trades with unknown tokens (should be rare with enrichment)
+      const tradesWithUnknown = relevantTrades.filter(
+        (trade) => trade.tokenIn === "unknown" || trade.tokenOut === "unknown",
       );
 
-      // 3. Enrich trades with prices and calculate USD values
-      const enrichedTrades = await this.enrichTradesWithPrices(relevantTrades);
+      if (tradesWithUnknown.length > 0) {
+        serviceLogger.warn(
+          `[LiveTradeProcessor] Found ${tradesWithUnknown.length}/${relevantTrades.length} trades still with unknown tokens after enrichment`,
+        );
 
-      // 4. Map to database schema
+        // Log a sample of problematic trades for debugging
+        tradesWithUnknown.slice(0, 3).forEach((trade) => {
+          serviceLogger.debug(
+            `[LiveTradeProcessor] Unknown tokens in trade ${trade.id}: tokenIn=${trade.tokenIn}, tokenOut=${trade.tokenOut}, protocol=${trade.protocol}`,
+          );
+        });
+      }
+
+      // Filter to only process complete trades
+      const completeTradesOnly = relevantTrades.filter(
+        (trade) => trade.tokenIn !== "unknown" && trade.tokenOut !== "unknown",
+      );
+
+      serviceLogger.info(
+        `[LiveTradeProcessor] Processing ${completeTradesOnly.length}/${relevantTrades.length} trades (${(
+          (completeTradesOnly.length / relevantTrades.length) *
+          100
+        ).toFixed(1)}% complete)`,
+      );
+
+      // 4. Enrich trades with prices and calculate USD values
+      const enrichedTrades =
+        await this.enrichTradesWithPrices(completeTradesOnly);
+
+      // 5. Map to database schema
       const mappedTrades = this.mapToDbSchema(
         enrichedTrades,
         competitionId,
