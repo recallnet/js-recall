@@ -8,14 +8,7 @@
     "PRIVATE_FONTS",
     "FONTS_REPO_ACCESS_TOKEN",
     "DATABASE_URL",
-    "NODE_ENV",
-    "SENTRY_DSN",
-    "SENTRY_ENVIRONMENT",
-    "ENABLE_SENTRY_DB_MONITORING",
-    "NEXT_PUBLIC_SENTRY_DSN",
-    "SENTRY_AUTH_TOKEN",
-    "SENTRY_ORG",
-    "SENTRY_PROJECT"
+    "NODE_ENV"
   ],
   "tasks": {
     "build": {
