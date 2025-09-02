@@ -1,13 +1,14 @@
 import { and, desc, count as drizzleCount, eq, sql } from "drizzle-orm";
 
+import { agents } from "@recallnet/db-schema/core/defs";
+import { trades } from "@recallnet/db-schema/trading/defs";
+import { InsertTrade } from "@recallnet/db-schema/trading/types";
+
 import { db } from "@/database/db.js";
 import {
   decrementBalanceInTransaction,
   incrementBalanceInTransaction,
 } from "@/database/repositories/balance-repository.js";
-import { agents } from "@/database/schema/core/defs.js";
-import { trades } from "@/database/schema/trading/defs.js";
-import { InsertTrade } from "@/database/schema/trading/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChainSchema } from "@/types/index.js";

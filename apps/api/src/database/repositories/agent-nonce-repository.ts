@@ -1,7 +1,8 @@
 import { eq, lt } from "drizzle-orm";
 
+import { agentNonces } from "@recallnet/db-schema/core/defs";
+
 import { db } from "@/database/db.js";
-import { agentNonces } from "@/database/schema/core/defs.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 export interface InsertAgentNonce {

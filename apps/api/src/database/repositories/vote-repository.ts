@@ -1,9 +1,10 @@
 import { and, count as drizzleCount, eq, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
+import { votes } from "@recallnet/db-schema/core/defs";
+import { InsertVote, SelectVote } from "@recallnet/db-schema/core/types";
+
 import { db } from "@/database/db.js";
-import { votes } from "@/database/schema/core/defs.js";
-import { InsertVote, SelectVote } from "@/database/schema/core/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 

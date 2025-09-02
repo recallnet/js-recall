@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
 
-import { db } from "@/database/db.js";
-import { tradingConstraints } from "@/database/schema/trading/defs.js";
+import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
 import {
   InsertTradingConstraints,
   SelectTradingConstraints,
-} from "@/database/schema/trading/types.js";
+} from "@recallnet/db-schema/trading/types";
+
+import { db } from "@/database/db.js";
 
 /**
  * Creates trading constraints for a competition
