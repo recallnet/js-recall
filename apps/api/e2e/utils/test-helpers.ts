@@ -5,8 +5,9 @@ import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { expect } from "vitest";
 
+import { portfolioSnapshots } from "@recallnet/db-schema/trading/defs";
+
 import { db } from "@/database/db.js";
-import { portfolioSnapshots } from "@/database/schema/trading/defs.js";
 
 import { ApiClient } from "./api-client.js";
 import {

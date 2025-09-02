@@ -1,5 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 
+import {
+  InsertVote,
+  SelectCompetition,
+  SelectVote,
+} from "@recallnet/db-schema/core/types";
+
 import { findById as findAgentById } from "@/database/repositories/agent-repository.js";
 import { isAgentActiveInCompetition } from "@/database/repositories/competition-repository.js";
 import { findById as findCompetitionById } from "@/database/repositories/competition-repository.js";
@@ -11,11 +17,6 @@ import {
   getVoteCountsByCompetition,
   hasUserVotedInCompetition,
 } from "@/database/repositories/vote-repository.js";
-import {
-  InsertVote,
-  SelectCompetition,
-  SelectVote,
-} from "@/database/schema/core/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import {
   CompetitionVotingStatus,

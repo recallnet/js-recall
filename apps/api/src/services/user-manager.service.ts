@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 
+import { InsertUser, SelectUser } from "@recallnet/db-schema/core/types";
+
 import {
   count,
   create,
@@ -12,7 +14,6 @@ import {
   searchUsers,
   update,
 } from "@/database/repositories/user-repository.js";
-import { InsertUser, SelectUser } from "@/database/schema/core/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { EmailService } from "@/services/email.service.js";
 import { UserMetadata, UserSearchParams } from "@/types/index.js";
