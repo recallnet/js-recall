@@ -1,5 +1,5 @@
 import { RPCHandler } from "@orpc/server/fetch";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 
 import { db } from "@/db";
 import { router } from "@/rpc/router/index";
