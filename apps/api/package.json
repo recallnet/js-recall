@@ -113,7 +113,7 @@
     "@recallnet/typescript-config": "workspace:*",
     "@types/bcrypt": "^5.0.0",
     "@types/cors": "^2.8.13",
-    "@types/pg": "^8.6.6",
+    "@types/pg": "^8.15.4",
     "@types/qs": "^6.14.0",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
