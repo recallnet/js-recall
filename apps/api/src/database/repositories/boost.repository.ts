@@ -153,8 +153,36 @@ class BoostRepository {
     const meta = args.meta || DEFAULT_META;
 
     return this.#db.transaction(async (tx) => {
+      let balanceRow: { balance: bigint };
+      const [inserted] = await tx
+        .insert(schema.boostBalances)
+        .values({
+          wallet: wallet,
+          balance: 0n,
+        })
+        .onConflictDoNothing({
+          target: [schema.boostBalances.wallet],
+        })
+        .returning({ balance: schema.boostBalances.balance });
+      if (inserted) {
+        balanceRow = inserted;
+      } else {
+        const [selected] = await tx
+          .select({ balance: schema.boostBalances.balance })
+          .from(schema.boostBalances)
+          .where(eq(schema.boostBalances.wallet, wallet))
+          .limit(1)
+          .for("update");
+        if (!selected) {
+          // Impossible situation if we prohibit deletion
+          throw new Error(
+            "Can neither INSERT nor SELECT for for boost_balances table",
+          );
+        }
+        balanceRow = selected;
+      }
       // 1) Try to record the change (idempotent via (wallet, idem_key))
-      const [change] = await tx
+      const [insertedChange] = await tx
         .insert(schema.boostChanges)
         .values({
           id: crypto.randomUUID(),
@@ -168,7 +196,7 @@ class BoostRepository {
         })
         .returning({ id: schema.boostChanges.id });
 
-      if (change) {
+      if (insertedChange) {
         // 2) First time we see this idemKey → increment (or create) balance
         const [updated] = await tx
           .insert(schema.boostBalances)
@@ -189,19 +217,13 @@ class BoostRepository {
 
         return {
           balanceAfter: updated!.balance,
-          changeId: change.id,
+          changeId: insertedChange.id,
           idemKey: idemKey,
         };
       } else {
-        // Already applied earlier: do NOT touch balance, just return current value
-        const [row] = await tx
-          .select({ balance: schema.boostBalances.balance })
-          .from(schema.boostBalances)
-          .where(eq(schema.boostBalances.wallet, wallet))
-          .limit(1);
-
+        // Already applied earlier: do NOT touch balance, just return the current value
         return {
-          balance: row?.balance ?? 0n,
+          balance: balanceRow.balance,
           idemKey: idemKey,
         };
       }
