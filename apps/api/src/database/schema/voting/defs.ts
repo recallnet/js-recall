@@ -110,11 +110,10 @@ export const rewardsRoots = pgTable(
  *
  * Purpose:
  * - Tracks the *current available balance* of Boost.
- * - One row per wallet; the primary key is the canonicalized EVM address string.
+ * - One row per (wallet, competitionId) pair.
  *
  * Invariants / notes:
  * - Balance is always ≥ 0 (enforced by CHECK).
- * - `wallet` must be lowercased before insert/update.
  * - `updatedAt` should be bumped on every change.
  * - Rows are mutable — this is the live ledger state.
  *
@@ -123,13 +122,16 @@ export const rewardsRoots = pgTable(
  *   in `boost_changes` (same transaction) for auditability/idempotency.
  *
  * Typical queries:
- * - Get balance by wallet (PK lookup).
- * - List wallets with recent activity (order by updated_at).
+ * - Get balance by wallet and competitionId.
  */
 export const boostBalances = pgTable(
   "boost_balances",
   {
-    wallet: bytea("wallet").primaryKey().notNull(),
+    id: uuid("id").defaultRandom().primaryKey(),
+    wallet: bytea("wallet").notNull(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
     balance: bigint("balance", { mode: "bigint" })
       .notNull()
       .default(sql`0`),
@@ -137,10 +139,18 @@ export const boostBalances = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
+    // enforce one balance per (wallet, competition)
+    walletCompetitionUniq: uniqueIndex(
+      "boost_balances_wallet_competition_uniq",
+    ).on(t.wallet, t.competitionId),
     // address must be exactly 20 bytes
     walletLenChk: sql`CHECK (octet_length(${t.wallet}) = 20)`,
     // balance must never be negative
     balanceNonNegative: sql`CHECK (${t.balance} >= 0)`,
+    balanceDescIdx: index("boost_balances_balance_desc_idx").on(
+      t.competitionId,
+      sql`${t.balance} DESC`,
+    ),
     updatedIdx: index("boost_balances_updated_at_idx").on(t.updatedAt),
     createdIdx: index("boost_balances_created_at_idx").on(t.createdAt),
   }),
@@ -156,7 +166,7 @@ export const boostBalances = pgTable(
  * - Provides audit trail, idempotency, and replay capability.
  *
  * Invariants / notes:
- * - (wallet, idem_key) is unique → an operation is applied at most once per wallet.
+ * - (balance_id, idem_key) is unique → an operation is applied at most once per balance (i.e., wallet x competitionId) entry.
  * - `delta_amount` is signed: positive for earn, negative for spend.
  * - `meta` holds structured context (competition id, reason, etc).
  * - Rows are never updated or deleted.
@@ -174,7 +184,12 @@ export const boostChanges = pgTable(
   "boost_changes",
   {
     id: uuid("id").primaryKey().notNull(),
-    wallet: bytea("wallet").notNull(),
+    balanceId: uuid("balance_id")
+      .notNull()
+      .references(() => boostBalances.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
     deltaAmount: bigint("delta_amount", { mode: "bigint" }).notNull(), // earn:+X, spend:-X
     meta: jsonb("meta")
       .notNull()
@@ -183,18 +198,16 @@ export const boostChanges = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
-    walletLenChk: sql`CHECK (octet_length(${t.wallet}) = 20)`,
     // enforce idempotency per wallet
-    uniqWalletIdem: uniqueIndex("boost_changes_wallet_idem_uq").on(
-      t.wallet,
+    uniqBalanceIdx: uniqueIndex("boost_changes_balance_idem_uq").on(
+      t.balanceId,
       t.idemKey,
     ),
     // Query pattern: history-by-wallet in time order
-    walletCreatedIdx: index("boost_changes_wallet_created_idx").on(
-      t.wallet,
+    balanceCreatedIdx: index("boost_changes_balance_created_idx").on(
+      t.balanceId,
       sql`${t.createdAt} DESC`,
     ),
-    walletIdx: index("boost_changes_wallet_idx").on(t.wallet),
     createdIdx: index("boost_changes_created_at_idx").on(t.createdAt),
   }),
 );

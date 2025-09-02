@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { db } from "@/database/db.js";
@@ -27,6 +27,8 @@ const DEFAULT_META: BoostChangeMeta = {};
 type BoostDiffArgs = {
   /** EVM address; will be lowercased before persisting. */
   wallet: string;
+  /** Competition ID */
+  competitionId: string;
   /**
    * Amount to apply:
    * - `increase`: must be >= 0n
@@ -36,7 +38,7 @@ type BoostDiffArgs = {
   /** Optional metadata persisted with the journal row. */
   meta?: BoostChangeMeta;
   /**
-   * Idempotency key (unique per wallet).
+   * Idempotency key (unique per balance_id = (wallet, competitionId)).
    * Reusing the same key makes the call safe to retry.
    */
   idemKey?: Uint8Array;
@@ -62,7 +64,7 @@ type BoostDiffResult =
  *  - boost_changes: immutable append-only journal of deltas with an idempotency key
  *
  * Core ideas:
- *  - **Idempotency** via (wallet, idem_key). Repeating the same logical operation
+ *  - **Idempotency** effectively via (wallet, competitionId, idem_key) through balanceId=(wallet, competitionId). Repeating the same logical operation
  *    with the same `idemKey` will be applied at most once.
  *  - **Atomicity**: change log and balance mutation happen in a single DB transaction.
  *  - **Lowercasing**: All wallets are canonicalized to lowercase before writes.
@@ -93,7 +95,7 @@ type BoostDiffResult =
  *        - Include a stable *external id* (e.g., competition id, order id).
  *        - Keep the string ≤ 256 chars (DB column limit); hashes are safe.
  *   2) **Random (good for one-offs / non-retried calls):**
- *      `crypto.randomUUID()`. Use only if you don’t need to dedupe retries.
+ *      `randomUUID()`. Use only if you don’t need to dedupe retries.
  *
  * - **When to reuse vs. generate new:**
  *   - **Retry the same operation?** Reuse the *same* `idemKey` (exactly-once effect).
@@ -151,26 +153,42 @@ class BoostRepository {
     const idemKey = args.idemKey ?? randomBytes(32);
     const wallet = BlockchainAddressAsU8A.encode(args.wallet);
     const meta = args.meta || DEFAULT_META;
+    const competitionId = args.competitionId;
 
     return this.#db.transaction(async (tx) => {
-      let balanceRow: { balance: bigint };
+      let balanceRow: { id: string; balance: bigint };
       const [inserted] = await tx
         .insert(schema.boostBalances)
         .values({
           wallet: wallet,
           balance: 0n,
+          competitionId: competitionId,
         })
         .onConflictDoNothing({
-          target: [schema.boostBalances.wallet],
+          target: [
+            schema.boostBalances.wallet,
+            schema.boostBalances.competitionId,
+          ],
         })
-        .returning({ balance: schema.boostBalances.balance });
+        .returning({
+          id: schema.boostBalances.id,
+          balance: schema.boostBalances.balance,
+        });
       if (inserted) {
         balanceRow = inserted;
       } else {
         const [selected] = await tx
-          .select({ balance: schema.boostBalances.balance })
+          .select({
+            id: schema.boostBalances.id,
+            balance: schema.boostBalances.balance,
+          })
           .from(schema.boostBalances)
-          .where(eq(schema.boostBalances.wallet, wallet))
+          .where(
+            and(
+              eq(schema.boostBalances.wallet, wallet),
+              eq(schema.boostBalances.competitionId, competitionId),
+            ),
+          )
           .limit(1)
           .for("update");
         if (!selected) {
@@ -185,14 +203,14 @@ class BoostRepository {
       const [insertedChange] = await tx
         .insert(schema.boostChanges)
         .values({
-          id: crypto.randomUUID(),
-          wallet,
+          id: randomUUID(),
+          balanceId: balanceRow.id,
           deltaAmount: amount,
           meta,
           idemKey,
         })
         .onConflictDoNothing({
-          target: [schema.boostChanges.wallet, schema.boostChanges.idemKey],
+          target: [schema.boostChanges.balanceId, schema.boostChanges.idemKey],
         })
         .returning({ id: schema.boostChanges.id });
 
@@ -203,9 +221,13 @@ class BoostRepository {
           .values({
             wallet: wallet,
             balance: amount,
+            competitionId: competitionId,
           })
           .onConflictDoUpdate({
-            target: [schema.boostBalances.wallet],
+            target: [
+              schema.boostBalances.wallet,
+              schema.boostBalances.competitionId,
+            ],
             set: {
               balance: sql`${schema.boostBalances.balance} + excluded.${schema.boostBalances.balance}`,
               updatedAt: sql`now()`,
@@ -264,20 +286,34 @@ class BoostRepository {
     const idemKey = args.idemKey ?? randomBytes(32);
     const wallet = BlockchainAddressAsU8A.encode(args.wallet);
     const meta = args.meta || DEFAULT_META;
+    const competitionId = args.competitionId;
 
     return this.#db.transaction(async (tx) => {
       // 1) Lock the wallet balance row if it exists
       const [balanceRow] = await tx
-        .select({ balance: schema.boostBalances.balance })
+        .select({
+          id: schema.boostBalances.id,
+          balance: schema.boostBalances.balance,
+        })
         .from(schema.boostBalances)
-        .where(eq(schema.boostBalances.wallet, wallet))
+        .where(
+          and(
+            eq(schema.boostBalances.wallet, wallet),
+            eq(schema.boostBalances.competitionId, competitionId),
+          ),
+        )
+        .limit(1)
         .for("update"); // locks this row until tx ends
       if (!balanceRow) {
-        throw new Error("Can not decrease balance of non-existent wallet");
+        throw new Error(
+          `Can not decrease balance of non-existent wallet ${wallet} and competition ${competitionId}`,
+        );
       }
       const currentBalance = balanceRow.balance;
       if (currentBalance < amount) {
-        throw new Error("Can not decrease balance below zero");
+        throw new Error(
+          `Can not decrease balance below zero for for wallet ${wallet} and competition ${competitionId}`,
+        );
       }
       // 2) Lock the (wallet, idemKey) change row if it exists
       const [existing] = await tx
@@ -285,7 +321,7 @@ class BoostRepository {
         .from(schema.boostChanges)
         .where(
           and(
-            eq(schema.boostChanges.wallet, wallet),
+            eq(schema.boostChanges.balanceId, balanceRow.id),
             eq(schema.boostChanges.idemKey, idemKey),
           ),
         )
@@ -305,31 +341,38 @@ class BoostRepository {
           balance: sql`${schema.boostBalances.balance} - ${amount}`,
           updatedAt: sql`now()`,
         })
-        .where(eq(schema.boostBalances.wallet, wallet))
+        .where(
+          and(
+            eq(schema.boostBalances.wallet, wallet),
+            eq(schema.boostBalances.competitionId, competitionId),
+          ),
+        )
         .returning({ balance: schema.boostBalances.balance });
 
       if (!updatedRow) {
-        throw new Error(`Can not decrease balance for wallet ${wallet}`);
+        throw new Error(
+          `Can not decrease balance for wallet ${wallet} and competition ${competitionId}`,
+        );
       }
 
       // 4) Record the change (unique (wallet, idem_key) prevents dupes)
       const [change] = await tx
         .insert(schema.boostChanges)
         .values({
-          id: crypto.randomUUID(),
-          wallet: wallet,
+          id: randomUUID(),
+          balanceId: balanceRow.id,
           deltaAmount: -amount,
           meta,
           idemKey,
         })
         .onConflictDoNothing({
-          target: [schema.boostChanges.wallet, schema.boostChanges.idemKey],
+          target: [schema.boostChanges.balanceId, schema.boostChanges.idemKey],
         })
         .returning({ id: schema.boostChanges.id });
 
       if (!change) {
         throw new Error(
-          `Can not add change for wallet ${wallet} and delta -${amount}`,
+          `Can not add change for wallet ${wallet}, competition ${competitionId} and delta -${amount}`,
         );
       }
 
