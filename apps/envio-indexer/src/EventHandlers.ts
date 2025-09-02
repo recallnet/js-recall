@@ -5,11 +5,14 @@ import {
   Curve,
   BalancerV1,
   BalancerV2,
-  ZeroEx,
   Bancor,
   Trade,
   Transfer
 } from "generated";
+
+// Temporary storage for transfers by transaction hash
+// This allows us to match transfers with trades in the same transaction
+const transfersByTx = new Map<string, Transfer[]>();
 
 // Helper function to get chain name from chain ID
 function getChainName(chainId: number): string {
@@ -26,6 +29,36 @@ function getChainName(chainId: number): string {
   return chainNames[chainId] || `chain_${chainId}`;
 }
 
+// Helper function to find matching transfers for a trade
+function findTokensFromTransfers(
+  txHash: string,
+  sender: string,
+  recipient: string,
+  amountIn: bigint,
+  amountOut: bigint
+): { tokenIn: string; tokenOut: string } {
+  const transfers = transfersByTx.get(txHash) || [];
+
+  // Look for transfer FROM sender (token going in)
+  // This could be to a router or directly to a pool
+  const inTransfer = transfers.find(t =>
+    t.from.toLowerCase() === sender.toLowerCase() &&
+    BigInt(t.value) === amountIn
+  );
+
+  // Look for transfer TO recipient (token coming out)
+  // This could be from a router or directly from a pool
+  const outTransfer = transfers.find(t =>
+    t.to.toLowerCase() === recipient.toLowerCase() &&
+    BigInt(t.value) === amountOut
+  );
+
+  return {
+    tokenIn: inTransfer?.token || "unknown",
+    tokenOut: outTransfer?.token || "unknown"
+  };
+}
+
 // Helper function to get protocol name from contract address
 function getProtocolFromAddress(address: string, eventType: string): string {
   // For MVP, we'll use event type as a proxy for protocol
@@ -34,7 +67,6 @@ function getProtocolFromAddress(address: string, eventType: string): string {
     "Swap": "uniswap", // Could be v2 or v3
     "TokenExchange": "curve",
     "LOG_SWAP": "balancer-v1",
-    "Fill": "0x",
     "TokensTraded": "bancor"
   };
 
@@ -70,6 +102,21 @@ ERC20Transfers.Transfer.handler(
       value: event.params.value
     };
 
+    // Store in our temporary map for matching with trades
+    const txHash = event.transaction.hash;
+    if (!transfersByTx.has(txHash)) {
+      transfersByTx.set(txHash, []);
+    }
+    transfersByTx.get(txHash)!.push(transfer);
+
+    // Clean up old entries to prevent memory issues (keep last 1000 txs)
+    if (transfersByTx.size > 1000) {
+      const oldestKey = transfersByTx.keys().next().value;
+      if (oldestKey) {
+        transfersByTx.delete(oldestKey);
+      }
+    }
+
     context.Transfer.set(transfer);
   },
   { wildcard: true }
@@ -83,6 +130,15 @@ UniswapV2.Swap.handler(
     const amountIn = isToken0ToToken1 ? event.params.amount0In : event.params.amount1In;
     const amountOut = isToken0ToToken1 ? event.params.amount1Out : event.params.amount0Out;
 
+    // Try to find token addresses from transfers in the same transaction
+    const { tokenIn, tokenOut } = findTokensFromTransfers(
+      event.transaction.hash,
+      event.params.sender.toLowerCase(),
+      event.params.to.toLowerCase(),
+      amountIn,
+      amountOut
+    );
+
     const trade: Trade = {
       id: `${event.chainId}_${event.transaction.hash}_${event.logIndex}`,
       sender: event.params.sender.toLowerCase(),
@@ -91,8 +147,8 @@ UniswapV2.Swap.handler(
       transactionHash: event.transaction.hash,
       blockNumber: BigInt(event.block.number),
       timestamp: BigInt(event.block.timestamp),
-      tokenIn: "unknown", // V2 doesn't expose token addresses in event
-      tokenOut: "unknown", // Would need pool contract state
+      tokenIn: tokenIn,
+      tokenOut: tokenOut,
       amountIn: amountIn,
       amountOut: amountOut,
       gasUsed: BigInt(event.transaction.gasUsed || 0),
@@ -116,6 +172,15 @@ UniswapV3.Swap.handler(
     const amountIn = isToken0In ? event.params.amount0 : event.params.amount1;
     const amountOut = isToken0In ? amount1Abs : amount0Abs;
 
+    // Try to find token addresses from transfers in the same transaction
+    const { tokenIn, tokenOut } = findTokensFromTransfers(
+      event.transaction.hash,
+      event.params.sender.toLowerCase(),
+      event.params.recipient.toLowerCase(),
+      amountIn,
+      amountOut
+    );
+
     const trade: Trade = {
       id: `${event.chainId}_${event.transaction.hash}_${event.logIndex}`,
       sender: event.params.sender.toLowerCase(),
@@ -124,8 +189,8 @@ UniswapV3.Swap.handler(
       transactionHash: event.transaction.hash,
       blockNumber: BigInt(event.block.number),
       timestamp: BigInt(event.block.timestamp),
-      tokenIn: "unknown", // V3 doesn't expose token addresses in event
-      tokenOut: "unknown", // Would need pool contract state
+      tokenIn: tokenIn,
+      tokenOut: tokenOut,
       amountIn: amountIn,
       amountOut: amountOut,
       gasUsed: BigInt(event.transaction.gasUsed || 0),
@@ -141,6 +206,16 @@ UniswapV3.Swap.handler(
 // Curve TokenExchange handler
 Curve.TokenExchange.handler(
   async ({ event, context }) => {
+    // Try to find token addresses from transfers in the same transaction
+    // Note: Curve swaps are self-custody (sender = recipient)
+    const { tokenIn, tokenOut } = findTokensFromTransfers(
+      event.transaction.hash,
+      event.params.buyer.toLowerCase(),
+      event.params.buyer.toLowerCase(),
+      event.params.tokens_sold,
+      event.params.tokens_bought
+    );
+
     const trade: Trade = {
       id: `${event.chainId}_${event.transaction.hash}_${event.logIndex}`,
       sender: event.params.buyer.toLowerCase(),
@@ -149,8 +224,9 @@ Curve.TokenExchange.handler(
       transactionHash: event.transaction.hash,
       blockNumber: BigInt(event.block.number),
       timestamp: BigInt(event.block.timestamp),
-      tokenIn: `curve-token-${event.params.sold_id}`, // Token index, not address
-      tokenOut: `curve-token-${event.params.bought_id}`,
+      // Use matched tokens if found, otherwise fall back to index notation
+      tokenIn: tokenIn !== "unknown" ? tokenIn : `curve-token-${event.params.sold_id}`,
+      tokenOut: tokenOut !== "unknown" ? tokenOut : `curve-token-${event.params.bought_id}`,
       amountIn: event.params.tokens_sold,
       amountOut: event.params.tokens_bought,
       gasUsed: BigInt(event.transaction.gasUsed || 0),
@@ -206,31 +282,6 @@ BalancerV2.Swap.handler(
       gasUsed: BigInt(event.transaction.gasUsed || 0),
       gasPrice: BigInt(event.transaction.gasPrice || 0),
       protocol: "balancer-v2"
-    };
-
-    context.Trade.set(trade);
-  },
-  { wildcard: true }
-);
-
-// 0x Protocol Fill handler
-ZeroEx.Fill.handler(
-  async ({ event, context }) => {
-    const trade: Trade = {
-      id: `${event.chainId}_${event.transaction.hash}_${event.logIndex}`,
-      sender: event.params.takerAddress.toLowerCase(),
-      recipient: event.params.takerAddress.toLowerCase(),
-      chain: getChainName(event.chainId),
-      transactionHash: event.transaction.hash,
-      blockNumber: BigInt(event.block.number),
-      timestamp: BigInt(event.block.timestamp),
-      tokenIn: "unknown", // Would need to decode assetData
-      tokenOut: "unknown", // Would need to decode assetData
-      amountIn: event.params.takerAssetFilledAmount,
-      amountOut: event.params.makerAssetFilledAmount,
-      gasUsed: BigInt(event.transaction.gasUsed || 0),
-      gasPrice: BigInt(event.transaction.gasPrice || 0),
-      protocol: "0x"
     };
 
     context.Trade.set(trade);

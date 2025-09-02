@@ -41,12 +41,7 @@ contracts:
   # As an aggregator, it routes through other DEXes which emit their own events
   # 1inch trades are captured via the underlying DEX events (Uniswap, Curve, etc.)
     
-  # 0x Protocol V3/V4 - Another major aggregator
-  # Note: This is a simplified version, full event has more parameters
-  - name: ZeroEx
-    handler: src/EventHandlers.ts
-    events:
-    - event: "Fill(address indexed makerAddress, address indexed feeRecipientAddress, address takerAddress, address senderAddress, uint256 makerAssetFilledAmount, uint256 takerAssetFilledAmount, uint256 makerFeePaid, uint256 takerFeePaid, bytes32 indexed orderHash)"
+  # NOTE: 0x Protocol removed for MVP - Complex asset data encoding makes token identification difficult
     
   # Balancer V2 - All swaps go through the Vault contract
   # Different from V1, uses poolId instead of separate pool contracts

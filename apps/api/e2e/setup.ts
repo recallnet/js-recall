@@ -11,6 +11,7 @@ import path from "path";
 import { createLogger } from "@/lib/logger.js";
 
 import { dbManager } from "./utils/db-manager.js";
+import { envioManager } from "./utils/envio-manager.js";
 import { startServer, stopServer } from "./utils/server.js";
 
 // Path to log file
@@ -152,6 +153,16 @@ export async function setup() {
     log("📦 Initializing database...");
     await dbManager.initialize();
 
+    // Optionally start Envio indexer for live trading tests
+    if (process.env.TEST_LIVE_TRADING === "true") {
+      log("🔥 Starting Envio indexer for live trading tests...");
+      await envioManager.start();
+
+      // Set the GraphQL endpoint for the API to use
+      process.env.ENVIO_GRAPHQL_ENDPOINT = envioManager.getGraphQLEndpoint();
+      log(`📡 Envio GraphQL endpoint: ${process.env.ENVIO_GRAPHQL_ENDPOINT}`);
+    }
+
     // Start server
     log("🌐 Starting server...");
     await startServer();
@@ -177,6 +188,12 @@ export async function teardown() {
   // Stop server
   log("🛑 Stopping server...");
   stopServer();
+
+  // Stop Envio if it was started
+  if (process.env.TEST_LIVE_TRADING === "true" && envioManager.isRunning()) {
+    log("🛑 Stopping Envio indexer...");
+    await envioManager.stop();
+  }
 
   log("✅ Test environment cleaned up");
 }

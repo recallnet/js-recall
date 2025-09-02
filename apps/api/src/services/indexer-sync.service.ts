@@ -1,293 +1,44 @@
-import { v4 as uuidv4 } from "uuid";
-
 import config from "@/config/index.js";
-import {
-  getLastSync,
-  updateSyncProgress,
-} from "@/database/repositories/indexer-sync-progress-repository.js";
-import { batchCreateOnChainTrades } from "@/database/repositories/trade-repository.js";
-import { InsertTrade } from "@/database/schema/trading/types.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { AgentManager } from "@/services/agent-manager.service.js";
-import { CompetitionManager } from "@/services/competition-manager.service.js";
-import { SpecificChain } from "@/types/index.js";
 import {
-  BatchSyncResult,
   IndexedTrade,
+  IndexedTransfer,
   IndexerGraphQLResponse,
 } from "@/types/live-trading.js";
 
 /**
  * Indexer Sync Service
- * Manages synchronization of on-chain trade data from blockchain indexers
- * Implements batch processing, competition-aware filtering, and progress tracking
+ * Fetches on-chain data from blockchain indexers (Envio)
  *
  * @remarks
- * This service is responsible for:
- * - Syncing trades from the Envio GraphQL endpoint
- * - Filtering trades by competition participants
- * - Tracking sync progress to avoid duplicate processing
- * - Managing efficient batch operations to prevent N+1 queries
+ * This service follows the Single Responsibility Principle:
+ * - ONLY fetches data from the Envio GraphQL endpoint
+ * - NO business logic, filtering, or data transformation
+ * - NO database operations
+ * - Returns raw indexed data for processing by other services
  */
-
-// Minimal agent interface for what we need in this service
-interface CachedAgent {
-  id: string;
-  walletAddress: string | null;
-}
-
 export class IndexerSyncService {
-  // Cache for agent data to avoid repeated queries
-  private agentCache: Map<string, { agent: CachedAgent; expiry: number }>;
-  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  private readonly graphqlEndpoint: string;
 
-  constructor(
-    private readonly competitionManager: CompetitionManager,
-    private readonly agentManager: AgentManager,
-  ) {
-    this.agentCache = new Map();
+  constructor() {
+    this.graphqlEndpoint = config.envio.graphqlEndpoint;
   }
 
   /**
-   * Get agents with caching to avoid repeated queries
-   * @param agentIds - Array of agent IDs to fetch
-   * @returns Array of agents
+   * Fetch trades from Envio GraphQL endpoint
+   *
+   * @param fromTimestamp Timestamp to fetch trades from (seconds since epoch)
+   * @param limit Maximum number of trades to fetch
+   * @param offset Offset for pagination
+   * @returns Raw indexed trades from Envio
    */
-  private async getCachedAgents(agentIds: string[]): Promise<CachedAgent[]> {
-    const now = Date.now();
-    const agents: CachedAgent[] = [];
-    const uncachedIds: string[] = [];
-
-    // Check cache first
-    for (const agentId of agentIds) {
-      const cached = this.agentCache.get(agentId);
-      if (cached && cached.expiry > now) {
-        agents.push(cached.agent);
-      } else {
-        uncachedIds.push(agentId);
-      }
-    }
-
-    // Bulk fetch uncached agents
-    if (uncachedIds.length > 0) {
-      // TODO: When AgentManager supports bulk fetch, use it here
-      // For now, we still need to fetch individually but at least we cache them
-      const fetchedAgents = await Promise.all(
-        uncachedIds.map(async (agentId) => {
-          const agent = await this.agentManager.getAgent(agentId);
-          if (agent && agent.walletAddress !== undefined) {
-            // Cache only what we need
-            const cachedAgent: CachedAgent = {
-              id: agent.id,
-              walletAddress: agent.walletAddress,
-            };
-            this.agentCache.set(agentId, {
-              agent: cachedAgent,
-              expiry: now + this.CACHE_TTL,
-            });
-            return cachedAgent;
-          }
-          return null;
-        }),
-      );
-
-      agents.push(...fetchedAgents.filter((a): a is CachedAgent => a !== null));
-    }
-
-    return agents;
-  }
-
-  /**
-   * Sync trades for a specific competition from Envio.
-   * @param competitionId - Competition to sync trades for
-   * @returns Number of trades synced
-   */
-  async syncCompetitionTrades(competitionId: string): Promise<number> {
-    const startTime = Date.now();
-
-    try {
-      serviceLogger.info(
-        `[IndexerSyncService] Starting trade sync for competition ${competitionId}`,
-      );
-
-      // Get last sync timestamp
-      const lastSync = await getLastSync(competitionId);
-      const fromTimestamp = lastSync?.lastSyncedTimestamp || 0;
-
-      // Get all agent addresses for this competition
-      const agentIds =
-        await this.competitionManager.getAllCompetitionAgents(competitionId);
-
-      if (agentIds.length === 0) {
-        serviceLogger.info(
-          `[IndexerSyncService] No agents in competition ${competitionId}`,
-        );
-        return 0;
-      }
-
-      // Get agent details using cache
-      const agents = await this.getCachedAgents(agentIds);
-
-      const agentAddresses = new Set(
-        agents
-          .filter((a) => a.walletAddress !== null)
-          .map((a) => a.walletAddress!.toLowerCase()),
-      );
-
-      let allTrades: IndexedTrade[] = [];
-      let hasMore = true;
-      let offset = 0;
-      const batchSize = config.envio.syncBatchSize;
-
-      // Query Envio in batches
-      while (hasMore) {
-        const trades = await this.queryEnvioTrades(
-          fromTimestamp,
-          batchSize,
-          offset,
-        );
-
-        if (trades.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        // Filter trades by competition participants
-        const relevantTrades = trades.filter(
-          (trade) =>
-            agentAddresses.has(trade.sender.toLowerCase()) ||
-            agentAddresses.has(trade.recipient.toLowerCase()),
-        );
-
-        allTrades = allTrades.concat(relevantTrades);
-        offset += batchSize;
-
-        // Stop if we've hit our sync limit to prevent memory issues
-        if (allTrades.length > 10000) {
-          serviceLogger.warn(
-            `[IndexerSyncService] Hit sync limit of 10000 trades for competition ${competitionId}`,
-          );
-          break;
-        }
-
-        // If we got less than batch size, we're done
-        if (trades.length < batchSize) {
-          hasMore = false;
-        }
-      }
-
-      if (allTrades.length === 0) {
-        serviceLogger.info(
-          `[IndexerSyncService] No new trades found for competition ${competitionId}`,
-        );
-        // Update sync progress even if no trades found
-        if (allTrades.length === 0 && offset === 0) {
-          // Use current timestamp if no trades were found
-          await updateSyncProgress(
-            competitionId,
-            BigInt(Math.floor(Date.now() / 1000)),
-          );
-        }
-        return 0;
-      }
-
-      // Map trades to our schema and insert
-      const mappedTrades = this.mapEnvioTradesToDb(
-        allTrades,
-        competitionId,
-        agents
-          .filter((a) => a.walletAddress !== null)
-          .map((a) => ({ id: a.id, walletAddress: a.walletAddress! })),
-      );
-
-      await batchCreateOnChainTrades(mappedTrades);
-
-      // Update sync progress with latest timestamp
-      const latestTimestamp = Math.max(
-        ...allTrades.map((t) => parseInt(t.timestamp)),
-      );
-      await updateSyncProgress(competitionId, BigInt(latestTimestamp));
-
-      const duration = Date.now() - startTime;
-      serviceLogger.info(
-        `[IndexerSyncService] Synced ${mappedTrades.length} trades for competition ${competitionId} in ${duration}ms`,
-      );
-
-      return mappedTrades.length;
-    } catch (error) {
-      serviceLogger.error(
-        `[IndexerSyncService] Error syncing trades for competition ${competitionId}:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Sync all active competitions in parallel with concurrency limit.
-   */
-  async syncAllActiveCompetitions(): Promise<BatchSyncResult> {
-    try {
-      const activeCompetition =
-        await this.competitionManager.getActiveCompetition();
-      const activeCompetitions = activeCompetition ? [activeCompetition] : [];
-
-      if (activeCompetitions.length === 0) {
-        serviceLogger.info(
-          "[IndexerSyncService] No active competitions to sync",
-        );
-        return { synced: 0, errors: 0 };
-      }
-
-      serviceLogger.info(
-        `[IndexerSyncService] Syncing ${activeCompetitions.length} active competitions`,
-      );
-
-      // Process in batches to respect concurrency limit
-      const results = await this.processInBatches(
-        activeCompetitions,
-        async (competition) => {
-          try {
-            const tradeCount = await this.syncCompetitionTrades(competition.id);
-            return { success: true, tradeCount };
-          } catch (error) {
-            serviceLogger.error(
-              `[IndexerSyncService] Error syncing competition ${competition.id}:`,
-              error,
-            );
-            return { success: false, error };
-          }
-        },
-        config.envio.maxConcurrentSyncs,
-      );
-
-      const synced = results.filter((r) => r.success).length;
-      const errors = results.filter((r) => !r.success).length;
-
-      serviceLogger.info(
-        `[IndexerSyncService] Sync complete: ${synced} succeeded, ${errors} failed`,
-      );
-
-      return { synced, errors };
-    } catch (error) {
-      serviceLogger.error(
-        "[IndexerSyncService] Error in syncAllActiveCompetitions:",
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Query Envio GraphQL endpoint for trades.
-   */
-  private async queryEnvioTrades(
+  async fetchTrades(
     fromTimestamp: number,
     limit: number,
     offset: number,
   ): Promise<IndexedTrade[]> {
     const query = `
-      query GetTrades($fromTimestamp: BigInt!, $limit: Int!, $offset: Int!) {
+      query GetTrades($fromTimestamp: numeric!, $limit: Int!, $offset: Int!) {
         Trade(
           where: { timestamp: { _gt: $fromTimestamp } }
           order_by: { timestamp: asc }
@@ -312,130 +63,260 @@ export class IndexerSyncService {
       }
     `;
 
-    const response = await fetch(config.envio.graphqlEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query,
-        variables: {
-          fromTimestamp: fromTimestamp.toString(),
-          limit,
-          offset,
+    try {
+      serviceLogger.debug(
+        `[IndexerSyncService] Fetching trades from Envio: timestamp>${fromTimestamp}, limit=${limit}, offset=${offset}`,
+      );
+
+      const response = await fetch(this.graphqlEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          query,
+          variables: {
+            fromTimestamp: fromTimestamp.toString(),
+            limit,
+            offset,
+          },
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(
-        `Envio GraphQL error: ${response.status} ${response.statusText}`,
+      if (!response.ok) {
+        throw new Error(
+          `Envio GraphQL error: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const result: IndexerGraphQLResponse<IndexedTrade> =
+        await response.json();
+
+      if (result.errors) {
+        throw new Error(
+          `GraphQL errors: ${result.errors.map((e) => e.message).join(", ")}`,
+        );
+      }
+
+      const trades = result.data?.Trade || [];
+
+      serviceLogger.debug(
+        `[IndexerSyncService] Fetched ${trades.length} trades from Envio`,
       );
+
+      return trades;
+    } catch (error) {
+      serviceLogger.error("[IndexerSyncService] Error fetching trades:", error);
+      throw error;
     }
-
-    const result: IndexerGraphQLResponse<IndexedTrade> = await response.json();
-
-    if (result.errors) {
-      throw new Error(
-        `GraphQL errors: ${result.errors.map((e) => e.message).join(", ")}`,
-      );
-    }
-
-    return result.data?.Trade || [];
   }
 
   /**
-   * Map Envio trades to our database schema.
+   * Fetch transfers from Envio GraphQL endpoint
+   *
+   * @param fromTimestamp Timestamp to fetch transfers from (seconds since epoch)
+   * @param limit Maximum number of transfers to fetch
+   * @param offset Offset for pagination
+   * @returns Raw indexed transfers from Envio
    */
-  private mapEnvioTradesToDb(
-    trades: IndexedTrade[],
-    competitionId: string,
-    agents: Array<{ id: string; walletAddress: string }>,
-  ): InsertTrade[] {
-    const agentMap = new Map(
-      agents.map((a) => [a.walletAddress.toLowerCase(), a.id]),
-    );
-
-    return trades
-      .map((trade) => {
-        // Determine which agent made the trade
-        const agentId =
-          agentMap.get(trade.sender.toLowerCase()) ||
-          agentMap.get(trade.recipient.toLowerCase());
-
-        if (!agentId) {
-          // This shouldn't happen due to our filtering, but log it
-          serviceLogger.warn(
-            `[IndexerSyncService] Trade ${trade.id} has no matching agent`,
-          );
-          return null;
+  async fetchTransfers(
+    fromTimestamp: number,
+    limit: number,
+    offset: number,
+  ): Promise<IndexedTransfer[]> {
+    const query = `
+      query GetTransfers($fromTimestamp: numeric!, $limit: Int!, $offset: Int!) {
+        Transfer(
+          where: { timestamp: { _gt: $fromTimestamp } }
+          order_by: { timestamp: asc }
+          limit: $limit
+          offset: $offset
+        ) {
+          id
+          from
+          to
+          chain
+          transactionHash
+          blockNumber
+          timestamp
+          token
+          value
         }
+      }
+    `;
 
-        const chain = this.mapChainName(trade.chain);
+    try {
+      serviceLogger.debug(
+        `[IndexerSyncService] Fetching transfers from Envio: timestamp>${fromTimestamp}, limit=${limit}, offset=${offset}`,
+      );
 
-        return {
-          id: uuidv4(),
-          agentId,
-          competitionId,
-          fromToken: trade.tokenIn,
-          toToken: trade.tokenOut,
-          fromAmount: Number(trade.amountIn) / 1e18, // Assuming 18 decimals, adjust as needed
-          toAmount: Number(trade.amountOut) / 1e18,
-          price: Number(trade.amountOut) / Number(trade.amountIn),
-          tradeAmountUsd: 0, // TODO: Calculate USD value
-          toTokenSymbol: "UNKNOWN", // TODO: Resolve symbols
-          fromTokenSymbol: "UNKNOWN",
-          success: true,
-          reason: `Indexed from ${trade.protocol}`,
-          timestamp: new Date(parseInt(trade.timestamp) * 1000),
-          fromChain: chain.includes("svm") ? "svm" : "evm",
-          toChain: chain.includes("svm") ? "svm" : "evm",
-          fromSpecificChain: chain,
-          toSpecificChain: chain,
-          tradeType: "on_chain" as const,
-          onChainTxHash: trade.transactionHash,
-          blockNumber: parseInt(trade.blockNumber),
-          gasUsed: Number(trade.gasUsed),
-          gasPrice: Number(trade.gasPrice),
-          gasCostUsd: 0, // TODO: Calculate gas cost in USD
-          indexedAt: new Date(),
-        };
-      })
-      .filter((trade): trade is NonNullable<typeof trade> => trade !== null);
+      const response = await fetch(this.graphqlEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          variables: {
+            fromTimestamp: fromTimestamp.toString(),
+            limit,
+            offset,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Envio GraphQL error: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const result: IndexerGraphQLResponse<IndexedTransfer> =
+        await response.json();
+
+      if (result.errors) {
+        throw new Error(
+          `GraphQL errors: ${result.errors.map((e) => e.message).join(", ")}`,
+        );
+      }
+
+      const transfers = result.data?.Transfer || [];
+
+      serviceLogger.debug(
+        `[IndexerSyncService] Fetched ${transfers.length} transfers from Envio`,
+      );
+
+      return transfers;
+    } catch (error) {
+      serviceLogger.error(
+        "[IndexerSyncService] Error fetching transfers:",
+        error,
+      );
+      throw error;
+    }
   }
 
   /**
-   * Map Envio chain names to our SpecificChain type.
+   * Fetch all trades in batches since a given timestamp
+   *
+   * @param fromTimestamp Timestamp to fetch trades from (seconds since epoch)
+   * @param maxTrades Maximum total trades to fetch (safety limit)
+   * @returns All trades since the given timestamp
    */
-  private mapChainName(envioChain: string): SpecificChain {
-    const chainMap: Record<string, SpecificChain> = {
-      ethereum: "eth",
-      polygon: "polygon",
-      arbitrum: "arbitrum",
-      optimism: "optimism",
-      base: "base",
-      // Add more mappings as needed
-    };
+  async fetchAllTradesSince(
+    fromTimestamp: number,
+    maxTrades: number = 10000,
+  ): Promise<IndexedTrade[]> {
+    const batchSize = config.envio.syncBatchSize;
+    let allTrades: IndexedTrade[] = [];
+    let offset = 0;
+    let hasMore = true;
 
-    return chainMap[envioChain.toLowerCase()] || ("eth" as SpecificChain);
-  }
+    while (hasMore && allTrades.length < maxTrades) {
+      const trades = await this.fetchTrades(fromTimestamp, batchSize, offset);
 
-  /**
-   * Process items in batches with concurrency limit.
-   */
-  private async processInBatches<T, R>(
-    items: T[],
-    processor: (item: T) => Promise<R>,
-    batchSize: number,
-  ): Promise<R[]> {
-    const results: R[] = [];
+      if (trades.length === 0) {
+        hasMore = false;
+        break;
+      }
 
-    for (let i = 0; i < items.length; i += batchSize) {
-      const batch = items.slice(i, i + batchSize);
-      const batchResults = await Promise.all(batch.map(processor));
-      results.push(...batchResults);
+      allTrades = allTrades.concat(trades);
+      offset += batchSize;
+
+      // If we got less than batch size, we're done
+      if (trades.length < batchSize) {
+        hasMore = false;
+      }
+
+      serviceLogger.debug(
+        `[IndexerSyncService] Fetched batch: ${trades.length} trades, total: ${allTrades.length}`,
+      );
     }
 
-    return results;
+    if (allTrades.length >= maxTrades) {
+      serviceLogger.warn(
+        `[IndexerSyncService] Hit max trades limit of ${maxTrades}`,
+      );
+    }
+
+    return allTrades;
+  }
+
+  /**
+   * Fetch all transfers in batches since a given timestamp
+   *
+   * @param fromTimestamp Timestamp to fetch transfers from (seconds since epoch)
+   * @param maxTransfers Maximum total transfers to fetch (safety limit)
+   * @returns All transfers since the given timestamp
+   */
+  async fetchAllTransfersSince(
+    fromTimestamp: number,
+    maxTransfers: number = 10000,
+  ): Promise<IndexedTransfer[]> {
+    const batchSize = config.envio.syncBatchSize;
+    let allTransfers: IndexedTransfer[] = [];
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore && allTransfers.length < maxTransfers) {
+      const transfers = await this.fetchTransfers(
+        fromTimestamp,
+        batchSize,
+        offset,
+      );
+
+      if (transfers.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      allTransfers = allTransfers.concat(transfers);
+      offset += batchSize;
+
+      // If we got less than batch size, we're done
+      if (transfers.length < batchSize) {
+        hasMore = false;
+      }
+
+      serviceLogger.debug(
+        `[IndexerSyncService] Fetched batch: ${transfers.length} transfers, total: ${allTransfers.length}`,
+      );
+    }
+
+    if (allTransfers.length >= maxTransfers) {
+      serviceLogger.warn(
+        `[IndexerSyncService] Hit max transfers limit of ${maxTransfers}`,
+      );
+    }
+
+    return allTransfers;
+  }
+
+  /**
+   * Get the latest timestamp from a set of trades
+   *
+   * @param trades Array of indexed trades
+   * @returns Latest timestamp in seconds, or 0 if no trades
+   */
+  getLatestTradeTimestamp(trades: IndexedTrade[]): number {
+    if (trades.length === 0) {
+      return 0;
+    }
+
+    return Math.max(...trades.map((t) => parseInt(t.timestamp)));
+  }
+
+  /**
+   * Get the latest timestamp from a set of transfers
+   *
+   * @param transfers Array of indexed transfers
+   * @returns Latest timestamp in seconds, or 0 if no transfers
+   */
+  getLatestTransferTimestamp(transfers: IndexedTransfer[]): number {
+    if (transfers.length === 0) {
+      return 0;
+    }
+
+    return Math.max(...transfers.map((t) => parseInt(t.timestamp)));
   }
 }

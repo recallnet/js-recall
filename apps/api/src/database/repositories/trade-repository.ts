@@ -399,6 +399,7 @@ async function createOnChainTradeImpl(
 /**
  * Batch create on-chain trades for efficiency
  * Used by the indexer when processing multiple transactions
+ * NOTE: This function does NOT update balances - use batchCreateOnChainTradesWithBalances for live trading
  */
 async function batchCreateOnChainTradesImpl(
   tradesToInsert: InsertTrade[],
@@ -430,6 +431,127 @@ async function batchCreateOnChainTradesImpl(
     return results;
   } catch (error) {
     repositoryLogger.error("Error in batchCreateOnChainTrades:", error);
+    throw error;
+  }
+}
+
+/**
+ * Batch create on-chain trades WITH atomic balance updates
+ * Critical for live trading competitions where on-chain trades ARE the competition
+ *
+ * @remarks
+ * This function ensures atomicity by updating all balances and inserting all trades
+ * in a single database transaction. If any balance update fails (e.g., insufficient funds),
+ * the entire batch is rolled back.
+ *
+ * @param tradesToInsert Array of on-chain trades to insert
+ * @returns Object containing created trades and balance update summary
+ */
+async function batchCreateOnChainTradesWithBalancesImpl(
+  tradesToInsert: InsertTrade[],
+): Promise<{
+  trades: (typeof trades.$inferSelect)[];
+  balanceUpdates: {
+    totalUpdated: number;
+    byAgent: Map<string, { fromTokens: Set<string>; toTokens: Set<string> }>;
+  };
+}> {
+  if (tradesToInsert.length === 0) {
+    return {
+      trades: [],
+      balanceUpdates: {
+        totalUpdated: 0,
+        byAgent: new Map(),
+      },
+    };
+  }
+
+  try {
+    const results = await db.transaction(async (tx) => {
+      const balanceUpdateSummary = new Map<
+        string,
+        { fromTokens: Set<string>; toTokens: Set<string> }
+      >();
+      let totalBalanceUpdates = 0;
+
+      // Process each trade's balance updates
+      for (const trade of tradesToInsert) {
+        // Validate chains
+        const fromSpecificChain = SpecificChainSchema.parse(
+          trade.fromSpecificChain,
+        );
+        const toSpecificChain = SpecificChainSchema.parse(
+          trade.toSpecificChain,
+        );
+
+        // Track balance updates per agent
+        if (!balanceUpdateSummary.has(trade.agentId)) {
+          balanceUpdateSummary.set(trade.agentId, {
+            fromTokens: new Set(),
+            toTokens: new Set(),
+          });
+        }
+        const agentSummary = balanceUpdateSummary.get(trade.agentId)!;
+
+        // Decrement fromToken balance
+        await decrementBalanceInTransaction(
+          tx,
+          trade.agentId,
+          trade.fromToken,
+          trade.fromAmount,
+          fromSpecificChain,
+          trade.fromTokenSymbol,
+        );
+        agentSummary.fromTokens.add(trade.fromToken);
+        totalBalanceUpdates++;
+
+        // Increment toToken balance (skip for burn trades)
+        if (trade.toAmount > 0) {
+          await incrementBalanceInTransaction(
+            tx,
+            trade.agentId,
+            trade.toToken,
+            trade.toAmount,
+            toSpecificChain,
+            trade.toTokenSymbol,
+          );
+          agentSummary.toTokens.add(trade.toToken);
+          totalBalanceUpdates++;
+        }
+      }
+
+      // Ensure all trades are marked as on-chain
+      const onChainTrades = tradesToInsert.map((trade) => ({
+        ...trade,
+        tradeType: "on_chain" as const,
+        timestamp: trade.timestamp || new Date(),
+      }));
+
+      // Batch insert all trades
+      const insertedTrades = await tx
+        .insert(trades)
+        .values(onChainTrades)
+        .returning();
+
+      repositoryLogger.info(
+        `[TradeRepository] Batch created ${insertedTrades.length} on-chain trades with ${totalBalanceUpdates} balance updates`,
+      );
+
+      return {
+        trades: insertedTrades,
+        balanceUpdates: {
+          totalUpdated: totalBalanceUpdates,
+          byAgent: balanceUpdateSummary,
+        },
+      };
+    });
+
+    return results;
+  } catch (error) {
+    repositoryLogger.error(
+      "Error in batchCreateOnChainTradesWithBalances:",
+      error,
+    );
     throw error;
   }
 }
@@ -578,6 +700,13 @@ export const batchCreateOnChainTrades = createTimedRepositoryFunction(
   "TradeRepository",
   "batchCreateOnChainTrades",
 );
+
+export const batchCreateOnChainTradesWithBalances =
+  createTimedRepositoryFunction(
+    batchCreateOnChainTradesWithBalancesImpl,
+    "TradeRepository",
+    "batchCreateOnChainTradesWithBalances",
+  );
 
 export const getTradesByType = createTimedRepositoryFunction(
   getTradesByTypeImpl,
