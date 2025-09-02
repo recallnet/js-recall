@@ -1,8 +1,9 @@
-import { ORPCError, os } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { cookies, headers } from "next/headers";
 
-import { router } from "@/rpc/router";
+import { db } from "@/db";
+import { router } from "@/rpc/router/index";
+import { sessionOptions } from "@/session";
 
 const handler = new RPCHandler(router);
 
@@ -10,12 +11,9 @@ async function handleRequest(request: Request) {
   const { response } = await handler.handle(request, {
     prefix: "/rpc",
     context: {
-      headers: await headers(),
       cookies: await cookies(),
-      cookieName: process.env.SESSION_COOKIE_NAME || "recall_session",
-      cookiePassword:
-        process.env.SESSION_COOKIE_PW ||
-        "complex_password_at_least_32_characters_long",
+      sessionOptions,
+      db,
     },
   });
 

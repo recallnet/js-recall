@@ -315,6 +315,9 @@ importers:
       dnum:
         specifier: ^2.15.0
         version: 2.15.0
+      drizzle-orm:
+        specifier: ^0.43.1
+        version: 0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0)
       embla-carousel-auto-scroll:
         specifier: ^8.6.0
         version: 8.6.0(embla-carousel@8.6.0)
@@ -342,6 +345,9 @@ importers:
       next-navigation-guard:
         specifier: ^0.1.2
         version: 0.1.2(next@15.3.2(@babel/core@7.28.0)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+      pg:
+        specifier: ^8.10.0
+        version: 8.16.0
       posthog-js:
         specifier: ^1.257.0
         version: 1.257.0
@@ -3060,6 +3066,9 @@ packages:
 
   '@openzeppelin/contracts@5.4.0':
     resolution: {integrity: sha512-eCYgWnLg6WO+X52I16TZt8uEjbtdkgLC0SUX/xnAksjjrQI4Xfn4iBRoI5j55dmlOhDv1Y7BoR3cU7e3WWhC6A==}
+
+  '@orpc/standard-server@1.8.6':
+    resolution: {integrity: sha512-py33OG4Mpu2LIA9Oo8lNH0THo7dcDwFPewiTYVXJ1zQN7SDHtIp+bWmtWgK81fUy5k/s5nM36hoGLojVw/1GZQ==}
 
   '@oven/bun-darwin-aarch64@1.2.17':
     resolution: {integrity: sha512-66Xjz3NZXUUWKZJPvWKuwEkaqMZpir1Gm4SbhbB2iiRSSTW8jqwdkSb9RhgTCDt5OnSPd3+Cq0WsP/T5ExJbhA==}
@@ -14561,6 +14570,12 @@ snapshots:
       '@openzeppelin/contracts': 5.4.0
 
   '@openzeppelin/contracts@5.4.0': {}
+
+  '@orpc/standard-server@1.8.6(@opentelemetry/api@1.9.0)':
+    dependencies:
+      '@orpc/shared': 1.8.6(@opentelemetry/api@1.9.0)
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
 
   '@oven/bun-darwin-aarch64@1.2.17':
     optional: true
