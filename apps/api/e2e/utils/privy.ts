@@ -231,12 +231,17 @@ export async function createMockPrivyToken(
   // Build the JWT
   const jwt = new SignJWT({
     // Only include claims that are used by our mock Privy client:
-    // - linked_accounts as string (real format)
-    // - cr (created_at) as ISO string (real format)
-    // - Below: sub, aud, iss, iat, exp
+    // - linked_accounts as string
+    // - cr (created_at) as ISO string
+    // - Below (via methods): sub, aud, iss, iat, exp
     linked_accounts: JSON.stringify(linkedAccounts),
-    // Keep cr for parity with some tests that read it
     cr: now.toISOString(),
+    // Include custom user data (for easier test overrides)
+    email: userData.email,
+    provider: userData.provider,
+    wallet_address: userData.walletAddress,
+    wallet_chain_type: userData.walletChainType,
+    provider_username: userData.name,
   })
     .setProtectedHeader({ alg: "ES256" })
     .setIssuedAt()

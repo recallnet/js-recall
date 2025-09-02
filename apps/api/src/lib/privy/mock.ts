@@ -175,6 +175,7 @@ export class MockPrivyClient {
     payload: Record<string, unknown>,
   ): PrivyUser {
     const privyId = String(payload.sub || "");
+    // Convenience variables for easier test overrides
     const email = payload.email ? String(payload.email) : undefined;
     const provider = (payload.provider as string) || undefined;
     const walletAddress = payload.wallet_address
@@ -183,8 +184,8 @@ export class MockPrivyClient {
     const walletChainType = payload.wallet_chain_type
       ? String(payload.wallet_chain_type)
       : undefined;
-    const name = payload.providerUsername
-      ? String(payload.providerUsername)
+    const name = payload.provider_username
+      ? String(payload.provider_username)
       : undefined;
 
     const now = new Date();
