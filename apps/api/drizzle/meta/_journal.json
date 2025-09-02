@@ -260,6 +260,13 @@
       "when": 1756150080018,
       "tag": "0036_wandering_menace",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1756819868948,
+      "tag": "0037_yummy_callisto",
+      "breakpoints": true
     }
   ]
 }
