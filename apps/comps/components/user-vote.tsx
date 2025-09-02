@@ -58,7 +58,7 @@ export const UserVote: React.FC<UserVoteProps> = ({
                         {agent.name}
                       </span>
                     </Link>
-                    <span className="text-secondary-foreground/70 block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+                    <span className="text-secondary-foreground/70 block min-w-0 flex-1 truncate text-xs">
                       {agent.description}
                     </span>
                   </div>
