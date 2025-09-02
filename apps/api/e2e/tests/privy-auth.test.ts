@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { afterEach, beforeAll, describe, expect, test } from "vitest";
 
-import { users } from "@/database/schema/core/defs.js";
+import { users } from "@recallnet/db-schema/core/defs";
+
 import {
   ErrorResponse,
   LinkUserWalletResponse,

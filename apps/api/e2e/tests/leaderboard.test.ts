@@ -318,12 +318,10 @@ describe("Leaderboard API", () => {
 
     // Create 2 users and vote for agent 1 and agent 2, respectively
     const { client: siweClient1 } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Privy Test User",
       userEmail: "siwe-test@example.com",
     });
     const { client: siweClient2 } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Privy Test User 2",
       userEmail: "siwe-test2@example.com",
     });
@@ -458,19 +456,16 @@ describe("Leaderboard API", () => {
 
     // Create users for voting before ending competitions
     const { client: voter1 } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Voter One",
       userEmail: "voter1@example.com",
     });
 
     const { client: voter2 } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Voter Two",
       userEmail: "voter2@example.com",
     });
 
     const { client: voter3 } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Voter Three",
       userEmail: "voter3@example.com",
     });

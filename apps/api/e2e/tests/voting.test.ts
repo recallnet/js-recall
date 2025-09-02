@@ -79,7 +79,6 @@ describe("Voting API", () => {
       // Create Privy authenticated user for voting (different from agent owners)
       const { client: userClient, user } = await createPrivyAuthenticatedClient(
         {
-          adminApiKey,
           userName: "Voting User",
           userEmail: "voter@test.com",
         },
@@ -145,7 +144,6 @@ describe("Voting API", () => {
       // Create Privy authenticated user
       const { client: userClient, user } = await createPrivyAuthenticatedClient(
         {
-          adminApiKey,
           userName: "Active Voter",
           userEmail: "active-voter@test.com",
         },
@@ -210,7 +208,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Duplicate Voter",
         userEmail: "duplicate-voter@test.com",
       });
@@ -283,7 +280,6 @@ describe("Voting API", () => {
       // Create first Privy authenticated user
       const { client: user1Client, user: user1 } =
         await createPrivyAuthenticatedClient({
-          adminApiKey,
           userName: "Voter One",
           userEmail: "voter1@test.com",
         });
@@ -291,7 +287,6 @@ describe("Voting API", () => {
       // Create second Privy authenticated user
       const { client: user2Client, user: user2 } =
         await createPrivyAuthenticatedClient({
-          adminApiKey,
           userName: "Voter Two",
           userEmail: "voter2@test.com",
         });
@@ -376,7 +371,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Invalid Agent Voter",
         userEmail: "invalid-agent-voter@test.com",
       });
@@ -422,7 +416,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Participation Voter",
         userEmail: "participation-voter@test.com",
       });
@@ -441,7 +434,6 @@ describe("Voting API", () => {
     test("should handle invalid request data", async () => {
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Invalid Data Voter",
         userEmail: "invalid-data-voter@test.com",
       });
@@ -496,7 +488,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "State Voter",
         userEmail: "state-voter@test.com",
       });
@@ -555,7 +546,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Voted State User",
         userEmail: "voted-state-user@test.com",
       });
@@ -629,7 +619,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Cannot Vote User",
         userEmail: "cannot-vote-user@test.com",
       });
@@ -695,7 +684,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Voting Persistence User",
         userEmail: "voting-persistence-user@test.com",
       });
@@ -763,7 +751,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Get Votes User",
         userEmail: "get-votes-user@test.com",
       });
@@ -803,7 +790,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Filter Votes User",
         userEmail: "filter-votes-user@test.com",
       });
@@ -923,17 +909,14 @@ describe("Voting API", () => {
 
       // Create multiple users and cast votes
       const { client: user1Client } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Vote Count User 1",
         userEmail: "vote-count-user1@test.com",
       });
       const { client: user2Client } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Vote Count User 2",
         userEmail: "vote-count-user2@test.com",
       });
       const { client: user3Client } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Vote Count User 3",
         userEmail: "vote-count-user3@test.com",
       });
@@ -1002,7 +985,6 @@ describe("Voting API", () => {
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Vote Status User",
         userEmail: "vote-status-user@test.com",
       });
@@ -1072,7 +1054,6 @@ describe("Voting API", () => {
 
       // Create user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Future Vote User",
         userEmail: "future-vote@test.com",
       });
@@ -1124,7 +1105,6 @@ describe("Voting API", () => {
 
       // Create user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Past Vote User",
         userEmail: "past-vote@test.com",
       });
@@ -1177,7 +1157,6 @@ describe("Voting API", () => {
       // Create user
       const { client: userClient, user } = await createPrivyAuthenticatedClient(
         {
-          adminApiKey,
           userName: "Valid Vote User",
           userEmail: "valid-vote@test.com",
         },
@@ -1229,7 +1208,6 @@ describe("Voting API", () => {
 
       // Create authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Test User",
         userEmail: "test-user@test.com",
       });
@@ -1283,7 +1261,6 @@ describe("Voting API", () => {
 
       // Create authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Test User 2",
         userEmail: "test-user2@test.com",
       });
@@ -1340,7 +1317,6 @@ describe("Voting API", () => {
 
       // Create authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Test User 3",
         userEmail: "test-user3@test.com",
       });

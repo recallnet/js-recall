@@ -481,7 +481,6 @@ describe("Competition API", () => {
 
     // Test 3: Privy authenticated user can access the rules
     const { client: siweClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Privy Rules Viewer",
       userEmail: "siwe-rules@example.com",
     });
@@ -1523,7 +1522,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user client
     const { client: siweClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Privy Competition Detail User",
       userEmail: "siwe-competition-detail@example.com",
     });
@@ -1571,7 +1569,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user client
     const { client: siweClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Privy Competition Agents User",
       userEmail: "siwe-competition-agents@example.com",
     });
@@ -1646,7 +1643,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user client
     const { client: siweClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Privy Competitions List User",
       userEmail: "siwe-competitions-list@example.com",
     });
@@ -1713,7 +1709,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user client
     const { client: siweClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Privy Access Comparison User",
       userEmail: "siwe-access-comparison@example.com",
     });
@@ -2694,7 +2689,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user
     const { client: userClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Competition Join User",
       userEmail: "competition-join@example.com",
     });
@@ -2752,7 +2746,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user
     const { client: userClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Competition Leave User",
       userEmail: "competition-leave@example.com",
     });
@@ -2831,13 +2824,11 @@ describe("Competition API", () => {
 
     // Create two Privy-authenticated users
     const { client: user1Client } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "User 1",
       userEmail: "user1@example.com",
     });
 
     const { client: user2Client } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "User 2",
       userEmail: "user2@example.com",
     });
@@ -2877,7 +2868,6 @@ describe("Competition API", () => {
 
     // Create a dummy user and agent to make the competition startable
     const { client: dummyUserClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Dummy User for Competition",
       userEmail: "dummy-user@example.com",
     });
@@ -2892,7 +2882,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user who will try to join
     const { client: userClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Non-Pending Test User",
       userEmail: "non-pending-test@example.com",
     });
@@ -2949,7 +2938,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user
     const { client: userClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Duplicate Join User",
       userEmail: "duplicate-join@example.com",
     });
@@ -3000,7 +2988,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user
     const { client: userClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Deleted Agent User",
       userEmail: "deleted-agent@example.com",
     });
@@ -3043,7 +3030,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user with agent
     const { client: userClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Active Leave User",
       userEmail: "active-leave@example.com",
     });
@@ -3107,7 +3093,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user
     const { client: userClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Ended Leave User",
       userEmail: "ended-leave@example.com",
     });
@@ -3154,7 +3139,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user
     const { client: userClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Non-Existent Competition User",
       userEmail: "non-existent-comp@example.com",
     });
@@ -3197,7 +3181,6 @@ describe("Competition API", () => {
 
     // Create a Privy-authenticated user
     const { client: userClient } = await createPrivyAuthenticatedClient({
-      adminApiKey,
       userName: "Not In Competition User",
       userEmail: "not-in-comp@example.com",
     });
@@ -3360,7 +3343,6 @@ describe("Competition API", () => {
 
       // Create a Privy-authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Join Window User",
         userEmail: "join-window@example.com",
       });
@@ -3417,7 +3399,6 @@ describe("Competition API", () => {
 
       // Create a Privy-authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Early Join User",
         userEmail: "early-join@example.com",
       });
@@ -3471,7 +3452,6 @@ describe("Competition API", () => {
 
       // Create a Privy-authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Late Join User",
         userEmail: "late-join@example.com",
       });
@@ -3525,7 +3505,6 @@ describe("Competition API", () => {
 
       // Create a Privy-authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Start Only User",
         userEmail: "start-only@example.com",
       });
@@ -3581,7 +3560,6 @@ describe("Competition API", () => {
 
       // Create a Privy-authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "End Only User",
         userEmail: "end-only@example.com",
       });
@@ -3637,7 +3615,6 @@ describe("Competition API", () => {
 
       // Create a Privy-authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Backward Compat User",
         userEmail: "backward-compat@example.com",
       });
@@ -3695,7 +3672,6 @@ describe("Competition API", () => {
       });
 
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Start Competition User",
         userEmail: "start-competition@example.com",
       });
@@ -4127,9 +4103,7 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy authenticated client
-      const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
-      });
+      const { client: userClient } = await createPrivyAuthenticatedClient({});
 
       // Create a pending competition with minTradesPerDay
       const competitionName = `Listed Competition ${Date.now()}`;
@@ -4484,13 +4458,11 @@ describe("Competition API", () => {
 
       // Create Privy authenticated user with agents
       const { client: user1Client } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Trophy User 1",
         userEmail: "trophy-user-1@example.com",
       });
 
       const { client: user2Client } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Trophy User 2",
         userEmail: "trophy-user-2@example.com",
       });
@@ -4636,7 +4608,6 @@ describe("Competition API", () => {
     test("should handle user with no competitions via user endpoints", async () => {
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "No Trophies User",
         userEmail: "no-trophies-user@example.com",
       });
@@ -5062,7 +5033,6 @@ describe("Competition API", () => {
 
       // Test 3: User client (need to create one)
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "Participant Count Test User",
         userEmail: "participant-test@example.com",
       });
@@ -5397,7 +5367,6 @@ describe("Competition API", () => {
 
       // Create a Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({
-        adminApiKey,
         userName: "User Competition Test",
       });
 
