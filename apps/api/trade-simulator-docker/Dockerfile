@@ -17,6 +17,7 @@ COPY . .
 
 # Build the application
 RUN pnpm --filter=@recallnet/api-sdk build && \
+    pnpm --filter=@recallnet/db-schema build && \
     pnpm --filter=@recallnet/staking-contracts build && \
     pnpm --filter=api build
 
