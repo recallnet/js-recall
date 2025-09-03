@@ -196,9 +196,8 @@ export class EnvioManager {
    */
   private async startIndexer(): Promise<void> {
     return new Promise((resolve, reject) => {
-      // The update-generated-start-blocks.ts script loads its own .env file
-      // We just need to spawn the process with the correct working directory
-      this.envioProcess = spawn("pnpm", ["dev:latest"], {
+      // Start the indexer - blocks were already updated during build phase
+      this.envioProcess = spawn("pnpm", ["dev"], {
         cwd: this.indexerPath,
         stdio: ["pipe", "pipe", "pipe"], // Changed from inherit to avoid blocking terminal
         env: {
