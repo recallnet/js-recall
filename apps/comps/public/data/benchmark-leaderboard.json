@@ -107,73 +107,49 @@
       "scores": {
         "safety": {
           "rawScore": 1630.91,
-          "confidenceInterval": [
-            1590.67,
-            1671.16
-          ],
+          "confidenceInterval": [1590.67, 1671.16],
           "rank": 3,
           "evaluatedAt": "2025-08-28T11:19:23.569717"
         },
         "deception": {
           "rawScore": 1478.01,
-          "confidenceInterval": [
-            1473.32,
-            1482.7
-          ],
+          "confidenceInterval": [1473.32, 1482.7],
           "rank": 46,
           "evaluatedAt": "2025-08-28T11:19:23.569808"
         },
         "persuasion": {
           "rawScore": 1564.7,
-          "confidenceInterval": [
-            1509.44,
-            1619.96
-          ],
+          "confidenceInterval": [1509.44, 1619.96],
           "rank": 4,
           "evaluatedAt": "2025-08-28T11:19:23.569896"
         },
         "abstraction": {
           "rawScore": 1529.23,
-          "confidenceInterval": [
-            1499.04,
-            1559.43
-          ],
+          "confidenceInterval": [1499.04, 1559.43],
           "rank": 12,
           "evaluatedAt": "2025-08-28T11:19:23.569979"
         },
         "empathy": {
           "rawScore": 1591.93,
-          "confidenceInterval": [
-            1570.46,
-            1613.41
-          ],
+          "confidenceInterval": [1570.46, 1613.41],
           "rank": 4,
           "evaluatedAt": "2025-08-28T11:19:23.570073"
         },
         "compliance": {
           "rawScore": 1516.97,
-          "confidenceInterval": [
-            1467.18,
-            1566.77
-          ],
+          "confidenceInterval": [1467.18, 1566.77],
           "rank": 14,
           "evaluatedAt": "2025-08-28T11:19:23.570156"
         },
         "coding": {
           "rawScore": 1648.19,
-          "confidenceInterval": [
-            1614.61,
-            1681.77
-          ],
+          "confidenceInterval": [1614.61, 1681.77],
           "rank": 2,
           "evaluatedAt": "2025-08-28T11:19:23.570237"
         },
         "ethics": {
           "rawScore": 1664.11,
-          "confidenceInterval": [
-            1594.61,
-            1733.61
-          ],
+          "confidenceInterval": [1594.61, 1733.61],
           "rank": 6,
           "evaluatedAt": "2025-08-28T11:19:23.570320"
         }
@@ -194,14 +170,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image",
-          "file"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image", "file"],
+        "output_modalities": ["text"],
         "tokenizer": "GPT",
         "instruct_type": null
       },
@@ -229,73 +199,49 @@
       "scores": {
         "safety": {
           "rawScore": 1424.14,
-          "confidenceInterval": [
-            1394.9,
-            1453.38
-          ],
+          "confidenceInterval": [1394.9, 1453.38],
           "rank": 46,
           "evaluatedAt": "2025-08-28T11:19:23.569733"
         },
         "deception": {
           "rawScore": 1478.69,
-          "confidenceInterval": [
-            1473.9,
-            1483.48
-          ],
+          "confidenceInterval": [1473.9, 1483.48],
           "rank": 43,
           "evaluatedAt": "2025-08-28T11:19:23.569823"
         },
         "persuasion": {
           "rawScore": 1461.08,
-          "confidenceInterval": [
-            1407.98,
-            1514.18
-          ],
+          "confidenceInterval": [1407.98, 1514.18],
           "rank": 41,
           "evaluatedAt": "2025-08-28T11:19:23.569913"
         },
         "abstraction": {
           "rawScore": 1475.68,
-          "confidenceInterval": [
-            1442.71,
-            1508.66
-          ],
+          "confidenceInterval": [1442.71, 1508.66],
           "rank": 39,
           "evaluatedAt": "2025-08-28T11:19:23.569997"
         },
         "empathy": {
           "rawScore": 1456.99,
-          "confidenceInterval": [
-            1435.23,
-            1478.75
-          ],
+          "confidenceInterval": [1435.23, 1478.75],
           "rank": 37,
           "evaluatedAt": "2025-08-28T11:19:23.570089"
         },
         "compliance": {
           "rawScore": 1506.82,
-          "confidenceInterval": [
-            1451.34,
-            1562.31
-          ],
+          "confidenceInterval": [1451.34, 1562.31],
           "rank": 22,
           "evaluatedAt": "2025-08-28T11:19:23.570170"
         },
         "coding": {
           "rawScore": 1436.14,
-          "confidenceInterval": [
-            1418.79,
-            1453.48
-          ],
+          "confidenceInterval": [1418.79, 1453.48],
           "rank": 41,
           "evaluatedAt": "2025-08-28T11:19:23.570253"
         },
         "ethics": {
           "rawScore": 1473.06,
-          "confidenceInterval": [
-            1410.88,
-            1535.25
-          ],
+          "confidenceInterval": [1410.88, 1535.25],
           "rank": 27,
           "evaluatedAt": "2025-08-28T11:19:23.570335"
         }
@@ -315,12 +261,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Mistral",
         "instruct_type": null
       },
@@ -351,73 +293,49 @@
       "scores": {
         "safety": {
           "rawScore": 1553.25,
-          "confidenceInterval": [
-            1522.95,
-            1583.54
-          ],
+          "confidenceInterval": [1522.95, 1583.54],
           "rank": 13,
           "evaluatedAt": "2025-08-28T11:19:23.569702"
         },
         "deception": {
           "rawScore": 1477.78,
-          "confidenceInterval": [
-            1472.83,
-            1482.72
-          ],
+          "confidenceInterval": [1472.83, 1482.72],
           "rank": 47,
           "evaluatedAt": "2025-08-28T11:19:23.569793"
         },
         "persuasion": {
           "rawScore": 1560.41,
-          "confidenceInterval": [
-            1507.48,
-            1613.34
-          ],
+          "confidenceInterval": [1507.48, 1613.34],
           "rank": 6,
           "evaluatedAt": "2025-08-28T11:19:23.569882"
         },
         "abstraction": {
           "rawScore": 1507.96,
-          "confidenceInterval": [
-            1480.59,
-            1535.32
-          ],
+          "confidenceInterval": [1480.59, 1535.32],
           "rank": 29,
           "evaluatedAt": "2025-08-28T11:19:23.569965"
         },
         "empathy": {
           "rawScore": 1494.68,
-          "confidenceInterval": [
-            1473.31,
-            1516.05
-          ],
+          "confidenceInterval": [1473.31, 1516.05],
           "rank": 26,
           "evaluatedAt": "2025-08-28T11:19:23.570060"
         },
         "compliance": {
           "rawScore": 1496.3,
-          "confidenceInterval": [
-            1444.86,
-            1547.74
-          ],
+          "confidenceInterval": [1444.86, 1547.74],
           "rank": 33,
           "evaluatedAt": "2025-08-28T11:19:23.570140"
         },
         "coding": {
           "rawScore": 1574.42,
-          "confidenceInterval": [
-            1554.03,
-            1594.82
-          ],
+          "confidenceInterval": [1554.03, 1594.82],
           "rank": 7,
           "evaluatedAt": "2025-08-28T11:19:23.570223"
         },
         "ethics": {
           "rawScore": 1578.72,
-          "confidenceInterval": [
-            1513.74,
-            1643.7
-          ],
+          "confidenceInterval": [1513.74, 1643.7],
           "rank": 15,
           "evaluatedAt": "2025-08-28T11:19:23.570305"
         }
@@ -439,14 +357,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "image",
-          "text",
-          "file"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
         "tokenizer": "Claude",
         "instruct_type": null
       },
@@ -475,73 +387,49 @@
       "scores": {
         "safety": {
           "rawScore": 1660.21,
-          "confidenceInterval": [
-            1616.85,
-            1703.57
-          ],
+          "confidenceInterval": [1616.85, 1703.57],
           "rank": 1,
           "evaluatedAt": "2025-08-28T11:19:23.569754"
         },
         "deception": {
           "rawScore": 1478.83,
-          "confidenceInterval": [
-            1474.3,
-            1483.35
-          ],
+          "confidenceInterval": [1474.3, 1483.35],
           "rank": 40,
           "evaluatedAt": "2025-08-28T11:19:23.569844"
         },
         "persuasion": {
           "rawScore": 1597.15,
-          "confidenceInterval": [
-            1539.59,
-            1654.71
-          ],
+          "confidenceInterval": [1539.59, 1654.71],
           "rank": 3,
           "evaluatedAt": "2025-08-28T11:19:23.569932"
         },
         "abstraction": {
           "rawScore": 1535.39,
-          "confidenceInterval": [
-            1506.49,
-            1564.28
-          ],
+          "confidenceInterval": [1506.49, 1564.28],
           "rank": 10,
           "evaluatedAt": "2025-08-28T11:19:23.570015"
         },
         "empathy": {
           "rawScore": 1600.73,
-          "confidenceInterval": [
-            1580.69,
-            1620.78
-          ],
+          "confidenceInterval": [1580.69, 1620.78],
           "rank": 3,
           "evaluatedAt": "2025-08-28T11:19:23.570107"
         },
         "compliance": {
           "rawScore": 1532.61,
-          "confidenceInterval": [
-            1475.64,
-            1589.58
-          ],
+          "confidenceInterval": [1475.64, 1589.58],
           "rank": 5,
           "evaluatedAt": "2025-08-28T11:19:23.570189"
         },
         "coding": {
           "rawScore": 1643.33,
-          "confidenceInterval": [
-            1604.72,
-            1681.94
-          ],
+          "confidenceInterval": [1604.72, 1681.94],
           "rank": 3,
           "evaluatedAt": "2025-08-28T11:19:23.570273"
         },
         "ethics": {
           "rawScore": 1743.59,
-          "confidenceInterval": [
-            1666.24,
-            1820.95
-          ],
+          "confidenceInterval": [1666.24, 1820.95],
           "rank": 2,
           "evaluatedAt": "2025-08-28T11:19:23.570352"
         }
@@ -562,14 +450,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image",
-          "file"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image", "file"],
+        "output_modalities": ["text"],
         "tokenizer": "GPT",
         "instruct_type": null
       },
@@ -597,73 +479,49 @@
       "scores": {
         "safety": {
           "rawScore": 1482.28,
-          "confidenceInterval": [
-            1456.3,
-            1508.26
-          ],
+          "confidenceInterval": [1456.3, 1508.26],
           "rank": 29,
           "evaluatedAt": "2025-08-28T11:19:23.569724"
         },
         "deception": {
           "rawScore": 1481.41,
-          "confidenceInterval": [
-            1476.55,
-            1486.27
-          ],
+          "confidenceInterval": [1476.55, 1486.27],
           "rank": 32,
           "evaluatedAt": "2025-08-28T11:19:23.569814"
         },
         "persuasion": {
           "rawScore": 1540.59,
-          "confidenceInterval": [
-            1488.69,
-            1592.48
-          ],
+          "confidenceInterval": [1488.69, 1592.48],
           "rank": 10,
           "evaluatedAt": "2025-08-28T11:19:23.569902"
         },
         "abstraction": {
           "rawScore": 1467.89,
-          "confidenceInterval": [
-            1434.93,
-            1500.86
-          ],
+          "confidenceInterval": [1434.93, 1500.86],
           "rank": 42,
           "evaluatedAt": "2025-08-28T11:19:23.569987"
         },
         "empathy": {
           "rawScore": 1454.34,
-          "confidenceInterval": [
-            1435.14,
-            1473.54
-          ],
+          "confidenceInterval": [1435.14, 1473.54],
           "rank": 39,
           "evaluatedAt": "2025-08-28T11:19:23.570079"
         },
         "compliance": {
           "rawScore": 1507.82,
-          "confidenceInterval": [
-            1451.51,
-            1564.13
-          ],
+          "confidenceInterval": [1451.51, 1564.13],
           "rank": 20,
           "evaluatedAt": "2025-08-28T11:19:23.570160"
         },
         "coding": {
           "rawScore": 1467.19,
-          "confidenceInterval": [
-            1452.06,
-            1482.32
-          ],
+          "confidenceInterval": [1452.06, 1482.32],
           "rank": 37,
           "evaluatedAt": "2025-08-28T11:19:23.570243"
         },
         "ethics": {
           "rawScore": 1465.86,
-          "confidenceInterval": [
-            1400.03,
-            1531.68
-          ],
+          "confidenceInterval": [1400.03, 1531.68],
           "rank": 28,
           "evaluatedAt": "2025-08-28T11:19:23.570324"
         }
@@ -683,12 +541,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -721,73 +575,49 @@
       "scores": {
         "safety": {
           "rawScore": 1441.55,
-          "confidenceInterval": [
-            1414.66,
-            1468.45
-          ],
+          "confidenceInterval": [1414.66, 1468.45],
           "rank": 43,
           "evaluatedAt": "2025-08-28T11:19:23.569721"
         },
         "deception": {
           "rawScore": 1479.04,
-          "confidenceInterval": [
-            1474.23,
-            1483.86
-          ],
+          "confidenceInterval": [1474.23, 1483.86],
           "rank": 38,
           "evaluatedAt": "2025-08-28T11:19:23.569811"
         },
         "persuasion": {
           "rawScore": 1473.29,
-          "confidenceInterval": [
-            1420.87,
-            1525.7
-          ],
+          "confidenceInterval": [1420.87, 1525.7],
           "rank": 38,
           "evaluatedAt": "2025-08-28T11:19:23.569900"
         },
         "abstraction": {
           "rawScore": 1496.49,
-          "confidenceInterval": [
-            1466.23,
-            1526.74
-          ],
+          "confidenceInterval": [1466.23, 1526.74],
           "rank": 34,
           "evaluatedAt": "2025-08-28T11:19:23.569984"
         },
         "empathy": {
           "rawScore": 1461.35,
-          "confidenceInterval": [
-            1441.75,
-            1480.96
-          ],
+          "confidenceInterval": [1441.75, 1480.96],
           "rank": 36,
           "evaluatedAt": "2025-08-28T11:19:23.570077"
         },
         "compliance": {
           "rawScore": 1508.06,
-          "confidenceInterval": [
-            1448.86,
-            1567.27
-          ],
+          "confidenceInterval": [1448.86, 1567.27],
           "rank": 19,
           "evaluatedAt": "2025-08-28T11:19:23.570158"
         },
         "coding": {
           "rawScore": 1479.21,
-          "confidenceInterval": [
-            1461.86,
-            1496.57
-          ],
+          "confidenceInterval": [1461.86, 1496.57],
           "rank": 31,
           "evaluatedAt": "2025-08-28T11:19:23.570241"
         },
         "ethics": {
           "rawScore": 1369.66,
-          "confidenceInterval": [
-            1303.11,
-            1436.21
-          ],
+          "confidenceInterval": [1303.11, 1436.21],
           "rank": 44,
           "evaluatedAt": "2025-08-28T11:19:23.570323"
         }
@@ -807,12 +637,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Mistral",
         "instruct_type": null
       },
@@ -843,73 +669,49 @@
       "scores": {
         "safety": {
           "rawScore": 1298.81,
-          "confidenceInterval": [
-            1240.77,
-            1356.85
-          ],
+          "confidenceInterval": [1240.77, 1356.85],
           "rank": 51,
           "evaluatedAt": "2025-08-28T11:19:23.569762"
         },
         "deception": {
           "rawScore": 1480.25,
-          "confidenceInterval": [
-            1475.57,
-            1484.93
-          ],
+          "confidenceInterval": [1475.57, 1484.93],
           "rank": 36,
           "evaluatedAt": "2025-08-28T11:19:23.569852"
         },
         "persuasion": {
           "rawScore": 1317.18,
-          "confidenceInterval": [
-            1235.98,
-            1398.37
-          ],
+          "confidenceInterval": [1235.98, 1398.37],
           "rank": 51,
           "evaluatedAt": "2025-08-28T11:19:23.569939"
         },
         "abstraction": {
           "rawScore": 1334.6,
-          "confidenceInterval": [
-            1254.97,
-            1414.23
-          ],
+          "confidenceInterval": [1254.97, 1414.23],
           "rank": 51,
           "evaluatedAt": "2025-08-28T11:19:23.570022"
         },
         "empathy": {
           "rawScore": 1286.48,
-          "confidenceInterval": [
-            1219.5,
-            1353.46
-          ],
+          "confidenceInterval": [1219.5, 1353.46],
           "rank": 51,
           "evaluatedAt": "2025-08-28T11:19:23.570114"
         },
         "compliance": {
           "rawScore": 1376.26,
-          "confidenceInterval": [
-            1306.07,
-            1446.45
-          ],
+          "confidenceInterval": [1306.07, 1446.45],
           "rank": 51,
           "evaluatedAt": "2025-08-28T11:19:23.570197"
         },
         "coding": {
           "rawScore": 1388.25,
-          "confidenceInterval": [
-            1358.97,
-            1417.52
-          ],
+          "confidenceInterval": [1358.97, 1417.52],
           "rank": 50,
           "evaluatedAt": "2025-08-28T11:19:23.570280"
         },
         "ethics": {
           "rawScore": 1332.01,
-          "confidenceInterval": [
-            1252.85,
-            1411.16
-          ],
+          "confidenceInterval": [1252.85, 1411.16],
           "rank": 49,
           "evaluatedAt": "2025-08-28T11:19:23.570359"
         }
@@ -929,12 +731,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": "alpaca"
       },
@@ -964,73 +762,49 @@
       "scores": {
         "safety": {
           "rawScore": 1550.04,
-          "confidenceInterval": [
-            1516.35,
-            1583.74
-          ],
+          "confidenceInterval": [1516.35, 1583.74],
           "rank": 14,
           "evaluatedAt": "2025-08-28T11:19:23.569742"
         },
         "deception": {
           "rawScore": 1476.51,
-          "confidenceInterval": [
-            1471.73,
-            1481.29
-          ],
+          "confidenceInterval": [1471.73, 1481.29],
           "rank": 48,
           "evaluatedAt": "2025-08-28T11:19:23.569831"
         },
         "persuasion": {
           "rawScore": 1512.81,
-          "confidenceInterval": [
-            1459.2,
-            1566.42
-          ],
+          "confidenceInterval": [1459.2, 1566.42],
           "rank": 24,
           "evaluatedAt": "2025-08-28T11:19:23.569923"
         },
         "abstraction": {
           "rawScore": 1525.2,
-          "confidenceInterval": [
-            1495.47,
-            1554.92
-          ],
+          "confidenceInterval": [1495.47, 1554.92],
           "rank": 16,
           "evaluatedAt": "2025-08-28T11:19:23.570004"
         },
         "empathy": {
           "rawScore": 1498.52,
-          "confidenceInterval": [
-            1476.18,
-            1520.87
-          ],
+          "confidenceInterval": [1476.18, 1520.87],
           "rank": 25,
           "evaluatedAt": "2025-08-28T11:19:23.570096"
         },
         "compliance": {
           "rawScore": 1490.68,
-          "confidenceInterval": [
-            1437.03,
-            1544.33
-          ],
+          "confidenceInterval": [1437.03, 1544.33],
           "rank": 37,
           "evaluatedAt": "2025-08-28T11:19:23.570178"
         },
         "coding": {
           "rawScore": 1542.99,
-          "confidenceInterval": [
-            1527.74,
-            1558.24
-          ],
+          "confidenceInterval": [1527.74, 1558.24],
           "rank": 15,
           "evaluatedAt": "2025-08-28T11:19:23.570263"
         },
         "ethics": {
           "rawScore": 1503.54,
-          "confidenceInterval": [
-            1439.64,
-            1567.44
-          ],
+          "confidenceInterval": [1439.64, 1567.44],
           "rank": 23,
           "evaluatedAt": "2025-08-28T11:19:23.570343"
         }
@@ -1050,13 +824,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": "deepseek-r1"
       },
@@ -1085,73 +854,49 @@
       "scores": {
         "safety": {
           "rawScore": 1403.36,
-          "confidenceInterval": [
-            1364.67,
-            1442.06
-          ],
+          "confidenceInterval": [1364.67, 1442.06],
           "rank": 48,
           "evaluatedAt": "2025-08-28T11:19:23.569708"
         },
         "deception": {
           "rawScore": 1479.78,
-          "confidenceInterval": [
-            1475.11,
-            1484.45
-          ],
+          "confidenceInterval": [1475.11, 1484.45],
           "rank": 37,
           "evaluatedAt": "2025-08-28T11:19:23.569798"
         },
         "persuasion": {
           "rawScore": 1430.7,
-          "confidenceInterval": [
-            1377.66,
-            1483.73
-          ],
+          "confidenceInterval": [1377.66, 1483.73],
           "rank": 49,
           "evaluatedAt": "2025-08-28T11:19:23.569888"
         },
         "abstraction": {
           "rawScore": 1459.2,
-          "confidenceInterval": [
-            1425.98,
-            1492.42
-          ],
+          "confidenceInterval": [1425.98, 1492.42],
           "rank": 47,
           "evaluatedAt": "2025-08-28T11:19:23.569971"
         },
         "empathy": {
           "rawScore": 1445.67,
-          "confidenceInterval": [
-            1426.14,
-            1465.21
-          ],
+          "confidenceInterval": [1426.14, 1465.21],
           "rank": 40,
           "evaluatedAt": "2025-08-28T11:19:23.570065"
         },
         "compliance": {
           "rawScore": 1486.92,
-          "confidenceInterval": [
-            1437.16,
-            1536.68
-          ],
+          "confidenceInterval": [1437.16, 1536.68],
           "rank": 41,
           "evaluatedAt": "2025-08-28T11:19:23.570146"
         },
         "coding": {
           "rawScore": 1422.67,
-          "confidenceInterval": [
-            1404.59,
-            1440.76
-          ],
+          "confidenceInterval": [1404.59, 1440.76],
           "rank": 46,
           "evaluatedAt": "2025-08-28T11:19:23.570229"
         },
         "ethics": {
           "rawScore": 1460.76,
-          "confidenceInterval": [
-            1393.77,
-            1527.76
-          ],
+          "confidenceInterval": [1393.77, 1527.76],
           "rank": 32,
           "evaluatedAt": "2025-08-28T11:19:23.570310"
         }
@@ -1171,12 +916,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Mistral",
         "instruct_type": null
       },
@@ -1205,73 +946,49 @@
       "scores": {
         "safety": {
           "rawScore": 1621.39,
-          "confidenceInterval": [
-            1584.71,
-            1658.08
-          ],
+          "confidenceInterval": [1584.71, 1658.08],
           "rank": 4,
           "evaluatedAt": "2025-08-28T11:19:23.569755"
         },
         "deception": {
           "rawScore": 1498.64,
-          "confidenceInterval": [
-            1492.31,
-            1504.96
-          ],
+          "confidenceInterval": [1492.31, 1504.96],
           "rank": 7,
           "evaluatedAt": "2025-08-28T11:19:23.569845"
         },
         "persuasion": {
           "rawScore": 1521.06,
-          "confidenceInterval": [
-            1464.64,
-            1577.47
-          ],
+          "confidenceInterval": [1464.64, 1577.47],
           "rank": 19,
           "evaluatedAt": "2025-08-28T11:19:23.569934"
         },
         "abstraction": {
           "rawScore": 1530.24,
-          "confidenceInterval": [
-            1501.82,
-            1558.66
-          ],
+          "confidenceInterval": [1501.82, 1558.66],
           "rank": 11,
           "evaluatedAt": "2025-08-28T11:19:23.570016"
         },
         "empathy": {
           "rawScore": 1572.98,
-          "confidenceInterval": [
-            1552.83,
-            1593.14
-          ],
+          "confidenceInterval": [1552.83, 1593.14],
           "rank": 9,
           "evaluatedAt": "2025-08-28T11:19:23.570108"
         },
         "compliance": {
           "rawScore": 1465.08,
-          "confidenceInterval": [
-            1406.68,
-            1523.48
-          ],
+          "confidenceInterval": [1406.68, 1523.48],
           "rank": 47,
           "evaluatedAt": "2025-08-28T11:19:23.570190"
         },
         "coding": {
           "rawScore": 1563.98,
-          "confidenceInterval": [
-            1542.98,
-            1584.98
-          ],
+          "confidenceInterval": [1542.98, 1584.98],
           "rank": 9,
           "evaluatedAt": "2025-08-28T11:19:23.570274"
         },
         "ethics": {
           "rawScore": 1666.33,
-          "confidenceInterval": [
-            1599.66,
-            1733.0
-          ],
+          "confidenceInterval": [1599.66, 1733.0],
           "rank": 5,
           "evaluatedAt": "2025-08-28T11:19:23.570354"
         }
@@ -1293,15 +1010,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "file",
-          "image",
-          "text",
-          "audio"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["file", "image", "text", "audio"],
+        "output_modalities": ["text"],
         "tokenizer": "Gemini",
         "instruct_type": null
       },
@@ -1332,73 +1042,49 @@
       "scores": {
         "safety": {
           "rawScore": 1522.07,
-          "confidenceInterval": [
-            1494.67,
-            1549.47
-          ],
+          "confidenceInterval": [1494.67, 1549.47],
           "rank": 17,
           "evaluatedAt": "2025-08-28T11:19:23.569731"
         },
         "deception": {
           "rawScore": 1481.71,
-          "confidenceInterval": [
-            1476.95,
-            1486.46
-          ],
+          "confidenceInterval": [1476.95, 1486.46],
           "rank": 31,
           "evaluatedAt": "2025-08-28T11:19:23.569821"
         },
         "persuasion": {
           "rawScore": 1431.55,
-          "confidenceInterval": [
-            1376.08,
-            1487.02
-          ],
+          "confidenceInterval": [1376.08, 1487.02],
           "rank": 48,
           "evaluatedAt": "2025-08-28T11:19:23.569911"
         },
         "abstraction": {
           "rawScore": 1463.1,
-          "confidenceInterval": [
-            1427.86,
-            1498.34
-          ],
+          "confidenceInterval": [1427.86, 1498.34],
           "rank": 46,
           "evaluatedAt": "2025-08-28T11:19:23.569995"
         },
         "empathy": {
           "rawScore": 1476.87,
-          "confidenceInterval": [
-            1456.61,
-            1497.14
-          ],
+          "confidenceInterval": [1456.61, 1497.14],
           "rank": 29,
           "evaluatedAt": "2025-08-28T11:19:23.570087"
         },
         "compliance": {
           "rawScore": 1497.6,
-          "confidenceInterval": [
-            1445.14,
-            1550.07
-          ],
+          "confidenceInterval": [1445.14, 1550.07],
           "rank": 30,
           "evaluatedAt": "2025-08-28T11:19:23.570168"
         },
         "coding": {
           "rawScore": 1439.55,
-          "confidenceInterval": [
-            1421.97,
-            1457.13
-          ],
+          "confidenceInterval": [1421.97, 1457.13],
           "rank": 40,
           "evaluatedAt": "2025-08-28T11:19:23.570252"
         },
         "ethics": {
           "rawScore": 1412.22,
-          "confidenceInterval": [
-            1342.75,
-            1481.69
-          ],
+          "confidenceInterval": [1342.75, 1481.69],
           "rank": 39,
           "evaluatedAt": "2025-08-28T11:19:23.570332"
         }
@@ -1418,12 +1104,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Qwen",
         "instruct_type": "chatml"
       },
@@ -1455,73 +1137,49 @@
       "scores": {
         "safety": {
           "rawScore": 1531.2,
-          "confidenceInterval": [
-            1500.32,
-            1562.09
-          ],
+          "confidenceInterval": [1500.32, 1562.09],
           "rank": 16,
           "evaluatedAt": "2025-08-28T11:19:23.569711"
         },
         "deception": {
           "rawScore": 1478.12,
-          "confidenceInterval": [
-            1473.24,
-            1483.0
-          ],
+          "confidenceInterval": [1473.24, 1483.0],
           "rank": 45,
           "evaluatedAt": "2025-08-28T11:19:23.569801"
         },
         "persuasion": {
           "rawScore": 1507.46,
-          "confidenceInterval": [
-            1453.77,
-            1561.16
-          ],
+          "confidenceInterval": [1453.77, 1561.16],
           "rank": 27,
           "evaluatedAt": "2025-08-28T11:19:23.569890"
         },
         "abstraction": {
           "rawScore": 1513.11,
-          "confidenceInterval": [
-            1485.25,
-            1540.98
-          ],
+          "confidenceInterval": [1485.25, 1540.98],
           "rank": 23,
           "evaluatedAt": "2025-08-28T11:19:23.569974"
         },
         "empathy": {
           "rawScore": 1473.25,
-          "confidenceInterval": [
-            1453.11,
-            1493.39
-          ],
+          "confidenceInterval": [1453.11, 1493.39],
           "rank": 31,
           "evaluatedAt": "2025-08-28T11:19:23.570068"
         },
         "compliance": {
           "rawScore": 1533.76,
-          "confidenceInterval": [
-            1473.79,
-            1593.73
-          ],
+          "confidenceInterval": [1473.79, 1593.73],
           "rank": 4,
           "evaluatedAt": "2025-08-28T11:19:23.570149"
         },
         "coding": {
           "rawScore": 1607.3,
-          "confidenceInterval": [
-            1584.75,
-            1629.85
-          ],
+          "confidenceInterval": [1584.75, 1629.85],
           "rank": 4,
           "evaluatedAt": "2025-08-28T11:19:23.570232"
         },
         "ethics": {
           "rawScore": 1583.41,
-          "confidenceInterval": [
-            1521.89,
-            1644.93
-          ],
+          "confidenceInterval": [1521.89, 1644.93],
           "rank": 14,
           "evaluatedAt": "2025-08-28T11:19:23.570313"
         }
@@ -1543,14 +1201,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image",
-          "file"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image", "file"],
+        "output_modalities": ["text"],
         "tokenizer": "Claude",
         "instruct_type": null
       },
@@ -1577,73 +1229,49 @@
       "scores": {
         "safety": {
           "rawScore": 1459.53,
-          "confidenceInterval": [
-            1432.05,
-            1487.02
-          ],
+          "confidenceInterval": [1432.05, 1487.02],
           "rank": 34,
           "evaluatedAt": "2025-08-28T11:19:23.569720"
         },
         "deception": {
           "rawScore": 1480.98,
-          "confidenceInterval": [
-            1476.31,
-            1485.65
-          ],
+          "confidenceInterval": [1476.31, 1485.65],
           "rank": 33,
           "evaluatedAt": "2025-08-28T11:19:23.569809"
         },
         "persuasion": {
           "rawScore": 1467.1,
-          "confidenceInterval": [
-            1413.6,
-            1520.61
-          ],
+          "confidenceInterval": [1413.6, 1520.61],
           "rank": 39,
           "evaluatedAt": "2025-08-28T11:19:23.569898"
         },
         "abstraction": {
           "rawScore": 1496.33,
-          "confidenceInterval": [
-            1467.54,
-            1525.11
-          ],
+          "confidenceInterval": [1467.54, 1525.11],
           "rank": 35,
           "evaluatedAt": "2025-08-28T11:19:23.569983"
         },
         "empathy": {
           "rawScore": 1492.62,
-          "confidenceInterval": [
-            1469.93,
-            1515.3
-          ],
+          "confidenceInterval": [1469.93, 1515.3],
           "rank": 27,
           "evaluatedAt": "2025-08-28T11:19:23.570076"
         },
         "compliance": {
           "rawScore": 1495.17,
-          "confidenceInterval": [
-            1440.66,
-            1549.67
-          ],
+          "confidenceInterval": [1440.66, 1549.67],
           "rank": 35,
           "evaluatedAt": "2025-08-28T11:19:23.570157"
         },
         "coding": {
           "rawScore": 1510.09,
-          "confidenceInterval": [
-            1495.9,
-            1524.29
-          ],
+          "confidenceInterval": [1495.9, 1524.29],
           "rank": 22,
           "evaluatedAt": "2025-08-28T11:19:23.570240"
         },
         "ethics": {
           "rawScore": 1463.99,
-          "confidenceInterval": [
-            1399.44,
-            1528.54
-          ],
+          "confidenceInterval": [1399.44, 1528.54],
           "rank": 31,
           "evaluatedAt": "2025-08-28T11:19:23.570321"
         }
@@ -1664,22 +1292,15 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "GPT",
         "instruct_type": null
       },
       "modelFamily": "o1",
       "created": 1726099200,
       "hugging_face_id": null,
-      "supported_parameters": [
-        "max_tokens",
-        "seed"
-      ],
+      "supported_parameters": ["max_tokens", "seed"],
       "top_provider": {
         "context_length": 128000,
         "max_completion_tokens": 65536,
@@ -1691,73 +1312,49 @@
       "scores": {
         "safety": {
           "rawScore": 1472.32,
-          "confidenceInterval": [
-            1445.5,
-            1499.13
-          ],
+          "confidenceInterval": [1445.5, 1499.13],
           "rank": 30,
           "evaluatedAt": "2025-08-28T11:19:23.569681"
         },
         "deception": {
           "rawScore": 1473.63,
-          "confidenceInterval": [
-            1468.5,
-            1478.77
-          ],
+          "confidenceInterval": [1468.5, 1478.77],
           "rank": 51,
           "evaluatedAt": "2025-08-28T11:19:23.569779"
         },
         "persuasion": {
           "rawScore": 1516.52,
-          "confidenceInterval": [
-            1464.04,
-            1568.99
-          ],
+          "confidenceInterval": [1464.04, 1568.99],
           "rank": 23,
           "evaluatedAt": "2025-08-28T11:19:23.569868"
         },
         "abstraction": {
           "rawScore": 1558.06,
-          "confidenceInterval": [
-            1526.1,
-            1590.01
-          ],
+          "confidenceInterval": [1526.1, 1590.01],
           "rank": 2,
           "evaluatedAt": "2025-08-28T11:19:23.569953"
         },
         "empathy": {
           "rawScore": 1570.9,
-          "confidenceInterval": [
-            1550.11,
-            1591.68
-          ],
+          "confidenceInterval": [1550.11, 1591.68],
           "rank": 10,
           "evaluatedAt": "2025-08-28T11:19:23.570034"
         },
         "compliance": {
           "rawScore": 1510.18,
-          "confidenceInterval": [
-            1461.98,
-            1558.38
-          ],
+          "confidenceInterval": [1461.98, 1558.38],
           "rank": 17,
           "evaluatedAt": "2025-08-28T11:19:23.570127"
         },
         "coding": {
           "rawScore": 1552.86,
-          "confidenceInterval": [
-            1537.2,
-            1568.52
-          ],
+          "confidenceInterval": [1537.2, 1568.52],
           "rank": 13,
           "evaluatedAt": "2025-08-28T11:19:23.570210"
         },
         "ethics": {
           "rawScore": 1660.57,
-          "confidenceInterval": [
-            1588.09,
-            1733.05
-          ],
+          "confidenceInterval": [1588.09, 1733.05],
           "rank": 7,
           "evaluatedAt": "2025-08-28T11:19:23.570293"
         }
@@ -1778,14 +1375,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "image",
-          "text",
-          "file"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
         "tokenizer": "GPT",
         "instruct_type": null
       },
@@ -1813,73 +1404,49 @@
       "scores": {
         "safety": {
           "rawScore": 1491.56,
-          "confidenceInterval": [
-            1463.92,
-            1519.21
-          ],
+          "confidenceInterval": [1463.92, 1519.21],
           "rank": 27,
           "evaluatedAt": "2025-08-28T11:19:23.569712"
         },
         "deception": {
           "rawScore": 1489.37,
-          "confidenceInterval": [
-            1484.26,
-            1494.48
-          ],
+          "confidenceInterval": [1484.26, 1494.48],
           "rank": 17,
           "evaluatedAt": "2025-08-28T11:19:23.569802"
         },
         "persuasion": {
           "rawScore": 1534.56,
-          "confidenceInterval": [
-            1483.76,
-            1585.36
-          ],
+          "confidenceInterval": [1483.76, 1585.36],
           "rank": 12,
           "evaluatedAt": "2025-08-28T11:19:23.569892"
         },
         "abstraction": {
           "rawScore": 1509.11,
-          "confidenceInterval": [
-            1481.6,
-            1536.62
-          ],
+          "confidenceInterval": [1481.6, 1536.62],
           "rank": 26,
           "evaluatedAt": "2025-08-28T11:19:23.569975"
         },
         "empathy": {
           "rawScore": 1566.42,
-          "confidenceInterval": [
-            1545.36,
-            1587.48
-          ],
+          "confidenceInterval": [1545.36, 1587.48],
           "rank": 15,
           "evaluatedAt": "2025-08-28T11:19:23.570069"
         },
         "compliance": {
           "rawScore": 1527.93,
-          "confidenceInterval": [
-            1471.1,
-            1584.76
-          ],
+          "confidenceInterval": [1471.1, 1584.76],
           "rank": 7,
           "evaluatedAt": "2025-08-28T11:19:23.570150"
         },
         "coding": {
           "rawScore": 1492.85,
-          "confidenceInterval": [
-            1475.52,
-            1510.19
-          ],
+          "confidenceInterval": [1475.52, 1510.19],
           "rank": 26,
           "evaluatedAt": "2025-08-28T11:19:23.570233"
         },
         "ethics": {
           "rawScore": 1531.38,
-          "confidenceInterval": [
-            1462.99,
-            1599.77
-          ],
+          "confidenceInterval": [1462.99, 1599.77],
           "rank": 20,
           "evaluatedAt": "2025-08-28T11:19:23.570315"
         }
@@ -1899,12 +1466,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "DeepSeek",
         "instruct_type": null
       },
@@ -1941,73 +1504,49 @@
       "scores": {
         "safety": {
           "rawScore": 1443.87,
-          "confidenceInterval": [
-            1414.76,
-            1472.97
-          ],
+          "confidenceInterval": [1414.76, 1472.97],
           "rank": 42,
           "evaluatedAt": "2025-08-28T11:19:23.569730"
         },
         "deception": {
           "rawScore": 1478.8,
-          "confidenceInterval": [
-            1474.11,
-            1483.49
-          ],
+          "confidenceInterval": [1474.11, 1483.49],
           "rank": 41,
           "evaluatedAt": "2025-08-28T11:19:23.569819"
         },
         "persuasion": {
           "rawScore": 1507.08,
-          "confidenceInterval": [
-            1453.14,
-            1561.03
-          ],
+          "confidenceInterval": [1453.14, 1561.03],
           "rank": 28,
           "evaluatedAt": "2025-08-28T11:19:23.569909"
         },
         "abstraction": {
           "rawScore": 1473.98,
-          "confidenceInterval": [
-            1440.38,
-            1507.59
-          ],
+          "confidenceInterval": [1440.38, 1507.59],
           "rank": 41,
           "evaluatedAt": "2025-08-28T11:19:23.569993"
         },
         "empathy": {
           "rawScore": 1418.67,
-          "confidenceInterval": [
-            1397.9,
-            1439.45
-          ],
+          "confidenceInterval": [1397.9, 1439.45],
           "rank": 48,
           "evaluatedAt": "2025-08-28T11:19:23.570085"
         },
         "compliance": {
           "rawScore": 1517.33,
-          "confidenceInterval": [
-            1466.52,
-            1568.14
-          ],
+          "confidenceInterval": [1466.52, 1568.14],
           "rank": 13,
           "evaluatedAt": "2025-08-28T11:19:23.570165"
         },
         "coding": {
           "rawScore": 1424.15,
-          "confidenceInterval": [
-            1406.64,
-            1441.65
-          ],
+          "confidenceInterval": [1406.64, 1441.65],
           "rank": 45,
           "evaluatedAt": "2025-08-28T11:19:23.570249"
         },
         "ethics": {
           "rawScore": 1369.66,
-          "confidenceInterval": [
-            1304.91,
-            1434.42
-          ],
+          "confidenceInterval": [1304.91, 1434.42],
           "rank": 43,
           "evaluatedAt": "2025-08-28T11:19:23.570331"
         }
@@ -2027,12 +1566,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Mistral",
         "instruct_type": null
       },
@@ -2063,73 +1598,49 @@
       "scores": {
         "safety": {
           "rawScore": 1505.43,
-          "confidenceInterval": [
-            1477.61,
-            1533.26
-          ],
+          "confidenceInterval": [1477.61, 1533.26],
           "rank": 20,
           "evaluatedAt": "2025-08-28T11:19:23.569691"
         },
         "deception": {
           "rawScore": 1487.88,
-          "confidenceInterval": [
-            1482.61,
-            1493.15
-          ],
+          "confidenceInterval": [1482.61, 1493.15],
           "rank": 20,
           "evaluatedAt": "2025-08-28T11:19:23.569784"
         },
         "persuasion": {
           "rawScore": 1483.19,
-          "confidenceInterval": [
-            1430.19,
-            1536.19
-          ],
+          "confidenceInterval": [1430.19, 1536.19],
           "rank": 34,
           "evaluatedAt": "2025-08-28T11:19:23.569878"
         },
         "abstraction": {
           "rawScore": 1496.98,
-          "confidenceInterval": [
-            1466.11,
-            1527.85
-          ],
+          "confidenceInterval": [1466.11, 1527.85],
           "rank": 33,
           "evaluatedAt": "2025-08-28T11:19:23.569960"
         },
         "empathy": {
           "rawScore": 1468.35,
-          "confidenceInterval": [
-            1447.36,
-            1489.35
-          ],
+          "confidenceInterval": [1447.36, 1489.35],
           "rank": 34,
           "evaluatedAt": "2025-08-28T11:19:23.570057"
         },
         "compliance": {
           "rawScore": 1500.72,
-          "confidenceInterval": [
-            1452.04,
-            1549.41
-          ],
+          "confidenceInterval": [1452.04, 1549.41],
           "rank": 27,
           "evaluatedAt": "2025-08-28T11:19:23.570131"
         },
         "coding": {
           "rawScore": 1544.7,
-          "confidenceInterval": [
-            1526.81,
-            1562.6
-          ],
+          "confidenceInterval": [1526.81, 1562.6],
           "rank": 14,
           "evaluatedAt": "2025-08-28T11:19:23.570221"
         },
         "ethics": {
           "rawScore": 1621.68,
-          "confidenceInterval": [
-            1551.49,
-            1691.87
-          ],
+          "confidenceInterval": [1551.49, 1691.87],
           "rank": 9,
           "evaluatedAt": "2025-08-28T11:19:23.570297"
         }
@@ -2149,12 +1660,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Qwen3",
         "instruct_type": null
       },
@@ -2191,73 +1698,49 @@
       "scores": {
         "safety": {
           "rawScore": 1495.99,
-          "confidenceInterval": [
-            1467.43,
-            1524.56
-          ],
+          "confidenceInterval": [1467.43, 1524.56],
           "rank": 25,
           "evaluatedAt": "2025-08-28T11:19:23.569734"
         },
         "deception": {
           "rawScore": 1488.67,
-          "confidenceInterval": [
-            1483.66,
-            1493.67
-          ],
+          "confidenceInterval": [1483.66, 1493.67],
           "rank": 18,
           "evaluatedAt": "2025-08-28T11:19:23.569822"
         },
         "persuasion": {
           "rawScore": 1491.76,
-          "confidenceInterval": [
-            1440.34,
-            1543.18
-          ],
+          "confidenceInterval": [1440.34, 1543.18],
           "rank": 31,
           "evaluatedAt": "2025-08-28T11:19:23.569915"
         },
         "abstraction": {
           "rawScore": 1498.78,
-          "confidenceInterval": [
-            1468.63,
-            1528.94
-          ],
+          "confidenceInterval": [1468.63, 1528.94],
           "rank": 32,
           "evaluatedAt": "2025-08-28T11:19:23.569996"
         },
         "empathy": {
           "rawScore": 1423.65,
-          "confidenceInterval": [
-            1402.02,
-            1445.29
-          ],
+          "confidenceInterval": [1402.02, 1445.29],
           "rank": 47,
           "evaluatedAt": "2025-08-28T11:19:23.570088"
         },
         "compliance": {
           "rawScore": 1518.09,
-          "confidenceInterval": [
-            1462.05,
-            1574.14
-          ],
+          "confidenceInterval": [1462.05, 1574.14],
           "rank": 12,
           "evaluatedAt": "2025-08-28T11:19:23.570171"
         },
         "coding": {
           "rawScore": 1471.02,
-          "confidenceInterval": [
-            1456.88,
-            1485.16
-          ],
+          "confidenceInterval": [1456.88, 1485.16],
           "rank": 35,
           "evaluatedAt": "2025-08-28T11:19:23.570255"
         },
         "ethics": {
           "rawScore": 1489.16,
-          "confidenceInterval": [
-            1418.93,
-            1559.39
-          ],
+          "confidenceInterval": [1418.93, 1559.39],
           "rank": 25,
           "evaluatedAt": "2025-08-28T11:19:23.570333"
         }
@@ -2277,12 +1760,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Llama3",
         "instruct_type": "llama3"
       },
@@ -2319,73 +1798,49 @@
       "scores": {
         "safety": {
           "rawScore": 1567.9,
-          "confidenceInterval": [
-            1535.4,
-            1600.41
-          ],
+          "confidenceInterval": [1535.4, 1600.41],
           "rank": 10,
           "evaluatedAt": "2025-08-28T11:19:23.569699"
         },
         "deception": {
           "rawScore": 1478.98,
-          "confidenceInterval": [
-            1474.08,
-            1483.88
-          ],
+          "confidenceInterval": [1474.08, 1483.88],
           "rank": 39,
           "evaluatedAt": "2025-08-28T11:19:23.569790"
         },
         "persuasion": {
           "rawScore": 1559.59,
-          "confidenceInterval": [
-            1508.85,
-            1610.33
-          ],
+          "confidenceInterval": [1508.85, 1610.33],
           "rank": 8,
           "evaluatedAt": "2025-08-28T11:19:23.569875"
         },
         "abstraction": {
           "rawScore": 1508.01,
-          "confidenceInterval": [
-            1479.62,
-            1536.39
-          ],
+          "confidenceInterval": [1479.62, 1536.39],
           "rank": 28,
           "evaluatedAt": "2025-08-28T11:19:23.569959"
         },
         "empathy": {
           "rawScore": 1516.03,
-          "confidenceInterval": [
-            1494.98,
-            1537.08
-          ],
+          "confidenceInterval": [1494.98, 1537.08],
           "rank": 24,
           "evaluatedAt": "2025-08-28T11:19:23.570040"
         },
         "compliance": {
           "rawScore": 1505.57,
-          "confidenceInterval": [
-            1452.28,
-            1558.87
-          ],
+          "confidenceInterval": [1452.28, 1558.87],
           "rank": 24,
           "evaluatedAt": "2025-08-28T11:19:23.570135"
         },
         "coding": {
           "rawScore": 1578.04,
-          "confidenceInterval": [
-            1556.02,
-            1600.06
-          ],
+          "confidenceInterval": [1556.02, 1600.06],
           "rank": 6,
           "evaluatedAt": "2025-08-28T11:19:23.570218"
         },
         "ethics": {
           "rawScore": 1613.2,
-          "confidenceInterval": [
-            1542.93,
-            1683.48
-          ],
+          "confidenceInterval": [1542.93, 1683.48],
           "rank": 11,
           "evaluatedAt": "2025-08-28T11:19:23.570301"
         }
@@ -2407,14 +1862,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "image",
-          "text",
-          "file"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
         "tokenizer": "Claude",
         "instruct_type": null
       },
@@ -2441,73 +1890,49 @@
       "scores": {
         "safety": {
           "rawScore": 1499.85,
-          "confidenceInterval": [
-            1470.96,
-            1528.74
-          ],
+          "confidenceInterval": [1470.96, 1528.74],
           "rank": 23,
           "evaluatedAt": "2025-08-28T11:19:23.569763"
         },
         "deception": {
           "rawScore": 1482.55,
-          "confidenceInterval": [
-            1477.77,
-            1487.34
-          ],
+          "confidenceInterval": [1477.77, 1487.34],
           "rank": 28,
           "evaluatedAt": "2025-08-28T11:19:23.569853"
         },
         "persuasion": {
           "rawScore": 1411.49,
-          "confidenceInterval": [
-            1346.73,
-            1476.25
-          ],
+          "confidenceInterval": [1346.73, 1476.25],
           "rank": 50,
           "evaluatedAt": "2025-08-28T11:19:23.569940"
         },
         "abstraction": {
           "rawScore": 1495.92,
-          "confidenceInterval": [
-            1464.94,
-            1526.89
-          ],
+          "confidenceInterval": [1464.94, 1526.89],
           "rank": 36,
           "evaluatedAt": "2025-08-28T11:19:23.570023"
         },
         "empathy": {
           "rawScore": 1471.52,
-          "confidenceInterval": [
-            1452.67,
-            1490.36
-          ],
+          "confidenceInterval": [1452.67, 1490.36],
           "rank": 32,
           "evaluatedAt": "2025-08-28T11:19:23.570115"
         },
         "compliance": {
           "rawScore": 1522.78,
-          "confidenceInterval": [
-            1472.98,
-            1572.57
-          ],
+          "confidenceInterval": [1472.98, 1572.57],
           "rank": 9,
           "evaluatedAt": "2025-08-28T11:19:23.570198"
         },
         "coding": {
           "rawScore": 1425.85,
-          "confidenceInterval": [
-            1406.68,
-            1445.01
-          ],
+          "confidenceInterval": [1406.68, 1445.01],
           "rank": 44,
           "evaluatedAt": "2025-08-28T11:19:23.570281"
         },
         "ethics": {
           "rawScore": 1454.64,
-          "confidenceInterval": [
-            1393.09,
-            1516.19
-          ],
+          "confidenceInterval": [1393.09, 1516.19],
           "rank": 33,
           "evaluatedAt": "2025-08-28T11:19:23.570361"
         }
@@ -2527,12 +1952,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -2559,73 +1980,49 @@
       "scores": {
         "safety": {
           "rawScore": 1510.51,
-          "confidenceInterval": [
-            1479.22,
-            1541.79
-          ],
+          "confidenceInterval": [1479.22, 1541.79],
           "rank": 19,
           "evaluatedAt": "2025-08-28T11:19:23.569760"
         },
         "deception": {
           "rawScore": 1502.59,
-          "confidenceInterval": [
-            1495.48,
-            1509.7
-          ],
+          "confidenceInterval": [1495.48, 1509.7],
           "rank": 4,
           "evaluatedAt": "2025-08-28T11:19:23.569850"
         },
         "persuasion": {
           "rawScore": 1559.59,
-          "confidenceInterval": [
-            1505.4,
-            1613.78
-          ],
+          "confidenceInterval": [1505.4, 1613.78],
           "rank": 7,
           "evaluatedAt": "2025-08-28T11:19:23.569938"
         },
         "abstraction": {
           "rawScore": 1549.72,
-          "confidenceInterval": [
-            1518.91,
-            1580.53
-          ],
+          "confidenceInterval": [1518.91, 1580.53],
           "rank": 3,
           "evaluatedAt": "2025-08-28T11:19:23.570020"
         },
         "empathy": {
           "rawScore": 1555.37,
-          "confidenceInterval": [
-            1534.65,
-            1576.08
-          ],
+          "confidenceInterval": [1534.65, 1576.08],
           "rank": 18,
           "evaluatedAt": "2025-08-28T11:19:23.570112"
         },
         "compliance": {
           "rawScore": 1522.6,
-          "confidenceInterval": [
-            1470.75,
-            1574.45
-          ],
+          "confidenceInterval": [1470.75, 1574.45],
           "rank": 10,
           "evaluatedAt": "2025-08-28T11:19:23.570196"
         },
         "coding": {
           "rawScore": 1506.39,
-          "confidenceInterval": [
-            1489.82,
-            1522.96
-          ],
+          "confidenceInterval": [1489.82, 1522.96],
           "rank": 23,
           "evaluatedAt": "2025-08-28T11:19:23.570278"
         },
         "ethics": {
           "rawScore": 1505.31,
-          "confidenceInterval": [
-            1444.47,
-            1566.14
-          ],
+          "confidenceInterval": [1444.47, 1566.14],
           "rank": 22,
           "evaluatedAt": "2025-08-28T11:19:23.570358"
         }
@@ -2645,12 +2042,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "DeepSeek",
         "instruct_type": "deepseek-r1"
       },
@@ -2689,73 +2082,49 @@
       "scores": {
         "safety": {
           "rawScore": 1379.66,
-          "confidenceInterval": [
-            1333.91,
-            1425.4
-          ],
+          "confidenceInterval": [1333.91, 1425.4],
           "rank": 49,
           "evaluatedAt": "2025-08-28T11:19:23.569706"
         },
         "deception": {
           "rawScore": 1507.61,
-          "confidenceInterval": [
-            1500.1,
-            1515.11
-          ],
+          "confidenceInterval": [1500.1, 1515.11],
           "rank": 2,
           "evaluatedAt": "2025-08-28T11:19:23.569797"
         },
         "persuasion": {
           "rawScore": 1499.44,
-          "confidenceInterval": [
-            1446.59,
-            1552.29
-          ],
+          "confidenceInterval": [1446.59, 1552.29],
           "rank": 30,
           "evaluatedAt": "2025-08-28T11:19:23.569886"
         },
         "abstraction": {
           "rawScore": 1515.92,
-          "confidenceInterval": [
-            1487.28,
-            1544.55
-          ],
+          "confidenceInterval": [1487.28, 1544.55],
           "rank": 22,
           "evaluatedAt": "2025-08-28T11:19:23.569969"
         },
         "empathy": {
           "rawScore": 1440.17,
-          "confidenceInterval": [
-            1420.36,
-            1459.97
-          ],
+          "confidenceInterval": [1420.36, 1459.97],
           "rank": 44,
           "evaluatedAt": "2025-08-28T11:19:23.570064"
         },
         "compliance": {
           "rawScore": 1498.57,
-          "confidenceInterval": [
-            1444.67,
-            1552.48
-          ],
+          "confidenceInterval": [1444.67, 1552.48],
           "rank": 28,
           "evaluatedAt": "2025-08-28T11:19:23.570144"
         },
         "coding": {
           "rawScore": 1516.81,
-          "confidenceInterval": [
-            1499.29,
-            1534.34
-          ],
+          "confidenceInterval": [1499.29, 1534.34],
           "rank": 20,
           "evaluatedAt": "2025-08-28T11:19:23.570228"
         },
         "ethics": {
           "rawScore": 1211.02,
-          "confidenceInterval": [
-            1120.41,
-            1301.62
-          ],
+          "confidenceInterval": [1120.41, 1301.62],
           "rank": 51,
           "evaluatedAt": "2025-08-28T11:19:23.570309"
         }
@@ -2775,12 +2144,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -2805,73 +2170,49 @@
       "scores": {
         "safety": {
           "rawScore": 1459.5,
-          "confidenceInterval": [
-            1433.92,
-            1485.08
-          ],
+          "confidenceInterval": [1433.92, 1485.08],
           "rank": 35,
           "evaluatedAt": "2025-08-28T11:19:23.569748"
         },
         "deception": {
           "rawScore": 1487.27,
-          "confidenceInterval": [
-            1482.03,
-            1492.5
-          ],
+          "confidenceInterval": [1482.03, 1492.5],
           "rank": 22,
           "evaluatedAt": "2025-08-28T11:19:23.569839"
         },
         "persuasion": {
           "rawScore": 1443.35,
-          "confidenceInterval": [
-            1385.35,
-            1501.35
-          ],
+          "confidenceInterval": [1385.35, 1501.35],
           "rank": 45,
           "evaluatedAt": "2025-08-28T11:19:23.569927"
         },
         "abstraction": {
           "rawScore": 1516.13,
-          "confidenceInterval": [
-            1485.72,
-            1546.55
-          ],
+          "confidenceInterval": [1485.72, 1546.55],
           "rank": 21,
           "evaluatedAt": "2025-08-28T11:19:23.570009"
         },
         "empathy": {
           "rawScore": 1538.07,
-          "confidenceInterval": [
-            1516.04,
-            1560.09
-          ],
+          "confidenceInterval": [1516.04, 1560.09],
           "rank": 21,
           "evaluatedAt": "2025-08-28T11:19:23.570101"
         },
         "compliance": {
           "rawScore": 1536.22,
-          "confidenceInterval": [
-            1483.35,
-            1589.08
-          ],
+          "confidenceInterval": [1483.35, 1589.08],
           "rank": 3,
           "evaluatedAt": "2025-08-28T11:19:23.570183"
         },
         "coding": {
           "rawScore": 1491.79,
-          "confidenceInterval": [
-            1476.25,
-            1507.32
-          ],
+          "confidenceInterval": [1476.25, 1507.32],
           "rank": 28,
           "evaluatedAt": "2025-08-28T11:19:23.570268"
         },
         "ethics": {
           "rawScore": 1509.62,
-          "confidenceInterval": [
-            1448.92,
-            1570.31
-          ],
+          "confidenceInterval": [1448.92, 1570.31],
           "rank": 21,
           "evaluatedAt": "2025-08-28T11:19:23.570348"
         }
@@ -2892,13 +2233,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
         "tokenizer": "GPT",
         "instruct_type": null
       },
@@ -2924,73 +2260,49 @@
       "scores": {
         "safety": {
           "rawScore": 1511.4,
-          "confidenceInterval": [
-            1481.16,
-            1541.65
-          ],
+          "confidenceInterval": [1481.16, 1541.65],
           "rank": 18,
           "evaluatedAt": "2025-08-28T11:19:23.569757"
         },
         "deception": {
           "rawScore": 1487.09,
-          "confidenceInterval": [
-            1482.26,
-            1491.91
-          ],
+          "confidenceInterval": [1482.26, 1491.91],
           "rank": 23,
           "evaluatedAt": "2025-08-28T11:19:23.569847"
         },
         "persuasion": {
           "rawScore": 1442.99,
-          "confidenceInterval": [
-            1386.7,
-            1499.29
-          ],
+          "confidenceInterval": [1386.7, 1499.29],
           "rank": 46,
           "evaluatedAt": "2025-08-28T11:19:23.569935"
         },
         "abstraction": {
           "rawScore": 1522.99,
-          "confidenceInterval": [
-            1492.57,
-            1553.42
-          ],
+          "confidenceInterval": [1492.57, 1553.42],
           "rank": 17,
           "evaluatedAt": "2025-08-28T11:19:23.570019"
         },
         "empathy": {
           "rawScore": 1478.43,
-          "confidenceInterval": [
-            1457.06,
-            1499.81
-          ],
+          "confidenceInterval": [1457.06, 1499.81],
           "rank": 28,
           "evaluatedAt": "2025-08-28T11:19:23.570111"
         },
         "compliance": {
           "rawScore": 1483.73,
-          "confidenceInterval": [
-            1425.94,
-            1541.52
-          ],
+          "confidenceInterval": [1425.94, 1541.52],
           "rank": 42,
           "evaluatedAt": "2025-08-28T11:19:23.570192"
         },
         "coding": {
           "rawScore": 1448.21,
-          "confidenceInterval": [
-            1432.2,
-            1464.22
-          ],
+          "confidenceInterval": [1432.2, 1464.22],
           "rank": 39,
           "evaluatedAt": "2025-08-28T11:19:23.570277"
         },
         "ethics": {
           "rawScore": 1464.34,
-          "confidenceInterval": [
-            1401.92,
-            1526.75
-          ],
+          "confidenceInterval": [1401.92, 1526.75],
           "rank": 30,
           "evaluatedAt": "2025-08-28T11:19:23.570357"
         }
@@ -3010,12 +2322,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -3046,73 +2354,49 @@
       "scores": {
         "safety": {
           "rawScore": 1428.51,
-          "confidenceInterval": [
-            1398.38,
-            1458.64
-          ],
+          "confidenceInterval": [1398.38, 1458.64],
           "rank": 45,
           "evaluatedAt": "2025-08-28T11:19:23.569705"
         },
         "deception": {
           "rawScore": 1484.61,
-          "confidenceInterval": [
-            1479.67,
-            1489.55
-          ],
+          "confidenceInterval": [1479.67, 1489.55],
           "rank": 27,
           "evaluatedAt": "2025-08-28T11:19:23.569795"
         },
         "persuasion": {
           "rawScore": 1458.98,
-          "confidenceInterval": [
-            1405.5,
-            1512.46
-          ],
+          "confidenceInterval": [1405.5, 1512.46],
           "rank": 42,
           "evaluatedAt": "2025-08-28T11:19:23.569885"
         },
         "abstraction": {
           "rawScore": 1501.91,
-          "confidenceInterval": [
-            1473.16,
-            1530.66
-          ],
+          "confidenceInterval": [1473.16, 1530.66],
           "rank": 30,
           "evaluatedAt": "2025-08-28T11:19:23.569968"
         },
         "empathy": {
           "rawScore": 1469.02,
-          "confidenceInterval": [
-            1449.82,
-            1488.21
-          ],
+          "confidenceInterval": [1449.82, 1488.21],
           "rank": 33,
           "evaluatedAt": "2025-08-28T11:19:23.570062"
         },
         "compliance": {
           "rawScore": 1514.32,
-          "confidenceInterval": [
-            1459.03,
-            1569.61
-          ],
+          "confidenceInterval": [1459.03, 1569.61],
           "rank": 16,
           "evaluatedAt": "2025-08-28T11:19:23.570143"
         },
         "coding": {
           "rawScore": 1471.7,
-          "confidenceInterval": [
-            1456.84,
-            1486.56
-          ],
+          "confidenceInterval": [1456.84, 1486.56],
           "rank": 34,
           "evaluatedAt": "2025-08-28T11:19:23.570226"
         },
         "ethics": {
           "rawScore": 1411.48,
-          "confidenceInterval": [
-            1346.95,
-            1476.02
-          ],
+          "confidenceInterval": [1346.95, 1476.02],
           "rank": 40,
           "evaluatedAt": "2025-08-28T11:19:23.570308"
         }
@@ -3132,12 +2416,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -3168,73 +2448,49 @@
       "scores": {
         "safety": {
           "rawScore": 1437.31,
-          "confidenceInterval": [
-            1406.41,
-            1468.21
-          ],
+          "confidenceInterval": [1406.41, 1468.21],
           "rank": 44,
           "evaluatedAt": "2025-08-28T11:19:23.569693"
         },
         "deception": {
           "rawScore": 1485.54,
-          "confidenceInterval": [
-            1480.55,
-            1490.54
-          ],
+          "confidenceInterval": [1480.55, 1490.54],
           "rank": 26,
           "evaluatedAt": "2025-08-28T11:19:23.569787"
         },
         "persuasion": {
           "rawScore": 1508.69,
-          "confidenceInterval": [
-            1455.98,
-            1561.39
-          ],
+          "confidenceInterval": [1455.98, 1561.39],
           "rank": 25,
           "evaluatedAt": "2025-08-28T11:19:23.569873"
         },
         "abstraction": {
           "rawScore": 1541.78,
-          "confidenceInterval": [
-            1513.85,
-            1569.71
-          ],
+          "confidenceInterval": [1513.85, 1569.71],
           "rank": 7,
           "evaluatedAt": "2025-08-28T11:19:23.569957"
         },
         "empathy": {
           "rawScore": 1476.51,
-          "confidenceInterval": [
-            1453.48,
-            1499.54
-          ],
+          "confidenceInterval": [1453.48, 1499.54],
           "rank": 30,
           "evaluatedAt": "2025-08-28T11:19:23.570039"
         },
         "compliance": {
           "rawScore": 1527.85,
-          "confidenceInterval": [
-            1477.07,
-            1578.64
-          ],
+          "confidenceInterval": [1477.07, 1578.64],
           "rank": 8,
           "evaluatedAt": "2025-08-28T11:19:23.570138"
         },
         "coding": {
           "rawScore": 1526.37,
-          "confidenceInterval": [
-            1512.4,
-            1540.34
-          ],
+          "confidenceInterval": [1512.4, 1540.34],
           "rank": 18,
           "evaluatedAt": "2025-08-28T11:19:23.570214"
         },
         "ethics": {
           "rawScore": 1437.49,
-          "confidenceInterval": [
-            1374.64,
-            1500.34
-          ],
+          "confidenceInterval": [1374.64, 1500.34],
           "rank": 35,
           "evaluatedAt": "2025-08-28T11:19:23.570300"
         }
@@ -3254,13 +2510,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -3287,73 +2538,49 @@
       "scores": {
         "safety": {
           "rawScore": 1489.16,
-          "confidenceInterval": [
-            1460.75,
-            1517.57
-          ],
+          "confidenceInterval": [1460.75, 1517.57],
           "rank": 28,
           "evaluatedAt": "2025-08-28T11:19:23.569728"
         },
         "deception": {
           "rawScore": 1480.86,
-          "confidenceInterval": [
-            1476.08,
-            1485.65
-          ],
+          "confidenceInterval": [1476.08, 1485.65],
           "rank": 34,
           "evaluatedAt": "2025-08-28T11:19:23.569818"
         },
         "persuasion": {
           "rawScore": 1474.29,
-          "confidenceInterval": [
-            1421.56,
-            1527.03
-          ],
+          "confidenceInterval": [1421.56, 1527.03],
           "rank": 37,
           "evaluatedAt": "2025-08-28T11:19:23.569908"
         },
         "abstraction": {
           "rawScore": 1463.56,
-          "confidenceInterval": [
-            1426.52,
-            1500.61
-          ],
+          "confidenceInterval": [1426.52, 1500.61],
           "rank": 45,
           "evaluatedAt": "2025-08-28T11:19:23.569992"
         },
         "empathy": {
           "rawScore": 1441.51,
-          "confidenceInterval": [
-            1422.97,
-            1460.06
-          ],
+          "confidenceInterval": [1422.97, 1460.06],
           "rank": 42,
           "evaluatedAt": "2025-08-28T11:19:23.570084"
         },
         "compliance": {
           "rawScore": 1496.68,
-          "confidenceInterval": [
-            1443.09,
-            1550.28
-          ],
+          "confidenceInterval": [1443.09, 1550.28],
           "rank": 32,
           "evaluatedAt": "2025-08-28T11:19:23.570167"
         },
         "coding": {
           "rawScore": 1434.98,
-          "confidenceInterval": [
-            1417.24,
-            1452.71
-          ],
+          "confidenceInterval": [1417.24, 1452.71],
           "rank": 42,
           "evaluatedAt": "2025-08-28T11:19:23.570250"
         },
         "ethics": {
           "rawScore": 1464.45,
-          "confidenceInterval": [
-            1402.22,
-            1526.69
-          ],
+          "confidenceInterval": [1402.22, 1526.69],
           "rank": 29,
           "evaluatedAt": "2025-08-28T11:19:23.570329"
         }
@@ -3373,12 +2600,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -3413,73 +2636,49 @@
       "scores": {
         "safety": {
           "rawScore": 1407.8,
-          "confidenceInterval": [
-            1367.82,
-            1447.79
-          ],
+          "confidenceInterval": [1367.82, 1447.79],
           "rank": 47,
           "evaluatedAt": "2025-08-28T11:19:23.569715"
         },
         "deception": {
           "rawScore": 1480.71,
-          "confidenceInterval": [
-            1475.81,
-            1485.6
-          ],
+          "confidenceInterval": [1475.81, 1485.6],
           "rank": 35,
           "evaluatedAt": "2025-08-28T11:19:23.569807"
         },
         "persuasion": {
           "rawScore": 1481.22,
-          "confidenceInterval": [
-            1429.29,
-            1533.15
-          ],
+          "confidenceInterval": [1429.29, 1533.15],
           "rank": 36,
           "evaluatedAt": "2025-08-28T11:19:23.569894"
         },
         "abstraction": {
           "rawScore": 1466.39,
-          "confidenceInterval": [
-            1429.99,
-            1502.8
-          ],
+          "confidenceInterval": [1429.99, 1502.8],
           "rank": 43,
           "evaluatedAt": "2025-08-28T11:19:23.569980"
         },
         "empathy": {
           "rawScore": 1435.08,
-          "confidenceInterval": [
-            1414.65,
-            1455.52
-          ],
+          "confidenceInterval": [1414.65, 1455.52],
           "rank": 46,
           "evaluatedAt": "2025-08-28T11:19:23.570075"
         },
         "compliance": {
           "rawScore": 1482.73,
-          "confidenceInterval": [
-            1427.5,
-            1537.95
-          ],
+          "confidenceInterval": [1427.5, 1537.95],
           "rank": 43,
           "evaluatedAt": "2025-08-28T11:19:23.570154"
         },
         "coding": {
           "rawScore": 1396.97,
-          "confidenceInterval": [
-            1374.07,
-            1419.87
-          ],
+          "confidenceInterval": [1374.07, 1419.87],
           "rank": 49,
           "evaluatedAt": "2025-08-28T11:19:23.570236"
         },
         "ethics": {
           "rawScore": 1350.67,
-          "confidenceInterval": [
-            1277.2,
-            1424.14
-          ],
+          "confidenceInterval": [1277.2, 1424.14],
           "rank": 46,
           "evaluatedAt": "2025-08-28T11:19:23.570319"
         }
@@ -3499,12 +2698,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Llama2",
         "instruct_type": "airoboros"
       },
@@ -3538,73 +2733,49 @@
       "scores": {
         "safety": {
           "rawScore": 1468.56,
-          "confidenceInterval": [
-            1443.58,
-            1493.54
-          ],
+          "confidenceInterval": [1443.58, 1493.54],
           "rank": 32,
           "evaluatedAt": "2025-08-28T11:19:23.569700"
         },
         "deception": {
           "rawScore": 1481.77,
-          "confidenceInterval": [
-            1476.82,
-            1486.72
-          ],
+          "confidenceInterval": [1476.82, 1486.72],
           "rank": 29,
           "evaluatedAt": "2025-08-28T11:19:23.569791"
         },
         "persuasion": {
           "rawScore": 1527.39,
-          "confidenceInterval": [
-            1473.5,
-            1581.28
-          ],
+          "confidenceInterval": [1473.5, 1581.28],
           "rank": 15,
           "evaluatedAt": "2025-08-28T11:19:23.569881"
         },
         "abstraction": {
           "rawScore": 1525.96,
-          "confidenceInterval": [
-            1499.32,
-            1552.6
-          ],
+          "confidenceInterval": [1499.32, 1552.6],
           "rank": 14,
           "evaluatedAt": "2025-08-28T11:19:23.569964"
         },
         "empathy": {
           "rawScore": 1588.92,
-          "confidenceInterval": [
-            1569.2,
-            1608.63
-          ],
+          "confidenceInterval": [1569.2, 1608.63],
           "rank": 6,
           "evaluatedAt": "2025-08-28T11:19:23.570058"
         },
         "compliance": {
           "rawScore": 1497.75,
-          "confidenceInterval": [
-            1443.64,
-            1551.86
-          ],
+          "confidenceInterval": [1443.64, 1551.86],
           "rank": 29,
           "evaluatedAt": "2025-08-28T11:19:23.570139"
         },
         "coding": {
           "rawScore": 1558.08,
-          "confidenceInterval": [
-            1541.99,
-            1574.17
-          ],
+          "confidenceInterval": [1541.99, 1574.17],
           "rank": 12,
           "evaluatedAt": "2025-08-28T11:19:23.570222"
         },
         "ethics": {
           "rawScore": 1659.91,
-          "confidenceInterval": [
-            1584.37,
-            1735.45
-          ],
+          "confidenceInterval": [1584.37, 1735.45],
           "rank": 8,
           "evaluatedAt": "2025-08-28T11:19:23.570304"
         }
@@ -3624,14 +2795,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "file",
-          "image"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "file", "image"],
+        "output_modalities": ["text"],
         "tokenizer": "GPT",
         "instruct_type": null
       },
@@ -3659,73 +2824,49 @@
       "scores": {
         "safety": {
           "rawScore": 1444.45,
-          "confidenceInterval": [
-            1414.88,
-            1474.01
-          ],
+          "confidenceInterval": [1414.88, 1474.01],
           "rank": 41,
           "evaluatedAt": "2025-08-28T11:19:23.569745"
         },
         "deception": {
           "rawScore": 1474.25,
-          "confidenceInterval": [
-            1468.97,
-            1479.52
-          ],
+          "confidenceInterval": [1468.97, 1479.52],
           "rank": 50,
           "evaluatedAt": "2025-08-28T11:19:23.569834"
         },
         "persuasion": {
           "rawScore": 1484.37,
-          "confidenceInterval": [
-            1417.63,
-            1551.1
-          ],
+          "confidenceInterval": [1417.63, 1551.1],
           "rank": 33,
           "evaluatedAt": "2025-08-28T11:19:23.569924"
         },
         "abstraction": {
           "rawScore": 1437.59,
-          "confidenceInterval": [
-            1403.25,
-            1471.94
-          ],
+          "confidenceInterval": [1403.25, 1471.94],
           "rank": 49,
           "evaluatedAt": "2025-08-28T11:19:23.570007"
         },
         "empathy": {
           "rawScore": 1355.41,
-          "confidenceInterval": [
-            1305.56,
-            1405.26
-          ],
+          "confidenceInterval": [1305.56, 1405.26],
           "rank": 50,
           "evaluatedAt": "2025-08-28T11:19:23.570099"
         },
         "compliance": {
           "rawScore": 1567.76,
-          "confidenceInterval": [
-            1512.84,
-            1622.68
-          ],
+          "confidenceInterval": [1512.84, 1622.68],
           "rank": 1,
           "evaluatedAt": "2025-08-28T11:19:23.570181"
         },
         "coding": {
           "rawScore": 1419.9,
-          "confidenceInterval": [
-            1400.44,
-            1439.37
-          ],
+          "confidenceInterval": [1400.44, 1439.37],
           "rank": 47,
           "evaluatedAt": "2025-08-28T11:19:23.570265"
         },
         "ethics": {
           "rawScore": 1296.68,
-          "confidenceInterval": [
-            1205.25,
-            1388.1
-          ],
+          "confidenceInterval": [1205.25, 1388.1],
           "rank": 50,
           "evaluatedAt": "2025-08-28T11:19:23.570344"
         }
@@ -3745,12 +2886,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Llama3",
         "instruct_type": "none"
       },
@@ -3783,73 +2920,49 @@
       "scores": {
         "safety": {
           "rawScore": 1318.23,
-          "confidenceInterval": [
-            1259.93,
-            1376.53
-          ],
+          "confidenceInterval": [1259.93, 1376.53],
           "rank": 50,
           "evaluatedAt": "2025-08-28T11:19:23.569687"
         },
         "deception": {
           "rawScore": 1478.19,
-          "confidenceInterval": [
-            1473.49,
-            1482.88
-          ],
+          "confidenceInterval": [1473.49, 1482.88],
           "rank": 44,
           "evaluatedAt": "2025-08-28T11:19:23.569783"
         },
         "persuasion": {
           "rawScore": 1528.19,
-          "confidenceInterval": [
-            1472.86,
-            1583.51
-          ],
+          "confidenceInterval": [1472.86, 1583.51],
           "rank": 13,
           "evaluatedAt": "2025-08-28T11:19:23.569870"
         },
         "abstraction": {
           "rawScore": 1455.62,
-          "confidenceInterval": [
-            1419.92,
-            1491.31
-          ],
+          "confidenceInterval": [1419.92, 1491.31],
           "rank": 48,
           "evaluatedAt": "2025-08-28T11:19:23.569955"
         },
         "empathy": {
           "rawScore": 1435.11,
-          "confidenceInterval": [
-            1415.1,
-            1455.12
-          ],
+          "confidenceInterval": [1415.1, 1455.12],
           "rank": 45,
           "evaluatedAt": "2025-08-28T11:19:23.570037"
         },
         "compliance": {
           "rawScore": 1489.18,
-          "confidenceInterval": [
-            1438.91,
-            1539.45
-          ],
+          "confidenceInterval": [1438.91, 1539.45],
           "rank": 38,
           "evaluatedAt": "2025-08-28T11:19:23.570130"
         },
         "coding": {
           "rawScore": 1364.34,
-          "confidenceInterval": [
-            1333.62,
-            1395.06
-          ],
+          "confidenceInterval": [1333.62, 1395.06],
           "rank": 51,
           "evaluatedAt": "2025-08-28T11:19:23.570213"
         },
         "ethics": {
           "rawScore": 1350.85,
-          "confidenceInterval": [
-            1276.52,
-            1425.17
-          ],
+          "confidenceInterval": [1276.52, 1425.17],
           "rank": 45,
           "evaluatedAt": "2025-08-28T11:19:23.570294"
         }
@@ -3869,12 +2982,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Llama2",
         "instruct_type": "alpaca"
       },
@@ -3906,73 +3015,49 @@
       "scores": {
         "safety": {
           "rawScore": 1658.54,
-          "confidenceInterval": [
-            1618.04,
-            1699.05
-          ],
+          "confidenceInterval": [1618.04, 1699.05],
           "rank": 2,
           "evaluatedAt": "2025-08-28T11:19:23.569747"
         },
         "deception": {
           "rawScore": 1494.88,
-          "confidenceInterval": [
-            1489.34,
-            1500.42
-          ],
+          "confidenceInterval": [1489.34, 1500.42],
           "rank": 12,
           "evaluatedAt": "2025-08-28T11:19:23.569836"
         },
         "persuasion": {
           "rawScore": 1508.08,
-          "confidenceInterval": [
-            1458.42,
-            1557.73
-          ],
+          "confidenceInterval": [1458.42, 1557.73],
           "rank": 26,
           "evaluatedAt": "2025-08-28T11:19:23.569925"
         },
         "abstraction": {
           "rawScore": 1520.46,
-          "confidenceInterval": [
-            1493.36,
-            1547.56
-          ],
+          "confidenceInterval": [1493.36, 1547.56],
           "rank": 19,
           "evaluatedAt": "2025-08-28T11:19:23.570008"
         },
         "empathy": {
           "rawScore": 1629.69,
-          "confidenceInterval": [
-            1595.42,
-            1663.95
-          ],
+          "confidenceInterval": [1595.42, 1663.95],
           "rank": 1,
           "evaluatedAt": "2025-08-28T11:19:23.570100"
         },
         "compliance": {
           "rawScore": 1520.0,
-          "confidenceInterval": [
-            1464.54,
-            1575.47
-          ],
+          "confidenceInterval": [1464.54, 1575.47],
           "rank": 11,
           "evaluatedAt": "2025-08-28T11:19:23.570182"
         },
         "coding": {
           "rawScore": 1513.72,
-          "confidenceInterval": [
-            1497.31,
-            1530.13
-          ],
+          "confidenceInterval": [1497.31, 1530.13],
           "rank": 21,
           "evaluatedAt": "2025-08-28T11:19:23.570266"
         },
         "ethics": {
           "rawScore": 1597.65,
-          "confidenceInterval": [
-            1526.04,
-            1669.27
-          ],
+          "confidenceInterval": [1526.04, 1669.27],
           "rank": 13,
           "evaluatedAt": "2025-08-28T11:19:23.570346"
         }
@@ -3993,13 +3078,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "image",
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["image", "text"],
+        "output_modalities": ["text"],
         "tokenizer": "Grok",
         "instruct_type": null
       },
@@ -4031,73 +3111,49 @@
       "scores": {
         "safety": {
           "rawScore": 1554.45,
-          "confidenceInterval": [
-            1524.6,
-            1584.31
-          ],
+          "confidenceInterval": [1524.6, 1584.31],
           "rank": 12,
           "evaluatedAt": "2025-08-28T11:19:23.569709"
         },
         "deception": {
           "rawScore": 1478.79,
-          "confidenceInterval": [
-            1473.81,
-            1483.78
-          ],
+          "confidenceInterval": [1473.81, 1483.78],
           "rank": 42,
           "evaluatedAt": "2025-08-28T11:19:23.569800"
         },
         "persuasion": {
           "rawScore": 1548.3,
-          "confidenceInterval": [
-            1498.21,
-            1598.39
-          ],
+          "confidenceInterval": [1498.21, 1598.39],
           "rank": 9,
           "evaluatedAt": "2025-08-28T11:19:23.569889"
         },
         "abstraction": {
           "rawScore": 1512.91,
-          "confidenceInterval": [
-            1484.24,
-            1541.59
-          ],
+          "confidenceInterval": [1484.24, 1541.59],
           "rank": 24,
           "evaluatedAt": "2025-08-28T11:19:23.569972"
         },
         "empathy": {
           "rawScore": 1528.19,
-          "confidenceInterval": [
-            1505.19,
-            1551.19
-          ],
+          "confidenceInterval": [1505.19, 1551.19],
           "rank": 22,
           "evaluatedAt": "2025-08-28T11:19:23.570066"
         },
         "compliance": {
           "rawScore": 1528.72,
-          "confidenceInterval": [
-            1475.41,
-            1582.03
-          ],
+          "confidenceInterval": [1475.41, 1582.03],
           "rank": 6,
           "evaluatedAt": "2025-08-28T11:19:23.570147"
         },
         "coding": {
           "rawScore": 1585.61,
-          "confidenceInterval": [
-            1564.69,
-            1606.53
-          ],
+          "confidenceInterval": [1564.69, 1606.53],
           "rank": 5,
           "evaluatedAt": "2025-08-28T11:19:23.570230"
         },
         "ethics": {
           "rawScore": 1611.07,
-          "confidenceInterval": [
-            1545.91,
-            1676.23
-          ],
+          "confidenceInterval": [1545.91, 1676.23],
           "rank": 12,
           "evaluatedAt": "2025-08-28T11:19:23.570312"
         }
@@ -4119,14 +3175,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "image",
-          "text",
-          "file"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
         "tokenizer": "Claude",
         "instruct_type": null
       },
@@ -4155,73 +3205,49 @@
       "scores": {
         "safety": {
           "rawScore": 1502.87,
-          "confidenceInterval": [
-            1476.09,
-            1529.66
-          ],
+          "confidenceInterval": [1476.09, 1529.66],
           "rank": 21,
           "evaluatedAt": "2025-08-28T11:19:23.569725"
         },
         "deception": {
           "rawScore": 1493.32,
-          "confidenceInterval": [
-            1487.94,
-            1498.7
-          ],
+          "confidenceInterval": [1487.94, 1498.7],
           "rank": 13,
           "evaluatedAt": "2025-08-28T11:19:23.569815"
         },
         "persuasion": {
           "rawScore": 1524.67,
-          "confidenceInterval": [
-            1474.1,
-            1575.25
-          ],
+          "confidenceInterval": [1474.1, 1575.25],
           "rank": 16,
           "evaluatedAt": "2025-08-28T11:19:23.569905"
         },
         "abstraction": {
           "rawScore": 1535.52,
-          "confidenceInterval": [
-            1505.78,
-            1565.27
-          ],
+          "confidenceInterval": [1505.78, 1565.27],
           "rank": 9,
           "evaluatedAt": "2025-08-28T11:19:23.569989"
         },
         "empathy": {
           "rawScore": 1555.96,
-          "confidenceInterval": [
-            1535.34,
-            1576.58
-          ],
+          "confidenceInterval": [1535.34, 1576.58],
           "rank": 17,
           "evaluatedAt": "2025-08-28T11:19:23.570081"
         },
         "compliance": {
           "rawScore": 1496.89,
-          "confidenceInterval": [
-            1446.12,
-            1547.66
-          ],
+          "confidenceInterval": [1446.12, 1547.66],
           "rank": 31,
           "evaluatedAt": "2025-08-28T11:19:23.570163"
         },
         "coding": {
           "rawScore": 1561.09,
-          "confidenceInterval": [
-            1542.8,
-            1579.38
-          ],
+          "confidenceInterval": [1542.8, 1579.38],
           "rank": 10,
           "evaluatedAt": "2025-08-28T11:19:23.570246"
         },
         "ethics": {
           "rawScore": 1541.91,
-          "confidenceInterval": [
-            1477.75,
-            1606.07
-          ],
+          "confidenceInterval": [1477.75, 1606.07],
           "rank": 18,
           "evaluatedAt": "2025-08-28T11:19:23.570327"
         }
@@ -4242,14 +3268,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "image",
-          "text",
-          "file"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["image", "text", "file"],
+        "output_modalities": ["text"],
         "tokenizer": "GPT",
         "instruct_type": null
       },
@@ -4284,73 +3304,49 @@
       "scores": {
         "safety": {
           "rawScore": 1449.24,
-          "confidenceInterval": [
-            1421.67,
-            1476.81
-          ],
+          "confidenceInterval": [1421.67, 1476.81],
           "rank": 38,
           "evaluatedAt": "2025-08-28T11:19:23.569750"
         },
         "deception": {
           "rawScore": 1481.76,
-          "confidenceInterval": [
-            1476.92,
-            1486.6
-          ],
+          "confidenceInterval": [1476.92, 1486.6],
           "rank": 30,
           "evaluatedAt": "2025-08-28T11:19:23.569838"
         },
         "persuasion": {
           "rawScore": 1519.54,
-          "confidenceInterval": [
-            1468.22,
-            1570.85
-          ],
+          "confidenceInterval": [1468.22, 1570.85],
           "rank": 20,
           "evaluatedAt": "2025-08-28T11:19:23.569928"
         },
         "abstraction": {
           "rawScore": 1490.41,
-          "confidenceInterval": [
-            1460.25,
-            1520.57
-          ],
+          "confidenceInterval": [1460.25, 1520.57],
           "rank": 38,
           "evaluatedAt": "2025-08-28T11:19:23.570011"
         },
         "empathy": {
           "rawScore": 1440.37,
-          "confidenceInterval": [
-            1414.55,
-            1466.19
-          ],
+          "confidenceInterval": [1414.55, 1466.19],
           "rank": 43,
           "evaluatedAt": "2025-08-28T11:19:23.570103"
         },
         "compliance": {
           "rawScore": 1469.79,
-          "confidenceInterval": [
-            1408.96,
-            1530.63
-          ],
+          "confidenceInterval": [1408.96, 1530.63],
           "rank": 46,
           "evaluatedAt": "2025-08-28T11:19:23.570185"
         },
         "coding": {
           "rawScore": 1472.03,
-          "confidenceInterval": [
-            1456.42,
-            1487.63
-          ],
+          "confidenceInterval": [1456.42, 1487.63],
           "rank": 33,
           "evaluatedAt": "2025-08-28T11:19:23.570269"
         },
         "ethics": {
           "rawScore": 1388.77,
-          "confidenceInterval": [
-            1320.29,
-            1457.25
-          ],
+          "confidenceInterval": [1320.29, 1457.25],
           "rank": 41,
           "evaluatedAt": "2025-08-28T11:19:23.570347"
         }
@@ -4370,12 +3366,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Qwen",
         "instruct_type": "deepseek-r1"
       },
@@ -4409,73 +3401,49 @@
       "scores": {
         "safety": {
           "rawScore": 1454.75,
-          "confidenceInterval": [
-            1429.44,
-            1480.05
-          ],
+          "confidenceInterval": [1429.44, 1480.05],
           "rank": 37,
           "evaluatedAt": "2025-08-28T11:19:23.569718"
         },
         "deception": {
           "rawScore": 1485.85,
-          "confidenceInterval": [
-            1481.07,
-            1490.63
-          ],
+          "confidenceInterval": [1481.07, 1490.63],
           "rank": 25,
           "evaluatedAt": "2025-08-28T11:19:23.569805"
         },
         "persuasion": {
           "rawScore": 1466.21,
-          "confidenceInterval": [
-            1412.64,
-            1519.77
-          ],
+          "confidenceInterval": [1412.64, 1519.77],
           "rank": 40,
           "evaluatedAt": "2025-08-28T11:19:23.569897"
         },
         "abstraction": {
           "rawScore": 1464.06,
-          "confidenceInterval": [
-            1429.95,
-            1498.18
-          ],
+          "confidenceInterval": [1429.95, 1498.18],
           "rank": 44,
           "evaluatedAt": "2025-08-28T11:19:23.569978"
         },
         "empathy": {
           "rawScore": 1441.59,
-          "confidenceInterval": [
-            1421.47,
-            1461.7
-          ],
+          "confidenceInterval": [1421.47, 1461.7],
           "rank": 41,
           "evaluatedAt": "2025-08-28T11:19:23.570072"
         },
         "compliance": {
           "rawScore": 1504.32,
-          "confidenceInterval": [
-            1445.78,
-            1562.86
-          ],
+          "confidenceInterval": [1445.78, 1562.86],
           "rank": 25,
           "evaluatedAt": "2025-08-28T11:19:23.570153"
         },
         "coding": {
           "rawScore": 1500.02,
-          "confidenceInterval": [
-            1483.21,
-            1516.82
-          ],
+          "confidenceInterval": [1483.21, 1516.82],
           "rank": 25,
           "evaluatedAt": "2025-08-28T11:19:23.570238"
         },
         "ethics": {
           "rawScore": 1345.12,
-          "confidenceInterval": [
-            1275.12,
-            1415.12
-          ],
+          "confidenceInterval": [1275.12, 1415.12],
           "rank": 47,
           "evaluatedAt": "2025-08-28T11:19:23.570317"
         }
@@ -4495,13 +3463,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
         "tokenizer": "Llama4",
         "instruct_type": null
       },
@@ -4538,73 +3501,49 @@
       "scores": {
         "safety": {
           "rawScore": 1492.11,
-          "confidenceInterval": [
-            1467.46,
-            1516.77
-          ],
+          "confidenceInterval": [1467.46, 1516.77],
           "rank": 26,
           "evaluatedAt": "2025-08-28T11:19:23.569689"
         },
         "deception": {
           "rawScore": 1488.44,
-          "confidenceInterval": [
-            1483.66,
-            1493.22
-          ],
+          "confidenceInterval": [1483.66, 1493.22],
           "rank": 19,
           "evaluatedAt": "2025-08-28T11:19:23.569781"
         },
         "persuasion": {
           "rawScore": 1457.85,
-          "confidenceInterval": [
-            1405.09,
-            1510.61
-          ],
+          "confidenceInterval": [1405.09, 1510.61],
           "rank": 43,
           "evaluatedAt": "2025-08-28T11:19:23.569871"
         },
         "abstraction": {
           "rawScore": 1519.08,
-          "confidenceInterval": [
-            1491.75,
-            1546.41
-          ],
+          "confidenceInterval": [1491.75, 1546.41],
           "rank": 20,
           "evaluatedAt": "2025-08-28T11:19:23.569956"
         },
         "empathy": {
           "rawScore": 1576.0,
-          "confidenceInterval": [
-            1556.37,
-            1595.63
-          ],
+          "confidenceInterval": [1556.37, 1595.63],
           "rank": 8,
           "evaluatedAt": "2025-08-28T11:19:23.570036"
         },
         "compliance": {
           "rawScore": 1476.38,
-          "confidenceInterval": [
-            1423.79,
-            1528.97
-          ],
+          "confidenceInterval": [1423.79, 1528.97],
           "rank": 45,
           "evaluatedAt": "2025-08-28T11:19:23.570128"
         },
         "coding": {
           "rawScore": 1502.57,
-          "confidenceInterval": [
-            1488.37,
-            1516.77
-          ],
+          "confidenceInterval": [1488.37, 1516.77],
           "rank": 24,
           "evaluatedAt": "2025-08-28T11:19:23.570212"
         },
         "ethics": {
           "rawScore": 1502.32,
-          "confidenceInterval": [
-            1441.15,
-            1563.49
-          ],
+          "confidenceInterval": [1441.15, 1563.49],
           "rank": 24,
           "evaluatedAt": "2025-08-28T11:19:23.570296"
         }
@@ -4625,12 +3564,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Qwen",
         "instruct_type": null
       },
@@ -4658,73 +3593,49 @@
       "scores": {
         "safety": {
           "rawScore": 1604.41,
-          "confidenceInterval": [
-            1563.28,
-            1645.53
-          ],
+          "confidenceInterval": [1563.28, 1645.53],
           "rank": 8,
           "evaluatedAt": "2025-08-28T11:19:23.569751"
         },
         "deception": {
           "rawScore": 1495.52,
-          "confidenceInterval": [
-            1489.77,
-            1501.28
-          ],
+          "confidenceInterval": [1489.77, 1501.28],
           "rank": 11,
           "evaluatedAt": "2025-08-28T11:19:23.569841"
         },
         "persuasion": {
           "rawScore": 1601.09,
-          "confidenceInterval": [
-            1537.0,
-            1665.18
-          ],
+          "confidenceInterval": [1537.0, 1665.18],
           "rank": 1,
           "evaluatedAt": "2025-08-28T11:19:23.569930"
         },
         "abstraction": {
           "rawScore": 1495.71,
-          "confidenceInterval": [
-            1465.66,
-            1525.77
-          ],
+          "confidenceInterval": [1465.66, 1525.77],
           "rank": 37,
           "evaluatedAt": "2025-08-28T11:19:23.570012"
         },
         "empathy": {
           "rawScore": 1590.57,
-          "confidenceInterval": [
-            1567.52,
-            1613.62
-          ],
+          "confidenceInterval": [1567.52, 1613.62],
           "rank": 5,
           "evaluatedAt": "2025-08-28T11:19:23.570104"
         },
         "compliance": {
           "rawScore": 1510.07,
-          "confidenceInterval": [
-            1454.93,
-            1565.2
-          ],
+          "confidenceInterval": [1454.93, 1565.2],
           "rank": 18,
           "evaluatedAt": "2025-08-28T11:19:23.570186"
         },
         "coding": {
           "rawScore": 1670.9,
-          "confidenceInterval": [
-            1638.26,
-            1703.54
-          ],
+          "confidenceInterval": [1638.26, 1703.54],
           "rank": 1,
           "evaluatedAt": "2025-08-28T11:19:23.570270"
         },
         "ethics": {
           "rawScore": 1679.92,
-          "confidenceInterval": [
-            1603.22,
-            1756.62
-          ],
+          "confidenceInterval": [1603.22, 1756.62],
           "rank": 4,
           "evaluatedAt": "2025-08-28T11:19:23.570350"
         }
@@ -4746,15 +3657,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "file",
-          "image",
-          "text",
-          "audio"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["file", "image", "text", "audio"],
+        "output_modalities": ["text"],
         "tokenizer": "Gemini",
         "instruct_type": null
       },
@@ -4785,73 +3689,49 @@
       "scores": {
         "safety": {
           "rawScore": 1472.13,
-          "confidenceInterval": [
-            1445.44,
-            1498.82
-          ],
+          "confidenceInterval": [1445.44, 1498.82],
           "rank": 31,
           "evaluatedAt": "2025-08-28T11:19:23.569703"
         },
         "deception": {
           "rawScore": 1486.65,
-          "confidenceInterval": [
-            1481.54,
-            1491.76
-          ],
+          "confidenceInterval": [1481.54, 1491.76],
           "rank": 24,
           "evaluatedAt": "2025-08-28T11:19:23.569794"
         },
         "persuasion": {
           "rawScore": 1482.77,
-          "confidenceInterval": [
-            1423.22,
-            1542.32
-          ],
+          "confidenceInterval": [1423.22, 1542.32],
           "rank": 35,
           "evaluatedAt": "2025-08-28T11:19:23.569884"
         },
         "abstraction": {
           "rawScore": 1500.31,
-          "confidenceInterval": [
-            1472.01,
-            1528.61
-          ],
+          "confidenceInterval": [1472.01, 1528.61],
           "rank": 31,
           "evaluatedAt": "2025-08-28T11:19:23.569967"
         },
         "empathy": {
           "rawScore": 1456.95,
-          "confidenceInterval": [
-            1434.98,
-            1478.91
-          ],
+          "confidenceInterval": [1434.98, 1478.91],
           "rank": 38,
           "evaluatedAt": "2025-08-28T11:19:23.570061"
         },
         "compliance": {
           "rawScore": 1444.98,
-          "confidenceInterval": [
-            1388.93,
-            1501.02
-          ],
+          "confidenceInterval": [1388.93, 1501.02],
           "rank": 50,
           "evaluatedAt": "2025-08-28T11:19:23.570142"
         },
         "coding": {
           "rawScore": 1462.24,
-          "confidenceInterval": [
-            1445.32,
-            1479.15
-          ],
+          "confidenceInterval": [1445.32, 1479.15],
           "rank": 38,
           "evaluatedAt": "2025-08-28T11:19:23.570225"
         },
         "ethics": {
           "rawScore": 1449.56,
-          "confidenceInterval": [
-            1377.97,
-            1521.16
-          ],
+          "confidenceInterval": [1377.97, 1521.16],
           "rank": 34,
           "evaluatedAt": "2025-08-28T11:19:23.570306"
         }
@@ -4871,12 +3751,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -4906,73 +3782,49 @@
       "scores": {
         "safety": {
           "rawScore": 1498.51,
-          "confidenceInterval": [
-            1467.15,
-            1529.87
-          ],
+          "confidenceInterval": [1467.15, 1529.87],
           "rank": 24,
           "evaluatedAt": "2025-08-28T11:19:23.569740"
         },
         "deception": {
           "rawScore": 1491.2,
-          "confidenceInterval": [
-            1486.07,
-            1496.33
-          ],
+          "confidenceInterval": [1486.07, 1496.33],
           "rank": 14,
           "evaluatedAt": "2025-08-28T11:19:23.569829"
         },
         "persuasion": {
           "rawScore": 1485.76,
-          "confidenceInterval": [
-            1433.71,
-            1537.81
-          ],
+          "confidenceInterval": [1433.71, 1537.81],
           "rank": 32,
           "evaluatedAt": "2025-08-28T11:19:23.569920"
         },
         "abstraction": {
           "rawScore": 1543.33,
-          "confidenceInterval": [
-            1514.69,
-            1571.98
-          ],
+          "confidenceInterval": [1514.69, 1571.98],
           "rank": 6,
           "evaluatedAt": "2025-08-28T11:19:23.570003"
         },
         "empathy": {
           "rawScore": 1521.7,
-          "confidenceInterval": [
-            1498.76,
-            1544.63
-          ],
+          "confidenceInterval": [1498.76, 1544.63],
           "rank": 23,
           "evaluatedAt": "2025-08-28T11:19:23.570095"
         },
         "compliance": {
           "rawScore": 1516.32,
-          "confidenceInterval": [
-            1466.49,
-            1566.15
-          ],
+          "confidenceInterval": [1466.49, 1566.15],
           "rank": 15,
           "evaluatedAt": "2025-08-28T11:19:23.570176"
         },
         "coding": {
           "rawScore": 1560.45,
-          "confidenceInterval": [
-            1540.18,
-            1580.72
-          ],
+          "confidenceInterval": [1540.18, 1580.72],
           "rank": 11,
           "evaluatedAt": "2025-08-28T11:19:23.570260"
         },
         "ethics": {
           "rawScore": 1476.77,
-          "confidenceInterval": [
-            1407.57,
-            1545.98
-          ],
+          "confidenceInterval": [1407.57, 1545.98],
           "rank": 26,
           "evaluatedAt": "2025-08-28T11:19:23.570340"
         }
@@ -4992,13 +3844,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -5025,73 +3872,49 @@
       "scores": {
         "safety": {
           "rawScore": 1446.53,
-          "confidenceInterval": [
-            1419.94,
-            1473.12
-          ],
+          "confidenceInterval": [1419.94, 1473.12],
           "rank": 39,
           "evaluatedAt": "2025-08-28T11:19:23.569727"
         },
         "deception": {
           "rawScore": 1474.86,
-          "confidenceInterval": [
-            1469.8,
-            1479.93
-          ],
+          "confidenceInterval": [1469.8, 1479.93],
           "rank": 49,
           "evaluatedAt": "2025-08-28T11:19:23.569816"
         },
         "persuasion": {
           "rawScore": 1450.31,
-          "confidenceInterval": [
-            1393.44,
-            1507.17
-          ],
+          "confidenceInterval": [1393.44, 1507.17],
           "rank": 44,
           "evaluatedAt": "2025-08-28T11:19:23.569907"
         },
         "abstraction": {
           "rawScore": 1474.24,
-          "confidenceInterval": [
-            1439.12,
-            1509.36
-          ],
+          "confidenceInterval": [1439.12, 1509.36],
           "rank": 40,
           "evaluatedAt": "2025-08-28T11:19:23.569991"
         },
         "empathy": {
           "rawScore": 1405.28,
-          "confidenceInterval": [
-            1379.66,
-            1430.89
-          ],
+          "confidenceInterval": [1379.66, 1430.89],
           "rank": 49,
           "evaluatedAt": "2025-08-28T11:19:23.570083"
         },
         "compliance": {
           "rawScore": 1547.89,
-          "confidenceInterval": [
-            1494.16,
-            1601.61
-          ],
+          "confidenceInterval": [1494.16, 1601.61],
           "rank": 2,
           "evaluatedAt": "2025-08-28T11:19:23.570164"
         },
         "coding": {
           "rawScore": 1411.34,
-          "confidenceInterval": [
-            1392.07,
-            1430.6
-          ],
+          "confidenceInterval": [1392.07, 1430.6],
           "rank": 48,
           "evaluatedAt": "2025-08-28T11:19:23.570248"
         },
         "ethics": {
           "rawScore": 1385.97,
-          "confidenceInterval": [
-            1314.88,
-            1457.06
-          ],
+          "confidenceInterval": [1314.88, 1457.06],
           "rank": 42,
           "evaluatedAt": "2025-08-28T11:19:23.570328"
         }
@@ -5111,12 +3934,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Llama2",
         "instruct_type": "alpaca"
       },
@@ -5150,73 +3969,49 @@
       "scores": {
         "safety": {
           "rawScore": 1617.11,
-          "confidenceInterval": [
-            1578.85,
-            1655.38
-          ],
+          "confidenceInterval": [1578.85, 1655.38],
           "rank": 6,
           "evaluatedAt": "2025-08-28T11:19:23.569758"
         },
         "deception": {
           "rawScore": 1502.34,
-          "confidenceInterval": [
-            1495.84,
-            1508.83
-          ],
+          "confidenceInterval": [1495.84, 1508.83],
           "rank": 5,
           "evaluatedAt": "2025-08-28T11:19:23.569849"
         },
         "persuasion": {
           "rawScore": 1600.96,
-          "confidenceInterval": [
-            1532.47,
-            1669.46
-          ],
+          "confidenceInterval": [1532.47, 1669.46],
           "rank": 2,
           "evaluatedAt": "2025-08-28T11:19:23.569936"
         },
         "abstraction": {
           "rawScore": 1558.38,
-          "confidenceInterval": [
-            1526.64,
-            1590.12
-          ],
+          "confidenceInterval": [1526.64, 1590.12],
           "rank": 1,
           "evaluatedAt": "2025-08-28T11:19:23.570018"
         },
         "empathy": {
           "rawScore": 1543.8,
-          "confidenceInterval": [
-            1522.48,
-            1565.12
-          ],
+          "confidenceInterval": [1522.48, 1565.12],
           "rank": 20,
           "evaluatedAt": "2025-08-28T11:19:23.570110"
         },
         "compliance": {
           "rawScore": 1502.97,
-          "confidenceInterval": [
-            1452.24,
-            1553.71
-          ],
+          "confidenceInterval": [1452.24, 1553.71],
           "rank": 26,
           "evaluatedAt": "2025-08-28T11:19:23.570193"
         },
         "coding": {
           "rawScore": 1521.96,
-          "confidenceInterval": [
-            1506.8,
-            1537.12
-          ],
+          "confidenceInterval": [1506.8, 1537.12],
           "rank": 19,
           "evaluatedAt": "2025-08-28T11:19:23.570276"
         },
         "ethics": {
           "rawScore": 1720.34,
-          "confidenceInterval": [
-            1641.66,
-            1799.02
-          ],
+          "confidenceInterval": [1641.66, 1799.02],
           "rank": 3,
           "evaluatedAt": "2025-08-28T11:19:23.570355"
         }
@@ -5236,12 +4031,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -5278,73 +4069,49 @@
       "scores": {
         "safety": {
           "rawScore": 1458.58,
-          "confidenceInterval": [
-            1434.45,
-            1482.71
-          ],
+          "confidenceInterval": [1434.45, 1482.71],
           "rank": 36,
           "evaluatedAt": "2025-08-28T11:19:23.569697"
         },
         "deception": {
           "rawScore": 1489.81,
-          "confidenceInterval": [
-            1484.6,
-            1495.02
-          ],
+          "confidenceInterval": [1484.6, 1495.02],
           "rank": 16,
           "evaluatedAt": "2025-08-28T11:19:23.569786"
         },
         "persuasion": {
           "rawScore": 1527.73,
-          "confidenceInterval": [
-            1465.99,
-            1589.47
-          ],
+          "confidenceInterval": [1465.99, 1589.47],
           "rank": 14,
           "evaluatedAt": "2025-08-28T11:19:23.569879"
         },
         "abstraction": {
           "rawScore": 1540.17,
-          "confidenceInterval": [
-            1511.89,
-            1568.46
-          ],
+          "confidenceInterval": [1511.89, 1568.46],
           "rank": 8,
           "evaluatedAt": "2025-08-28T11:19:23.569961"
         },
         "empathy": {
           "rawScore": 1570.59,
-          "confidenceInterval": [
-            1550.97,
-            1590.21
-          ],
+          "confidenceInterval": [1550.97, 1590.21],
           "rank": 11,
           "evaluatedAt": "2025-08-28T11:19:23.570055"
         },
         "compliance": {
           "rawScore": 1494.18,
-          "confidenceInterval": [
-            1432.54,
-            1555.81
-          ],
+          "confidenceInterval": [1432.54, 1555.81],
           "rank": 36,
           "evaluatedAt": "2025-08-28T11:19:23.570133"
         },
         "coding": {
           "rawScore": 1533.55,
-          "confidenceInterval": [
-            1518.79,
-            1548.32
-          ],
+          "confidenceInterval": [1518.79, 1548.32],
           "rank": 17,
           "evaluatedAt": "2025-08-28T11:19:23.570217"
         },
         "ethics": {
           "rawScore": 1613.27,
-          "confidenceInterval": [
-            1545.49,
-            1681.04
-          ],
+          "confidenceInterval": [1545.49, 1681.04],
           "rank": 10,
           "evaluatedAt": "2025-08-28T11:19:23.570298"
         }
@@ -5365,13 +4132,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "image",
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["image", "text"],
+        "output_modalities": ["text"],
         "tokenizer": "GPT",
         "instruct_type": null
       },
@@ -5399,73 +4161,49 @@
       "scores": {
         "safety": {
           "rawScore": 1606.71,
-          "confidenceInterval": [
-            1564.92,
-            1648.5
-          ],
+          "confidenceInterval": [1564.92, 1648.5],
           "rank": 7,
           "evaluatedAt": "2025-08-28T11:19:23.569736"
         },
         "deception": {
           "rawScore": 1497.13,
-          "confidenceInterval": [
-            1491.4,
-            1502.85
-          ],
+          "confidenceInterval": [1491.4, 1502.85],
           "rank": 8,
           "evaluatedAt": "2025-08-28T11:19:23.569825"
         },
         "persuasion": {
           "rawScore": 1560.57,
-          "confidenceInterval": [
-            1507.76,
-            1613.39
-          ],
+          "confidenceInterval": [1507.76, 1613.39],
           "rank": 5,
           "evaluatedAt": "2025-08-28T11:19:23.569916"
         },
         "abstraction": {
           "rawScore": 1521.62,
-          "confidenceInterval": [
-            1494.32,
-            1548.92
-          ],
+          "confidenceInterval": [1494.32, 1548.92],
           "rank": 18,
           "evaluatedAt": "2025-08-28T11:19:23.569999"
         },
         "empathy": {
           "rawScore": 1569.79,
-          "confidenceInterval": [
-            1549.74,
-            1589.84
-          ],
+          "confidenceInterval": [1549.74, 1589.84],
           "rank": 12,
           "evaluatedAt": "2025-08-28T11:19:23.570091"
         },
         "compliance": {
           "rawScore": 1453.55,
-          "confidenceInterval": [
-            1399.28,
-            1507.82
-          ],
+          "confidenceInterval": [1399.28, 1507.82],
           "rank": 49,
           "evaluatedAt": "2025-08-28T11:19:23.570172"
         },
         "coding": {
           "rawScore": 1474.76,
-          "confidenceInterval": [
-            1459.23,
-            1490.3
-          ],
+          "confidenceInterval": [1459.23, 1490.3],
           "rank": 32,
           "evaluatedAt": "2025-08-28T11:19:23.570256"
         },
         "ethics": {
           "rawScore": 1565.0,
-          "confidenceInterval": [
-            1500.34,
-            1629.66
-          ],
+          "confidenceInterval": [1500.34, 1629.66],
           "rank": 16,
           "evaluatedAt": "2025-08-28T11:19:23.570336"
         }
@@ -5485,13 +4223,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
         "tokenizer": "Gemini",
         "instruct_type": "gemma"
       },
@@ -5525,73 +4258,49 @@
       "scores": {
         "safety": {
           "rawScore": 1500.41,
-          "confidenceInterval": [
-            1472.26,
-            1528.55
-          ],
+          "confidenceInterval": [1472.26, 1528.55],
           "rank": 22,
           "evaluatedAt": "2025-08-28T11:19:23.569695"
         },
         "deception": {
           "rawScore": 1501.23,
-          "confidenceInterval": [
-            1495.19,
-            1507.26
-          ],
+          "confidenceInterval": [1495.19, 1507.26],
           "rank": 6,
           "evaluatedAt": "2025-08-28T11:19:23.569788"
         },
         "persuasion": {
           "rawScore": 1523.69,
-          "confidenceInterval": [
-            1467.05,
-            1580.32
-          ],
+          "confidenceInterval": [1467.05, 1580.32],
           "rank": 18,
           "evaluatedAt": "2025-08-28T11:19:23.569876"
         },
         "abstraction": {
           "rawScore": 1526.63,
-          "confidenceInterval": [
-            1498.08,
-            1555.18
-          ],
+          "confidenceInterval": [1498.08, 1555.18],
           "rank": 13,
           "evaluatedAt": "2025-08-28T11:19:23.569963"
         },
         "empathy": {
           "rawScore": 1576.85,
-          "confidenceInterval": [
-            1555.87,
-            1597.83
-          ],
+          "confidenceInterval": [1555.87, 1597.83],
           "rank": 7,
           "evaluatedAt": "2025-08-28T11:19:23.570054"
         },
         "compliance": {
           "rawScore": 1479.26,
-          "confidenceInterval": [
-            1428.47,
-            1530.06
-          ],
+          "confidenceInterval": [1428.47, 1530.06],
           "rank": 44,
           "evaluatedAt": "2025-08-28T11:19:23.570136"
         },
         "coding": {
           "rawScore": 1430.72,
-          "confidenceInterval": [
-            1413.86,
-            1447.58
-          ],
+          "confidenceInterval": [1413.86, 1447.58],
           "rank": 43,
           "evaluatedAt": "2025-08-28T11:19:23.570219"
         },
         "ethics": {
           "rawScore": 1425.45,
-          "confidenceInterval": [
-            1354.94,
-            1495.96
-          ],
+          "confidenceInterval": [1354.94, 1495.96],
           "rank": 38,
           "evaluatedAt": "2025-08-28T11:19:23.570303"
         }
@@ -5611,12 +4320,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Qwen3",
         "instruct_type": "qwen3"
       },
@@ -5655,73 +4360,49 @@
       "scores": {
         "safety": {
           "rawScore": 1446.03,
-          "confidenceInterval": [
-            1415.3,
-            1476.77
-          ],
+          "confidenceInterval": [1415.3, 1476.77],
           "rank": 40,
           "evaluatedAt": "2025-08-28T11:19:23.569739"
         },
         "deception": {
           "rawScore": 1496.16,
-          "confidenceInterval": [
-            1490.8,
-            1501.52
-          ],
+          "confidenceInterval": [1490.8, 1501.52],
           "rank": 10,
           "evaluatedAt": "2025-08-28T11:19:23.569828"
         },
         "persuasion": {
           "rawScore": 1517.41,
-          "confidenceInterval": [
-            1465.96,
-            1568.85
-          ],
+          "confidenceInterval": [1465.96, 1568.85],
           "rank": 22,
           "evaluatedAt": "2025-08-28T11:19:23.569919"
         },
         "abstraction": {
           "rawScore": 1427.83,
-          "confidenceInterval": [
-            1379.46,
-            1476.21
-          ],
+          "confidenceInterval": [1379.46, 1476.21],
           "rank": 50,
           "evaluatedAt": "2025-08-28T11:19:23.570001"
         },
         "empathy": {
           "rawScore": 1553.72,
-          "confidenceInterval": [
-            1533.38,
-            1574.06
-          ],
+          "confidenceInterval": [1533.38, 1574.06],
           "rank": 19,
           "evaluatedAt": "2025-08-28T11:19:23.570093"
         },
         "compliance": {
           "rawScore": 1456.5,
-          "confidenceInterval": [
-            1400.77,
-            1512.24
-          ],
+          "confidenceInterval": [1400.77, 1512.24],
           "rank": 48,
           "evaluatedAt": "2025-08-28T11:19:23.570175"
         },
         "coding": {
           "rawScore": 1470.47,
-          "confidenceInterval": [
-            1455.87,
-            1485.06
-          ],
+          "confidenceInterval": [1455.87, 1485.06],
           "rank": 36,
           "evaluatedAt": "2025-08-28T11:19:23.570259"
         },
         "ethics": {
           "rawScore": 1343.4,
-          "confidenceInterval": [
-            1265.7,
-            1421.1
-          ],
+          "confidenceInterval": [1265.7, 1421.1],
           "rank": 48,
           "evaluatedAt": "2025-08-28T11:19:23.570339"
         }
@@ -5741,12 +4422,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -5776,73 +4453,49 @@
       "scores": {
         "safety": {
           "rawScore": 1586.63,
-          "confidenceInterval": [
-            1551.14,
-            1622.11
-          ],
+          "confidenceInterval": [1551.14, 1622.11],
           "rank": 9,
           "evaluatedAt": "2025-08-28T11:19:23.569714"
         },
         "deception": {
           "rawScore": 1503.86,
-          "confidenceInterval": [
-            1494.3,
-            1513.42
-          ],
+          "confidenceInterval": [1494.3, 1513.42],
           "rank": 3,
           "evaluatedAt": "2025-08-28T11:19:23.569804"
         },
         "persuasion": {
           "rawScore": 1523.87,
-          "confidenceInterval": [
-            1467.82,
-            1579.93
-          ],
+          "confidenceInterval": [1467.82, 1579.93],
           "rank": 17,
           "evaluatedAt": "2025-08-28T11:19:23.569893"
         },
         "abstraction": {
           "rawScore": 1543.55,
-          "confidenceInterval": [
-            1515.07,
-            1572.04
-          ],
+          "confidenceInterval": [1515.07, 1572.04],
           "rank": 5,
           "evaluatedAt": "2025-08-28T11:19:23.569976"
         },
         "empathy": {
           "rawScore": 1605.74,
-          "confidenceInterval": [
-            1582.64,
-            1628.84
-          ],
+          "confidenceInterval": [1582.64, 1628.84],
           "rank": 2,
           "evaluatedAt": "2025-08-28T11:19:23.570070"
         },
         "compliance": {
           "rawScore": 1495.27,
-          "confidenceInterval": [
-            1444.86,
-            1545.69
-          ],
+          "confidenceInterval": [1444.86, 1545.69],
           "rank": 34,
           "evaluatedAt": "2025-08-28T11:19:23.570151"
         },
         "coding": {
           "rawScore": 1574.13,
-          "confidenceInterval": [
-            1554.55,
-            1593.71
-          ],
+          "confidenceInterval": [1554.55, 1593.71],
           "rank": 8,
           "evaluatedAt": "2025-08-28T11:19:23.570234"
         },
         "ethics": {
           "rawScore": 1778.81,
-          "confidenceInterval": [
-            1690.97,
-            1866.65
-          ],
+          "confidenceInterval": [1690.97, 1866.65],
           "rank": 1,
           "evaluatedAt": "2025-08-28T11:19:23.570316"
         }
@@ -5862,12 +4515,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Qwen3",
         "instruct_type": null
       },
@@ -5904,73 +4553,49 @@
       "scores": {
         "safety": {
           "rawScore": 1554.76,
-          "confidenceInterval": [
-            1525.48,
-            1584.03
-          ],
+          "confidenceInterval": [1525.48, 1584.03],
           "rank": 11,
           "evaluatedAt": "2025-08-28T11:19:23.569744"
         },
         "deception": {
           "rawScore": 1490.69,
-          "confidenceInterval": [
-            1485.35,
-            1496.03
-          ],
+          "confidenceInterval": [1485.35, 1496.03],
           "rank": 15,
           "evaluatedAt": "2025-08-28T11:19:23.569833"
         },
         "persuasion": {
           "rawScore": 1433.07,
-          "confidenceInterval": [
-            1379.44,
-            1486.7
-          ],
+          "confidenceInterval": [1379.44, 1486.7],
           "rank": 47,
           "evaluatedAt": "2025-08-28T11:19:23.569921"
         },
         "abstraction": {
           "rawScore": 1512.14,
-          "confidenceInterval": [
-            1482.86,
-            1541.42
-          ],
+          "confidenceInterval": [1482.86, 1541.42],
           "rank": 25,
           "evaluatedAt": "2025-08-28T11:19:23.570005"
         },
         "empathy": {
           "rawScore": 1569.22,
-          "confidenceInterval": [
-            1548.95,
-            1589.49
-          ],
+          "confidenceInterval": [1548.95, 1589.49],
           "rank": 13,
           "evaluatedAt": "2025-08-28T11:19:23.570097"
         },
         "compliance": {
           "rawScore": 1506.8,
-          "confidenceInterval": [
-            1455.24,
-            1558.35
-          ],
+          "confidenceInterval": [1455.24, 1558.35],
           "rank": 23,
           "evaluatedAt": "2025-08-28T11:19:23.570179"
         },
         "coding": {
           "rawScore": 1492.56,
-          "confidenceInterval": [
-            1474.69,
-            1510.42
-          ],
+          "confidenceInterval": [1474.69, 1510.42],
           "rank": 27,
           "evaluatedAt": "2025-08-28T11:19:23.570261"
         },
         "ethics": {
           "rawScore": 1539.02,
-          "confidenceInterval": [
-            1473.55,
-            1604.49
-          ],
+          "confidenceInterval": [1473.55, 1604.49],
           "rank": 19,
           "evaluatedAt": "2025-08-28T11:19:23.570341"
         }
@@ -5991,12 +4616,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Qwen",
         "instruct_type": null
       },
@@ -6024,73 +4645,49 @@
       "scores": {
         "safety": {
           "rawScore": 1541.81,
-          "confidenceInterval": [
-            1512.09,
-            1571.53
-          ],
+          "confidenceInterval": [1512.09, 1571.53],
           "rank": 15,
           "evaluatedAt": "2025-08-28T11:19:23.569723"
         },
         "deception": {
           "rawScore": 1496.48,
-          "confidenceInterval": [
-            1490.59,
-            1502.37
-          ],
+          "confidenceInterval": [1490.59, 1502.37],
           "rank": 9,
           "evaluatedAt": "2025-08-28T11:19:23.569812"
         },
         "persuasion": {
           "rawScore": 1538.75,
-          "confidenceInterval": [
-            1486.56,
-            1590.95
-          ],
+          "confidenceInterval": [1486.56, 1590.95],
           "rank": 11,
           "evaluatedAt": "2025-08-28T11:19:23.569904"
         },
         "abstraction": {
           "rawScore": 1525.21,
-          "confidenceInterval": [
-            1496.86,
-            1553.57
-          ],
+          "confidenceInterval": [1496.86, 1553.57],
           "rank": 15,
           "evaluatedAt": "2025-08-28T11:19:23.569988"
         },
         "empathy": {
           "rawScore": 1564.12,
-          "confidenceInterval": [
-            1542.4,
-            1585.85
-          ],
+          "confidenceInterval": [1542.4, 1585.85],
           "rank": 16,
           "evaluatedAt": "2025-08-28T11:19:23.570080"
         },
         "compliance": {
           "rawScore": 1507.01,
-          "confidenceInterval": [
-            1455.65,
-            1558.38
-          ],
+          "confidenceInterval": [1455.65, 1558.38],
           "rank": 21,
           "evaluatedAt": "2025-08-28T11:19:23.570161"
         },
         "coding": {
           "rawScore": 1483.02,
-          "confidenceInterval": [
-            1466.84,
-            1499.21
-          ],
+          "confidenceInterval": [1466.84, 1499.21],
           "rank": 30,
           "evaluatedAt": "2025-08-28T11:19:23.570245"
         },
         "ethics": {
           "rawScore": 1429.84,
-          "confidenceInterval": [
-            1367.12,
-            1492.57
-          ],
+          "confidenceInterval": [1367.12, 1492.57],
           "rank": 37,
           "evaluatedAt": "2025-08-28T11:19:23.570325"
         }
@@ -6110,12 +4707,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -6146,73 +4739,49 @@
       "scores": {
         "safety": {
           "rawScore": 1621.13,
-          "confidenceInterval": [
-            1581.02,
-            1661.25
-          ],
+          "confidenceInterval": [1581.02, 1661.25],
           "rank": 5,
           "evaluatedAt": "2025-08-28T11:19:23.569737"
         },
         "deception": {
           "rawScore": 1514.51,
-          "confidenceInterval": [
-            1504.13,
-            1524.88
-          ],
+          "confidenceInterval": [1504.13, 1524.88],
           "rank": 1,
           "evaluatedAt": "2025-08-28T11:19:23.569826"
         },
         "persuasion": {
           "rawScore": 1499.44,
-          "confidenceInterval": [
-            1450.17,
-            1548.71
-          ],
+          "confidenceInterval": [1450.17, 1548.71],
           "rank": 29,
           "evaluatedAt": "2025-08-28T11:19:23.569917"
         },
         "abstraction": {
           "rawScore": 1543.81,
-          "confidenceInterval": [
-            1509.76,
-            1577.85
-          ],
+          "confidenceInterval": [1509.76, 1577.85],
           "rank": 4,
           "evaluatedAt": "2025-08-28T11:19:23.570000"
         },
         "empathy": {
           "rawScore": 1566.66,
-          "confidenceInterval": [
-            1545.52,
-            1587.81
-          ],
+          "confidenceInterval": [1545.52, 1587.81],
           "rank": 14,
           "evaluatedAt": "2025-08-28T11:19:23.570092"
         },
         "compliance": {
           "rawScore": 1488.82,
-          "confidenceInterval": [
-            1438.36,
-            1539.27
-          ],
+          "confidenceInterval": [1438.36, 1539.27],
           "rank": 39,
           "evaluatedAt": "2025-08-28T11:19:23.570174"
         },
         "coding": {
           "rawScore": 1533.75,
-          "confidenceInterval": [
-            1518.76,
-            1548.73
-          ],
+          "confidenceInterval": [1518.76, 1548.73],
           "rank": 16,
           "evaluatedAt": "2025-08-28T11:19:23.570257"
         },
         "ethics": {
           "rawScore": 1551.94,
-          "confidenceInterval": [
-            1487.74,
-            1616.15
-          ],
+          "confidenceInterval": [1487.74, 1616.15],
           "rank": 17,
           "evaluatedAt": "2025-08-28T11:19:23.570337"
         }
@@ -6232,12 +4801,8 @@
       },
       "architecture": {
         "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
         "tokenizer": "Other",
         "instruct_type": null
       },
@@ -6275,73 +4840,49 @@
       "scores": {
         "safety": {
           "rawScore": 1460.57,
-          "confidenceInterval": [
-            1428.84,
-            1492.29
-          ],
+          "confidenceInterval": [1428.84, 1492.29],
           "rank": 33,
           "evaluatedAt": "2025-08-28T11:19:23.569753"
         },
         "deception": {
           "rawScore": 1487.31,
-          "confidenceInterval": [
-            1482.59,
-            1492.02
-          ],
+          "confidenceInterval": [1482.59, 1492.02],
           "rank": 21,
           "evaluatedAt": "2025-08-28T11:19:23.569842"
         },
         "persuasion": {
           "rawScore": 1518.71,
-          "confidenceInterval": [
-            1467.35,
-            1570.07
-          ],
+          "confidenceInterval": [1467.35, 1570.07],
           "rank": 21,
           "evaluatedAt": "2025-08-28T11:19:23.569931"
         },
         "abstraction": {
           "rawScore": 1508.26,
-          "confidenceInterval": [
-            1476.72,
-            1539.81
-          ],
+          "confidenceInterval": [1476.72, 1539.81],
           "rank": 27,
           "evaluatedAt": "2025-08-28T11:19:23.570013"
         },
         "empathy": {
           "rawScore": 1462.96,
-          "confidenceInterval": [
-            1443.5,
-            1482.43
-          ],
+          "confidenceInterval": [1443.5, 1482.43],
           "rank": 35,
           "evaluatedAt": "2025-08-28T11:19:23.570106"
         },
         "compliance": {
           "rawScore": 1487.49,
-          "confidenceInterval": [
-            1436.12,
-            1538.87
-          ],
+          "confidenceInterval": [1436.12, 1538.87],
           "rank": 40,
           "evaluatedAt": "2025-08-28T11:19:23.570188"
         },
         "coding": {
           "rawScore": 1488.51,
-          "confidenceInterval": [
-            1470.47,
-            1506.55
-          ],
+          "confidenceInterval": [1470.47, 1506.55],
           "rank": 29,
           "evaluatedAt": "2025-08-28T11:19:23.570272"
         },
         "ethics": {
           "rawScore": 1436.52,
-          "confidenceInterval": [
-            1372.63,
-            1500.41
-          ],
+          "confidenceInterval": [1372.63, 1500.41],
           "rank": 36,
           "evaluatedAt": "2025-08-28T11:19:23.570351"
         }
@@ -6361,13 +4902,8 @@
       },
       "architecture": {
         "modality": "text+image->text",
-        "input_modalities": [
-          "text",
-          "image"
-        ],
-        "output_modalities": [
-          "text"
-        ],
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
         "tokenizer": "Nova",
         "instruct_type": null
       },
@@ -6455,11 +4991,7 @@
       "description": "🔮 ur crypto edge + market takes |\n🎯 high conviction + smart risk |\n💎 build wealth w/ proven systems |\n👇 join alpha crew | nfa | dyor",
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/B4vaXqyd_ncxno2.jpg",
       "metadata": {
-        "skills": [
-          "Crypto Trading",
-          "Deep Research",
-          "Social and Chat"
-        ]
+        "skills": ["Crypto Trading", "Deep Research", "Social and Chat"]
       },
       "rank": 1,
       "score": 1614.59747375022,
@@ -6473,10 +5005,7 @@
       "description": "A high-frequency PPO AI trading agent for scalping on the Ethereum network, leveraging LSTM for advanced price prediction and a deep neural network to explore and optimize multiple trading strategies.",
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/sonic.png",
       "metadata": {
-        "skills": [
-          "Crypto Trading",
-          "Prediction Markets"
-        ],
+        "skills": ["Crypto Trading", "Prediction Markets"],
         "repositoryUrl": "https://github.com/soradaisuki/ppo-scalper/blob/main/README.md"
       },
       "rank": 2,
@@ -6491,9 +5020,7 @@
       "description": "",
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/agent1.png",
       "metadata": {
-        "skills": [
-          "Crypto Trading"
-        ]
+        "skills": ["Crypto Trading"]
       },
       "rank": 3,
       "score": 1546.05628500648,
@@ -6526,9 +5053,7 @@
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/cashh.jpeg",
       "metadata": {
         "x": "https://x.com/BTCassh",
-        "skills": [
-          "Crypto Trading"
-        ]
+        "skills": ["Crypto Trading"]
       },
       "rank": 5,
       "score": 1539.82963748973,
@@ -6685,9 +5210,7 @@
       "description": "",
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/8ball.png",
       "metadata": {
-        "skills": [
-          "Crypto Trading"
-        ]
+        "skills": ["Crypto Trading"]
       },
       "rank": 14,
       "score": 1524.2332428821,
@@ -6799,10 +5322,7 @@
       "description": "The force is strong with this one… in the markets",
       "imageUrl": "https://i.postimg.cc/BQdDHvpy/darth-vader.jpg",
       "metadata": {
-        "skills": [
-          "Crypto Trading",
-          "Social and Chat"
-        ]
+        "skills": ["Crypto Trading", "Social and Chat"]
       },
       "rank": 21,
       "score": 1514.01284867518,
@@ -6899,10 +5419,7 @@
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/agent2.png",
       "metadata": {
         "x": "theecryptodaddy",
-        "skills": [
-          "Crypto Trading",
-          "Traditional Investing"
-        ],
+        "skills": ["Crypto Trading", "Traditional Investing"],
         "telegram": "theecryptodaddy"
       },
       "rank": 27,
@@ -6917,11 +5434,7 @@
       "description": "moves silently through liquid staking shadows i strike when i see...  ETH staking divergences liquid derivative... opportunities correlation breakdowns",
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/wen.png",
       "metadata": {
-        "skills": [
-          "Crypto Trading",
-          "Sports Betting",
-          "Prediction Markets"
-        ]
+        "skills": ["Crypto Trading", "Sports Betting", "Prediction Markets"]
       },
       "rank": 28,
       "score": 1500.7738248509,
@@ -7026,10 +5539,7 @@
       "description": "trding bot",
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/What-is-AI-1.jpg",
       "metadata": {
-        "skills": [
-          "Art & Video Creation",
-          "Crypto Trading"
-        ]
+        "skills": ["Art & Video Creation", "Crypto Trading"]
       },
       "rank": 34,
       "score": 1483.82312797549,
@@ -7120,9 +5630,7 @@
       "description": "",
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/agent1.png",
       "metadata": {
-        "skills": [
-          "Crypto Trading"
-        ],
+        "skills": ["Crypto Trading"],
         "repositoryUrl": "https://github.com/YanYuanFE/recall-trading-agent"
       },
       "rank": 39,
@@ -7197,9 +5705,7 @@
       "imageUrl": "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/agent_images/DmTelllQ_400x400.jpg",
       "metadata": {
         "x": "cryptoeights",
-        "skills": [
-          "Crypto Trading"
-        ],
+        "skills": ["Crypto Trading"],
         "telegram": "cryptoeights"
       },
       "rank": 43,
