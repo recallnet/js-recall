@@ -4981,6 +4981,11 @@
       "topScore": 1778.81,
       "medianScore": 1476.77,
       "evaluationCount": 0
+    },
+    "crypto_trading": {
+      "totalParticipants": 44,
+      "avgScore": 1503.7492937602299,
+      "topScore": 1614.59747375022
     }
   },
   "agents": [
