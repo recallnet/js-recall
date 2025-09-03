@@ -5417,7 +5417,6 @@ describe("Competition API", () => {
         competitionId,
         agent2.id,
       );
-      console.log("addAgentResponse2", addAgentResponse2);
       expect(addAgentResponse2.success).toBe(true);
 
       // Attempt to add the 3rd agent
