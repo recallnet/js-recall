@@ -68,13 +68,27 @@ jobs:
         run: pnpm install
 
       - name: Build API and dependencies
+        env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
         run: |
+          echo "🔑 Checking ALCHEMY_API_KEY availability..."
+          if [ -n "$ALCHEMY_API_KEY" ]; then
+            echo "✅ ALCHEMY_API_KEY is set: ${ALCHEMY_API_KEY:0:5}..."
+          else
+            echo "❌ ALCHEMY_API_KEY is NOT set!"
+          fi
+          
           # Build only what's needed for API and live trading tests
+          echo "📦 Building API dependencies..."
           pnpm --filter=api... build
-          pnpm --filter=@recall/envio-indexer build
+          
+          echo "📦 Building Envio indexer (will update block numbers)..."
+          ALCHEMY_API_KEY=${{ secrets.ALCHEMY_API_KEY }} pnpm --filter=@recall/envio-indexer build
 
       - name: Setup Envio Indexer
         working-directory: apps/envio-indexer
+        env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
         run: |
           echo "📦 Installing Envio indexer dependencies..."
           pnpm install
@@ -206,6 +220,8 @@ jobs:
 
       - name: Run Live Trading E2E tests
         working-directory: apps/api
+        env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
         run: |
           echo "🧪 Running Live Trading E2E tests..."
           echo "This will start the Envio indexer and run live trade processor tests"
@@ -214,7 +230,7 @@ jobs:
           echo "  - Docker is available (required for Envio)"
           echo "  - Envio will start its own containers (postgres, hasura)"
           echo "  - Ports 8080 (Hasura) and 9898 (GraphQL) will be used"
-          echo "  - ALCHEMY_API_KEY is set: ${ALCHEMY_API_KEY:0:10}..."
+          echo "  - ALCHEMY_API_KEY is set: ${ALCHEMY_API_KEY:0:5}..."
           echo ""
           
           # Create a wrapper script to handle test execution
@@ -231,7 +247,8 @@ jobs:
               env: {
                 ...process.env,
                 TEST_LIVE_TRADING: 'true',
-                E2E_TEST_DISTINGUISH_ERRORS: 'true'
+                E2E_TEST_DISTINGUISH_ERRORS: 'true',
+                ALCHEMY_API_KEY: process.env.ALCHEMY_API_KEY
               }
             });
 

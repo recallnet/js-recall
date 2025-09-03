@@ -81,10 +81,17 @@ async function updateGeneratedConfig() {
     // Skip if no API key (development mode without latest blocks)
     if (!process.env.ALCHEMY_API_KEY) {
         console.log('📦 Starting indexer with configured start blocks (ALCHEMY_API_KEY not set)');
+        console.log('   Debug info:', {
+            hasAlchemyKey: !!process.env.ALCHEMY_API_KEY,
+            isCI: !!process.env.CI,
+            nodeEnv: process.env.NODE_ENV,
+            cwd: process.cwd()
+        });
         return;
     }
 
     console.log(`🔄 Fetching latest block numbers... (API key: ${process.env.ALCHEMY_API_KEY?.substring(0, 5)}...)`);
+    console.log('   Running in CI:', !!process.env.CI);
 
     // Fetch latest blocks for all chains SEQUENTIALLY with delays to avoid rate limits
     const blocks = [];
