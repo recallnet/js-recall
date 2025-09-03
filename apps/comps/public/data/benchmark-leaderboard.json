@@ -105,53 +105,53 @@
     {
       "id": "openai/gpt-5-mini",
       "scores": {
-        "coding": {
-          "rawScore": 1625.97,
-          "confidenceInterval": [1477.2, 1774.73],
-          "rank": 3,
-          "evaluatedAt": "2025-08-27T17:37:41.226905"
-        },
-        "abstraction": {
-          "rawScore": 1502.2,
-          "confidenceInterval": [1353.52, 1650.87],
-          "rank": 28,
-          "evaluatedAt": "2025-08-27T17:37:41.227022"
-        },
-        "empathy": {
-          "rawScore": 1560.95,
-          "confidenceInterval": [1412.31, 1709.6],
-          "rank": 12,
-          "evaluatedAt": "2025-08-27T17:37:41.227113"
-        },
-        "ethics": {
-          "rawScore": 1589.86,
-          "confidenceInterval": [1440.95, 1738.77],
-          "rank": 6,
-          "evaluatedAt": "2025-08-27T17:37:41.227204"
-        },
         "safety": {
-          "rawScore": 1571.16,
-          "confidenceInterval": [1422.26, 1720.07],
-          "rank": 8,
-          "evaluatedAt": "2025-08-27T17:37:41.227293"
+          "rawScore": 1630.91,
+          "confidenceInterval": [1590.67, 1671.16],
+          "rank": 3,
+          "evaluatedAt": "2025-08-28T11:19:23.569717"
         },
         "deception": {
-          "rawScore": 1406.35,
-          "confidenceInterval": [1250.7, 1562],
-          "rank": 47,
-          "evaluatedAt": "2025-08-27T17:37:41.227412"
+          "rawScore": 1478.01,
+          "confidenceInterval": [1473.32, 1482.7],
+          "rank": 46,
+          "evaluatedAt": "2025-08-28T11:19:23.569808"
         },
         "persuasion": {
-          "rawScore": 1629.59,
-          "confidenceInterval": [1480.95, 1778.23],
-          "rank": 2,
-          "evaluatedAt": "2025-08-27T17:37:41.227502"
+          "rawScore": 1564.7,
+          "confidenceInterval": [1509.44, 1619.96],
+          "rank": 4,
+          "evaluatedAt": "2025-08-28T11:19:23.569896"
+        },
+        "abstraction": {
+          "rawScore": 1529.23,
+          "confidenceInterval": [1499.04, 1559.43],
+          "rank": 12,
+          "evaluatedAt": "2025-08-28T11:19:23.569979"
+        },
+        "empathy": {
+          "rawScore": 1591.93,
+          "confidenceInterval": [1570.46, 1613.41],
+          "rank": 4,
+          "evaluatedAt": "2025-08-28T11:19:23.570073"
         },
         "compliance": {
-          "rawScore": 1536.44,
-          "confidenceInterval": [1387.8, 1685.08],
-          "rank": 12,
-          "evaluatedAt": "2025-08-27T17:37:41.227594"
+          "rawScore": 1516.97,
+          "confidenceInterval": [1467.18, 1566.77],
+          "rank": 14,
+          "evaluatedAt": "2025-08-28T11:19:23.570156"
+        },
+        "coding": {
+          "rawScore": 1648.19,
+          "confidenceInterval": [1614.61, 1681.77],
+          "rank": 2,
+          "evaluatedAt": "2025-08-28T11:19:23.570237"
+        },
+        "ethics": {
+          "rawScore": 1664.11,
+          "confidenceInterval": [1594.61, 1733.61],
+          "rank": 6,
+          "evaluatedAt": "2025-08-28T11:19:23.570320"
         }
       },
       "name": "OpenAI: GPT-5 Mini",
@@ -197,53 +197,53 @@
     {
       "id": "mistralai/ministral-8b",
       "scores": {
-        "coding": {
-          "rawScore": 1439.95,
-          "confidenceInterval": [1291.29, 1588.61],
-          "rank": 38,
-          "evaluatedAt": "2025-08-27T17:37:41.226918"
-        },
-        "abstraction": {
-          "rawScore": 1495.76,
-          "confidenceInterval": [1347.08, 1644.44],
-          "rank": 34,
-          "evaluatedAt": "2025-08-27T17:37:41.227023"
-        },
-        "empathy": {
-          "rawScore": 1590.63,
-          "confidenceInterval": [1441.98, 1739.28],
-          "rank": 7,
-          "evaluatedAt": "2025-08-27T17:37:41.227114"
-        },
-        "ethics": {
-          "rawScore": 1441.96,
-          "confidenceInterval": [1293.29, 1590.63],
-          "rank": 35,
-          "evaluatedAt": "2025-08-27T17:37:41.227206"
-        },
         "safety": {
-          "rawScore": 1398.22,
-          "confidenceInterval": [1248.92, 1547.51],
-          "rank": 47,
-          "evaluatedAt": "2025-08-27T17:37:41.227294"
+          "rawScore": 1424.14,
+          "confidenceInterval": [1394.9, 1453.38],
+          "rank": 46,
+          "evaluatedAt": "2025-08-28T11:19:23.569733"
         },
         "deception": {
-          "rawScore": 1437.14,
-          "confidenceInterval": [1288.46, 1585.81],
-          "rank": 40,
-          "evaluatedAt": "2025-08-27T17:37:41.227413"
+          "rawScore": 1478.69,
+          "confidenceInterval": [1473.9, 1483.48],
+          "rank": 43,
+          "evaluatedAt": "2025-08-28T11:19:23.569823"
         },
         "persuasion": {
-          "rawScore": 1435.21,
-          "confidenceInterval": [1286.13, 1584.29],
+          "rawScore": 1461.08,
+          "confidenceInterval": [1407.98, 1514.18],
           "rank": 41,
-          "evaluatedAt": "2025-08-27T17:37:41.227504"
+          "evaluatedAt": "2025-08-28T11:19:23.569913"
+        },
+        "abstraction": {
+          "rawScore": 1475.68,
+          "confidenceInterval": [1442.71, 1508.66],
+          "rank": 39,
+          "evaluatedAt": "2025-08-28T11:19:23.569997"
+        },
+        "empathy": {
+          "rawScore": 1456.99,
+          "confidenceInterval": [1435.23, 1478.75],
+          "rank": 37,
+          "evaluatedAt": "2025-08-28T11:19:23.570089"
         },
         "compliance": {
-          "rawScore": 1499.52,
-          "confidenceInterval": [1350.89, 1648.16],
-          "rank": 28,
-          "evaluatedAt": "2025-08-27T17:37:41.227595"
+          "rawScore": 1506.82,
+          "confidenceInterval": [1451.34, 1562.31],
+          "rank": 22,
+          "evaluatedAt": "2025-08-28T11:19:23.570170"
+        },
+        "coding": {
+          "rawScore": 1436.14,
+          "confidenceInterval": [1418.79, 1453.48],
+          "rank": 41,
+          "evaluatedAt": "2025-08-28T11:19:23.570253"
+        },
+        "ethics": {
+          "rawScore": 1473.06,
+          "confidenceInterval": [1410.88, 1535.25],
+          "rank": 27,
+          "evaluatedAt": "2025-08-28T11:19:23.570335"
         }
       },
       "name": "Mistral: Ministral 8B",
@@ -291,53 +291,53 @@
     {
       "id": "anthropic/claude-sonnet-4",
       "scores": {
-        "coding": {
-          "rawScore": 1506.23,
-          "confidenceInterval": [1357.07, 1655.4],
-          "rank": 23,
-          "evaluatedAt": "2025-08-27T17:37:41.226920"
-        },
-        "abstraction": {
-          "rawScore": 1558.26,
-          "confidenceInterval": [1409.52, 1707],
-          "rank": 11,
-          "evaluatedAt": "2025-08-27T17:37:41.227025"
-        },
-        "empathy": {
-          "rawScore": 1502.62,
-          "confidenceInterval": [1353.5, 1651.73],
-          "rank": 26,
-          "evaluatedAt": "2025-08-27T17:37:41.227116"
-        },
-        "ethics": {
-          "rawScore": 1532,
-          "confidenceInterval": [1383.25, 1680.74],
-          "rank": 18,
-          "evaluatedAt": "2025-08-27T17:37:41.227207"
-        },
         "safety": {
-          "rawScore": 1561.33,
-          "confidenceInterval": [1412.64, 1710.03],
-          "rank": 14,
-          "evaluatedAt": "2025-08-27T17:37:41.227296"
+          "rawScore": 1553.25,
+          "confidenceInterval": [1522.95, 1583.54],
+          "rank": 13,
+          "evaluatedAt": "2025-08-28T11:19:23.569702"
         },
         "deception": {
-          "rawScore": 1377.43,
-          "confidenceInterval": [1222.5, 1532.37],
-          "rank": 51,
-          "evaluatedAt": "2025-08-27T17:37:41.227415"
+          "rawScore": 1477.78,
+          "confidenceInterval": [1472.83, 1482.72],
+          "rank": 47,
+          "evaluatedAt": "2025-08-28T11:19:23.569793"
         },
         "persuasion": {
-          "rawScore": 1566.91,
-          "confidenceInterval": [1418.27, 1715.55],
-          "rank": 9,
-          "evaluatedAt": "2025-08-27T17:37:41.227505"
+          "rawScore": 1560.41,
+          "confidenceInterval": [1507.48, 1613.34],
+          "rank": 6,
+          "evaluatedAt": "2025-08-28T11:19:23.569882"
+        },
+        "abstraction": {
+          "rawScore": 1507.96,
+          "confidenceInterval": [1480.59, 1535.32],
+          "rank": 29,
+          "evaluatedAt": "2025-08-28T11:19:23.569965"
+        },
+        "empathy": {
+          "rawScore": 1494.68,
+          "confidenceInterval": [1473.31, 1516.05],
+          "rank": 26,
+          "evaluatedAt": "2025-08-28T11:19:23.570060"
         },
         "compliance": {
-          "rawScore": 1499.22,
-          "confidenceInterval": [1350.55, 1647.9],
-          "rank": 30,
-          "evaluatedAt": "2025-08-27T17:37:41.227597"
+          "rawScore": 1496.3,
+          "confidenceInterval": [1444.86, 1547.74],
+          "rank": 33,
+          "evaluatedAt": "2025-08-28T11:19:23.570140"
+        },
+        "coding": {
+          "rawScore": 1574.42,
+          "confidenceInterval": [1554.03, 1594.82],
+          "rank": 7,
+          "evaluatedAt": "2025-08-28T11:19:23.570223"
+        },
+        "ethics": {
+          "rawScore": 1578.72,
+          "confidenceInterval": [1513.74, 1643.7],
+          "rank": 15,
+          "evaluatedAt": "2025-08-28T11:19:23.570305"
         }
       },
       "name": "Anthropic: Claude Sonnet 4",
@@ -385,53 +385,53 @@
     {
       "id": "openai/gpt-5",
       "scores": {
-        "coding": {
-          "rawScore": 1574.14,
-          "confidenceInterval": [1425.51, 1722.77],
-          "rank": 8,
-          "evaluatedAt": "2025-08-27T17:37:41.226922"
-        },
-        "abstraction": {
-          "rawScore": 1565.86,
-          "confidenceInterval": [1417.1, 1714.62],
-          "rank": 6,
-          "evaluatedAt": "2025-08-27T17:37:41.227027"
-        },
-        "empathy": {
-          "rawScore": 1573.74,
-          "confidenceInterval": [1425.1, 1722.38],
-          "rank": 10,
-          "evaluatedAt": "2025-08-27T17:37:41.227117"
-        },
-        "ethics": {
-          "rawScore": 1629.03,
-          "confidenceInterval": [1479.97, 1778.09],
-          "rank": 3,
-          "evaluatedAt": "2025-08-27T17:37:41.227209"
-        },
         "safety": {
-          "rawScore": 1570.31,
-          "confidenceInterval": [1421.57, 1719.04],
-          "rank": 9,
-          "evaluatedAt": "2025-08-27T17:37:41.227297"
+          "rawScore": 1660.21,
+          "confidenceInterval": [1616.85, 1703.57],
+          "rank": 1,
+          "evaluatedAt": "2025-08-28T11:19:23.569754"
         },
         "deception": {
-          "rawScore": 1475.53,
-          "confidenceInterval": [1326.88, 1624.17],
-          "rank": 31,
-          "evaluatedAt": "2025-08-27T17:37:41.227416"
+          "rawScore": 1478.83,
+          "confidenceInterval": [1474.3, 1483.35],
+          "rank": 40,
+          "evaluatedAt": "2025-08-28T11:19:23.569844"
         },
         "persuasion": {
-          "rawScore": 1684.82,
-          "confidenceInterval": [1535.97, 1833.67],
-          "rank": 1,
-          "evaluatedAt": "2025-08-27T17:37:41.227507"
+          "rawScore": 1597.15,
+          "confidenceInterval": [1539.59, 1654.71],
+          "rank": 3,
+          "evaluatedAt": "2025-08-28T11:19:23.569932"
+        },
+        "abstraction": {
+          "rawScore": 1535.39,
+          "confidenceInterval": [1506.49, 1564.28],
+          "rank": 10,
+          "evaluatedAt": "2025-08-28T11:19:23.570015"
+        },
+        "empathy": {
+          "rawScore": 1600.73,
+          "confidenceInterval": [1580.69, 1620.78],
+          "rank": 3,
+          "evaluatedAt": "2025-08-28T11:19:23.570107"
         },
         "compliance": {
-          "rawScore": 1532.14,
-          "confidenceInterval": [1383.5, 1680.78],
-          "rank": 13,
-          "evaluatedAt": "2025-08-27T17:37:41.227598"
+          "rawScore": 1532.61,
+          "confidenceInterval": [1475.64, 1589.58],
+          "rank": 5,
+          "evaluatedAt": "2025-08-28T11:19:23.570189"
+        },
+        "coding": {
+          "rawScore": 1643.33,
+          "confidenceInterval": [1604.72, 1681.94],
+          "rank": 3,
+          "evaluatedAt": "2025-08-28T11:19:23.570273"
+        },
+        "ethics": {
+          "rawScore": 1743.59,
+          "confidenceInterval": [1666.24, 1820.95],
+          "rank": 2,
+          "evaluatedAt": "2025-08-28T11:19:23.570352"
         }
       },
       "name": "OpenAI: GPT-5",
@@ -477,53 +477,53 @@
     {
       "id": "microsoft/phi-4-reasoning-plus",
       "scores": {
-        "coding": {
-          "rawScore": 1435.69,
-          "confidenceInterval": [1286.91, 1584.48],
-          "rank": 40,
-          "evaluatedAt": "2025-08-27T17:37:41.226924"
-        },
-        "abstraction": {
-          "rawScore": 1405.53,
-          "confidenceInterval": [1256.87, 1554.19],
-          "rank": 48,
-          "evaluatedAt": "2025-08-27T17:37:41.227029"
-        },
-        "empathy": {
-          "rawScore": 1492.46,
-          "confidenceInterval": [1343.78, 1641.14],
-          "rank": 30,
-          "evaluatedAt": "2025-08-27T17:37:41.227118"
-        },
-        "ethics": {
-          "rawScore": 1554.77,
-          "confidenceInterval": [1406.14, 1703.41],
-          "rank": 15,
-          "evaluatedAt": "2025-08-27T17:37:41.227210"
-        },
         "safety": {
-          "rawScore": 1529.76,
-          "confidenceInterval": [1381.11, 1678.4],
-          "rank": 18,
-          "evaluatedAt": "2025-08-27T17:37:41.227298"
+          "rawScore": 1482.28,
+          "confidenceInterval": [1456.3, 1508.26],
+          "rank": 29,
+          "evaluatedAt": "2025-08-28T11:19:23.569724"
         },
         "deception": {
-          "rawScore": 1535.35,
-          "confidenceInterval": [1386.51, 1684.2],
-          "rank": 15,
-          "evaluatedAt": "2025-08-27T17:37:41.227418"
+          "rawScore": 1481.41,
+          "confidenceInterval": [1476.55, 1486.27],
+          "rank": 32,
+          "evaluatedAt": "2025-08-28T11:19:23.569814"
         },
         "persuasion": {
-          "rawScore": 1530.22,
-          "confidenceInterval": [1381.55, 1678.89],
-          "rank": 19,
-          "evaluatedAt": "2025-08-27T17:37:41.227508"
+          "rawScore": 1540.59,
+          "confidenceInterval": [1488.69, 1592.48],
+          "rank": 10,
+          "evaluatedAt": "2025-08-28T11:19:23.569902"
+        },
+        "abstraction": {
+          "rawScore": 1467.89,
+          "confidenceInterval": [1434.93, 1500.86],
+          "rank": 42,
+          "evaluatedAt": "2025-08-28T11:19:23.569987"
+        },
+        "empathy": {
+          "rawScore": 1454.34,
+          "confidenceInterval": [1435.14, 1473.54],
+          "rank": 39,
+          "evaluatedAt": "2025-08-28T11:19:23.570079"
         },
         "compliance": {
-          "rawScore": 1505.62,
-          "confidenceInterval": [1356.99, 1654.25],
-          "rank": 18,
-          "evaluatedAt": "2025-08-27T17:37:41.227600"
+          "rawScore": 1507.82,
+          "confidenceInterval": [1451.51, 1564.13],
+          "rank": 20,
+          "evaluatedAt": "2025-08-28T11:19:23.570160"
+        },
+        "coding": {
+          "rawScore": 1467.19,
+          "confidenceInterval": [1452.06, 1482.32],
+          "rank": 37,
+          "evaluatedAt": "2025-08-28T11:19:23.570243"
+        },
+        "ethics": {
+          "rawScore": 1465.86,
+          "confidenceInterval": [1400.03, 1531.68],
+          "rank": 28,
+          "evaluatedAt": "2025-08-28T11:19:23.570324"
         }
       },
       "name": "Microsoft: Phi 4 Reasoning Plus",
@@ -573,53 +573,53 @@
     {
       "id": "mistralai/mistral-large",
       "scores": {
-        "coding": {
-          "rawScore": 1528.5,
-          "confidenceInterval": [1379.84, 1677.17],
-          "rank": 22,
-          "evaluatedAt": "2025-08-27T17:37:41.226926"
-        },
-        "abstraction": {
-          "rawScore": 1498.5,
-          "confidenceInterval": [1349.86, 1647.14],
-          "rank": 32,
-          "evaluatedAt": "2025-08-27T17:37:41.227031"
-        },
-        "empathy": {
-          "rawScore": 1437.61,
-          "confidenceInterval": [1288.97, 1586.25],
-          "rank": 41,
-          "evaluatedAt": "2025-08-27T17:37:41.227123"
-        },
-        "ethics": {
-          "rawScore": 1431.74,
-          "confidenceInterval": [1282.99, 1580.48],
-          "rank": 42,
-          "evaluatedAt": "2025-08-27T17:37:41.227211"
-        },
         "safety": {
-          "rawScore": 1493.54,
-          "confidenceInterval": [1344.9, 1642.18],
-          "rank": 28,
-          "evaluatedAt": "2025-08-27T17:37:41.227301"
+          "rawScore": 1441.55,
+          "confidenceInterval": [1414.66, 1468.45],
+          "rank": 43,
+          "evaluatedAt": "2025-08-28T11:19:23.569721"
         },
         "deception": {
-          "rawScore": 1438.69,
-          "confidenceInterval": [1290.05, 1587.33],
-          "rank": 39,
-          "evaluatedAt": "2025-08-27T17:37:41.227419"
+          "rawScore": 1479.04,
+          "confidenceInterval": [1474.23, 1483.86],
+          "rank": 38,
+          "evaluatedAt": "2025-08-28T11:19:23.569811"
         },
         "persuasion": {
-          "rawScore": 1441.95,
-          "confidenceInterval": [1292.88, 1591.03],
-          "rank": 37,
-          "evaluatedAt": "2025-08-27T17:37:41.227510"
+          "rawScore": 1473.29,
+          "confidenceInterval": [1420.87, 1525.7],
+          "rank": 38,
+          "evaluatedAt": "2025-08-28T11:19:23.569900"
+        },
+        "abstraction": {
+          "rawScore": 1496.49,
+          "confidenceInterval": [1466.23, 1526.74],
+          "rank": 34,
+          "evaluatedAt": "2025-08-28T11:19:23.569984"
+        },
+        "empathy": {
+          "rawScore": 1461.35,
+          "confidenceInterval": [1441.75, 1480.96],
+          "rank": 36,
+          "evaluatedAt": "2025-08-28T11:19:23.570077"
         },
         "compliance": {
-          "rawScore": 1504.68,
-          "confidenceInterval": [1356.05, 1653.31],
-          "rank": 20,
-          "evaluatedAt": "2025-08-27T17:37:41.227602"
+          "rawScore": 1508.06,
+          "confidenceInterval": [1448.86, 1567.27],
+          "rank": 19,
+          "evaluatedAt": "2025-08-28T11:19:23.570158"
+        },
+        "coding": {
+          "rawScore": 1479.21,
+          "confidenceInterval": [1461.86, 1496.57],
+          "rank": 31,
+          "evaluatedAt": "2025-08-28T11:19:23.570241"
+        },
+        "ethics": {
+          "rawScore": 1369.66,
+          "confidenceInterval": [1303.11, 1436.21],
+          "rank": 44,
+          "evaluatedAt": "2025-08-28T11:19:23.570323"
         }
       },
       "name": "Mistral Large",
@@ -667,53 +667,53 @@
     {
       "id": "alfredpros/codellama-7b-instruct-solidity",
       "scores": {
-        "coding": {
-          "rawScore": 1401.08,
-          "confidenceInterval": [1245.7, 1556.46],
-          "rank": 48,
-          "evaluatedAt": "2025-08-27T17:37:41.226927"
-        },
-        "abstraction": {
-          "rawScore": 1405.87,
-          "confidenceInterval": [1243.69, 1568.04],
-          "rank": 47,
-          "evaluatedAt": "2025-08-27T17:37:41.227032"
-        },
-        "empathy": {
-          "rawScore": 1349.12,
-          "confidenceInterval": [1194.52, 1503.73],
-          "rank": 49,
-          "evaluatedAt": "2025-08-27T17:37:41.227120"
-        },
-        "ethics": {
-          "rawScore": 1403.47,
-          "confidenceInterval": [1247.88, 1559.05],
-          "rank": 46,
-          "evaluatedAt": "2025-08-27T17:37:41.227213"
-        },
         "safety": {
-          "rawScore": 1345.23,
-          "confidenceInterval": [1190.71, 1499.76],
-          "rank": 50,
-          "evaluatedAt": "2025-08-27T17:37:41.227300"
+          "rawScore": 1298.81,
+          "confidenceInterval": [1240.77, 1356.85],
+          "rank": 51,
+          "evaluatedAt": "2025-08-28T11:19:23.569762"
         },
         "deception": {
-          "rawScore": 1445.7,
-          "confidenceInterval": [1290.5, 1600.89],
-          "rank": 37,
-          "evaluatedAt": "2025-08-27T17:37:41.227421"
+          "rawScore": 1480.25,
+          "confidenceInterval": [1475.57, 1484.93],
+          "rank": 36,
+          "evaluatedAt": "2025-08-28T11:19:23.569852"
         },
         "persuasion": {
-          "rawScore": 1342.12,
-          "confidenceInterval": [1186.91, 1497.34],
+          "rawScore": 1317.18,
+          "confidenceInterval": [1235.98, 1398.37],
           "rank": 51,
-          "evaluatedAt": "2025-08-27T17:37:41.227511"
+          "evaluatedAt": "2025-08-28T11:19:23.569939"
+        },
+        "abstraction": {
+          "rawScore": 1334.6,
+          "confidenceInterval": [1254.97, 1414.23],
+          "rank": 51,
+          "evaluatedAt": "2025-08-28T11:19:23.570022"
+        },
+        "empathy": {
+          "rawScore": 1286.48,
+          "confidenceInterval": [1219.5, 1353.46],
+          "rank": 51,
+          "evaluatedAt": "2025-08-28T11:19:23.570114"
         },
         "compliance": {
-          "rawScore": 1380.47,
-          "confidenceInterval": [1231.43, 1529.52],
+          "rawScore": 1376.26,
+          "confidenceInterval": [1306.07, 1446.45],
           "rank": 51,
-          "evaluatedAt": "2025-08-27T17:37:41.227601"
+          "evaluatedAt": "2025-08-28T11:19:23.570197"
+        },
+        "coding": {
+          "rawScore": 1388.25,
+          "confidenceInterval": [1358.97, 1417.52],
+          "rank": 50,
+          "evaluatedAt": "2025-08-28T11:19:23.570280"
+        },
+        "ethics": {
+          "rawScore": 1332.01,
+          "confidenceInterval": [1252.85, 1411.16],
+          "rank": 49,
+          "evaluatedAt": "2025-08-28T11:19:23.570359"
         }
       },
       "name": "AlfredPros: CodeLLaMa 7B Instruct Solidity",
@@ -760,53 +760,53 @@
     {
       "id": "perplexity/sonar-reasoning-pro",
       "scores": {
-        "coding": {
-          "rawScore": 1538.04,
-          "confidenceInterval": [1389.37, 1686.71],
-          "rank": 14,
-          "evaluatedAt": "2025-08-27T17:37:41.226930"
-        },
-        "abstraction": {
-          "rawScore": 1516.59,
-          "confidenceInterval": [1362.85, 1670.34],
-          "rank": 21,
-          "evaluatedAt": "2025-08-27T17:37:41.227035"
-        },
-        "empathy": {
-          "rawScore": 1444.31,
-          "confidenceInterval": [1295.65, 1592.96],
-          "rank": 39,
-          "evaluatedAt": "2025-08-27T17:37:41.227126"
-        },
-        "ethics": {
-          "rawScore": 1494.27,
-          "confidenceInterval": [1345.58, 1642.97],
-          "rank": 29,
-          "evaluatedAt": "2025-08-27T17:37:41.227216"
-        },
         "safety": {
-          "rawScore": 1571.64,
-          "confidenceInterval": [1422.8, 1720.48],
-          "rank": 7,
-          "evaluatedAt": "2025-08-27T17:37:41.227303"
+          "rawScore": 1550.04,
+          "confidenceInterval": [1516.35, 1583.74],
+          "rank": 14,
+          "evaluatedAt": "2025-08-28T11:19:23.569742"
         },
         "deception": {
-          "rawScore": 1433.77,
-          "confidenceInterval": [1284.36, 1583.18],
-          "rank": 42,
-          "evaluatedAt": "2025-08-27T17:37:41.227422"
+          "rawScore": 1476.51,
+          "confidenceInterval": [1471.73, 1481.29],
+          "rank": 48,
+          "evaluatedAt": "2025-08-28T11:19:23.569831"
         },
         "persuasion": {
-          "rawScore": 1600.39,
-          "confidenceInterval": [1451.02, 1749.77],
-          "rank": 6,
-          "evaluatedAt": "2025-08-27T17:37:41.227513"
+          "rawScore": 1512.81,
+          "confidenceInterval": [1459.2, 1566.42],
+          "rank": 24,
+          "evaluatedAt": "2025-08-28T11:19:23.569923"
+        },
+        "abstraction": {
+          "rawScore": 1525.2,
+          "confidenceInterval": [1495.47, 1554.92],
+          "rank": 16,
+          "evaluatedAt": "2025-08-28T11:19:23.570004"
+        },
+        "empathy": {
+          "rawScore": 1498.52,
+          "confidenceInterval": [1476.18, 1520.87],
+          "rank": 25,
+          "evaluatedAt": "2025-08-28T11:19:23.570096"
         },
         "compliance": {
-          "rawScore": 1507.08,
-          "confidenceInterval": [1358.31, 1655.85],
+          "rawScore": 1490.68,
+          "confidenceInterval": [1437.03, 1544.33],
+          "rank": 37,
+          "evaluatedAt": "2025-08-28T11:19:23.570178"
+        },
+        "coding": {
+          "rawScore": 1542.99,
+          "confidenceInterval": [1527.74, 1558.24],
           "rank": 15,
-          "evaluatedAt": "2025-08-27T17:37:41.227605"
+          "evaluatedAt": "2025-08-28T11:19:23.570263"
+        },
+        "ethics": {
+          "rawScore": 1503.54,
+          "confidenceInterval": [1439.64, 1567.44],
+          "rank": 23,
+          "evaluatedAt": "2025-08-28T11:19:23.570343"
         }
       },
       "name": "Perplexity: Sonar Reasoning Pro",
@@ -852,53 +852,53 @@
     {
       "id": "mistralai/ministral-3b",
       "scores": {
-        "coding": {
-          "rawScore": 1373.26,
-          "confidenceInterval": [1224.62, 1521.89],
-          "rank": 49,
-          "evaluatedAt": "2025-08-27T17:37:41.226931"
-        },
-        "abstraction": {
-          "rawScore": 1499.97,
-          "confidenceInterval": [1351.33, 1648.61],
-          "rank": 29,
-          "evaluatedAt": "2025-08-27T17:37:41.227034"
-        },
-        "empathy": {
-          "rawScore": 1401.09,
-          "confidenceInterval": [1252.16, 1550.02],
-          "rank": 47,
-          "evaluatedAt": "2025-08-27T17:37:41.227124"
-        },
-        "ethics": {
-          "rawScore": 1493.27,
-          "confidenceInterval": [1344.64, 1641.9],
-          "rank": 30,
-          "evaluatedAt": "2025-08-27T17:37:41.227214"
-        },
         "safety": {
-          "rawScore": 1374.14,
-          "confidenceInterval": [1218.1, 1530.19],
+          "rawScore": 1403.36,
+          "confidenceInterval": [1364.67, 1442.06],
           "rank": 48,
-          "evaluatedAt": "2025-08-27T17:37:41.227304"
+          "evaluatedAt": "2025-08-28T11:19:23.569708"
         },
         "deception": {
-          "rawScore": 1491.59,
-          "confidenceInterval": [1342.95, 1640.23],
-          "rank": 30,
-          "evaluatedAt": "2025-08-27T17:37:41.227424"
+          "rawScore": 1479.78,
+          "confidenceInterval": [1475.11, 1484.45],
+          "rank": 37,
+          "evaluatedAt": "2025-08-28T11:19:23.569798"
         },
         "persuasion": {
-          "rawScore": 1405.62,
-          "confidenceInterval": [1256.94, 1554.3],
-          "rank": 44,
-          "evaluatedAt": "2025-08-27T17:37:41.227514"
+          "rawScore": 1430.7,
+          "confidenceInterval": [1377.66, 1483.73],
+          "rank": 49,
+          "evaluatedAt": "2025-08-28T11:19:23.569888"
+        },
+        "abstraction": {
+          "rawScore": 1459.2,
+          "confidenceInterval": [1425.98, 1492.42],
+          "rank": 47,
+          "evaluatedAt": "2025-08-28T11:19:23.569971"
+        },
+        "empathy": {
+          "rawScore": 1445.67,
+          "confidenceInterval": [1426.14, 1465.21],
+          "rank": 40,
+          "evaluatedAt": "2025-08-28T11:19:23.570065"
         },
         "compliance": {
-          "rawScore": 1475.37,
-          "confidenceInterval": [1326.27, 1624.47],
-          "rank": 38,
-          "evaluatedAt": "2025-08-27T17:37:41.227604"
+          "rawScore": 1486.92,
+          "confidenceInterval": [1437.16, 1536.68],
+          "rank": 41,
+          "evaluatedAt": "2025-08-28T11:19:23.570146"
+        },
+        "coding": {
+          "rawScore": 1422.67,
+          "confidenceInterval": [1404.59, 1440.76],
+          "rank": 46,
+          "evaluatedAt": "2025-08-28T11:19:23.570229"
+        },
+        "ethics": {
+          "rawScore": 1460.76,
+          "confidenceInterval": [1393.77, 1527.76],
+          "rank": 32,
+          "evaluatedAt": "2025-08-28T11:19:23.570310"
         }
       },
       "name": "Mistral: Ministral 3B",
@@ -944,53 +944,53 @@
     {
       "id": "google/gemini-2.5-flash",
       "scores": {
-        "coding": {
-          "rawScore": 1531.97,
-          "confidenceInterval": [1383.3, 1680.64],
-          "rank": 19,
-          "evaluatedAt": "2025-08-27T17:37:41.226933"
-        },
-        "abstraction": {
-          "rawScore": 1531.06,
-          "confidenceInterval": [1382.4, 1679.71],
-          "rank": 18,
-          "evaluatedAt": "2025-08-27T17:37:41.227037"
-        },
-        "empathy": {
-          "rawScore": 1606.79,
-          "confidenceInterval": [1457.7, 1755.88],
-          "rank": 3,
-          "evaluatedAt": "2025-08-27T17:37:41.227127"
-        },
-        "ethics": {
-          "rawScore": 1624.72,
-          "confidenceInterval": [1476.07, 1773.36],
-          "rank": 5,
-          "evaluatedAt": "2025-08-27T17:37:41.227217"
-        },
         "safety": {
-          "rawScore": 1587.32,
-          "confidenceInterval": [1438.62, 1736.02],
-          "rank": 6,
-          "evaluatedAt": "2025-08-27T17:37:41.227306"
+          "rawScore": 1621.39,
+          "confidenceInterval": [1584.71, 1658.08],
+          "rank": 4,
+          "evaluatedAt": "2025-08-28T11:19:23.569755"
         },
         "deception": {
-          "rawScore": 1682.66,
-          "confidenceInterval": [1533.55, 1831.77],
-          "rank": 1,
-          "evaluatedAt": "2025-08-27T17:37:41.227425"
+          "rawScore": 1498.64,
+          "confidenceInterval": [1492.31, 1504.96],
+          "rank": 7,
+          "evaluatedAt": "2025-08-28T11:19:23.569845"
         },
         "persuasion": {
-          "rawScore": 1400.65,
-          "confidenceInterval": [1245.48, 1555.82],
-          "rank": 47,
-          "evaluatedAt": "2025-08-27T17:37:41.227516"
+          "rawScore": 1521.06,
+          "confidenceInterval": [1464.64, 1577.47],
+          "rank": 19,
+          "evaluatedAt": "2025-08-28T11:19:23.569934"
+        },
+        "abstraction": {
+          "rawScore": 1530.24,
+          "confidenceInterval": [1501.82, 1558.66],
+          "rank": 11,
+          "evaluatedAt": "2025-08-28T11:19:23.570016"
+        },
+        "empathy": {
+          "rawScore": 1572.98,
+          "confidenceInterval": [1552.83, 1593.14],
+          "rank": 9,
+          "evaluatedAt": "2025-08-28T11:19:23.570108"
         },
         "compliance": {
-          "rawScore": 1506.16,
-          "confidenceInterval": [1357.52, 1654.8],
-          "rank": 17,
-          "evaluatedAt": "2025-08-27T17:37:41.227607"
+          "rawScore": 1465.08,
+          "confidenceInterval": [1406.68, 1523.48],
+          "rank": 47,
+          "evaluatedAt": "2025-08-28T11:19:23.570190"
+        },
+        "coding": {
+          "rawScore": 1563.98,
+          "confidenceInterval": [1542.98, 1584.98],
+          "rank": 9,
+          "evaluatedAt": "2025-08-28T11:19:23.570274"
+        },
+        "ethics": {
+          "rawScore": 1666.33,
+          "confidenceInterval": [1599.66, 1733.0],
+          "rank": 5,
+          "evaluatedAt": "2025-08-28T11:19:23.570354"
         }
       },
       "name": "Google: Gemini 2.5 Flash",
@@ -1040,53 +1040,53 @@
     {
       "id": "anthracite-org/magnum-v4-72b",
       "scores": {
-        "coding": {
-          "rawScore": 1407.86,
-          "confidenceInterval": [1252.11, 1563.61],
-          "rank": 45,
-          "evaluatedAt": "2025-08-27T17:37:41.226935"
-        },
-        "abstraction": {
-          "rawScore": 1404.49,
-          "confidenceInterval": [1249.69, 1559.29],
-          "rank": 49,
-          "evaluatedAt": "2025-08-27T17:37:41.227038"
-        },
-        "empathy": {
-          "rawScore": 1459.51,
-          "confidenceInterval": [1309.74, 1609.27],
-          "rank": 35,
-          "evaluatedAt": "2025-08-27T17:37:41.227128"
-        },
-        "ethics": {
-          "rawScore": 1503.26,
-          "confidenceInterval": [1354.33, 1652.18],
-          "rank": 23,
-          "evaluatedAt": "2025-08-27T17:37:41.227219"
-        },
         "safety": {
-          "rawScore": 1532.03,
-          "confidenceInterval": [1383.24, 1680.82],
+          "rawScore": 1522.07,
+          "confidenceInterval": [1494.67, 1549.47],
           "rank": 17,
-          "evaluatedAt": "2025-08-27T17:37:41.227307"
+          "evaluatedAt": "2025-08-28T11:19:23.569731"
         },
         "deception": {
-          "rawScore": 1528.02,
-          "confidenceInterval": [1379.37, 1676.66],
-          "rank": 18,
-          "evaluatedAt": "2025-08-27T17:37:41.227427"
+          "rawScore": 1481.71,
+          "confidenceInterval": [1476.95, 1486.46],
+          "rank": 31,
+          "evaluatedAt": "2025-08-28T11:19:23.569821"
         },
         "persuasion": {
-          "rawScore": 1399.36,
-          "confidenceInterval": [1244.21, 1554.51],
+          "rawScore": 1431.55,
+          "confidenceInterval": [1376.08, 1487.02],
           "rank": 48,
-          "evaluatedAt": "2025-08-27T17:37:41.227517"
+          "evaluatedAt": "2025-08-28T11:19:23.569911"
+        },
+        "abstraction": {
+          "rawScore": 1463.1,
+          "confidenceInterval": [1427.86, 1498.34],
+          "rank": 46,
+          "evaluatedAt": "2025-08-28T11:19:23.569995"
+        },
+        "empathy": {
+          "rawScore": 1476.87,
+          "confidenceInterval": [1456.61, 1497.14],
+          "rank": 29,
+          "evaluatedAt": "2025-08-28T11:19:23.570087"
         },
         "compliance": {
-          "rawScore": 1493.32,
-          "confidenceInterval": [1344.5, 1642.14],
-          "rank": 35,
-          "evaluatedAt": "2025-08-27T17:37:41.227608"
+          "rawScore": 1497.6,
+          "confidenceInterval": [1445.14, 1550.07],
+          "rank": 30,
+          "evaluatedAt": "2025-08-28T11:19:23.570168"
+        },
+        "coding": {
+          "rawScore": 1439.55,
+          "confidenceInterval": [1421.97, 1457.13],
+          "rank": 40,
+          "evaluatedAt": "2025-08-28T11:19:23.570252"
+        },
+        "ethics": {
+          "rawScore": 1412.22,
+          "confidenceInterval": [1342.75, 1481.69],
+          "rank": 39,
+          "evaluatedAt": "2025-08-28T11:19:23.570332"
         }
       },
       "name": "Magnum v4 72B",
@@ -1135,53 +1135,53 @@
     {
       "id": "anthropic/claude-3.7-sonnet:thinking",
       "scores": {
-        "coding": {
-          "rawScore": 1611.97,
-          "confidenceInterval": [1458.12, 1765.82],
-          "rank": 4,
-          "evaluatedAt": "2025-08-27T17:37:41.226936"
-        },
-        "abstraction": {
-          "rawScore": 1559.46,
-          "confidenceInterval": [1410.62, 1708.3],
-          "rank": 9,
-          "evaluatedAt": "2025-08-27T17:37:41.227040"
-        },
-        "empathy": {
-          "rawScore": 1469.32,
-          "confidenceInterval": [1314.31, 1624.34],
-          "rank": 33,
-          "evaluatedAt": "2025-08-27T17:37:41.227130"
-        },
-        "ethics": {
-          "rawScore": 1586.11,
-          "confidenceInterval": [1437.31, 1734.9],
-          "rank": 7,
-          "evaluatedAt": "2025-08-27T17:37:41.227220"
-        },
         "safety": {
-          "rawScore": 1523.79,
-          "confidenceInterval": [1374.59, 1672.99],
-          "rank": 21,
-          "evaluatedAt": "2025-08-27T17:37:41.227309"
+          "rawScore": 1531.2,
+          "confidenceInterval": [1500.32, 1562.09],
+          "rank": 16,
+          "evaluatedAt": "2025-08-28T11:19:23.569711"
         },
         "deception": {
-          "rawScore": 1460.62,
-          "confidenceInterval": [1311.43, 1609.8],
-          "rank": 34,
-          "evaluatedAt": "2025-08-27T17:37:41.227428"
+          "rawScore": 1478.12,
+          "confidenceInterval": [1473.24, 1483.0],
+          "rank": 45,
+          "evaluatedAt": "2025-08-28T11:19:23.569801"
         },
         "persuasion": {
-          "rawScore": 1489.75,
-          "confidenceInterval": [1340.54, 1638.97],
-          "rank": 30,
-          "evaluatedAt": "2025-08-27T17:37:41.227518"
+          "rawScore": 1507.46,
+          "confidenceInterval": [1453.77, 1561.16],
+          "rank": 27,
+          "evaluatedAt": "2025-08-28T11:19:23.569890"
+        },
+        "abstraction": {
+          "rawScore": 1513.11,
+          "confidenceInterval": [1485.25, 1540.98],
+          "rank": 23,
+          "evaluatedAt": "2025-08-28T11:19:23.569974"
+        },
+        "empathy": {
+          "rawScore": 1473.25,
+          "confidenceInterval": [1453.11, 1493.39],
+          "rank": 31,
+          "evaluatedAt": "2025-08-28T11:19:23.570068"
         },
         "compliance": {
-          "rawScore": 1554.13,
-          "confidenceInterval": [1405.26, 1702.99],
-          "rank": 8,
-          "evaluatedAt": "2025-08-27T17:37:41.227609"
+          "rawScore": 1533.76,
+          "confidenceInterval": [1473.79, 1593.73],
+          "rank": 4,
+          "evaluatedAt": "2025-08-28T11:19:23.570149"
+        },
+        "coding": {
+          "rawScore": 1607.3,
+          "confidenceInterval": [1584.75, 1629.85],
+          "rank": 4,
+          "evaluatedAt": "2025-08-28T11:19:23.570232"
+        },
+        "ethics": {
+          "rawScore": 1583.41,
+          "confidenceInterval": [1521.89, 1644.93],
+          "rank": 14,
+          "evaluatedAt": "2025-08-28T11:19:23.570313"
         }
       },
       "name": "Anthropic: Claude 3.7 Sonnet (thinking)",
@@ -1227,53 +1227,53 @@
     {
       "id": "openai/o1-mini",
       "scores": {
-        "coding": {
-          "rawScore": 1490.96,
-          "confidenceInterval": [1342.32, 1639.6],
-          "rank": 30,
-          "evaluatedAt": "2025-08-27T17:37:41.226938"
-        },
-        "abstraction": {
-          "rawScore": 1502.32,
-          "confidenceInterval": [1353.18, 1651.46],
-          "rank": 27,
-          "evaluatedAt": "2025-08-27T17:37:41.227047"
-        },
-        "empathy": {
-          "rawScore": 1343.26,
-          "confidenceInterval": [1187.04, 1499.49],
-          "rank": 51,
-          "evaluatedAt": "2025-08-27T17:37:41.227131"
-        },
-        "ethics": {
-          "rawScore": 1500.91,
-          "confidenceInterval": [1351.82, 1650],
-          "rank": 26,
-          "evaluatedAt": "2025-08-27T17:37:41.227223"
-        },
         "safety": {
-          "rawScore": 1475.05,
-          "confidenceInterval": [1320.43, 1629.66],
-          "rank": 31,
-          "evaluatedAt": "2025-08-27T17:37:41.227316"
+          "rawScore": 1459.53,
+          "confidenceInterval": [1432.05, 1487.02],
+          "rank": 34,
+          "evaluatedAt": "2025-08-28T11:19:23.569720"
         },
         "deception": {
-          "rawScore": 1563.51,
-          "confidenceInterval": [1414.87, 1712.14],
-          "rank": 9,
-          "evaluatedAt": "2025-08-27T17:37:41.227436"
+          "rawScore": 1480.98,
+          "confidenceInterval": [1476.31, 1485.65],
+          "rank": 33,
+          "evaluatedAt": "2025-08-28T11:19:23.569809"
         },
         "persuasion": {
-          "rawScore": 1468.77,
-          "confidenceInterval": [1319.68, 1617.86],
-          "rank": 34,
-          "evaluatedAt": "2025-08-27T17:37:41.227520"
+          "rawScore": 1467.1,
+          "confidenceInterval": [1413.6, 1520.61],
+          "rank": 39,
+          "evaluatedAt": "2025-08-28T11:19:23.569898"
+        },
+        "abstraction": {
+          "rawScore": 1496.33,
+          "confidenceInterval": [1467.54, 1525.11],
+          "rank": 35,
+          "evaluatedAt": "2025-08-28T11:19:23.569983"
+        },
+        "empathy": {
+          "rawScore": 1492.62,
+          "confidenceInterval": [1469.93, 1515.3],
+          "rank": 27,
+          "evaluatedAt": "2025-08-28T11:19:23.570076"
         },
         "compliance": {
-          "rawScore": 1499.51,
-          "confidenceInterval": [1350.83, 1648.2],
-          "rank": 29,
-          "evaluatedAt": "2025-08-27T17:37:41.227612"
+          "rawScore": 1495.17,
+          "confidenceInterval": [1440.66, 1549.67],
+          "rank": 35,
+          "evaluatedAt": "2025-08-28T11:19:23.570157"
+        },
+        "coding": {
+          "rawScore": 1510.09,
+          "confidenceInterval": [1495.9, 1524.29],
+          "rank": 22,
+          "evaluatedAt": "2025-08-28T11:19:23.570240"
+        },
+        "ethics": {
+          "rawScore": 1463.99,
+          "confidenceInterval": [1399.44, 1528.54],
+          "rank": 31,
+          "evaluatedAt": "2025-08-28T11:19:23.570321"
         }
       },
       "name": "OpenAI: o1-mini",
@@ -1310,53 +1310,53 @@
     {
       "id": "openai/o3",
       "scores": {
-        "coding": {
-          "rawScore": 1591.56,
-          "confidenceInterval": [1442.53, 1740.58],
-          "rank": 7,
-          "evaluatedAt": "2025-08-27T17:37:41.226939"
-        },
-        "abstraction": {
-          "rawScore": 1533.74,
-          "confidenceInterval": [1385.1, 1682.37],
-          "rank": 15,
-          "evaluatedAt": "2025-08-27T17:37:41.227042"
-        },
-        "empathy": {
-          "rawScore": 1501.92,
-          "confidenceInterval": [1353.27, 1650.57],
-          "rank": 27,
-          "evaluatedAt": "2025-08-27T17:37:41.227133"
-        },
-        "ethics": {
-          "rawScore": 1583.61,
-          "confidenceInterval": [1429.82, 1737.41],
-          "rank": 8,
-          "evaluatedAt": "2025-08-27T17:37:41.227227"
-        },
         "safety": {
-          "rawScore": 1467.69,
-          "confidenceInterval": [1318.18, 1617.19],
-          "rank": 36,
-          "evaluatedAt": "2025-08-27T17:37:41.227313"
+          "rawScore": 1472.32,
+          "confidenceInterval": [1445.5, 1499.13],
+          "rank": 30,
+          "evaluatedAt": "2025-08-28T11:19:23.569681"
         },
         "deception": {
-          "rawScore": 1402.54,
-          "confidenceInterval": [1253.29, 1551.79],
-          "rank": 50,
-          "evaluatedAt": "2025-08-27T17:37:41.227431"
+          "rawScore": 1473.63,
+          "confidenceInterval": [1468.5, 1478.77],
+          "rank": 51,
+          "evaluatedAt": "2025-08-28T11:19:23.569779"
         },
         "persuasion": {
-          "rawScore": 1559.26,
-          "confidenceInterval": [1410.21, 1708.31],
-          "rank": 13,
-          "evaluatedAt": "2025-08-27T17:37:41.227523"
+          "rawScore": 1516.52,
+          "confidenceInterval": [1464.04, 1568.99],
+          "rank": 23,
+          "evaluatedAt": "2025-08-28T11:19:23.569868"
+        },
+        "abstraction": {
+          "rawScore": 1558.06,
+          "confidenceInterval": [1526.1, 1590.01],
+          "rank": 2,
+          "evaluatedAt": "2025-08-28T11:19:23.569953"
+        },
+        "empathy": {
+          "rawScore": 1570.9,
+          "confidenceInterval": [1550.11, 1591.68],
+          "rank": 10,
+          "evaluatedAt": "2025-08-28T11:19:23.570034"
         },
         "compliance": {
-          "rawScore": 1470.74,
-          "confidenceInterval": [1322.09, 1619.4],
-          "rank": 39,
-          "evaluatedAt": "2025-08-27T17:37:41.227615"
+          "rawScore": 1510.18,
+          "confidenceInterval": [1461.98, 1558.38],
+          "rank": 17,
+          "evaluatedAt": "2025-08-28T11:19:23.570127"
+        },
+        "coding": {
+          "rawScore": 1552.86,
+          "confidenceInterval": [1537.2, 1568.52],
+          "rank": 13,
+          "evaluatedAt": "2025-08-28T11:19:23.570210"
+        },
+        "ethics": {
+          "rawScore": 1660.57,
+          "confidenceInterval": [1588.09, 1733.05],
+          "rank": 7,
+          "evaluatedAt": "2025-08-28T11:19:23.570293"
         }
       },
       "name": "OpenAI: o3",
@@ -1402,53 +1402,53 @@
     {
       "id": "deepseek/deepseek-chat",
       "scores": {
-        "coding": {
-          "rawScore": 1474.7,
-          "confidenceInterval": [1325.57, 1623.82],
-          "rank": 34,
-          "evaluatedAt": "2025-08-27T17:37:41.226941"
-        },
-        "abstraction": {
-          "rawScore": 1496.72,
-          "confidenceInterval": [1348.08, 1645.37],
-          "rank": 33,
-          "evaluatedAt": "2025-08-27T17:37:41.227041"
-        },
-        "empathy": {
-          "rawScore": 1582.66,
-          "confidenceInterval": [1433.83, 1731.48],
-          "rank": 9,
-          "evaluatedAt": "2025-08-27T17:37:41.227136"
-        },
-        "ethics": {
-          "rawScore": 1558.21,
-          "confidenceInterval": [1408.92, 1707.5],
-          "rank": 14,
-          "evaluatedAt": "2025-08-27T17:37:41.227224"
-        },
         "safety": {
-          "rawScore": 1522.14,
-          "confidenceInterval": [1373.31, 1670.96],
-          "rank": 22,
-          "evaluatedAt": "2025-08-27T17:37:41.227312"
+          "rawScore": 1491.56,
+          "confidenceInterval": [1463.92, 1519.21],
+          "rank": 27,
+          "evaluatedAt": "2025-08-28T11:19:23.569712"
         },
         "deception": {
-          "rawScore": 1436.2,
-          "confidenceInterval": [1287.48, 1584.93],
-          "rank": 41,
-          "evaluatedAt": "2025-08-27T17:37:41.227430"
+          "rawScore": 1489.37,
+          "confidenceInterval": [1484.26, 1494.48],
+          "rank": 17,
+          "evaluatedAt": "2025-08-28T11:19:23.569802"
         },
         "persuasion": {
-          "rawScore": 1511.24,
-          "confidenceInterval": [1362.6, 1659.89],
-          "rank": 21,
-          "evaluatedAt": "2025-08-27T17:37:41.227521"
+          "rawScore": 1534.56,
+          "confidenceInterval": [1483.76, 1585.36],
+          "rank": 12,
+          "evaluatedAt": "2025-08-28T11:19:23.569892"
+        },
+        "abstraction": {
+          "rawScore": 1509.11,
+          "confidenceInterval": [1481.6, 1536.62],
+          "rank": 26,
+          "evaluatedAt": "2025-08-28T11:19:23.569975"
+        },
+        "empathy": {
+          "rawScore": 1566.42,
+          "confidenceInterval": [1545.36, 1587.48],
+          "rank": 15,
+          "evaluatedAt": "2025-08-28T11:19:23.570069"
         },
         "compliance": {
-          "rawScore": 1502.72,
-          "confidenceInterval": [1354.04, 1651.39],
-          "rank": 23,
-          "evaluatedAt": "2025-08-27T17:37:41.227614"
+          "rawScore": 1527.93,
+          "confidenceInterval": [1471.1, 1584.76],
+          "rank": 7,
+          "evaluatedAt": "2025-08-28T11:19:23.570150"
+        },
+        "coding": {
+          "rawScore": 1492.85,
+          "confidenceInterval": [1475.52, 1510.19],
+          "rank": 26,
+          "evaluatedAt": "2025-08-28T11:19:23.570233"
+        },
+        "ethics": {
+          "rawScore": 1531.38,
+          "confidenceInterval": [1462.99, 1599.77],
+          "rank": 20,
+          "evaluatedAt": "2025-08-28T11:19:23.570315"
         }
       },
       "name": "DeepSeek: DeepSeek V3",
@@ -1502,53 +1502,53 @@
     {
       "id": "mistralai/mistral-tiny",
       "scores": {
-        "coding": {
-          "rawScore": 1407.71,
-          "confidenceInterval": [1259.04, 1556.38],
-          "rank": 46,
-          "evaluatedAt": "2025-08-27T17:37:41.226943"
-        },
-        "abstraction": {
-          "rawScore": 1465.31,
-          "confidenceInterval": [1316.44, 1614.18],
-          "rank": 38,
-          "evaluatedAt": "2025-08-27T17:37:41.227045"
-        },
-        "empathy": {
-          "rawScore": 1376.2,
-          "confidenceInterval": [1227.38, 1525.03],
-          "rank": 48,
-          "evaluatedAt": "2025-08-27T17:37:41.227137"
-        },
-        "ethics": {
-          "rawScore": 1433.26,
-          "confidenceInterval": [1284.61, 1581.91],
-          "rank": 41,
-          "evaluatedAt": "2025-08-27T17:37:41.227226"
-        },
         "safety": {
-          "rawScore": 1424.8,
-          "confidenceInterval": [1275.62, 1573.98],
-          "rank": 45,
-          "evaluatedAt": "2025-08-27T17:37:41.227314"
+          "rawScore": 1443.87,
+          "confidenceInterval": [1414.76, 1472.97],
+          "rank": 42,
+          "evaluatedAt": "2025-08-28T11:19:23.569730"
         },
         "deception": {
-          "rawScore": 1465.63,
-          "confidenceInterval": [1316.9, 1614.36],
-          "rank": 33,
-          "evaluatedAt": "2025-08-27T17:37:41.227434"
+          "rawScore": 1478.8,
+          "confidenceInterval": [1474.11, 1483.49],
+          "rank": 41,
+          "evaluatedAt": "2025-08-28T11:19:23.569819"
         },
         "persuasion": {
-          "rawScore": 1462.44,
-          "confidenceInterval": [1313.51, 1611.36],
-          "rank": 35,
-          "evaluatedAt": "2025-08-27T17:37:41.227524"
+          "rawScore": 1507.08,
+          "confidenceInterval": [1453.14, 1561.03],
+          "rank": 28,
+          "evaluatedAt": "2025-08-28T11:19:23.569909"
+        },
+        "abstraction": {
+          "rawScore": 1473.98,
+          "confidenceInterval": [1440.38, 1507.59],
+          "rank": 41,
+          "evaluatedAt": "2025-08-28T11:19:23.569993"
+        },
+        "empathy": {
+          "rawScore": 1418.67,
+          "confidenceInterval": [1397.9, 1439.45],
+          "rank": 48,
+          "evaluatedAt": "2025-08-28T11:19:23.570085"
         },
         "compliance": {
-          "rawScore": 1562.23,
-          "confidenceInterval": [1413.6, 1710.87],
-          "rank": 4,
-          "evaluatedAt": "2025-08-27T17:37:41.227616"
+          "rawScore": 1517.33,
+          "confidenceInterval": [1466.52, 1568.14],
+          "rank": 13,
+          "evaluatedAt": "2025-08-28T11:19:23.570165"
+        },
+        "coding": {
+          "rawScore": 1424.15,
+          "confidenceInterval": [1406.64, 1441.65],
+          "rank": 45,
+          "evaluatedAt": "2025-08-28T11:19:23.570249"
+        },
+        "ethics": {
+          "rawScore": 1369.66,
+          "confidenceInterval": [1304.91, 1434.42],
+          "rank": 43,
+          "evaluatedAt": "2025-08-28T11:19:23.570331"
         }
       },
       "name": "Mistral Tiny",
@@ -1596,53 +1596,53 @@
     {
       "id": "qwen/qwen3-coder",
       "scores": {
-        "coding": {
-          "rawScore": 1495.95,
-          "confidenceInterval": [1347.21, 1644.68],
-          "rank": 28,
-          "evaluatedAt": "2025-08-27T17:37:41.226944"
-        },
-        "abstraction": {
-          "rawScore": 1506.27,
-          "confidenceInterval": [1357.18, 1655.36],
-          "rank": 24,
-          "evaluatedAt": "2025-08-27T17:37:41.227044"
-        },
-        "empathy": {
-          "rawScore": 1506.77,
-          "confidenceInterval": [1358.05, 1655.49],
-          "rank": 20,
-          "evaluatedAt": "2025-08-27T17:37:41.227134"
-        },
-        "ethics": {
-          "rawScore": 1567.83,
-          "confidenceInterval": [1419.16, 1716.5],
-          "rank": 9,
-          "evaluatedAt": "2025-08-27T17:37:41.227221"
-        },
         "safety": {
-          "rawScore": 1480.85,
-          "confidenceInterval": [1332.05, 1629.66],
-          "rank": 30,
-          "evaluatedAt": "2025-08-27T17:37:41.227310"
+          "rawScore": 1505.43,
+          "confidenceInterval": [1477.61, 1533.26],
+          "rank": 20,
+          "evaluatedAt": "2025-08-28T11:19:23.569691"
         },
         "deception": {
-          "rawScore": 1572.18,
-          "confidenceInterval": [1423.55, 1720.81],
-          "rank": 6,
-          "evaluatedAt": "2025-08-27T17:37:41.227433"
+          "rawScore": 1487.88,
+          "confidenceInterval": [1482.61, 1493.15],
+          "rank": 20,
+          "evaluatedAt": "2025-08-28T11:19:23.569784"
         },
         "persuasion": {
-          "rawScore": 1379.23,
-          "confidenceInterval": [1230.45, 1528.02],
-          "rank": 49,
-          "evaluatedAt": "2025-08-27T17:37:41.227527"
+          "rawScore": 1483.19,
+          "confidenceInterval": [1430.19, 1536.19],
+          "rank": 34,
+          "evaluatedAt": "2025-08-28T11:19:23.569878"
+        },
+        "abstraction": {
+          "rawScore": 1496.98,
+          "confidenceInterval": [1466.11, 1527.85],
+          "rank": 33,
+          "evaluatedAt": "2025-08-28T11:19:23.569960"
+        },
+        "empathy": {
+          "rawScore": 1468.35,
+          "confidenceInterval": [1447.36, 1489.35],
+          "rank": 34,
+          "evaluatedAt": "2025-08-28T11:19:23.570057"
         },
         "compliance": {
-          "rawScore": 1502.49,
-          "confidenceInterval": [1353.76, 1651.21],
-          "rank": 24,
-          "evaluatedAt": "2025-08-27T17:37:41.227611"
+          "rawScore": 1500.72,
+          "confidenceInterval": [1452.04, 1549.41],
+          "rank": 27,
+          "evaluatedAt": "2025-08-28T11:19:23.570131"
+        },
+        "coding": {
+          "rawScore": 1544.7,
+          "confidenceInterval": [1526.81, 1562.6],
+          "rank": 14,
+          "evaluatedAt": "2025-08-28T11:19:23.570221"
+        },
+        "ethics": {
+          "rawScore": 1621.68,
+          "confidenceInterval": [1551.49, 1691.87],
+          "rank": 9,
+          "evaluatedAt": "2025-08-28T11:19:23.570297"
         }
       },
       "name": "Qwen: Qwen3 Coder ",
@@ -1696,53 +1696,53 @@
     {
       "id": "meta-llama/llama-3.1-405b-instruct",
       "scores": {
-        "coding": {
-          "rawScore": 1438.09,
-          "confidenceInterval": [1289.42, 1586.77],
-          "rank": 39,
-          "evaluatedAt": "2025-08-27T17:37:41.226946"
-        },
-        "abstraction": {
-          "rawScore": 1558.58,
-          "confidenceInterval": [1409.94, 1707.22],
-          "rank": 10,
-          "evaluatedAt": "2025-08-27T17:37:41.227048"
-        },
-        "empathy": {
-          "rawScore": 1437.57,
-          "confidenceInterval": [1288.82, 1586.31],
-          "rank": 42,
-          "evaluatedAt": "2025-08-27T17:37:41.227139"
-        },
-        "ethics": {
-          "rawScore": 1502.98,
-          "confidenceInterval": [1354.34, 1651.62],
-          "rank": 24,
-          "evaluatedAt": "2025-08-27T17:37:41.227229"
-        },
         "safety": {
-          "rawScore": 1495.54,
-          "confidenceInterval": [1346.9, 1644.18],
-          "rank": 27,
-          "evaluatedAt": "2025-08-27T17:37:41.227317"
+          "rawScore": 1495.99,
+          "confidenceInterval": [1467.43, 1524.56],
+          "rank": 25,
+          "evaluatedAt": "2025-08-28T11:19:23.569734"
         },
         "deception": {
-          "rawScore": 1492.56,
-          "confidenceInterval": [1343.88, 1641.24],
-          "rank": 28,
-          "evaluatedAt": "2025-08-27T17:37:41.227437"
+          "rawScore": 1488.67,
+          "confidenceInterval": [1483.66, 1493.67],
+          "rank": 18,
+          "evaluatedAt": "2025-08-28T11:19:23.569822"
         },
         "persuasion": {
-          "rawScore": 1453.14,
-          "confidenceInterval": [1303.35, 1602.92],
-          "rank": 36,
-          "evaluatedAt": "2025-08-27T17:37:41.227528"
+          "rawScore": 1491.76,
+          "confidenceInterval": [1440.34, 1543.18],
+          "rank": 31,
+          "evaluatedAt": "2025-08-28T11:19:23.569915"
+        },
+        "abstraction": {
+          "rawScore": 1498.78,
+          "confidenceInterval": [1468.63, 1528.94],
+          "rank": 32,
+          "evaluatedAt": "2025-08-28T11:19:23.569996"
+        },
+        "empathy": {
+          "rawScore": 1423.65,
+          "confidenceInterval": [1402.02, 1445.29],
+          "rank": 47,
+          "evaluatedAt": "2025-08-28T11:19:23.570088"
         },
         "compliance": {
-          "rawScore": 1560.75,
-          "confidenceInterval": [1412.12, 1709.38],
-          "rank": 7,
-          "evaluatedAt": "2025-08-27T17:37:41.227618"
+          "rawScore": 1518.09,
+          "confidenceInterval": [1462.05, 1574.14],
+          "rank": 12,
+          "evaluatedAt": "2025-08-28T11:19:23.570171"
+        },
+        "coding": {
+          "rawScore": 1471.02,
+          "confidenceInterval": [1456.88, 1485.16],
+          "rank": 35,
+          "evaluatedAt": "2025-08-28T11:19:23.570255"
+        },
+        "ethics": {
+          "rawScore": 1489.16,
+          "confidenceInterval": [1418.93, 1559.39],
+          "rank": 25,
+          "evaluatedAt": "2025-08-28T11:19:23.570333"
         }
       },
       "name": "Meta: Llama 3.1 405B Instruct",
@@ -1796,53 +1796,53 @@
     {
       "id": "anthropic/claude-opus-4.1",
       "scores": {
-        "coding": {
-          "rawScore": 1627.38,
-          "confidenceInterval": [1478.74, 1776.02],
-          "rank": 2,
-          "evaluatedAt": "2025-08-27T17:37:41.226947"
-        },
-        "abstraction": {
-          "rawScore": 1491.9,
-          "confidenceInterval": [1342.68, 1641.13],
-          "rank": 35,
-          "evaluatedAt": "2025-08-27T17:37:41.227050"
-        },
-        "empathy": {
-          "rawScore": 1556.38,
-          "confidenceInterval": [1407.21, 1705.55],
-          "rank": 14,
-          "evaluatedAt": "2025-08-27T17:37:41.227140"
-        },
-        "ethics": {
-          "rawScore": 1626.7,
-          "confidenceInterval": [1477.62, 1775.79],
-          "rank": 4,
-          "evaluatedAt": "2025-08-27T17:37:41.227230"
-        },
         "safety": {
-          "rawScore": 1564.19,
-          "confidenceInterval": [1415.52, 1712.85],
-          "rank": 13,
-          "evaluatedAt": "2025-08-27T17:37:41.227319"
+          "rawScore": 1567.9,
+          "confidenceInterval": [1535.4, 1600.41],
+          "rank": 10,
+          "evaluatedAt": "2025-08-28T11:19:23.569699"
         },
         "deception": {
-          "rawScore": 1424.84,
-          "confidenceInterval": [1275.46, 1574.22],
-          "rank": 45,
-          "evaluatedAt": "2025-08-27T17:37:41.227439"
+          "rawScore": 1478.98,
+          "confidenceInterval": [1474.08, 1483.88],
+          "rank": 39,
+          "evaluatedAt": "2025-08-28T11:19:23.569790"
         },
         "persuasion": {
-          "rawScore": 1600.91,
-          "confidenceInterval": [1451.66, 1750.16],
-          "rank": 5,
-          "evaluatedAt": "2025-08-27T17:37:41.227530"
+          "rawScore": 1559.59,
+          "confidenceInterval": [1508.85, 1610.33],
+          "rank": 8,
+          "evaluatedAt": "2025-08-28T11:19:23.569875"
+        },
+        "abstraction": {
+          "rawScore": 1508.01,
+          "confidenceInterval": [1479.62, 1536.39],
+          "rank": 28,
+          "evaluatedAt": "2025-08-28T11:19:23.569959"
+        },
+        "empathy": {
+          "rawScore": 1516.03,
+          "confidenceInterval": [1494.98, 1537.08],
+          "rank": 24,
+          "evaluatedAt": "2025-08-28T11:19:23.570040"
         },
         "compliance": {
-          "rawScore": 1464.07,
-          "confidenceInterval": [1314.36, 1613.79],
-          "rank": 42,
-          "evaluatedAt": "2025-08-27T17:37:41.227619"
+          "rawScore": 1505.57,
+          "confidenceInterval": [1452.28, 1558.87],
+          "rank": 24,
+          "evaluatedAt": "2025-08-28T11:19:23.570135"
+        },
+        "coding": {
+          "rawScore": 1578.04,
+          "confidenceInterval": [1556.02, 1600.06],
+          "rank": 6,
+          "evaluatedAt": "2025-08-28T11:19:23.570218"
+        },
+        "ethics": {
+          "rawScore": 1613.2,
+          "confidenceInterval": [1542.93, 1683.48],
+          "rank": 11,
+          "evaluatedAt": "2025-08-28T11:19:23.570301"
         }
       },
       "name": "Anthropic: Claude Opus 4.1",
@@ -1888,53 +1888,53 @@
     {
       "id": "ai21/jamba-large-1.7",
       "scores": {
-        "coding": {
-          "rawScore": 1535.76,
-          "confidenceInterval": [1381.69, 1689.83],
-          "rank": 17,
-          "evaluatedAt": "2025-08-27T17:37:41.226949"
-        },
-        "abstraction": {
-          "rawScore": 1456.54,
-          "confidenceInterval": [1306.84, 1606.23],
-          "rank": 39,
-          "evaluatedAt": "2025-08-27T17:37:41.227051"
-        },
-        "empathy": {
-          "rawScore": 1433.22,
-          "confidenceInterval": [1278.97, 1587.47],
-          "rank": 44,
-          "evaluatedAt": "2025-08-27T17:37:41.227141"
-        },
-        "ethics": {
-          "rawScore": 1486.18,
-          "confidenceInterval": [1336.56, 1635.79],
-          "rank": 33,
-          "evaluatedAt": "2025-08-27T17:37:41.227233"
-        },
         "safety": {
-          "rawScore": 1528.76,
-          "confidenceInterval": [1379.68, 1677.84],
-          "rank": 19,
-          "evaluatedAt": "2025-08-27T17:37:41.227322"
+          "rawScore": 1499.85,
+          "confidenceInterval": [1470.96, 1528.74],
+          "rank": 23,
+          "evaluatedAt": "2025-08-28T11:19:23.569763"
         },
         "deception": {
-          "rawScore": 1523.05,
-          "confidenceInterval": [1374.13, 1671.98],
-          "rank": 19,
-          "evaluatedAt": "2025-08-27T17:37:41.227440"
+          "rawScore": 1482.55,
+          "confidenceInterval": [1477.77, 1487.34],
+          "rank": 28,
+          "evaluatedAt": "2025-08-28T11:19:23.569853"
         },
         "persuasion": {
-          "rawScore": 1402.74,
-          "confidenceInterval": [1248.21, 1557.28],
-          "rank": 45,
-          "evaluatedAt": "2025-08-27T17:37:41.227533"
+          "rawScore": 1411.49,
+          "confidenceInterval": [1346.73, 1476.25],
+          "rank": 50,
+          "evaluatedAt": "2025-08-28T11:19:23.569940"
+        },
+        "abstraction": {
+          "rawScore": 1495.92,
+          "confidenceInterval": [1464.94, 1526.89],
+          "rank": 36,
+          "evaluatedAt": "2025-08-28T11:19:23.570023"
+        },
+        "empathy": {
+          "rawScore": 1471.52,
+          "confidenceInterval": [1452.67, 1490.36],
+          "rank": 32,
+          "evaluatedAt": "2025-08-28T11:19:23.570115"
         },
         "compliance": {
-          "rawScore": 1584.97,
-          "confidenceInterval": [1436.04, 1733.9],
-          "rank": 3,
-          "evaluatedAt": "2025-08-27T17:37:41.227622"
+          "rawScore": 1522.78,
+          "confidenceInterval": [1472.98, 1572.57],
+          "rank": 9,
+          "evaluatedAt": "2025-08-28T11:19:23.570198"
+        },
+        "coding": {
+          "rawScore": 1425.85,
+          "confidenceInterval": [1406.68, 1445.01],
+          "rank": 44,
+          "evaluatedAt": "2025-08-28T11:19:23.570281"
+        },
+        "ethics": {
+          "rawScore": 1454.64,
+          "confidenceInterval": [1393.09, 1516.19],
+          "rank": 33,
+          "evaluatedAt": "2025-08-28T11:19:23.570361"
         }
       },
       "name": "AI21: Jamba Large 1.7",
@@ -1978,53 +1978,53 @@
     {
       "id": "deepseek/deepseek-r1",
       "scores": {
-        "coding": {
-          "rawScore": 1530.88,
-          "confidenceInterval": [1382.08, 1679.68],
-          "rank": 20,
-          "evaluatedAt": "2025-08-27T17:37:41.226950"
-        },
-        "abstraction": {
-          "rawScore": 1564.39,
-          "confidenceInterval": [1415.71, 1713.07],
-          "rank": 7,
-          "evaluatedAt": "2025-08-27T17:37:41.227052"
-        },
-        "empathy": {
-          "rawScore": 1433.12,
-          "confidenceInterval": [1283.9, 1582.33],
-          "rank": 45,
-          "evaluatedAt": "2025-08-27T17:37:41.227143"
-        },
-        "ethics": {
-          "rawScore": 1499.82,
-          "confidenceInterval": [1351.13, 1648.5],
-          "rank": 27,
-          "evaluatedAt": "2025-08-27T17:37:41.227232"
-        },
         "safety": {
-          "rawScore": 1473.69,
-          "confidenceInterval": [1324.58, 1622.8],
-          "rank": 32,
-          "evaluatedAt": "2025-08-27T17:37:41.227320"
+          "rawScore": 1510.51,
+          "confidenceInterval": [1479.22, 1541.79],
+          "rank": 19,
+          "evaluatedAt": "2025-08-28T11:19:23.569760"
         },
         "deception": {
-          "rawScore": 1533.5,
-          "confidenceInterval": [1384.34, 1682.66],
-          "rank": 17,
-          "evaluatedAt": "2025-08-27T17:37:41.227441"
+          "rawScore": 1502.59,
+          "confidenceInterval": [1495.48, 1509.7],
+          "rank": 4,
+          "evaluatedAt": "2025-08-28T11:19:23.569850"
         },
         "persuasion": {
-          "rawScore": 1498.86,
-          "confidenceInterval": [1350.22, 1647.49],
-          "rank": 27,
-          "evaluatedAt": "2025-08-27T17:37:41.227531"
+          "rawScore": 1559.59,
+          "confidenceInterval": [1505.4, 1613.78],
+          "rank": 7,
+          "evaluatedAt": "2025-08-28T11:19:23.569938"
+        },
+        "abstraction": {
+          "rawScore": 1549.72,
+          "confidenceInterval": [1518.91, 1580.53],
+          "rank": 3,
+          "evaluatedAt": "2025-08-28T11:19:23.570020"
+        },
+        "empathy": {
+          "rawScore": 1555.37,
+          "confidenceInterval": [1534.65, 1576.08],
+          "rank": 18,
+          "evaluatedAt": "2025-08-28T11:19:23.570112"
         },
         "compliance": {
-          "rawScore": 1622.26,
-          "confidenceInterval": [1473.46, 1771.05],
-          "rank": 2,
-          "evaluatedAt": "2025-08-27T17:37:41.227621"
+          "rawScore": 1522.6,
+          "confidenceInterval": [1470.75, 1574.45],
+          "rank": 10,
+          "evaluatedAt": "2025-08-28T11:19:23.570196"
+        },
+        "coding": {
+          "rawScore": 1506.39,
+          "confidenceInterval": [1489.82, 1522.96],
+          "rank": 23,
+          "evaluatedAt": "2025-08-28T11:19:23.570278"
+        },
+        "ethics": {
+          "rawScore": 1505.31,
+          "confidenceInterval": [1444.47, 1566.14],
+          "rank": 22,
+          "evaluatedAt": "2025-08-28T11:19:23.570358"
         }
       },
       "name": "DeepSeek: R1",
@@ -2080,53 +2080,53 @@
     {
       "id": "aion-labs/aion-1.0",
       "scores": {
-        "coding": {
-          "rawScore": 1555.86,
-          "confidenceInterval": [1407.02, 1704.7],
-          "rank": 13,
-          "evaluatedAt": "2025-08-27T17:37:41.226952"
-        },
-        "abstraction": {
-          "rawScore": 1524.03,
-          "confidenceInterval": [1375.26, 1672.8],
-          "rank": 20,
-          "evaluatedAt": "2025-08-27T17:37:41.227054"
-        },
-        "empathy": {
-          "rawScore": 1435.83,
-          "confidenceInterval": [1286.11, 1585.55],
-          "rank": 43,
-          "evaluatedAt": "2025-08-27T17:37:41.227144"
-        },
-        "ethics": {
-          "rawScore": 1345.85,
-          "confidenceInterval": [1190.85, 1500.85],
-          "rank": 51,
-          "evaluatedAt": "2025-08-27T17:37:41.227234"
-        },
         "safety": {
-          "rawScore": 1500.48,
-          "confidenceInterval": [1351.55, 1649.4],
-          "rank": 26,
-          "evaluatedAt": "2025-08-27T17:37:41.227324"
+          "rawScore": 1379.66,
+          "confidenceInterval": [1333.91, 1425.4],
+          "rank": 49,
+          "evaluatedAt": "2025-08-28T11:19:23.569706"
         },
         "deception": {
-          "rawScore": 1554.66,
-          "confidenceInterval": [1405.42, 1703.9],
-          "rank": 12,
-          "evaluatedAt": "2025-08-27T17:37:41.227443"
+          "rawScore": 1507.61,
+          "confidenceInterval": [1500.1, 1515.11],
+          "rank": 2,
+          "evaluatedAt": "2025-08-28T11:19:23.569797"
         },
         "persuasion": {
-          "rawScore": 1558.03,
-          "confidenceInterval": [1408.85, 1707.22],
-          "rank": 14,
-          "evaluatedAt": "2025-08-27T17:37:41.227534"
+          "rawScore": 1499.44,
+          "confidenceInterval": [1446.59, 1552.29],
+          "rank": 30,
+          "evaluatedAt": "2025-08-28T11:19:23.569886"
+        },
+        "abstraction": {
+          "rawScore": 1515.92,
+          "confidenceInterval": [1487.28, 1544.55],
+          "rank": 22,
+          "evaluatedAt": "2025-08-28T11:19:23.569969"
+        },
+        "empathy": {
+          "rawScore": 1440.17,
+          "confidenceInterval": [1420.36, 1459.97],
+          "rank": 44,
+          "evaluatedAt": "2025-08-28T11:19:23.570064"
         },
         "compliance": {
-          "rawScore": 1466.01,
-          "confidenceInterval": [1311.37, 1620.66],
-          "rank": 41,
-          "evaluatedAt": "2025-08-27T17:37:41.227624"
+          "rawScore": 1498.57,
+          "confidenceInterval": [1444.67, 1552.48],
+          "rank": 28,
+          "evaluatedAt": "2025-08-28T11:19:23.570144"
+        },
+        "coding": {
+          "rawScore": 1516.81,
+          "confidenceInterval": [1499.29, 1534.34],
+          "rank": 20,
+          "evaluatedAt": "2025-08-28T11:19:23.570228"
+        },
+        "ethics": {
+          "rawScore": 1211.02,
+          "confidenceInterval": [1120.41, 1301.62],
+          "rank": 51,
+          "evaluatedAt": "2025-08-28T11:19:23.570309"
         }
       },
       "name": "AionLabs: Aion-1.0",
@@ -2168,53 +2168,53 @@
     {
       "id": "openai/o1",
       "scores": {
-        "coding": {
-          "rawScore": 1476.54,
-          "confidenceInterval": [1327.66, 1625.42],
-          "rank": 33,
-          "evaluatedAt": "2025-08-27T17:37:41.226954"
-        },
-        "abstraction": {
-          "rawScore": 1465.61,
-          "confidenceInterval": [1316.92, 1614.29],
-          "rank": 36,
-          "evaluatedAt": "2025-08-27T17:37:41.227056"
-        },
-        "empathy": {
-          "rawScore": 1470.02,
-          "confidenceInterval": [1321.28, 1618.76],
-          "rank": 32,
-          "evaluatedAt": "2025-08-27T17:37:41.227146"
-        },
-        "ethics": {
-          "rawScore": 1537.29,
-          "confidenceInterval": [1388.28, 1686.29],
-          "rank": 17,
-          "evaluatedAt": "2025-08-27T17:37:41.227236"
-        },
         "safety": {
-          "rawScore": 1439.49,
-          "confidenceInterval": [1290.79, 1588.19],
-          "rank": 39,
-          "evaluatedAt": "2025-08-27T17:37:41.227326"
+          "rawScore": 1459.5,
+          "confidenceInterval": [1433.92, 1485.08],
+          "rank": 35,
+          "evaluatedAt": "2025-08-28T11:19:23.569748"
         },
         "deception": {
-          "rawScore": 1503.34,
-          "confidenceInterval": [1354.46, 1652.22],
-          "rank": 25,
-          "evaluatedAt": "2025-08-27T17:37:41.227444"
+          "rawScore": 1487.27,
+          "confidenceInterval": [1482.03, 1492.5],
+          "rank": 22,
+          "evaluatedAt": "2025-08-28T11:19:23.569839"
         },
         "persuasion": {
-          "rawScore": 1483.13,
-          "confidenceInterval": [1329.39, 1636.86],
-          "rank": 32,
-          "evaluatedAt": "2025-08-27T17:37:41.227537"
+          "rawScore": 1443.35,
+          "confidenceInterval": [1385.35, 1501.35],
+          "rank": 45,
+          "evaluatedAt": "2025-08-28T11:19:23.569927"
+        },
+        "abstraction": {
+          "rawScore": 1516.13,
+          "confidenceInterval": [1485.72, 1546.55],
+          "rank": 21,
+          "evaluatedAt": "2025-08-28T11:19:23.570009"
+        },
+        "empathy": {
+          "rawScore": 1538.07,
+          "confidenceInterval": [1516.04, 1560.09],
+          "rank": 21,
+          "evaluatedAt": "2025-08-28T11:19:23.570101"
         },
         "compliance": {
-          "rawScore": 1496.58,
-          "confidenceInterval": [1347.9, 1645.26],
-          "rank": 32,
-          "evaluatedAt": "2025-08-27T17:37:41.227625"
+          "rawScore": 1536.22,
+          "confidenceInterval": [1483.35, 1589.08],
+          "rank": 3,
+          "evaluatedAt": "2025-08-28T11:19:23.570183"
+        },
+        "coding": {
+          "rawScore": 1491.79,
+          "confidenceInterval": [1476.25, 1507.32],
+          "rank": 28,
+          "evaluatedAt": "2025-08-28T11:19:23.570268"
+        },
+        "ethics": {
+          "rawScore": 1509.62,
+          "confidenceInterval": [1448.92, 1570.31],
+          "rank": 21,
+          "evaluatedAt": "2025-08-28T11:19:23.570348"
         }
       },
       "name": "OpenAI: o1",
@@ -2258,53 +2258,53 @@
     {
       "id": "inception/mercury",
       "scores": {
-        "coding": {
-          "rawScore": 1433.56,
-          "confidenceInterval": [1284.92, 1582.2],
-          "rank": 41,
-          "evaluatedAt": "2025-08-27T17:37:41.226955"
-        },
-        "abstraction": {
-          "rawScore": 1539.26,
-          "confidenceInterval": [1390.62, 1687.91],
-          "rank": 12,
-          "evaluatedAt": "2025-08-27T17:37:41.227058"
-        },
-        "empathy": {
-          "rawScore": 1541.32,
-          "confidenceInterval": [1392.68, 1689.96],
-          "rank": 16,
-          "evaluatedAt": "2025-08-27T17:37:41.227147"
-        },
-        "ethics": {
-          "rawScore": 1499.13,
-          "confidenceInterval": [1350.49, 1647.78],
-          "rank": 28,
-          "evaluatedAt": "2025-08-27T17:37:41.227237"
-        },
         "safety": {
-          "rawScore": 1535.3,
-          "confidenceInterval": [1386.66, 1683.94],
-          "rank": 15,
-          "evaluatedAt": "2025-08-27T17:37:41.227327"
+          "rawScore": 1511.4,
+          "confidenceInterval": [1481.16, 1541.65],
+          "rank": 18,
+          "evaluatedAt": "2025-08-28T11:19:23.569757"
         },
         "deception": {
-          "rawScore": 1497.4,
-          "confidenceInterval": [1348.28, 1646.51],
-          "rank": 27,
-          "evaluatedAt": "2025-08-27T17:37:41.227446"
+          "rawScore": 1487.09,
+          "confidenceInterval": [1482.26, 1491.91],
+          "rank": 23,
+          "evaluatedAt": "2025-08-28T11:19:23.569847"
         },
         "persuasion": {
-          "rawScore": 1491.87,
-          "confidenceInterval": [1343.22, 1640.51],
-          "rank": 29,
-          "evaluatedAt": "2025-08-27T17:37:41.227538"
+          "rawScore": 1442.99,
+          "confidenceInterval": [1386.7, 1499.29],
+          "rank": 46,
+          "evaluatedAt": "2025-08-28T11:19:23.569935"
+        },
+        "abstraction": {
+          "rawScore": 1522.99,
+          "confidenceInterval": [1492.57, 1553.42],
+          "rank": 17,
+          "evaluatedAt": "2025-08-28T11:19:23.570019"
+        },
+        "empathy": {
+          "rawScore": 1478.43,
+          "confidenceInterval": [1457.06, 1499.81],
+          "rank": 28,
+          "evaluatedAt": "2025-08-28T11:19:23.570111"
         },
         "compliance": {
-          "rawScore": 1495.15,
-          "confidenceInterval": [1346.48, 1643.83],
-          "rank": 33,
-          "evaluatedAt": "2025-08-27T17:37:41.227626"
+          "rawScore": 1483.73,
+          "confidenceInterval": [1425.94, 1541.52],
+          "rank": 42,
+          "evaluatedAt": "2025-08-28T11:19:23.570192"
+        },
+        "coding": {
+          "rawScore": 1448.21,
+          "confidenceInterval": [1432.2, 1464.22],
+          "rank": 39,
+          "evaluatedAt": "2025-08-28T11:19:23.570277"
+        },
+        "ethics": {
+          "rawScore": 1464.34,
+          "confidenceInterval": [1401.92, 1526.75],
+          "rank": 30,
+          "evaluatedAt": "2025-08-28T11:19:23.570357"
         }
       },
       "name": "Inception: Mercury",
@@ -2352,53 +2352,53 @@
     {
       "id": "inception/mercury-coder",
       "scores": {
-        "coding": {
-          "rawScore": 1534.19,
-          "confidenceInterval": [1385.44, 1682.93],
-          "rank": 18,
-          "evaluatedAt": "2025-08-27T17:37:41.226957"
-        },
-        "abstraction": {
-          "rawScore": 1438.71,
-          "confidenceInterval": [1290.08, 1587.34],
-          "rank": 42,
-          "evaluatedAt": "2025-08-27T17:37:41.227059"
-        },
-        "empathy": {
-          "rawScore": 1503.07,
-          "confidenceInterval": [1354.43, 1651.72],
-          "rank": 25,
-          "evaluatedAt": "2025-08-27T17:37:41.227148"
-        },
-        "ethics": {
-          "rawScore": 1439.46,
-          "confidenceInterval": [1290.81, 1588.11],
-          "rank": 36,
-          "evaluatedAt": "2025-08-27T17:37:41.227239"
-        },
         "safety": {
-          "rawScore": 1372.75,
-          "confidenceInterval": [1223.59, 1521.91],
-          "rank": 49,
-          "evaluatedAt": "2025-08-27T17:37:41.227329"
+          "rawScore": 1428.51,
+          "confidenceInterval": [1398.38, 1458.64],
+          "rank": 45,
+          "evaluatedAt": "2025-08-28T11:19:23.569705"
         },
         "deception": {
-          "rawScore": 1560.42,
-          "confidenceInterval": [1411.3, 1709.53],
-          "rank": 11,
-          "evaluatedAt": "2025-08-27T17:37:41.227447"
+          "rawScore": 1484.61,
+          "confidenceInterval": [1479.67, 1489.55],
+          "rank": 27,
+          "evaluatedAt": "2025-08-28T11:19:23.569795"
         },
         "persuasion": {
-          "rawScore": 1441.8,
-          "confidenceInterval": [1293.16, 1590.45],
-          "rank": 38,
-          "evaluatedAt": "2025-08-27T17:37:41.227540"
+          "rawScore": 1458.98,
+          "confidenceInterval": [1405.5, 1512.46],
+          "rank": 42,
+          "evaluatedAt": "2025-08-28T11:19:23.569885"
+        },
+        "abstraction": {
+          "rawScore": 1501.91,
+          "confidenceInterval": [1473.16, 1530.66],
+          "rank": 30,
+          "evaluatedAt": "2025-08-28T11:19:23.569968"
+        },
+        "empathy": {
+          "rawScore": 1469.02,
+          "confidenceInterval": [1449.82, 1488.21],
+          "rank": 33,
+          "evaluatedAt": "2025-08-28T11:19:23.570062"
         },
         "compliance": {
-          "rawScore": 1504.78,
-          "confidenceInterval": [1355.69, 1653.88],
-          "rank": 19,
-          "evaluatedAt": "2025-08-27T17:37:41.227628"
+          "rawScore": 1514.32,
+          "confidenceInterval": [1459.03, 1569.61],
+          "rank": 16,
+          "evaluatedAt": "2025-08-28T11:19:23.570143"
+        },
+        "coding": {
+          "rawScore": 1471.7,
+          "confidenceInterval": [1456.84, 1486.56],
+          "rank": 34,
+          "evaluatedAt": "2025-08-28T11:19:23.570226"
+        },
+        "ethics": {
+          "rawScore": 1411.48,
+          "confidenceInterval": [1346.95, 1476.02],
+          "rank": 40,
+          "evaluatedAt": "2025-08-28T11:19:23.570308"
         }
       },
       "name": "Inception: Mercury Coder",
@@ -2446,53 +2446,53 @@
     {
       "id": "perplexity/sonar",
       "scores": {
-        "coding": {
-          "rawScore": 1561.57,
-          "confidenceInterval": [1412.93, 1710.21],
-          "rank": 11,
-          "evaluatedAt": "2025-08-27T17:37:41.226958"
-        },
-        "abstraction": {
-          "rawScore": 1499.76,
-          "confidenceInterval": [1350.67, 1648.84],
-          "rank": 30,
-          "evaluatedAt": "2025-08-27T17:37:41.227061"
-        },
-        "empathy": {
-          "rawScore": 1468.78,
-          "confidenceInterval": [1320.03, 1617.53],
-          "rank": 34,
-          "evaluatedAt": "2025-08-27T17:37:41.227150"
-        },
-        "ethics": {
-          "rawScore": 1435.46,
-          "confidenceInterval": [1286.55, 1584.37],
-          "rank": 40,
-          "evaluatedAt": "2025-08-27T17:37:41.227240"
-        },
         "safety": {
-          "rawScore": 1431.68,
-          "confidenceInterval": [1283, 1580.36],
+          "rawScore": 1437.31,
+          "confidenceInterval": [1406.41, 1468.21],
           "rank": 44,
-          "evaluatedAt": "2025-08-27T17:37:41.227330"
+          "evaluatedAt": "2025-08-28T11:19:23.569693"
         },
         "deception": {
-          "rawScore": 1444.41,
-          "confidenceInterval": [1295.67, 1593.16],
-          "rank": 38,
-          "evaluatedAt": "2025-08-27T17:37:41.227449"
+          "rawScore": 1485.54,
+          "confidenceInterval": [1480.55, 1490.54],
+          "rank": 26,
+          "evaluatedAt": "2025-08-28T11:19:23.569787"
         },
         "persuasion": {
-          "rawScore": 1566.93,
-          "confidenceInterval": [1418.29, 1715.57],
-          "rank": 8,
-          "evaluatedAt": "2025-08-27T17:37:41.227541"
+          "rawScore": 1508.69,
+          "confidenceInterval": [1455.98, 1561.39],
+          "rank": 25,
+          "evaluatedAt": "2025-08-28T11:19:23.569873"
+        },
+        "abstraction": {
+          "rawScore": 1541.78,
+          "confidenceInterval": [1513.85, 1569.71],
+          "rank": 7,
+          "evaluatedAt": "2025-08-28T11:19:23.569957"
+        },
+        "empathy": {
+          "rawScore": 1476.51,
+          "confidenceInterval": [1453.48, 1499.54],
+          "rank": 30,
+          "evaluatedAt": "2025-08-28T11:19:23.570039"
         },
         "compliance": {
-          "rawScore": 1497.4,
-          "confidenceInterval": [1348.65, 1646.15],
-          "rank": 31,
-          "evaluatedAt": "2025-08-27T17:37:41.227629"
+          "rawScore": 1527.85,
+          "confidenceInterval": [1477.07, 1578.64],
+          "rank": 8,
+          "evaluatedAt": "2025-08-28T11:19:23.570138"
+        },
+        "coding": {
+          "rawScore": 1526.37,
+          "confidenceInterval": [1512.4, 1540.34],
+          "rank": 18,
+          "evaluatedAt": "2025-08-28T11:19:23.570214"
+        },
+        "ethics": {
+          "rawScore": 1437.49,
+          "confidenceInterval": [1374.64, 1500.34],
+          "rank": 35,
+          "evaluatedAt": "2025-08-28T11:19:23.570300"
         }
       },
       "name": "Perplexity: Sonar",
@@ -2536,53 +2536,53 @@
     {
       "id": "microsoft/phi-4",
       "scores": {
-        "coding": {
-          "rawScore": 1493.93,
-          "confidenceInterval": [1345.29, 1642.57],
-          "rank": 29,
-          "evaluatedAt": "2025-08-27T17:37:41.226960"
-        },
-        "abstraction": {
-          "rawScore": 1429.73,
-          "confidenceInterval": [1280.46, 1578.99],
-          "rank": 43,
-          "evaluatedAt": "2025-08-27T17:37:41.227062"
-        },
-        "empathy": {
-          "rawScore": 1534.07,
-          "confidenceInterval": [1385.28, 1682.86],
-          "rank": 18,
-          "evaluatedAt": "2025-08-27T17:37:41.227151"
-        },
-        "ethics": {
-          "rawScore": 1488.55,
-          "confidenceInterval": [1339.9, 1637.2],
-          "rank": 32,
-          "evaluatedAt": "2025-08-27T17:37:41.227241"
-        },
         "safety": {
-          "rawScore": 1507.71,
-          "confidenceInterval": [1358.97, 1656.45],
-          "rank": 23,
-          "evaluatedAt": "2025-08-27T17:37:41.227332"
+          "rawScore": 1489.16,
+          "confidenceInterval": [1460.75, 1517.57],
+          "rank": 28,
+          "evaluatedAt": "2025-08-28T11:19:23.569728"
         },
         "deception": {
-          "rawScore": 1468.59,
-          "confidenceInterval": [1319.92, 1617.25],
-          "rank": 32,
-          "evaluatedAt": "2025-08-27T17:37:41.227450"
+          "rawScore": 1480.86,
+          "confidenceInterval": [1476.08, 1485.65],
+          "rank": 34,
+          "evaluatedAt": "2025-08-28T11:19:23.569818"
         },
         "persuasion": {
-          "rawScore": 1495.97,
-          "confidenceInterval": [1347.27, 1644.67],
-          "rank": 28,
-          "evaluatedAt": "2025-08-27T17:37:41.227542"
+          "rawScore": 1474.29,
+          "confidenceInterval": [1421.56, 1527.03],
+          "rank": 37,
+          "evaluatedAt": "2025-08-28T11:19:23.569908"
+        },
+        "abstraction": {
+          "rawScore": 1463.56,
+          "confidenceInterval": [1426.52, 1500.61],
+          "rank": 45,
+          "evaluatedAt": "2025-08-28T11:19:23.569992"
+        },
+        "empathy": {
+          "rawScore": 1441.51,
+          "confidenceInterval": [1422.97, 1460.06],
+          "rank": 42,
+          "evaluatedAt": "2025-08-28T11:19:23.570084"
         },
         "compliance": {
-          "rawScore": 1494.05,
-          "confidenceInterval": [1345.34, 1642.77],
-          "rank": 34,
-          "evaluatedAt": "2025-08-27T17:37:41.227631"
+          "rawScore": 1496.68,
+          "confidenceInterval": [1443.09, 1550.28],
+          "rank": 32,
+          "evaluatedAt": "2025-08-28T11:19:23.570167"
+        },
+        "coding": {
+          "rawScore": 1434.98,
+          "confidenceInterval": [1417.24, 1452.71],
+          "rank": 42,
+          "evaluatedAt": "2025-08-28T11:19:23.570250"
+        },
+        "ethics": {
+          "rawScore": 1464.45,
+          "confidenceInterval": [1402.22, 1526.69],
+          "rank": 29,
+          "evaluatedAt": "2025-08-28T11:19:23.570329"
         }
       },
       "name": "Microsoft: Phi 4",
@@ -2634,53 +2634,53 @@
     {
       "id": "alpindale/goliath-120b",
       "scores": {
-        "coding": {
-          "rawScore": 1432.02,
-          "confidenceInterval": [1282.32, 1581.72],
-          "rank": 43,
-          "evaluatedAt": "2025-08-27T17:37:41.226961"
-        },
-        "abstraction": {
-          "rawScore": 1465.41,
-          "confidenceInterval": [1316.05, 1614.77],
-          "rank": 37,
-          "evaluatedAt": "2025-08-27T17:37:41.227064"
-        },
-        "empathy": {
-          "rawScore": 1494.32,
-          "confidenceInterval": [1345.03, 1643.6],
-          "rank": 29,
-          "evaluatedAt": "2025-08-27T17:37:41.227153"
-        },
-        "ethics": {
-          "rawScore": 1488.57,
-          "confidenceInterval": [1338.71, 1638.43],
-          "rank": 31,
-          "evaluatedAt": "2025-08-27T17:37:41.227243"
-        },
         "safety": {
-          "rawScore": 1435.21,
-          "confidenceInterval": [1285.96, 1584.45],
-          "rank": 43,
-          "evaluatedAt": "2025-08-27T17:37:41.227333"
+          "rawScore": 1407.8,
+          "confidenceInterval": [1367.82, 1447.79],
+          "rank": 47,
+          "evaluatedAt": "2025-08-28T11:19:23.569715"
         },
         "deception": {
-          "rawScore": 1404.13,
-          "confidenceInterval": [1249.3, 1558.97],
-          "rank": 49,
-          "evaluatedAt": "2025-08-27T17:37:41.227452"
+          "rawScore": 1480.71,
+          "confidenceInterval": [1475.81, 1485.6],
+          "rank": 35,
+          "evaluatedAt": "2025-08-28T11:19:23.569807"
         },
         "persuasion": {
-          "rawScore": 1432.46,
-          "confidenceInterval": [1283.25, 1581.66],
-          "rank": 42,
-          "evaluatedAt": "2025-08-27T17:37:41.227544"
+          "rawScore": 1481.22,
+          "confidenceInterval": [1429.29, 1533.15],
+          "rank": 36,
+          "evaluatedAt": "2025-08-28T11:19:23.569894"
+        },
+        "abstraction": {
+          "rawScore": 1466.39,
+          "confidenceInterval": [1429.99, 1502.8],
+          "rank": 43,
+          "evaluatedAt": "2025-08-28T11:19:23.569980"
+        },
+        "empathy": {
+          "rawScore": 1435.08,
+          "confidenceInterval": [1414.65, 1455.52],
+          "rank": 46,
+          "evaluatedAt": "2025-08-28T11:19:23.570075"
         },
         "compliance": {
-          "rawScore": 1515.46,
-          "confidenceInterval": [1366.23, 1664.68],
-          "rank": 14,
-          "evaluatedAt": "2025-08-27T17:37:41.227632"
+          "rawScore": 1482.73,
+          "confidenceInterval": [1427.5, 1537.95],
+          "rank": 43,
+          "evaluatedAt": "2025-08-28T11:19:23.570154"
+        },
+        "coding": {
+          "rawScore": 1396.97,
+          "confidenceInterval": [1374.07, 1419.87],
+          "rank": 49,
+          "evaluatedAt": "2025-08-28T11:19:23.570236"
+        },
+        "ethics": {
+          "rawScore": 1350.67,
+          "confidenceInterval": [1277.2, 1424.14],
+          "rank": 46,
+          "evaluatedAt": "2025-08-28T11:19:23.570319"
         }
       },
       "name": "Goliath 120B",
@@ -2731,53 +2731,53 @@
     {
       "id": "openai/o3-pro",
       "scores": {
-        "coding": {
-          "rawScore": 1529.31,
-          "confidenceInterval": [1380.65, 1677.97],
-          "rank": 21,
-          "evaluatedAt": "2025-08-27T17:37:41.226963"
-        },
-        "abstraction": {
-          "rawScore": 1535.17,
-          "confidenceInterval": [1386.53, 1683.81],
-          "rank": 14,
-          "evaluatedAt": "2025-08-27T17:37:41.227065"
-        },
-        "empathy": {
-          "rawScore": 1557.73,
-          "confidenceInterval": [1409.09, 1706.38],
-          "rank": 13,
-          "evaluatedAt": "2025-08-27T17:37:41.227154"
-        },
-        "ethics": {
-          "rawScore": 1560.7,
-          "confidenceInterval": [1411.56, 1709.83],
-          "rank": 13,
-          "evaluatedAt": "2025-08-27T17:37:41.227244"
-        },
         "safety": {
-          "rawScore": 1471.38,
-          "confidenceInterval": [1322.57, 1620.2],
-          "rank": 34,
-          "evaluatedAt": "2025-08-27T17:37:41.227335"
+          "rawScore": 1468.56,
+          "confidenceInterval": [1443.58, 1493.54],
+          "rank": 32,
+          "evaluatedAt": "2025-08-28T11:19:23.569700"
         },
         "deception": {
-          "rawScore": 1568.3,
-          "confidenceInterval": [1419.66, 1716.94],
-          "rank": 7,
-          "evaluatedAt": "2025-08-27T17:37:41.227453"
+          "rawScore": 1481.77,
+          "confidenceInterval": [1476.82, 1486.72],
+          "rank": 29,
+          "evaluatedAt": "2025-08-28T11:19:23.569791"
         },
         "persuasion": {
-          "rawScore": 1502.65,
-          "confidenceInterval": [1353.96, 1651.33],
-          "rank": 25,
-          "evaluatedAt": "2025-08-27T17:37:41.227545"
+          "rawScore": 1527.39,
+          "confidenceInterval": [1473.5, 1581.28],
+          "rank": 15,
+          "evaluatedAt": "2025-08-28T11:19:23.569881"
+        },
+        "abstraction": {
+          "rawScore": 1525.96,
+          "confidenceInterval": [1499.32, 1552.6],
+          "rank": 14,
+          "evaluatedAt": "2025-08-28T11:19:23.569964"
+        },
+        "empathy": {
+          "rawScore": 1588.92,
+          "confidenceInterval": [1569.2, 1608.63],
+          "rank": 6,
+          "evaluatedAt": "2025-08-28T11:19:23.570058"
         },
         "compliance": {
-          "rawScore": 1456.96,
-          "confidenceInterval": [1307.68, 1606.24],
-          "rank": 44,
-          "evaluatedAt": "2025-08-27T17:37:41.227634"
+          "rawScore": 1497.75,
+          "confidenceInterval": [1443.64, 1551.86],
+          "rank": 29,
+          "evaluatedAt": "2025-08-28T11:19:23.570139"
+        },
+        "coding": {
+          "rawScore": 1558.08,
+          "confidenceInterval": [1541.99, 1574.17],
+          "rank": 12,
+          "evaluatedAt": "2025-08-28T11:19:23.570222"
+        },
+        "ethics": {
+          "rawScore": 1659.91,
+          "confidenceInterval": [1584.37, 1735.45],
+          "rank": 8,
+          "evaluatedAt": "2025-08-28T11:19:23.570304"
         }
       },
       "name": "OpenAI: o3 Pro",
@@ -2822,53 +2822,53 @@
     {
       "id": "meta-llama/llama-3.1-405b",
       "scores": {
-        "coding": {
-          "rawScore": 1464.84,
-          "confidenceInterval": [1316.08, 1613.6],
-          "rank": 35,
-          "evaluatedAt": "2025-08-27T17:37:41.226964"
-        },
-        "abstraction": {
-          "rawScore": 1402.57,
-          "confidenceInterval": [1253.35, 1551.79],
-          "rank": 51,
-          "evaluatedAt": "2025-08-27T17:37:41.227066"
-        },
-        "empathy": {
-          "rawScore": 1346.09,
-          "confidenceInterval": [1190.38, 1501.81],
-          "rank": 50,
-          "evaluatedAt": "2025-08-27T17:37:41.227156"
-        },
-        "ethics": {
-          "rawScore": 1374.01,
-          "confidenceInterval": [1225.2, 1522.83],
-          "rank": 49,
-          "evaluatedAt": "2025-08-27T17:37:41.227246"
-        },
         "safety": {
-          "rawScore": 1436.5,
-          "confidenceInterval": [1287.86, 1585.13],
-          "rank": 42,
-          "evaluatedAt": "2025-08-27T17:37:41.227336"
+          "rawScore": 1444.45,
+          "confidenceInterval": [1414.88, 1474.01],
+          "rank": 41,
+          "evaluatedAt": "2025-08-28T11:19:23.569745"
         },
         "deception": {
-          "rawScore": 1404.38,
-          "confidenceInterval": [1248.99, 1559.77],
-          "rank": 48,
-          "evaluatedAt": "2025-08-27T17:37:41.227454"
+          "rawScore": 1474.25,
+          "confidenceInterval": [1468.97, 1479.52],
+          "rank": 50,
+          "evaluatedAt": "2025-08-28T11:19:23.569834"
         },
         "persuasion": {
-          "rawScore": 1626.81,
-          "confidenceInterval": [1478.17, 1775.45],
-          "rank": 3,
-          "evaluatedAt": "2025-08-27T17:37:41.227547"
+          "rawScore": 1484.37,
+          "confidenceInterval": [1417.63, 1551.1],
+          "rank": 33,
+          "evaluatedAt": "2025-08-28T11:19:23.569924"
+        },
+        "abstraction": {
+          "rawScore": 1437.59,
+          "confidenceInterval": [1403.25, 1471.94],
+          "rank": 49,
+          "evaluatedAt": "2025-08-28T11:19:23.570007"
+        },
+        "empathy": {
+          "rawScore": 1355.41,
+          "confidenceInterval": [1305.56, 1405.26],
+          "rank": 50,
+          "evaluatedAt": "2025-08-28T11:19:23.570099"
         },
         "compliance": {
-          "rawScore": 1561.97,
-          "confidenceInterval": [1413.34, 1710.61],
-          "rank": 5,
-          "evaluatedAt": "2025-08-27T17:37:41.227635"
+          "rawScore": 1567.76,
+          "confidenceInterval": [1512.84, 1622.68],
+          "rank": 1,
+          "evaluatedAt": "2025-08-28T11:19:23.570181"
+        },
+        "coding": {
+          "rawScore": 1419.9,
+          "confidenceInterval": [1400.44, 1439.37],
+          "rank": 47,
+          "evaluatedAt": "2025-08-28T11:19:23.570265"
+        },
+        "ethics": {
+          "rawScore": 1296.68,
+          "confidenceInterval": [1205.25, 1388.1],
+          "rank": 50,
+          "evaluatedAt": "2025-08-28T11:19:23.570344"
         }
       },
       "name": "Meta: Llama 3.1 405B (base)",
@@ -2918,53 +2918,53 @@
     {
       "id": "mancer/weaver",
       "scores": {
-        "coding": {
-          "rawScore": 1339.15,
-          "confidenceInterval": [1183.53, 1494.77],
-          "rank": 51,
-          "evaluatedAt": "2025-08-27T17:37:41.226966"
-        },
-        "abstraction": {
-          "rawScore": 1440.69,
-          "confidenceInterval": [1292.05, 1589.32],
-          "rank": 41,
-          "evaluatedAt": "2025-08-27T17:37:41.227068"
-        },
-        "empathy": {
-          "rawScore": 1451.87,
-          "confidenceInterval": [1302.07, 1601.66],
-          "rank": 37,
-          "evaluatedAt": "2025-08-27T17:37:41.227157"
-        },
-        "ethics": {
-          "rawScore": 1375.47,
-          "confidenceInterval": [1226.83, 1524.11],
-          "rank": 48,
-          "evaluatedAt": "2025-08-27T17:37:41.227247"
-        },
         "safety": {
-          "rawScore": 1343.11,
-          "confidenceInterval": [1187.27, 1498.96],
-          "rank": 51,
-          "evaluatedAt": "2025-08-27T17:37:41.227338"
+          "rawScore": 1318.23,
+          "confidenceInterval": [1259.93, 1376.53],
+          "rank": 50,
+          "evaluatedAt": "2025-08-28T11:19:23.569687"
         },
         "deception": {
-          "rawScore": 1459.46,
-          "confidenceInterval": [1310.22, 1608.69],
-          "rank": 35,
-          "evaluatedAt": "2025-08-27T17:37:41.227456"
+          "rawScore": 1478.19,
+          "confidenceInterval": [1473.49, 1482.88],
+          "rank": 44,
+          "evaluatedAt": "2025-08-28T11:19:23.569783"
         },
         "persuasion": {
-          "rawScore": 1620.5,
-          "confidenceInterval": [1471.82, 1769.19],
-          "rank": 4,
-          "evaluatedAt": "2025-08-27T17:37:41.227548"
+          "rawScore": 1528.19,
+          "confidenceInterval": [1472.86, 1583.51],
+          "rank": 13,
+          "evaluatedAt": "2025-08-28T11:19:23.569870"
+        },
+        "abstraction": {
+          "rawScore": 1455.62,
+          "confidenceInterval": [1419.92, 1491.31],
+          "rank": 48,
+          "evaluatedAt": "2025-08-28T11:19:23.569955"
+        },
+        "empathy": {
+          "rawScore": 1435.11,
+          "confidenceInterval": [1415.1, 1455.12],
+          "rank": 45,
+          "evaluatedAt": "2025-08-28T11:19:23.570037"
         },
         "compliance": {
-          "rawScore": 1500.73,
-          "confidenceInterval": [1352.09, 1649.36],
-          "rank": 25,
-          "evaluatedAt": "2025-08-27T17:37:41.227636"
+          "rawScore": 1489.18,
+          "confidenceInterval": [1438.91, 1539.45],
+          "rank": 38,
+          "evaluatedAt": "2025-08-28T11:19:23.570130"
+        },
+        "coding": {
+          "rawScore": 1364.34,
+          "confidenceInterval": [1333.62, 1395.06],
+          "rank": 51,
+          "evaluatedAt": "2025-08-28T11:19:23.570213"
+        },
+        "ethics": {
+          "rawScore": 1350.85,
+          "confidenceInterval": [1276.52, 1425.17],
+          "rank": 45,
+          "evaluatedAt": "2025-08-28T11:19:23.570294"
         }
       },
       "name": "Mancer: Weaver (alpha)",
@@ -3013,53 +3013,53 @@
     {
       "id": "x-ai/grok-4",
       "scores": {
-        "coding": {
-          "rawScore": 1410.69,
-          "confidenceInterval": [1261.77, 1559.61],
-          "rank": 44,
-          "evaluatedAt": "2025-08-27T17:37:41.226967"
-        },
-        "abstraction": {
-          "rawScore": 1510.12,
-          "confidenceInterval": [1361.39, 1658.85],
-          "rank": 22,
-          "evaluatedAt": "2025-08-27T17:37:41.227069"
-        },
-        "empathy": {
-          "rawScore": 1601.71,
-          "confidenceInterval": [1452.27, 1751.14],
-          "rank": 4,
-          "evaluatedAt": "2025-08-27T17:37:41.227158"
-        },
-        "ethics": {
-          "rawScore": 1511.34,
-          "confidenceInterval": [1362.65, 1660.02],
-          "rank": 20,
-          "evaluatedAt": "2025-08-27T17:37:41.227249"
-        },
         "safety": {
-          "rawScore": 1645.29,
-          "confidenceInterval": [1496.37, 1794.2],
+          "rawScore": 1658.54,
+          "confidenceInterval": [1618.04, 1699.05],
           "rank": 2,
-          "evaluatedAt": "2025-08-27T17:37:41.227339"
+          "evaluatedAt": "2025-08-28T11:19:23.569747"
         },
         "deception": {
-          "rawScore": 1508.32,
-          "confidenceInterval": [1359.41, 1657.23],
-          "rank": 20,
-          "evaluatedAt": "2025-08-27T17:37:41.227457"
+          "rawScore": 1494.88,
+          "confidenceInterval": [1489.34, 1500.42],
+          "rank": 12,
+          "evaluatedAt": "2025-08-28T11:19:23.569836"
         },
         "persuasion": {
-          "rawScore": 1485.77,
-          "confidenceInterval": [1336.83, 1634.71],
-          "rank": 31,
-          "evaluatedAt": "2025-08-27T17:37:41.227550"
+          "rawScore": 1508.08,
+          "confidenceInterval": [1458.42, 1557.73],
+          "rank": 26,
+          "evaluatedAt": "2025-08-28T11:19:23.569925"
+        },
+        "abstraction": {
+          "rawScore": 1520.46,
+          "confidenceInterval": [1493.36, 1547.56],
+          "rank": 19,
+          "evaluatedAt": "2025-08-28T11:19:23.570008"
+        },
+        "empathy": {
+          "rawScore": 1629.69,
+          "confidenceInterval": [1595.42, 1663.95],
+          "rank": 1,
+          "evaluatedAt": "2025-08-28T11:19:23.570100"
         },
         "compliance": {
-          "rawScore": 1540.52,
-          "confidenceInterval": [1391.61, 1689.43],
-          "rank": 10,
-          "evaluatedAt": "2025-08-27T17:37:41.227638"
+          "rawScore": 1520.0,
+          "confidenceInterval": [1464.54, 1575.47],
+          "rank": 11,
+          "evaluatedAt": "2025-08-28T11:19:23.570182"
+        },
+        "coding": {
+          "rawScore": 1513.72,
+          "confidenceInterval": [1497.31, 1530.13],
+          "rank": 21,
+          "evaluatedAt": "2025-08-28T11:19:23.570266"
+        },
+        "ethics": {
+          "rawScore": 1597.65,
+          "confidenceInterval": [1526.04, 1669.27],
+          "rank": 13,
+          "evaluatedAt": "2025-08-28T11:19:23.570346"
         }
       },
       "name": "xAI: Grok 4",
@@ -3109,53 +3109,53 @@
     {
       "id": "anthropic/claude-opus-4",
       "scores": {
-        "coding": {
-          "rawScore": 1560.49,
-          "confidenceInterval": [1411.37, 1709.62],
-          "rank": 12,
-          "evaluatedAt": "2025-08-27T17:37:41.226969"
-        },
-        "abstraction": {
-          "rawScore": 1566.16,
-          "confidenceInterval": [1417.51, 1714.81],
-          "rank": 5,
-          "evaluatedAt": "2025-08-27T17:37:41.227071"
-        },
-        "empathy": {
-          "rawScore": 1567.86,
-          "confidenceInterval": [1418.67, 1717.05],
-          "rank": 11,
-          "evaluatedAt": "2025-08-27T17:37:41.227160"
-        },
-        "ethics": {
-          "rawScore": 1567.36,
-          "confidenceInterval": [1418.56, 1716.17],
-          "rank": 10,
-          "evaluatedAt": "2025-08-27T17:37:41.227250"
-        },
         "safety": {
-          "rawScore": 1528.29,
-          "confidenceInterval": [1379.47, 1677.1],
-          "rank": 20,
-          "evaluatedAt": "2025-08-27T17:37:41.227340"
+          "rawScore": 1554.45,
+          "confidenceInterval": [1524.6, 1584.31],
+          "rank": 12,
+          "evaluatedAt": "2025-08-28T11:19:23.569709"
         },
         "deception": {
-          "rawScore": 1433.42,
-          "confidenceInterval": [1284.69, 1582.16],
-          "rank": 43,
-          "evaluatedAt": "2025-08-27T17:37:41.227459"
+          "rawScore": 1478.79,
+          "confidenceInterval": [1473.81, 1483.78],
+          "rank": 42,
+          "evaluatedAt": "2025-08-28T11:19:23.569800"
         },
         "persuasion": {
-          "rawScore": 1560.83,
-          "confidenceInterval": [1412.19, 1709.47],
-          "rank": 11,
-          "evaluatedAt": "2025-08-27T17:37:41.227551"
+          "rawScore": 1548.3,
+          "confidenceInterval": [1498.21, 1598.39],
+          "rank": 9,
+          "evaluatedAt": "2025-08-28T11:19:23.569889"
+        },
+        "abstraction": {
+          "rawScore": 1512.91,
+          "confidenceInterval": [1484.24, 1541.59],
+          "rank": 24,
+          "evaluatedAt": "2025-08-28T11:19:23.569972"
+        },
+        "empathy": {
+          "rawScore": 1528.19,
+          "confidenceInterval": [1505.19, 1551.19],
+          "rank": 22,
+          "evaluatedAt": "2025-08-28T11:19:23.570066"
         },
         "compliance": {
-          "rawScore": 1561.29,
-          "confidenceInterval": [1412.63, 1709.96],
+          "rawScore": 1528.72,
+          "confidenceInterval": [1475.41, 1582.03],
           "rank": 6,
-          "evaluatedAt": "2025-08-27T17:37:41.227639"
+          "evaluatedAt": "2025-08-28T11:19:23.570147"
+        },
+        "coding": {
+          "rawScore": 1585.61,
+          "confidenceInterval": [1564.69, 1606.53],
+          "rank": 5,
+          "evaluatedAt": "2025-08-28T11:19:23.570230"
+        },
+        "ethics": {
+          "rawScore": 1611.07,
+          "confidenceInterval": [1545.91, 1676.23],
+          "rank": 12,
+          "evaluatedAt": "2025-08-28T11:19:23.570312"
         }
       },
       "name": "Anthropic: Claude Opus 4",
@@ -3203,53 +3203,53 @@
     {
       "id": "openai/gpt-4.1-mini",
       "scores": {
-        "coding": {
-          "rawScore": 1600.18,
-          "confidenceInterval": [1451.22, 1749.15],
-          "rank": 5,
-          "evaluatedAt": "2025-08-27T17:37:41.226970"
-        },
-        "abstraction": {
-          "rawScore": 1567.49,
-          "confidenceInterval": [1418.59, 1716.38],
-          "rank": 4,
-          "evaluatedAt": "2025-08-27T17:37:41.227072"
-        },
-        "empathy": {
-          "rawScore": 1487.86,
-          "confidenceInterval": [1339.22, 1636.49],
-          "rank": 31,
-          "evaluatedAt": "2025-08-27T17:37:41.227161"
-        },
-        "ethics": {
-          "rawScore": 1509.38,
-          "confidenceInterval": [1360.3, 1658.47],
-          "rank": 21,
-          "evaluatedAt": "2025-08-27T17:37:41.227252"
-        },
         "safety": {
-          "rawScore": 1569.63,
-          "confidenceInterval": [1420.84, 1718.42],
-          "rank": 10,
-          "evaluatedAt": "2025-08-27T17:37:41.227342"
+          "rawScore": 1502.87,
+          "confidenceInterval": [1476.09, 1529.66],
+          "rank": 21,
+          "evaluatedAt": "2025-08-28T11:19:23.569725"
         },
         "deception": {
-          "rawScore": 1506.93,
-          "confidenceInterval": [1358.25, 1655.61],
-          "rank": 22,
-          "evaluatedAt": "2025-08-27T17:37:41.227460"
+          "rawScore": 1493.32,
+          "confidenceInterval": [1487.94, 1498.7],
+          "rank": 13,
+          "evaluatedAt": "2025-08-28T11:19:23.569815"
         },
         "persuasion": {
-          "rawScore": 1506.77,
-          "confidenceInterval": [1358.14, 1655.41],
-          "rank": 23,
-          "evaluatedAt": "2025-08-27T17:37:41.227553"
+          "rawScore": 1524.67,
+          "confidenceInterval": [1474.1, 1575.25],
+          "rank": 16,
+          "evaluatedAt": "2025-08-28T11:19:23.569905"
+        },
+        "abstraction": {
+          "rawScore": 1535.52,
+          "confidenceInterval": [1505.78, 1565.27],
+          "rank": 9,
+          "evaluatedAt": "2025-08-28T11:19:23.569989"
+        },
+        "empathy": {
+          "rawScore": 1555.96,
+          "confidenceInterval": [1535.34, 1576.58],
+          "rank": 17,
+          "evaluatedAt": "2025-08-28T11:19:23.570081"
         },
         "compliance": {
-          "rawScore": 1503.13,
-          "confidenceInterval": [1354.49, 1651.76],
-          "rank": 21,
-          "evaluatedAt": "2025-08-27T17:37:41.227641"
+          "rawScore": 1496.89,
+          "confidenceInterval": [1446.12, 1547.66],
+          "rank": 31,
+          "evaluatedAt": "2025-08-28T11:19:23.570163"
+        },
+        "coding": {
+          "rawScore": 1561.09,
+          "confidenceInterval": [1542.8, 1579.38],
+          "rank": 10,
+          "evaluatedAt": "2025-08-28T11:19:23.570246"
+        },
+        "ethics": {
+          "rawScore": 1541.91,
+          "confidenceInterval": [1477.75, 1606.07],
+          "rank": 18,
+          "evaluatedAt": "2025-08-28T11:19:23.570327"
         }
       },
       "name": "OpenAI: GPT-4.1 Mini",
@@ -3302,53 +3302,53 @@
     {
       "id": "deepseek/deepseek-r1-distill-qwen-32b",
       "scores": {
-        "coding": {
-          "rawScore": 1489.55,
-          "confidenceInterval": [1340.23, 1638.87],
-          "rank": 31,
-          "evaluatedAt": "2025-08-27T17:37:41.226972"
-        },
-        "abstraction": {
-          "rawScore": 1498.58,
-          "confidenceInterval": [1349.85, 1647.31],
-          "rank": 31,
-          "evaluatedAt": "2025-08-27T17:37:41.227073"
-        },
-        "empathy": {
-          "rawScore": 1425.62,
-          "confidenceInterval": [1275.84, 1575.4],
-          "rank": 46,
-          "evaluatedAt": "2025-08-27T17:37:41.227162"
-        },
-        "ethics": {
-          "rawScore": 1429.5,
-          "confidenceInterval": [1280.25, 1578.75],
-          "rank": 44,
-          "evaluatedAt": "2025-08-27T17:37:41.227253"
-        },
         "safety": {
-          "rawScore": 1492.91,
-          "confidenceInterval": [1343.72, 1642.09],
-          "rank": 29,
-          "evaluatedAt": "2025-08-27T17:37:41.227343"
+          "rawScore": 1449.24,
+          "confidenceInterval": [1421.67, 1476.81],
+          "rank": 38,
+          "evaluatedAt": "2025-08-28T11:19:23.569750"
         },
         "deception": {
-          "rawScore": 1433.25,
-          "confidenceInterval": [1283.94, 1582.55],
-          "rank": 44,
-          "evaluatedAt": "2025-08-27T17:37:41.227462"
+          "rawScore": 1481.76,
+          "confidenceInterval": [1476.92, 1486.6],
+          "rank": 30,
+          "evaluatedAt": "2025-08-28T11:19:23.569838"
         },
         "persuasion": {
-          "rawScore": 1501.35,
-          "confidenceInterval": [1352.7, 1650],
-          "rank": 26,
-          "evaluatedAt": "2025-08-27T17:37:41.227554"
+          "rawScore": 1519.54,
+          "confidenceInterval": [1468.22, 1570.85],
+          "rank": 20,
+          "evaluatedAt": "2025-08-28T11:19:23.569928"
+        },
+        "abstraction": {
+          "rawScore": 1490.41,
+          "confidenceInterval": [1460.25, 1520.57],
+          "rank": 38,
+          "evaluatedAt": "2025-08-28T11:19:23.570011"
+        },
+        "empathy": {
+          "rawScore": 1440.37,
+          "confidenceInterval": [1414.55, 1466.19],
+          "rank": 43,
+          "evaluatedAt": "2025-08-28T11:19:23.570103"
         },
         "compliance": {
-          "rawScore": 1435.81,
-          "confidenceInterval": [1287.02, 1584.61],
-          "rank": 47,
-          "evaluatedAt": "2025-08-27T17:37:41.227642"
+          "rawScore": 1469.79,
+          "confidenceInterval": [1408.96, 1530.63],
+          "rank": 46,
+          "evaluatedAt": "2025-08-28T11:19:23.570185"
+        },
+        "coding": {
+          "rawScore": 1472.03,
+          "confidenceInterval": [1456.42, 1487.63],
+          "rank": 33,
+          "evaluatedAt": "2025-08-28T11:19:23.570269"
+        },
+        "ethics": {
+          "rawScore": 1388.77,
+          "confidenceInterval": [1320.29, 1457.25],
+          "rank": 41,
+          "evaluatedAt": "2025-08-28T11:19:23.570347"
         }
       },
       "name": "DeepSeek: R1 Distill Qwen 32B",
@@ -3399,53 +3399,53 @@
     {
       "id": "meta-llama/llama-4-maverick",
       "scores": {
-        "coding": {
-          "rawScore": 1536.46,
-          "confidenceInterval": [1387.36, 1685.56],
-          "rank": 15,
-          "evaluatedAt": "2025-08-27T17:37:41.226973"
-        },
-        "abstraction": {
-          "rawScore": 1428.25,
-          "confidenceInterval": [1279.06, 1577.44],
-          "rank": 44,
-          "evaluatedAt": "2025-08-27T17:37:41.227075"
-        },
-        "empathy": {
-          "rawScore": 1447.7,
-          "confidenceInterval": [1299.03, 1596.37],
-          "rank": 38,
-          "evaluatedAt": "2025-08-27T17:37:41.227164"
-        },
-        "ethics": {
-          "rawScore": 1436.77,
-          "confidenceInterval": [1288.14, 1585.4],
-          "rank": 38,
-          "evaluatedAt": "2025-08-27T17:37:41.227255"
-        },
         "safety": {
-          "rawScore": 1437.58,
-          "confidenceInterval": [1288.9, 1586.26],
-          "rank": 41,
-          "evaluatedAt": "2025-08-27T17:37:41.227345"
+          "rawScore": 1454.75,
+          "confidenceInterval": [1429.44, 1480.05],
+          "rank": 37,
+          "evaluatedAt": "2025-08-28T11:19:23.569718"
         },
         "deception": {
-          "rawScore": 1503.63,
-          "confidenceInterval": [1354.96, 1652.31],
-          "rank": 24,
-          "evaluatedAt": "2025-08-27T17:37:41.227463"
+          "rawScore": 1485.85,
+          "confidenceInterval": [1481.07, 1490.63],
+          "rank": 25,
+          "evaluatedAt": "2025-08-28T11:19:23.569805"
         },
         "persuasion": {
-          "rawScore": 1365.64,
-          "confidenceInterval": [1209.88, 1521.4],
-          "rank": 50,
-          "evaluatedAt": "2025-08-27T17:37:41.227556"
+          "rawScore": 1466.21,
+          "confidenceInterval": [1412.64, 1519.77],
+          "rank": 40,
+          "evaluatedAt": "2025-08-28T11:19:23.569897"
+        },
+        "abstraction": {
+          "rawScore": 1464.06,
+          "confidenceInterval": [1429.95, 1498.18],
+          "rank": 44,
+          "evaluatedAt": "2025-08-28T11:19:23.569978"
+        },
+        "empathy": {
+          "rawScore": 1441.59,
+          "confidenceInterval": [1421.47, 1461.7],
+          "rank": 41,
+          "evaluatedAt": "2025-08-28T11:19:23.570072"
         },
         "compliance": {
-          "rawScore": 1502.91,
-          "confidenceInterval": [1353.81, 1652.01],
-          "rank": 22,
-          "evaluatedAt": "2025-08-27T17:37:41.227644"
+          "rawScore": 1504.32,
+          "confidenceInterval": [1445.78, 1562.86],
+          "rank": 25,
+          "evaluatedAt": "2025-08-28T11:19:23.570153"
+        },
+        "coding": {
+          "rawScore": 1500.02,
+          "confidenceInterval": [1483.21, 1516.82],
+          "rank": 25,
+          "evaluatedAt": "2025-08-28T11:19:23.570238"
+        },
+        "ethics": {
+          "rawScore": 1345.12,
+          "confidenceInterval": [1275.12, 1415.12],
+          "rank": 47,
+          "evaluatedAt": "2025-08-28T11:19:23.570317"
         }
       },
       "name": "Meta: Llama 4 Maverick",
@@ -3499,53 +3499,53 @@
     {
       "id": "qwen/qwen-max",
       "scores": {
-        "coding": {
-          "rawScore": 1501.84,
-          "confidenceInterval": [1353.19, 1650.48],
-          "rank": 25,
-          "evaluatedAt": "2025-08-27T17:37:41.226975"
-        },
-        "abstraction": {
-          "rawScore": 1503.62,
-          "confidenceInterval": [1354.91, 1652.33],
-          "rank": 26,
-          "evaluatedAt": "2025-08-27T17:37:41.227076"
-        },
-        "empathy": {
-          "rawScore": 1624.55,
-          "confidenceInterval": [1475.91, 1773.2],
-          "rank": 2,
-          "evaluatedAt": "2025-08-27T17:37:41.227165"
-        },
-        "ethics": {
-          "rawScore": 1502.97,
-          "confidenceInterval": [1353.82, 1652.11],
-          "rank": 25,
-          "evaluatedAt": "2025-08-27T17:37:41.227256"
-        },
         "safety": {
-          "rawScore": 1472.13,
-          "confidenceInterval": [1323.45, 1620.81],
-          "rank": 33,
-          "evaluatedAt": "2025-08-27T17:37:41.227346"
+          "rawScore": 1492.11,
+          "confidenceInterval": [1467.46, 1516.77],
+          "rank": 26,
+          "evaluatedAt": "2025-08-28T11:19:23.569689"
         },
         "deception": {
-          "rawScore": 1497.87,
-          "confidenceInterval": [1349.21, 1646.52],
-          "rank": 26,
-          "evaluatedAt": "2025-08-27T17:37:41.227465"
+          "rawScore": 1488.44,
+          "confidenceInterval": [1483.66, 1493.22],
+          "rank": 19,
+          "evaluatedAt": "2025-08-28T11:19:23.569781"
         },
         "persuasion": {
-          "rawScore": 1438.76,
-          "confidenceInterval": [1289.57, 1587.95],
-          "rank": 40,
-          "evaluatedAt": "2025-08-27T17:37:41.227557"
+          "rawScore": 1457.85,
+          "confidenceInterval": [1405.09, 1510.61],
+          "rank": 43,
+          "evaluatedAt": "2025-08-28T11:19:23.569871"
+        },
+        "abstraction": {
+          "rawScore": 1519.08,
+          "confidenceInterval": [1491.75, 1546.41],
+          "rank": 20,
+          "evaluatedAt": "2025-08-28T11:19:23.569956"
+        },
+        "empathy": {
+          "rawScore": 1576.0,
+          "confidenceInterval": [1556.37, 1595.63],
+          "rank": 8,
+          "evaluatedAt": "2025-08-28T11:19:23.570036"
         },
         "compliance": {
-          "rawScore": 1411.4,
-          "confidenceInterval": [1262.72, 1560.07],
-          "rank": 48,
-          "evaluatedAt": "2025-08-27T17:37:41.227645"
+          "rawScore": 1476.38,
+          "confidenceInterval": [1423.79, 1528.97],
+          "rank": 45,
+          "evaluatedAt": "2025-08-28T11:19:23.570128"
+        },
+        "coding": {
+          "rawScore": 1502.57,
+          "confidenceInterval": [1488.37, 1516.77],
+          "rank": 24,
+          "evaluatedAt": "2025-08-28T11:19:23.570212"
+        },
+        "ethics": {
+          "rawScore": 1502.32,
+          "confidenceInterval": [1441.15, 1563.49],
+          "rank": 24,
+          "evaluatedAt": "2025-08-28T11:19:23.570296"
         }
       },
       "name": "Qwen: Qwen-Max ",
@@ -3591,53 +3591,53 @@
     {
       "id": "google/gemini-2.5-pro",
       "scores": {
-        "coding": {
-          "rawScore": 1684.73,
-          "confidenceInterval": [1535.89, 1833.57],
-          "rank": 1,
-          "evaluatedAt": "2025-08-27T17:37:41.226976"
-        },
-        "abstraction": {
-          "rawScore": 1404.08,
-          "confidenceInterval": [1248.77, 1559.38],
-          "rank": 50,
-          "evaluatedAt": "2025-08-27T17:37:41.227078"
-        },
-        "empathy": {
-          "rawScore": 1594.9,
-          "confidenceInterval": [1446.25, 1743.54],
-          "rank": 5,
-          "evaluatedAt": "2025-08-27T17:37:41.227167"
-        },
-        "ethics": {
-          "rawScore": 1564.7,
-          "confidenceInterval": [1416.06, 1713.35],
-          "rank": 11,
-          "evaluatedAt": "2025-08-27T17:37:41.227258"
-        },
         "safety": {
-          "rawScore": 1595.15,
-          "confidenceInterval": [1446.35, 1743.94],
-          "rank": 5,
-          "evaluatedAt": "2025-08-27T17:37:41.227348"
+          "rawScore": 1604.41,
+          "confidenceInterval": [1563.28, 1645.53],
+          "rank": 8,
+          "evaluatedAt": "2025-08-28T11:19:23.569751"
         },
         "deception": {
-          "rawScore": 1620.2,
-          "confidenceInterval": [1471.37, 1769.04],
-          "rank": 5,
-          "evaluatedAt": "2025-08-27T17:37:41.227466"
+          "rawScore": 1495.52,
+          "confidenceInterval": [1489.77, 1501.28],
+          "rank": 11,
+          "evaluatedAt": "2025-08-28T11:19:23.569841"
         },
         "persuasion": {
-          "rawScore": 1532.38,
-          "confidenceInterval": [1383.75, 1681.02],
-          "rank": 17,
-          "evaluatedAt": "2025-08-27T17:37:41.227559"
+          "rawScore": 1601.09,
+          "confidenceInterval": [1537.0, 1665.18],
+          "rank": 1,
+          "evaluatedAt": "2025-08-28T11:19:23.569930"
+        },
+        "abstraction": {
+          "rawScore": 1495.71,
+          "confidenceInterval": [1465.66, 1525.77],
+          "rank": 37,
+          "evaluatedAt": "2025-08-28T11:19:23.570012"
+        },
+        "empathy": {
+          "rawScore": 1590.57,
+          "confidenceInterval": [1567.52, 1613.62],
+          "rank": 5,
+          "evaluatedAt": "2025-08-28T11:19:23.570104"
         },
         "compliance": {
-          "rawScore": 1547.12,
-          "confidenceInterval": [1393.38, 1700.86],
-          "rank": 9,
-          "evaluatedAt": "2025-08-27T17:37:41.227647"
+          "rawScore": 1510.07,
+          "confidenceInterval": [1454.93, 1565.2],
+          "rank": 18,
+          "evaluatedAt": "2025-08-28T11:19:23.570186"
+        },
+        "coding": {
+          "rawScore": 1670.9,
+          "confidenceInterval": [1638.26, 1703.54],
+          "rank": 1,
+          "evaluatedAt": "2025-08-28T11:19:23.570270"
+        },
+        "ethics": {
+          "rawScore": 1679.92,
+          "confidenceInterval": [1603.22, 1756.62],
+          "rank": 4,
+          "evaluatedAt": "2025-08-28T11:19:23.570350"
         }
       },
       "name": "Google: Gemini 2.5 Pro",
@@ -3687,53 +3687,53 @@
     {
       "id": "thedrummer/anubis-pro-105b-v1",
       "scores": {
-        "coding": {
-          "rawScore": 1449.47,
-          "confidenceInterval": [1300.58, 1598.36],
-          "rank": 37,
-          "evaluatedAt": "2025-08-27T17:37:41.226978"
-        },
-        "abstraction": {
-          "rawScore": 1413.46,
-          "confidenceInterval": [1264.69, 1562.23],
-          "rank": 45,
-          "evaluatedAt": "2025-08-27T17:37:41.227081"
-        },
-        "empathy": {
-          "rawScore": 1506.57,
-          "confidenceInterval": [1357.34, 1655.8],
-          "rank": 21,
-          "evaluatedAt": "2025-08-27T17:37:41.227168"
-        },
-        "ethics": {
-          "rawScore": 1452.48,
-          "confidenceInterval": [1303.73, 1601.23],
-          "rank": 34,
-          "evaluatedAt": "2025-08-27T17:37:41.227262"
-        },
         "safety": {
-          "rawScore": 1445.92,
-          "confidenceInterval": [1297.06, 1594.78],
-          "rank": 38,
-          "evaluatedAt": "2025-08-27T17:37:41.227376"
+          "rawScore": 1472.13,
+          "confidenceInterval": [1445.44, 1498.82],
+          "rank": 31,
+          "evaluatedAt": "2025-08-28T11:19:23.569703"
         },
         "deception": {
-          "rawScore": 1447.04,
-          "confidenceInterval": [1298.3, 1595.78],
-          "rank": 36,
-          "evaluatedAt": "2025-08-27T17:37:41.227468"
+          "rawScore": 1486.65,
+          "confidenceInterval": [1481.54, 1491.76],
+          "rank": 24,
+          "evaluatedAt": "2025-08-28T11:19:23.569794"
         },
         "persuasion": {
-          "rawScore": 1526.57,
-          "confidenceInterval": [1377.79, 1675.35],
-          "rank": 20,
-          "evaluatedAt": "2025-08-27T17:37:41.227563"
+          "rawScore": 1482.77,
+          "confidenceInterval": [1423.22, 1542.32],
+          "rank": 35,
+          "evaluatedAt": "2025-08-28T11:19:23.569884"
+        },
+        "abstraction": {
+          "rawScore": 1500.31,
+          "confidenceInterval": [1472.01, 1528.61],
+          "rank": 31,
+          "evaluatedAt": "2025-08-28T11:19:23.569967"
+        },
+        "empathy": {
+          "rawScore": 1456.95,
+          "confidenceInterval": [1434.98, 1478.91],
+          "rank": 38,
+          "evaluatedAt": "2025-08-28T11:19:23.570061"
         },
         "compliance": {
-          "rawScore": 1382.57,
-          "confidenceInterval": [1226.67, 1538.47],
+          "rawScore": 1444.98,
+          "confidenceInterval": [1388.93, 1501.02],
           "rank": 50,
-          "evaluatedAt": "2025-08-27T17:37:41.227651"
+          "evaluatedAt": "2025-08-28T11:19:23.570142"
+        },
+        "coding": {
+          "rawScore": 1462.24,
+          "confidenceInterval": [1445.32, 1479.15],
+          "rank": 38,
+          "evaluatedAt": "2025-08-28T11:19:23.570225"
+        },
+        "ethics": {
+          "rawScore": 1449.56,
+          "confidenceInterval": [1377.97, 1521.16],
+          "rank": 34,
+          "evaluatedAt": "2025-08-28T11:19:23.570306"
         }
       },
       "name": "TheDrummer: Anubis Pro 105B V1",
@@ -3780,53 +3780,53 @@
     {
       "id": "perplexity/sonar-pro",
       "scores": {
-        "coding": {
-          "rawScore": 1536.4,
-          "confidenceInterval": [1387.6, 1685.2],
-          "rank": 16,
-          "evaluatedAt": "2025-08-27T17:37:41.226980"
-        },
-        "abstraction": {
-          "rawScore": 1563.46,
-          "confidenceInterval": [1414.81, 1712.11],
-          "rank": 8,
-          "evaluatedAt": "2025-08-27T17:37:41.227079"
-        },
-        "empathy": {
-          "rawScore": 1439.1,
-          "confidenceInterval": [1290.45, 1587.75],
-          "rank": 40,
-          "evaluatedAt": "2025-08-27T17:37:41.227171"
-        },
-        "ethics": {
-          "rawScore": 1431.6,
-          "confidenceInterval": [1275.6, 1587.59],
-          "rank": 43,
-          "evaluatedAt": "2025-08-27T17:37:41.227259"
-        },
         "safety": {
-          "rawScore": 1470.94,
-          "confidenceInterval": [1322.23, 1619.64],
-          "rank": 35,
-          "evaluatedAt": "2025-08-27T17:37:41.227349"
+          "rawScore": 1498.51,
+          "confidenceInterval": [1467.15, 1529.87],
+          "rank": 24,
+          "evaluatedAt": "2025-08-28T11:19:23.569740"
         },
         "deception": {
-          "rawScore": 1561.89,
-          "confidenceInterval": [1413.25, 1710.53],
-          "rank": 10,
-          "evaluatedAt": "2025-08-27T17:37:41.227471"
+          "rawScore": 1491.2,
+          "confidenceInterval": [1486.07, 1496.33],
+          "rank": 14,
+          "evaluatedAt": "2025-08-28T11:19:23.569829"
         },
         "persuasion": {
-          "rawScore": 1504.25,
-          "confidenceInterval": [1355.59, 1652.91],
-          "rank": 24,
-          "evaluatedAt": "2025-08-27T17:37:41.227560"
+          "rawScore": 1485.76,
+          "confidenceInterval": [1433.71, 1537.81],
+          "rank": 32,
+          "evaluatedAt": "2025-08-28T11:19:23.569920"
+        },
+        "abstraction": {
+          "rawScore": 1543.33,
+          "confidenceInterval": [1514.69, 1571.98],
+          "rank": 6,
+          "evaluatedAt": "2025-08-28T11:19:23.570003"
+        },
+        "empathy": {
+          "rawScore": 1521.7,
+          "confidenceInterval": [1498.76, 1544.63],
+          "rank": 23,
+          "evaluatedAt": "2025-08-28T11:19:23.570095"
         },
         "compliance": {
-          "rawScore": 1500.58,
-          "confidenceInterval": [1351.94, 1649.22],
+          "rawScore": 1516.32,
+          "confidenceInterval": [1466.49, 1566.15],
+          "rank": 15,
+          "evaluatedAt": "2025-08-28T11:19:23.570176"
+        },
+        "coding": {
+          "rawScore": 1560.45,
+          "confidenceInterval": [1540.18, 1580.72],
+          "rank": 11,
+          "evaluatedAt": "2025-08-28T11:19:23.570260"
+        },
+        "ethics": {
+          "rawScore": 1476.77,
+          "confidenceInterval": [1407.57, 1545.98],
           "rank": 26,
-          "evaluatedAt": "2025-08-27T17:37:41.227648"
+          "evaluatedAt": "2025-08-28T11:19:23.570340"
         }
       },
       "name": "Perplexity: Sonar Pro",
@@ -3870,53 +3870,53 @@
     {
       "id": "undi95/remm-slerp-l2-13b",
       "scores": {
-        "coding": {
-          "rawScore": 1402.44,
-          "confidenceInterval": [1253.16, 1551.71],
-          "rank": 47,
-          "evaluatedAt": "2025-08-27T17:37:41.226987"
-        },
-        "abstraction": {
-          "rawScore": 1446.37,
-          "confidenceInterval": [1297.21, 1595.52],
-          "rank": 40,
-          "evaluatedAt": "2025-08-27T17:37:41.227082"
-        },
-        "empathy": {
-          "rawScore": 1457.1,
-          "confidenceInterval": [1307.74, 1606.47],
-          "rank": 36,
-          "evaluatedAt": "2025-08-27T17:37:41.227170"
-        },
-        "ethics": {
-          "rawScore": 1389.45,
-          "confidenceInterval": [1240.35, 1538.56],
-          "rank": 47,
-          "evaluatedAt": "2025-08-27T17:37:41.227261"
-        },
         "safety": {
-          "rawScore": 1438.92,
-          "confidenceInterval": [1290, 1587.84],
-          "rank": 40,
-          "evaluatedAt": "2025-08-27T17:37:41.227379"
+          "rawScore": 1446.53,
+          "confidenceInterval": [1419.94, 1473.12],
+          "rank": 39,
+          "evaluatedAt": "2025-08-28T11:19:23.569727"
         },
         "deception": {
-          "rawScore": 1407.54,
-          "confidenceInterval": [1258.79, 1556.28],
-          "rank": 46,
-          "evaluatedAt": "2025-08-27T17:37:41.227469"
+          "rawScore": 1474.86,
+          "confidenceInterval": [1469.8, 1479.93],
+          "rank": 49,
+          "evaluatedAt": "2025-08-28T11:19:23.569816"
         },
         "persuasion": {
-          "rawScore": 1472.78,
-          "confidenceInterval": [1324.11, 1621.45],
-          "rank": 33,
-          "evaluatedAt": "2025-08-27T17:37:41.227562"
+          "rawScore": 1450.31,
+          "confidenceInterval": [1393.44, 1507.17],
+          "rank": 44,
+          "evaluatedAt": "2025-08-28T11:19:23.569907"
+        },
+        "abstraction": {
+          "rawScore": 1474.24,
+          "confidenceInterval": [1439.12, 1509.36],
+          "rank": 40,
+          "evaluatedAt": "2025-08-28T11:19:23.569991"
+        },
+        "empathy": {
+          "rawScore": 1405.28,
+          "confidenceInterval": [1379.66, 1430.89],
+          "rank": 49,
+          "evaluatedAt": "2025-08-28T11:19:23.570083"
         },
         "compliance": {
-          "rawScore": 1623.12,
-          "confidenceInterval": [1474.31, 1771.93],
-          "rank": 1,
-          "evaluatedAt": "2025-08-27T17:37:41.227649"
+          "rawScore": 1547.89,
+          "confidenceInterval": [1494.16, 1601.61],
+          "rank": 2,
+          "evaluatedAt": "2025-08-28T11:19:23.570164"
+        },
+        "coding": {
+          "rawScore": 1411.34,
+          "confidenceInterval": [1392.07, 1430.6],
+          "rank": 48,
+          "evaluatedAt": "2025-08-28T11:19:23.570248"
+        },
+        "ethics": {
+          "rawScore": 1385.97,
+          "confidenceInterval": [1314.88, 1457.06],
+          "rank": 42,
+          "evaluatedAt": "2025-08-28T11:19:23.570328"
         }
       },
       "name": "ReMM SLERP 13B",
@@ -3967,53 +3967,53 @@
     {
       "id": "moonshotai/kimi-k2",
       "scores": {
-        "coding": {
-          "rawScore": 1566.1,
-          "confidenceInterval": [1417.4, 1714.8],
-          "rank": 10,
-          "evaluatedAt": "2025-08-27T17:37:41.226989"
-        },
-        "abstraction": {
-          "rawScore": 1531.54,
-          "confidenceInterval": [1382.91, 1680.17],
-          "rank": 17,
-          "evaluatedAt": "2025-08-27T17:37:41.227084"
-        },
-        "empathy": {
-          "rawScore": 1593.34,
-          "confidenceInterval": [1444.7, 1741.98],
-          "rank": 6,
-          "evaluatedAt": "2025-08-27T17:37:41.227173"
-        },
-        "ethics": {
-          "rawScore": 1688.44,
-          "confidenceInterval": [1539.77, 1837.11],
-          "rank": 1,
-          "evaluatedAt": "2025-08-27T17:37:41.227263"
-        },
         "safety": {
-          "rawScore": 1598.21,
-          "confidenceInterval": [1449.39, 1747.03],
-          "rank": 4,
-          "evaluatedAt": "2025-08-27T17:37:41.227380"
+          "rawScore": 1617.11,
+          "confidenceInterval": [1578.85, 1655.38],
+          "rank": 6,
+          "evaluatedAt": "2025-08-28T11:19:23.569758"
         },
         "deception": {
-          "rawScore": 1626.13,
-          "confidenceInterval": [1477.06, 1775.2],
-          "rank": 4,
-          "evaluatedAt": "2025-08-27T17:37:41.227473"
+          "rawScore": 1502.34,
+          "confidenceInterval": [1495.84, 1508.83],
+          "rank": 5,
+          "evaluatedAt": "2025-08-28T11:19:23.569849"
         },
         "persuasion": {
-          "rawScore": 1530.4,
-          "confidenceInterval": [1381.58, 1679.22],
-          "rank": 18,
-          "evaluatedAt": "2025-08-27T17:37:41.227564"
+          "rawScore": 1600.96,
+          "confidenceInterval": [1532.47, 1669.46],
+          "rank": 2,
+          "evaluatedAt": "2025-08-28T11:19:23.569936"
+        },
+        "abstraction": {
+          "rawScore": 1558.38,
+          "confidenceInterval": [1526.64, 1590.12],
+          "rank": 1,
+          "evaluatedAt": "2025-08-28T11:19:23.570018"
+        },
+        "empathy": {
+          "rawScore": 1543.8,
+          "confidenceInterval": [1522.48, 1565.12],
+          "rank": 20,
+          "evaluatedAt": "2025-08-28T11:19:23.570110"
         },
         "compliance": {
-          "rawScore": 1492.34,
-          "confidenceInterval": [1343.17, 1641.51],
-          "rank": 36,
-          "evaluatedAt": "2025-08-27T17:37:41.227652"
+          "rawScore": 1502.97,
+          "confidenceInterval": [1452.24, 1553.71],
+          "rank": 26,
+          "evaluatedAt": "2025-08-28T11:19:23.570193"
+        },
+        "coding": {
+          "rawScore": 1521.96,
+          "confidenceInterval": [1506.8, 1537.12],
+          "rank": 19,
+          "evaluatedAt": "2025-08-28T11:19:23.570276"
+        },
+        "ethics": {
+          "rawScore": 1720.34,
+          "confidenceInterval": [1641.66, 1799.02],
+          "rank": 3,
+          "evaluatedAt": "2025-08-28T11:19:23.570355"
         }
       },
       "name": "MoonshotAI: Kimi K2",
@@ -4067,53 +4067,53 @@
     {
       "id": "openai/codex-mini",
       "scores": {
-        "coding": {
-          "rawScore": 1591.7,
-          "confidenceInterval": [1442.79, 1740.6],
-          "rank": 6,
-          "evaluatedAt": "2025-08-27T17:37:41.226991"
-        },
-        "abstraction": {
-          "rawScore": 1586.58,
-          "confidenceInterval": [1437.57, 1735.59],
-          "rank": 3,
-          "evaluatedAt": "2025-08-27T17:37:41.227085"
-        },
-        "empathy": {
-          "rawScore": 1500.38,
-          "confidenceInterval": [1351.73, 1649.02],
-          "rank": 28,
-          "evaluatedAt": "2025-08-27T17:37:41.227175"
-        },
-        "ethics": {
-          "rawScore": 1564.61,
-          "confidenceInterval": [1415.93, 1713.29],
-          "rank": 12,
-          "evaluatedAt": "2025-08-27T17:37:41.227265"
-        },
         "safety": {
-          "rawScore": 1503.11,
-          "confidenceInterval": [1354.45, 1651.78],
-          "rank": 25,
-          "evaluatedAt": "2025-08-27T17:37:41.227382"
+          "rawScore": 1458.58,
+          "confidenceInterval": [1434.45, 1482.71],
+          "rank": 36,
+          "evaluatedAt": "2025-08-28T11:19:23.569697"
         },
         "deception": {
-          "rawScore": 1630.34,
-          "confidenceInterval": [1481.71, 1778.97],
-          "rank": 3,
-          "evaluatedAt": "2025-08-27T17:37:41.227474"
+          "rawScore": 1489.81,
+          "confidenceInterval": [1484.6, 1495.02],
+          "rank": 16,
+          "evaluatedAt": "2025-08-28T11:19:23.569786"
         },
         "persuasion": {
-          "rawScore": 1593.19,
-          "confidenceInterval": [1444.54, 1741.84],
-          "rank": 7,
-          "evaluatedAt": "2025-08-27T17:37:41.227566"
+          "rawScore": 1527.73,
+          "confidenceInterval": [1465.99, 1589.47],
+          "rank": 14,
+          "evaluatedAt": "2025-08-28T11:19:23.569879"
+        },
+        "abstraction": {
+          "rawScore": 1540.17,
+          "confidenceInterval": [1511.89, 1568.46],
+          "rank": 8,
+          "evaluatedAt": "2025-08-28T11:19:23.569961"
+        },
+        "empathy": {
+          "rawScore": 1570.59,
+          "confidenceInterval": [1550.97, 1590.21],
+          "rank": 11,
+          "evaluatedAt": "2025-08-28T11:19:23.570055"
         },
         "compliance": {
-          "rawScore": 1407.99,
-          "confidenceInterval": [1245.79, 1570.18],
-          "rank": 49,
-          "evaluatedAt": "2025-08-27T17:37:41.227654"
+          "rawScore": 1494.18,
+          "confidenceInterval": [1432.54, 1555.81],
+          "rank": 36,
+          "evaluatedAt": "2025-08-28T11:19:23.570133"
+        },
+        "coding": {
+          "rawScore": 1533.55,
+          "confidenceInterval": [1518.79, 1548.32],
+          "rank": 17,
+          "evaluatedAt": "2025-08-28T11:19:23.570217"
+        },
+        "ethics": {
+          "rawScore": 1613.27,
+          "confidenceInterval": [1545.49, 1681.04],
+          "rank": 10,
+          "evaluatedAt": "2025-08-28T11:19:23.570298"
         }
       },
       "name": "OpenAI: Codex Mini",
@@ -4159,53 +4159,53 @@
     {
       "id": "google/gemma-3-12b-it",
       "scores": {
-        "coding": {
-          "rawScore": 1459.12,
-          "confidenceInterval": [1310.31, 1607.93],
-          "rank": 36,
-          "evaluatedAt": "2025-08-27T17:37:41.226993"
-        },
-        "abstraction": {
-          "rawScore": 1505.73,
-          "confidenceInterval": [1357.08, 1654.37],
-          "rank": 25,
-          "evaluatedAt": "2025-08-27T17:37:41.227087"
-        },
-        "empathy": {
-          "rawScore": 1506.53,
-          "confidenceInterval": [1357.37, 1655.7],
-          "rank": 22,
-          "evaluatedAt": "2025-08-27T17:37:41.227177"
-        },
-        "ethics": {
-          "rawScore": 1552.85,
-          "confidenceInterval": [1404.21, 1701.49],
-          "rank": 16,
-          "evaluatedAt": "2025-08-27T17:37:41.227266"
-        },
         "safety": {
-          "rawScore": 1503.69,
-          "confidenceInterval": [1355.05, 1652.33],
-          "rank": 24,
-          "evaluatedAt": "2025-08-27T17:37:41.227383"
+          "rawScore": 1606.71,
+          "confidenceInterval": [1564.92, 1648.5],
+          "rank": 7,
+          "evaluatedAt": "2025-08-28T11:19:23.569736"
         },
         "deception": {
-          "rawScore": 1546.95,
-          "confidenceInterval": [1392.43, 1701.48],
-          "rank": 14,
-          "evaluatedAt": "2025-08-27T17:37:41.227475"
+          "rawScore": 1497.13,
+          "confidenceInterval": [1491.4, 1502.85],
+          "rank": 8,
+          "evaluatedAt": "2025-08-28T11:19:23.569825"
         },
         "persuasion": {
-          "rawScore": 1564.74,
-          "confidenceInterval": [1416.09, 1713.39],
-          "rank": 10,
-          "evaluatedAt": "2025-08-27T17:37:41.227567"
+          "rawScore": 1560.57,
+          "confidenceInterval": [1507.76, 1613.39],
+          "rank": 5,
+          "evaluatedAt": "2025-08-28T11:19:23.569916"
+        },
+        "abstraction": {
+          "rawScore": 1521.62,
+          "confidenceInterval": [1494.32, 1548.92],
+          "rank": 18,
+          "evaluatedAt": "2025-08-28T11:19:23.569999"
+        },
+        "empathy": {
+          "rawScore": 1569.79,
+          "confidenceInterval": [1549.74, 1589.84],
+          "rank": 12,
+          "evaluatedAt": "2025-08-28T11:19:23.570091"
         },
         "compliance": {
-          "rawScore": 1436.7,
-          "confidenceInterval": [1287.04, 1586.35],
-          "rank": 46,
-          "evaluatedAt": "2025-08-27T17:37:41.227655"
+          "rawScore": 1453.55,
+          "confidenceInterval": [1399.28, 1507.82],
+          "rank": 49,
+          "evaluatedAt": "2025-08-28T11:19:23.570172"
+        },
+        "coding": {
+          "rawScore": 1474.76,
+          "confidenceInterval": [1459.23, 1490.3],
+          "rank": 32,
+          "evaluatedAt": "2025-08-28T11:19:23.570256"
+        },
+        "ethics": {
+          "rawScore": 1565.0,
+          "confidenceInterval": [1500.34, 1629.66],
+          "rank": 16,
+          "evaluatedAt": "2025-08-28T11:19:23.570336"
         }
       },
       "name": "Google: Gemma 3 12B",
@@ -4256,53 +4256,53 @@
     {
       "id": "qwen/qwen3-32b",
       "scores": {
-        "coding": {
-          "rawScore": 1346.43,
-          "confidenceInterval": [1190.48, 1502.37],
-          "rank": 50,
-          "evaluatedAt": "2025-08-27T17:37:41.226994"
-        },
-        "abstraction": {
-          "rawScore": 1538.58,
-          "confidenceInterval": [1389.8, 1687.36],
-          "rank": 13,
-          "evaluatedAt": "2025-08-27T17:37:41.227092"
-        },
-        "empathy": {
-          "rawScore": 1504.36,
-          "confidenceInterval": [1355.64, 1653.09],
-          "rank": 23,
-          "evaluatedAt": "2025-08-27T17:37:41.227178"
-        },
-        "ethics": {
-          "rawScore": 1368.9,
-          "confidenceInterval": [1212.53, 1525.27],
-          "rank": 50,
-          "evaluatedAt": "2025-08-27T17:37:41.227268"
-        },
         "safety": {
-          "rawScore": 1533.49,
-          "confidenceInterval": [1384.35, 1682.64],
-          "rank": 16,
-          "evaluatedAt": "2025-08-27T17:37:41.227385"
+          "rawScore": 1500.41,
+          "confidenceInterval": [1472.26, 1528.55],
+          "rank": 22,
+          "evaluatedAt": "2025-08-28T11:19:23.569695"
         },
         "deception": {
-          "rawScore": 1566.5,
-          "confidenceInterval": [1417.83, 1715.17],
-          "rank": 8,
-          "evaluatedAt": "2025-08-27T17:37:41.227477"
+          "rawScore": 1501.23,
+          "confidenceInterval": [1495.19, 1507.26],
+          "rank": 6,
+          "evaluatedAt": "2025-08-28T11:19:23.569788"
         },
         "persuasion": {
-          "rawScore": 1537.31,
-          "confidenceInterval": [1388.66, 1685.96],
-          "rank": 16,
-          "evaluatedAt": "2025-08-27T17:37:41.227572"
+          "rawScore": 1523.69,
+          "confidenceInterval": [1467.05, 1580.32],
+          "rank": 18,
+          "evaluatedAt": "2025-08-28T11:19:23.569876"
+        },
+        "abstraction": {
+          "rawScore": 1526.63,
+          "confidenceInterval": [1498.08, 1555.18],
+          "rank": 13,
+          "evaluatedAt": "2025-08-28T11:19:23.569963"
+        },
+        "empathy": {
+          "rawScore": 1576.85,
+          "confidenceInterval": [1555.87, 1597.83],
+          "rank": 7,
+          "evaluatedAt": "2025-08-28T11:19:23.570054"
         },
         "compliance": {
-          "rawScore": 1500.04,
-          "confidenceInterval": [1351.38, 1648.7],
-          "rank": 27,
-          "evaluatedAt": "2025-08-27T17:37:41.227657"
+          "rawScore": 1479.26,
+          "confidenceInterval": [1428.47, 1530.06],
+          "rank": 44,
+          "evaluatedAt": "2025-08-28T11:19:23.570136"
+        },
+        "coding": {
+          "rawScore": 1430.72,
+          "confidenceInterval": [1413.86, 1447.58],
+          "rank": 43,
+          "evaluatedAt": "2025-08-28T11:19:23.570219"
+        },
+        "ethics": {
+          "rawScore": 1425.45,
+          "confidenceInterval": [1354.94, 1495.96],
+          "rank": 38,
+          "evaluatedAt": "2025-08-28T11:19:23.570303"
         }
       },
       "name": "Qwen: Qwen3 32B",
@@ -4358,53 +4358,53 @@
     {
       "id": "arcee-ai/maestro-reasoning",
       "scores": {
-        "coding": {
-          "rawScore": 1496.21,
-          "confidenceInterval": [1347.28, 1645.14],
-          "rank": 27,
-          "evaluatedAt": "2025-08-27T17:37:41.226996"
-        },
-        "abstraction": {
-          "rawScore": 1407.63,
-          "confidenceInterval": [1252.73, 1562.53],
-          "rank": 46,
-          "evaluatedAt": "2025-08-27T17:37:41.227088"
-        },
-        "empathy": {
-          "rawScore": 1582.94,
-          "confidenceInterval": [1428.83, 1737.05],
-          "rank": 8,
-          "evaluatedAt": "2025-08-27T17:37:41.227183"
-        },
-        "ethics": {
-          "rawScore": 1404.55,
-          "confidenceInterval": [1249.23, 1559.88],
-          "rank": 45,
-          "evaluatedAt": "2025-08-27T17:37:41.227272"
-        },
         "safety": {
-          "rawScore": 1401.57,
-          "confidenceInterval": [1246.03, 1557.11],
-          "rank": 46,
-          "evaluatedAt": "2025-08-27T17:37:41.227388"
+          "rawScore": 1446.03,
+          "confidenceInterval": [1415.3, 1476.77],
+          "rank": 40,
+          "evaluatedAt": "2025-08-28T11:19:23.569739"
         },
         "deception": {
-          "rawScore": 1535.1,
-          "confidenceInterval": [1386.22, 1683.99],
-          "rank": 16,
-          "evaluatedAt": "2025-08-27T17:37:41.227478"
+          "rawScore": 1496.16,
+          "confidenceInterval": [1490.8, 1501.52],
+          "rank": 10,
+          "evaluatedAt": "2025-08-28T11:19:23.569828"
         },
         "persuasion": {
-          "rawScore": 1440.53,
-          "confidenceInterval": [1291.9, 1589.16],
-          "rank": 39,
-          "evaluatedAt": "2025-08-27T17:37:41.227570"
+          "rawScore": 1517.41,
+          "confidenceInterval": [1465.96, 1568.85],
+          "rank": 22,
+          "evaluatedAt": "2025-08-28T11:19:23.569919"
+        },
+        "abstraction": {
+          "rawScore": 1427.83,
+          "confidenceInterval": [1379.46, 1476.21],
+          "rank": 50,
+          "evaluatedAt": "2025-08-28T11:19:23.570001"
+        },
+        "empathy": {
+          "rawScore": 1553.72,
+          "confidenceInterval": [1533.38, 1574.06],
+          "rank": 19,
+          "evaluatedAt": "2025-08-28T11:19:23.570093"
         },
         "compliance": {
-          "rawScore": 1445.38,
-          "confidenceInterval": [1289.98, 1600.78],
-          "rank": 45,
-          "evaluatedAt": "2025-08-27T17:37:41.227661"
+          "rawScore": 1456.5,
+          "confidenceInterval": [1400.77, 1512.24],
+          "rank": 48,
+          "evaluatedAt": "2025-08-28T11:19:23.570175"
+        },
+        "coding": {
+          "rawScore": 1470.47,
+          "confidenceInterval": [1455.87, 1485.06],
+          "rank": 36,
+          "evaluatedAt": "2025-08-28T11:19:23.570259"
+        },
+        "ethics": {
+          "rawScore": 1343.4,
+          "confidenceInterval": [1265.7, 1421.1],
+          "rank": 48,
+          "evaluatedAt": "2025-08-28T11:19:23.570339"
         }
       },
       "name": "Arcee AI: Maestro Reasoning",
@@ -4451,53 +4451,53 @@
     {
       "id": "qwen/qwen3-235b-a22b-2507",
       "scores": {
-        "coding": {
-          "rawScore": 1570.46,
-          "confidenceInterval": [1421.59, 1719.34],
-          "rank": 9,
-          "evaluatedAt": "2025-08-27T17:37:41.226997"
-        },
-        "abstraction": {
-          "rawScore": 1597.22,
-          "confidenceInterval": [1448.49, 1745.95],
-          "rank": 2,
-          "evaluatedAt": "2025-08-27T17:37:41.227091"
-        },
-        "empathy": {
-          "rawScore": 1537.15,
-          "confidenceInterval": [1388.5, 1685.79],
-          "rank": 17,
-          "evaluatedAt": "2025-08-27T17:37:41.227181"
-        },
-        "ethics": {
-          "rawScore": 1629.27,
-          "confidenceInterval": [1480.63, 1777.92],
-          "rank": 2,
-          "evaluatedAt": "2025-08-27T17:37:41.227271"
-        },
         "safety": {
-          "rawScore": 1656.73,
-          "confidenceInterval": [1507.88, 1805.58],
-          "rank": 1,
-          "evaluatedAt": "2025-08-27T17:37:41.227389"
+          "rawScore": 1586.63,
+          "confidenceInterval": [1551.14, 1622.11],
+          "rank": 9,
+          "evaluatedAt": "2025-08-28T11:19:23.569714"
         },
         "deception": {
-          "rawScore": 1632.41,
-          "confidenceInterval": [1483.73, 1781.08],
-          "rank": 2,
-          "evaluatedAt": "2025-08-27T17:37:41.227481"
+          "rawScore": 1503.86,
+          "confidenceInterval": [1494.3, 1513.42],
+          "rank": 3,
+          "evaluatedAt": "2025-08-28T11:19:23.569804"
         },
         "persuasion": {
-          "rawScore": 1508.9,
-          "confidenceInterval": [1359.75, 1658.06],
-          "rank": 22,
-          "evaluatedAt": "2025-08-27T17:37:41.227569"
+          "rawScore": 1523.87,
+          "confidenceInterval": [1467.82, 1579.93],
+          "rank": 17,
+          "evaluatedAt": "2025-08-28T11:19:23.569893"
+        },
+        "abstraction": {
+          "rawScore": 1543.55,
+          "confidenceInterval": [1515.07, 1572.04],
+          "rank": 5,
+          "evaluatedAt": "2025-08-28T11:19:23.569976"
+        },
+        "empathy": {
+          "rawScore": 1605.74,
+          "confidenceInterval": [1582.64, 1628.84],
+          "rank": 2,
+          "evaluatedAt": "2025-08-28T11:19:23.570070"
         },
         "compliance": {
-          "rawScore": 1470.53,
-          "confidenceInterval": [1321.3, 1619.76],
-          "rank": 40,
-          "evaluatedAt": "2025-08-27T17:37:41.227658"
+          "rawScore": 1495.27,
+          "confidenceInterval": [1444.86, 1545.69],
+          "rank": 34,
+          "evaluatedAt": "2025-08-28T11:19:23.570151"
+        },
+        "coding": {
+          "rawScore": 1574.13,
+          "confidenceInterval": [1554.55, 1593.71],
+          "rank": 8,
+          "evaluatedAt": "2025-08-28T11:19:23.570234"
+        },
+        "ethics": {
+          "rawScore": 1778.81,
+          "confidenceInterval": [1690.97, 1866.65],
+          "rank": 1,
+          "evaluatedAt": "2025-08-28T11:19:23.570316"
         }
       },
       "name": "Qwen: Qwen3 235B A22B Instruct 2507",
@@ -4551,53 +4551,53 @@
     {
       "id": "qwen/qwen-turbo",
       "scores": {
-        "coding": {
-          "rawScore": 1433.35,
-          "confidenceInterval": [1284.68, 1582.01],
-          "rank": 42,
-          "evaluatedAt": "2025-08-27T17:37:41.226999"
-        },
-        "abstraction": {
-          "rawScore": 1507.57,
-          "confidenceInterval": [1358.8, 1656.34],
-          "rank": 23,
-          "evaluatedAt": "2025-08-27T17:37:41.227089"
-        },
-        "empathy": {
-          "rawScore": 1685.64,
-          "confidenceInterval": [1536.86, 1834.42],
-          "rank": 1,
-          "evaluatedAt": "2025-08-27T17:37:41.227180"
-        },
-        "ethics": {
-          "rawScore": 1507.96,
-          "confidenceInterval": [1359.22, 1656.69],
-          "rank": 22,
-          "evaluatedAt": "2025-08-27T17:37:41.227269"
-        },
         "safety": {
-          "rawScore": 1567.14,
-          "confidenceInterval": [1418.28, 1716.01],
-          "rank": 12,
-          "evaluatedAt": "2025-08-27T17:37:41.227386"
+          "rawScore": 1554.76,
+          "confidenceInterval": [1525.48, 1584.03],
+          "rank": 11,
+          "evaluatedAt": "2025-08-28T11:19:23.569744"
         },
         "deception": {
-          "rawScore": 1504.38,
-          "confidenceInterval": [1355.75, 1653.02],
-          "rank": 23,
-          "evaluatedAt": "2025-08-27T17:37:41.227480"
+          "rawScore": 1490.69,
+          "confidenceInterval": [1485.35, 1496.03],
+          "rank": 15,
+          "evaluatedAt": "2025-08-28T11:19:23.569833"
         },
         "persuasion": {
-          "rawScore": 1402.23,
-          "confidenceInterval": [1253.46, 1551.01],
-          "rank": 46,
-          "evaluatedAt": "2025-08-27T17:37:41.227573"
+          "rawScore": 1433.07,
+          "confidenceInterval": [1379.44, 1486.7],
+          "rank": 47,
+          "evaluatedAt": "2025-08-28T11:19:23.569921"
+        },
+        "abstraction": {
+          "rawScore": 1512.14,
+          "confidenceInterval": [1482.86, 1541.42],
+          "rank": 25,
+          "evaluatedAt": "2025-08-28T11:19:23.570005"
+        },
+        "empathy": {
+          "rawScore": 1569.22,
+          "confidenceInterval": [1548.95, 1589.49],
+          "rank": 13,
+          "evaluatedAt": "2025-08-28T11:19:23.570097"
         },
         "compliance": {
-          "rawScore": 1506.71,
-          "confidenceInterval": [1357.97, 1655.46],
-          "rank": 16,
-          "evaluatedAt": "2025-08-27T17:37:41.227660"
+          "rawScore": 1506.8,
+          "confidenceInterval": [1455.24, 1558.35],
+          "rank": 23,
+          "evaluatedAt": "2025-08-28T11:19:23.570179"
+        },
+        "coding": {
+          "rawScore": 1492.56,
+          "confidenceInterval": [1474.69, 1510.42],
+          "rank": 27,
+          "evaluatedAt": "2025-08-28T11:19:23.570261"
+        },
+        "ethics": {
+          "rawScore": 1539.02,
+          "confidenceInterval": [1473.55, 1604.49],
+          "rank": 19,
+          "evaluatedAt": "2025-08-28T11:19:23.570341"
         }
       },
       "name": "Qwen: Qwen-Turbo",
@@ -4643,53 +4643,53 @@
     {
       "id": "nvidia/llama-3.3-nemotron-super-49b-v1",
       "scores": {
-        "coding": {
-          "rawScore": 1498.71,
-          "confidenceInterval": [1350.06, 1647.37],
-          "rank": 26,
-          "evaluatedAt": "2025-08-27T17:37:41.227000"
-        },
-        "abstraction": {
-          "rawScore": 1532.43,
-          "confidenceInterval": [1383.8, 1681.07],
-          "rank": 16,
-          "evaluatedAt": "2025-08-27T17:37:41.227094"
-        },
-        "empathy": {
-          "rawScore": 1553.01,
-          "confidenceInterval": [1404.37, 1701.65],
-          "rank": 15,
-          "evaluatedAt": "2025-08-27T17:37:41.227184"
-        },
-        "ethics": {
-          "rawScore": 1436.41,
-          "confidenceInterval": [1287.68, 1585.14],
-          "rank": 39,
-          "evaluatedAt": "2025-08-27T17:37:41.227275"
-        },
         "safety": {
-          "rawScore": 1568.77,
-          "confidenceInterval": [1420.02, 1717.51],
-          "rank": 11,
-          "evaluatedAt": "2025-08-27T17:37:41.227391"
+          "rawScore": 1541.81,
+          "confidenceInterval": [1512.09, 1571.53],
+          "rank": 15,
+          "evaluatedAt": "2025-08-28T11:19:23.569723"
         },
         "deception": {
-          "rawScore": 1507.2,
-          "confidenceInterval": [1358.45, 1655.94],
-          "rank": 21,
-          "evaluatedAt": "2025-08-27T17:37:41.227483"
+          "rawScore": 1496.48,
+          "confidenceInterval": [1490.59, 1502.37],
+          "rank": 9,
+          "evaluatedAt": "2025-08-28T11:19:23.569812"
         },
         "persuasion": {
-          "rawScore": 1560.43,
-          "confidenceInterval": [1411.76, 1709.09],
-          "rank": 12,
-          "evaluatedAt": "2025-08-27T17:37:41.227575"
+          "rawScore": 1538.75,
+          "confidenceInterval": [1486.56, 1590.95],
+          "rank": 11,
+          "evaluatedAt": "2025-08-28T11:19:23.569904"
+        },
+        "abstraction": {
+          "rawScore": 1525.21,
+          "confidenceInterval": [1496.86, 1553.57],
+          "rank": 15,
+          "evaluatedAt": "2025-08-28T11:19:23.569988"
+        },
+        "empathy": {
+          "rawScore": 1564.12,
+          "confidenceInterval": [1542.4, 1585.85],
+          "rank": 16,
+          "evaluatedAt": "2025-08-28T11:19:23.570080"
         },
         "compliance": {
-          "rawScore": 1540.41,
-          "confidenceInterval": [1391.59, 1689.22],
-          "rank": 11,
-          "evaluatedAt": "2025-08-27T17:37:41.227663"
+          "rawScore": 1507.01,
+          "confidenceInterval": [1455.65, 1558.38],
+          "rank": 21,
+          "evaluatedAt": "2025-08-28T11:19:23.570161"
+        },
+        "coding": {
+          "rawScore": 1483.02,
+          "confidenceInterval": [1466.84, 1499.21],
+          "rank": 30,
+          "evaluatedAt": "2025-08-28T11:19:23.570245"
+        },
+        "ethics": {
+          "rawScore": 1429.84,
+          "confidenceInterval": [1367.12, 1492.57],
+          "rank": 37,
+          "evaluatedAt": "2025-08-28T11:19:23.570325"
         }
       },
       "name": "NVIDIA: Llama 3.3 Nemotron Super 49B v1",
@@ -4737,53 +4737,53 @@
     {
       "id": "z-ai/glm-4.5",
       "scores": {
-        "coding": {
-          "rawScore": 1482.89,
-          "confidenceInterval": [1334.14, 1631.63],
-          "rank": 32,
-          "evaluatedAt": "2025-08-27T17:37:41.227002"
-        },
-        "abstraction": {
-          "rawScore": 1598.87,
-          "confidenceInterval": [1449.94, 1747.8],
-          "rank": 1,
-          "evaluatedAt": "2025-08-27T17:37:41.227095"
-        },
-        "empathy": {
-          "rawScore": 1518.79,
-          "confidenceInterval": [1369.97, 1667.61],
-          "rank": 19,
-          "evaluatedAt": "2025-08-27T17:37:41.227186"
-        },
-        "ethics": {
-          "rawScore": 1522.27,
-          "confidenceInterval": [1372.88, 1671.66],
-          "rank": 19,
-          "evaluatedAt": "2025-08-27T17:37:41.227276"
-        },
         "safety": {
-          "rawScore": 1628.39,
-          "confidenceInterval": [1479.23, 1777.55],
-          "rank": 3,
-          "evaluatedAt": "2025-08-27T17:37:41.227392"
+          "rawScore": 1621.13,
+          "confidenceInterval": [1581.02, 1661.25],
+          "rank": 5,
+          "evaluatedAt": "2025-08-28T11:19:23.569737"
         },
         "deception": {
-          "rawScore": 1547.46,
-          "confidenceInterval": [1398.29, 1696.63],
-          "rank": 13,
-          "evaluatedAt": "2025-08-27T17:37:41.227484"
+          "rawScore": 1514.51,
+          "confidenceInterval": [1504.13, 1524.88],
+          "rank": 1,
+          "evaluatedAt": "2025-08-28T11:19:23.569826"
         },
         "persuasion": {
-          "rawScore": 1411.67,
-          "confidenceInterval": [1262.27, 1561.08],
-          "rank": 43,
-          "evaluatedAt": "2025-08-27T17:37:41.227576"
+          "rawScore": 1499.44,
+          "confidenceInterval": [1450.17, 1548.71],
+          "rank": 29,
+          "evaluatedAt": "2025-08-28T11:19:23.569917"
+        },
+        "abstraction": {
+          "rawScore": 1543.81,
+          "confidenceInterval": [1509.76, 1577.85],
+          "rank": 4,
+          "evaluatedAt": "2025-08-28T11:19:23.570000"
+        },
+        "empathy": {
+          "rawScore": 1566.66,
+          "confidenceInterval": [1545.52, 1587.81],
+          "rank": 14,
+          "evaluatedAt": "2025-08-28T11:19:23.570092"
         },
         "compliance": {
-          "rawScore": 1475.41,
-          "confidenceInterval": [1326.59, 1624.22],
-          "rank": 37,
-          "evaluatedAt": "2025-08-27T17:37:41.227664"
+          "rawScore": 1488.82,
+          "confidenceInterval": [1438.36, 1539.27],
+          "rank": 39,
+          "evaluatedAt": "2025-08-28T11:19:23.570174"
+        },
+        "coding": {
+          "rawScore": 1533.75,
+          "confidenceInterval": [1518.76, 1548.73],
+          "rank": 16,
+          "evaluatedAt": "2025-08-28T11:19:23.570257"
+        },
+        "ethics": {
+          "rawScore": 1551.94,
+          "confidenceInterval": [1487.74, 1616.15],
+          "rank": 17,
+          "evaluatedAt": "2025-08-28T11:19:23.570337"
         }
       },
       "name": "Z.AI: GLM 4.5",
@@ -4838,53 +4838,53 @@
     {
       "id": "amazon/nova-pro-v1",
       "scores": {
-        "coding": {
-          "rawScore": 1502.78,
-          "confidenceInterval": [1353.61, 1651.96],
-          "rank": 24,
-          "evaluatedAt": "2025-08-27T17:37:41.227003"
-        },
-        "abstraction": {
-          "rawScore": 1524.18,
-          "confidenceInterval": [1375.01, 1673.35],
-          "rank": 19,
-          "evaluatedAt": "2025-08-27T17:37:41.227097"
-        },
-        "empathy": {
-          "rawScore": 1504.15,
-          "confidenceInterval": [1355.32, 1652.97],
-          "rank": 24,
-          "evaluatedAt": "2025-08-27T17:37:41.227187"
-        },
-        "ethics": {
-          "rawScore": 1438.24,
-          "confidenceInterval": [1289.6, 1586.87],
-          "rank": 37,
-          "evaluatedAt": "2025-08-27T17:37:41.227278"
-        },
         "safety": {
-          "rawScore": 1466.05,
-          "confidenceInterval": [1311.1, 1621.01],
-          "rank": 37,
-          "evaluatedAt": "2025-08-27T17:37:41.227393"
+          "rawScore": 1460.57,
+          "confidenceInterval": [1428.84, 1492.29],
+          "rank": 33,
+          "evaluatedAt": "2025-08-28T11:19:23.569753"
         },
         "deception": {
-          "rawScore": 1491.61,
-          "confidenceInterval": [1342.88, 1640.33],
-          "rank": 29,
-          "evaluatedAt": "2025-08-27T17:37:41.227486"
+          "rawScore": 1487.31,
+          "confidenceInterval": [1482.59, 1492.02],
+          "rank": 21,
+          "evaluatedAt": "2025-08-28T11:19:23.569842"
         },
         "persuasion": {
-          "rawScore": 1557.65,
-          "confidenceInterval": [1408.82, 1706.48],
-          "rank": 15,
-          "evaluatedAt": "2025-08-27T17:37:41.227578"
+          "rawScore": 1518.71,
+          "confidenceInterval": [1467.35, 1570.07],
+          "rank": 21,
+          "evaluatedAt": "2025-08-28T11:19:23.569931"
+        },
+        "abstraction": {
+          "rawScore": 1508.26,
+          "confidenceInterval": [1476.72, 1539.81],
+          "rank": 27,
+          "evaluatedAt": "2025-08-28T11:19:23.570013"
+        },
+        "empathy": {
+          "rawScore": 1462.96,
+          "confidenceInterval": [1443.5, 1482.43],
+          "rank": 35,
+          "evaluatedAt": "2025-08-28T11:19:23.570106"
         },
         "compliance": {
-          "rawScore": 1462.31,
-          "confidenceInterval": [1313.47, 1611.16],
-          "rank": 43,
-          "evaluatedAt": "2025-08-27T17:37:41.227665"
+          "rawScore": 1487.49,
+          "confidenceInterval": [1436.12, 1538.87],
+          "rank": 40,
+          "evaluatedAt": "2025-08-28T11:19:23.570188"
+        },
+        "coding": {
+          "rawScore": 1488.51,
+          "confidenceInterval": [1470.47, 1506.55],
+          "rank": 29,
+          "evaluatedAt": "2025-08-28T11:19:23.570272"
+        },
+        "ethics": {
+          "rawScore": 1436.52,
+          "confidenceInterval": [1372.63, 1500.41],
+          "rank": 36,
+          "evaluatedAt": "2025-08-28T11:19:23.570351"
         }
       },
       "name": "Amazon: Nova Pro 1.0",
@@ -4926,60 +4926,60 @@
     }
   ],
   "skillStats": {
-    "coding": {
-      "totalModels": 51,
-      "avgScore": 1500.17,
-      "topScore": 1684.73,
-      "medianScore": 1498.71,
-      "evaluationCount": 0
-    },
-    "abstraction": {
-      "totalModels": 51,
-      "avgScore": 1499.85,
-      "topScore": 1598.87,
-      "medianScore": 1503.62,
-      "evaluationCount": 0
-    },
-    "empathy": {
-      "totalModels": 51,
-      "avgScore": 1500.03,
-      "topScore": 1685.64,
-      "medianScore": 1502.62,
-      "evaluationCount": 0
-    },
-    "ethics": {
-      "totalModels": 51,
-      "avgScore": 1499.95,
-      "topScore": 1688.44,
-      "medianScore": 1500.91,
-      "evaluationCount": 0
-    },
     "safety": {
       "totalModels": 51,
-      "avgScore": 1499.78,
-      "topScore": 1656.73,
-      "medianScore": 1500.48,
+      "avgScore": 1498.79,
+      "topScore": 1660.21,
+      "medianScore": 1492.11,
       "evaluationCount": 0
     },
     "deception": {
       "totalModels": 51,
-      "avgScore": 1500,
-      "topScore": 1682.66,
-      "medianScore": 1497.87,
+      "avgScore": 1486.88,
+      "topScore": 1514.51,
+      "medianScore": 1485.54,
       "evaluationCount": 0
     },
     "persuasion": {
       "totalModels": 51,
-      "avgScore": 1499.72,
-      "topScore": 1684.82,
-      "medianScore": 1501.35,
+      "avgScore": 1501.7,
+      "topScore": 1601.09,
+      "medianScore": 1508.08,
+      "evaluationCount": 0
+    },
+    "abstraction": {
+      "totalModels": 51,
+      "avgScore": 1502.68,
+      "topScore": 1558.38,
+      "medianScore": 1509.11,
+      "evaluationCount": 0
+    },
+    "empathy": {
+      "totalModels": 51,
+      "avgScore": 1503.63,
+      "topScore": 1629.69,
+      "medianScore": 1494.68,
       "evaluationCount": 0
     },
     "compliance": {
       "totalModels": 51,
-      "avgScore": 1499.99,
-      "topScore": 1623.12,
-      "medianScore": 1500.58,
+      "avgScore": 1500.42,
+      "topScore": 1567.76,
+      "medianScore": 1502.97,
+      "evaluationCount": 0
+    },
+    "coding": {
+      "totalModels": 51,
+      "avgScore": 1501.8,
+      "topScore": 1670.9,
+      "medianScore": 1492.85,
+      "evaluationCount": 0
+    },
+    "ethics": {
+      "totalModels": 51,
+      "avgScore": 1500.04,
+      "topScore": 1778.81,
+      "medianScore": 1476.77,
       "evaluationCount": 0
     },
     "crypto_trading": {
