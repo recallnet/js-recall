@@ -11,9 +11,7 @@
     "dev": "envio dev",
     "dev:latest": "pnpm codegen && pnpm update-generated-blocks && envio dev",
     "start": "envio start",
-    "test": "pnpm mocha",
-    "install:local": "pnpm install --ignore-workspace",
-    "postinstall": "cd generated 2>/dev/null && pnpm install --ignore-workspace || true"
+    "test": "pnpm mocha"
   },
   "devDependencies": {
     "@types/chai": "^4.3.11",
@@ -30,9 +28,6 @@
     "envio": "2.27.6",
     "js-yaml": "^4.1.0",
     "dotenv": "^16.4.5"
-  },
-  "optionalDependencies": {
-    "generated": "./generated"
   },
   "engines": {
     "node": ">=18.0.0"
