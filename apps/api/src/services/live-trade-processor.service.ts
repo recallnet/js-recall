@@ -1,9 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
 
+import { InsertTrade, SelectTrade } from "@recallnet/db-schema/trading/types";
+
 import { config } from "@/config/index.js";
 import { findByCompetition } from "@/database/repositories/agent-repository.js";
 import { batchCreateOnChainTradesWithBalances } from "@/database/repositories/trade-repository.js";
-import { InsertTrade, SelectTrade } from "@recallnet/db-schema/trading/types";
 import { serviceLogger } from "@/lib/logger.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
 import { IndexedTrade, IndexedTransfer } from "@/types/live-trading.js";
@@ -235,7 +236,7 @@ export class LiveTradeProcessor {
         if (!hasValidPrices) {
           serviceLogger.warn(
             `[LiveTradeProcessor] Skipping trade - no price data from DexScreener: ` +
-            `${trade.tokenIn} -> ${trade.tokenOut} on ${trade.chain}`,
+              `${trade.tokenIn} -> ${trade.tokenOut} on ${trade.chain}`,
           );
         }
 
@@ -245,7 +246,7 @@ export class LiveTradeProcessor {
       if (tradesWithPrices.length < enrichedTrades.length) {
         serviceLogger.info(
           `[LiveTradeProcessor] Filtered out ${enrichedTrades.length - tradesWithPrices.length} trades ` +
-          `without DexScreener price data. Processing ${tradesWithPrices.length}/${enrichedTrades.length} trades.`,
+            `without DexScreener price data. Processing ${tradesWithPrices.length}/${enrichedTrades.length} trades.`,
         );
       }
 
@@ -263,7 +264,7 @@ export class LiveTradeProcessor {
       const duration = Date.now() - startTime;
       serviceLogger.info(
         `[LiveTradeProcessor] Processed ${mappedTrades.length} trades in ${duration}ms. ` +
-        `Persisted ${result.trades.length} trades with ${result.balanceUpdates.totalUpdated} balance updates`,
+          `Persisted ${result.trades.length} trades with ${result.balanceUpdates.totalUpdated} balance updates`,
       );
 
       return result;
