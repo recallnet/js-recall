@@ -146,17 +146,23 @@ export class EnvioManager {
    * Wait for Hasura GraphQL Engine to be ready
    */
   private async waitForHasura(
-    maxRetries = 30,
+    maxRetries = 60, // Increased from 30 to 60 for CI
     retryDelay = 1000,
   ): Promise<void> {
     for (let i = 0; i < maxRetries; i++) {
       try {
         const response = await axios.get(this.hasuraHealthEndpoint);
         if (response.status === 200) {
+          console.log(`✅ Hasura is ready after ${i + 1} attempts`);
           return;
         }
       } catch {
         // Expected to fail until Hasura is ready
+        if (i % 10 === 0 && i > 0) {
+          console.log(
+            `⏳ Still waiting for Hasura... (${i}/${maxRetries} attempts)`,
+          );
+        }
       }
 
       if (i < maxRetries - 1) {
