@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "clean": "tsc --clean",
-    "build": "tsc --build",
+    "build": "pnpm codegen && tsc --build",
     "watch": "tsc --watch",
     "mocha": "ts-mocha test/**/*.ts",
     "codegen": "envio codegen",

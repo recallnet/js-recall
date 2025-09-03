@@ -10,6 +10,17 @@ import {
   Transfer
 } from "generated";
 
+import type {
+  ERC20Transfers_Transfer_event,
+  UniswapV2_Swap_event,
+  UniswapV3_Swap_event,
+  Curve_TokenExchange_event,
+  BalancerV1_LOG_SWAP_event,
+  BalancerV2_Swap_event,
+  Bancor_TokensTraded_event,
+  HandlerContext
+} from "generated";
+
 // Type for transfers stored in memory with logIndex for ordering
 type TransferWithLogIndex = Transfer & { logIndex: number };
 
@@ -38,7 +49,7 @@ function getChainName(chainId: number): string {
 async function findTokensFromTransfers(
   txHash: string,
   swapLogIndex: number,
-  context: any
+  context: HandlerContext
 ): Promise<{ tokenIn: string; tokenOut: string }> {
   // First try memory cache
   let transfers = transfersByTx.get(txHash) || [];
@@ -49,7 +60,7 @@ async function findTokensFromTransfers(
 
     if (dbTransfers && dbTransfers.length > 0) {
       // Extract log index from the ID (format: chainId_blockNumber_logIndex)
-      transfers = dbTransfers.map((t: any) => ({
+      transfers = dbTransfers.map((t: Transfer) => ({
         ...t,
         logIndex: parseInt(t.id.split('_')[2])
       }));
@@ -124,7 +135,7 @@ function getProtocolFromAddress(address: string, eventType: string): string {
 
 // ERC20 Transfer handler - for tracking all token movements
 ERC20Transfers.Transfer.handler(
-  async ({ event, context }) => {
+  async ({ event, context }: { event: ERC20Transfers_Transfer_event; context: HandlerContext }) => {
     const transfer: Transfer = {
       id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
       from: event.params.from.toLowerCase(),
@@ -224,7 +235,7 @@ ERC20Transfers.Transfer.handler(
 
 // Uniswap V2 and forks handler
 UniswapV2.Swap.handler(
-  async ({ event, context }) => {
+  async ({ event, context }: { event: UniswapV2_Swap_event; context: HandlerContext }) => {
     // Determine which amounts are non-zero to identify trade direction
     const isToken0ToToken1 = event.params.amount0In > 0n && event.params.amount1Out > 0n;
     const amountIn = isToken0ToToken1 ? event.params.amount0In : event.params.amount1In;
@@ -243,7 +254,7 @@ UniswapV2.Swap.handler(
       const dbTransfers = await context.Transfer.getWhere.transactionHash.eq(event.transaction.hash);
 
       if (dbTransfers && dbTransfers.length >= 2) {
-        const transfers: TransferWithLogIndex[] = dbTransfers.map((t: any) => ({
+        const transfers: TransferWithLogIndex[] = dbTransfers.map((t: Transfer) => ({
           ...t,
           logIndex: parseInt(t.id.split('_')[2])
         }));
@@ -327,7 +338,7 @@ UniswapV2.Swap.handler(
 
 // Uniswap V3 handler
 UniswapV3.Swap.handler(
-  async ({ event, context }) => {
+  async ({ event, context }: { event: UniswapV3_Swap_event; context: HandlerContext }) => {
     // V3 uses signed amounts - positive means in, negative means out
     const amount0Abs = event.params.amount0 < 0n ? -event.params.amount0 : event.params.amount0;
     const amount1Abs = event.params.amount1 < 0n ? -event.params.amount1 : event.params.amount1;
@@ -348,7 +359,7 @@ UniswapV3.Swap.handler(
       const dbTransfers = await context.Transfer.getWhere.transactionHash.eq(event.transaction.hash);
 
       if (dbTransfers && dbTransfers.length >= 2) {
-        const transfers: TransferWithLogIndex[] = dbTransfers.map((t: any) => ({
+        const transfers: TransferWithLogIndex[] = dbTransfers.map((t: Transfer) => ({
           ...t,
           logIndex: parseInt(t.id.split('_')[2])
         }));
@@ -427,7 +438,7 @@ UniswapV3.Swap.handler(
 
 // Curve TokenExchange handler
 Curve.TokenExchange.handler(
-  async ({ event, context }) => {
+  async ({ event, context }: { event: Curve_TokenExchange_event; context: HandlerContext }) => {
     // Try to find token addresses from transfers in the same transaction
     // Note: Curve swaps are self-custody (sender = recipient)
     const { tokenIn, tokenOut } = await findTokensFromTransfers(
@@ -461,7 +472,7 @@ Curve.TokenExchange.handler(
 
 // Balancer V1 LOG_SWAP handler
 BalancerV1.LOG_SWAP.handler(
-  async ({ event, context }) => {
+  async ({ event, context }: { event: BalancerV1_LOG_SWAP_event; context: HandlerContext }) => {
     const trade: Trade = {
       id: `${event.chainId}_${event.transaction.hash}_${event.logIndex}`,
       sender: event.params.caller.toLowerCase(),
@@ -486,7 +497,7 @@ BalancerV1.LOG_SWAP.handler(
 
 // Balancer V2 Swap handler
 BalancerV2.Swap.handler(
-  async ({ event, context }) => {
+  async ({ event, context }: { event: BalancerV2_Swap_event; context: HandlerContext }) => {
     const trade: Trade = {
       id: `${event.chainId}_${event.transaction.hash}_${event.logIndex}`,
       sender: event.transaction.from?.toLowerCase() || "", // V2 doesn't include sender in event
@@ -511,7 +522,7 @@ BalancerV2.Swap.handler(
 
 // Bancor TokensTraded handler
 Bancor.TokensTraded.handler(
-  async ({ event, context }) => {
+  async ({ event, context }: { event: Bancor_TokensTraded_event; context: HandlerContext }) => {
     const trade: Trade = {
       id: `${event.chainId}_${event.transaction.hash}_${event.logIndex}`,
       sender: event.params.trader.toLowerCase(),
