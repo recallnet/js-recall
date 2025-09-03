@@ -212,7 +212,7 @@ jobs:
           DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false
 
           # Metrics server configuration
-          METRICS_PORT=3003
+          METRICS_PORT=3004  # Changed from 3003 to avoid conflict with Envio
 
           # Enable auto-verify user email
           ENABLE_AUTO_VERIFY_USER_EMAIL=true
