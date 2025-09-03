@@ -4,7 +4,11 @@ import * as path from 'path';
 import { config } from 'dotenv';
 
 // Load environment variables from the envio-indexer directory
-config({ path: path.join(__dirname, '..', '.env') });
+// In CI, the ALCHEMY_API_KEY is already in process.env, so we only load .env if it exists
+const envPath = path.join(__dirname, '..', '.env');
+if (fs.existsSync(envPath)) {
+    config({ path: envPath });
+}
 
 /**
  * Chain configurations with Alchemy RPC endpoints
@@ -80,7 +84,7 @@ async function updateGeneratedConfig() {
         return;
     }
 
-    console.log('🔄 Fetching latest block numbers...');
+    console.log(`🔄 Fetching latest block numbers... (API key: ${process.env.ALCHEMY_API_KEY?.substring(0, 5)}...)`);
 
     // Fetch latest blocks for all chains SEQUENTIALLY with delays to avoid rate limits
     const blocks = [];
@@ -157,6 +161,11 @@ async function updateGeneratedConfig() {
         // Write the updated config back
         fs.writeFileSync(generatedConfigPath, configContent);
         console.log(`✅ Updated ${updatedCount} chain(s) with latest block numbers`);
+
+        // In CI, log that we're starting from recent blocks
+        if (process.env.CI) {
+            console.log('🎯 CI Mode: Starting indexer from recent blocks for live data');
+        }
     } else if (successfulFetches.length === 0) {
         console.log('❌ Could not fetch any block numbers. Using existing configuration.');
     } else {
