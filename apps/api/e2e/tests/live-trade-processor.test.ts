@@ -8,7 +8,7 @@ import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, test } from "vitest";
 
 import { db } from "@/database/db.js";
-import { balances, trades } from "@/database/schema/trading/defs.js";
+import { balances, trades } from "@recallnet/db-schema/trading/defs";
 import {
   createTestClient,
   getAdminApiKey,
