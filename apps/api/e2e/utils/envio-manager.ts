@@ -212,9 +212,12 @@ export class EnvioManager {
       // Locally, use dev:latest to update blocks in generated files
       const command = process.env.CI ? "dev" : "dev:latest";
 
+      console.log(`🚀 Starting Envio with command: pnpm ${command}`);
+      console.log(`   Working directory: ${this.indexerPath}`);
+
       this.envioProcess = spawn("pnpm", [command], {
         cwd: this.indexerPath,
-        stdio: ["pipe", "pipe", "pipe"], // Changed from inherit to avoid blocking terminal
+        stdio: ["pipe", "pipe", "pipe"],
         env: {
           ...process.env,
           // Envio manages its own RPC connections and database
@@ -222,8 +225,36 @@ export class EnvioManager {
         },
       });
 
+      // Capture and log stdout
+      this.envioProcess.stdout?.on("data", (data) => {
+        const output = data.toString();
+        if (process.env.CI) {
+          console.log(`[Envio stdout]: ${output}`);
+        }
+        // Look for specific success/failure indicators
+        if (
+          output.includes("error") ||
+          output.includes("Error") ||
+          output.includes("ERROR")
+        ) {
+          console.error(`❌ Envio error detected: ${output}`);
+        }
+      });
+
+      // Capture and log stderr
+      this.envioProcess.stderr?.on("data", (data) => {
+        const output = data.toString();
+        console.error(`[Envio stderr]: ${output}`);
+      });
+
       this.envioProcess.on("error", (error) => {
         reject(new Error(`Failed to start Envio indexer: ${error}`));
+      });
+
+      this.envioProcess.on("exit", (code) => {
+        if (code !== 0 && code !== null) {
+          console.error(`⚠️ Envio process exited with code ${code}`);
+        }
       });
 
       // Give it a moment to start
