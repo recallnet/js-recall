@@ -1,7 +1,8 @@
 import { count as drizzleCount, eq, inArray } from "drizzle-orm";
 
+import { liveCompetitionConfig } from "@recallnet/db-schema/trading/defs";
+
 import { db } from "@/database/db.js";
-import { liveCompetitionConfig } from "@/database/schema/trading/defs.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
