@@ -71,7 +71,8 @@
         "ENVIO_SYNC_BATCH_SIZE",
         "ENVIO_SYNC_INTERVAL_MINUTES",
         "ENVIO_MAX_CONCURRENT_SYNCS",
-        "TEST_LIVE_TRADING"
+        "TEST_LIVE_TRADING",
+        "CI"
       ]
     }
   }

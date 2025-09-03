@@ -166,9 +166,17 @@ describeIfLiveTrading(
 
       // The Envio indexer is automatically started by setup.ts when TEST_LIVE_TRADING=true
       console.log("📡 Using Envio indexer managed by test setup");
+      console.log(
+        `   GraphQL endpoint: ${process.env.ENVIO_GRAPHQL_ENDPOINT || "http://localhost:8080/v1/graphql"}`,
+      );
 
-      // Give the indexer a moment to ensure it's fully ready
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      // Wait for indexer to sync some data
+      // In CI, this needs more time as it's syncing from scratch
+      const waitTime = process.env.CI ? 30000 : 5000; // 30s in CI, 5s locally
+      console.log(
+        `⏳ Waiting ${waitTime / 1000}s for Envio to sync initial data...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
 
       // Fetch all available trades and use the most recent ones
       // (avoiding early indexing issues from when Envio first started)
@@ -200,7 +208,7 @@ describeIfLiveTrading(
       } else {
         console.log("⚠️ No trades indexed yet. Chain activity might be low.");
       }
-    }, 240000); // 4 minute timeout (up to 3 minutes wait + setup)
+    }, 240000); // 4 minute timeout (accommodates 30s wait in CI + setup)
 
     test("should fetch and display real trade data from Envio", async () => {
       // This test helps us understand what data is available

@@ -1,5 +1,8 @@
 name: API Live Trading CI
 
+# IMPORTANT: This workflow requires the ALCHEMY_API_KEY secret to be set in GitHub
+# Without it, the Envio indexer will use static block numbers which may not have recent trades
+
 on:
   push:
     branches:
@@ -11,8 +14,8 @@ env:
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: fe319abf1a1b0d76b39894e5e17aff0c
   NEXT_PUBLIC_CHAIN_NAME: testnet
   # Required for Envio indexer to fetch initial block numbers
-  # This should be replaced with a real key stored in GitHub secrets
-  ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY || 'demo-key-for-testing' }}
+  # If not provided, Envio will use the static block numbers in config.yaml
+  ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
 
 jobs:
   live-trading-tests:
