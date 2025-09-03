@@ -64,8 +64,11 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Build everything
-        run: pnpm build
+      - name: Build API and dependencies
+        run: |
+          # Build only what's needed for API and live trading tests
+          pnpm --filter=api... build
+          pnpm --filter=@recall/envio-indexer build
 
       - name: Setup Envio Indexer
         working-directory: apps/envio-indexer
