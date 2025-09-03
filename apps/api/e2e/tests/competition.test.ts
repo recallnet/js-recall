@@ -14,6 +14,7 @@ import {
   CROSS_CHAIN_TRADING_TYPE,
   CompetitionAgentsResponse,
   CompetitionDetailResponse,
+  CompetitionJoinResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CompetitionWithAgents,
@@ -53,7 +54,7 @@ describe("Competition API", () => {
     adminApiKey = await getAdminApiKey();
   });
 
-  test("should start a competition with registered agents", async () => {
+  test("should start a competition with explicitly provided registered agents", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -81,8 +82,74 @@ describe("Competition API", () => {
     expect(competition).toBeDefined();
     expect(competition.name).toBe(competitionName);
     expect(competition.status).toBe("active");
+    expect(competition.agentIds?.length).toBe(2);
     expect(competition.agentIds).toContain(agent1.id);
     expect(competition.agentIds).toContain(agent2.id);
+  });
+
+  test("should merge already registered agents with explicitly provided registered agents", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents
+    const { agent: agent1, client: agent1Client } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Alpha",
+      });
+    const { agent: agent2, client: agent2Client } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Beta",
+      });
+
+    // Create a competition without starting it
+    const competitionName = `Two-Stage Competition ${Date.now()}`;
+    const createResponse = await createTestCompetition(
+      adminClient,
+      competitionName,
+    );
+    const originalCompetition = createResponse.competition;
+    const competitionId = originalCompetition.id;
+
+    // Join both agents before starting the competition
+    const joinResponse1 = (await agent1Client.joinCompetition(
+      competitionId,
+      agent1.id,
+    )) as CompetitionJoinResponse;
+    expect(joinResponse1.success).toBe(true);
+    const joinResponse2 = (await agent2Client.joinCompetition(
+      competitionId,
+      agent2.id,
+    )) as CompetitionJoinResponse;
+    expect(joinResponse2.success).toBe(true);
+
+    // Set up a 3rd agent
+    const { agent: agent3 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Gamma",
+    });
+
+    // Start a competition—but only provide the 3rd agent
+    const competitionResponse = await startExistingTestCompetition(
+      adminClient,
+      competitionId,
+      // Note: we ensure that deduplicated, existing, and "new" agents are added
+      [agent1.id, agent3.id],
+    );
+    expect(competitionResponse.success).toBe(true);
+
+    // Verify competition was started
+    const competition = competitionResponse.competition;
+    expect(competition).toBeDefined();
+    expect(competition.id).toBe(competitionId);
+    expect(competition.name).toBe(competitionName);
+    expect(competition.status).toBe("active");
+    expect(competition.agentIds?.length).toBe(3);
+    expect(competition.agentIds).toContain(agent1.id);
+    expect(competition.agentIds).toContain(agent2.id);
+    expect(competition.agentIds).toContain(agent3.id);
   });
 
   test("should create a competition without starting it", async () => {
@@ -106,20 +173,22 @@ describe("Competition API", () => {
     expect(competition.endDate).toBeNull();
   });
 
-  test("should start an existing competition with agents", async () => {
+  test("should start an existing competition with already registered agents", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agents
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent Delta",
-    });
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent Echo",
-    });
+    const { agent: agent1, client: agent1Client } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Delta",
+      });
+    const { agent: agent2, client: agent2Client } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Echo",
+      });
 
     // Create a competition without starting it
     const competitionName = `Two-Stage Competition ${Date.now()}`;
@@ -127,23 +196,33 @@ describe("Competition API", () => {
       adminClient,
       competitionName,
     );
+    expect(createResponse.success).toBe(true);
+    expect(createResponse.competition.status).toBe("pending");
+    const competitionId = createResponse.competition.id;
 
-    // Verify competition was created in PENDING state
-    const pendingCompetition = createResponse.competition;
-    expect(pendingCompetition).toBeDefined();
-    expect(pendingCompetition.status).toBe("pending");
+    // Join both agents before starting the competition
+    const joinResponse1 = (await agent1Client.joinCompetition(
+      competitionId,
+      agent1.id,
+    )) as CompetitionJoinResponse;
+    expect(joinResponse1.success).toBe(true);
+    const joinResponse2 = (await agent2Client.joinCompetition(
+      competitionId,
+      agent2.id,
+    )) as CompetitionJoinResponse;
+    expect(joinResponse2.success).toBe(true);
 
     // Now start the existing competition
     const startResponse = await startExistingTestCompetition(
       adminClient,
-      pendingCompetition.id,
-      [agent1.id, agent2.id],
+      competitionId,
+      // Note: we don't provide `agentIds` here because they are already registered
     );
 
     // Verify competition was started
     const activeCompetition = startResponse.competition;
     expect(activeCompetition).toBeDefined();
-    expect(activeCompetition.id).toBe(pendingCompetition.id);
+    expect(activeCompetition.id).toBe(competitionId);
     expect(activeCompetition.name).toBe(competitionName);
     expect(activeCompetition.status).toBe("active");
     expect(activeCompetition.startDate).toBeDefined();
@@ -5228,7 +5307,7 @@ describe("Competition API", () => {
       expect(ourCompetition.registeredParticipants).toBe(0);
     });
 
-    test("should enforce participant limit with mixed registration attempts", async () => {
+    test("should fail to register if maximum participant limit is reached", async () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
@@ -5288,6 +5367,74 @@ describe("Competition API", () => {
       )) as CompetitionAgentsResponse;
       expect(agentsResponse.success).toBe(true);
       expect(agentsResponse.pagination.total).toBe(1);
+    });
+
+    test("should start a competition if max == registered participants", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Start Competition Test Agent",
+      });
+      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Start Competition Test Agent",
+      });
+      const { agent: agent3 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Start Competition Test Agent",
+      });
+
+      // Create competition
+      const competitionName = `Start Competition Test ${Date.now()}`;
+      const maxParticipants = 2;
+      const createResponse = (await createTestCompetition(
+        adminClient,
+        competitionName,
+        "Test competition to start",
+        false, // sandbox
+        undefined, // externalUrl
+        undefined, // imageUrl
+        undefined, // type
+        undefined, // votingStartDate
+        undefined, // votingEndDate
+        undefined, // joinStartDate
+        undefined, // joinEndDate
+        maxParticipants,
+      )) as CreateCompetitionResponse;
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Add 2 the agents to the competition
+      const addAgentResponse1 = await adminClient.addAgentToCompetition(
+        competitionId,
+        agent1.id,
+      );
+      expect(addAgentResponse1.success).toBe(true);
+      const addAgentResponse2 = await adminClient.addAgentToCompetition(
+        competitionId,
+        agent2.id,
+      );
+      console.log("addAgentResponse2", addAgentResponse2);
+      expect(addAgentResponse2.success).toBe(true);
+
+      // Attempt to add the 3rd agent
+      const addAgentResponse3 = (await adminClient.addAgentToCompetition(
+        competitionId,
+        agent3.id,
+      )) as ErrorResponse;
+      expect(addAgentResponse3.success).toBe(false);
+      expect(addAgentResponse3.error).toBe(
+        "Competition has reached maximum participant limit (2)",
+      );
+
+      // Start the competition
+      const startResponse = await adminClient.startCompetition({
+        competitionId,
+      });
+      expect(startResponse.success).toBe(true);
     });
 
     test("should return maxParticipants in admin start competition response", async () => {

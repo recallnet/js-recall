@@ -315,17 +315,7 @@ async function addAgentToCompetitionImpl(
         throw new Error(`Competition ${competitionId} not found`);
       }
 
-      // Check participant limit if one exists
-      if (
-        competition.maxParticipants &&
-        competition.registeredParticipants >= competition.maxParticipants
-      ) {
-        throw new Error(
-          `Competition has reached maximum participant limit (${competition.maxParticipants})`,
-        );
-      }
-
-      // Add the agent to the competition and check if it was actually inserted
+      // Attempt to add the agent to the competition
       const insertResult = await tx
         .insert(competitionAgents)
         .values({
@@ -338,8 +328,20 @@ async function addAgentToCompetitionImpl(
         .onConflictDoNothing()
         .returning({ insertedId: competitionAgents.agentId });
 
-      // Only increment the counter if the agent was actually inserted
+      // Only process if the agent was actually inserted (not a duplicate)
       if (insertResult.length > 0) {
+        // Check participant limit AFTER confirming this is a new registration
+        if (
+          competition.maxParticipants &&
+          competition.registeredParticipants + 1 > competition.maxParticipants
+        ) {
+          // Transaction will rollback, keeping registeredParticipants accurate
+          throw new Error(
+            `Competition has reached maximum participant limit (${competition.maxParticipants})`,
+          );
+        }
+
+        // Increment the participant counter
         await tx
           .update(competitions)
           .set({
