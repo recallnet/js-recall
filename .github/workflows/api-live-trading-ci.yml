@@ -222,6 +222,18 @@ jobs:
         working-directory: apps/api
         env:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          TEST_MODE: true
+          CI: true
+          TEST_LIVE_TRADING: true  # Critical: Enable live trading tests
+          DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
+          TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
+          JEST_WORKER_ID: 1  # Force single worker to prevent open handles from child processes
+          DB_CONNECTION_TIMEOUT: 5000
+          DB_IDLE_TIMEOUT: 1000
+          NODE_OPTIONS: "--max-old-space-size=4096"  # Increase Node.js memory limit
+          E2E_CLEANUP_DB: true
+          DB_CLEANUP_STRATEGY: truncate
+          TEST_FORCE_EXIT: true
         run: |
           echo "🧪 Running Live Trading E2E tests..."
           echo "This will start the Envio indexer and run live trade processor tests"
@@ -275,19 +287,6 @@ jobs:
 
           # Run the tests through the wrapper script
           node run-live-trading-tests.cjs
-        env:
-          TEST_MODE: true
-          CI: true
-          TEST_LIVE_TRADING: true  # Critical: Enable live trading tests
-          DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
-          TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
-          JEST_WORKER_ID: 1  # Force single worker to prevent open handles from child processes
-          DB_CONNECTION_TIMEOUT: 5000
-          DB_IDLE_TIMEOUT: 1000
-          NODE_OPTIONS: "--max-old-space-size=4096"  # Increase Node.js memory limit
-          E2E_CLEANUP_DB: true
-          DB_CLEANUP_STRATEGY: truncate
-          TEST_FORCE_EXIT: true
 
       - name: Debug - Show Envio logs on failure
         if: failure()
