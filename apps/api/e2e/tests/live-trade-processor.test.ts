@@ -35,6 +35,67 @@ const TEST_CHAIN_NAME_MAP: Record<string, SpecificChain> = {
 };
 
 /**
+ * Helper to poll Envio until minimum trades are indexed
+ */
+async function waitForMinimumTrades(
+  indexerSyncService: IndexerSyncService,
+  options: {
+    minTrades: number;
+    maxWaitTime: number;
+    pollInterval: number;
+  },
+): Promise<void> {
+  const { minTrades, maxWaitTime, pollInterval } = options;
+  const startTime = Date.now();
+  let tradeCount = 0;
+  let attempts = 0;
+
+  console.log(`⏳ Waiting for at least ${minTrades} trades to be indexed...`);
+  console.log(`   Max wait time: ${maxWaitTime / 1000}s`);
+  console.log(`   Poll interval: ${pollInterval / 1000}s`);
+
+  while (Date.now() - startTime < maxWaitTime) {
+    attempts++;
+
+    try {
+      // Fetch a small batch to check count
+      const trades = await indexerSyncService.fetchAllTradesSince(0, 100);
+
+      // The service returns at least a full batch (1000), so if we get >= 100, fetch the full amount
+      if (trades.length >= 100) {
+        // Fetch more to get actual count
+        const moreTrades = await indexerSyncService.fetchAllTradesSince(
+          0,
+          minTrades + 100,
+        );
+        tradeCount = moreTrades.length;
+      } else {
+        tradeCount = trades.length;
+      }
+
+      if (attempts % 5 === 1) {
+        console.log(`   Attempt ${attempts}: Found ${tradeCount} trades...`);
+      }
+
+      if (tradeCount >= minTrades) {
+        console.log(`✅ Found ${tradeCount} trades (>= ${minTrades} required)`);
+        return;
+      }
+    } catch {
+      console.log(
+        `   Attempt ${attempts}: Error fetching trades (indexer may still be starting)...`,
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error(
+    `Timeout: Only ${tradeCount} trades indexed after ${maxWaitTime / 1000}s (needed ${minTrades})`,
+  );
+}
+
+/**
  * Helper function to pre-fund agents with tokens they'll need for testing
  * This simulates agents having accumulated tokens from previous trading
  *
@@ -171,12 +232,12 @@ describeIfLiveTrading(
       );
 
       // Wait for indexer to sync some data
-      // In CI, this needs more time as it's syncing from scratch
-      const waitTime = process.env.CI ? 30000 : 5000; // 30s in CI, 5s locally
-      console.log(
-        `⏳ Waiting ${waitTime / 1000}s for Envio to sync initial data...`,
-      );
-      await new Promise((resolve) => setTimeout(resolve, waitTime));
+      // Poll until we have sufficient trades indexed
+      await waitForMinimumTrades(indexerSyncService, {
+        minTrades: 10000, // Need 10k to use the most recent 1k
+        maxWaitTime: process.env.CI ? 300000 : 120000, // 5 min in CI, 2 min locally
+        pollInterval: 2000,
+      });
 
       // Fetch all available trades and use the most recent ones
       // (avoiding early indexing issues from when Envio first started)

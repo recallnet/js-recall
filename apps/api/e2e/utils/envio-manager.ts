@@ -123,6 +123,12 @@ export class EnvioManager {
         { stdio: "pipe" },
       );
 
+      // Remove the Docker volume to ensure clean state for next run
+      execSync(
+        "sh -c 'docker volume rm generated_db_data 2>/dev/null || true'",
+        { stdio: "pipe" },
+      );
+
       console.log("✅ Docker containers cleaned up");
     } catch {
       // Ignore errors during cleanup - containers might not exist
