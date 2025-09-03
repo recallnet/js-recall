@@ -11,6 +11,7 @@
     "format:check": "prettier --check . --ignore-path=../../.prettierignore",
     "clean": "rm -rf .turbo .next node_modules",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "docs:check": "typedoc --emit none",
     "docs:build": "typedoc",
     "docs:watch": "typedoc --watch",
@@ -49,13 +50,16 @@
     "@types/pg": "^8.6.6",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.0.2",
+    "@vitest/coverage-v8": "^3.2.4",
     "ethers": "^6.13.7",
     "jose": "^6.0.11",
+    "jsdom": "^26.1.0",
     "jsonwebtoken": "^9.0.2",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",
     "typedoc-plugin-markdown": "^4.6.0",
     "typescript": "^5.7.3",
-    "vitest": "^3.0.9"
+    "vitest": "^3.2.4"
   }
 }
