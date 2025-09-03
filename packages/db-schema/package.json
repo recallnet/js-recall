@@ -2,9 +2,7 @@
   "name": "@recallnet/db-schema",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "description": "Recall Drizzle schema.",
   "repository": {
     "type": "git",
