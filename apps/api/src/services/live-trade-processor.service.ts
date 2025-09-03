@@ -223,14 +223,40 @@ export class LiveTradeProcessor {
       const enrichedTrades =
         await this.enrichTradesWithPrices(completeTradesOnly);
 
-      // 5. Map to database schema
+      // 5. Filter out trades without price data from DexScreener
+      // NOTE: At this point, all trades have valid token addresses (not "unknown"),
+      // but DexScreener may not have price data for all tokens.
+      // TODO: In production, consider using additional price providers (CoinGecko, CoinMarketCap, etc.)
+      // to improve coverage for tokens not listed on DexScreener.
+      const tradesWithPrices = enrichedTrades.filter((trade) => {
+        // Must have valid price data to calculate USD values
+        const hasValidPrices = trade.tradeAmountUsd > 0;
+
+        if (!hasValidPrices) {
+          serviceLogger.warn(
+            `[LiveTradeProcessor] Skipping trade - no price data from DexScreener: ` +
+              `${trade.tokenIn} -> ${trade.tokenOut} on ${trade.chain}`,
+          );
+        }
+
+        return hasValidPrices;
+      });
+
+      if (tradesWithPrices.length < enrichedTrades.length) {
+        serviceLogger.info(
+          `[LiveTradeProcessor] Filtered out ${enrichedTrades.length - tradesWithPrices.length} trades ` +
+            `without DexScreener price data. Processing ${tradesWithPrices.length}/${enrichedTrades.length} trades.`,
+        );
+      }
+
+      // 6. Map to database schema
       const mappedTrades = this.mapToDbSchema(
-        enrichedTrades,
+        tradesWithPrices,
         competitionId,
         agentsByWallet,
       );
 
-      // 6. CRITICAL: Persist trades with atomic balance updates
+      // 7. CRITICAL: Persist trades with atomic balance updates
       // This is what makes live trading competitions work!
       const result = await batchCreateOnChainTradesWithBalances(mappedTrades);
 

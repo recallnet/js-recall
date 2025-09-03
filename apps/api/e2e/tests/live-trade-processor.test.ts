@@ -185,10 +185,14 @@ async function prefundAgentsForTesting(
         if (existingBalance.length === 0) {
           const symbol = "UNKNOWN";
 
+          // Ensure a reasonable minimum balance (1000 tokens in decimal units)
+          // This handles both large trades and small test amounts
+          const finalAmount = Math.max(decimalAmount, 1000);
+
           await db.insert(balances).values({
             agentId,
             tokenAddress: token.toLowerCase(),
-            amount: Math.max(decimalAmount, 100000000), // At least 100M units for large trades
+            amount: finalAmount,
             specificChain,
             symbol,
             createdAt: new Date(),
@@ -351,8 +355,11 @@ describeIfLiveTrading(
       });
 
       // Pre-fund agents with required token balances
-      // Use a larger sample to ensure we capture all trades for our test agents
+      // Use the SAME set of trades for both pre-funding and processing to ensure consistency
       const tradesToProcess = realTrades.slice(0, 200);
+
+      // CRITICAL: Pre-fund with the EXACT same trades we're going to process
+      // This ensures agents have balances for exactly the tokens they'll trade
       await prefundAgentsForTesting(tradesToProcess, agentsByWallet);
 
       // Process the real trades through LiveTradeProcessor
@@ -454,6 +461,14 @@ describeIfLiveTrading(
       // Get trades for testing - all should have complete tokens now thanks to our fix
       const testTrades = realTrades.slice(0, 5);
 
+      // Pre-fund the agent with required token balances
+      const agentsByWallet = new Map<string, { id: string }>();
+      agentsByWallet.set(walletAddr.toLowerCase(), { id: agent.id });
+
+      // Pre-fund with EXACTLY the trades we're going to process
+      // This ensures the agent has the right balances for the trades
+      await prefundAgentsForTesting(testTrades, agentsByWallet);
+
       // Verify all trades have complete token information (no unknowns)
       const tradesWithCompleteTokens = testTrades.filter(
         (trade) => trade.tokenIn !== "unknown" && trade.tokenOut !== "unknown",
@@ -478,18 +493,26 @@ describeIfLiveTrading(
         expect(result.trades).toBeDefined();
         expect(result.trades.length).toBeLessThanOrEqual(testTrades.length);
 
-        result.trades.forEach((trade, index) => {
-          const originalTrade = testTrades[index];
-          // Check that trade data is preserved
-          expect(trade.fromToken).toBe(originalTrade?.tokenIn);
-          expect(trade.toToken).toBe(originalTrade?.tokenOut);
+        result.trades.forEach((trade) => {
+          // Find the original trade by transaction hash, not by index
+          // (filtering for price data changes the order/count)
+          const originalTrade = testTrades.find(
+            (t) => t.transactionHash === trade.onChainTxHash,
+          );
 
-          // Check that price data was added (if available)
-          if (trade.tradeAmountUsd && trade.tradeAmountUsd > 0) {
-            console.log(`💰 Trade ${index}: ${trade.tradeAmountUsd} USD`);
-            expect(typeof trade.tradeAmountUsd).toBe("number");
-            expect(trade.tradeAmountUsd).toBeGreaterThan(0);
+          // Check that trade data is preserved (if we found the original)
+          if (originalTrade) {
+            expect(trade.fromToken.toLowerCase()).toBe(
+              originalTrade.tokenIn.toLowerCase(),
+            );
+            expect(trade.toToken.toLowerCase()).toBe(
+              originalTrade.tokenOut.toLowerCase(),
+            );
           }
+
+          // Check that price data was added (trades without prices are filtered out)
+          expect(trade.tradeAmountUsd).toBeGreaterThan(0);
+          console.log(`💰 Trade: ${trade.tradeAmountUsd} USD`);
         });
 
         // Database Persistence Check for Enriched Trades
@@ -876,7 +899,9 @@ describeIfLiveTrading(
 
         // Pre-fund the agent before processing
         const agentsByWallet = new Map<string, { id: string }>();
-        agentsByWallet.set(agent.walletAddress!.toLowerCase(), agent);
+        agentsByWallet.set(agent.walletAddress!.toLowerCase(), {
+          id: agent.id,
+        });
 
         await prefundAgentsForTesting(processingTestTrades, agentsByWallet);
 
