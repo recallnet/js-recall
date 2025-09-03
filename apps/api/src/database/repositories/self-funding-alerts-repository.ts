@@ -1,8 +1,9 @@
 import { and, desc, count as drizzleCount, eq, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
+import { selfFundingAlerts } from "@recallnet/db-schema/trading/defs";
+
 import { db } from "@/database/db.js";
-import { selfFundingAlerts } from "@/database/schema/trading/defs.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 

@@ -1,13 +1,14 @@
 import { and, desc, count as drizzleCount, eq, sql } from "drizzle-orm";
 
+import { agents } from "@recallnet/db-schema/core/defs";
+import { trades } from "@recallnet/db-schema/trading/defs";
+import { InsertTrade } from "@recallnet/db-schema/trading/types";
+
 import { db } from "@/database/db.js";
 import {
   decrementBalanceInTransaction,
   incrementBalanceInTransaction,
 } from "@/database/repositories/balance-repository.js";
-import { agents } from "@/database/schema/core/defs.js";
-import { trades } from "@/database/schema/trading/defs.js";
-import { InsertTrade } from "@/database/schema/trading/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChainSchema } from "@/types/index.js";
@@ -130,6 +131,48 @@ async function getAgentTradesImpl(
     return await query;
   } catch (error) {
     repositoryLogger.error("Error in getAgentTrades:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get the count of trades for a competition (count, total volume, unique tokens)
+ * @param competitionId Competition ID
+ * @returns Count of trades
+ */
+async function getCompetitionTradeMetricsImpl(competitionId: string) {
+  try {
+    const query = await db.execute(sql`
+      WITH base AS (
+      SELECT
+        ${trades.id}             AS id,
+        ${trades.tradeAmountUsd} AS trade_amount_usd,
+        ${trades.fromToken}      AS from_token,
+        ${trades.toToken}        AS to_token
+      FROM ${trades}
+      WHERE ${trades.competitionId} = ${competitionId}
+    )
+    SELECT
+      COUNT(*) FILTER (WHERE u.ord = 1)                                       AS total_trades,
+      COALESCE(SUM(b.trade_amount_usd) FILTER (WHERE u.ord = 1), 0)::numeric  AS total_volume,
+      COUNT(DISTINCT u.token)                                                 AS unique_tokens
+    FROM base b
+    CROSS JOIN LATERAL
+      unnest(ARRAY[b.from_token, b.to_token]) WITH ORDINALITY AS u(token, ord);
+    `);
+    const result = query.rows[0] ?? {
+      total_trades: 0,
+      total_volume: 0,
+      unique_tokens: 0,
+    };
+
+    return {
+      totalTrades: Number(result.total_trades),
+      totalVolume: Number(result.total_volume),
+      uniqueTokens: Number(result.unique_tokens),
+    };
+  } catch (error) {
+    repositoryLogger.error("Error in getCompetitionTradeMetrics:", error);
     throw error;
   }
 }
@@ -681,6 +724,12 @@ export const getAllTrades = createTimedRepositoryFunction(
   getAllTradesImpl,
   "TradeRepository",
   "getAllTrades",
+);
+
+export const getCompetitionTradeMetrics = createTimedRepositoryFunction(
+  getCompetitionTradeMetricsImpl,
+  "TradeRepository",
+  "getCompetitionTradeMetrics",
 );
 
 export const isTransactionIndexed = createTimedRepositoryFunction(

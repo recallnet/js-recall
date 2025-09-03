@@ -1,6 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "extends": ["//"],
+  "extends": [
+    "//"
+  ],
   "tasks": {
     "build": {
       "env": [
@@ -72,7 +74,12 @@
         "ENVIO_SYNC_INTERVAL_MINUTES",
         "ENVIO_MAX_CONCURRENT_SYNCS",
         "TEST_LIVE_TRADING",
-        "CI"
+        "CI",
+        "DISABLE_CACHE_API",
+        "CACHE_API_LEADERBOARD_MAX_CACHE_SIZE",
+        "CACHE_API_LEADERBOARD_TTL_MS",
+        "CACHE_API_COMPETITION_MAX_CACHE_SIZE",
+        "CACHE_API_COMPETITION_TTL_MS"
       ]
     }
   }

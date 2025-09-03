@@ -44,6 +44,9 @@ importers:
       '@recallnet/api-sdk':
         specifier: workspace:*
         version: link:../../packages/api-sdk
+      '@recallnet/db-schema':
+        specifier: workspace:*
+        version: link:../../packages/db-schema
       '@recallnet/staking-contracts':
         specifier: workspace:*
         version: link:../../packages/staking-contracts
@@ -926,6 +929,40 @@ importers:
         version: 4.6.3(typedoc@0.28.4(typescript@5.8.3))
       typescript:
         specifier: ^5.3.3
+        version: 5.8.3
+
+  packages/db-schema:
+    dependencies:
+      drizzle-orm:
+        specifier: ^0.43.1
+        version: 0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0)
+      drizzle-zod:
+        specifier: ^0.8.2
+        version: 0.8.2(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.2)(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0))(zod@3.25.23)
+      zod:
+        specifier: ^3.25.17
+        version: 3.25.23
+    devDependencies:
+      '@recallnet/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@recallnet/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      tsup:
+        specifier: ^8.3.6
+        version: 8.5.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
+      typedoc:
+        specifier: ^0.28.1
+        version: 0.28.4(typescript@5.8.3)
+      typedoc-plugin-coverage:
+        specifier: ^3.4.1
+        version: 3.4.1(typedoc@0.28.4(typescript@5.8.3))
+      typedoc-plugin-markdown:
+        specifier: ^4.6.0
+        version: 4.6.3(typedoc@0.28.4(typescript@5.8.3))
+      typescript:
+        specifier: ^5.7.3
         version: 5.8.3
 
   packages/eslint-config:

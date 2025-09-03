@@ -1,15 +1,17 @@
 import { v4 as uuidv4 } from "uuid";
 
+import { InsertTrade, SelectTrade } from "@recallnet/db-schema/trading/types";
+
 import { config, features } from "@/config/index.js";
 import {
   count,
   createTradeWithBalances,
   getAgentTrades,
   getAgentTradesInCompetition,
+  getCompetitionTradeMetrics,
   getCompetitionTrades,
 } from "@/database/repositories/trade-repository.js";
 import { findByCompetitionId } from "@/database/repositories/trading-constraints-repository.js";
-import { InsertTrade, SelectTrade } from "@/database/schema/trading/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { EXEMPT_TOKENS, calculateSlippage } from "@/lib/trade-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -306,6 +308,27 @@ export class TradeSimulator {
         error,
       );
       return { trades: [], total: 0 };
+    }
+  }
+
+  /**
+   * Get trade metrics for a competition
+   * @param competitionId Competition ID
+   * @returns Count of trades, total volume, and number of unique tokens
+   */
+  async getCompetitionTradeMetrics(competitionId: string): Promise<{
+    totalTrades: number;
+    totalVolume: number;
+    uniqueTokens: number;
+  }> {
+    try {
+      return await getCompetitionTradeMetrics(competitionId);
+    } catch (error) {
+      serviceLogger.error(
+        `[TradeSimulator] Error getting competition trade metrics:`,
+        error,
+      );
+      return { totalTrades: 0, totalVolume: 0, uniqueTokens: 0 };
     }
   }
 

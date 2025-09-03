@@ -1,8 +1,6 @@
-import {
-  AgentHandleSchema,
-  MAX_HANDLE_LENGTH,
-  MIN_HANDLE_LENGTH,
-} from "@/types/index.js";
+import { MAX_HANDLE_LENGTH } from "@recallnet/db-schema/core/defs";
+
+import { AgentHandleSchema, MIN_HANDLE_LENGTH } from "@/types/index.js";
 
 /**
  * Utility functions for agent handle generation and validation
