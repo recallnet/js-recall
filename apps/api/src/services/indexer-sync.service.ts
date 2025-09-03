@@ -287,17 +287,19 @@ export class IndexerSyncService {
 
       // Fetch transfers for these transactions in batches
       const transfersByTx = new Map<string, IndexedTransfer[]>();
-      const batchSize = 10; // Process 10 tx hashes at a time
+      const batchSize = 50; // Process 50 tx hashes at a time (increased since we're using single query)
 
       for (let i = 0; i < txHashes.length; i += batchSize) {
         const batch = txHashes.slice(i, i + batchSize);
-        const batchTransfers = await Promise.all(
-          batch.map((txHash) => this.fetchTransfersByTxHash(txHash)),
-        );
+        const batchTransfers = await this.fetchTransfersByTxHashes(batch);
 
         // Organize transfers by transaction hash
-        batch.forEach((txHash, index) => {
-          transfersByTx.set(txHash, batchTransfers[index] || []);
+        batchTransfers.forEach((transfer) => {
+          const txHash = transfer.transactionHash;
+          if (!transfersByTx.has(txHash)) {
+            transfersByTx.set(txHash, []);
+          }
+          transfersByTx.get(txHash)!.push(transfer);
         });
       }
 
@@ -526,6 +528,88 @@ export class IndexerSyncService {
     }
 
     return Math.max(...transfers.map((t) => parseInt(t.timestamp)));
+  }
+
+  /**
+   * Fetch transfers for multiple transaction hashes in a single query
+   * Optimized version that reduces network overhead
+   *
+   * @param txHashes Array of transaction hashes to fetch transfers for
+   * @returns All transfers for the given transactions
+   */
+  async fetchTransfersByTxHashes(
+    txHashes: string[],
+  ): Promise<IndexedTransfer[]> {
+    if (txHashes.length === 0) {
+      return [];
+    }
+
+    const query = `
+      query GetTransfersByTxHashes($txHashes: [String!]!) {
+        Transfer(
+          where: { transactionHash: { _in: $txHashes } }
+          order_by: { transactionHash: asc, id: asc }
+        ) {
+          id
+          from
+          to
+          chain
+          transactionHash
+          blockNumber
+          timestamp
+          token
+          value
+        }
+      }
+    `;
+
+    try {
+      serviceLogger.debug(
+        `[IndexerSyncService] Fetching transfers for ${txHashes.length} transactions in batch`,
+      );
+
+      const response = await fetch(this.graphqlEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          variables: {
+            txHashes,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Envio GraphQL error: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const result: IndexerGraphQLResponse<IndexedTransfer> =
+        await response.json();
+
+      if (result.errors) {
+        throw new Error(
+          `GraphQL errors: ${result.errors.map((e) => e.message).join(", ")}`,
+        );
+      }
+
+      const transfers = result.data?.Transfer || [];
+
+      serviceLogger.debug(
+        `[IndexerSyncService] Fetched ${transfers.length} transfers for ${txHashes.length} transactions`,
+      );
+
+      return transfers;
+    } catch (error) {
+      serviceLogger.error(
+        `[IndexerSyncService] Error fetching batch transfers:`,
+        error,
+      );
+      throw error;
+    }
   }
 
   /**

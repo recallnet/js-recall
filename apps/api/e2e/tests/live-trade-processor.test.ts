@@ -8,8 +8,7 @@ import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, test } from "vitest";
 
 import { db } from "@/database/db.js";
-import { trades } from "@/database/schema/trading/defs.js";
-import type { InsertTrade } from "@/database/schema/trading/types.js";
+import { balances, trades } from "@/database/schema/trading/defs.js";
 import {
   createTestClient,
   getAdminApiKey,
@@ -19,11 +18,129 @@ import {
 import { ServiceRegistry } from "@/services/index.js";
 import { IndexerSyncService } from "@/services/indexer-sync.service.js";
 import { LiveTradeProcessor } from "@/services/live-trade-processor.service.js";
+import { SpecificChain } from "@/types/index.js";
 import type { IndexedTrade, IndexedTransfer } from "@/types/live-trading.js";
 
 // Only run these tests when TEST_LIVE_TRADING is enabled
 const describeIfLiveTrading =
   process.env.TEST_LIVE_TRADING === "true" ? describe : describe.skip;
+
+// Chain name mappings (same as in live-trade-processor.service.ts)
+const TEST_CHAIN_NAME_MAP: Record<string, SpecificChain> = {
+  ethereum: "eth",
+  polygon: "polygon",
+  arbitrum: "arbitrum",
+  optimism: "optimism",
+  base: "base",
+};
+
+/**
+ * Helper function to pre-fund agents with tokens they'll need for testing
+ * This simulates agents having accumulated tokens from previous trading
+ *
+ * @param tradesToProcess - Trades that will be processed
+ * @param agentsByWallet - Map of wallet addresses to agent IDs
+ */
+async function prefundAgentsForTesting(
+  tradesToProcess: IndexedTrade[],
+  agentsByWallet: Map<string, { id: string }>,
+): Promise<void> {
+  console.log(
+    "💰 Pre-funding agents with required token balances for testing...",
+  );
+
+  // Map to track tokens by agent and chain
+  const tokensByAgentAndChain = new Map<string, Map<string, Set<string>>>();
+  const amountsByAgentToken = new Map<string, Map<string, bigint>>();
+
+  for (const trade of tradesToProcess) {
+    const agent = agentsByWallet.get(trade.sender.toLowerCase());
+    if (!agent) continue; // Skip if not a competition participant
+
+    const agentId = agent.id;
+
+    // Map the chain name properly
+    const specificChain = TEST_CHAIN_NAME_MAP[trade.chain.toLowerCase()];
+    if (!specificChain) {
+      // Skip trades from unsupported chains
+      continue;
+    }
+
+    // Track tokens and amounts per chain
+    if (!tokensByAgentAndChain.has(agentId)) {
+      tokensByAgentAndChain.set(agentId, new Map());
+      amountsByAgentToken.set(agentId, new Map());
+    }
+
+    const agentChainMap = tokensByAgentAndChain.get(agentId)!;
+    if (!agentChainMap.has(specificChain)) {
+      agentChainMap.set(specificChain, new Set());
+    }
+
+    // For tokenIn (what they're selling), we need a balance
+    if (trade.tokenIn !== "unknown") {
+      agentChainMap.get(specificChain)!.add(trade.tokenIn);
+
+      // Track the maximum amount needed for this token
+      const tokenKey = `${specificChain}:${trade.tokenIn}`;
+      const currentAmount =
+        amountsByAgentToken.get(agentId)!.get(tokenKey) || BigInt(0);
+      const tradeAmount = BigInt(trade.amountIn);
+      if (tradeAmount > currentAmount) {
+        amountsByAgentToken.get(agentId)!.set(tokenKey, tradeAmount);
+      }
+    }
+  }
+
+  // Create balance records for each agent's required tokens
+  let balancesCreated = 0;
+  for (const [agentId, chainMap] of tokensByAgentAndChain) {
+    const tokenAmounts = amountsByAgentToken.get(agentId)!;
+
+    for (const [specificChain, tokens] of chainMap) {
+      for (const token of tokens) {
+        // Get the amount needed (with 2x buffer for safety)
+        const tokenKey = `${specificChain}:${token}`;
+        const amountNeeded = tokenAmounts.get(tokenKey) || BigInt(0);
+        // Use a much larger buffer (1000x) to handle large trades
+        const bufferAmount = amountNeeded * BigInt(1000);
+
+        // Convert to decimal (assuming 18 decimals for most tokens, adjust as needed)
+        const decimals = 18; // This is a simplification, real code would look up decimals
+        const decimalAmount = Number(bufferAmount) / Math.pow(10, decimals);
+
+        // Create the balance record
+        const existingBalance = await db
+          .select()
+          .from(balances)
+          .where(
+            and(
+              eq(balances.agentId, agentId),
+              eq(balances.tokenAddress, token.toLowerCase()),
+            ),
+          )
+          .limit(1);
+
+        if (existingBalance.length === 0) {
+          const symbol = "UNKNOWN";
+
+          await db.insert(balances).values({
+            agentId,
+            tokenAddress: token.toLowerCase(),
+            amount: Math.max(decimalAmount, 100000000), // At least 100M units for large trades
+            specificChain,
+            symbol,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+          balancesCreated++;
+        }
+      }
+    }
+  }
+
+  console.log(`   ✅ Created ${balancesCreated} balance records for testing`);
+}
 
 describeIfLiveTrading(
   "LiveTradeProcessor Service (E2E with Real Envio)",
@@ -154,18 +271,36 @@ describeIfLiveTrading(
       const competitionId = competitionResponse.competition.id;
       console.log(`🏁 Started competition: ${competitionId}`);
 
+      // Build agentsByWallet map for pre-funding
+      const agentsByWallet = new Map<string, { id: string }>();
+      testAgents.forEach((agent) => {
+        if (agent.walletAddress) {
+          agentsByWallet.set(agent.walletAddress.toLowerCase(), {
+            id: agent.id,
+          });
+        }
+      });
+
+      // Pre-fund agents with required token balances
+      // Use a larger sample to ensure we capture all trades for our test agents
+      const tradesToProcess = realTrades.slice(0, 200);
+      await prefundAgentsForTesting(tradesToProcess, agentsByWallet);
+
       // Process the real trades through LiveTradeProcessor
-      const processedTrades = await liveTradeProcessor.processCompetitionTrades(
+      const result = await liveTradeProcessor.processCompetitionTrades(
         competitionId,
-        realTrades.slice(0, 10), // Process first 10 trades
+        tradesToProcess,
       );
 
       // Verify processing results
-      expect(processedTrades).toBeDefined();
-      expect(Array.isArray(processedTrades)).toBe(true);
+      expect(result).toBeDefined();
+      expect(result.trades).toBeDefined();
+      expect(Array.isArray(result.trades)).toBe(true);
+      expect(result.balanceUpdates).toBeDefined();
+      expect(result.balanceUpdates.totalUpdated).toBeGreaterThanOrEqual(0);
 
       // Only trades from our competition agents should be processed
-      processedTrades.forEach((trade: InsertTrade) => {
+      result.trades.forEach((trade) => {
         // Check if the agent ID matches one of our test agents
         const agentInCompetition = testAgents.some(
           (a) => a.id === trade.agentId,
@@ -174,8 +309,49 @@ describeIfLiveTrading(
       });
 
       console.log(
-        `✅ Processed ${processedTrades.length} trades for competition agents`,
+        `✅ Processed ${result.trades.length} trades for competition agents`,
       );
+
+      // Database Persistence Checks
+      if (result.trades.length > 0) {
+        console.log("🔍 Verifying database persistence...");
+
+        // Check trades are persisted
+        const persistedTrades = await db
+          .select()
+          .from(trades)
+          .where(eq(trades.competitionId, competitionId));
+
+        expect(persistedTrades.length).toBe(result.trades.length);
+        console.log(`  ✓ Found ${persistedTrades.length} trades in database`);
+
+        // Verify trade fields
+        persistedTrades.forEach((trade) => {
+          // Check critical fields for on-chain trades
+          expect(trade.tradeType).toBe("on_chain");
+          expect(trade.onChainTxHash).toBeTruthy();
+          expect(trade.blockNumber).toBeGreaterThan(0);
+          expect(trade.gasUsed).toBeGreaterThan(0);
+          expect(trade.gasPrice).toBeGreaterThan(0);
+          expect(trade.gasCostUsd).toBeGreaterThanOrEqual(0);
+          expect(trade.indexedAt).toBeTruthy();
+        });
+        console.log("  ✓ All trades have correct on-chain fields");
+
+        // Check balance updates happened
+        expect(result.balanceUpdates.totalUpdated).toBeGreaterThan(0);
+        expect(result.balanceUpdates.byAgent.size).toBeGreaterThan(0);
+        console.log(
+          `  ✓ Updated ${result.balanceUpdates.totalUpdated} balances`,
+        );
+
+        // Verify each agent's balance updates
+        result.balanceUpdates.byAgent.forEach((updates, agentId) => {
+          console.log(`    Agent ${agentId.substring(0, 8)}...:`);
+          console.log(`      - From tokens: ${updates.fromTokens.size}`);
+          console.log(`      - To tokens: ${updates.toTokens.size}`);
+        });
+      }
     });
 
     test("should enrich trades with real price data", async () => {
@@ -186,13 +362,17 @@ describeIfLiveTrading(
 
       // Setup a minimal competition
       const adminClient = await setupAdminClient();
+      // Skip test if we don't have real data
+      if (!uniqueWalletAddresses[1] && !realTrades[1]?.sender) {
+        console.log("⚠️ Insufficient wallet addresses for test, skipping");
+        return;
+      }
+      const walletAddr = uniqueWalletAddresses[1] || realTrades[1]!.sender;
       const { agent } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Price Enrichment Test Agent",
-        walletAddress:
-          uniqueWalletAddresses[1] ||
-          realTrades[1]?.sender ||
-          "0x" + "1".repeat(40),
+        walletAddress: walletAddr,
+        agentWalletAddress: walletAddr, // Use real wallet address from Envio data
       });
 
       const competitionResponse = await startTestCompetition(
@@ -219,17 +399,17 @@ describeIfLiveTrading(
 
       if (testTrades.length > 0) {
         // Process trades which will enrich them with prices internally
-        const enrichedTrades =
-          await liveTradeProcessor.processCompetitionTrades(
-            competitionId,
-            testTrades,
-          );
+        const result = await liveTradeProcessor.processCompetitionTrades(
+          competitionId,
+          testTrades,
+        );
 
         // Verify enrichment
-        expect(enrichedTrades).toBeDefined();
-        expect(enrichedTrades.length).toBeLessThanOrEqual(testTrades.length);
+        expect(result).toBeDefined();
+        expect(result.trades).toBeDefined();
+        expect(result.trades.length).toBeLessThanOrEqual(testTrades.length);
 
-        enrichedTrades.forEach((trade: InsertTrade, index) => {
+        result.trades.forEach((trade, index) => {
           const originalTrade = testTrades[index];
           // Check that trade data is preserved
           expect(trade.fromToken).toBe(originalTrade?.tokenIn);
@@ -242,6 +422,24 @@ describeIfLiveTrading(
             expect(trade.tradeAmountUsd).toBeGreaterThan(0);
           }
         });
+
+        // Database Persistence Check for Enriched Trades
+        const dbTrades = await db
+          .select()
+          .from(trades)
+          .where(eq(trades.competitionId, competitionId));
+
+        expect(dbTrades.length).toBe(result.trades.length);
+
+        // Verify enrichment persisted correctly
+        dbTrades.forEach((dbTrade) => {
+          expect(dbTrade.fromTokenSymbol).toBeTruthy();
+          expect(dbTrade.toTokenSymbol).toBeTruthy();
+          if (dbTrade.tradeAmountUsd) {
+            expect(dbTrade.tradeAmountUsd).toBeGreaterThan(0);
+          }
+        });
+        console.log("✅ Price enrichment persisted to database");
       } else {
         console.log(
           "⚠️ No trades with known tokens found for price enrichment",
@@ -271,11 +469,18 @@ describeIfLiveTrading(
       ).slice(0, 3);
 
       const testAgents = [];
+      // Skip test if we don't have real transfer data
+      if (transferAddresses.length < 2) {
+        console.log("⚠️ Insufficient transfer addresses for test, skipping");
+        return;
+      }
       for (let i = 0; i < Math.min(2, transferAddresses.length); i++) {
+        const walletAddr = transferAddresses[i]!;
         const { agent } = await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: `Self-Funding Test Agent ${i + 1}`,
-          walletAddress: transferAddresses[i] || `0x${"3".repeat(40)}`,
+          walletAddress: walletAddr,
+          agentWalletAddress: walletAddr, // Use real wallet address from Envio data
         });
         testAgents.push(agent);
       }
@@ -324,13 +529,17 @@ describeIfLiveTrading(
 
       // Setup competition with real addresses
       const adminClient = await setupAdminClient();
+      // Skip test if we don't have real data
+      if (!uniqueWalletAddresses[2] && !realTrades[2]?.sender) {
+        console.log("⚠️ Insufficient wallet addresses for test, skipping");
+        return;
+      }
+      const walletAddr = uniqueWalletAddresses[2] || realTrades[2]!.sender;
       const { agent } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "DB Persistence Test Agent",
-        walletAddress:
-          uniqueWalletAddresses[2] ||
-          realTrades[2]?.sender ||
-          "0x" + "2".repeat(40),
+        walletAddress: walletAddr,
+        agentWalletAddress: walletAddr, // Use real wallet address from Envio data
       });
 
       const competitionResponse = await startTestCompetition(
@@ -353,13 +562,31 @@ describeIfLiveTrading(
         sender: agent.walletAddress!.toLowerCase(), // Override sender to match our agent
       };
 
+      // Pre-fund the agent with required token balances
+      const agentsByWallet = new Map<string, { id: string }>();
+      agentsByWallet.set(agent.walletAddress!.toLowerCase(), { id: agent.id });
+      await prefundAgentsForTesting([testTrade], agentsByWallet);
+
       const result = await liveTradeProcessor.processCompetitionTrades(
         competitionId,
         [testTrade],
       );
 
       // Verify trade was processed
-      expect(result.length).toBeGreaterThan(0);
+      expect(result.trades.length).toBeGreaterThan(0);
+
+      // Verify balance updates
+      expect(result.balanceUpdates.totalUpdated).toBeGreaterThan(0);
+      expect(result.balanceUpdates.byAgent.has(agent.id)).toBe(true);
+
+      const agentBalanceUpdates = result.balanceUpdates.byAgent.get(agent.id);
+      if (agentBalanceUpdates) {
+        expect(agentBalanceUpdates.fromTokens.size).toBeGreaterThan(0);
+        expect(agentBalanceUpdates.toTokens.size).toBeGreaterThan(0);
+        console.log(
+          `✅ Balance updates: ${agentBalanceUpdates.fromTokens.size} from tokens, ${agentBalanceUpdates.toTokens.size} to tokens`,
+        );
+      }
 
       // Check database for persisted trade
       const [persistedTrade] = await db
@@ -374,8 +601,16 @@ describeIfLiveTrading(
         expect(persistedTrade).toBeDefined();
         expect(persistedTrade.tradeType).toBe("on_chain");
         expect(persistedTrade.agentId).toBe(agent.id);
+        expect(persistedTrade.onChainTxHash).toBe(testTrade.transactionHash);
+        expect(persistedTrade.gasUsed).toBeGreaterThan(0);
+        expect(persistedTrade.gasPrice).toBeGreaterThan(0);
+        expect(persistedTrade.blockNumber).toBeGreaterThan(0);
         console.log(
           `✅ Trade persisted to database with ID: ${persistedTrade.id}`,
+        );
+        console.log(`   Transaction hash: ${persistedTrade.onChainTxHash}`);
+        console.log(
+          `   Gas cost: $${persistedTrade.gasCostUsd?.toFixed(4) || "0"} USD`,
         );
 
         // Clean up
@@ -414,10 +649,12 @@ describeIfLiveTrading(
 
         // Setup competition
         const adminClient = await setupAdminClient();
+        const walletAddr = potentialExitTransfers[0]?.from;
         const { agent } = await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Chain Exit Test Agent",
-          walletAddress: potentialExitTransfers[0]?.from,
+          walletAddress: walletAddr,
+          agentWalletAddress: walletAddr, // Use real wallet address from Envio data
         });
 
         const competitionResponse = await startTestCompetition(
@@ -548,13 +785,18 @@ describeIfLiveTrading(
 
         // Setup minimal competition
         const adminClient = await setupAdminClient();
+        // Skip test if we don't have real data
+        if (!uniqueWalletAddresses[3] && !processingTestTrades[0]?.sender) {
+          console.log("⚠️ Insufficient wallet addresses for test, skipping");
+          return;
+        }
+        const walletAddr =
+          uniqueWalletAddresses[3] || processingTestTrades[0]!.sender;
         const { agent } = await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Consistency Test Agent",
-          walletAddress:
-            uniqueWalletAddresses[3] ||
-            processingTestTrades[0]?.sender ||
-            "0x" + "9".repeat(40),
+          walletAddress: walletAddr,
+          agentWalletAddress: walletAddr, // Use real wallet address from Envio data
         });
 
         const competitionResponse = await startTestCompetition(
@@ -563,12 +805,17 @@ describeIfLiveTrading(
           [agent.id],
         );
 
+        // Pre-fund the agent before processing
+        const agentsByWallet = new Map<string, { id: string }>();
+        agentsByWallet.set(agent.walletAddress!.toLowerCase(), agent);
+
+        await prefundAgentsForTesting(processingTestTrades, agentsByWallet);
+
         // Process trades - should only process complete ones
-        const processedTrades =
-          await liveTradeProcessor.processCompetitionTrades(
-            competitionResponse.competition.id,
-            processingTestTrades,
-          );
+        const result = await liveTradeProcessor.processCompetitionTrades(
+          competitionResponse.competition.id,
+          processingTestTrades,
+        );
 
         // Verify only complete trades were processed
         const inputCompleteTrades = processingTestTrades.filter(
@@ -577,10 +824,10 @@ describeIfLiveTrading(
 
         console.log(`  Input: ${processingTestTrades.length} total trades`);
         console.log(`  Input complete: ${inputCompleteTrades.length} trades`);
-        console.log(`  Processed: ${processedTrades.length} trades`);
+        console.log(`  Processed: ${result.trades.length} trades`);
 
         // Processed count should not exceed complete trades count
-        expect(processedTrades.length).toBeLessThanOrEqual(
+        expect(result.trades.length).toBeLessThanOrEqual(
           inputCompleteTrades.length,
         );
         console.log(
@@ -588,6 +835,400 @@ describeIfLiveTrading(
         );
       }
     }, 30000); // 30 second timeout
+
+    test("should efficiently batch fetch transfers for multiple transactions", async () => {
+      if (realTrades.length === 0) {
+        console.log("⚠️ No real trades found, skipping test");
+        return;
+      }
+
+      console.log("🔬 Testing optimized batch transfer fetching...");
+
+      // Get unique transaction hashes from trades
+      const txHashes = Array.from(
+        new Set(realTrades.slice(0, 50).map((t) => t.transactionHash)),
+      );
+      console.log(
+        `   Testing with ${txHashes.length} unique transaction hashes`,
+      );
+
+      // Test the new batch method
+      const startTime = Date.now();
+      const batchedTransfers =
+        await indexerSyncService.fetchTransfersByTxHashes(txHashes);
+      const batchTime = Date.now() - startTime;
+
+      console.log(
+        `   ✅ Batch fetched ${batchedTransfers.length} transfers in ${batchTime}ms`,
+      );
+
+      // Verify results
+      expect(batchedTransfers).toBeDefined();
+      expect(Array.isArray(batchedTransfers)).toBe(true);
+
+      // Group by transaction hash to verify completeness
+      const transfersByTx = new Map<string, typeof batchedTransfers>();
+      batchedTransfers.forEach((transfer) => {
+        const txHash = transfer.transactionHash;
+        if (!transfersByTx.has(txHash)) {
+          transfersByTx.set(txHash, []);
+        }
+        transfersByTx.get(txHash)!.push(transfer);
+      });
+
+      console.log(
+        `   📊 Transfers found for ${transfersByTx.size}/${txHashes.length} transactions`,
+      );
+
+      // Verify transfer structure
+      if (batchedTransfers.length > 0) {
+        const sampleTransfer = batchedTransfers[0];
+        expect(sampleTransfer).toHaveProperty("from");
+        expect(sampleTransfer).toHaveProperty("to");
+        expect(sampleTransfer).toHaveProperty("token");
+        expect(sampleTransfer).toHaveProperty("value");
+        expect(sampleTransfer).toHaveProperty("transactionHash");
+        expect(sampleTransfer).toHaveProperty("blockNumber");
+      }
+
+      // Compare with single-query approach (for validation, not performance comparison in CI)
+      if (txHashes.length <= 3) {
+        console.log(
+          "\n   🔍 Validating batch results against individual queries...",
+        );
+        const individualTransfers = await Promise.all(
+          txHashes.map((tx) => indexerSyncService.fetchTransfersByTxHash(tx)),
+        );
+        const flatIndividual = individualTransfers.flat();
+
+        // Sort both arrays for comparison (by txHash and id)
+        const sortFn = (a: IndexedTransfer, b: IndexedTransfer) => {
+          if (a.transactionHash !== b.transactionHash) {
+            return a.transactionHash.localeCompare(b.transactionHash);
+          }
+          return a.id.localeCompare(b.id);
+        };
+
+        batchedTransfers.sort(sortFn);
+        flatIndividual.sort(sortFn);
+
+        expect(batchedTransfers.length).toBe(flatIndividual.length);
+        console.log(
+          `   ✅ Batch and individual results match (${batchedTransfers.length} transfers)`,
+        );
+      }
+    });
+
+    test("should filter out trades from unsupported chains", async () => {
+      // Fetch a larger sample to potentially find unsupported chains
+      console.log("🔍 Fetching trades to test chain filtering...");
+      const allTrades = await indexerSyncService.fetchAllTradesSince(0, 10000);
+      console.log(`   Found ${allTrades.length} total trades in database`);
+
+      // Use the most recent 1000 trades for testing
+      const testTrades = allTrades.slice(-1000);
+      console.log(
+        `   Using ${testTrades.length} most recent trades for testing`,
+      );
+
+      if (testTrades.length === 0) {
+        console.log("⚠️ No trades found, skipping test");
+        return;
+      }
+
+      // Analyze the chain distribution
+      const chainCounts = new Map<string, number>();
+      const supportedChains = [
+        "ethereum",
+        "polygon",
+        "arbitrum",
+        "optimism",
+        "base",
+      ];
+      let unsupportedChainCount = 0;
+
+      testTrades.forEach((trade) => {
+        const chain = trade.chain.toLowerCase();
+        chainCounts.set(chain, (chainCounts.get(chain) || 0) + 1);
+
+        if (!supportedChains.includes(chain)) {
+          unsupportedChainCount++;
+        }
+      });
+
+      console.log("\n📊 Chain distribution in test trades:");
+      chainCounts.forEach((count, chain) => {
+        const isSupported = supportedChains.includes(chain);
+        console.log(
+          `   ${chain}: ${count} trades ${isSupported ? "✅ (supported)" : "❌ (unsupported)"}`,
+        );
+      });
+      console.log(
+        `   Total unsupported chain trades: ${unsupportedChainCount}`,
+      );
+
+      // Setup a competition with multiple agents from the trades
+      const adminClient = await setupAdminClient();
+
+      // Get wallet addresses that have the most trades in our test data
+      // But skip any that have already been used in previous tests
+      const usedWallets = new Set(uniqueWalletAddresses);
+      const walletTradeCounts = new Map<string, number>();
+      testTrades.forEach((trade) => {
+        const sender = trade.sender.toLowerCase();
+        const recipient = trade.recipient.toLowerCase();
+
+        // Only count if not already used in previous tests
+        if (!usedWallets.has(sender)) {
+          walletTradeCounts.set(
+            sender,
+            (walletTradeCounts.get(sender) || 0) + 1,
+          );
+        }
+        if (!usedWallets.has(recipient)) {
+          walletTradeCounts.set(
+            recipient,
+            (walletTradeCounts.get(recipient) || 0) + 1,
+          );
+        }
+      });
+
+      // Sort wallets by trade count and take the top 3
+      const walletAddresses = Array.from(walletTradeCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([wallet]) => wallet);
+
+      if (walletAddresses.length < 3) {
+        console.log("⚠️ Not enough unused wallet addresses for test, skipping");
+        return;
+      }
+
+      console.log(`\n👥 Using top 3 unused wallets with most trades:`);
+      walletAddresses.forEach((wallet) => {
+        const count = walletTradeCounts.get(wallet);
+        console.log(`   ${wallet}: ${count} trades`);
+      });
+
+      // Create test agents
+      const testAgents = [];
+      for (let i = 0; i < Math.min(walletAddresses.length, 3); i++) {
+        const { agent } = await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: `Chain Filter Test Agent ${i}`,
+          walletAddress: walletAddresses[i],
+          agentWalletAddress: walletAddresses[i], // IMPORTANT: Set agent wallet address!
+        });
+        testAgents.push(agent);
+      }
+
+      const competitionResponse = await startTestCompetition(
+        adminClient,
+        "Chain Filtering Test Competition",
+        testAgents.map((a) => a.id),
+      );
+      const competitionId = competitionResponse.competition.id;
+
+      // Create agentsByWallet map
+      const agentsByWallet = new Map<string, { id: string }>();
+      testAgents.forEach((agent) => {
+        agentsByWallet.set(agent.walletAddress!.toLowerCase(), {
+          id: agent.id,
+        });
+      });
+
+      // Pre-fund agents for all their trades (the helper will filter unsupported chains)
+      console.log("\n💰 Pre-funding agents for supported chain trades...");
+      await prefundAgentsForTesting(testTrades, agentsByWallet);
+
+      // Process all trades - LiveTradeProcessor should filter unsupported chains
+      console.log("\n🔄 Processing trades through LiveTradeProcessor...");
+
+      // Count how many trades we expect to process (trades involving our agents)
+      const expectedTrades = testTrades.filter((trade) => {
+        return (
+          agentsByWallet.has(trade.sender.toLowerCase()) ||
+          agentsByWallet.has(trade.recipient.toLowerCase())
+        );
+      });
+      console.log(
+        `   Expected ${expectedTrades.length} trades involving our agents`,
+      );
+
+      const result = await liveTradeProcessor.processCompetitionTrades(
+        competitionId,
+        testTrades,
+      );
+
+      console.log(`   Processed ${result.trades.length} trades`);
+
+      // Verify no unsupported chain trades were processed
+      result.trades.forEach((trade) => {
+        // Check that from and to chains are supported
+        expect(
+          supportedChains.map((c) => (c === "ethereum" ? "eth" : c)),
+        ).toContain(trade.fromSpecificChain);
+        if (trade.toSpecificChain) {
+          expect(
+            supportedChains.map((c) => (c === "ethereum" ? "eth" : c)),
+          ).toContain(trade.toSpecificChain);
+        }
+      });
+
+      // Verify the processing was correct
+      if (expectedTrades.length > 0) {
+        // We should have processed some trades
+        expect(result.trades.length).toBeGreaterThan(0);
+        console.log(
+          `   ✅ Processed ${result.trades.length} of ${expectedTrades.length} expected trades`,
+        );
+      } else {
+        // No trades expected for our agents
+        expect(result.trades.length).toBe(0);
+        console.log(
+          `   ✅ Correctly processed 0 trades (no trades for our agents)`,
+        );
+      }
+
+      // Verify database doesn't have any unsupported chain trades
+      const persistedTrades = await db
+        .select()
+        .from(trades)
+        .where(eq(trades.competitionId, competitionId));
+
+      console.log(
+        `\n✅ Database check: ${persistedTrades.length} trades persisted`,
+      );
+
+      // Verify the count matches what was processed
+      expect(persistedTrades.length).toBe(result.trades.length);
+
+      persistedTrades.forEach((trade) => {
+        // Verify all persisted trades use supported chains only
+        const supportedSpecificChains = [
+          "eth",
+          "polygon",
+          "arbitrum",
+          "optimism",
+          "base",
+          "svm",
+        ];
+        expect(supportedSpecificChains).toContain(trade.fromSpecificChain);
+        if (trade.toSpecificChain) {
+          expect(supportedSpecificChains).toContain(trade.toSpecificChain);
+        }
+      });
+
+      console.log(
+        "✅ Confirmed: All persisted trades are from supported chains only",
+      );
+      console.log(
+        `✅ Successfully filtered out ${unsupportedChainCount} unsupported chain trades from input`,
+      );
+    });
+
+    test("should persist trades and update balances atomically", async () => {
+      if (realTrades.length === 0) {
+        console.log("⚠️ No real trades found, skipping test");
+        return;
+      }
+
+      // Setup a competition
+      const adminClient = await setupAdminClient();
+      // Skip test if we don't have real data
+      if (!uniqueWalletAddresses[4] && !realTrades[4]?.sender) {
+        console.log("⚠️ Insufficient wallet addresses for test, skipping");
+        return;
+      }
+      const walletAddr = uniqueWalletAddresses[4] || realTrades[4]!.sender;
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Atomic Update Test Agent",
+        walletAddress: walletAddr,
+        agentWalletAddress: walletAddr, // Use real wallet address from Envio data
+      });
+
+      const competitionResponse = await startTestCompetition(
+        adminClient,
+        "Atomic Update Test Competition",
+        [agent.id],
+      );
+      const competitionId = competitionResponse.competition.id;
+
+      console.log("🔬 Testing atomic trade persistence and balance updates...");
+
+      // Process a batch of trades - modify them to match our agent's wallet
+      const testBatch = realTrades.slice(0, 3).map((trade) => ({
+        ...trade,
+        sender: agent.walletAddress!.toLowerCase(), // Override sender to match our agent
+      }));
+
+      // Pre-fund the agent with required token balances
+      const agentsByWallet = new Map<string, { id: string }>();
+      agentsByWallet.set(agent.walletAddress!.toLowerCase(), { id: agent.id });
+      await prefundAgentsForTesting(testBatch, agentsByWallet);
+
+      const result = await liveTradeProcessor.processCompetitionTrades(
+        competitionId,
+        testBatch,
+      );
+
+      // Verify atomicity
+      expect(result.trades.length).toBeGreaterThan(0);
+      expect(result.balanceUpdates.totalUpdated).toBeGreaterThan(0);
+
+      // Check trades in database
+      const persistedTrades = await db
+        .select()
+        .from(trades)
+        .where(eq(trades.competitionId, competitionId));
+
+      expect(persistedTrades.length).toBe(result.trades.length);
+
+      // Verify all trades have complete data
+      persistedTrades.forEach((trade) => {
+        expect(trade.tradeType).toBe("on_chain");
+        expect(trade.onChainTxHash).toBeTruthy();
+        expect(trade.fromAmount).toBeGreaterThan(0);
+        expect(trade.toAmount).toBeGreaterThan(0);
+        expect(trade.gasUsed).toBeGreaterThan(0);
+        expect(trade.timestamp).toBeTruthy();
+      });
+
+      // Check that balances were created/updated for the agents
+      for (const [agentId, updates] of result.balanceUpdates.byAgent) {
+        const agentBalances = await db
+          .select()
+          .from(balances)
+          .where(eq(balances.agentId, agentId));
+
+        console.log(`  Agent ${agentId.substring(0, 8)}...:`);
+        console.log(`    - Total balances in DB: ${agentBalances.length}`);
+        console.log(`    - From tokens updated: ${updates.fromTokens.size}`);
+        console.log(`    - To tokens updated: ${updates.toTokens.size}`);
+
+        // Verify at least some balances exist
+        expect(agentBalances.length).toBeGreaterThan(0);
+
+        // Check that the balances match the tokens that were updated
+        const balanceTokens = new Set(
+          agentBalances.map((b) => b.tokenAddress.toLowerCase()),
+        );
+
+        // All updated tokens should have balance records
+        updates.fromTokens.forEach((token) => {
+          expect(balanceTokens.has(token.toLowerCase())).toBe(true);
+        });
+        updates.toTokens.forEach((token) => {
+          expect(balanceTokens.has(token.toLowerCase())).toBe(true);
+        });
+      }
+
+      console.log("✅ Atomic trade persistence and balance updates verified!");
+
+      // Clean up
+      await db.delete(trades).where(eq(trades.competitionId, competitionId));
+    }, 30000);
   },
 );
 

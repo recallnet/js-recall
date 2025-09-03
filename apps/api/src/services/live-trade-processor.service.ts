@@ -2,7 +2,8 @@ import { v4 as uuidv4 } from "uuid";
 
 import { config } from "@/config/index.js";
 import { findByCompetition } from "@/database/repositories/agent-repository.js";
-import { InsertTrade } from "@/database/schema/trading/types.js";
+import { batchCreateOnChainTradesWithBalances } from "@/database/repositories/trade-repository.js";
+import { InsertTrade, SelectTrade } from "@/database/schema/trading/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
 import { IndexedTrade, IndexedTransfer } from "@/types/live-trading.js";
@@ -110,13 +111,6 @@ export class LiveTradeProcessor {
   private readonly competitionManager: CompetitionManager;
   private readonly balanceManager: BalanceManager;
 
-  // Cache for price data to avoid repeated lookups
-  private priceCache: Map<
-    string,
-    { price: number; symbol: string; decimals: number; expiry: number }
-  >;
-  private readonly PRICE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
   constructor(
     priceTracker: PriceTracker,
     competitionManager: CompetitionManager,
@@ -125,22 +119,26 @@ export class LiveTradeProcessor {
     this.priceTracker = priceTracker;
     this.competitionManager = competitionManager;
     this.balanceManager = balanceManager;
-    this.priceCache = new Map();
   }
 
   /**
    * Process raw indexed trades for a competition
-   * Handles validation, enrichment, and maps to database schema
-   * DOES NOT persist - returns mapped trades for the repository layer
+   * Handles validation, enrichment, persistence with atomic balance updates
    *
    * @param competitionId Competition ID to process trades for
    * @param indexedTrades Raw trades from the indexer
-   * @returns Mapped trades ready for database insertion
+   * @returns Object containing persisted trades and balance update summary
    */
   async processCompetitionTrades(
     competitionId: string,
     indexedTrades: IndexedTrade[],
-  ): Promise<InsertTrade[]> {
+  ): Promise<{
+    trades: SelectTrade[];
+    balanceUpdates: {
+      totalUpdated: number;
+      byAgent: Map<string, { fromTokens: Set<string>; toTokens: Set<string> }>;
+    };
+  }> {
     const startTime = Date.now();
 
     try {
@@ -158,18 +156,37 @@ export class LiveTradeProcessor {
         `[LiveTradeProcessor] Found ${agents.length} agents with wallets in competition`,
       );
 
-      // 2. Filter trades by competition participants
-      const relevantTrades = indexedTrades.filter(
-        (trade) =>
+      // 2. Filter trades by competition participants AND supported chains
+      const relevantTrades = indexedTrades.filter((trade) => {
+        // Check if trade involves a competition participant
+        const hasParticipant =
           agentsByWallet.has(trade.sender.toLowerCase()) ||
-          agentsByWallet.has(trade.recipient.toLowerCase()),
-      );
+          agentsByWallet.has(trade.recipient.toLowerCase());
+
+        // Check if trade is on a supported chain
+        const isSupportedChain =
+          CHAIN_NAME_MAP[trade.chain.toLowerCase()] !== undefined;
+
+        if (!isSupportedChain && hasParticipant) {
+          serviceLogger.debug(
+            `[LiveTradeProcessor] Skipping trade ${trade.id} on unsupported chain: ${trade.chain}`,
+          );
+        }
+
+        return hasParticipant && isSupportedChain;
+      });
 
       if (relevantTrades.length === 0) {
         serviceLogger.info(
           `[LiveTradeProcessor] No relevant trades found for competition ${competitionId}`,
         );
-        return [];
+        return {
+          trades: [],
+          balanceUpdates: {
+            totalUpdated: 0,
+            byAgent: new Map(),
+          },
+        };
       }
 
       // 3. Check for trades with unknown tokens (should be rare with enrichment)
@@ -213,12 +230,17 @@ export class LiveTradeProcessor {
         agentsByWallet,
       );
 
+      // 6. CRITICAL: Persist trades with atomic balance updates
+      // This is what makes live trading competitions work!
+      const result = await batchCreateOnChainTradesWithBalances(mappedTrades);
+
       const duration = Date.now() - startTime;
       serviceLogger.info(
-        `[LiveTradeProcessor] Processed ${mappedTrades.length} trades in ${duration}ms`,
+        `[LiveTradeProcessor] Processed ${mappedTrades.length} trades in ${duration}ms. ` +
+          `Persisted ${result.trades.length} trades with ${result.balanceUpdates.totalUpdated} balance updates`,
       );
 
-      return mappedTrades;
+      return result;
     } catch (error) {
       serviceLogger.error(
         `[LiveTradeProcessor] Error processing trades for competition ${competitionId}:`,
@@ -403,12 +425,11 @@ export class LiveTradeProcessor {
       Array.from(tokens),
     );
 
-    // Convert PriceReports to our internal price format and update cache
+    // Convert PriceReports to our internal price format
     const priceMap = new Map<
       string,
       { price: number; symbol: string; decimals: number } | null
     >();
-    const now = Date.now();
 
     priceReports.forEach((report, token) => {
       if (report) {
@@ -416,10 +437,7 @@ export class LiveTradeProcessor {
           price: report.price,
           symbol: report.symbol,
           decimals: 18, // Default decimals, could be enhanced later
-          expiry: now + this.PRICE_CACHE_TTL,
         };
-        // Update cache for future lookups
-        this.priceCache.set(token.toLowerCase(), priceData);
         priceMap.set(token.toLowerCase(), priceData);
       } else {
         priceMap.set(token.toLowerCase(), null);
@@ -528,55 +546,20 @@ export class LiveTradeProcessor {
   }
 
   /**
-   * Get cached price or fetch from PriceTracker
-   *
-   * @param tokenAddress Token address
-   * @returns Price data with symbol and decimals
-   */
-  private async getCachedPrice(
-    tokenAddress: string,
-  ): Promise<{ price: number; symbol: string; decimals: number } | null> {
-    const now = Date.now();
-    const cached = this.priceCache.get(tokenAddress.toLowerCase());
-
-    if (cached && cached.expiry > now) {
-      return cached;
-    }
-
-    try {
-      // Fetch from PriceTracker
-      const priceResult = await this.priceTracker.getPrice(tokenAddress);
-
-      if (priceResult) {
-        const priceData = {
-          price: priceResult.price,
-          symbol: priceResult.symbol,
-          decimals: 18, // Default to 18 decimals
-          expiry: now + this.PRICE_CACHE_TTL,
-        };
-
-        this.priceCache.set(tokenAddress.toLowerCase(), priceData);
-        return priceData;
-      }
-
-      return null;
-    } catch (error) {
-      serviceLogger.error(
-        `[LiveTradeProcessor] Error fetching price for ${tokenAddress}:`,
-        error,
-      );
-      return null;
-    }
-  }
-
-  /**
    * Map Envio chain names to our SpecificChain type
    *
    * @param envioChain Chain name from Envio
    * @returns SpecificChain enum value
+   * @throws Error if chain is not supported
    */
   private mapChainName(envioChain: string): SpecificChain {
-    return CHAIN_NAME_MAP[envioChain.toLowerCase()] || ("eth" as SpecificChain);
+    const mappedChain = CHAIN_NAME_MAP[envioChain.toLowerCase()];
+    if (!mappedChain) {
+      throw new Error(
+        `Unsupported chain: ${envioChain}. Supported chains: ${Object.keys(CHAIN_NAME_MAP).join(", ")}`,
+      );
+    }
+    return mappedChain;
   }
 
   /**
