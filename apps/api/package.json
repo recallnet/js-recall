@@ -18,6 +18,7 @@
     "test:watch": "vitest watch --project unit",
     "test:e2e": "vitest run --project e2e",
     "test:e2e:live": "TEST_LIVE_TRADING=true vitest run --project e2e --testTimeout=60000",
+    "test:e2e:live-single": "TEST_LIVE_TRADING=true vitest run --project e2e e2e/tests/live-trade-processor.test.ts",
     "rewards:allocate": "tsx scripts/rewards-allocate.ts",
     "rewards:insert-test-data": "tsx scripts/insert-rewards.ts",
     "db:gen-migrations": "NODE_OPTIONS='--import tsx' drizzle-kit generate",

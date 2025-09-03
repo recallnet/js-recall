@@ -1,4 +1,4 @@
-name: API CI
+name: API Live Trading CI
 
 on:
   push:
@@ -10,96 +10,14 @@ on:
 env:
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: fe319abf1a1b0d76b39894e5e17aff0c
   NEXT_PUBLIC_CHAIN_NAME: testnet
+  # Required for Envio indexer to fetch initial block numbers
+  # This should be replaced with a real key stored in GitHub secrets
+  ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY || 'demo-key-for-testing' }}
 
 jobs:
-  unit-tests:
+  live-trading-tests:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Build everything
-        run: pnpm build
-
-      - name: Run unit tests
-        working-directory: apps/api
-        run: |
-          # List test files to ensure they're found
-          echo "Found these unit test files:"
-          find src -name "*.test.ts" || echo "No unit test files found"
-
-          # Create a simplified test environment file
-          cat > .env.test << EOF
-          NODE_ENV=test
-          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trading_simulator_test
-          # Note: root encryption key is also used for sessions; requires a 32 character length
-          ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters
-          EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
-          TEST_MODE=true
-          EOF
-
-          # Create a wrapper script to ensure proper test execution
-          cat > run-unit-tests-with-fail.cjs << EOF
-          const { execSync } = require('child_process');
-
-          console.log('⏳ Starting unit tests with wrapper...');
-
-          try {
-            // Run the unit tests with NODE_ENV=test
-            execSync('pnpm test', {
-              stdio: 'inherit',
-              env: {
-                ...process.env,
-                NODE_ENV: 'test',
-                TEST_MODE: 'true'
-              }
-            });
-
-            console.log('✅ Unit tests completed successfully');
-            process.exit(0);
-          } catch (error) {
-            console.error('⚠️ Error in unit tests:', error.message);
-
-            // Properly fail the build when tests fail
-            process.exit(1);
-          }
-          EOF
-
-          # Run the tests through the wrapper script
-          node run-unit-tests-with-fail.cjs
-        env:
-          NODE_ENV: test
-          TEST_MODE: true
-          NODE_OPTIONS: --max-old-space-size=4096
-
-  e2e-tests:
-    runs-on: ubuntu-latest
+    timeout-minutes: 30  # Give enough time for Envio indexer to sync
     services:
       postgres:
         image: postgres:14
@@ -113,7 +31,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          # Maps tcp port 5432 on service container to the host
           - 5432:5432
 
     steps:
@@ -139,8 +56,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-live-trading-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
+            ${{ runner.os }}-pnpm-store-live-trading-
             ${{ runner.os }}-pnpm-store-
 
       - name: Install Dependencies
@@ -148,6 +66,18 @@ jobs:
 
       - name: Build everything
         run: pnpm build
+
+      - name: Setup Envio Indexer
+        working-directory: apps/envio-indexer
+        run: |
+          echo "📦 Installing Envio indexer dependencies..."
+          pnpm install
+          
+          echo "🔍 Verifying Envio CLI is available..."
+          npx envio --version || echo "Envio CLI will be installed on first use"
+          
+          echo "📁 Current directory structure:"
+          ls -la
 
       - name: Detect environment and get postgres IP
         id: detect-env
@@ -268,99 +198,84 @@ jobs:
           ENABLE_AUTO_VERIFY_USER_EMAIL=true
           EOF
 
-      - name: Run E2E tests
+      - name: Run Live Trading E2E tests
         working-directory: apps/api
         run: |
-          # Note: Live trading tests are skipped (TEST_LIVE_TRADING not set)
-          # They run in a separate workflow: api-live-trading-ci.yml
+          echo "🧪 Running Live Trading E2E tests..."
+          echo "This will start the Envio indexer and run live trade processor tests"
+          echo ""
+          echo "📌 CI Environment Notes:"
+          echo "  - Docker is available (required for Envio)"
+          echo "  - Envio will start its own containers (postgres, hasura)"
+          echo "  - Ports 8080 (Hasura) and 9898 (GraphQL) will be used"
+          echo "  - ALCHEMY_API_KEY is set: ${ALCHEMY_API_KEY:0:10}..."
+          echo ""
           
-          # Show the current working directory
-          echo "Current working directory: $(pwd)"
-
-          # Show the environment file that will be used
-          echo "Contents of .env.test file:"
-          cat .env.test
-
-          # Verify the path for e2e tests
-          echo "E2E directory structure:"
-          find e2e -type f -name "*.test.ts" | sort
-
-          # Check that .env.test is in the location expected by setup.ts
-          echo "Verifying .env.test is in the location expected by setup.ts:"
-          SETUP_PATH="$(pwd)/e2e/setup.ts"
-          RELATIVE_ENV_PATH="$(dirname $SETUP_PATH)/../.env.test"
-          echo "Expected path from setup.ts: $RELATIVE_ENV_PATH"
-          if [ -f "$RELATIVE_ENV_PATH" ]; then
-            echo "✅ .env.test exists at the expected path"
-          else
-            echo "❌ .env.test NOT found at expected path"
-          fi
-
-          # Create a wrapper script to ensure proper test execution and cleanup
-          cat > run-tests-with-fail.cjs << EOF
+          # Create a wrapper script to handle test execution
+          cat > run-live-trading-tests.cjs << EOF
           const { spawnSync } = require('child_process');
 
-          console.log('⏳ Starting E2E tests with wrapper...');
+          console.log('⏳ Starting Live Trading E2E tests...');
+          console.log('📡 Envio indexer will be automatically started by setup.ts');
 
           try {
-            // Run the E2E tests
-            const result = spawnSync('pnpm', ['run', 'test:e2e'], {
+            // Run only the live-trade-processor test with TEST_LIVE_TRADING enabled
+            const result = spawnSync('pnpm', ['vitest', 'run', '--project', 'e2e', 'e2e/tests/live-trade-processor.test.ts'], {
               stdio: 'inherit',
               env: {
                 ...process.env,
-                // Set an environment flag to indicate we're running in CI with special error handling
+                TEST_LIVE_TRADING: 'true',
                 E2E_TEST_DISTINGUISH_ERRORS: 'true'
               }
             });
 
             // Check the exit code
             if (result.status !== 0) {
-              // The process output is already passed through with stdio: 'inherit'
-              // Jest will report clear test failures with "[FAIL]" in the output
-
-              // If exit code is 1 (standard Jest failure code), fail the build
               if (result.status === 1) {
-                console.error('❌ Tests failed with exit code 1 (standard test failure)');
+                console.error('❌ Live trading tests failed');
+                process.exit(1);
+              } else {
+                console.warn('⚠️ Process exited with code', result.status, 'but may be a cleanup issue');
+                // For live trading tests, we should be stricter about exit codes
+                // since the Envio indexer might cause issues
                 process.exit(1);
               }
-              // If exit code is greater than 1, it's likely a process/cleanup issue
-              else {
-                console.warn('⚠️ Process exited with code', result.status, 'but may be a cleanup issue, treating as success');
-                console.warn('   This is likely due to connection handling or test teardown issues, not actual test failures');
-                process.exit(0);
-              }
             } else {
-              console.log('✅ Tests completed successfully');
+              console.log('✅ Live trading tests completed successfully');
               process.exit(0);
             }
           } catch (error) {
-            console.error('⚠️ Error running tests:', error.message);
-
-            // Check if the error message suggests a test failure
-            if (error.message.includes('Test failed') ||
-                error.message.includes('failed with exit code 1') ||
-                error.message.includes('tests failed')) {
-              console.error('❌ Tests failed, failing the build');
-              process.exit(1);
-            } else {
-              console.warn('⚠️ Error appears to be from process/shutdown, treating as success');
-              process.exit(0);
-            }
+            console.error('⚠️ Error running live trading tests:', error.message);
+            process.exit(1);
           }
           EOF
 
           # Run the tests through the wrapper script
-          node run-tests-with-fail.cjs
+          node run-live-trading-tests.cjs
         env:
           TEST_MODE: true
           CI: true
+          TEST_LIVE_TRADING: true  # Critical: Enable live trading tests
           DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
           TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
-          # TODO: I think the tests are Vitest, why do we have a JEST env here?
-          JEST_WORKER_ID: 1 # Force single worker to prevent open handles from child processes
+          JEST_WORKER_ID: 1  # Force single worker to prevent open handles from child processes
           DB_CONNECTION_TIMEOUT: 5000
           DB_IDLE_TIMEOUT: 1000
-          NODE_OPTIONS: "--max-old-space-size=4096" # Increase Node.js memory limit
+          NODE_OPTIONS: "--max-old-space-size=4096"  # Increase Node.js memory limit
           E2E_CLEANUP_DB: true
           DB_CLEANUP_STRATEGY: truncate
           TEST_FORCE_EXIT: true
+
+      - name: Debug - Show Envio logs on failure
+        if: failure()
+        working-directory: apps/envio-indexer
+        run: |
+          echo "📋 Showing Envio indexer logs (if available)..."
+          if [ -f "envio.log" ]; then
+            tail -n 100 envio.log
+          else
+            echo "No envio.log file found"
+          fi
+          
+          echo "📋 Checking for other log files..."
+          find . -name "*.log" -type f -exec echo "Found log: {}" \; -exec tail -n 50 {} \;
