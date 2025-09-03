@@ -220,6 +220,8 @@ export class EnvioManager {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
           ...process.env,
+          // Set Envio's port explicitly to avoid conflicts with API metrics server
+          ENVIO_INDEXER_PORT: "3006",
           // Envio manages its own RPC connections and database
           // No need to provide RPC endpoints - they're configured in config.yaml
         },
