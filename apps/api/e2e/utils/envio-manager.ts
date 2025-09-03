@@ -56,9 +56,15 @@ export class EnvioManager {
       // 1. Ensure Docker is running (Envio needs it)
       await this.checkDocker();
 
-      // 2. Run codegen to setup GraphQL schema
-      console.log("🔧 Running Envio codegen...");
-      await this.runCodegen();
+      // 2. Handle codegen appropriately for each environment
+      if (process.env.CI) {
+        // In CI: codegen was already run during the build phase
+        console.log("🔧 Skipping codegen (already done in CI build)");
+      } else {
+        // Locally: we need to run codegen before starting dev:latest
+        console.log("🔧 Running Envio codegen...");
+        await this.runCodegen();
+      }
 
       // 3. Start the Envio indexer (it will manage its own Docker containers)
       console.log(
@@ -196,8 +202,11 @@ export class EnvioManager {
    */
   private async startIndexer(): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Start the indexer - blocks were already updated during build phase
-      this.envioProcess = spawn("pnpm", ["dev"], {
+      // In CI, blocks were already updated during build phase, use regular dev
+      // Locally, use dev:latest to update blocks in generated files
+      const command = process.env.CI ? "dev" : "dev:latest";
+
+      this.envioProcess = spawn("pnpm", [command], {
         cwd: this.indexerPath,
         stdio: ["pipe", "pipe", "pipe"], // Changed from inherit to avoid blocking terminal
         env: {

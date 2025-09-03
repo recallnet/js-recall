@@ -9,6 +9,7 @@
     "codegen": "envio codegen",
     "update-generated-blocks": "tsx scripts/update-generated-start-blocks.ts",
     "dev": "envio dev",
+    "dev:latest": "pnpm codegen && pnpm update-generated-blocks && envio dev",
     "start": "envio start",
     "test": "pnpm mocha",
     "install:local": "pnpm install --ignore-workspace",
