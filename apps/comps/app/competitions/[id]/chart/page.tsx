@@ -92,7 +92,7 @@ export default function CompetitionChartPage({
           currentPage={1}
           onPageChange={handlePageChange}
           className="shadow-2xl"
-          suppressInternalLoading={true}
+          suppressInternalLoading={false}
         />
 
         <div className="my-8 text-center">

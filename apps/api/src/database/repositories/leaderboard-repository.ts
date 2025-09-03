@@ -9,27 +9,24 @@ import {
   sum,
 } from "drizzle-orm";
 
-import { dbRead } from "@/database/db.js";
 import {
   agents,
   competitionAgents,
   competitions,
   competitionsLeaderboard,
   votes,
-} from "@/database/schema/core/defs.js";
-import { agentScore } from "@/database/schema/ranking/defs.js";
+} from "@recallnet/db-schema/core/defs";
+import { agentScore } from "@recallnet/db-schema/ranking/defs";
 import {
   trades,
   tradingCompetitionsLeaderboard,
-} from "@/database/schema/trading/defs.js";
+} from "@recallnet/db-schema/trading/defs";
+
+import { dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import type { RawAgentMetricsQueryResult } from "@/types/agent-metrics.js";
-import {
-  COMPETITION_AGENT_STATUS,
-  COMPETITION_STATUS,
-  CompetitionType,
-} from "@/types/index.js";
+import { CompetitionType } from "@/types/index.js";
 
 /**
  * Leaderboard Repository
@@ -57,12 +54,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   const relevantCompetitions = await dbRead
     .select({ id: competitions.id })
     .from(competitions)
-    .where(
-      and(
-        eq(competitions.type, type),
-        eq(competitions.status, COMPETITION_STATUS.ENDED),
-      ),
-    );
+    .where(and(eq(competitions.type, type), eq(competitions.status, "ended")));
 
   if (relevantCompetitions.length === 0) {
     return {
@@ -103,7 +95,7 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
     .where(
       and(
         inArray(competitionAgents.competitionId, relevantCompetitionIds),
-        eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+        eq(competitionAgents.status, "active"),
       ),
     );
 

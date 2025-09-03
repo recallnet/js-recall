@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 
+import { competitions } from "@recallnet/db-schema/core/defs";
+
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { competitions } from "@/database/schema/core/defs.js";
 import { middlewareLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import { COMPETITION_STATUS } from "@/types/index.js";
 
 /**
  * Active Competition Filter Middleware
@@ -57,7 +57,7 @@ async function getActiveComp() {
   const [activeComp] = await db
     .select({ id: competitions.id, name: competitions.name })
     .from(competitions)
-    .where(eq(competitions.status, COMPETITION_STATUS.ACTIVE))
+    .where(eq(competitions.status, "active"))
     .limit(1);
 
   // Update cache
