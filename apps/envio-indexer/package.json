@@ -2,7 +2,7 @@
   "name": "@recall/envio-indexer",
   "version": "0.1.0",
   "scripts": {
-    "clean": "tsc --clean",
+    "clean": "rm -rf dist generated .turbo node_modules",
     "build": "pnpm codegen && pnpm update-generated-blocks && tsc --build",
     "watch": "tsc --watch",
     "mocha": "ts-mocha test/**/*.ts",
