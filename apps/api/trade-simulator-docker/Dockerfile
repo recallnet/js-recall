@@ -8,6 +8,7 @@ COPY package.json pnpm-*.yaml .npmrc ./
 COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/typescript-config/package.json packages/typescript-config/
 COPY packages/api-sdk/package.json packages/api-sdk/
+COPY packages/db-schema/package.json packages/db-schema/
 COPY packages/staking-contracts/package.json packages/staking-contracts/
 COPY apps/api/package.json apps/api/
 
