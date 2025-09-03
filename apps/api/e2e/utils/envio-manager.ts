@@ -212,9 +212,6 @@ export class EnvioManager {
       // Locally, use dev:latest to update blocks in generated files
       const command = process.env.CI ? "dev" : "dev:latest";
 
-      console.log(`🚀 Starting Envio with command: pnpm ${command}`);
-      console.log(`   Working directory: ${this.indexerPath}`);
-
       this.envioProcess = spawn("pnpm", [command], {
         cwd: this.indexerPath,
         stdio: ["pipe", "pipe", "pipe"],
@@ -227,26 +224,29 @@ export class EnvioManager {
         },
       });
 
-      // Capture and log stdout
+      // Capture stdout for error detection only
       this.envioProcess.stdout?.on("data", (data) => {
         const output = data.toString();
-        if (process.env.CI) {
-          console.log(`[Envio stdout]: ${output}`);
-        }
-        // Look for specific success/failure indicators
+        // Only log errors or important status messages
         if (
           output.includes("error") ||
           output.includes("Error") ||
           output.includes("ERROR")
         ) {
           console.error(`❌ Envio error detected: ${output}`);
+        } else if (output.includes("All events have been fetched")) {
+          // Log successful indexing milestones
+          console.log("📊 Envio: Events fetched from chains");
         }
       });
 
-      // Capture and log stderr
+      // Capture stderr - only log actual errors
       this.envioProcess.stderr?.on("data", (data) => {
         const output = data.toString();
-        console.error(`[Envio stderr]: ${output}`);
+        // Only log if it's an actual error (not just info messages)
+        if (output.includes("Error") || output.includes("EADDRINUSE")) {
+          console.error(`[Envio stderr]: ${output}`);
+        }
       });
 
       this.envioProcess.on("error", (error) => {

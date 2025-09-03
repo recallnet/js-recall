@@ -234,7 +234,7 @@ describeIfLiveTrading(
       // Wait for indexer to sync some data
       // Poll until we have sufficient trades indexed
       await waitForMinimumTrades(indexerSyncService, {
-        minTrades: 10000, // Need 10k to use the most recent 1k
+        minTrades: 2000, // Need 2k to have buffer for using most recent 1k
         maxWaitTime: process.env.CI ? 300000 : 120000, // 5 min in CI, 2 min locally
         pollInterval: 2000,
       });
