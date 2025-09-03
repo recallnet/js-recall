@@ -30,7 +30,7 @@ import {
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
-  createSiweAuthenticatedClient,
+  createPrivyAuthenticatedClient,
   createTestAgent,
   createTestClient,
   createTestCompetition,
@@ -479,10 +479,9 @@ describe("Competition API", () => {
     expect(unauthRulesResponse.rules).toBeDefined();
     expect(unauthRulesResponse.competition.id).toBe(competitionId);
 
-    // Test 3: SIWE authenticated user can access the rules
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "SIWE Rules Viewer",
+    // Test 3: Privy authenticated user can access the rules
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
+      userName: "Privy Rules Viewer",
       userEmail: "siwe-rules@example.com",
     });
 
@@ -1377,7 +1376,7 @@ describe("Competition API", () => {
       expect(typeof agent.active).toBe("boolean");
       expect(agent.deactivationReason).toBeNull();
 
-      // Verify new PnL and 24h change fields are accessible to SIWE users
+      // Verify new PnL and 24h change fields are accessible to Privy users
       expect(typeof agent.pnl).toBe("number");
       expect(typeof agent.pnlPercent).toBe("number");
       expect(typeof agent.change24h).toBe("number");
@@ -1515,28 +1514,27 @@ describe("Competition API", () => {
     });
   });
 
-  // test cases for SIWE user authentication
-  test("SIWE users can access competition details endpoint", async () => {
+  // test cases for Privy user authentication
+  test("Privy users can access competition details endpoint", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "SIWE Competition Detail User",
+    // Create a Privy-authenticated user client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
+      userName: "Privy Competition Detail User",
       userEmail: "siwe-competition-detail@example.com",
     });
 
     // Create a competition
-    const competitionName = `SIWE Detail Test Competition ${Date.now()}`;
+    const competitionName = `Privy Detail Test Competition ${Date.now()}`;
     const createResponse = await createTestCompetition(
       adminClient,
       competitionName,
-      "Test competition for SIWE user access",
+      "Test competition for Privy user access",
     );
 
-    // Test SIWE user can get competition details by ID
+    // Test Privy user can get competition details by ID
     const detailResponse = await siweClient.getCompetition(
       createResponse.competition.id,
     );
@@ -1556,7 +1554,7 @@ describe("Competition API", () => {
       (detailResponse as CompetitionDetailResponse).competition.status,
     ).toBe("pending");
 
-    // Test SIWE user gets 404 for non-existent competition
+    // Test Privy user gets 404 for non-existent competition
     const notFoundResponse = await siweClient.getCompetition(
       "00000000-0000-0000-0000-000000000000",
     );
@@ -1564,34 +1562,33 @@ describe("Competition API", () => {
     expect((notFoundResponse as ErrorResponse).error).toContain("not found");
   });
 
-  test("SIWE users can access competition agents endpoint", async () => {
+  test("Privy users can access competition agents endpoint", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "SIWE Competition Agents User",
+    // Create a Privy-authenticated user client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
+      userName: "Privy Competition Agents User",
       userEmail: "siwe-competition-agents@example.com",
     });
 
     // Register multiple agents for the competition
     const { agent: agent1 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "SIWE Test Agent One",
+      agentName: "Privy Test Agent One",
     });
 
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "SIWE Test Agent Two",
+      agentName: "Privy Test Agent Two",
     });
 
     // Create and start a competition with multiple agents
-    const competitionName = `SIWE Agents Test Competition ${Date.now()}`;
+    const competitionName = `Privy Agents Test Competition ${Date.now()}`;
     const startResponse = await adminClient.startCompetition({
       name: competitionName,
-      description: "Test competition for SIWE user agents access",
+      description: "Test competition for Privy user agents access",
       agentIds: [agent1.id, agent2.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     });
@@ -1599,7 +1596,7 @@ describe("Competition API", () => {
     expect(startResponse.success).toBe(true);
     const competition = (startResponse as StartCompetitionResponse).competition;
 
-    // Test SIWE user can get competition agents
+    // Test Privy user can get competition agents
     const agentsResponse = await siweClient.getCompetitionAgents(
       competition.id,
     );
@@ -1618,7 +1615,7 @@ describe("Competition API", () => {
       expect(typeof agent.active).toBe("boolean");
       expect(agent.deactivationReason).toBeNull();
 
-      // Verify new PnL and 24h change fields are accessible to SIWE users
+      // Verify new PnL and 24h change fields are accessible to Privy users
       expect(typeof agent.pnl).toBe("number");
       expect(typeof agent.pnlPercent).toBe("number");
       expect(typeof agent.change24h).toBe("number");
@@ -1631,7 +1628,7 @@ describe("Competition API", () => {
       expect(Number.isFinite(agent.change24hPercent)).toBe(true);
     }
 
-    // Test SIWE user gets 404 for non-existent competition
+    // Test Privy user gets 404 for non-existent competition
     const notFoundResponse = await siweClient.getCompetitionAgents(
       "00000000-0000-0000-0000-000000000000",
     );
@@ -1639,37 +1636,36 @@ describe("Competition API", () => {
     expect((notFoundResponse as ErrorResponse).error).toContain("not found");
   });
 
-  test("SIWE users can access existing competitions endpoint", async () => {
+  test("Privy users can access existing competitions endpoint", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "SIWE Competitions List User",
+    // Create a Privy-authenticated user client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
+      userName: "Privy Competitions List User",
       userEmail: "siwe-competitions-list@example.com",
     });
 
     // Create several competitions in different states
     const pendingComp = await createTestCompetition(
       adminClient,
-      `SIWE Pending Competition ${Date.now()}`,
+      `Privy Pending Competition ${Date.now()}`,
     );
 
     // Register an agent for active competition
     const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "SIWE Active Competition Agent",
+      agentName: "Privy Active Competition Agent",
     });
 
     const activeComp = await startTestCompetition(
       adminClient,
-      `SIWE Active Competition ${Date.now()}`,
+      `Privy Active Competition ${Date.now()}`,
       [agent.id],
     );
 
-    // Test SIWE user can get pending competitions
+    // Test Privy user can get pending competitions
     const pendingResponse = await siweClient.getCompetitions("pending");
     expect(pendingResponse.success).toBe(true);
     expect(
@@ -1682,7 +1678,7 @@ describe("Competition API", () => {
     ).competitions.find((comp) => comp.id === pendingComp.competition.id);
     expect(foundPending).toBeDefined();
 
-    // Test SIWE user can get active competitions
+    // Test Privy user can get active competitions
     const activeResponse = await siweClient.getCompetitions("active");
     expect(activeResponse.success).toBe(true);
     expect(
@@ -1695,7 +1691,7 @@ describe("Competition API", () => {
     ).competitions.find((comp) => comp.id === activeComp.competition.id);
     expect(foundActive).toBeDefined();
 
-    // Test SIWE user can use sorting
+    // Test Privy user can use sorting
     const sortedResponse = await siweClient.getCompetitions(
       "pending",
       "createdAt",
@@ -1706,15 +1702,14 @@ describe("Competition API", () => {
     ).toBeDefined();
   });
 
-  test("SIWE users have same access as agent API key users for competition endpoints", async () => {
+  test("Privy users have same access as agent API key users for competition endpoints", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "SIWE Access Comparison User",
+    // Create a Privy-authenticated user client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
+      userName: "Privy Access Comparison User",
       userEmail: "siwe-access-comparison@example.com",
     });
 
@@ -2692,9 +2687,8 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user
-    const { client: userClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated user
+    const { client: userClient } = await createPrivyAuthenticatedClient({
       userName: "Competition Join User",
       userEmail: "competition-join@example.com",
     });
@@ -2750,9 +2744,8 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user
-    const { client: userClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated user
+    const { client: userClient } = await createPrivyAuthenticatedClient({
       userName: "Competition Leave User",
       userEmail: "competition-leave@example.com",
     });
@@ -2829,15 +2822,13 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create two SIWE-authenticated users
-    const { client: user1Client } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create two Privy-authenticated users
+    const { client: user1Client } = await createPrivyAuthenticatedClient({
       userName: "User 1",
       userEmail: "user1@example.com",
     });
 
-    const { client: user2Client } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: user2Client } = await createPrivyAuthenticatedClient({
       userName: "User 2",
       userEmail: "user2@example.com",
     });
@@ -2876,8 +2867,7 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create a dummy user and agent to make the competition startable
-    const { client: dummyUserClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: dummyUserClient } = await createPrivyAuthenticatedClient({
       userName: "Dummy User for Competition",
       userEmail: "dummy-user@example.com",
     });
@@ -2890,9 +2880,8 @@ describe("Competition API", () => {
     expect(dummyAgentResponse.success).toBe(true);
     const dummyAgent = (dummyAgentResponse as AgentProfileResponse).agent;
 
-    // Create a SIWE-authenticated user who will try to join
-    const { client: userClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated user who will try to join
+    const { client: userClient } = await createPrivyAuthenticatedClient({
       userName: "Non-Pending Test User",
       userEmail: "non-pending-test@example.com",
     });
@@ -2947,9 +2936,8 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user
-    const { client: userClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated user
+    const { client: userClient } = await createPrivyAuthenticatedClient({
       userName: "Duplicate Join User",
       userEmail: "duplicate-join@example.com",
     });
@@ -2998,9 +2986,8 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user
-    const { client: userClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated user
+    const { client: userClient } = await createPrivyAuthenticatedClient({
       userName: "Deleted Agent User",
       userEmail: "deleted-agent@example.com",
     });
@@ -3041,9 +3028,8 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user with agent
-    const { client: userClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated user with agent
+    const { client: userClient } = await createPrivyAuthenticatedClient({
       userName: "Active Leave User",
       userEmail: "active-leave@example.com",
     });
@@ -3105,9 +3091,8 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user
-    const { client: userClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated user
+    const { client: userClient } = await createPrivyAuthenticatedClient({
       userName: "Ended Leave User",
       userEmail: "ended-leave@example.com",
     });
@@ -3152,9 +3137,8 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user
-    const { client: userClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated user
+    const { client: userClient } = await createPrivyAuthenticatedClient({
       userName: "Non-Existent Competition User",
       userEmail: "non-existent-comp@example.com",
     });
@@ -3195,9 +3179,8 @@ describe("Competition API", () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Create a SIWE-authenticated user
-    const { client: userClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated user
+    const { client: userClient } = await createPrivyAuthenticatedClient({
       userName: "Not In Competition User",
       userEmail: "not-in-comp@example.com",
     });
@@ -3358,9 +3341,8 @@ describe("Competition API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Create a SIWE-authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy-authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Join Window User",
         userEmail: "join-window@example.com",
       });
@@ -3415,9 +3397,8 @@ describe("Competition API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Create a SIWE-authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy-authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Early Join User",
         userEmail: "early-join@example.com",
       });
@@ -3469,9 +3450,8 @@ describe("Competition API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Create a SIWE-authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy-authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Late Join User",
         userEmail: "late-join@example.com",
       });
@@ -3523,9 +3503,8 @@ describe("Competition API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Create a SIWE-authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy-authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Start Only User",
         userEmail: "start-only@example.com",
       });
@@ -3579,9 +3558,8 @@ describe("Competition API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Create a SIWE-authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy-authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "End Only User",
         userEmail: "end-only@example.com",
       });
@@ -3635,9 +3613,8 @@ describe("Competition API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Create a SIWE-authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy-authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Backward Compat User",
         userEmail: "backward-compat@example.com",
       });
@@ -3694,8 +3671,7 @@ describe("Competition API", () => {
         agentName: "Start Competition Agent 1",
       });
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Start Competition User",
         userEmail: "start-competition@example.com",
       });
@@ -4126,10 +4102,8 @@ describe("Competition API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Create a SIWE authenticated client
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
-      });
+      // Create a Privy authenticated client
+      const { client: userClient } = await createPrivyAuthenticatedClient({});
 
       // Create a pending competition with minTradesPerDay
       const competitionName = `Listed Competition ${Date.now()}`;
@@ -4477,20 +4451,18 @@ describe("Competition API", () => {
       expect(typeof agent4Trophy?.imageUrl === "string").toBe(true);
     });
 
-    test("should populate trophies correctly via user-specific endpoints (SIWE)", async () => {
+    test("should populate trophies correctly via user-specific endpoints (Privy)", async () => {
       // Setup admin client
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Create SIWE authenticated user with agents
-      const { client: user1Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user with agents
+      const { client: user1Client } = await createPrivyAuthenticatedClient({
         userName: "Trophy User 1",
         userEmail: "trophy-user-1@example.com",
       });
 
-      const { client: user2Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: user2Client } = await createPrivyAuthenticatedClient({
         userName: "Trophy User 2",
         userEmail: "trophy-user-2@example.com",
       });
@@ -4634,9 +4606,8 @@ describe("Competition API", () => {
     });
 
     test("should handle user with no competitions via user endpoints", async () => {
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "No Trophies User",
         userEmail: "no-trophies-user@example.com",
       });
@@ -5061,8 +5032,7 @@ describe("Competition API", () => {
       expect(agentCompetition.registeredParticipants).toBe(2);
 
       // Test 3: User client (need to create one)
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Participant Count Test User",
         userEmail: "participant-test@example.com",
       });
@@ -5395,13 +5365,12 @@ describe("Competition API", () => {
 
       const maxParticipants = 4;
 
-      // Create a SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "User Competition Test",
       });
 
-      // Create an agent for this user via SIWE session
+      // Create an agent for this user via Privy session
       const agentResponse = (await createTestAgent(
         userClient,
         "User Competition Agent",

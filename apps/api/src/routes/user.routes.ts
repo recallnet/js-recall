@@ -24,7 +24,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     responses:
    *       200:
    *         description: User profile retrieved successfully
@@ -45,15 +45,23 @@ export function configureUserRoutes(
    *                     walletAddress:
    *                       type: string
    *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     walletLastVerifiedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     embeddedWalletAddress:
+   *                       type: string
+   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     privyId:
+   *                       type: string
+   *                       example: "1234567890abcdef1234567890abcdef12345678"
    *                     name:
    *                       type: string
    *                       example: "John Doe"
    *                     email:
    *                       type: string
    *                       example: "john@example.com"
-   *                     isEmailVerified:
+   *                     isSubscribed:
    *                       type: boolean
-   *                       description: Whether the user's email address has been verified
    *                       example: true
    *                     imageUrl:
    *                       type: string
@@ -70,6 +78,9 @@ export function configureUserRoutes(
    *                     updatedAt:
    *                       type: string
    *                       format: date-time
+   *                     lastLoginAt:
+   *                       type: string
+   *                       format: date-time
    *       401:
    *         description: User not authenticated
    *       404:
@@ -81,6 +92,93 @@ export function configureUserRoutes(
 
   /**
    * @openapi
+   * /api/user/wallet/link:
+   *   post:
+   *     summary: Link a wallet to the authenticated user
+   *     description: Link a wallet to the authenticated user
+   *     tags:
+   *       - User
+   *     security:
+   *       - PrivyCookie: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               walletAddress:
+   *                 type: string
+   *                 description: The wallet address to link to the user
+   *                 example: "0x1234567890abcdef1234567890abcdef12345678"
+   *             additionalProperties: false
+   *     responses:
+   *       200:
+   *         description: Wallet linked successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 user:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       format: uuid
+   *                     walletAddress:
+   *                       type: string
+   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     walletLastVerifiedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     embeddedWalletAddress:
+   *                       type: string
+   *                       example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                     privyId:
+   *                       type: string
+   *                       example: "1234567890abcdef1234567890abcdef12345678"
+   *                     name:
+   *                       type: string
+   *                       example: "John Doe"
+   *                     email:
+   *                       type: string
+   *                       example: "john@example.com"
+   *                     isSubscribed:
+   *                       type: boolean
+   *                       example: true
+   *                     imageUrl:
+   *                       type: string
+   *                       example: "https://example.com/avatar.jpg"
+   *                     status:
+   *                       type: string
+   *                       enum: [active, inactive, suspended, deleted]
+   *                     metadata:
+   *                       type: object
+   *                       example: { "foo": "bar" }
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     lastLoginAt:
+   *                       type: string
+   *                       format: date-time
+   *       401:
+   *         description: User not authenticated
+   *       404:
+   *         description: User not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.post("/wallet/link", userController.linkWallet);
+
+  /**
+   * @openapi
    * /api/user/profile:
    *   put:
    *     summary: Update authenticated user profile
@@ -88,7 +186,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     requestBody:
    *       required: true
    *       content:
@@ -104,10 +202,6 @@ export function configureUserRoutes(
    *                 type: string
    *                 description: URL to user's profile image
    *                 example: "https://example.com/avatar.jpg"
-   *               email:
-   *                 type: string
-   *                 description: User's email
-   *                 example: "john@example.com"
    *               metadata:
    *                 type: object
    *                 description: User's metadata
@@ -133,14 +227,23 @@ export function configureUserRoutes(
    *                     walletAddress:
    *                       type: string
    *                       nullable: true
+   *                     walletLastVerifiedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     embeddedWalletAddress:
+   *                       type: string
+   *                       nullable: true
+   *                     privyId:
+   *                       type: string
+   *                       nullable: true
    *                     name:
    *                       type: string
    *                     email:
    *                       type: string
    *                       nullable: true
-   *                     isEmailVerified:
+   *                     isSubscribed:
    *                       type: boolean
-   *                       description: Whether the user's email address has been verified
+   *                       example: true
    *                     imageUrl:
    *                       type: string
    *                       nullable: true
@@ -153,6 +256,9 @@ export function configureUserRoutes(
    *                       type: string
    *                       format: date-time
    *                     updatedAt:
+   *                       type: string
+   *                       format: date-time
+   *                     lastLoginAt:
    *                       type: string
    *                       format: date-time
    *       400:
@@ -175,7 +281,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     requestBody:
    *       required: true
    *       content:
@@ -280,7 +386,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     responses:
    *       200:
    *         description: Agents retrieved successfully
@@ -309,8 +415,6 @@ export function configureUserRoutes(
    *                       walletAddress:
    *                         type: string
    *                         nullable: true
-   *                       isVerified:
-   *                         type: boolean
    *                       name:
    *                         type: string
    *                       description:
@@ -410,7 +514,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     parameters:
    *       - in: path
    *         name: agentId
@@ -442,8 +546,6 @@ export function configureUserRoutes(
    *                     walletAddress:
    *                       type: string
    *                       nullable: true
-   *                     isVerified:
-   *                       type: boolean
    *                     name:
    *                       type: string
    *                     email:
@@ -552,7 +654,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     parameters:
    *       - in: path
    *         name: agentId
@@ -661,7 +763,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     parameters:
    *       - in: path
    *         name: agentId
@@ -767,52 +869,6 @@ export function configureUserRoutes(
 
   /**
    * @openapi
-   * /api/user/verify-email:
-   *   post:
-   *     summary: Initiate email verification for the authenticated user
-   *     description: Creates a new email verification token and sends a verification email to the user's email address
-   *     tags:
-   *       - User
-   *     security:
-   *       - SIWESession: []
-   *     responses:
-   *       200:
-   *         description: Email verification initiated successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 message:
-   *                   type: string
-   *                   example: "Email verification initiated successfully"
-   *       400:
-   *         description: User does not have an email address
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: false
-   *                 error:
-   *                   type: string
-   *                   example: "User does not have an email address"
-   *       401:
-   *         description: User not authenticated
-   *       404:
-   *         description: User not found
-   *       500:
-   *         description: Internal server error
-   */
-  router.post("/verify-email", userController.verifyEmail);
-
-  /**
-   * @openapi
    * /api/user/competitions:
    *   get:
    *     summary: Get competitions for user's agents
@@ -820,7 +876,7 @@ export function configureUserRoutes(
    *     tags:
    *       - User
    *     security:
-   *       - SIWESession: []
+   *       - PrivyCookie: []
    *     parameters:
    *       - in: query
    *         name: limit

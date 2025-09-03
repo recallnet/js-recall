@@ -1,11 +1,6 @@
-import { IronSession } from "iron-session";
-
-import type { SessionData } from "./session-types";
-
 declare global {
   namespace Express {
     interface Request {
-      session?: IronSession<SessionData>;
       agentId?: string;
       userId?: string;
       adminId?: string;
@@ -16,7 +11,11 @@ declare global {
         name: string;
       };
       competitionId?: string;
-      traceId?: string; // Added for logging correlation
+      privyToken?: string;
+      traceId?: string;
     }
   }
 }
+
+// Note: This export is required to make TypeScript treat this file as a module
+export {};

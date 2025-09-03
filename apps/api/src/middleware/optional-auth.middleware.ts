@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import { getIronSession } from "iron-session";
 
-import { config } from "@/config/index.js";
+import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
+import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
 import type { AdminManager } from "@/services/admin-manager.service.js";
 import type { AgentManager } from "@/services/agent-manager.service.js";
-import type { SessionData } from "@/types/index.js";
+import { UserManager } from "@/services/user-manager.service.js";
 
 /**
  * Optional Authentication Middleware
@@ -23,51 +23,26 @@ import type { SessionData } from "@/types/index.js";
  */
 export function optionalAuthMiddleware(
   agentManager: AgentManager,
+  userManager: UserManager,
   adminManager: AdminManager,
 ) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, _: Response, next: NextFunction) => {
     try {
-      // First, try to get SIWE session using same config as siweSessionMiddleware
-      try {
-        const session = await getIronSession<SessionData>(req, res, {
-          cookieName: config.app.cookieName,
-          password: config.security.rootEncryptionKey,
-          ttl: config.app.sessionTtl,
-          cookieOptions: {
-            secure: config.server.nodeEnv === "production",
-            httpOnly: true,
-            sameSite: "lax",
-            path: "/",
-            maxAge: config.app.sessionTtl,
-            domain:
-              config.server.nodeEnv === "production"
-                ? config.app.domain
-                : undefined,
-          },
-        });
+      const identityToken = extractPrivyIdentityToken(req);
+      if (identityToken) {
+        try {
+          const { privyId } = await verifyPrivyIdentityToken(identityToken);
 
-        // Check for valid session with wallet and user ID
-        if (
-          session.siwe &&
-          session.wallet &&
-          session.userId &&
-          session.siwe.address === session.wallet
-        ) {
-          // Check session expiry
-          if (
-            session.siwe.expirationTime &&
-            Date.now() > new Date(session.siwe.expirationTime).getTime()
-          ) {
-            session.destroy();
-          } else {
-            req.userId = session.userId;
-            req.session = session;
-            req.wallet = session.wallet;
+          req.privyToken = identityToken;
+          const user = await userManager.getUserByPrivyId(privyId);
+          if (user) {
+            req.userId = user.id;
             return next();
           }
+          // If user not found, continue to API key auth below
+        } catch {
+          // Privy token verification failed, continue to API key auth below
         }
-      } catch {
-        // Session parsing failed - continue trying other methods
       }
 
       // If no session, try API key authentication

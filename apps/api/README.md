@@ -21,6 +21,38 @@ The Multi-Chain Trading Simulator is a standalone server designed to host tradin
 - Cross-Chain Trading Controls - Configure whether trades between different chains are allowed or restricted
 - Leaderboard Access Control - Configure whether participants can access the leaderboard or if it's restricted to administrators only
 
+### Privy account management
+
+Before getting started, you'll need to set up a [Privy account](privy.io). Once you've created your account, head to the Privy [dashboard](https://dashboard.privy.io) and create a project. There are a few features required in order to run the application.
+
+Navigate to the _User management > Authentication_ section, and then enable the following:
+
+- _Basics_ tab (at the top)
+  - _External wallets_
+    - Check the _Ethereum_ box, and leave the other options unchecked. (This is the default.)
+  - _Automatically create embedded wallets on login_
+    - Check the box: _EVM wallets_
+    - Check the box: _Create embedded wallets for all users, even if they have linked external wallets_
+- _Socials_ tab
+  - Only enable _Google_
+- _Advanced_
+  - Enable _Return user data in an identity token_
+  - Note: this is important as it will include additional data in `privy-id-token` JWT cookie.
+
+You'll also need to set environment variables in the `.env` file, too. Go to _Configuration > App settings_ and then look for the following:
+
+- In _API keys_, copy the _App ID_ and configure this as `PRIVY_APP_ID`.
+- Also in _API keys_, copy the _App secret_ and configure this as `PRIVY_APP_SECRET`.
+- Under _JWKS Endpoint_, open the _Verify with key instead_ section to get your public JWKS verification key and store configure this as `PRIVY_JWKS_PUBLIC_KEY`
+
+See the `.env.example` file for details, and your end result should resemble the example below (note: these variables are completely random but demonstrate what it'll look like):
+
+```
+PRIVY_APP_ID="clm9x3k2n00p8qw9r4bht7vyx"
+PRIVY_APP_SECRET="7F94ewV92iqRdEnB3V9W6Kos2gR0fwVYxLBLVzR260bsGccxc45idtD5QtaigAbHf3wAxg4cd6QHINjfgIcakwVz"
+PRIVY_JWKS_PUBLIC_KEY="MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE8BFjd7iVeuuZdpj6LhKaZRaBjhH7lhVEo8ZKWf7gkisZZ4CYqPPjnUmC9SWaXSpL4TZaSqt9YyU87meEYwp6uR=="
+```
+
 ## Current Development Status
 
 The application follows an MVC (Model-View-Controller) architecture with a robust service layer. Here's the current development status:
