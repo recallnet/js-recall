@@ -26,11 +26,7 @@ const CHAINS = [
  */
 async function getLatestBlock(alchemyNetwork: string): Promise<number> {
     const alchemyKey = process.env.ALCHEMY_API_KEY;
-    if (!alchemyKey) {
-        console.error('Warning: ALCHEMY_API_KEY not set, skipping start block updates');
-        console.error('To enable automatic latest block fetching, set ALCHEMY_API_KEY in apps/envio-indexer/.env');
-        return 0;
-    }
+    // We know the key exists because we check it early in updateGeneratedConfig
 
     const url = `https://${alchemyNetwork}.g.alchemy.com/v2/${alchemyKey}`;
 
@@ -90,14 +86,10 @@ async function updateGeneratedConfig() {
 
     // Skip if no API key (development mode without latest blocks)
     if (!process.env.ALCHEMY_API_KEY) {
-        console.log('📦 Starting indexer with configured start blocks (ALCHEMY_API_KEY not set)');
-        console.log('   Debug info:', {
-            hasAlchemyKey: !!process.env.ALCHEMY_API_KEY,
-            isCI: !!process.env.CI,
-            nodeEnv: process.env.NODE_ENV,
-            cwd: process.cwd()
-        });
-        return;
+        console.log('ℹ️  ALCHEMY_API_KEY not set - skipping block updates');
+        console.log('   This is fine for builds that don\'t need live trading functionality.');
+        // Exit gracefully with success code - this is not an error
+        process.exit(0);
     }
 
     console.log(`🔄 Fetching latest block numbers... (API key: ${process.env.ALCHEMY_API_KEY?.substring(0, 5)}...)`);
