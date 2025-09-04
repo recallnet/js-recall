@@ -9,8 +9,6 @@ import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 import { useClientCleanup } from "./useAuth";
 import { useAnalytics } from "./usePostHog";
 
-// import { usePrivyAuth } from "./usePrivyAuth";
-
 /**
  * Hook to fetch user profile
  * @returns Query result with profile data
@@ -68,27 +66,3 @@ export const useUpdateProfile = () => {
     },
   });
 };
-
-// export const useLinkWallet = () => {
-//   const { user } = useUser();
-//   const [, setUser] = useAtom(userAtom);
-//   const queryClient = useQueryClient();
-//   const { trackEvent } = useAnalytics();
-//   const { linkWallet } = usePrivyAuth();
-
-//   return useMutation({
-//     mutationFn: async () => {
-//       linkWallet();
-//     },
-//     onSuccess: () => {
-//       trackEvent("UserLinkedWallet", {
-//         updatedFields: ["walletAddress"],
-//       });
-//       setUser({ user: user, status: "authenticated" });
-//       queryClient.invalidateQueries({ queryKey: ["profile"] });
-//     },
-//     onError: (error) => {
-//       console.error("Wallet linking failed:", error);
-//     },
-//   });
-// };
