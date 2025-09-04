@@ -1,20 +1,23 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateRewards } from "./index.js";
+import {
+  calculateRewardsForCompetitors,
+  calculateRewardsForUsers,
+} from "./index.js";
 import type {
   BoostAllocation,
   BoostAllocationWindow,
   Leaderboard,
 } from "./types.js";
 
-describe("calculateRewards", () => {
+describe("calculate rewards for users", () => {
   it("should calculate rewards correctly for 1000 ETH prize pool with 3 users and 3 competitors over 4-day window", () => {
     // Test parameters from testcase.md
     const prizePool = 1000n * 10n ** 18n; // 1000 ETH in WEI
     const leaderBoard: Leaderboard = [
-      "Competitor A",
-      "Competitor B",
-      "Competitor C",
+      { competitor: "Competitor A", rank: 1 },
+      { competitor: "Competitor B", rank: 2 },
+      { competitor: "Competitor C", rank: 3 },
     ];
     const window: BoostAllocationWindow = {
       start: new Date("2024-01-01T00:00:00Z"),
@@ -91,7 +94,7 @@ describe("calculateRewards", () => {
     ];
 
     // Calculate rewards
-    const rewards = calculateRewards(
+    const rewards = calculateRewardsForUsers(
       prizePool,
       boostAllocations,
       leaderBoard,
@@ -133,5 +136,133 @@ describe("calculateRewards", () => {
     expect(aliceReward.amount).eq(294551339071887017092n);
     expect(bobReward.amount).eq(394543812352031530113n);
     expect(charlieReward.amount).eq(130663856691253951527n);
+  });
+});
+
+describe("calculate rewards for competitors", () => {
+  it("should calculate rewards correctly for 1000 ETH prize pool with 3 competitors", () => {
+    const prizePool = 1000n * 10n ** 18n; // 1000 ETH in WEI
+    const leaderBoard: Leaderboard = [
+      { competitor: "Competitor A", rank: 1 },
+      { competitor: "Competitor B", rank: 2 },
+      { competitor: "Competitor C", rank: 3 },
+    ];
+
+    const rewards = calculateRewardsForCompetitors(prizePool, leaderBoard);
+
+    // Verify the results structure
+    expect(rewards).toHaveLength(3);
+
+    // Sort by address to ensure consistent ordering for comparison
+    const sortedRewards = rewards.sort((a, b) =>
+      a.address.localeCompare(b.address),
+    );
+
+    // Verify all competitors are present
+    const addresses = sortedRewards.map((r) => r.address);
+    expect(addresses).toContain("Competitor A");
+    expect(addresses).toContain("Competitor B");
+    expect(addresses).toContain("Competitor C");
+
+    // Verify that rewards were distributed (total should be approximately equal to prize pool)
+    const totalDistributed = rewards.reduce(
+      (sum, reward) => sum + reward.amount,
+      0n,
+    );
+    // Allow for small rounding differences due to ROUND_DOWN
+    expect(totalDistributed).toBeGreaterThan(prizePool - 10n);
+    expect(totalDistributed).toBeLessThanOrEqual(prizePool);
+
+    // Verify all rewards are positive
+    rewards.forEach((reward) => {
+      expect(reward.amount).toBeGreaterThan(0n);
+    });
+
+    // Verify rank 1 gets the highest reward, rank 2 gets second highest, etc.
+    const competitorAReward = rewards.find(
+      (r) => r.address === "Competitor A",
+    )!;
+    const competitorBReward = rewards.find(
+      (r) => r.address === "Competitor B",
+    )!;
+    const competitorCReward = rewards.find(
+      (r) => r.address === "Competitor C",
+    )!;
+
+    expect(competitorAReward.amount).toBeGreaterThan(competitorBReward.amount);
+    expect(competitorBReward.amount).toBeGreaterThan(competitorCReward.amount);
+
+    // Verify specific expected values based on decay rate of 0.5
+    // With decay rate 0.5 and 3 competitors:
+    // Rank 1: ~57.14% of prize pool = ~571.43 ETH
+    // Rank 2: ~28.57% of prize pool = ~285.71 ETH
+    // Rank 3: ~14.29% of prize pool = ~142.86 ETH
+    expect(competitorAReward.amount).toBe(571428571428571428571n);
+    expect(competitorBReward.amount).toBe(285714285714285714285n);
+    expect(competitorCReward.amount).toBe(142857142857142857142n);
+  });
+
+  it("should calculate rewards correctly for 1000 ETH prize pool with ties in rankings", () => {
+    const prizePool = 1000n * 10n ** 18n; // 1000 ETH in WEI
+    const leaderBoard: Leaderboard = [
+      { competitor: "Competitor A", rank: 1 },
+      { competitor: "Competitor B", rank: 1 }, // Tie for first place
+      { competitor: "Competitor C", rank: 3 },
+    ];
+
+    const rewards = calculateRewardsForCompetitors(prizePool, leaderBoard);
+
+    // Verify the results structure
+    expect(rewards).toHaveLength(3);
+
+    // Sort by address to ensure consistent ordering for comparison
+    const sortedRewards = rewards.sort((a, b) =>
+      a.address.localeCompare(b.address),
+    );
+
+    // Verify all competitors are present
+    const addresses = sortedRewards.map((r) => r.address);
+    expect(addresses).toContain("Competitor A");
+    expect(addresses).toContain("Competitor B");
+    expect(addresses).toContain("Competitor C");
+
+    // Verify that rewards were distributed (total should be approximately equal to prize pool)
+    const totalDistributed = rewards.reduce(
+      (sum, reward) => sum + reward.amount,
+      0n,
+    );
+    // Allow for small rounding differences due to ROUND_DOWN
+    expect(totalDistributed).toBeGreaterThan(prizePool - 10n);
+    expect(totalDistributed).toBeLessThanOrEqual(prizePool);
+
+    // Verify all rewards are positive
+    rewards.forEach((reward) => {
+      expect(reward.amount).toBeGreaterThan(0n);
+    });
+
+    // Verify tied competitors get equal rewards
+    const competitorAReward = rewards.find(
+      (r) => r.address === "Competitor A",
+    )!;
+    const competitorBReward = rewards.find(
+      (r) => r.address === "Competitor B",
+    )!;
+    const competitorCReward = rewards.find(
+      (r) => r.address === "Competitor C",
+    )!;
+
+    // Tied competitors should get equal rewards
+    expect(competitorAReward.amount).toBe(competitorBReward.amount);
+
+    // Third place should get less than the tied first place competitors
+    expect(competitorAReward.amount).toBeGreaterThan(competitorCReward.amount);
+    expect(competitorBReward.amount).toBeGreaterThan(competitorCReward.amount);
+
+    // Verify specific expected values based on decay rate of 0.5 with ties:
+    // Rank 1 (tied): ~42.86% each = ~428.57 ETH each
+    // Rank 3: ~14.29% = ~142.86 ETH
+    expect(competitorAReward.amount).toBe(428571428571428571428n);
+    expect(competitorBReward.amount).toBe(428571428571428571428n);
+    expect(competitorCReward.amount).toBe(142857142857142857142n);
   });
 });

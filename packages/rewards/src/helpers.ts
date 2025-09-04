@@ -52,13 +52,39 @@ export function splitPrizePool(
   const amountDecimal = new Decimal(amount.toString());
   const denominator = new Decimal(1).minus(rDecimal.pow(k));
 
-  for (let i = 1; i <= k; i++) {
-    const weight = new Decimal(1)
-      .minus(rDecimal)
-      .times(rDecimal.pow(i - 1))
-      .div(denominator);
-    splits[leaderBoard[i - 1]!] = weight.times(amountDecimal);
+  // Group competitors by rank to handle ties
+  const rankGroups = new Map<number, string[]>();
+  for (const placement of leaderBoard) {
+    if (!rankGroups.has(placement.rank)) {
+      rankGroups.set(placement.rank, []);
+    }
+    rankGroups.get(placement.rank)!.push(placement.competitor);
   }
+
+  // Calculate prize pool for each rank and distribute among tied competitors
+  for (const [rank, competitors] of rankGroups) {
+    let combinedPool = new Decimal(0);
+    const numTiedCompetitors = competitors.length;
+
+    for (let i = 0; i < numTiedCompetitors; i++) {
+      const actualRank = rank + i;
+      const weight = new Decimal(1)
+        .minus(rDecimal)
+        .times(rDecimal.pow(actualRank - 1))
+        .div(denominator);
+
+      const rankPool = weight.times(amountDecimal);
+      combinedPool = combinedPool.plus(rankPool);
+    }
+
+    // Split the combined pool equally among tied competitors
+    const splitPerCompetitor = combinedPool.div(numTiedCompetitors);
+
+    for (const competitor of competitors) {
+      splits[competitor] = splitPerCompetitor;
+    }
+  }
+
   return splits;
 }
 

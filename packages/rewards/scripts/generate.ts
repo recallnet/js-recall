@@ -1,10 +1,6 @@
 #!/usr/bin/env node
-import { writeFileSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 /**
  * Configuration interface for data generation
@@ -27,7 +23,10 @@ interface GenerationConfig {
  */
 interface GeneratedData {
   prizePool: string;
-  leaderBoard: string[];
+  leaderBoard: Array<{
+    competitor: string;
+    rank: number;
+  }>;
   window: {
     start: string;
     end: string;
@@ -63,12 +62,18 @@ function randomTimestamp(start: Date, end: Date): string {
 }
 
 /**
- * Generate competitor names
+ * Generate competitor names with ranks
  */
-function generateCompetitors(numCompetitors: number): string[] {
-  const competitors: string[] = [];
+function generateCompetitors(numCompetitors: number): Array<{
+  competitor: string;
+  rank: number;
+}> {
+  const competitors: Array<{ competitor: string; rank: number }> = [];
   for (let i = 1; i <= numCompetitors; i++) {
-    competitors.push(`Competitor ${String.fromCharCode(64 + i)}`); // A, B, C, etc.
+    competitors.push({
+      competitor: `Competitor ${String.fromCharCode(64 + i)}`, // A, B, C, etc.
+      rank: i,
+    });
   }
   return competitors;
 }
@@ -224,7 +229,7 @@ function generateUsers(numUsers: number): string[] {
  */
 function generateBoostAllocations(
   users: string[],
-  competitors: string[],
+  competitors: Array<{ competitor: string; rank: number }>,
   windowStart: Date,
   windowEnd: Date,
   minBoostsPerUser: number,
@@ -248,7 +253,10 @@ function generateBoostAllocations(
     const numBoosts = randomInt(minBoostsPerUser, maxBoostsPerUser);
 
     for (let i = 0; i < numBoosts; i++) {
-      const competitor = competitors[randomInt(0, competitors.length - 1)];
+      const competitorObj = competitors[randomInt(0, competitors.length - 1)];
+      const competitor = competitorObj?.competitor;
+      if (!competitor) continue; // Skip if no competitor found
+
       const boost = randomInt(minBoostValue, maxBoostValue);
       const timestamp = randomTimestamp(windowStart, windowEnd);
 
@@ -432,7 +440,7 @@ async function main() {
     const testData = generateTestData(config);
 
     // Write to file
-    const outputPath = join(__dirname, "..", config.outputFile);
+    const outputPath = join(process.cwd(), config.outputFile);
     writeFileSync(outputPath, JSON.stringify(testData, null, 2), "utf-8");
 
     console.log(`Test data generated successfully!`);

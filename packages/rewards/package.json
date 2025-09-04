@@ -2,9 +2,7 @@
   "name": "@recallnet/rewards",
   "version": "0.0.1",
   "license": "MIT AND Apache-2.0",
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "description": "Recall Network rewards system.",
   "repository": {
     "type": "git",

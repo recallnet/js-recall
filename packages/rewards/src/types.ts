@@ -50,4 +50,15 @@ export type Reward = {
  * Represents a leaderboard as an ordered list of competitor identifiers
  * The first element is the winner, second is runner-up, etc.
  */
-export type Leaderboard = string[];
+
+export type Placement = {
+  /** The competitor's identifier */
+  competitor: string;
+  /** The rank of the competitor */
+  rank: number;
+};
+
+/**
+ * Represents a leaderboard as an ordered list of placements
+ */
+export type Leaderboard = Placement[];

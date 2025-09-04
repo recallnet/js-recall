@@ -2,7 +2,7 @@
   "prizePool": "1000000000000000000000",
   "leaderBoard": [
     { "competitor": "Competitor A", "rank": 1 },
-    { "competitor": "Competitor B", "rank": 2 },
+    { "competitor": "Competitor B", "rank": 1 },
     { "competitor": "Competitor C", "rank": 3 }
   ],
   "window": {

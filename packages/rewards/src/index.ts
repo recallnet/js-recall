@@ -17,12 +17,14 @@ export type { BoostAllocation, BoostAllocationWindow, Reward, Leaderboard };
 export const BoostTimeDecayRate = 0.5;
 /** Decay rate for prize pool distribution */
 export const PrizePoolDecayRate = 0.5;
+/** Decay rate for competitor prize pool distribution */
+export const CompetitorPrizePoolDecayRate = 0.5;
 
 /**
  * Calculate rewards for users based on their boost allocations and the leaderboard
  * @param prizePool - The total prize pool amount to distribute in WEI
  * @param boostAllocations - Array of boost allocations from users
- * @param leaderBoard - Ordered list of competitors (winner first)
+ * @param leaderBoard - List of placements
  * @param window - Time window for boost allocations
  * @param prizePoolDecayRate - Decay rate for prize pool distribution (defaults to PrizePoolDecayRate)
  * @param boostTimeDecayRate - Decay rate for boost time calculations (defaults to BoostTimeDecayRate)
@@ -30,7 +32,7 @@ export const PrizePoolDecayRate = 0.5;
  * @returns Array of rewards to be distributed to users
  * @throws {Error} If the boost allocation window is invalid or the decay rates are invalid
  */
-export function calculateRewards(
+export function calculateRewardsForUsers(
   prizePool: bigint,
   boostAllocations: BoostAllocation[],
   leaderBoard: Leaderboard,
@@ -54,13 +56,13 @@ export function calculateRewards(
     );
   }
 
-  if (prizePoolDecayRate <= 0 || prizePoolDecayRate >= 1) {
+  if (prizePoolDecayRate <= 0.1 || prizePoolDecayRate >= 0.9) {
     throw new Error(
       `Invalid prize pool decay rate: ${prizePoolDecayRate}. Must be between 0 and 1.`,
     );
   }
 
-  if (boostTimeDecayRate <= 0 || boostTimeDecayRate >= 1) {
+  if (boostTimeDecayRate <= 0.1 || boostTimeDecayRate >= 0.9) {
     throw new Error(
       `Invalid boost time decay rate: ${boostTimeDecayRate}. Must be between 0 and 1.`,
     );
@@ -115,6 +117,49 @@ export function calculateRewards(
       const payoutBigInt = BigInt(payoutSum.toFixed(0, Decimal.ROUND_DOWN));
       rewards.push({ address: user, amount: payoutBigInt });
     }
+  }
+  hook({ rewards: rewards });
+
+  return rewards;
+}
+
+/**
+ * Calculate rewards for competitors based on the prize pool distribution
+ * @param prizePool - The total prize pool amount to distribute in WEI
+ * @param leaderBoard - List of placements
+ * @param prizePoolDecayRate - Decay rate for prize pool distribution (defaults to CompetitorPrizePoolDecayRate)
+ * @param hook - Optional function to be called to inspect the calculations
+ * @returns Array of rewards to be distributed to competitors
+ */
+export function calculateRewardsForCompetitors(
+  prizePool: bigint,
+  leaderBoard: Leaderboard,
+  prizePoolDecayRate: number = CompetitorPrizePoolDecayRate,
+  hook: (data: Record<string, unknown>) => void = () => {},
+): Reward[] {
+  if (!leaderBoard || leaderBoard.length === 0 || prizePool === BigInt(0)) {
+    return [];
+  }
+
+  if (prizePoolDecayRate <= 0.1 || prizePoolDecayRate >= 0.9) {
+    throw new Error(
+      `Invalid prize pool decay rate: ${prizePoolDecayRate}. Must be between 0 and 1.`,
+    );
+  }
+
+  const prizePoolSplits = splitPrizePool(
+    prizePool,
+    leaderBoard,
+    prizePoolDecayRate,
+  );
+  hook({ prizePoolSplits: prizePoolSplits });
+
+  const rewards: Reward[] = [];
+  for (const [competitor, split] of Object.entries(prizePoolSplits)) {
+    rewards.push({
+      address: competitor,
+      amount: BigInt(split.toFixed(0, Decimal.ROUND_DOWN)),
+    });
   }
   hook({ rewards: rewards });
 

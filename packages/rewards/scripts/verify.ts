@@ -1,17 +1,13 @@
 #!/usr/bin/env node
-import { readFileSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-import { calculateRewards } from "@recallnet/rewards";
+import { calculateRewardsForUsers } from "../src/index.js";
 import type {
   BoostAllocation,
   BoostAllocationWindow,
   Leaderboard,
-} from "@recallnet/rewards";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+} from "../src/types.js";
 
 /**
  * Get current memory usage in a human-readable format
@@ -61,7 +57,10 @@ function logMemoryUsage(label: string): void {
  */
 interface SampleData {
   prizePool: string;
-  leaderBoard: string[];
+  leaderBoard: Array<{
+    competitor: string;
+    rank: number;
+  }>;
   window: {
     start: string;
     end: string;
@@ -119,12 +118,12 @@ async function main() {
     const args = process.argv.slice(2);
     if (args.length === 0) {
       console.error("Usage: node verify.ts <filename>");
-      console.error("Example: node verify.ts ../examples/sample-data.json");
+      console.error("Example: node verify.ts examples/sample-data.json");
       process.exit(1);
     }
 
     const filename = args[0]!; // Non-null assertion since we check length above
-    const sampleDataPath = join(__dirname, filename);
+    const sampleDataPath = join(process.cwd(), filename);
     console.log(`Reading sample data from: ${sampleDataPath}`);
 
     const sampleDataRaw = readFileSync(sampleDataPath, "utf-8");
@@ -147,7 +146,9 @@ async function main() {
     // Log input data
     console.log("Input Data:");
     console.log(`   Prize Pool: ${formatAmount(prizePool)} WEI`);
-    console.log(`   Leaderboard: ${leaderBoard.join(" → ")}`);
+    console.log(
+      `   Leaderboard: ${leaderBoard.map((p: { competitor: string; rank: number }) => `${p.competitor} (rank ${p.rank})`).join(" → ")}`,
+    );
     console.log(
       `   Window: ${window.start.toISOString()} to ${window.end.toISOString()}`,
     );
@@ -159,7 +160,7 @@ async function main() {
     const startTime = Date.now();
 
     const intermediateSteps: Record<string, unknown>[] = [];
-    const rewards = calculateRewards(
+    const rewards = calculateRewardsForUsers(
       prizePool,
       boostAllocations,
       leaderBoard,
@@ -188,7 +189,9 @@ async function main() {
           console.log(`     Prize Pool Splits:`);
           Object.entries(value as Record<string, unknown>).forEach(
             ([competitor, split]) => {
-              console.log(`       ${competitor}: ${split.toString()} WEI`);
+              console.log(
+                `       ${competitor}: ${(split as { toString(): string }).toString()} WEI`,
+              );
             },
           );
         } else if (key === "userTotals") {
@@ -198,14 +201,18 @@ async function main() {
           ).forEach(([user, competitors]) => {
             console.log(`       ${user}:`);
             Object.entries(competitors).forEach(([competitor, boost]) => {
-              console.log(`         ${competitor}: ${boost.toString()}`);
+              console.log(
+                `         ${competitor}: ${(boost as { toString(): string }).toString()}`,
+              );
             });
           });
         } else if (key === "competitorTotals") {
           console.log(`     Competitor Totals (Real Boost):`);
           Object.entries(value as Record<string, unknown>).forEach(
             ([competitor, total]) => {
-              console.log(`       ${competitor}: ${total.toString()}`);
+              console.log(
+                `       ${competitor}: ${(total as { toString(): string }).toString()}`,
+              );
             },
           );
         } else if (key === "rewards") {
@@ -229,12 +236,14 @@ async function main() {
     } else {
       let totalDistributed = BigInt(0);
 
-      rewards.forEach((reward, index) => {
-        console.log(
-          `   ${index + 1}. ${reward.address}: ${formatAmount(reward.amount)} WEI`,
-        );
-        totalDistributed += reward.amount;
-      });
+      rewards.forEach(
+        (reward: { address: string; amount: bigint }, index: number) => {
+          console.log(
+            `   ${index + 1}. ${reward.address}: ${formatAmount(reward.amount)} WEI`,
+          );
+          totalDistributed += reward.amount;
+        },
+      );
 
       console.log("");
       console.log(

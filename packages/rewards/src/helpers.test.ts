@@ -648,16 +648,16 @@ describe("splitPrizePool", () => {
   it("should split 1000 amount among 10 competitors with decay rate 0.5", () => {
     const amount = 1000n; // Using bigint for WEI
     const leaderBoard = [
-      "competitor1",
-      "competitor2",
-      "competitor3",
-      "competitor4",
-      "competitor5",
-      "competitor6",
-      "competitor7",
-      "competitor8",
-      "competitor9",
-      "competitor10",
+      { competitor: "competitor1", rank: 1 },
+      { competitor: "competitor2", rank: 2 },
+      { competitor: "competitor3", rank: 3 },
+      { competitor: "competitor4", rank: 4 },
+      { competitor: "competitor5", rank: 5 },
+      { competitor: "competitor6", rank: 6 },
+      { competitor: "competitor7", rank: 7 },
+      { competitor: "competitor8", rank: 8 },
+      { competitor: "competitor9", rank: 9 },
+      { competitor: "competitor10", rank: 10 },
     ];
     const r = 0.5;
 
@@ -733,5 +733,188 @@ describe("splitPrizePool", () => {
     Object.values(result).forEach((value) => {
       expect(value.gt(0)).toBe(true);
     });
+  });
+
+  it("should handle ties correctly by splitting combined pools equally among tied competitors", () => {
+    const amount = 1000n; // Using bigint for WEI
+    const leaderBoard = [
+      { competitor: "A", rank: 1 }, // Tied for 1st place
+      { competitor: "B", rank: 1 }, // Tied for 1st place
+      { competitor: "C", rank: 3 }, // 3rd place
+    ];
+    const r = 0.5;
+
+    const result = splitPrizePool(amount, leaderBoard, r);
+
+    // Verify all competitors are present
+    expect(Object.keys(result)).toHaveLength(3);
+    expect(result).toHaveProperty("A");
+    expect(result).toHaveProperty("B");
+    expect(result).toHaveProperty("C");
+
+    // Calculate expected values for each rank
+    const k = leaderBoard.length;
+    const rDecimal = new Decimal(r);
+    const amountDecimal = new Decimal(amount.toString());
+    const denominator = new Decimal(1).minus(rDecimal.pow(k));
+
+    // Rank 1 weight: ((1 - 0.5) * 0.5^0) / (1 - 0.5^3) = 0.5 / 0.875 = 0.571428...
+    const rank1Weight = new Decimal(1)
+      .minus(rDecimal)
+      .times(rDecimal.pow(0))
+      .div(denominator);
+
+    // Rank 2 weight: ((1 - 0.5) * 0.5^1) / (1 - 0.5^3) = 0.25 / 0.875 = 0.285714...
+    const rank2Weight = new Decimal(1)
+      .minus(rDecimal)
+      .times(rDecimal.pow(1))
+      .div(denominator);
+
+    // Rank 3 weight: ((1 - 0.5) * 0.5^2) / (1 - 0.5^3) = 0.125 / 0.875 = 0.142857...
+    const rank3Weight = new Decimal(1)
+      .minus(rDecimal)
+      .times(rDecimal.pow(2))
+      .div(denominator);
+
+    // Combined pool for ranks 1 and 2 (since A and B are tied for 1st)
+    const combinedPoolForTiedRank1 = rank1Weight
+      .plus(rank2Weight)
+      .times(amountDecimal);
+
+    // Each tied competitor gets half of the combined pool
+    const expectedForA = combinedPoolForTiedRank1.div(2);
+    const expectedForB = combinedPoolForTiedRank1.div(2);
+
+    // Competitor C gets the full pool for rank 3
+    const expectedForC = rank3Weight.times(amountDecimal);
+
+    // Verify exact values with high precision
+    expect(result.A!.equals(expectedForA)).toBe(true);
+    expect(result.B!.equals(expectedForB)).toBe(true);
+    expect(result.C!.equals(expectedForC)).toBe(true);
+
+    // Verify that A and B get exactly the same amount (they're tied)
+    expect(result.A!.equals(result.B!)).toBe(true);
+
+    // Verify the total amount equals the input amount exactly
+    const totalSplit = Object.values(result).reduce(
+      (sum, value) => sum.plus(value),
+      new Decimal(0),
+    );
+    const difference = totalSplit.minus(amountDecimal).abs();
+    expect(difference.lte(new Decimal("1e-15"))).toBe(true);
+
+    // Verify all values are positive
+    Object.values(result).forEach((value) => {
+      expect(value.gt(0)).toBe(true);
+    });
+
+    // Verify that tied competitors get more than the next rank
+    // A and B (tied for 1st) should get more than C (3rd place)
+    expect(result.A!.gt(result.C!)).toBe(true);
+    expect(result.B!.gt(result.C!)).toBe(true);
+  });
+
+  it("should handle multiple ties at different ranks correctly", () => {
+    const amount = 1000n;
+    const leaderBoard = [
+      { competitor: "A", rank: 1 }, // Tied for 1st place
+      { competitor: "B", rank: 1 }, // Tied for 1st place
+      { competitor: "C", rank: 3 }, // Tied for 3rd place
+      { competitor: "D", rank: 3 }, // Tied for 3rd place
+      { competitor: "E", rank: 3 }, // Tied for 3rd place
+    ];
+    const r = 0.5;
+
+    const result = splitPrizePool(amount, leaderBoard, r);
+
+    // Verify all competitors are present
+    expect(Object.keys(result)).toHaveLength(5);
+    expect(result).toHaveProperty("A");
+    expect(result).toHaveProperty("B");
+    expect(result).toHaveProperty("C");
+    expect(result).toHaveProperty("D");
+    expect(result).toHaveProperty("E");
+
+    // Calculate expected values
+    const k = leaderBoard.length;
+    const rDecimal = new Decimal(r);
+    const amountDecimal = new Decimal(amount.toString());
+    const denominator = new Decimal(1).minus(rDecimal.pow(k));
+
+    // Rank 1 weight
+    const rank1Weight = new Decimal(1)
+      .minus(rDecimal)
+      .times(rDecimal.pow(0))
+      .div(denominator);
+
+    // Rank 2 weight
+    const rank2Weight = new Decimal(1)
+      .minus(rDecimal)
+      .times(rDecimal.pow(1))
+      .div(denominator);
+
+    // Rank 3 weight
+    const rank3Weight = new Decimal(1)
+      .minus(rDecimal)
+      .times(rDecimal.pow(2))
+      .div(denominator);
+
+    // Rank 4 weight
+    const rank4Weight = new Decimal(1)
+      .minus(rDecimal)
+      .times(rDecimal.pow(3))
+      .div(denominator);
+
+    // Rank 5 weight
+    const rank5Weight = new Decimal(1)
+      .minus(rDecimal)
+      .times(rDecimal.pow(4))
+      .div(denominator);
+
+    // Combined pools for tied ranks
+    const combinedPoolForRank1 = rank1Weight
+      .plus(rank2Weight)
+      .times(amountDecimal);
+    const combinedPoolForRank3 = rank3Weight
+      .plus(rank4Weight)
+      .plus(rank5Weight)
+      .times(amountDecimal);
+
+    // Expected values
+    const expectedForA = combinedPoolForRank1.div(2); // Split between A and B
+    const expectedForB = combinedPoolForRank1.div(2); // Split between A and B
+    const expectedForC = combinedPoolForRank3.div(3); // Split between C, D, and E
+    const expectedForD = combinedPoolForRank3.div(3); // Split between C, D, and E
+    const expectedForE = combinedPoolForRank3.div(3); // Split between C, D, and E
+
+    // Verify exact values
+    expect(result.A!.equals(expectedForA)).toBe(true);
+    expect(result.B!.equals(expectedForB)).toBe(true);
+    expect(result.C!.equals(expectedForC)).toBe(true);
+    expect(result.D!.equals(expectedForD)).toBe(true);
+    expect(result.E!.equals(expectedForE)).toBe(true);
+
+    // Verify that tied competitors get exactly the same amount
+    expect(result.A!.equals(result.B!)).toBe(true);
+    expect(result.C!.equals(result.D!)).toBe(true);
+    expect(result.D!.equals(result.E!)).toBe(true);
+
+    // Verify the total amount equals the input amount exactly
+    const totalSplit = Object.values(result).reduce(
+      (sum, value) => sum.plus(value),
+      new Decimal(0),
+    );
+    const difference = totalSplit.minus(amountDecimal).abs();
+    expect(difference.lte(new Decimal("1e-15"))).toBe(true);
+
+    // Verify all values are positive
+    Object.values(result).forEach((value) => {
+      expect(value.gt(0)).toBe(true);
+    });
+
+    // Verify that rank 1 tied competitors get more than rank 3 tied competitors
+    expect(result.A!.gt(result.C!)).toBe(true);
+    expect(result.B!.gt(result.C!)).toBe(true);
   });
 });
