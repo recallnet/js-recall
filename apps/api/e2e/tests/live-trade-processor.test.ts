@@ -163,15 +163,15 @@ async function prefundAgentsForTesting(
 
     for (const [specificChain, tokens] of chainMap) {
       for (const token of tokens) {
-        // Get the amount needed (with 2x buffer for safety)
+        // Get the amount needed
         const tokenKey = `${specificChain}:${token}`;
         const amountNeeded = tokenAmounts.get(tokenKey) || BigInt(0);
-        // Use a much larger buffer (1000x) to handle large trades
-        const bufferAmount = amountNeeded * BigInt(1000);
 
-        // Convert to decimal (assuming 18 decimals for most tokens, adjust as needed)
-        const decimals = 18; // This is a simplification, real code would look up decimals
-        const decimalAmount = Number(bufferAmount) / Math.pow(10, decimals);
+        // DON'T convert to decimal - trades are already stored in decimal format in DB
+        // The amountIn from IndexedTrade is already in human-readable decimal format
+        // Just ensure we have enough balance with a 10x buffer
+        const bufferMultiplier = 10;
+        const decimalAmount = Number(amountNeeded) * bufferMultiplier;
 
         // Create the balance record
         const existingBalance = await db
@@ -188,9 +188,9 @@ async function prefundAgentsForTesting(
         if (existingBalance.length === 0) {
           const symbol = "UNKNOWN";
 
-          // Ensure a reasonable minimum balance (1000 tokens in decimal units)
+          // Ensure a minimum balance of 10000 units for safety
           // This handles both large trades and small test amounts
-          const finalAmount = Math.max(decimalAmount, 1000);
+          const finalAmount = Math.max(decimalAmount, 10000);
 
           await db.insert(balances).values({
             agentId,
@@ -202,6 +202,24 @@ async function prefundAgentsForTesting(
             updatedAt: new Date(),
           });
           balancesCreated++;
+        } else if (existingBalance[0]) {
+          // Update existing balance to ensure it's sufficient
+          const currentAmount = existingBalance[0].amount;
+          if (currentAmount < decimalAmount) {
+            await db
+              .update(balances)
+              .set({
+                amount: Math.max(decimalAmount, 10000),
+                updatedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(balances.agentId, agentId),
+                  eq(balances.tokenAddress, token.toLowerCase()),
+                ),
+              );
+            balancesCreated++;
+          }
         }
       }
     }
@@ -364,12 +382,18 @@ describeIfLiveTrading(
       });
 
       // Pre-fund agents with required token balances
-      // Use the SAME set of trades for both pre-funding and processing to ensure consistency
-      const tradesToProcess = realTrades.slice(0, 200);
+      // First, get ALL trades for our test agents to ensure complete balance history
+      const agentWallets = Array.from(agentsByWallet.keys());
+      const allAgentTrades = realTrades.filter((trade) =>
+        agentWallets.includes(trade.sender.toLowerCase()),
+      );
 
-      // CRITICAL: Pre-fund with the EXACT same trades we're going to process
-      // This ensures agents have balances for exactly the tokens they'll trade
-      await prefundAgentsForTesting(tradesToProcess, agentsByWallet);
+      // Pre-fund with ALL historical trades to ensure complete balances
+      await prefundAgentsForTesting(allAgentTrades, agentsByWallet);
+
+      // Now select a subset of trades to actually process in the test
+      // Use recent trades to avoid dependency issues
+      const tradesToProcess = allAgentTrades.slice(-100); // Last 100 trades from our agents
 
       // Process the real trades through LiveTradeProcessor
       const result = await liveTradeProcessor.processCompetitionTrades(
@@ -467,16 +491,22 @@ describeIfLiveTrading(
       );
       const competitionId = competitionResponse.competition.id;
 
-      // Get trades for testing - all should have complete tokens now thanks to our fix
-      const testTrades = realTrades.slice(0, 5);
+      // Get ALL trades from the agent's wallet to understand full trading history
+      const allAgentTrades = realTrades.filter(
+        (trade) => trade.sender.toLowerCase() === walletAddr.toLowerCase(),
+      );
+
+      // Select test trades from the END of the history (most recent)
+      // This ensures all dependencies from earlier trades are included
+      const testTrades = allAgentTrades.slice(-5); // Last 5 trades
 
       // Pre-fund the agent with required token balances
       const agentsByWallet = new Map<string, { id: string }>();
       agentsByWallet.set(walletAddr.toLowerCase(), { id: agent.id });
 
-      // Pre-fund with EXACTLY the trades we're going to process
-      // This ensures the agent has the right balances for the trades
-      await prefundAgentsForTesting(testTrades, agentsByWallet);
+      // Pre-fund with ALL trades from the agent's history
+      // This ensures we have balances for all tokens ever traded
+      await prefundAgentsForTesting(allAgentTrades, agentsByWallet);
 
       // Verify all trades have complete token information (no unknowns)
       const tradesWithCompleteTokens = testTrades.filter(
