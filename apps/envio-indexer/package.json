@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "scripts": {
     "clean": "rm -rf dist generated .turbo node_modules",
-    "build": "pnpm codegen && pnpm update-generated-blocks && tsc --build",
+    "build": "echo 'Skipping envio-indexer build (requires envio CLI)' || true",
+    "build:with-indexer": "pnpm codegen && pnpm update-generated-blocks && tsc --build",
     "watch": "tsc --watch",
     "mocha": "ts-mocha test/**/*.ts",
     "codegen": "envio codegen",

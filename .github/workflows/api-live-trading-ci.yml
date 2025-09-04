@@ -82,8 +82,8 @@ jobs:
           echo "📦 Building API dependencies..."
           pnpm --filter=api... build
           
-          echo "📦 Building Envio indexer (will update block numbers)..."
-          ALCHEMY_API_KEY=${{ secrets.ALCHEMY_API_KEY }} pnpm --filter=@recall/envio-indexer build
+          echo "📦 Building Envio indexer with full functionality (will update block numbers)..."
+          ALCHEMY_API_KEY=${{ secrets.ALCHEMY_API_KEY }} pnpm --filter=@recall/envio-indexer build:with-indexer
 
       - name: Setup Envio Indexer
         working-directory: apps/envio-indexer
