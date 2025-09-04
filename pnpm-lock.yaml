@@ -379,6 +379,10 @@ importers:
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
+    optionalDependencies:
+      generated:
+        specifier: ./generated
+        version: link:generated
     devDependencies:
       '@types/chai':
         specifier: ^4.3.11
