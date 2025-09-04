@@ -297,7 +297,20 @@ export class CompetitionManager {
       }
 
       // Register agent in the competition (automatically sets status to 'active')
-      await addAgentToCompetition(competitionId, agentId);
+      try {
+        await addAgentToCompetition(competitionId, agentId);
+      } catch (error) {
+        // If participant limit error, provide a more helpful error message
+        if (
+          error instanceof Error &&
+          error.message.includes("maximum participant limit")
+        ) {
+          throw new Error(
+            `Cannot start competition: ${error.message}. Some agents may already be registered.`,
+          );
+        }
+        throw error;
+      }
 
       serviceLogger.debug(
         `[CompetitionManager] Agent ${agentId} ready for competition`,

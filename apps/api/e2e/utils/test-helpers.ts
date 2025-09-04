@@ -294,7 +294,7 @@ export async function createTestCompetition(
 export async function startExistingTestCompetition(
   adminClient: ApiClient,
   competitionId: string,
-  agentIds: string[],
+  agentIds?: string[],
   sandboxMode?: boolean,
   externalUrl?: string,
   imageUrl?: string,

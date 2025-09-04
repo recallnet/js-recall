@@ -638,14 +638,11 @@ export function makeAdminController(services: ServiceRegistry) {
         // Get pre-registered agents from the database if we have a competitionId
         if (competitionId) {
           const competitionAgents =
-            await services.competitionManager.getCompetitionAgentsWithMetrics(
-              competitionId,
-              {
-                sort: "",
-                limit: 1000,
-                offset: 0,
-              },
-            );
+            await services.agentManager.getAgentsForCompetition(competitionId, {
+              sort: "",
+              limit: 1000,
+              offset: 0,
+            });
           const registeredAgents = competitionAgents.agents.map(
             (agent) => agent.id,
           );
@@ -1862,7 +1859,19 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Add agent to competition using repository method
-        await addAgentToCompetition(competitionId, agentId);
+        try {
+          await addAgentToCompetition(competitionId, agentId);
+        } catch (error) {
+          // Handle specific error for participant limit
+          if (
+            error instanceof Error &&
+            error.message.includes("maximum participant limit")
+          ) {
+            throw new ApiError(409, error.message);
+          }
+          // Re-throw other errors
+          throw error;
+        }
 
         // Complete sandbox mode logic if enabled
         if (competition.sandboxMode) {
