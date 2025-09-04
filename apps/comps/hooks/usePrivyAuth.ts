@@ -24,9 +24,6 @@ enum PrivyErrorCode {
   MUST_BE_AUTHENTICATED = "must_be_authenticated",
 }
 
-// Module-scoped guard to serialize backend login across multiple hook instances
-let loginInFlight: Promise<unknown> | null = null;
-
 /**
  * Check if a Privy user is set up with a custom linked wallet. Custom linked wallets are linked
  * accounts with a wallet client type that is not "privy" (i.e., not an embedded wallet).
@@ -56,6 +53,14 @@ export function getCustomLinkedWallets(
   }));
 }
 
+// Global state to prevent multiple login attempts across hook instances
+const globalLoginState = {
+  loginInProgress: false,
+  backendLoginInProgress: false,
+  walletLinkingInProgress: false,
+  walletBackendLinkingInProgress: false,
+};
+
 /**
  * Custom Privy authentication hook for profile sync with backend
  */
@@ -74,8 +79,11 @@ export function usePrivyAuth() {
     reject: (reason?: unknown) => void;
   } | null>(null);
 
-  const { linkWallet: triggerPrivyLinkWallet } = useLinkAccount({
+  const { linkWallet } = useLinkAccount({
     onSuccess: async ({ linkedAccount }) => {
+      // Reset wallet linking flag immediately
+      globalLoginState.walletLinkingInProgress = false;
+
       const walletAddress = (
         linkedAccount as WalletWithMetadata
       ).address.toLowerCase();
@@ -88,6 +96,12 @@ export function usePrivyAuth() {
 
       // Only persist to backend if we're already authenticated
       if (userState.status === "authenticated") {
+        // Prevent multiple backend wallet linking calls
+        if (globalLoginState.walletBackendLinkingInProgress) {
+          return;
+        }
+
+        globalLoginState.walletBackendLinkingInProgress = true;
         try {
           const result = await apiClient.linkWallet({ walletAddress });
           if (result.success && result.user) {
@@ -95,31 +109,96 @@ export function usePrivyAuth() {
             queryClient.invalidateQueries({ queryKey: ["profile"] });
           }
         } catch (error) {
-          console.error("Backend wallet linking failed:", error);
           setAuthError(
             error instanceof Error ? error.message : "Failed to link wallet",
           );
+        } finally {
+          globalLoginState.walletBackendLinkingInProgress = false;
         }
+      } else {
+        // If not authenticated yet, trigger the backend login flow
+
+        // Reset the login progress flag to allow the flow to continue
+        globalLoginState.loginInProgress = false;
+        globalLoginState.walletLinkingInProgress = false;
+
+        // The user's linkedAccounts have been updated by Privy
+        // The next time onComplete runs, it will see the wallet and proceed with login
       }
     },
-    onError: (error) => {
-      // Silently handle user cancellations and expected errors
-      const errorString = String(error || "");
+    onError: async (error) => {
+      // If user is in pending state and exits link flow, continue with login without wallet
       if (
-        error === PrivyErrorCode.USER_EXITED_LINK_FLOW ||
-        error === PrivyErrorCode.CANNOT_LINK_MORE_OF_TYPE ||
-        error === PrivyErrorCode.MUST_BE_AUTHENTICATED ||
-        errorString.includes("must_be_authenticated")
+        error === PrivyErrorCode.USER_EXITED_LINK_FLOW &&
+        userState.status === "pending"
       ) {
+        // Reset flags
+        globalLoginState.loginInProgress = false;
+        globalLoginState.backendLoginInProgress = true;
+
+        try {
+          // Complete backend login without wallet
+          const result = await apiClient.login();
+
+          // Identify user in analytics
+          posthog.identify(result.userId);
+          trackEvent("UserLoggedIn");
+
+          // Fetch profile and update state
+          const profileResult = await apiClient.getProfile();
+          if (profileResult.success && profileResult.user) {
+            setUserAtom({
+              user: profileResult.user,
+              status: "authenticated",
+            });
+            queryClient.setQueryData(["profile"], profileResult.user);
+            queryClient.invalidateQueries({ queryKey: ["profile"] });
+          } else {
+            throw new Error("Failed to fetch user profile after login");
+          }
+        } catch (loginError) {
+          setAuthError(
+            loginError instanceof Error ? loginError.message : "Login failed",
+          );
+          setUserAtom({ user: null, status: "unauthenticated" });
+        } finally {
+          globalLoginState.backendLoginInProgress = false;
+          setIsAuthenticating(false);
+        }
+
+        // Reset wallet linking flag
+        globalLoginState.walletLinkingInProgress = false;
+
         // Resolve promise with null for cancellations
         if (linkWalletPromiseRef.current) {
           linkWalletPromiseRef.current.resolve(null);
           linkWalletPromiseRef.current = null;
         }
-        setAuthError(null);
         return;
       }
-      console.error("Wallet linking failed:", error);
+
+      if (
+        error === PrivyErrorCode.CANNOT_LINK_MORE_OF_TYPE ||
+        error === PrivyErrorCode.MUST_BE_AUTHENTICATED
+      ) {
+        // For other wallet linking cases, just reset the state
+        setIsAuthenticating(false);
+        globalLoginState.loginInProgress = false;
+        globalLoginState.walletLinkingInProgress = false;
+        setAuthError(null);
+
+        // Resolve promise with null for cancellations
+        if (linkWalletPromiseRef.current) {
+          linkWalletPromiseRef.current.resolve(null);
+          linkWalletPromiseRef.current = null;
+        }
+        return;
+      }
+
+      // Handle actual errors
+      setIsAuthenticating(false);
+      globalLoginState.loginInProgress = false;
+      globalLoginState.walletLinkingInProgress = false;
       setAuthError("Failed to link wallet");
 
       // Reject promise for actual errors
@@ -130,22 +209,21 @@ export function usePrivyAuth() {
     },
   });
 
-  // Awaitable wrapper around the Privy link flow
-  const linkWalletAsync = useCallback(async (): Promise<string | null> => {
-    setAuthError(null);
-    return new Promise<string | null>((resolve, reject) => {
-      linkWalletPromiseRef.current = { resolve, reject };
-      triggerPrivyLinkWallet();
-    });
-  }, [triggerPrivyLinkWallet]);
-
   // Use Privy's useLogin hook with proper callback handling
   const { login: privyLogin } = useLogin({
     onComplete: async ({ user: privyUser }) => {
+      // We don't have the backend user yet, but we've completed email auth
+      // Mark that we're potentially waiting for wallet linking
+      setUserAtom({ user: null, status: "pending" });
+      // Prevent multiple onComplete executions during the same login flow
+      if (globalLoginState.loginInProgress) {
+        return;
+      }
+      globalLoginState.loginInProgress = true;
+
       try {
         // Step 1: Check if user needs to link a wallet before login
         const privyLinkedWallets = getCustomLinkedWallets(privyUser);
-        let linkedWalletAddress: string | null = null;
 
         // If there are no custom linked wallets, prompt user to link wallet before backend login
         // TODO: this is temporary as part of the profile migration. i.e., our ideal state is email
@@ -153,23 +231,27 @@ export function usePrivyAuth() {
         // But, we try to coerce legacy users to link the wallet during onboarding so that we can
         // search for their existing account.
         if (privyLinkedWallets.length === 0) {
-          try {
-            linkedWalletAddress = await linkWalletAsync();
-          } catch {
-            // User cancelled wallet linking, continue anyway (e.g., they cancelled the linking flow)
+          // Check if wallet linking is already in progress
+          if (!globalLoginState.walletLinkingInProgress) {
+            globalLoginState.walletLinkingInProgress = true;
+
+            // Schedule the wallet linking after the current execution context
+            // This allows Privy to properly complete the login flow first
+            setTimeout(() => {
+              linkWallet();
+              // The walletLinkingInProgress flag will be reset in the onSuccess or onError callbacks
+            }, 100);
           }
+
+          // Exit early - the useEffect will handle backend login once wallet is linked
+          globalLoginState.loginInProgress = false;
+          return;
         }
 
         // Step 2: Complete backend login
-        if (!loginInFlight) {
-          loginInFlight = (async () => {
-            const result = await apiClient.login();
-            // Identify user in analytics once per login
-            posthog.identify(result.userId, { wallet: result.wallet });
-            trackEvent("UserLoggedIn");
-          })();
-        }
-        await loginInFlight;
+        const result = await apiClient.login();
+        posthog.identify(result.userId, { wallet: result.wallet });
+        trackEvent("UserLoggedIn");
 
         // Step 3: Fetch profile data and set authenticated state
         const profileResult = await apiClient.getProfile();
@@ -187,28 +269,6 @@ export function usePrivyAuth() {
           refetchType: "none",
         });
 
-        // Step 5: If a wallet was linked during login, persist it to backend now
-        if (linkedWalletAddress) {
-          try {
-            const result = await apiClient.linkWallet({
-              walletAddress: linkedWalletAddress,
-            });
-            if (result.success && result.user) {
-              setUserAtom({ user: result.user, status: "authenticated" });
-              queryClient.setQueryData(["profile"], result.user);
-              queryClient.invalidateQueries({
-                queryKey: ["profile"],
-                refetchType: "none",
-              });
-            }
-          } catch (error) {
-            console.error("Backend wallet linking failed:", error);
-            setAuthError(
-              error instanceof Error ? error.message : "Failed to link wallet",
-            );
-          }
-        }
-
         // Step 6: We've already prompted for wallet linking at the beginning if needed
         // Don't prompt again here as Privy's auth state might not be ready yet
 
@@ -224,24 +284,21 @@ export function usePrivyAuth() {
         // Small delay to ensure React processes state updates
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Reset loginInFlight after successful login
-        loginInFlight = null;
+        // Reset login in progress flag
+        globalLoginState.loginInProgress = false;
 
         return true;
       } catch (error) {
-        console.error("Backend authentication failed:", error);
         setAuthError(
-          error instanceof Error
-            ? error.message
-            : "Backend authentication failed",
+          error instanceof Error ? error.message : "Authentication failed",
         );
         setIsAuthenticating(false);
 
         // Reset to unauthenticated on error
         setUserAtom({ user: null, status: "unauthenticated" });
 
-        // Reset loginInFlight on error
-        loginInFlight = null;
+        // Reset login in progress flag
+        globalLoginState.loginInProgress = false;
       }
     },
     onError: (error) => {
@@ -251,15 +308,26 @@ export function usePrivyAuth() {
       if (error === PrivyErrorCode.USER_EXITED_AUTH_FLOW) {
         setIsAuthenticating(false);
         setAuthError(null);
+
+        // Reset global state even on cancellation
+        globalLoginState.loginInProgress = false;
+        globalLoginState.backendLoginInProgress = false;
+        globalLoginState.walletLinkingInProgress = false;
+        globalLoginState.walletBackendLinkingInProgress = false;
         return;
       }
 
-      console.error("Privy login failed:", error);
       setAuthError(errorMessage);
       setIsAuthenticating(false);
 
       // Reset to unauthenticated on Privy login failure
       setUserAtom({ user: null, status: "unauthenticated" });
+
+      // Reset global state
+      globalLoginState.loginInProgress = false;
+      globalLoginState.backendLoginInProgress = false;
+      globalLoginState.walletLinkingInProgress = false;
+      globalLoginState.walletBackendLinkingInProgress = false;
     },
   });
 
@@ -267,6 +335,12 @@ export function usePrivyAuth() {
     onSuccess: () => {
       setUserAtom({ user: null, status: "unauthenticated" });
       queryClient.clear();
+
+      // Reset global state
+      globalLoginState.loginInProgress = false;
+      globalLoginState.backendLoginInProgress = false;
+      globalLoginState.walletLinkingInProgress = false;
+      globalLoginState.walletBackendLinkingInProgress = false;
     },
   });
 
@@ -291,7 +365,6 @@ export function usePrivyAuth() {
       queryClient.invalidateQueries({ queryKey: ["competition"] });
     },
     onError: (error) => {
-      console.error("Profile fetch failed:", error);
       setAuthError(
         error instanceof Error ? error.message : "Profile fetch failed",
       );
@@ -327,6 +400,57 @@ export function usePrivyAuth() {
     }
   }, [authenticated]);
 
+  // Watch for changes in linked accounts and complete login if needed
+  useEffect(() => {
+    if (userState.status !== "pending") {
+      return;
+    }
+    if (!privyUser) {
+      return;
+    }
+
+    const customWallets = getCustomLinkedWallets(privyUser);
+    if (
+      customWallets.length > 0 &&
+      !globalLoginState.loginInProgress &&
+      !globalLoginState.backendLoginInProgress
+    ) {
+      // Trigger backend login
+      (async () => {
+        globalLoginState.backendLoginInProgress = true;
+        try {
+          const result = await apiClient.login();
+
+          // Fetch profile and update state
+          const profileResult = await apiClient.getProfile();
+          if (profileResult.success && profileResult.user) {
+            setUserAtom({ user: profileResult.user, status: "authenticated" });
+            queryClient.setQueryData(["profile"], profileResult.user);
+            queryClient.invalidateQueries({ queryKey: ["profile"] });
+
+            // Analytics
+            posthog.identify(result.userId, { wallet: result.wallet });
+            trackEvent("UserLoggedIn");
+          }
+        } catch (error) {
+          setAuthError(
+            error instanceof Error ? error.message : "Backend login failed",
+          );
+        } finally {
+          globalLoginState.backendLoginInProgress = false;
+        }
+      })();
+    }
+  }, [
+    privyUser,
+    userState.status,
+    queryClient,
+    setUserAtom,
+    posthog,
+    trackEvent,
+    setAuthError,
+  ]);
+
   return {
     // Auth state
     authenticated,
@@ -336,8 +460,7 @@ export function usePrivyAuth() {
     // Actions
     login,
     logout,
-    linkWallet: triggerPrivyLinkWallet,
-    linkWalletAsync,
+    linkWallet,
 
     // Status
     isAuthenticating: isAuthenticating || profileFetchMutation.isPending,

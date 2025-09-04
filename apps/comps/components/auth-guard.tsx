@@ -3,7 +3,6 @@ import { useEffect, useRef } from "react";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
 import { useUserSession } from "@/hooks/useAuth";
-import { usePrivyAuth } from "@/hooks/usePrivyAuth";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -18,7 +17,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 }) => {
   const session = useUserSession();
   const router = useRouter();
-  const { ready } = usePrivyAuth();
   const lastWasAuthedRef = useRef(false);
 
   // Track last authenticated state to avoid tearing down UI during transient loading
@@ -29,14 +27,14 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   }, [session]);
 
   useEffect(() => {
-    if (!session.isInitialized || !ready) {
+    if (!session.isInitialized) {
       return;
     }
 
     if (!session.isLoading && !session.isAuthenticated) {
       router.push(redirectTo);
     }
-  }, [session, ready, router, redirectTo]);
+  }, [session, router, redirectTo]);
 
   if (!session.isInitialized) {
     return skeleton;

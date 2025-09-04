@@ -13,7 +13,8 @@ import UserInfoSection from "@/components/user-info";
 import UserVotesSection from "@/components/user-votes";
 import { useUserAgents } from "@/hooks";
 import { useUserSession } from "@/hooks/useAuth";
-import { useLinkWallet, useUpdateProfile } from "@/hooks/useProfile";
+import { usePrivyAuth } from "@/hooks/usePrivyAuth";
+import { useUpdateProfile } from "@/hooks/useProfile";
 import { UpdateProfileRequest } from "@/types/profile";
 
 export default function ProfilePage() {
@@ -21,7 +22,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const pathname = usePathname();
   const updateProfile = useUpdateProfile();
-  const linkWallet = useLinkWallet();
+  const { linkWallet } = usePrivyAuth();
   const { data: agents, isLoading } = useUserAgents({ limit: 100 });
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function ProfilePage() {
   };
 
   const handleLinkWallet = async () => {
-    linkWallet.mutate();
+    linkWallet();
   };
 
   return (

@@ -1,30 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAtom } from "jotai";
 
-import { UnauthorizedError, apiClient } from "@/lib/api-client";
-import { AuthStatus, useUser, userAtom } from "@/state/atoms";
+import { UnauthorizedError } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
+import { useUser, userAtom } from "@/state/atoms";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 
 import { useClientCleanup } from "./useAuth";
 import { useAnalytics } from "./usePostHog";
-import { usePrivyAuth } from "./usePrivyAuth";
+
+// import { usePrivyAuth } from "./usePrivyAuth";
 
 /**
  * Hook to fetch user profile
  * @returns Query result with profile data
  */
 export const useProfile = () => {
-  const { status } = useUser();
+  const { status, user } = useUser();
   const cleanup = useClientCleanup();
 
   return useQuery({
     queryKey: ["profile"],
     staleTime: 1000,
-    refetchOnMount: false, // Don't refetch on mount if we already have data
-    refetchOnWindowFocus: false,
     queryFn: async (): Promise<ProfileResponse["user"]> => {
       try {
-        // Always fetch fresh data from the backend when authenticated
+        if (user && user.name && status === "authenticated") return user;
+
         const res = await apiClient.getProfile();
         if (!res.success) throw new Error("Error when fetching profile");
         return res.user;
@@ -63,31 +64,31 @@ export const useUpdateProfile = () => {
 
       // Invalidate profile query to get updated data
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-      setUser({ user: data.user, status: "authenticated" as AuthStatus });
+      setUser({ user: data.user, status: "authenticated" });
     },
   });
 };
 
-export const useLinkWallet = () => {
-  const { user } = useUser();
-  const [, setUser] = useAtom(userAtom);
-  const queryClient = useQueryClient();
-  const { trackEvent } = useAnalytics();
-  const { linkWallet } = usePrivyAuth();
+// export const useLinkWallet = () => {
+//   const { user } = useUser();
+//   const [, setUser] = useAtom(userAtom);
+//   const queryClient = useQueryClient();
+//   const { trackEvent } = useAnalytics();
+//   const { linkWallet } = usePrivyAuth();
 
-  return useMutation({
-    mutationFn: async () => {
-      linkWallet();
-    },
-    onSuccess: () => {
-      trackEvent("UserLinkedWallet", {
-        updatedFields: ["walletAddress"],
-      });
-      setUser({ user: user, status: "authenticated" as AuthStatus });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-    },
-    onError: (error) => {
-      console.error("Wallet linking failed:", error);
-    },
-  });
-};
+//   return useMutation({
+//     mutationFn: async () => {
+//       linkWallet();
+//     },
+//     onSuccess: () => {
+//       trackEvent("UserLinkedWallet", {
+//         updatedFields: ["walletAddress"],
+//       });
+//       setUser({ user: user, status: "authenticated" });
+//       queryClient.invalidateQueries({ queryKey: ["profile"] });
+//     },
+//     onError: (error) => {
+//       console.error("Wallet linking failed:", error);
+//     },
+//   });
+// };
