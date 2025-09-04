@@ -88,6 +88,7 @@ export class PortfolioSnapshotter {
     const priceMap: Map<string, PriceReport | null> = new Map();
 
     // Ensure at least one attempt even if maxRetries is 0
+    // This handles the edge case where maxRetries=0 should still make 1 attempt
     const effectiveMaxRetries = Math.max(1, maxRetries);
 
     while (attemptNumber < effectiveMaxRetries) {
@@ -103,12 +104,16 @@ export class PortfolioSnapshotter {
 
       // Add exponential backoff delay between retry attempts (except first attempt)
       if (attemptNumber > 1) {
+        // Exponential backoff: attemptNumber - 2 is intentional to get 1s, 2s, 4s progression
+        // Attempt 2: 2^(2-2) = 2^0 = 1 second
+        // Attempt 3: 2^(3-2) = 2^1 = 2 seconds
+        // Attempt 4: 2^(4-2) = 2^2 = 4 seconds
         const backoffDelay = Math.min(
           1000 * Math.pow(2, attemptNumber - 2),
           10000,
         ); // Max 10 seconds
         repositoryLogger.debug(
-          `[PortfolioSnapshotter] Retry attempt ${attemptNumber}/${maxRetries} for agent ${agentId} after ${backoffDelay}ms delay`,
+          `[PortfolioSnapshotter] Retry attempt ${attemptNumber}/${effectiveMaxRetries} for agent ${agentId} after ${backoffDelay}ms delay`,
         );
         await new Promise((resolve) => setTimeout(resolve, backoffDelay));
       }
@@ -229,9 +234,9 @@ export class PortfolioSnapshotter {
       }
 
       // If this was the last attempt and we still have failures, log it
-      if (attemptNumber === maxRetries) {
+      if (attemptNumber === effectiveMaxRetries) {
         repositoryLogger.error(
-          `[PortfolioSnapshotter] Failed to fetch prices for ${stillFailedCount} tokens after ${maxRetries} attempts for agent ${agentId}`,
+          `[PortfolioSnapshotter] Failed to fetch prices for ${stillFailedCount} tokens after ${effectiveMaxRetries} attempts for agent ${agentId}`,
         );
       }
     }
@@ -454,7 +459,7 @@ export class PortfolioSnapshotter {
   /**
    * Pre-fetch prices for all unique tokens across all agents
    * This populates the cache before processing to avoid cache expiration
-   * @param agentIds Array of agent IDs
+   * @param agentIds Array of agent IDs (not agent objects - the parameter name is intentional)
    */
   private async preFetchAllTokenPrices(agentIds: string[]): Promise<void> {
     repositoryLogger.debug(
@@ -466,6 +471,7 @@ export class PortfolioSnapshotter {
     const tokenToAgentCount = new Map<string, number>(); // Track how many agents hold each token
 
     // Fetch all balances in bulk (much faster than sequential)
+    // Note: getBulkBalances expects agentIds (string[]), not agent objects
     const allBalances = await this.balanceManager.getBulkBalances(agentIds);
 
     for (const balance of allBalances) {
