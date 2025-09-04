@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
 import { useUserSession } from "@/hooks/useAuth";
@@ -17,6 +17,14 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 }) => {
   const session = useUserSession();
   const router = useRouter();
+  const lastWasAuthedRef = useRef(false);
+
+  // Track last authenticated state to avoid tearing down UI during transient loading
+  useEffect(() => {
+    if (session.isInitialized) {
+      lastWasAuthedRef.current = session.isAuthenticated;
+    }
+  }, [session]);
 
   useEffect(() => {
     if (!session.isInitialized) {
@@ -28,13 +36,19 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     }
   }, [session, router, redirectTo]);
 
-  if (!session.isInitialized || session.isLoading) {
+  if (!session.isInitialized) {
     return skeleton;
+  }
+
+  // While loading, keep previous authed content mounted to avoid flicker
+  if (session.isLoading) {
+    return lastWasAuthedRef.current ? <>{children}</> : skeleton;
   }
 
   if (session.isAuthenticated) {
     return <>{children}</>;
   }
 
-  return null;
+  // When unauthenticated, show skeleton while redirecting to avoid a blank frame
+  return skeleton;
 };

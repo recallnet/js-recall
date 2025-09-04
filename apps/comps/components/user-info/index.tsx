@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useClickAway } from "@uidotdev/usehooks";
-import { BadgeCheckIcon, CircleAlertIcon, SquarePen } from "lucide-react";
+import { SquarePen } from "lucide-react";
 import React, { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -16,17 +16,19 @@ import {
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
 import { toast } from "@recallnet/ui2/components/toast";
-import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
-import { useVerifyEmail } from "@/hooks/useVerifyEmail";
 import { ConflictError } from "@/lib/api-client";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
 import { ProfilePicture } from "./ProfilePicture";
+import LinkWallet from "./link-wallet";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
+  name: z
+    .string()
+    .min(1, { message: "Name is required" })
+    .max(100, { message: "Name must be less than 100 characters" }),
   website: asOptionalStringWithoutEmpty(
     z.string().url({ message: "Must be a valid URL" }),
   ),
@@ -37,16 +39,15 @@ type FormData = z.infer<typeof formSchema>;
 interface UserInfoSectionProps {
   user: ProfileResponse["user"];
   onSave: (data: Partial<UpdateProfileRequest>) => Promise<void>;
+  onLinkWallet: () => Promise<void>;
 }
 
 export default function UserInfoSection({
   user,
   onSave,
+  onLinkWallet,
 }: UserInfoSectionProps) {
-  const [editField, setEditField] = useState<"email" | "website" | null>(null);
-  const [emailVerifyClicked, setEmailVerifyClicked] = useState(false);
-  const { mutate: verifyEmail } = useVerifyEmail();
-  const verified = user.isEmailVerified;
+  const [editField, setEditField] = useState<"name" | "website" | null>(null);
 
   // Click away ref to dismiss edit mode
   const editFieldRef = useClickAway<HTMLDivElement>(() => {
@@ -58,9 +59,8 @@ export default function UserInfoSection({
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-
     defaultValues: {
-      email: user?.email || "",
+      name: user?.name || "",
       website: user?.metadata?.website || "",
     },
   });
@@ -75,7 +75,7 @@ export default function UserInfoSection({
   const handleSave: SubmitHandler<FormData> = async (data) => {
     try {
       const transformedData: UpdateProfileRequest = {
-        email: data.email,
+        name: data.name,
         metadata: data.website ? { website: data.website } : undefined,
       };
 
@@ -101,33 +101,6 @@ export default function UserInfoSection({
     }
   };
 
-  const sendEmailVerify = () => {
-    setEmailVerifyClicked(true);
-
-    verifyEmail(undefined, {
-      onSuccess: (res) => {
-        if (res.success) {
-          toast.success(
-            <div className="flex flex-col">
-              <span>Verification Email Sent</span>
-              <span className="text-primary-foreground font-normal">
-                An email has been sent to your inbox.
-              </span>
-            </div>,
-          );
-          setTimeout(setEmailVerifyClicked, 60 * 1000, false); // wait 60 seconds
-        } else {
-          toast.error(res.message);
-        }
-      },
-      onError: (res) => {
-        toast.error("Failed to send verification email", {
-          description: res.message,
-        });
-      },
-    });
-  };
-
   return (
     <div className="flex w-full border">
       <ProfilePicture
@@ -135,7 +108,11 @@ export default function UserInfoSection({
         onSave={async (newUrl) => {
           await onSave({ imageUrl: newUrl });
         }}
-        className="w-90"
+        className="w-90 my-auto hidden sm:block"
+        fallbackData={{
+          walletAddress: user?.walletAddress,
+          name: user?.name,
+        }}
       />
       <div className="flex w-full flex-col items-start justify-center gap-5 border-l p-4">
         <div className="flex items-center gap-3">
@@ -147,75 +124,10 @@ export default function UserInfoSection({
             onSubmit={form.handleSubmit(handleSave)}
             className="w-full space-y-4"
           >
-            {/* Email row */}
+            {/* Email row (not editable) */}
             <div className="text-secondary-foreground flex min-h-[40px] flex-wrap items-center gap-4">
-              <span className="text-foreground w-20 font-semibold">E-mail</span>
-              {editField === "email" ? (
-                <div ref={editFieldRef} className="flex items-center gap-2">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormControl>
-                          <Input
-                            {...field}
-                            className="w-full max-w-sm"
-                            autoFocus
-                            onKeyDown={handleKeyDown}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <Button>Save</Button>
-                </div>
-              ) : (
-                <>
-                  <SquarePen
-                    className="h-5 w-5 cursor-pointer"
-                    onClick={() => setEditField("email")}
-                  />
-                  <span>{user?.email}</span>
-                  {
-                    //TODO still need "verified" field to put this conditionally
-                  }
-                  {verified ? (
-                    <div className="flex items-center gap-2">
-                      <Tooltip
-                        content={
-                          <span className="text-green-500">Verified email</span>
-                        }
-                      >
-                        <BadgeCheckIcon
-                          className="text-green-500 hover:text-green-700"
-                          strokeWidth={1}
-                        />
-                      </Tooltip>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Tooltip
-                        content={
-                          <span className="text-yellow-400">
-                            This email is not verified
-                          </span>
-                        }
-                      >
-                        <CircleAlertIcon className="text-yellow-400 hover:text-yellow-700" />
-                      </Tooltip>
-                      <Button
-                        variant="link"
-                        className="p-0 underline"
-                        onClick={sendEmailVerify}
-                        disabled={emailVerifyClicked}
-                      >
-                        Verify
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
+              <span className="text-foreground w-20 font-semibold">Email</span>
+              <span>{user?.email}</span>
             </div>
 
             {/* Website row */}
@@ -245,15 +157,25 @@ export default function UserInfoSection({
                 </div>
               ) : (
                 <>
+                  {user.metadata?.website && (
+                    <span>{user.metadata.website}</span>
+                  )}
                   <SquarePen
                     className="h-5 w-5 cursor-pointer"
                     onClick={() => setEditField("website")}
                   />
-                  <span>{user?.metadata?.website}</span>
                 </>
               )}
             </div>
           </form>
+
+          {/* Link wallet button. Note: for now, we only allow for linking wallets */}
+          <div className="text-secondary-foreground flex min-h-[40px] flex-wrap items-center gap-4">
+            <span className="text-foreground w-20 font-semibold">
+              Wallet address
+            </span>
+            <LinkWallet user={user} onLinkWallet={onLinkWallet} />
+          </div>
         </Form>
       </div>
     </div>

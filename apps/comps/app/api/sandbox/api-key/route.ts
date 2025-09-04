@@ -28,8 +28,8 @@ async function handleGetAgentApiKey(request: NextRequest) {
 
   // Get agent name from query parameters
   const { searchParams } = new URL(request.url);
-  const agentName = searchParams.get("name");
-  if (!agentName) {
+  const agentHandle = searchParams.get("handle");
+  if (!agentHandle) {
     throw new Error("Agent name is required");
   }
 
@@ -39,11 +39,11 @@ async function handleGetAgentApiKey(request: NextRequest) {
     sessionCookie,
   );
   const { user } = profileData;
-  const { walletAddress } = user;
+  const { email } = user;
 
   // Find the agent's ID in the sandbox using its name
   const searchData = await sandboxAdminRequest<AdminSearchResult>(
-    `/admin/search?user.walletAddress=${walletAddress}&agent.name=${encodeURIComponent(agentName)}&join=true`,
+    `/admin/search?user.email=${email}&agent.handle=${encodeURIComponent(agentHandle)}&join=true`,
   );
 
   // Check if agent exists in sandbox

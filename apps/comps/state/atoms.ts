@@ -3,7 +3,7 @@ import { atomWithStorage } from "jotai/utils";
 
 import { User } from "@/types/profile";
 
-export type AuthStatus = "unauthenticated" | "authenticated";
+export type AuthStatus = "unauthenticated" | "pending" | "authenticated";
 
 export type UserStorage = {
   user: User | null;

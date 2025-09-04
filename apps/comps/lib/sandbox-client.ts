@@ -45,6 +45,7 @@ export class SandboxClient {
    */
   async createAgent(agentData: {
     name: string;
+    handle: string;
     description?: string;
     imageUrl?: string;
     email?: string;
@@ -69,12 +70,12 @@ export class SandboxClient {
 
   /**
    * Get an agent's API key from the sandbox
-   * @param agentName - Name of the agent
+   * @param agentHandle - Name of the agent
    * @returns Agent API key response
    */
-  async getAgentApiKey(agentName: string): Promise<AdminAgentKeyResponse> {
+  async getAgentApiKey(agentHandle: string): Promise<AdminAgentKeyResponse> {
     const response = await fetch(
-      `${SANDBOX_API_BASE}/api-key?name=${encodeURIComponent(agentName)}`,
+      `${SANDBOX_API_BASE}/api-key?handle=${encodeURIComponent(agentHandle)}`,
       {
         method: "GET",
         headers: {
