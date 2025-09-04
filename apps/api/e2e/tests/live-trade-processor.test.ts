@@ -22,6 +22,8 @@ import { LiveTradeProcessor } from "@/services/live-trade-processor.service.js";
 import { SpecificChain } from "@/types/index.js";
 import type { IndexedTrade, IndexedTransfer } from "@/types/live-trading.js";
 
+import { MockPriceTracker } from "./mocks/mock-price-tracker.js";
+
 // Only run these tests when TEST_LIVE_TRADING is enabled
 const describeIfLiveTrading =
   process.env.TEST_LIVE_TRADING === "true" ? describe : describe.skip;
@@ -223,8 +225,14 @@ describeIfLiveTrading(
       // Initialize services
       services = new ServiceRegistry();
       indexerSyncService = new IndexerSyncService();
+
+      // Use MockPriceTracker to eliminate DexScreener API failures
+      const mockPriceTracker = new MockPriceTracker();
+
+      // Create LiveTradeProcessor with mock price tracker
+      // MockPriceTracker extends PriceTracker and overrides external API calls
       liveTradeProcessor = new LiveTradeProcessor(
-        services.priceTracker,
+        mockPriceTracker,
         services.competitionManager,
         services.balanceManager,
       );
