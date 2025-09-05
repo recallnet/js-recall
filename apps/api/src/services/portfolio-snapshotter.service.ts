@@ -10,7 +10,7 @@ import {
 import { repositoryLogger } from "@/lib/logger.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { BalanceManager, PriceTracker } from "@/services/index.js";
-import { PriceReport, SpecificChain } from "@/types/index.js";
+import { PriceReport } from "@/types/index.js";
 
 /**
  * Portfolio Snapshotter Service
@@ -179,69 +179,19 @@ export class PortfolioSnapshotter {
         break;
       }
 
-      // Step 4: Try individual retries for failed tokens (with rate limiting)
-      repositoryLogger.debug(
-        `[PortfolioSnapshotter] ${failedTokens.length} tokens still missing prices for agent ${agentId}, trying individual fetches`,
-      );
-
-      for (const tokenAddress of failedTokens) {
-        // Skip if we somehow got a price in the meantime
-        if (priceMap.get(tokenAddress) !== null) {
-          continue;
-        }
-
-        // Add delay between individual retries to avoid rate limiting
-        // DexScreener has 100ms built-in rate limiting, so we add a small buffer
-        // Shorter delay = faster recovery, but higher risk of rate limiting
-        const individualRetryDelayMs = 200; // 200ms is safe given DexScreener's throttling
-        await new Promise((resolve) =>
-          setTimeout(resolve, individualRetryDelayMs),
-        );
-
-        const balance = balances.find((b) => b.tokenAddress === tokenAddress);
-        if (balance) {
-          const priceResult = await this.priceTracker.getPrice(
-            tokenAddress,
-            undefined,
-            balance.specificChain as SpecificChain,
-          );
-
-          if (priceResult) {
-            priceMap.set(tokenAddress, priceResult);
-            repositoryLogger.debug(
-              `[PortfolioSnapshotter] Individual retry successful for ${tokenAddress}: $${priceResult.price}`,
-            );
-          } else {
-            // Keep it as null to indicate we tried
-            repositoryLogger.warn(
-              `[PortfolioSnapshotter] Individual retry failed for ${tokenAddress} (${balance.symbol})`,
-            );
-          }
-        }
-      }
-
-      // Check if we've resolved all failures after individual retries
-      const stillFailedCount = balances.filter(
-        (balance) =>
-          balance.amount > 0 && priceMap.get(balance.tokenAddress) === null,
-      ).length;
-
-      if (stillFailedCount === 0) {
-        repositoryLogger.debug(
-          `[PortfolioSnapshotter] All prices resolved after individual retries for agent ${agentId}`,
-        );
-        break;
-      }
-
-      // If this was the last attempt and we still have failures, log it
+      // Log remaining failures for this attempt
       if (attemptNumber === effectiveMaxRetries) {
         repositoryLogger.error(
-          `[PortfolioSnapshotter] Failed to fetch prices for ${stillFailedCount} tokens after ${effectiveMaxRetries} attempts for agent ${agentId}`,
+          `[PortfolioSnapshotter] Failed to fetch prices for ${failedTokens.length} tokens after ${effectiveMaxRetries} attempts for agent ${agentId}`,
+        );
+      } else {
+        repositoryLogger.debug(
+          `[PortfolioSnapshotter] ${failedTokens.length} tokens still missing prices for agent ${agentId}, will retry entire batch`,
         );
       }
     }
 
-    // Step 4: Calculate total value
+    // Step 3: Calculate total value
     let totalValue = 0;
     let pricesFetched = 0;
     let pricesFailed = 0;
@@ -266,7 +216,7 @@ export class PortfolioSnapshotter {
       }
     }
 
-    // Step 5: Handle snapshot creation based on price fetch results
+    // Step 4: Handle snapshot creation based on price fetch results
     if (pricesFailed > 0) {
       // We have incomplete price data - use most recent valid snapshot instead
       repositoryLogger.warn(
