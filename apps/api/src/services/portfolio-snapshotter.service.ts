@@ -39,15 +39,6 @@ export class PortfolioSnapshotter {
     force: boolean = false,
     maxRetries: number = 3,
   ): Promise<void> {
-    const startTime = Date.now();
-    // Dynamic timeout based on expected processing time
-    // Base time + (retries * backoff) + individual retries
-    // For initial snapshots with ~20 tokens: ~10-15 seconds should be enough
-    // For complex portfolios with many tokens: might need 30-60 seconds
-    const MAX_AGENT_SNAPSHOT_TIME = Math.min(
-      60000, // Max 60 seconds
-      15000 + maxRetries * 5000, // Base 15s + 5s per retry attempt
-    );
     repositoryLogger.debug(
       `[PortfolioSnapshotter] Taking portfolio snapshot for agent ${agentId} in competition ${competitionId}`,
     );
@@ -92,14 +83,6 @@ export class PortfolioSnapshotter {
 
     while (attemptNumber < effectiveMaxRetries) {
       attemptNumber++;
-
-      // Check if we've exceeded max time for this agent
-      if (Date.now() - startTime > MAX_AGENT_SNAPSHOT_TIME) {
-        repositoryLogger.error(
-          `[PortfolioSnapshotter] Timeout: Agent ${agentId} snapshot exceeded ${MAX_AGENT_SNAPSHOT_TIME}ms, aborting`,
-        );
-        break;
-      }
 
       // Add exponential backoff delay between retry attempts (except first attempt)
       if (attemptNumber > 1) {
