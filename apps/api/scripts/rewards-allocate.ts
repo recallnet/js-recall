@@ -23,15 +23,17 @@ const colors = {
  * on the provided competitionId
  */
 async function allocateRewards() {
-  // Get the competitionId from command line arguments
+  // Get the required parameters from command line arguments
   const competitionId = process.argv[2];
+  const tokenAddress = process.argv[3];
+  const startTimestamp = process.argv[4];
 
-  if (!competitionId) {
+  if (!competitionId || !tokenAddress || !startTimestamp) {
     console.error(
-      `${colors.red}Error: Missing required parameter.${colors.reset}`,
+      `${colors.red}Error: Missing required parameters.${colors.reset}`,
     );
     console.log(
-      `${colors.yellow}Usage: pnpm rewards:allocate <competitionId>${colors.reset}`,
+      `${colors.cyan}Example: pnpm rewards:allocate 123e4567-e89b-12d3-a456-426614174000 0x1234567890123456789012345678901234567890 1704067200${colors.reset}`,
     );
     process.exit(1);
   }
@@ -50,12 +52,22 @@ async function allocateRewards() {
     console.log(
       `\n${colors.blue}Allocating rewards for competition: ${colors.yellow}${competitionId}${colors.reset}`,
     );
+    console.log(
+      `${colors.blue}Token Address: ${colors.yellow}${tokenAddress}${colors.reset}`,
+    );
+    console.log(
+      `${colors.blue}Start Timestamp: ${colors.yellow}${startTimestamp}${colors.reset}`,
+    );
 
-    // Instantiate the RewardsService
+    // Instantiate the RewardsService (will use config-based RewardsAllocator)
     const rewardsService = new RewardsService();
 
-    // Call the allocate method
-    await rewardsService.allocate(competitionId);
+    // Call the allocate method with all required parameters
+    await rewardsService.allocate(
+      competitionId,
+      tokenAddress as `0x${string}`,
+      parseInt(startTimestamp),
+    );
 
     console.log(
       `\n${colors.green}Successfully allocated rewards for competition: ${colors.yellow}${competitionId}${colors.reset}`,

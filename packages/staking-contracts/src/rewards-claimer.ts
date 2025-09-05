@@ -22,19 +22,13 @@ const abi = JSON.parse(
   ),
 );
 
-interface AllocationResult {
-  transactionHash: string;
-  blockNumber: bigint;
-  gasUsed: bigint;
-}
-
 interface ClaimResult {
   transactionHash: string;
   blockNumber: bigint;
   gasUsed: bigint;
 }
 
-class RewardsAllocator {
+class RewardsClaimer {
   private walletClient: WalletClient;
   private publicClient: PublicClient;
   private contractAddress: Hex;
@@ -63,18 +57,24 @@ class RewardsAllocator {
     this.contractAddress = contractAddress;
   }
 
-  async allocate(
+  /**
+   * Claims rewards using a merkle proof
+   * @param root The merkle root of the allocation
+   * @param claimAmount The amount of tokens to claim
+   * @param proof The merkle proof for the claim
+   * @returns Promise<ClaimResult> The result of the claim transaction
+   */
+  async claim(
     root: string,
-    tokenAddress: string,
-    totalAmount: bigint,
-    startTimestamp: number,
-  ): Promise<AllocationResult> {
+    claimAmount: bigint,
+    proof: string[],
+  ): Promise<ClaimResult> {
     const hash = await this.walletClient.writeContract({
       account: this.walletClient.account!,
       address: this.contractAddress,
       abi: abi,
-      functionName: "addAllocation",
-      args: [root, tokenAddress, totalAmount, startTimestamp],
+      functionName: "claim",
+      args: [root, claimAmount, proof],
       chain: this.walletClient.chain,
     });
 
@@ -90,10 +90,40 @@ class RewardsAllocator {
       };
     }
 
-    throw new Error("Transaction failed. Receipt: " + JSON.stringify(receipt));
+    throw new Error(
+      "Claim transaction failed. Receipt: " + JSON.stringify(receipt),
+    );
+  }
+
+  /**
+   * Gets the token balance for a specific account
+   * @param tokenAddress The address of the ERC20 token
+   * @param accountAddress The address of the account to check
+   * @returns Promise<bigint> The token balance
+   */
+  async getBalance(
+    tokenAddress: string,
+    accountAddress: string,
+  ): Promise<bigint> {
+    const balance = await this.publicClient.readContract({
+      address: tokenAddress as `0x${string}`,
+      abi: [
+        {
+          inputs: [{ name: "account", type: "address" }],
+          name: "balanceOf",
+          outputs: [{ name: "", type: "uint256" }],
+          stateMutability: "view",
+          type: "function",
+        },
+      ],
+      functionName: "balanceOf",
+      args: [accountAddress as `0x${string}`],
+    });
+
+    return balance as bigint;
   }
 }
 
 export { Network };
-export type { AllocationResult, ClaimResult };
-export default RewardsAllocator;
+export type { ClaimResult };
+export default RewardsClaimer;
