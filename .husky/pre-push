@@ -1,0 +1,17 @@
+#!/bin/sh
+
+echo "🚀 Running pre-push quality checks..."
+
+# Linting
+echo "🧹 ESLint check..."
+pnpm lint
+
+# Format check
+echo "💅 Prettier format check..."
+pnpm format:check
+
+# Build check
+echo "🏗️ Build verification..."
+pnpm build
+
+echo "✅ All pre-push checks passed! Ready to push."
