@@ -139,6 +139,29 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               competitionConfiguration:
+   *                 type: object
+   *                 description: Competition-specific configuration settings
+   *                 properties:
+   *                   maxTradePercentage:
+   *                     type: number
+   *                     description: Maximum trade size as percentage of portfolio
+   *                     example: 25
+   *               initialBalances:
+   *                 type: array
+   *                 description: Initial token balances for agents
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       description: Blockchain identifier
+   *                     tokenSymbol:
+   *                       type: string
+   *                       description: Token symbol
+   *                     amount:
+   *                       type: number
+   *                       description: Initial balance amount
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -361,6 +384,29 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               competitionConfiguration:
+   *                 type: object
+   *                 description: Competition-specific configuration settings
+   *                 properties:
+   *                   maxTradePercentage:
+   *                     type: number
+   *                     description: Maximum trade size as percentage of portfolio
+   *                     example: 25
+   *               initialBalances:
+   *                 type: array
+   *                 description: Initial token balances for agents
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       description: Blockchain identifier
+   *                     tokenSymbol:
+   *                       type: string
+   *                       description: Token symbol
+   *                     amount:
+   *                       type: number
+   *                       description: Initial balance amount
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -639,6 +685,29 @@ export function configureAdminRoutes(
    *                 additionalProperties:
    *                   type: number
    *                   description: Reward amount for the given rank
+   *               competitionConfiguration:
+   *                 type: object
+   *                 description: Competition-specific configuration settings
+   *                 properties:
+   *                   maxTradePercentage:
+   *                     type: number
+   *                     description: Maximum trade size as percentage of portfolio
+   *                     example: 25
+   *               initialBalances:
+   *                 type: array
+   *                 description: Initial token balances for agents
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       description: Blockchain identifier
+   *                     tokenSymbol:
+   *                       type: string
+   *                       description: Token symbol
+   *                     amount:
+   *                       type: number
+   *                       description: Initial balance amount
    *     responses:
    *       200:
    *         description: Competition updated successfully
