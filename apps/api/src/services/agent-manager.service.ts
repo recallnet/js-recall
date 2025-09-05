@@ -4,6 +4,12 @@ import { generateNonce } from "siwe";
 import { v4 as uuidv4 } from "uuid";
 import { recoverMessageAddress } from "viem";
 
+import {
+  InsertAgent,
+  SelectAgent,
+  SelectCompetition,
+} from "@recallnet/db-schema/core/types";
+
 import { config } from "@/config/index.js";
 import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";
 import {
@@ -18,6 +24,7 @@ import {
   findByApiKeyHash,
   findByCompetition,
   findById,
+  findByIds,
   findByName,
   findByOwnerId,
   findByWallet,
@@ -39,11 +46,6 @@ import { createEmailVerificationToken } from "@/database/repositories/email-veri
 import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
 import { countBulkAgentTradesInCompetitions } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
-import {
-  InsertAgent,
-  SelectAgent,
-  SelectCompetition,
-} from "@/database/schema/core/types.js";
 import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -51,7 +53,6 @@ import { AgentMetricsHelper } from "@/services/agent-metrics-helper.js";
 import { EmailService } from "@/services/email.service.js";
 import type { AgentWithMetrics } from "@/types/agent-metrics.js";
 import {
-  ACTOR_STATUS,
   AgentCompetitionsParams,
   AgentMetadata,
   AgentPublic,
@@ -276,14 +277,21 @@ export class AgentManager {
   }
 
   /**
-   * Get all agents
-   * @returns Array of all agents
+   * Get multiple agents by their IDs
+   * @param agentIds Array of agent IDs to retrieve
+   * @returns Array of agents matching the provided IDs
    */
-  async getAllAgents() {
+  async getAgentsByIds(agentIds: string[]) {
     try {
-      return await findAll();
+      if (agentIds.length === 0) {
+        return [];
+      }
+      return await findByIds(agentIds);
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error retrieving all agents:", error);
+      serviceLogger.error(
+        "[AgentManager] Error retrieving agents by IDs:",
+        error,
+      );
       return [];
     }
   }
@@ -316,10 +324,7 @@ export class AgentManager {
   private validateAgentStatus(agent: SelectAgent, apiKey: string): void {
     // Check if globally suspended/deleted
     // Note: We now allow "inactive" agents to authenticate for non-competition operations
-    if (
-      agent.status === ACTOR_STATUS.SUSPENDED ||
-      agent.status === ACTOR_STATUS.DELETED
-    ) {
+    if (agent.status === "suspended" || agent.status === "deleted") {
       // Cache the deactivation info
       this.inactiveAgentsCache.set(agent.id, {
         reason: agent.deactivationReason || "No reason provided",

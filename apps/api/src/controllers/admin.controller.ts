@@ -3,23 +3,19 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { config, reloadSecurityConfig } from "@/config/index.js";
-import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import {
   SelectCompetitionReward,
   UpdateCompetition,
-} from "@/database/schema/core/types.js";
+} from "@recallnet/db-schema/core/types";
+
+import { config, reloadSecurityConfig } from "@/config/index.js";
+import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import {
-  ACTOR_STATUS,
-  ActorStatus,
-  AdminCreateAgentSchema,
-  COMPETITION_STATUS,
-} from "@/types/index.js";
+import { ActorStatus, AdminCreateAgentSchema } from "@/types/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
@@ -33,6 +29,7 @@ import {
   AdminGetCompetitionSnapshotsParamsSchema,
   AdminGetCompetitionSnapshotsQuerySchema,
   AdminGetPerformanceReportsQuerySchema,
+  AdminListAllAgentsQuerySchema,
   AdminReactivateAgentInCompetitionParamsSchema,
   AdminReactivateAgentParamsSchema,
   AdminRegisterUserSchema,
@@ -626,7 +623,7 @@ export function makeAdminController(services: ServiceRegistry) {
             continue;
           }
 
-          if (agent.status !== ACTOR_STATUS.ACTIVE) {
+          if (agent.status !== "active") {
             invalidAgentIds.push(agentId);
             continue;
           }
@@ -647,14 +644,11 @@ export function makeAdminController(services: ServiceRegistry) {
         // Get pre-registered agents from the database if we have a competitionId
         if (competitionId) {
           const competitionAgents =
-            await services.competitionManager.getCompetitionAgentsWithMetrics(
-              competitionId,
-              {
-                sort: "",
-                limit: 1000,
-                offset: 0,
-              },
-            );
+            await services.agentManager.getAgentsForCompetition(competitionId, {
+              sort: "",
+              limit: 1000,
+              offset: 0,
+            });
           const registeredAgents = competitionAgents.agents.map(
             (agent) => agent.id,
           );
@@ -686,7 +680,7 @@ export function makeAdminController(services: ServiceRegistry) {
           }
 
           // Verify competition is in PENDING state
-          if (competition.status !== COMPETITION_STATUS.PENDING) {
+          if (competition.status !== "pending") {
             throw new ApiError(
               400,
               `Competition is already in ${competition.status} state and cannot be started`,
@@ -935,8 +929,9 @@ export function makeAdminController(services: ServiceRegistry) {
           users.map((user) => [user.id, user.name || "Unknown User"]),
         );
 
-        // Get all agents to map agent IDs to agent names and owners
-        const agents = await services.agentManager.getAllAgents();
+        // Get only agents in this competition to map agent IDs to agent names and owners
+        const agentIds = leaderboard.map((entry) => entry.agentId);
+        const agents = await services.agentManager.getAgentsByIds(agentIds);
         const agentMap = new Map(
           agents.map((agent) => [
             agent.id,
@@ -1190,8 +1185,27 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async listAllAgents(req: Request, res: Response, next: NextFunction) {
       try {
-        // Get all agents from the database
-        const agents = await services.agentManager.getAllAgents();
+        // Parse and validate pagination parameters
+        const queryResult = flatParse(AdminListAllAgentsQuerySchema, req.query);
+        if (!queryResult.success) {
+          throw new ApiError(
+            400,
+            `Invalid query parameters: ${queryResult.error}`,
+          );
+        }
+        const {
+          limit = 50,
+          offset = 0,
+          sort = "-createdAt",
+        } = queryResult.data;
+
+        // Get agents from the database with pagination
+        const agents = await services.agentManager.getAgents({
+          pagingParams: { limit, offset, sort },
+        });
+
+        // Get total count for pagination metadata
+        const totalCount = await services.agentManager.countAgents();
 
         // Format the agents for the response
         const formattedAgents = agents.map((agent) => ({
@@ -1209,10 +1223,16 @@ export function makeAdminController(services: ServiceRegistry) {
           updatedAt: agent.updatedAt,
         }));
 
-        // Return the agents
+        // Return the agents with pagination metadata
         res.status(200).json({
           success: true,
           agents: formattedAgents,
+          pagination: {
+            limit,
+            offset,
+            total: totalCount,
+            hasMore: offset + agents.length < totalCount,
+          },
         });
       } catch (error) {
         next(error);
@@ -1715,7 +1735,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if competition is still active
-        if (competition.status === COMPETITION_STATUS.ENDED) {
+        if (competition.status === "ended") {
           return res.status(400).json({
             success: false,
             error: "Cannot reactivate agent in ended competition",
@@ -1845,7 +1865,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if competition is ended
-        if (competition.status === COMPETITION_STATUS.ENDED) {
+        if (competition.status === "ended") {
           return res.status(400).json({
             success: false,
             error: "Cannot add agent to ended competition",
@@ -1853,10 +1873,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // HARD RULE: Cannot add agents to active non-sandbox competitions
-        if (
-          competition.status === COMPETITION_STATUS.ACTIVE &&
-          !competition.sandboxMode
-        ) {
+        if (competition.status === "active" && !competition.sandboxMode) {
           return res.status(400).json({
             success: false,
             error:
@@ -1878,7 +1895,19 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Add agent to competition using repository method
-        await addAgentToCompetition(competitionId, agentId);
+        try {
+          await addAgentToCompetition(competitionId, agentId);
+        } catch (error) {
+          // Handle specific error for participant limit
+          if (
+            error instanceof Error &&
+            error.message.includes("maximum participant limit")
+          ) {
+            throw new ApiError(409, error.message);
+          }
+          // Re-throw other errors
+          throw error;
+        }
 
         // Complete sandbox mode logic if enabled
         if (competition.sandboxMode) {

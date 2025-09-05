@@ -1,15 +1,17 @@
 import { v4 as uuidv4 } from "uuid";
 
+import { InsertTrade, SelectTrade } from "@recallnet/db-schema/trading/types";
+
 import { config, features } from "@/config/index.js";
 import {
   count,
   createTradeWithBalances,
   getAgentTrades,
   getAgentTradesInCompetition,
+  getCompetitionTradeMetrics,
   getCompetitionTrades,
 } from "@/database/repositories/trade-repository.js";
 import { findByCompetitionId } from "@/database/repositories/trading-constraints-repository.js";
-import { InsertTrade, SelectTrade } from "@/database/schema/trading/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { EXEMPT_TOKENS, calculateSlippage } from "@/lib/trade-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -24,6 +26,12 @@ import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
 import { PriceTracker } from "./price-tracker.service.js";
 
 const MIN_TRADE_AMOUNT = 0.000001;
+
+// Result types inferred from repository functions to ensure consistency
+type CompetitionTradesResult = Awaited<ReturnType<typeof getCompetitionTrades>>;
+type AgentTradesInCompetitionResult = Awaited<
+  ReturnType<typeof getAgentTradesInCompetition>
+>;
 
 // Interface for trading constraints
 interface TradingConstraints {
@@ -294,7 +302,7 @@ export class TradeSimulator {
     competitionId: string,
     limit?: number,
     offset?: number,
-  ) {
+  ): Promise<CompetitionTradesResult> {
     try {
       return await getCompetitionTrades(competitionId, limit, offset);
     } catch (error) {
@@ -302,7 +310,28 @@ export class TradeSimulator {
         `[TradeSimulator] Error getting competition trades:`,
         error,
       );
-      return [];
+      return { trades: [], total: 0 };
+    }
+  }
+
+  /**
+   * Get trade metrics for a competition
+   * @param competitionId Competition ID
+   * @returns Count of trades, total volume, and number of unique tokens
+   */
+  async getCompetitionTradeMetrics(competitionId: string): Promise<{
+    totalTrades: number;
+    totalVolume: number;
+    uniqueTokens: number;
+  }> {
+    try {
+      return await getCompetitionTradeMetrics(competitionId);
+    } catch (error) {
+      serviceLogger.error(
+        `[TradeSimulator] Error getting competition trade metrics:`,
+        error,
+      );
+      return { totalTrades: 0, totalVolume: 0, uniqueTokens: 0 };
     }
   }
 
@@ -319,7 +348,7 @@ export class TradeSimulator {
     agentId: string,
     limit?: number,
     offset?: number,
-  ) {
+  ): Promise<AgentTradesInCompetitionResult> {
     try {
       return await getAgentTradesInCompetition(
         competitionId,
@@ -332,7 +361,7 @@ export class TradeSimulator {
         `[TradeSimulator] Error getting agent trades in competition:`,
         error,
       );
-      return [];
+      return { trades: [], total: 0 };
     }
   }
 

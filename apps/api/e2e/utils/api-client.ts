@@ -357,9 +357,10 @@ export class ApiClient {
   async startCompetition(
     params:
       | {
-          name: string;
+          name?: string;
+          competitionId?: string;
           description?: string;
-          agentIds: string[];
+          agentIds?: string[];
           tradingType?: CrossChainTradingType;
           sandboxMode?: boolean;
           externalUrl?: string;
@@ -478,7 +479,7 @@ export class ApiClient {
    */
   async startExistingCompetition(
     competitionId: string,
-    agentIds: string[],
+    agentIds?: string[],
     crossChainTradingType?: CrossChainTradingType,
     sandboxMode?: boolean,
     externalUrl?: string,

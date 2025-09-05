@@ -1,31 +1,37 @@
 import { eq } from "drizzle-orm";
 
-import { db } from "@/database/db.js";
 import {
   rewards,
   rewardsRoots,
   rewardsTree,
-} from "@/database/schema/voting/defs.js";
+} from "@recallnet/db-schema/voting/defs";
 import {
   InsertReward,
   InsertRewardsRoot,
   SelectReward,
   SelectRewardsRoot,
   SelectRewardsTree,
-} from "@/database/schema/voting/types.js";
+} from "@recallnet/db-schema/voting/types";
+
+import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
 /**
- * Get all rewards for a specific epoch
- * @param epochId The epoch ID (UUID) to get rewards for
- * @returns Array of rewards for the epoch
+ * Get all rewards for a specific competition
+ * @param competitionId The competition ID (UUID) to get rewards for
+ * @returns Array of rewards for the competition
  */
-async function getRewardsByEpochImpl(epochId: string): Promise<SelectReward[]> {
+async function getRewardsByCompetitionImpl(
+  competitionId: string,
+): Promise<SelectReward[]> {
   try {
-    return await db.select().from(rewards).where(eq(rewards.epoch, epochId));
+    return await db
+      .select()
+      .from(rewards)
+      .where(eq(rewards.competitionId, competitionId));
   } catch (error) {
-    repositoryLogger.error("Error in getRewardsByEpoch:", error);
+    repositoryLogger.error("Error in getRewardsByCompetition:", error);
     throw error;
   }
 }
@@ -54,7 +60,7 @@ async function insertRewardsImpl(
 async function insertRewardsTreeImpl(
   entries: {
     id?: string;
-    epoch: string;
+    competitionId: string;
     level: number;
     idx: number;
     hash: Uint8Array;
@@ -100,20 +106,20 @@ async function insertRewardsRootImpl(
 }
 
 /**
- * Get all nodes of a rewards tree for a specific epoch
- * @param epochId The epoch ID (UUID) to get tree nodes for
+ * Get all nodes of a rewards tree for a specific competition
+ * @param competitionId The competition ID (UUID) to get tree nodes for
  * @returns Array of tree nodes with level, idx, and hash
  */
-async function getRewardsTreeByEpochImpl(
-  epochId: string,
+async function getRewardsTreeByCompetitionImpl(
+  competitionId: string,
 ): Promise<SelectRewardsTree[]> {
   try {
     return await db
       .select()
       .from(rewardsTree)
-      .where(eq(rewardsTree.epoch, epochId));
+      .where(eq(rewardsTree.competitionId, competitionId));
   } catch (error) {
-    repositoryLogger.error("Error in getRewardsTreeByEpoch:", error);
+    repositoryLogger.error("Error in getRewardsTreeByCompetition:", error);
     throw error;
   }
 }
@@ -122,10 +128,10 @@ async function getRewardsTreeByEpochImpl(
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
 
-export const getRewardsByEpoch = createTimedRepositoryFunction(
-  getRewardsByEpochImpl,
+export const getRewardsByCompetition = createTimedRepositoryFunction(
+  getRewardsByCompetitionImpl,
   "RewardsRepository",
-  "getRewardsByEpoch",
+  "getRewardsByCompetition",
 );
 
 export const insertRewards = createTimedRepositoryFunction(
@@ -146,8 +152,8 @@ export const insertRewardsRoot = createTimedRepositoryFunction(
   "insertRewardsRoot",
 );
 
-export const getRewardsTreeByEpoch = createTimedRepositoryFunction(
-  getRewardsTreeByEpochImpl,
+export const getRewardsTreeByCompetition = createTimedRepositoryFunction(
+  getRewardsTreeByCompetitionImpl,
   "RewardsRepository",
-  "getRewardsTreeByEpoch",
+  "getRewardsTreeByCompetition",
 );

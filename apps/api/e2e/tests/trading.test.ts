@@ -1,10 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { trades as tradesDef } from "@recallnet/db-schema/trading/defs";
+import { InsertTrade } from "@recallnet/db-schema/trading/types";
+
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { trades as tradesDef } from "@/database/schema/trading/defs.js";
-import { InsertTrade } from "@/database/schema/trading/types.js";
 import {
   BalancesResponse,
   BlockchainType,
@@ -1330,9 +1331,15 @@ describe("Trading API", () => {
     const solPrice = (priceResponse as PriceResponse).price;
     expect(solPrice).toBeGreaterThan(0);
 
+    // Get the current price of USDC to calculate actual USD value
+    const usdcPriceResponse = await agentClient.getPrice(usdcTokenAddress);
+    expect(usdcPriceResponse.success).toBe(true);
+    const usdcPrice = (usdcPriceResponse as PriceResponse).price;
+    expect(usdcPrice).toBeGreaterThan(0);
+
     // Define trade amount
     const tradeAmount = 100; // 100 USDC
-    const expectedUsdValue = tradeAmount; // Since we're trading from USDC, the USD value should be ~tradeAmount
+    const expectedUsdValue = tradeAmount * usdcPrice!; // Calculate actual USD value based on USDC price
 
     // Execute a trade
     const tradeResponse = await agentClient.executeTrade({
@@ -1354,8 +1361,8 @@ describe("Trading API", () => {
     const actualUsdValue = (tradeResponse as TradeResponse).transaction
       .tradeAmountUsd;
 
-    // Verify that the USD value is approximately correct (allow for small variations)
-    expect(actualUsdValue).toBeCloseTo(expectedUsdValue, 0); // Using precision 0 to allow for some variation
+    // Verify that the USD value is approximately correct (allow for small variations due to price movement)
+    expect(actualUsdValue).toBeCloseTo(expectedUsdValue, 1); // Using precision 1 to allow for price movement between fetch and execution
 
     // Verify tradeAmountUsd also appears in trade history
     const tradeHistoryResponse = await agentClient.getTradeHistory();
@@ -1390,7 +1397,7 @@ describe("Trading API", () => {
       .transaction.tradeAmountUsd;
 
     // Verify USD value is approximately correct, allowing for some variation due to price fluctuations
-    expect(reverseActualUsdValue).toBeCloseTo(reverseExpectedUsdValue, 0);
+    expect(reverseActualUsdValue).toBeCloseTo(reverseExpectedUsdValue, 1);
   });
 
   test("symbol information is returned in all trading-related responses", async () => {

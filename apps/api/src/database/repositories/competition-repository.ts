@@ -14,35 +14,35 @@ import {
 import { unionAll } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
 
-import { db, dbRead } from "@/database/db.js";
 import {
   competitionAgents,
   competitionRewards,
   competitions,
   competitionsLeaderboard,
-} from "@/database/schema/core/defs.js";
+} from "@recallnet/db-schema/core/defs";
 // Import for enrichment functionality
-import { votes } from "@/database/schema/core/defs.js";
+import { votes } from "@recallnet/db-schema/core/defs";
 import {
   InsertCompetition,
+  InsertCompetitionAgent,
   InsertCompetitionsLeaderboard,
   UpdateCompetition,
-} from "@/database/schema/core/types.js";
+} from "@recallnet/db-schema/core/types";
 import {
   portfolioSnapshots,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
-} from "@/database/schema/trading/defs.js";
-import { tradingConstraints } from "@/database/schema/trading/defs.js";
-import { InsertTradingCompetition } from "@/database/schema/trading/types.js";
-import { InsertPortfolioSnapshot } from "@/database/schema/trading/types.js";
+} from "@recallnet/db-schema/trading/defs";
+import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
+import { InsertTradingCompetition } from "@recallnet/db-schema/trading/types";
+import { InsertPortfolioSnapshot } from "@recallnet/db-schema/trading/types";
+
+import { db, dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
   BestPlacementDbSchema,
-  COMPETITION_AGENT_STATUS,
-  COMPETITION_STATUS,
   CompetitionAgentStatus,
   CompetitionStatus,
   PagingParams,
@@ -315,31 +315,33 @@ async function addAgentToCompetitionImpl(
         throw new Error(`Competition ${competitionId} not found`);
       }
 
-      // Check participant limit if one exists
-      if (
-        competition.maxParticipants &&
-        competition.registeredParticipants >= competition.maxParticipants
-      ) {
-        throw new Error(
-          `Competition has reached maximum participant limit (${competition.maxParticipants})`,
-        );
-      }
-
-      // Add the agent to the competition and check if it was actually inserted
+      // Attempt to add the agent to the competition
       const insertResult = await tx
         .insert(competitionAgents)
         .values({
           competitionId,
           agentId,
-          status: COMPETITION_AGENT_STATUS.ACTIVE,
+          status: "active",
           createdAt: new Date(),
           updatedAt: new Date(),
         })
         .onConflictDoNothing()
         .returning({ insertedId: competitionAgents.agentId });
 
-      // Only increment the counter if the agent was actually inserted
+      // Only process if the agent was actually inserted (not a duplicate)
       if (insertResult.length > 0) {
+        // Check participant limit AFTER confirming this is a new registration
+        if (
+          competition.maxParticipants &&
+          competition.registeredParticipants + 1 > competition.maxParticipants
+        ) {
+          // Transaction will rollback, keeping registeredParticipants accurate
+          throw new Error(
+            `Competition has reached maximum participant limit (${competition.maxParticipants})`,
+          );
+        }
+
+        // Increment the participant counter
         await tx
           .update(competitions)
           .set({
@@ -375,7 +377,7 @@ async function removeAgentFromCompetitionImpl(
       const result = await tx
         .update(competitionAgents)
         .set({
-          status: COMPETITION_AGENT_STATUS.DISQUALIFIED,
+          status: "disqualified",
           deactivationReason: reason || "Disqualified from competition",
           deactivatedAt: new Date(),
           updatedAt: new Date(),
@@ -384,7 +386,7 @@ async function removeAgentFromCompetitionImpl(
           and(
             eq(competitionAgents.competitionId, competitionId),
             eq(competitionAgents.agentId, agentId),
-            eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+            eq(competitionAgents.status, "active"),
           ),
         )
         .returning();
@@ -459,10 +461,10 @@ async function addAgentsImpl(competitionId: string, agentIds: string[]) {
       }
 
       const now = new Date();
-      const values = agentIds.map((agentId) => ({
+      const values: InsertCompetitionAgent[] = agentIds.map((agentId) => ({
         competitionId,
         agentId,
-        status: COMPETITION_AGENT_STATUS.ACTIVE,
+        status: "active",
         createdAt: now,
         updatedAt: now,
       }));
@@ -504,7 +506,7 @@ async function addAgentsImpl(competitionId: string, agentIds: string[]) {
  */
 async function getAgentsImpl(
   competitionId: string,
-  status: CompetitionAgentStatus = COMPETITION_AGENT_STATUS.ACTIVE,
+  status: CompetitionAgentStatus = "active",
 ) {
   try {
     const result = await db
@@ -554,7 +556,7 @@ async function isAgentActiveInCompetitionImpl(
         and(
           eq(competitionAgents.competitionId, competitionId),
           eq(competitionAgents.agentId, agentId),
-          eq(competitionAgents.status, COMPETITION_AGENT_STATUS.ACTIVE),
+          eq(competitionAgents.status, "active"),
         ),
       )
       .limit(1);
@@ -738,7 +740,7 @@ async function updateAgentCompetitionStatusImpl(
 
       // Add deactivation fields when moving to inactive status, clear them when reactivating
       const updateData =
-        status !== COMPETITION_AGENT_STATUS.ACTIVE
+        status !== "active"
           ? {
               ...baseUpdateData,
               deactivationReason: reason || `Status changed to ${status}`,
@@ -765,9 +767,8 @@ async function updateAgentCompetitionStatusImpl(
 
       // Update the registered participants counter if the status change affects it
       if (wasUpdated) {
-        const wasActive =
-          currentStatus.status === COMPETITION_AGENT_STATUS.ACTIVE;
-        const isNowActive = status === COMPETITION_AGENT_STATUS.ACTIVE;
+        const wasActive = currentStatus.status === "active";
+        const isNowActive = status === "active";
 
         if (wasActive && !isNowActive) {
           // Decrement counter: ACTIVE -> non-ACTIVE
@@ -848,7 +849,7 @@ async function markAgentAsWithdrawnImpl(
   return updateAgentCompetitionStatusImpl(
     competitionId,
     agentId,
-    COMPETITION_AGENT_STATUS.WITHDRAWN,
+    "withdrawn",
     reason || "Agent withdrew from competition voluntarily",
   );
 }
@@ -868,7 +869,7 @@ async function findActiveImpl() {
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
       )
-      .where(eq(competitions.status, COMPETITION_STATUS.ACTIVE))
+      .where(eq(competitions.status, "active"))
       .limit(1);
 
     return result;
@@ -919,17 +920,17 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
       total_value: number;
     }>(sql`
       SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
-      FROM competition_agents ca
+      FROM ${competitionAgents} ca
       CROSS JOIN LATERAL (
         SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
-        FROM trading_comps.portfolio_snapshots ps
+        FROM ${portfolioSnapshots} ps
         WHERE ps.agent_id = ca.agent_id
           AND ps.competition_id = ca.competition_id
         ORDER BY ps.timestamp DESC
         LIMIT 1
       ) ps
       WHERE ca.competition_id = ${competitionId}
-        AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
+        AND ca.status = ${"active"}
     `);
 
     // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
@@ -1023,7 +1024,7 @@ async function get24hSnapshotsImpl(
       .from(competitions)
       .where(
         and(
-          eq(competitions.status, COMPETITION_STATUS.ENDED),
+          eq(competitions.status, "ended"),
           eq(competitions.id, competitionId),
         ),
       );
@@ -1336,19 +1337,22 @@ async function getAgentRankingsInCompetitionsImpl(
     );
 
     // Calculate rankings directly in SQL without fetching all agents
+    // Only include active agents in ranking calculation
     const rankingResults = await db.execute(
       sql`
         WITH latest_snapshots AS (
           SELECT
-            competition_id,
-            agent_id,
-            total_value,
-            ROW_NUMBER() OVER (PARTITION BY competition_id, agent_id ORDER BY timestamp DESC) as rn
-          FROM ${portfolioSnapshots}
-          WHERE competition_id IN (${sql.join(
+            ps.competition_id,
+            ps.agent_id,
+            ps.total_value,
+            ROW_NUMBER() OVER (PARTITION BY ps.competition_id, ps.agent_id ORDER BY ps.timestamp DESC) as rn
+          FROM ${portfolioSnapshots} ps
+          INNER JOIN ${competitionAgents} ca ON ps.agent_id = ca.agent_id AND ps.competition_id = ca.competition_id
+          WHERE ps.competition_id IN (${sql.join(
             competitionIds.map((id) => sql`${id}`),
             sql`, `,
           )})
+            AND ca.status = ${"active"}
         ),
         ranked AS (
           SELECT
@@ -1459,7 +1463,7 @@ async function countAgentCompetitionsImpl(agentId: string): Promise<number> {
       .where(
         and(
           eq(competitionAgents.agentId, agentId),
-          eq(competitions.status, COMPETITION_STATUS.ENDED),
+          eq(competitions.status, "ended"),
         ),
       );
 
@@ -1844,7 +1848,7 @@ async function findActiveCompetitionsPastEndDateImpl() {
       )
       .where(
         and(
-          eq(competitions.status, COMPETITION_STATUS.ACTIVE),
+          eq(competitions.status, "active"),
           isNotNull(competitions.endDate),
           lte(competitions.endDate, now),
         ),
@@ -2120,7 +2124,7 @@ async function getAgentPortfolioTimelineImpl(
         JOIN agents a ON a.id = ca.agent_id
         JOIN competitions c ON c.id = ca.competition_id
         WHERE ca.competition_id = ${competitionId}
-          AND ca.status = ${COMPETITION_AGENT_STATUS.ACTIVE}
+          AND ca.status = ${"active"}
       ) AS ranked_snapshots
       WHERE rn = 1
     `);

@@ -36,7 +36,7 @@ export const AgentRegisteredModal: React.FC<Props> = ({
   if (loaded && agent && competition)
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[570px]">
+        <DialogContent className="w-full max-w-[570px] p-4 sm:p-6">
           <DialogHeader className="text-secondary-foreground mb-3 text-start">
             <div className="flex flex-col items-center">
               <DotLottieReact
@@ -113,7 +113,7 @@ export const AgentRegisteredModal: React.FC<Props> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[700px]">
+      <DialogContent className="w-full max-w-[700px] p-4 sm:p-6">
         <DialogHeader className="flex items-center justify-center p-5 text-start">
           <SquarePathAnimation size={40} />
         </DialogHeader>

@@ -1,3 +1,8 @@
+import {
+  InsertTradingConstraints,
+  SelectTradingConstraints,
+} from "@recallnet/db-schema/trading/types";
+
 import { config } from "@/config/index.js";
 import {
   create,
@@ -6,10 +11,6 @@ import {
   update,
   upsert,
 } from "@/database/repositories/trading-constraints-repository.js";
-import {
-  InsertTradingConstraints,
-  SelectTradingConstraints,
-} from "@/database/schema/trading/types.js";
 
 export interface TradingConstraintsInput {
   competitionId: string;

@@ -234,10 +234,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         cell: ({ row }) => (
           <IconButton
             className={cn(
+              "enabled:text-blue-500 enabled:hover:bg-blue-500 enabled:hover:text-white disabled:cursor-not-allowed",
               competition.userVotingInfo?.info.agentId === row.original.id
-                ? "text-blue-500 [&:disabled]:opacity-100"
-                : "text-secondary-foreground",
+                ? "[&:disabled]:opacity-100"
+                : "",
             )}
+            iconClassName="h-8 w-8"
             Icon={ArrowUp}
             disabled={!competition.userVotingInfo?.canVote}
             onClick={() => {
@@ -247,6 +249,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           />
         ),
         size: 70,
+        meta: {
+          className: "justify-center",
+        },
       },
     ],
     [
@@ -363,12 +368,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              position: "relative",
-            }}
-          >
+          <TableBody>
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const row = table.getRowModel().rows[virtualRow.index];
               if (!row) return null;
@@ -376,11 +376,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 <TableRow
                   key={row.id}
                   style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    transform: `translateY(${virtualRow.start}px)`,
                     display: "flex",
                     cursor: "pointer",
                   }}

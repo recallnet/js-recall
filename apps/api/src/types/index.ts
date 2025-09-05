@@ -3,6 +3,15 @@ import { IronSession } from "iron-session";
 import { SiweMessage } from "siwe";
 import { z } from "zod/v4";
 
+import {
+  actorStatus,
+  competitionAgentStatus,
+  competitionStatus,
+  competitionType,
+} from "@recallnet/db-schema/core/defs";
+import { MAX_HANDLE_LENGTH } from "@recallnet/db-schema/core/defs";
+import { crossChainTradingType } from "@recallnet/db-schema/trading/defs";
+
 /**
  * Blockchain type enum
  */
@@ -369,28 +378,10 @@ export interface Admin {
 }
 
 /**
- * Cross-chain trading types values for zod or database enum.
- */
-export const CROSS_CHAIN_TRADING_TYPE_VALUES = [
-  "disallowAll",
-  "disallowXParent",
-  "allow",
-] as const;
-
-/**
- * Cross-chain trading types values.
- */
-export const CROSS_CHAIN_TRADING_TYPE = {
-  DISALLOW_ALL: "disallowAll",
-  DISALLOW_X_PARENT: "disallowXParent",
-  ALLOW: "allow",
-} as const;
-
-/**
  * Zod schema for the cross-chain trading type.
  */
 export const CrossChainTradingTypeSchema = z.enum(
-  CROSS_CHAIN_TRADING_TYPE_VALUES,
+  crossChainTradingType.enumValues,
 );
 
 /**
@@ -523,29 +514,9 @@ export interface LoginResponse {
 }
 
 /**
- * Actor (user, agent, admin) status values for zod or database enum.
- */
-export const ACTOR_STATUS_VALUES = [
-  "active",
-  "inactive",
-  "suspended",
-  "deleted",
-] as const;
-
-/**
- * Actor (user, agent, admin) statuses.
- */
-export const ACTOR_STATUS = {
-  ACTIVE: "active",
-  INACTIVE: "inactive",
-  SUSPENDED: "suspended",
-  DELETED: "deleted",
-} as const;
-
-/**
  * Zod schema for the status of a user, agent, or admin.
  */
-export const ActorStatusSchema = z.enum(ACTOR_STATUS_VALUES);
+export const ActorStatusSchema = z.enum(actorStatus.enumValues);
 
 /**
  * Status of a user, agent, or admin.
@@ -556,11 +527,6 @@ export type ActorStatus = z.infer<typeof ActorStatusSchema>;
  * Minimum length of a handle.
  */
 export const MIN_HANDLE_LENGTH = 3;
-
-/**
- * Maximum length of a handle.
- */
-export const MAX_HANDLE_LENGTH = 15;
 
 /**
  * Agent information Object
@@ -607,27 +573,9 @@ export const TradingConstraintsSchema = z
   .optional();
 
 /**
- * Competition status values for zod or database enum.
- */
-export const COMPETITION_STATUS_VALUES = [
-  "pending",
-  "active",
-  "ended",
-] as const;
-
-/**
- * Competition statuses.
- */
-export const COMPETITION_STATUS = {
-  PENDING: "pending",
-  ACTIVE: "active",
-  ENDED: "ended",
-} as const;
-
-/**
  * Zod schema for the status of a competition.
  */
-export const CompetitionStatusSchema = z.enum(COMPETITION_STATUS_VALUES);
+export const CompetitionStatusSchema = z.enum(competitionStatus.enumValues);
 
 /**
  * Status of a competition.
@@ -635,28 +583,10 @@ export const CompetitionStatusSchema = z.enum(COMPETITION_STATUS_VALUES);
 export type CompetitionStatus = z.infer<typeof CompetitionStatusSchema>;
 
 /**
- * Competition agent status values for zod or database enum.
- */
-export const COMPETITION_AGENT_STATUS_VALUES = [
-  "active",
-  "withdrawn",
-  "disqualified",
-] as const;
-
-/**
- * Competition agent statuses.
- */
-export const COMPETITION_AGENT_STATUS = {
-  ACTIVE: "active",
-  WITHDRAWN: "withdrawn",
-  DISQUALIFIED: "disqualified",
-} as const;
-
-/**
  * Zod schema for the status of an agent within a competition.
  */
 export const CompetitionAgentStatusSchema = z.enum(
-  COMPETITION_AGENT_STATUS_VALUES,
+  competitionAgentStatus.enumValues,
 );
 
 /**
@@ -667,21 +597,9 @@ export type CompetitionAgentStatus = z.infer<
 >;
 
 /**
- * Competition status values for zod or database enum.
- */
-export const COMPETITION_TYPE_VALUES = ["trading"] as const;
-
-/**
- * Competition statuses.
- */
-export const COMPETITION_TYPE = {
-  TRADING: "trading",
-} as const;
-
-/**
  * Zod schema for the status of a competition.
  */
-export const CompetitionTypeSchema = z.enum(COMPETITION_TYPE_VALUES);
+export const CompetitionTypeSchema = z.enum(competitionType.enumValues);
 
 /**
  * Status of a competition.
@@ -927,7 +845,7 @@ export const LEADERBOARD_SORT_FIELDS = [
  * Query string parameters for global leaderboard rankings
  */
 export const LeaderboardParamsSchema = z.object({
-  type: z.enum(COMPETITION_TYPE_VALUES).default(COMPETITION_TYPE.TRADING),
+  type: CompetitionTypeSchema.default("trading"),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
   sort: z.string().optional().default("rank"), // Default to rank ascending

@@ -18,7 +18,7 @@
     "test:watch": "vitest watch --project unit",
     "test:e2e": "vitest run --project e2e",
     "rewards:allocate": "tsx scripts/rewards-allocate.ts",
-    "rewards:insert-test-data": "tsx scripts/insert-epoch-rewards.ts",
+    "rewards:insert-test-data": "tsx scripts/insert-rewards.ts",
     "db:gen-migrations": "NODE_OPTIONS='--import tsx' drizzle-kit generate",
     "db:custom-migration": "NODE_OPTIONS='--import tsx' drizzle-kit generate --custom",
     "db:check": "NODE_OPTIONS='--import tsx' drizzle-kit check",
@@ -69,7 +69,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@envio-dev/hypersync-client": "^0.6.5",
     "@recallnet/api-sdk": "workspace:*",
+    "@recallnet/db-schema": "workspace:*",
     "@recallnet/staking-contracts": "workspace:*",
     "@types/express": "^4.17.17",
     "@types/jsonwebtoken": "^9.0.9",

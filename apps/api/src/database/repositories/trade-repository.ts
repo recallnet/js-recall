@@ -1,12 +1,14 @@
 import { and, desc, count as drizzleCount, eq, sql } from "drizzle-orm";
 
+import { agents } from "@recallnet/db-schema/core/defs";
+import { trades } from "@recallnet/db-schema/trading/defs";
+import { InsertTrade } from "@recallnet/db-schema/trading/types";
+
 import { db } from "@/database/db.js";
 import {
   decrementBalanceInTransaction,
   incrementBalanceInTransaction,
 } from "@/database/repositories/balance-repository.js";
-import { trades } from "@/database/schema/trading/defs.js";
-import { InsertTrade } from "@/database/schema/trading/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChainSchema } from "@/types/index.js";
@@ -134,6 +136,48 @@ async function getAgentTradesImpl(
 }
 
 /**
+ * Get the count of trades for a competition (count, total volume, unique tokens)
+ * @param competitionId Competition ID
+ * @returns Count of trades
+ */
+async function getCompetitionTradeMetricsImpl(competitionId: string) {
+  try {
+    const query = await db.execute(sql`
+      WITH base AS (
+      SELECT
+        ${trades.id}             AS id,
+        ${trades.tradeAmountUsd} AS trade_amount_usd,
+        ${trades.fromToken}      AS from_token,
+        ${trades.toToken}        AS to_token
+      FROM ${trades}
+      WHERE ${trades.competitionId} = ${competitionId}
+    )
+    SELECT
+      COUNT(*) FILTER (WHERE u.ord = 1)                                       AS total_trades,
+      COALESCE(SUM(b.trade_amount_usd) FILTER (WHERE u.ord = 1), 0)::numeric  AS total_volume,
+      COUNT(DISTINCT u.token)                                                 AS unique_tokens
+    FROM base b
+    CROSS JOIN LATERAL
+      unnest(ARRAY[b.from_token, b.to_token]) WITH ORDINALITY AS u(token, ord);
+    `);
+    const result = query.rows[0] ?? {
+      total_trades: 0,
+      total_volume: 0,
+      unique_tokens: 0,
+    };
+
+    return {
+      totalTrades: Number(result.total_trades),
+      totalVolume: Number(result.total_volume),
+      uniqueTokens: Number(result.unique_tokens),
+    };
+  } catch (error) {
+    repositoryLogger.error("Error in getCompetitionTradeMetrics:", error);
+    throw error;
+  }
+}
+
+/**
  * Get trades for a competition
  * @param competitionId Competition ID
  * @param limit Optional result limit
@@ -145,21 +189,53 @@ async function getCompetitionTradesImpl(
   offset?: number,
 ) {
   try {
-    const query = db
-      .select()
+    const tradesQuery = db
+      .select({
+        id: trades.id,
+        competitionId: trades.competitionId,
+        agentId: trades.agentId,
+        fromToken: trades.fromToken,
+        toToken: trades.toToken,
+        fromAmount: trades.fromAmount,
+        toAmount: trades.toAmount,
+        fromTokenSymbol: trades.fromTokenSymbol,
+        toTokenSymbol: trades.toTokenSymbol,
+        fromSpecificChain: trades.fromSpecificChain,
+        toSpecificChain: trades.toSpecificChain,
+        tradeAmountUsd: trades.tradeAmountUsd,
+        timestamp: trades.timestamp,
+        reason: trades.reason,
+        agent: {
+          id: agents.id,
+          name: agents.name,
+          imageUrl: agents.imageUrl,
+          description: agents.description,
+        },
+      })
       .from(trades)
+      .leftJoin(agents, eq(trades.agentId, agents.id))
       .where(eq(trades.competitionId, competitionId))
       .orderBy(desc(trades.timestamp));
 
     if (limit !== undefined) {
-      query.limit(limit);
+      tradesQuery.limit(limit);
     }
 
     if (offset !== undefined) {
-      query.offset(offset);
+      tradesQuery.offset(offset);
     }
 
-    return await query;
+    const totalQuery = db
+      .select({ count: drizzleCount() })
+      .from(trades)
+      .where(eq(trades.competitionId, competitionId));
+
+    const [results, total] = await Promise.all([tradesQuery, totalQuery]);
+
+    return {
+      trades: results,
+      total: total[0]?.count ?? 0,
+    };
   } catch (error) {
     repositoryLogger.error("Error in getCompetitionTrades:", error);
     throw error;
@@ -244,26 +320,36 @@ async function getAgentTradesInCompetitionImpl(
   offset?: number,
 ) {
   try {
-    const query = db
+    const whereClause = and(
+      eq(trades.competitionId, competitionId),
+      eq(trades.agentId, agentId),
+    );
+
+    const tradesQuery = db
       .select()
       .from(trades)
-      .where(
-        and(
-          eq(trades.competitionId, competitionId),
-          eq(trades.agentId, agentId),
-        ),
-      )
+      .where(whereClause)
       .orderBy(desc(trades.timestamp));
 
     if (limit !== undefined) {
-      query.limit(limit);
+      tradesQuery.limit(limit);
     }
 
     if (offset !== undefined) {
-      query.offset(offset);
+      tradesQuery.offset(offset);
     }
 
-    return await query;
+    const totalQuery = db
+      .select({ count: drizzleCount() })
+      .from(trades)
+      .where(whereClause);
+
+    const [results, total] = await Promise.all([tradesQuery, totalQuery]);
+
+    return {
+      trades: results,
+      total: total[0]?.count ?? 0,
+    };
   } catch (error) {
     repositoryLogger.error("Error in getAgentTradesInCompetition:", error);
     throw error;
@@ -347,4 +433,10 @@ export const getAllTrades = createTimedRepositoryFunction(
   getAllTradesImpl,
   "TradeRepository",
   "getAllTrades",
+);
+
+export const getCompetitionTradeMetrics = createTimedRepositoryFunction(
+  getCompetitionTradeMetricsImpl,
+  "TradeRepository",
+  "getCompetitionTradeMetrics",
 );

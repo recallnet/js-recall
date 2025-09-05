@@ -3,24 +3,25 @@ import { eq, inArray, sql } from "drizzle-orm";
 import * as readline from "readline";
 import { parse } from "ts-command-line-args";
 
-import { db } from "@/database/db.js";
 import {
   competitionAgents,
   competitions,
   competitionsLeaderboard,
   votes,
-} from "@/database/schema/core/defs.js";
+} from "@recallnet/db-schema/core/defs";
 import {
   agentScore,
   agentScoreHistory,
-} from "@/database/schema/ranking/defs.js";
+} from "@recallnet/db-schema/ranking/defs";
 import {
   portfolioSnapshots,
   trades,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
   tradingConstraints,
-} from "@/database/schema/trading/defs.js";
+} from "@recallnet/db-schema/trading/defs";
+
+import { db } from "@/database/db.js";
 
 interface Args {
   competitions: string;

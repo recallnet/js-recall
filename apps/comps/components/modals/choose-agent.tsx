@@ -61,7 +61,7 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[850px]">
+        <DialogContent className="w-full max-w-[850px] p-4 sm:p-6">
           <DialogHeader className="mb text-start">
             <DialogTitle className="flex items-center justify-start gap-2 text-xl font-bold text-white">
               <Bot className="size-6 text-gray-700" />
@@ -82,12 +82,12 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
                 onClick={() => setSelectedIndex(Math.max(0, selectedIndex - 1))}
                 disabled={selectedIndex === 0}
                 variant="outline"
-                className="z-10 h-10 w-10 translate-x-[20px] rounded-full p-0 hover:bg-white hover:text-black"
+                className="z-10 h-8 w-8 translate-x-[10px] rounded-full p-0 hover:bg-white hover:text-black sm:h-10 sm:w-10 sm:translate-x-[20px]"
               >
-                <ArrowLeft className="h-6 w-6" />
+                <ArrowLeft className="h-4 w-4 sm:h-6 sm:w-6" />
               </Button>
 
-              <div className="relative flex h-80 flex-1 overflow-hidden">
+              <div className="relative flex h-60 flex-1 overflow-hidden sm:h-80">
                 {agentsGrouped.map((agentGroup, i) => {
                   const currentIndex = i - selectedIndex;
 
@@ -112,7 +112,7 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
                               <AgentCard
                                 agent={agent}
                                 nameComponent="text"
-                                className="h-85 w-65 pointer-events-none relative flex-shrink-0 translate-y-[-40px] scale-75 transition-all duration-200 hover:shadow-lg"
+                                className="sm:h-85 sm:w-65 pointer-events-none relative h-64 w-48 flex-shrink-0 translate-y-[-40px] scale-75 transition-all duration-200 hover:shadow-lg"
                                 onClick={() => onContinue(agent.id)}
                               >
                                 <div className="absolute z-20 h-full w-full bg-black/30"></div>
@@ -125,7 +125,7 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
                             key={j}
                             agent={agent}
                             nameComponent="text"
-                            className="h-85 w-65 hover:scale-80 flex-shrink-0 scale-75 transition-all duration-200 hover:shadow-lg"
+                            className="hover:scale-80 sm:h-85 sm:w-65 h-64 w-48 flex-shrink-0 scale-75 transition-all duration-200 hover:shadow-lg"
                             onClick={() => onContinue(agent.id)}
                           />
                         );
@@ -143,9 +143,9 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
                 }
                 disabled={selectedIndex == agentsGrouped.length - 1}
                 variant="outline"
-                className="z-10 h-10 w-10 translate-x-[-20px] rounded-full p-0 hover:bg-white hover:text-black"
+                className="z-10 h-8 w-8 translate-x-[-10px] rounded-full p-0 hover:bg-white hover:text-black sm:h-10 sm:w-10 sm:translate-x-[-20px]"
               >
-                <ArrowRight className="h-6 w-6" />
+                <ArrowRight className="h-4 w-4 sm:h-6 sm:w-6" />
               </Button>
             </div>
           </div>
