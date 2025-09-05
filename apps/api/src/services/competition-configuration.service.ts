@@ -1,9 +1,10 @@
-import { config } from "@/config/index.js";
-import * as repository from "@/database/repositories/competition-configuration-repository.js";
 import {
   InsertCompetitionConfiguration,
   SelectCompetitionConfiguration,
-} from "@/database/schema/trading/types.js";
+} from "@recallnet/db-schema/trading/types";
+
+import { config } from "@/config/index.js";
+import * as repository from "@/database/repositories/competition-configuration-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 
 export interface CompetitionConfigurationInput {

@@ -1,12 +1,13 @@
 import { and, eq, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
-import { db } from "@/database/db.js";
-import { competitionInitialBalances } from "@/database/schema/trading/defs.js";
+import { competitionInitialBalances } from "@recallnet/db-schema/trading/defs";
 import {
   InsertCompetitionInitialBalance,
   SelectCompetitionInitialBalance,
-} from "@/database/schema/trading/types.js";
+} from "@recallnet/db-schema/trading/types";
+
+import { db } from "@/database/db.js";
 
 /**
  * Creates initial balances for a competition in bulk

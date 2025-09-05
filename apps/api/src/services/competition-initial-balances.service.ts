@@ -1,11 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { config } from "@/config/index.js";
-import * as repository from "@/database/repositories/competition-initial-balances-repository.js";
 import {
   InsertCompetitionInitialBalance,
   SelectCompetitionInitialBalance,
-} from "@/database/schema/trading/types.js";
+} from "@recallnet/db-schema/trading/types";
+
+import { config } from "@/config/index.js";
+import * as repository from "@/database/repositories/competition-initial-balances-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { SpecificChain } from "@/types/index.js";
 
@@ -167,7 +168,7 @@ export class CompetitionInitialBalancesService {
 
     const chainTokens =
       config.specificChainTokens[
-        chain as keyof typeof config.specificChainTokens
+      chain as keyof typeof config.specificChainTokens
       ];
 
     const address = chainTokens[symbol as keyof typeof chainTokens];

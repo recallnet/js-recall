@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
 
-import { db } from "@/database/db.js";
-import { competitionConfigurations } from "@/database/schema/trading/defs.js";
+import { competitionConfigurations } from "@recallnet/db-schema/trading/defs";
 import {
   InsertCompetitionConfiguration,
   SelectCompetitionConfiguration,
-} from "@/database/schema/trading/types.js";
+} from "@recallnet/db-schema/trading/types";
+
+import { db } from "@/database/db.js";
 
 /**
  * Creates competition configuration for a competition

@@ -1,12 +1,13 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { config } from "@/config/index.js";
-import { db } from "@/database/db.js";
 import {
   competitionConfigurations,
   competitionInitialBalances,
-} from "@/database/schema/trading/defs.js";
+} from "@recallnet/db-schema/trading/defs";
+
+import { config } from "@/config/index.js";
+import { db } from "@/database/db.js";
 import {
   BalancesResponse,
   BlockchainType,
@@ -383,7 +384,7 @@ describe("Competition Configuration (Stateless)", () => {
             // Find corresponding token address
             const chainTokens =
               config.specificChainTokens[
-                chain as keyof typeof config.specificChainTokens
+              chain as keyof typeof config.specificChainTokens
               ];
             if (chainTokens && symbol in chainTokens) {
               const tokenAddress =

@@ -1,6 +1,7 @@
+import { SelectCompetitionConfiguration } from "@recallnet/db-schema/trading/types";
+
 import { config, features } from "@/config/index.js";
 import { findActive } from "@/database/repositories/competition-repository.js";
-import { SelectCompetitionConfiguration } from "@/database/schema/trading/types.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { CompetitionConfigurationService } from "@/services/competition-configuration.service.js";
 import { CrossChainTradingType } from "@/types/index.js";
