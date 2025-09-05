@@ -77,11 +77,8 @@ export class PortfolioSnapshotter {
     let attemptNumber = 0;
     const priceMap: Map<string, PriceReport | null> = new Map();
 
-    // Ensure at least one attempt even if maxRetries is 0
-    // This handles the edge case where maxRetries=0 should still make 1 attempt
-    const effectiveMaxRetries = Math.max(1, maxRetries);
-
-    while (attemptNumber < effectiveMaxRetries) {
+    // Loop will run maxRetries + 1 times (initial attempt + retries)
+    while (attemptNumber < maxRetries + 1) {
       attemptNumber++;
 
       // Add exponential backoff delay between retry attempts (except first attempt)
@@ -95,7 +92,7 @@ export class PortfolioSnapshotter {
           10000,
         ); // Max 10 seconds
         repositoryLogger.debug(
-          `[PortfolioSnapshotter] Retry attempt ${attemptNumber}/${effectiveMaxRetries} for agent ${agentId} after ${backoffDelay}ms delay`,
+          `[PortfolioSnapshotter] Retry attempt ${attemptNumber}/${maxRetries + 1} for agent ${agentId} after ${backoffDelay}ms delay`,
         );
         await new Promise((resolve) => setTimeout(resolve, backoffDelay));
       }
@@ -162,9 +159,9 @@ export class PortfolioSnapshotter {
       }
 
       // Log remaining failures for this attempt
-      if (attemptNumber === effectiveMaxRetries) {
+      if (attemptNumber === maxRetries + 1) {
         repositoryLogger.error(
-          `[PortfolioSnapshotter] Failed to fetch prices for ${failedTokens.length} tokens after ${effectiveMaxRetries} attempts for agent ${agentId}`,
+          `[PortfolioSnapshotter] Failed to fetch prices for ${failedTokens.length} tokens after ${maxRetries + 1} attempts for agent ${agentId}`,
         );
       } else {
         repositoryLogger.debug(
