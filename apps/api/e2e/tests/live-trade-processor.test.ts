@@ -10,6 +10,7 @@ import { beforeAll, describe, expect, test } from "vitest";
 import { balances, trades } from "@recallnet/db-schema/trading/defs";
 
 import { db } from "@/database/db.js";
+import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   createTestClient,
   getAdminApiKey,
@@ -816,30 +817,100 @@ describeIfLiveTrading(
           `🔍 Found ${potentialExitTransfers.length} potential exit transfers`,
         );
 
-        // Find a valid wallet address from the transfers
-        const validTransfer = potentialExitTransfers.find(
-          (t) => t.from && t.from.length === 42 && t.from.startsWith("0x"),
-        );
+        // Create admin client and get all existing agents to see if any match our transfer wallets
+        const adminClient = new ApiClient(adminApiKey);
+        const existingAgents = await adminClient.listAgents();
 
-        if (!validTransfer) {
+        let agent: { id: string } | undefined;
+        let walletAddr: string | undefined;
+
+        if (existingAgents.success && existingAgents.agents) {
+          // Try to find an existing agent whose wallet matches a transfer
+          for (const existingAgent of existingAgents.agents) {
+            if (!existingAgent.walletAddress) continue;
+
+            const matchingTransfer = potentialExitTransfers.find(
+              (t) =>
+                t.from &&
+                t.from.toLowerCase() ===
+                  existingAgent.walletAddress!.toLowerCase(),
+            );
+            if (matchingTransfer) {
+              agent = { id: existingAgent.id };
+              walletAddr = existingAgent.walletAddress;
+              console.log(
+                `   ✅ Found existing agent with matching wallet: ${walletAddr}`,
+              );
+              break;
+            }
+          }
+        }
+
+        // If no existing agent matches, create a new one with a transfer wallet
+        if (!agent) {
+          // Get unique wallet addresses from transfers
+          const uniqueWallets = Array.from(
+            new Set(
+              potentialExitTransfers
+                .filter(
+                  (t) =>
+                    t.from && t.from.length === 42 && t.from.startsWith("0x"),
+                )
+                .map((t) => t.from),
+            ),
+          );
+
+          if (uniqueWallets.length === 0) {
+            console.log(
+              "⚠️ No transfers with valid wallet addresses found, skipping test",
+            );
+            return;
+          }
+
+          // Try to register a new agent with one of the transfer wallets
+          for (const wallet of uniqueWallets.slice(0, 5)) {
+            // Try up to 5 wallets
+            try {
+              console.log(
+                `   Trying to register new agent with wallet: ${wallet}`,
+              );
+              const result = await registerUserAndAgentAndGetClient({
+                adminApiKey,
+                agentName: "Chain Exit Test Agent",
+                walletAddress: wallet,
+                agentWalletAddress: wallet,
+              });
+              agent = result.agent;
+              walletAddr = wallet;
+              console.log(
+                `   ✅ Successfully registered new agent with wallet: ${wallet}`,
+              );
+              break;
+            } catch (error) {
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
+              if (
+                errorMessage.includes("409") ||
+                errorMessage.includes("already exists")
+              ) {
+                console.log(
+                  `   ⚠️ Wallet ${wallet} already registered, trying next...`,
+                );
+                continue;
+              }
+              throw error; // Re-throw if it's not a duplicate wallet error
+            }
+          }
+        }
+
+        if (!agent || !walletAddr) {
           console.log(
-            "⚠️ No transfers with valid wallet addresses found, skipping test",
+            "⚠️ Could not find or create an agent with matching wallet, skipping test",
           );
           return;
         }
 
-        const walletAddr = validTransfer.from;
-        console.log(`   Using wallet address: ${walletAddr}`);
-
-        const { agent } = await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Chain Exit Test Agent",
-          walletAddress: walletAddr,
-          agentWalletAddress: walletAddr,
-        });
-
-        // Create admin client using the existing admin API key
-        const adminClient = await createTestClient(adminApiKey);
+        // Start competition for the agent
         const competitionResponse = await startTestCompetition(
           adminClient,
           `Chain Exit Detection Test ${Date.now()}`,
