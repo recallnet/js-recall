@@ -317,26 +317,12 @@ export class CompetitionManager {
       );
     }
 
-    // Update the competition, and use this latest response to have accurate `registeredParticipants`
-    const finalCompetition = await updateCompetition({
-      id: competitionId,
-      status: "active",
-      startDate: new Date(),
-      updatedAt: new Date(),
-    });
-
-    serviceLogger.debug(
-      `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
-    );
-    serviceLogger.debug(
-      `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
-    );
-
+    // Set up trading constraints before taking snapshots
     const existingConstraints =
       await this.tradingConstraintsService.getConstraints(competitionId);
     let newConstraints = existingConstraints;
     if (tradingConstraints && existingConstraints) {
-      // If the caller provided constraints and the already exist, we update
+      // If the caller provided constraints and they already exist, we update
       newConstraints = await this.tradingConstraintsService.updateConstraints(
         competitionId,
         tradingConstraints,
@@ -354,8 +340,32 @@ export class CompetitionManager {
         })) || null;
     }
 
-    // Take initial portfolio snapshots
+    // Take initial portfolio snapshots BEFORE setting status to active
+    // This ensures no trades can happen during snapshot initialization
+    // and the snapshotter has exclusive access to price API rate limits
+    serviceLogger.debug(
+      `[CompetitionManager] Taking initial portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
+    );
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    serviceLogger.debug(
+      `[CompetitionManager] Initial portfolio snapshots completed`,
+    );
+
+    // NOW update the competition status to active
+    // This opens trading and price endpoint access to agents
+    const finalCompetition = await updateCompetition({
+      id: competitionId,
+      status: "active",
+      startDate: new Date(),
+      updatedAt: new Date(),
+    });
+
+    serviceLogger.debug(
+      `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
+    );
+    serviceLogger.debug(
+      `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
+    );
 
     // Reload competition-specific configuration settings
     await this.configurationService.loadCompetitionSettings();
