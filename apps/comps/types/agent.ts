@@ -98,6 +98,7 @@ export interface LeaderboardStats {
 }
 
 export interface LeaderboardResponse {
+  success?: boolean; // Optional to handle both API response and direct data
   stats: LeaderboardStats;
   agents: LeaderboardAgent[];
   pagination: PaginationResponse;
