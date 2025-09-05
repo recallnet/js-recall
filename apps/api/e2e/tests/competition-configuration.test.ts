@@ -384,7 +384,7 @@ describe("Competition Configuration (Stateless)", () => {
             // Find corresponding token address
             const chainTokens =
               config.specificChainTokens[
-              chain as keyof typeof config.specificChainTokens
+                chain as keyof typeof config.specificChainTokens
               ];
             if (chainTokens && symbol in chainTokens) {
               const tokenAddress =

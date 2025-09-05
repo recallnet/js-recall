@@ -168,7 +168,7 @@ export class CompetitionInitialBalancesService {
 
     const chainTokens =
       config.specificChainTokens[
-      chain as keyof typeof config.specificChainTokens
+        chain as keyof typeof config.specificChainTokens
       ];
 
     const address = chainTokens[symbol as keyof typeof chainTokens];
