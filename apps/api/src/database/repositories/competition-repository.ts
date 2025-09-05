@@ -1033,44 +1033,72 @@ async function get24hSnapshotsImpl(
     const twentyFourHoursAgo = new Date(endTime - 24 * 60 * 60 * 1000);
 
     // Get earliest snapshots for each agent using efficient UNNEST + CROSS JOIN LATERAL
-    const earliestResult = await dbRead.execute<{
-      id: number;
-      agent_id: string;
-      competition_id: string;
-      timestamp: Date;
-      total_value: string;
-    }>(sql`
-      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
-      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
-      CROSS JOIN LATERAL (
-        SELECT id, agent_id, competition_id, timestamp, total_value
-        FROM trading_comps.portfolio_snapshots ps
-        WHERE ps.agent_id = agents.agent_id
-          AND ps.competition_id = ${competitionId}
-        ORDER BY ps.timestamp ASC
-        LIMIT 1
-      ) ps
-    `);
+    let earliestResult;
+    try {
+      earliestResult = await dbRead.execute<{
+        id: number;
+        agent_id: string;
+        competition_id: string;
+        timestamp: Date;
+        total_value: string;
+      }>(sql`
+        SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+        FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+        CROSS JOIN LATERAL (
+          SELECT id, agent_id, competition_id, timestamp, total_value
+          FROM trading_comps.portfolio_snapshots ps
+          WHERE ps.agent_id = agents.agent_id
+            AND ps.competition_id = ${competitionId}
+          ORDER BY ps.timestamp ASC
+          LIMIT 1
+        ) ps
+      `);
+    } catch (error) {
+      repositoryLogger.error("Error executing earliestResult query:", error);
+      throw new Error(
+        `Failed to get earliest snapshots: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
 
     // Get snapshots closest to 24h ago using efficient UNNEST + CROSS JOIN LATERAL
-    const snapshots24hResult = await dbRead.execute<{
-      id: number;
-      agent_id: string;
-      competition_id: string;
-      timestamp: Date;
-      total_value: string;
-    }>(sql`
-      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
-      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
-      CROSS JOIN LATERAL (
-        SELECT id, agent_id, competition_id, timestamp, total_value
-        FROM trading_comps.portfolio_snapshots ps
-        WHERE ps.agent_id = agents.agent_id
-          AND ps.competition_id = ${competitionId}
-        ORDER BY ABS(EXTRACT(EPOCH FROM ps.timestamp - ${twentyFourHoursAgo}))
-        LIMIT 1
-      ) ps
-    `);
+    let snapshots24hResult;
+    try {
+      snapshots24hResult = await dbRead.execute<{
+        id: number;
+        agent_id: string;
+        competition_id: string;
+        timestamp: Date;
+        total_value: string;
+      }>(sql`
+        SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+        FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+        CROSS JOIN LATERAL (
+          SELECT id, agent_id, competition_id, timestamp, total_value
+          FROM trading_comps.portfolio_snapshots ps
+          WHERE ps.agent_id = agents.agent_id
+            AND ps.competition_id = ${competitionId}
+          ORDER BY ABS(EXTRACT(EPOCH FROM ps.timestamp - ${twentyFourHoursAgo}))
+          LIMIT 1
+        ) ps
+      `);
+    } catch (error) {
+      repositoryLogger.error(
+        "Error executing snapshots24hResult query:",
+        error,
+      );
+      throw new Error(
+        `Failed to get 24h snapshots: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+
+    if (!earliestResult || !earliestResult.rows) {
+      throw new Error("earliestResult is undefined or missing rows property");
+    }
+    if (!snapshots24hResult || !snapshots24hResult.rows) {
+      throw new Error(
+        "snapshots24hResult is undefined or missing rows property",
+      );
+    }
 
     repositoryLogger.debug(
       `Retrieved ${earliestResult.rows.length} earliest snapshots and ${snapshots24hResult.rows.length} 24h-ago snapshots for ${agentIds.length} agents`,
