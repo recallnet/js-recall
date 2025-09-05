@@ -274,6 +274,9 @@ jobs:
       - name: Run E2E tests
         working-directory: apps/api
         run: |
+          # Note: Live trading tests are skipped (TEST_LIVE_TRADING not set)
+          # They run in a separate workflow: api-live-trading-ci.yml
+          
           # Show the current working directory
           echo "Current working directory: $(pwd)"
 

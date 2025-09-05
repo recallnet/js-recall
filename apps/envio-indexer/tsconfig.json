@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es2020", //required for use with BigInt types
+    "lib": [
+      "es2020"
+    ],
+    "allowJs": true,
+    "checkJs": false,
+    "outDir": "build",
+    "strict": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "module": "CommonJS"
+  },
+  "include": [
+    "src",
+    "test"
+  ]
+}

@@ -1,0 +1,87 @@
+name: recall-live-trading-indexer
+description: Shared live trading indexer for all competitions
+contracts:
+  - name: ERC20Transfers
+    handler: src/EventHandlers.ts
+    events:
+      - event: Transfer(address indexed from, address indexed to, uint256 value)
+  - name: UniswapV2
+    handler: src/EventHandlers.ts
+    events:
+      - event: Swap(address indexed sender, uint256 amount0In, uint256 amount1In, uint256 amount0Out, uint256 amount1Out, address indexed to)
+  - name: UniswapV3
+    handler: src/EventHandlers.ts
+    events:
+      - event: Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
+  - name: Curve
+    handler: src/EventHandlers.ts
+    events:
+      - event: TokenExchange(address indexed buyer, int128 sold_id, uint256 tokens_sold, int128 bought_id, uint256 tokens_bought)
+  - name: BalancerV1
+    handler: src/EventHandlers.ts
+    events:
+      - event: LOG_SWAP(address indexed caller, address indexed tokenIn, address indexed tokenOut, uint256 tokenAmountIn, uint256 tokenAmountOut)
+  - name: BalancerV2
+    handler: src/EventHandlers.ts
+    events:
+      - event: Swap(bytes32 indexed poolId, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut)
+  - name: Bancor
+    handler: src/EventHandlers.ts
+    events:
+      - event: TokensTraded(address indexed trader, address indexed sourceToken, address indexed targetToken, uint256 sourceAmount, uint256 targetAmount, uint256 bntAmount, uint256 bntFee)
+networks:
+  - id: 1
+    start_block: 23246973
+    contracts:
+      - name: ERC20Transfers
+      - name: UniswapV2
+      - name: UniswapV3
+      - name: Curve
+      - name: BalancerV1
+      - name: BalancerV2
+      - name: Bancor
+  - id: 137
+    start_block: 75972301
+    contracts:
+      - name: ERC20Transfers
+      - name: UniswapV2
+      - name: UniswapV3
+      - name: Curve
+      - name: BalancerV1
+      - name: BalancerV2
+  - id: 42161
+    start_block: 375000375
+    contracts:
+      - name: ERC20Transfers
+      - name: UniswapV2
+      - name: UniswapV3
+      - name: Curve
+      - name: BalancerV1
+      - name: BalancerV2
+  - id: 10
+    start_block: 140619962
+    contracts:
+      - name: ERC20Transfers
+      - name: UniswapV2
+      - name: UniswapV3
+      - name: Curve
+      - name: BalancerV1
+      - name: BalancerV2
+  - id: 8453
+    start_block: 35024677
+    contracts:
+      - name: ERC20Transfers
+      - name: UniswapV2
+      - name: UniswapV3
+      - name: Curve
+      - name: BalancerV1
+      - name: BalancerV2
+unordered_multichain_mode: true
+preload_handlers: true
+field_selection:
+  transaction_fields:
+    - hash
+    - gasUsed
+    - gasPrice
+    - from
+    - to
