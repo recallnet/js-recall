@@ -35,7 +35,10 @@ import {
 } from "@recallnet/db-schema/trading/defs";
 import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
 import { InsertTradingCompetition } from "@recallnet/db-schema/trading/types";
-import { InsertPortfolioSnapshot } from "@recallnet/db-schema/trading/types";
+import {
+  InsertPortfolioSnapshot,
+  SelectPortfolioSnapshot,
+} from "@recallnet/db-schema/trading/types";
 
 import { db, dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
@@ -910,7 +913,9 @@ async function createPortfolioSnapshotImpl(snapshot: InsertPortfolioSnapshot) {
  * Get latest portfolio snapshots for all active agents in a competition
  * @param competitionId Competition ID
  */
-async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
+async function getLatestPortfolioSnapshotsImpl(
+  competitionId: string,
+): Promise<SelectPortfolioSnapshot[]> {
   try {
     const result = await dbRead.execute<{
       id: number;
@@ -948,43 +953,58 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
 }
 
 /**
- * Get portfolio snapshots for multiple agents in a competition efficiently
- * This replaces N+1 query patterns when getting snapshots for multiple agents
+ * Get the latest portfolio snapshot for multiple agents in a competition efficiently
  * @param competitionId Competition ID
- * @param agentIds Array of agent IDs to get snapshots for
- * @returns Array of portfolio snapshots for all specified agents
+ * @param agentIds Array of agent IDs to get latest snapshots for
+ * @returns Array containing only the most recent portfolio snapshot for each agent
  */
-async function getBulkAgentPortfolioSnapshotsImpl(
+async function getBulkLatestPortfolioSnapshotsImpl(
   competitionId: string,
   agentIds: string[],
-) {
+): Promise<SelectPortfolioSnapshot[]> {
   if (agentIds.length === 0) {
     return [];
   }
 
   try {
     repositoryLogger.debug(
-      `getBulkAgentPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
+      `getBulkLatestPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
-    const result = await db
-      .select()
-      .from(portfolioSnapshots)
-      .where(
-        and(
-          eq(portfolioSnapshots.competitionId, competitionId),
-          inArray(portfolioSnapshots.agentId, agentIds),
-        ),
-      )
-      .orderBy(desc(portfolioSnapshots.timestamp));
+    // Build the SQL query using LATERAL join to get only the latest snapshot per agent
+    const result = await dbRead.execute<{
+      id: number;
+      agent_id: string;
+      competition_id: string;
+      timestamp: Date;
+      total_value: number;
+    }>(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+      CROSS JOIN LATERAL (
+        SELECT id, agent_id, competition_id, timestamp, total_value
+        FROM ${portfolioSnapshots} ps
+        WHERE ps.agent_id = agents.agent_id
+          AND ps.competition_id = ${competitionId}
+        ORDER BY ps.timestamp DESC
+        LIMIT 1
+      ) ps
+    `);
 
     repositoryLogger.debug(
-      `Retrieved ${result.length} portfolio snapshots for ${agentIds.length} agents`,
+      `Retrieved ${result.rows.length} latest portfolio snapshots for ${agentIds.length} agents`,
     );
 
-    return result;
+    // Convert snake_case to camelCase to match Drizzle SelectPortfolioSnapshot type
+    return result.rows.map((row) => ({
+      id: row.id,
+      agentId: row.agent_id,
+      competitionId: row.competition_id,
+      timestamp: row.timestamp,
+      totalValue: Number(row.total_value),
+    }));
   } catch (error) {
-    repositoryLogger.error("Error in getBulkAgentPortfolioSnapshots:", error);
+    repositoryLogger.error("Error in getBulkLatestPortfolioSnapshots:", error);
     throw error;
   }
 }
@@ -1980,10 +2000,10 @@ export const getLatestPortfolioSnapshots = createTimedRepositoryFunction(
   "getLatestPortfolioSnapshots",
 );
 
-export const getBulkAgentPortfolioSnapshots = createTimedRepositoryFunction(
-  getBulkAgentPortfolioSnapshotsImpl,
+export const getBulkLatestPortfolioSnapshots = createTimedRepositoryFunction(
+  getBulkLatestPortfolioSnapshotsImpl,
   "CompetitionRepository",
-  "getBulkAgentPortfolioSnapshots",
+  "getBulkLatestPortfolioSnapshots",
 );
 
 export const getAgentPortfolioSnapshots = createTimedRepositoryFunction(
