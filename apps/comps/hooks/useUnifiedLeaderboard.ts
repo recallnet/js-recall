@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { ApiClient } from "@/lib/api-client";
 import {
   UnifiedLeaderboardData,
   UnifiedRankingEntry,
@@ -7,6 +8,8 @@ import {
 } from "@/types/leaderboard";
 
 import { useBenchmarkLeaderboard } from "./useBenchmarkLeaderboard";
+
+const apiClient = new ApiClient();
 
 /**
  * Hook to get unified leaderboard data combining benchmark models + trading agents
@@ -27,22 +30,33 @@ export const useUnifiedLeaderboard = () => {
       // Process skill data
       const skillDataMap: Record<string, UnifiedSkillData> = {};
 
-      Object.entries(allSkills).forEach(([skillId, skill]) => {
+      // Process each skill
+      for (const [skillId, skill] of Object.entries(allSkills)) {
         if (skillId === "crypto_trading") {
-          // Trading skill - use agents from JSON
+          // Trading skill - fetch initial agents from API
+          const agentsResponse = await apiClient.getGlobalLeaderboard({
+            type: "trading",
+            limit: 100,
+            offset: 0,
+          });
+
           skillDataMap[skillId] = {
             skill,
             participants: {
               models: [], // No models in trading
-              agents: benchmarkQuery.data!.agents || [],
+              agents: agentsResponse.agents || [],
             },
             stats: {
-              totalParticipants: benchmarkQuery.data!.agents?.length || 0,
+              totalParticipants: agentsResponse.pagination?.total || 0, // Use total from API
               modelCount: 0,
-              agentCount: benchmarkQuery.data!.agents?.length || 0,
-              avgScore: benchmarkQuery.data?.skillStats[skillId]?.avgScore || 0,
-              topScore: benchmarkQuery.data?.skillStats[skillId]?.topScore || 0,
+              agentCount: agentsResponse.pagination?.total || 0, // Use total from API
+              avgScore:
+                benchmarkQuery.data?.skillStats.crypto_trading?.avgScore || 0,
+              topScore:
+                benchmarkQuery.data?.skillStats.crypto_trading?.topScore || 0,
             },
+            // Store pagination info for potential use
+            pagination: agentsResponse.pagination,
           };
         } else {
           // Benchmark skill - use models from JSON
@@ -69,7 +83,10 @@ export const useUnifiedLeaderboard = () => {
             },
           };
         }
-      });
+      }
+
+      // Calculate total agents from the API pagination data (shows full count)
+      const totalAgents = skillDataMap.crypto_trading?.stats?.agentCount || 0;
 
       return {
         skills: allSkills,
@@ -77,7 +94,7 @@ export const useUnifiedLeaderboard = () => {
         globalStats: {
           totalSkills: Object.keys(allSkills).length,
           totalModels: benchmarkQuery.data.models.length,
-          totalAgents: benchmarkQuery.data.agents?.length || 0,
+          totalAgents: totalAgents,
         },
       };
     },
