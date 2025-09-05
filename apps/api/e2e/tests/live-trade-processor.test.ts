@@ -816,8 +816,7 @@ describeIfLiveTrading(
           `🔍 Found ${potentialExitTransfers.length} potential exit transfers`,
         );
 
-        // Setup competition
-        const adminClient = await setupAdminClient();
+        // Setup competition using existing admin API key to avoid conflicts
         const walletAddr = potentialExitTransfers[0]?.from;
         const { agent } = await registerUserAndAgentAndGetClient({
           adminApiKey,
@@ -826,6 +825,8 @@ describeIfLiveTrading(
           agentWalletAddress: walletAddr, // Use real wallet address from Envio data
         });
 
+        // Create admin client using the existing admin API key
+        const adminClient = await createTestClient(adminApiKey);
         const competitionResponse = await startTestCompetition(
           adminClient,
           `Chain Exit Detection Test ${Date.now()}`,
