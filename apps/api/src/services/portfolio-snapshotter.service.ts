@@ -217,58 +217,29 @@ export class PortfolioSnapshotter {
 
     // Step 4: Handle snapshot creation based on price fetch results
     if (pricesFailed > 0) {
-      // We have incomplete price data - use most recent valid snapshot instead
+      // We have incomplete price data - skip snapshot creation
       repositoryLogger.warn(
-        `[PortfolioSnapshotter] Failed to get prices for ${pricesFailed}/${balances.filter((b) => b.amount > 0).length} tokens for agent ${agentId}: ${missingPriceTokens.join(", ")}. Attempting to use previous snapshot value.`,
+        `[PortfolioSnapshotter] Failed to get prices for ${pricesFailed}/${balances.filter((b) => b.amount > 0).length} tokens for agent ${agentId}. ` +
+          `Missing prices for: ${missingPriceTokens.join(", ")}. ` +
+          `Skipping snapshot creation to avoid recording inaccurate data.`,
       );
-
-      // Get the most recent snapshot for this agent
-      const recentSnapshots = await getAgentPortfolioSnapshots(
-        competitionId,
-        agentId,
-        1, // limit to 1 most recent
-      );
-
-      if (recentSnapshots.length > 0 && recentSnapshots[0]) {
-        const mostRecentSnapshot = recentSnapshots[0];
-        const previousValue = Number(mostRecentSnapshot.totalValue);
-
-        // Create a new snapshot with the carried-forward value
-        await createPortfolioSnapshot({
-          agentId,
-          competitionId,
-          timestamp,
-          totalValue: previousValue,
-        });
-
-        repositoryLogger.info(
-          `[PortfolioSnapshotter] Created snapshot for agent ${agentId} using previous value of $${previousValue.toFixed(2)} ` +
-            `from ${mostRecentSnapshot.timestamp.toISOString()} due to ${pricesFailed} price fetch failures`,
-        );
-      } else {
-        // No previous snapshot exists - this is likely the first snapshot and we can't get prices
-        repositoryLogger.error(
-          `[PortfolioSnapshotter] Cannot create initial snapshot for agent ${agentId} - ` +
-            `failed to fetch prices for ${pricesFailed} tokens and no previous snapshot exists to use as fallback. ` +
-            `Missing prices for: ${missingPriceTokens.join(", ")}`,
-        );
-        // Don't create a zero-value or partial-value snapshot
-        return;
-      }
-    } else {
-      // All prices fetched successfully - create accurate snapshot
-      await createPortfolioSnapshot({
-        agentId,
-        competitionId,
-        timestamp,
-        totalValue,
-      });
-
-      repositoryLogger.debug(
-        `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} with calculated total value $${totalValue.toFixed(2)}. ` +
-          `All ${pricesFetched} prices fetched successfully.`,
-      );
+      // Don't create a snapshot with incomplete data
+      // The read-time logic can handle using older snapshots when newer ones are missing
+      return;
     }
+
+    // All prices fetched successfully - create accurate snapshot
+    await createPortfolioSnapshot({
+      agentId,
+      competitionId,
+      timestamp,
+      totalValue,
+    });
+
+    repositoryLogger.debug(
+      `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} with calculated total value $${totalValue.toFixed(2)}. ` +
+        `All ${pricesFetched} prices fetched successfully.`,
+    );
   }
 
   /**
