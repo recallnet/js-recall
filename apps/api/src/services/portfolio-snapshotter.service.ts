@@ -1,4 +1,3 @@
-import { config } from "@/config/index.js";
 import {
   createPortfolioSnapshot,
   findAll,
@@ -284,238 +283,22 @@ export class PortfolioSnapshotter {
 
     const startTime = Date.now();
     const agents = await getCompetitionAgents(competitionId);
+    const timestamp = new Date();
 
-    // Pre-fetch all unique tokens to populate cache
-    try {
-      await this.preFetchAllTokenPrices(agents);
-    } catch (error) {
-      // Log warning but continue - individual agent snapshots will retry
-      repositoryLogger.warn(
-        `[PortfolioSnapshotter] Pre-fetch failed, will rely on per-agent fetching: ${error}`,
+    for (const agentId of agents) {
+      await this.takePortfolioSnapshotForAgent(
+        competitionId,
+        agentId,
+        timestamp,
+        force,
       );
-    }
-
-    // Dynamic batch processing based on cache TTL and rate limits
-    // Goal: Complete all snapshots before price cache expires
-    const cacheTTLMs = config.priceTracker.priceTTLMs || 60000; // Default 60s
-    const safeProcessingTimeMs = cacheTTLMs * 0.8; // Use 80% of cache TTL to be safe
-    const totalAgents = agents.length;
-
-    // Calculate optimal batch size and delays
-    // Assumption: ~200ms per agent processing time
-    const ESTIMATED_AGENT_PROCESS_TIME_MS = 200;
-
-    // Calculate how many batches we can fit in the safe processing time
-    // If we have 100 agents and 48s (80% of 60s) to process them:
-    // We need to determine batch size and delays
-    let BATCH_SIZE: number;
-    let BATCH_DELAY_MS: number;
-
-    if (totalAgents <= 40) {
-      // Small competition - process all at once
-      BATCH_SIZE = totalAgents;
-      BATCH_DELAY_MS = 0;
-    } else if (totalAgents <= 200) {
-      // Medium competition - optimize for cache TTL
-      const maxBatches = 5; // Reasonable max to fit in cache TTL
-      BATCH_SIZE = Math.ceil(totalAgents / maxBatches);
-      // Calculate delay to fit within safe processing time
-      const totalProcessingTime =
-        BATCH_SIZE * ESTIMATED_AGENT_PROCESS_TIME_MS * maxBatches;
-      const availableDelayTime = Math.max(
-        0,
-        safeProcessingTimeMs - totalProcessingTime,
-      );
-      BATCH_DELAY_MS = Math.min(
-        15000,
-        Math.floor(availableDelayTime / (maxBatches - 1)),
-      );
-    } else {
-      // Large competition - use conservative defaults
-      // May need to increase cache TTL for very large competitions
-      BATCH_SIZE = 50;
-      BATCH_DELAY_MS = 10000;
-      repositoryLogger.warn(
-        `[PortfolioSnapshotter] Large competition (${totalAgents} agents) may exceed cache TTL of ${cacheTTLMs}ms. ` +
-          `Consider increasing PRICE_CACHE_TTL_MS for competitions this large.`,
-      );
-    }
-
-    repositoryLogger.debug(
-      `[PortfolioSnapshotter] Processing ${agents.length} agents in batches of ${BATCH_SIZE} with ${BATCH_DELAY_MS}ms delays. ` +
-        `Cache TTL: ${cacheTTLMs}ms, Safe processing time: ${safeProcessingTimeMs}ms`,
-    );
-
-    let successCount = 0;
-    let failureCount = 0;
-
-    for (let i = 0; i < agents.length; i += BATCH_SIZE) {
-      const batch = agents.slice(i, i + BATCH_SIZE);
-      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
-      const totalBatches = Math.ceil(agents.length / BATCH_SIZE);
-
-      // Use current timestamp for this batch - ensures accurate time tracking
-      // even if processing takes several minutes
-      const batchTimestamp = new Date();
-
-      repositoryLogger.debug(
-        `[PortfolioSnapshotter] Processing batch ${batchNumber}/${totalBatches} (${batch.length} agents) at ${batchTimestamp.toISOString()}`,
-      );
-
-      // Process agents in this batch sequentially (they'll share token cache)
-      for (const agentId of batch) {
-        try {
-          await this.takePortfolioSnapshotForAgent(
-            competitionId,
-            agentId,
-            batchTimestamp,
-            force,
-          );
-          successCount++;
-        } catch (error) {
-          // Log error but continue with other agents
-          repositoryLogger.error(
-            `[PortfolioSnapshotter] Failed to take snapshot for agent ${agentId}: ${error}`,
-          );
-          failureCount++;
-          // Continue processing other agents rather than failing the entire batch
-        }
-      }
-
-      // Add delay between batches (except after the last batch)
-      if (i + BATCH_SIZE < agents.length) {
-        repositoryLogger.debug(
-          `[PortfolioSnapshotter] Batch ${batchNumber} complete. Waiting ${BATCH_DELAY_MS}ms before next batch...`,
-        );
-        await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
-      }
     }
 
     const endTime = Date.now();
     const duration = endTime - startTime;
 
-    // Log final summary
-    if (failureCount > 0) {
-      repositoryLogger.warn(
-        `[PortfolioSnapshotter] Completed with partial failures: ${successCount} succeeded, ${failureCount} failed out of ${agents.length} agents. Duration: ${duration}ms (${Math.round(duration / 1000)}s)`,
-      );
-    } else {
-      repositoryLogger.debug(
-        `[PortfolioSnapshotter] Successfully completed all ${successCount} portfolio snapshots in ${duration}ms (${Math.round(duration / 1000)}s)`,
-      );
-    }
-  }
-
-  /**
-   * Pre-fetch prices for all unique tokens across all agents
-   * This populates the cache before processing to avoid cache expiration
-   * @param agentIds Array of agent IDs (not agent objects - the parameter name is intentional)
-   */
-  private async preFetchAllTokenPrices(agentIds: string[]): Promise<void> {
     repositoryLogger.debug(
-      `[PortfolioSnapshotter] Pre-fetching token prices for ${agentIds.length} agents`,
-    );
-
-    // Step 1: Collect all unique tokens across all agents
-    const uniqueTokens = new Set<string>();
-    const tokenToAgentCount = new Map<string, number>(); // Track how many agents hold each token
-
-    // Fetch all balances in bulk (much faster than sequential)
-    // Note: getBulkBalances expects agentIds (string[]), not agent objects
-    const allBalances = await this.balanceManager.getBulkBalances(agentIds);
-
-    for (const balance of allBalances) {
-      if (balance.amount > 0) {
-        uniqueTokens.add(balance.tokenAddress);
-        tokenToAgentCount.set(
-          balance.tokenAddress,
-          (tokenToAgentCount.get(balance.tokenAddress) || 0) + 1,
-        );
-      }
-    }
-
-    const tokenArray = Array.from(uniqueTokens);
-    repositoryLogger.debug(
-      `[PortfolioSnapshotter] Found ${tokenArray.length} unique tokens across all agents`,
-    );
-
-    // Log most common tokens for debugging
-    const commonTokens = Array.from(tokenToAgentCount.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([token, count]) => `${token.slice(0, 10)}...: ${count} agents`);
-
-    if (commonTokens.length > 0) {
-      repositoryLogger.debug(
-        `[PortfolioSnapshotter] Most common tokens: ${commonTokens.join(", ")}`,
-      );
-    }
-
-    // Step 2: Fetch prices in controlled batches
-    // Dynamic sizing based on total tokens and cache TTL
-    const cacheTTLMs = config.priceTracker.priceTTLMs || 60000;
-    const totalTokens = tokenArray.length;
-
-    // Calculate optimal pre-fetch batch size
-    // For initial snapshots with ~15-20 tokens, we can fetch all at once
-    // For larger sets, we need to batch to avoid rate limits
-    let PREFETCH_BATCH_SIZE: number;
-    let PREFETCH_DELAY_MS: number;
-
-    if (totalTokens <= 30) {
-      // Small token set - fetch all at once
-      PREFETCH_BATCH_SIZE = totalTokens;
-      PREFETCH_DELAY_MS = 0;
-    } else if (totalTokens <= 100) {
-      // Medium token set - 2-3 batches
-      PREFETCH_BATCH_SIZE = 50;
-      PREFETCH_DELAY_MS = 3000; // 3 seconds between batches
-    } else {
-      // Large token set - need more conservative approach
-      PREFETCH_BATCH_SIZE = 40;
-      PREFETCH_DELAY_MS = 5000; // 5 seconds between batches
-
-      // Check if we might exceed cache TTL
-      const estimatedTime =
-        (Math.ceil(totalTokens / PREFETCH_BATCH_SIZE) - 1) * PREFETCH_DELAY_MS;
-      if (estimatedTime > cacheTTLMs * 0.5) {
-        repositoryLogger.warn(
-          `[PortfolioSnapshotter] Pre-fetching ${totalTokens} tokens might exceed cache TTL. Consider increasing PRICE_CACHE_TTL_MS.`,
-        );
-      }
-    }
-
-    for (let i = 0; i < tokenArray.length; i += PREFETCH_BATCH_SIZE) {
-      const batch = tokenArray.slice(i, i + PREFETCH_BATCH_SIZE);
-      const batchNumber = Math.floor(i / PREFETCH_BATCH_SIZE) + 1;
-      const totalBatches = Math.ceil(tokenArray.length / PREFETCH_BATCH_SIZE);
-
-      repositoryLogger.debug(
-        `[PortfolioSnapshotter] Pre-fetching price batch ${batchNumber}/${totalBatches} (${batch.length} tokens)`,
-      );
-
-      // Fetch this batch of prices (will be cached)
-      const prices = await this.priceTracker.getBulkPrices(batch);
-
-      // Log how many succeeded
-      const successCount = Array.from(prices.values()).filter(
-        (p) => p !== null,
-      ).length;
-      repositoryLogger.debug(
-        `[PortfolioSnapshotter] Pre-fetch batch ${batchNumber}: ${successCount}/${batch.length} prices fetched successfully`,
-      );
-
-      // Add delay between batches to avoid rate limiting (except after last batch)
-      if (
-        i + PREFETCH_BATCH_SIZE < tokenArray.length &&
-        PREFETCH_DELAY_MS > 0
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, PREFETCH_DELAY_MS));
-      }
-    }
-
-    repositoryLogger.debug(
-      `[PortfolioSnapshotter] Pre-fetch complete. Cache is now warm for all tokens.`,
+      `[PortfolioSnapshotter] Completed portfolio snapshots for competition ${competitionId} in ${duration}ms (${Math.round(duration / 1000)}s)`,
     );
   }
 
