@@ -13,7 +13,12 @@
         "NEXT_PUBLIC_FRONTEND_URL",
         "SANDBOX_ADMIN_API_KEY",
         "NEXT_PUBLIC_DISABLE_LEADERBOARD_TEMP",
-        "NEXT_PUBLIC_POSTHOG_KEY"
+        "NEXT_PUBLIC_POSTHOG_KEY",
+        "NEXT_PUBLIC_SENTRY_DSN",
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_ORG",
+        "SENTRY_PROJECT",
+        "NEXT_RUNTIME"
       ]
     }
   }
