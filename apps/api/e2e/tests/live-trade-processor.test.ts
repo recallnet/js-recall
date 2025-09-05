@@ -816,13 +816,26 @@ describeIfLiveTrading(
           `🔍 Found ${potentialExitTransfers.length} potential exit transfers`,
         );
 
-        // Setup competition using existing admin API key to avoid conflicts
-        const walletAddr = potentialExitTransfers[0]?.from;
+        // Find a valid wallet address from the transfers
+        const validTransfer = potentialExitTransfers.find(
+          (t) => t.from && t.from.length === 42 && t.from.startsWith("0x"),
+        );
+
+        if (!validTransfer) {
+          console.log(
+            "⚠️ No transfers with valid wallet addresses found, skipping test",
+          );
+          return;
+        }
+
+        const walletAddr = validTransfer.from;
+        console.log(`   Using wallet address: ${walletAddr}`);
+
         const { agent } = await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Chain Exit Test Agent",
           walletAddress: walletAddr,
-          agentWalletAddress: walletAddr, // Use real wallet address from Envio data
+          agentWalletAddress: walletAddr,
         });
 
         // Create admin client using the existing admin API key
@@ -834,10 +847,24 @@ describeIfLiveTrading(
         );
         const competitionId = competitionResponse.competition.id;
 
+        // Filter transfers to only include those from our agent's wallet
+        const agentTransfers = potentialExitTransfers
+          .filter(
+            (t) => t.from && t.from.toLowerCase() === walletAddr.toLowerCase(),
+          )
+          .slice(0, 10);
+
+        if (agentTransfers.length === 0) {
+          console.log(
+            "⚠️ No transfers from agent wallet found, skipping detection",
+          );
+          return;
+        }
+
         // Detect chain exits (using detectSelfFunding which handles both self-funding and exits)
         const detectionResult = await liveTradeProcessor.detectSelfFunding(
           competitionId,
-          potentialExitTransfers.slice(0, 10),
+          agentTransfers,
         );
 
         expect(detectionResult).toBeDefined();
