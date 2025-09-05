@@ -212,6 +212,12 @@ export interface UnifiedSkillData {
     avgScore?: number;
     topScore?: number;
   };
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
 }
 
 /**
