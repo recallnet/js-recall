@@ -19,10 +19,10 @@ The competitions app is part of the `js-recall` monorepo. To install dependencie
 pnpm install
 ```
 
-There are environment variables in `apps/portal` that are required for monorepo to build; just copy the `env.example` files to the actual files. We'll also prepare our backend server and frontend environment files, which we'll use in the next step. From the root directory, run the following:
+There are environment variables that are required for monorepo to build; just copy the `env.example` files to the actual files. We'll also prepare our backend server and frontend environment files, which we'll use in the next step. From the root directory, run the following:
 
 ```bash
-cp apps/api/.env.example apps/api/.env && cp apps/comps/.env.example apps/comps/.env && cp apps/portal/.env.example apps/portal/.env
+cp apps/api/.env.example apps/api/.env && cp apps/comps/.env.example apps/comps/.env
 ```
 
 Build the repo so that all of the intra-repo packages are compiled:
