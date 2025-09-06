@@ -24,7 +24,7 @@ import {
   getAgentCompetitionRecord,
   getAllCompetitionAgents,
   getBulkAgentCompetitionRecords,
-  getBulkAgentPortfolioSnapshots,
+  getBulkLatestPortfolioSnapshots,
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
   isAgentActiveInCompetition,
@@ -783,19 +783,21 @@ export class CompetitionManager {
       }> = [];
       if (inactiveAgentIds.length > 0) {
         // 🚀 BULK OPERATIONS: Fetch all inactive agent data
-        const [competitionRecords, portfolioSnapshots] = await Promise.all([
+        const [competitionRecords, latestSnapshots] = await Promise.all([
           getBulkAgentCompetitionRecords(competitionId, inactiveAgentIds),
-          getBulkAgentPortfolioSnapshots(competitionId, inactiveAgentIds),
+          getBulkLatestPortfolioSnapshots(competitionId, inactiveAgentIds),
         ]);
 
         // Create lookup maps for efficient data joining
         const competitionRecordsMap = new Map(
           competitionRecords.map((record) => [record.agentId, record]),
         );
-
-        // Group snapshots by agent and get latest value for each
-        const latestPortfolioValues =
-          this.getLatestPortfolioValuesFromSnapshots(portfolioSnapshots);
+        const latestPortfolioValues = new Map(
+          latestSnapshots.map((snapshot) => [
+            snapshot.agentId,
+            snapshot.totalValue ?? 0,
+          ]),
+        );
 
         // Build inactive agents array efficiently
         inactiveAgents = inactiveAgentIds.map((agentId) => {
@@ -835,40 +837,6 @@ export class CompetitionManager {
         `Failed to retrieve leaderboard data for competition ${competitionId}: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
-  }
-
-  /**
-   * Helper method to extract latest portfolio values from bulk snapshots
-   * @param snapshots Array of portfolio snapshots from getBulkAgentPortfolioSnapshots
-   * @returns Map of agentId to latest portfolio value
-   */
-  private getLatestPortfolioValuesFromSnapshots(
-    snapshots: Awaited<ReturnType<typeof getBulkAgentPortfolioSnapshots>>,
-  ): Map<string, number> {
-    const latestValuesByAgent = new Map<string, number>();
-
-    // Get latest value for each agent using a single-pass approach
-    const latestSnapshotsByAgent = new Map<string, (typeof snapshots)[0]>();
-
-    for (const snapshot of snapshots) {
-      const currentLatestSnapshot = latestSnapshotsByAgent.get(
-        snapshot.agentId,
-      );
-      if (
-        !currentLatestSnapshot ||
-        (snapshot.timestamp?.getTime() ?? 0) >
-          (currentLatestSnapshot.timestamp?.getTime() ?? 0)
-      ) {
-        latestSnapshotsByAgent.set(snapshot.agentId, snapshot);
-      }
-    }
-
-    // Extract total values from latest snapshots
-    for (const [agentId, snapshot] of latestSnapshotsByAgent.entries()) {
-      latestValuesByAgent.set(agentId, snapshot.totalValue ?? 0);
-    }
-
-    return latestValuesByAgent;
   }
 
   /**
