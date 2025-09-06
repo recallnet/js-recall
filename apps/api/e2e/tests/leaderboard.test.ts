@@ -292,28 +292,24 @@ describe("Leaderboard API", () => {
     const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
     const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-    const createResponse = await adminClient.createCompetition(
-      competitionName,
-      "Test competition for leaderboard votes",
-      "disallowAll",
-      undefined, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
-      "trading", // type
-      undefined, // endDate
-      votingStartDate.toISOString(), // votingStartDate
-      votingEndDate.toISOString(), // votingEndDate
-    );
+    const createResponse = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Test competition for leaderboard votes",
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      type: "trading", // type
+      votingStartDate: votingStartDate.toISOString(),
+      votingEndDate: votingEndDate.toISOString(),
+    });
 
     expect(createResponse.success).toBe(true);
     const competition = (createResponse as CreateCompetitionResponse)
       .competition;
 
     // Start the competition with agents
-    await adminClient.startExistingCompetition(competition.id, [
-      agent1.id,
-      agent2.id,
-    ]);
+    await adminClient.startExistingCompetition({
+      competitionId: competition.id,
+      agentIds: [agent1.id, agent2.id],
+    });
     const firstCompetitionId = competition.id;
 
     // Create 2 users and vote for agent 1 and agent 2, respectively
@@ -336,28 +332,24 @@ describe("Leaderboard API", () => {
 
     // Create second competition with proper voting dates
     const newCompetitionName = `Agents Test Competition ${Date.now()}`;
-    const createResponse2 = await adminClient.createCompetition(
-      newCompetitionName,
-      "Second test competition for leaderboard votes",
-      "disallowAll",
-      undefined, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
-      "trading", // type
-      undefined, // endDate
-      votingStartDate.toISOString(), // votingStartDate
-      votingEndDate.toISOString(), // votingEndDate
-    );
+    const createResponse2 = await adminClient.createCompetition({
+      name: newCompetitionName,
+      description: "Second test competition for leaderboard votes",
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      type: "trading", // type
+      votingStartDate: votingStartDate.toISOString(),
+      votingEndDate: votingEndDate.toISOString(),
+    });
 
     expect(createResponse2.success).toBe(true);
     const competition2 = (createResponse2 as CreateCompetitionResponse)
       .competition;
 
     // Start the second competition with agents
-    await adminClient.startExistingCompetition(competition2.id, [
-      agent1.id,
-      agent2.id,
-    ]);
+    await adminClient.startExistingCompetition({
+      competitionId: competition2.id,
+      agentIds: [agent1.id, agent2.id],
+    });
     const secondCompetitionId = competition2.id;
 
     // Vote for the *same* agent in the second competition
@@ -407,29 +399,23 @@ describe("Leaderboard API", () => {
     const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
     const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-    const createResponse1 = await adminClient.createCompetition(
-      competitionName1,
-      "Test competition for sorting",
-      "disallowAll",
-      undefined, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
-      "trading", // type
-      undefined, // endDate
-      votingStartDate.toISOString(), // votingStartDate
-      votingEndDate.toISOString(), // votingEndDate
-    );
+    const createResponse1 = await adminClient.createCompetition({
+      name: competitionName1,
+      description: "Test competition for sorting",
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      votingStartDate: votingStartDate.toISOString(),
+      votingEndDate: votingEndDate.toISOString(),
+    });
 
     expect(createResponse1.success).toBe(true);
     const competition1 = (createResponse1 as CreateCompetitionResponse)
       .competition;
 
     // Start the competition with agents
-    await adminClient.startExistingCompetition(competition1.id, [
-      agent1.id,
-      agent2.id,
-      agent3.id,
-    ]);
+    await adminClient.startExistingCompetition({
+      competitionId: competition1.id,
+      agentIds: [agent1.id, agent2.id, agent3.id],
+    });
 
     // Make different trades to create score differences
     // Agent 1: Best performance (profitable trade)
@@ -489,28 +475,23 @@ describe("Leaderboard API", () => {
 
     // Create second competition with proper voting dates (only agent1 and agent2)
     const competitionName2 = `Sort Test Competition 2 ${Date.now()}`;
-    const createResponse2 = await adminClient.createCompetition(
-      competitionName2,
-      "Second test competition for sorting",
-      "disallowAll",
-      undefined, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
-      "trading", // type
-      undefined, // endDate
-      votingStartDate.toISOString(), // votingStartDate
-      votingEndDate.toISOString(), // votingEndDate
-    );
+    const createResponse2 = await adminClient.createCompetition({
+      name: competitionName2,
+      description: "Second test competition for sorting",
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      votingStartDate: votingStartDate.toISOString(),
+      votingEndDate: votingEndDate.toISOString(),
+    });
 
     expect(createResponse2.success).toBe(true);
     const competition2 = (createResponse2 as CreateCompetitionResponse)
       .competition;
 
     // Start the second competition with only agent1 and agent2
-    await adminClient.startExistingCompetition(competition2.id, [
-      agent1.id,
-      agent2.id,
-    ]);
+    await adminClient.startExistingCompetition({
+      competitionId: competition2.id,
+      agentIds: [agent1.id, agent2.id],
+    });
 
     await agentClient1.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,

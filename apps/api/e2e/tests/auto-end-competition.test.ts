@@ -36,28 +36,22 @@ describe("Competition End Date Processing", () => {
     const competitionName = `Auto End Competition ${Date.now()}`;
     const endDate = new Date(Date.now() + 5000); // 5 seconds from now
 
-    const createResponse = await adminClient.createCompetition(
-      competitionName,
-      "Competition that should auto-end",
-      undefined, // tradingType
-      false, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
-      undefined, // type
-      endDate.toISOString(), // endDate
-      undefined, // votingStartDate
-      undefined, // votingEndDate
-    );
+    const createResponse = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Competition that should auto-end",
+      sandboxMode: false,
+      endDate: endDate.toISOString(),
+    });
 
     expect(createResponse.success).toBe(true);
     const competition = (createResponse as CreateCompetitionResponse)
       .competition;
 
     // Start the competition
-    const startResponse = await adminClient.startExistingCompetition(
-      competition.id,
-      [agent.id],
-    );
+    const startResponse = await adminClient.startExistingCompetition({
+      competitionId: competition.id,
+      agentIds: [agent.id],
+    });
     expect(startResponse.success).toBe(true);
 
     // Verify competition is active
@@ -100,28 +94,22 @@ describe("Competition End Date Processing", () => {
     const endDate = new Date(Date.now() + 30000); // 30 seconds from now
     const competitionName = `Future End Competition ${Date.now()}`;
 
-    const createResponse = await adminClient.createCompetition(
-      competitionName,
-      "Competition that should not auto-end yet",
-      undefined, // tradingType
-      false, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
-      undefined, // type
-      endDate.toISOString(), // endDate
-      undefined, // votingStartDate
-      undefined, // votingEndDate
-    );
+    const createResponse = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Competition that should not auto-end yet",
+      sandboxMode: false,
+      endDate: endDate.toISOString(),
+    });
 
     expect(createResponse.success).toBe(true);
     const competition = (createResponse as CreateCompetitionResponse)
       .competition;
 
     // Start the competition
-    const startResponse = await adminClient.startExistingCompetition(
-      competition.id,
-      [agent.id],
-    );
+    const startResponse = await adminClient.startExistingCompetition({
+      competitionId: competition.id,
+      agentIds: [agent.id],
+    });
     expect(startResponse.success).toBe(true);
 
     // Verify competition is active
