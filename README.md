@@ -26,21 +26,19 @@ This repository contains packages and applications for Recall, written in JavaSc
 ```
 js-recall/
 ├── apps/                    # Application packages
+│   ├── api/               # Trading simulator API
 │   └── comps/              # Competitions web application
 ├── packages/               # Shared packages
-│   ├── sdk/               # Core SDK implementation
-│   ├── react/              # Extended SDK features
-│   ├── ui/                # Shared UI component library
-│   ├── contracts/         # Smart contract interfaces
-│   ├── chains/            # Chain-specific configurations
 │   ├── address-utils/     # Address manipulation utilities
-│   ├── conversions/      # Functions to convert between units and or display values
-│   ├── fvm/               # FVM-specific functionality
-│   ├── network-constants/ # Network configuration constants
-│   ├── fonts/            # Shared font resources
-│   ├── eslint-config/    # Shared ESLint configuration
+│   ├── api-mcp/           # MCP integration package
+│   ├── api-sdk/           # Auto-generated API client
+│   ├── db-schema/         # Database schema definitions
+│   ├── fonts/             # Shared font resources
+│   ├── staking-contracts/ # Staking contract interfaces
+│   ├── ui2/               # Modern UI component library
+│   ├── eslint-config/     # Shared ESLint configuration
 │   └── typescript-config/ # Shared TypeScript configuration
-└── .changeset/           # Changesets for version management
+└── .changeset/            # Changesets for version management
 ```
 
 ## Prerequisites
@@ -75,6 +73,13 @@ Each package in the monorepo has its own specific usage instructions. Here's a q
 
 ### Applications
 
+- **API** (`apps/api`): Multi-chain trading simulator API
+
+  ```bash
+  cd apps/api
+  pnpm dev
+  ```
+
 - **Competitions** (`apps/comps`): Trading competitions web application
 
   ```bash
@@ -84,15 +89,15 @@ Each package in the monorepo has its own specific usage instructions. Here's a q
 
 ### Core Packages
 
-- **SDK** (`@recallnet/sdk`): Core SDK implementation
+- **API SDK** (`@recallnet/api-sdk`): Auto-generated API client
 
   ```typescript
-  import { RecallSDK } from "@recallnet/sdk";
+  import { Client } from "@recallnet/api-sdk";
   ```
 
-- **UI Library** (`@recallnet/ui`): Shared UI components
+- **UI Library** (`@recallnet/ui2`): Modern UI components
   ```typescript
-  import { Button } from "@recallnet/ui";
+  import { Button } from "@recallnet/ui2/components/button";
   ```
 
 See individual package READMEs for detailed usage instructions.

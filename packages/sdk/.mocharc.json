@@ -1,9 +1,0 @@
-{
-  "extensions": ["ts"],
-  "timeout": 5000,
-  "spec": "test/*.test.ts",
-  "file": ["test/setup.ts"],
-  "loader": "ts-node/esm",
-  "node-option": ["loader=ts-node/esm"],
-  "exit": true
-}
