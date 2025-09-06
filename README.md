@@ -26,8 +26,7 @@ This repository contains packages and applications for Recall, written in JavaSc
 ```
 js-recall/
 ├── apps/                    # Application packages
-│   ├── portal/             # Main web application
-│   └── faucet/            # Faucet application
+│   └── comps/              # Competitions web application
 ├── packages/               # Shared packages
 │   ├── sdk/               # Core SDK implementation
 │   ├── react/              # Extended SDK features
@@ -76,16 +75,10 @@ Each package in the monorepo has its own specific usage instructions. Here's a q
 
 ### Applications
 
-- **Portal** (`apps/portal`): Main web application
+- **Competitions** (`apps/comps`): Trading competitions web application
 
   ```bash
-  cd apps/portal
-  pnpm dev
-  ```
-
-- **Faucet** (`apps/faucet`): Faucet application
-  ```bash
-  cd apps/faucet
+  cd apps/comps
   pnpm dev
   ```
 

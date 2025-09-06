@@ -36,9 +36,6 @@ This file provides guidance to AI coding agents when working with code in this r
 
 - `apps/api/` - Multi-chain trading simulator API (Node.js/Express + PostgreSQL)
 - `apps/comps/` - Competitions web app (Next.js)
-- `apps/portal/` - Main web application (Next.js)
-- `apps/faucet/` - Token faucet app (Next.js)
-- `apps/registration/` - Registration site (Next.js)
 - `packages/` - Shared libraries, utilities, and toolkits
   - `db-schema/` - Drizzle database schema definitions organized by domain
 
