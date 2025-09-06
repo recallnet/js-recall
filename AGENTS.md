@@ -104,12 +104,12 @@ Code must pass all of these before merge:
 **Shared Packages:**
 
 - `@recallnet/api-sdk` - Auto-generated API client
-- `@recallnet/agent-toolkit` - AI agent integration tools
-- `@recallnet/ui` - Shared React components (shadcn/ui based)
-- `@recallnet/chains` - Chain configuration and utilities
-
-**Agent Development:**
-Agent toolkits support multiple AI frameworks (OpenAI, LangChain, AI SDK, MCP). Use existing patterns in `packages/agent-toolkit/src/` when extending.
+- `@recallnet/api-mcp` - MCP integration package
+- `@recallnet/ui2` - Modern UI components (shadcn/ui based)
+- `@recallnet/address-utils` - Address manipulation utilities
+- `@recallnet/db-schema` - Database schema definitions
+- `@recallnet/fonts` - Shared font resources
+- `@recallnet/staking-contracts` - Staking contract interfaces
 
 ## Environment Setup
 
