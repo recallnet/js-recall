@@ -21,8 +21,7 @@ ARG NEXT_PUBLIC_API_BASE_URL
 ARG NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
 
 # Build the application
-RUN pnpm --filter=@recallnet/address-utils build && \
-    pnpm --filter=@recallnet/fonts build && \
+RUN pnpm --filter=@recallnet/fonts build && \
     pnpm --filter=comps build
 
 FROM node:22-alpine

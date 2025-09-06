@@ -4,12 +4,12 @@ import { Award } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { displayAddress } from "@recallnet/address-utils/display";
 import Card, { CardProps } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
 import { Agent } from "@/types";
+import { displayAddress } from "@/utils/address";
 import { formatCompactNumber, toOrdinal } from "@/utils/format";
 
 import { VerificationBadge } from "../verification-badge";
