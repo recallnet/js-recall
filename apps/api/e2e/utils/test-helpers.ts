@@ -13,6 +13,7 @@ import { db } from "@/database/db.js";
 import { ApiClient } from "./api-client.js";
 import {
   CreateCompetitionResponse,
+  CrossChainTradingType,
   StartCompetitionResponse,
   TradingConstraints,
 } from "./api-types.js";
@@ -217,27 +218,33 @@ export async function registerUserAndAgentAndGetClient({
 /**
  * Start a competition with given agents
  */
-export async function startTestCompetition(
-  adminClient: ApiClient,
-  name: string,
-  agentIds: string[],
-  sandboxMode?: boolean,
-  externalUrl?: string,
-  imageUrl?: string,
-  tradingConstraints?: TradingConstraints,
-): Promise<StartCompetitionResponse> {
-  const result = await adminClient.startCompetition(
-    name,
-    `Test competition description for ${name}`,
-    agentIds,
-    undefined, // tradingType
+export async function startTestCompetition({
+  adminClient,
+  name,
+  agentIds,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  tradingConstraints,
+}: {
+  adminClient: ApiClient;
+  name?: string;
+  agentIds?: string[];
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  tradingConstraints?: TradingConstraints;
+}): Promise<StartCompetitionResponse> {
+  const competitionName = name || `Test competition ${Date.now()}`;
+  const result = await adminClient.startCompetition({
+    name: competitionName,
+    description: `Test competition description for ${competitionName}`,
+    agentIds: agentIds || [],
     sandboxMode,
     externalUrl,
     imageUrl,
-    undefined, // votingStartDate
-    undefined, // votingEndDate
     tradingConstraints,
-  );
+  });
 
   if (!result.success) {
     throw new Error("Failed to start competition");
@@ -249,37 +256,60 @@ export async function startTestCompetition(
 /**
  * Create a competition in PENDING state without starting it
  */
-export async function createTestCompetition(
-  adminClient: ApiClient,
-  name: string,
-  description?: string,
-  sandboxMode?: boolean,
-  externalUrl?: string,
-  imageUrl?: string,
-  type?: string,
-  votingStartDate?: string,
-  votingEndDate?: string,
-  joinStartDate?: string,
-  joinEndDate?: string,
-  maxParticipants?: number,
-  tradingConstraints?: TradingConstraints,
-): Promise<CreateCompetitionResponse> {
-  const result = await adminClient.createCompetition(
-    name,
-    description || `Test competition description for ${name}`,
-    undefined, // tradingType
+export async function createTestCompetition({
+  adminClient,
+  name,
+  description,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  type,
+  tradingType,
+  startDate,
+  endDate,
+  votingStartDate,
+  votingEndDate,
+  joinStartDate,
+  joinEndDate,
+  maxParticipants,
+  tradingConstraints,
+}: {
+  adminClient: ApiClient;
+  name?: string;
+  description?: string;
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  type?: string;
+  tradingType?: CrossChainTradingType;
+  startDate?: string;
+  endDate?: string;
+  votingStartDate?: string;
+  votingEndDate?: string;
+  joinStartDate?: string;
+  joinEndDate?: string;
+  maxParticipants?: number;
+  tradingConstraints?: TradingConstraints;
+}): Promise<CreateCompetitionResponse> {
+  const competitionName = name || `Test competition ${Date.now()}`;
+  const result = await adminClient.createCompetition({
+    name: competitionName,
+    description:
+      description || `Test competition description for ${competitionName}`,
+    tradingType,
     sandboxMode,
     externalUrl,
     imageUrl,
     type,
-    undefined, // endDate
+    startDate,
+    endDate,
     votingStartDate,
     votingEndDate,
     joinStartDate,
     joinEndDate,
     maxParticipants,
     tradingConstraints,
-  );
+  });
 
   if (!result.success) {
     throw new Error("Failed to create competition");
@@ -291,22 +321,28 @@ export async function createTestCompetition(
 /**
  * Start an existing competition with given agents
  */
-export async function startExistingTestCompetition(
-  adminClient: ApiClient,
-  competitionId: string,
-  agentIds?: string[],
-  sandboxMode?: boolean,
-  externalUrl?: string,
-  imageUrl?: string,
-): Promise<StartCompetitionResponse> {
-  const result = await adminClient.startExistingCompetition(
+export async function startExistingTestCompetition({
+  adminClient,
+  competitionId,
+  agentIds,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+}: {
+  adminClient: ApiClient;
+  competitionId: string;
+  agentIds?: string[];
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+}): Promise<StartCompetitionResponse> {
+  const result = await adminClient.startExistingCompetition({
     competitionId,
-    agentIds,
-    undefined, // crossChainTradingType
+    agentIds: agentIds || [],
     sandboxMode,
     externalUrl,
     imageUrl,
-  );
+  });
 
   if (!result.success) {
     throw new Error("Failed to start existing competition");
@@ -508,10 +544,10 @@ export async function generateTestCompetitions(adminApiKey: string) {
 
   const comps = [];
   for (let i = 0; i < 20; i++) {
-    const result = await createTestCompetition(
+    const result = await createTestCompetition({
       adminClient,
-      `Competition ${i} ${Date.now()}`,
-    );
+      name: `Competition ${i} ${Date.now()}`,
+    });
 
     comps.push(result);
 

@@ -1163,11 +1163,11 @@ describe("Admin API", () => {
 
     // Start competition with both agents
     const competitionName = `Per-Competition Remove Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id, agent2.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+    });
     const competition = startResponse.competition;
 
     // Verify both agents are initially in the competition
@@ -1229,11 +1229,11 @@ describe("Admin API", () => {
 
     // Start competition with the agent
     const competitionName = `Per-Competition Reactivate Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
     const competition = startResponse.competition;
 
     // Remove agent from the competition first
@@ -1316,11 +1316,11 @@ describe("Admin API", () => {
     });
 
     const competitionName = `Valid Competition Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
     const competition = startResponse.competition;
 
     // Try to remove non-existent agent
@@ -1353,11 +1353,11 @@ describe("Admin API", () => {
 
     // Start competition with only agent1
     const competitionName = `Single Agent Competition Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id],
+    });
     const competition = startResponse.competition;
 
     // Try to remove agent2 (who is not in the competition)
@@ -1391,11 +1391,11 @@ describe("Admin API", () => {
 
     // Start competition with only agent1
     const competitionName = `Reactivate Not In Competition Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id],
+    });
     const competition = startResponse.competition;
 
     // Try to reactivate agent2 (who is not in the competition)
@@ -1422,11 +1422,11 @@ describe("Admin API", () => {
       });
 
     const competitionName = `Auth Test Competition ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
     const competition = startResponse.competition;
 
     // Try per-competition operations with non-admin client
@@ -1463,11 +1463,11 @@ describe("Admin API", () => {
 
     // Start competition with the agent
     const competitionName = `Status Independence Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
     const competition = startResponse.competition;
 
     // Verify agent can access API initially

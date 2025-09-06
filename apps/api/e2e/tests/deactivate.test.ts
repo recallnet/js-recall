@@ -41,7 +41,11 @@ describe("Agent Deactivation API", () => {
     });
 
     const competitionName = `Test Competition ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Deactivate the agent
     const reason = "Violated competition rules by using external API";
@@ -82,7 +86,11 @@ describe("Agent Deactivation API", () => {
 
     // Start a competition with the agent
     const competitionName = `Deactivation Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Verify agent can access API before deactivation
     const profileResponse = await client.getAgentProfile();
@@ -151,7 +159,11 @@ describe("Agent Deactivation API", () => {
 
     // Start a competition with the agent
     const competitionName = `Reactivation Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Deactivate the agent
     const reason = "Temporary deactivation for testing";
@@ -207,10 +219,11 @@ describe("Agent Deactivation API", () => {
 
     // Start a competition with both agents
     const competitionName = `Non-Admin Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [
-      agent1.id,
-      agent2.id,
-    ]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+    });
 
     // Agent One tries to deactivate Agent Two (should fail)
     const deactivateResponse = (await client1.deactivateAgent(
@@ -254,11 +267,11 @@ describe("Agent Deactivation API", () => {
 
     // Create competition with all three agents
     const competitionName = `Leaderboard Test ${Date.now()}`;
-    const competition = await startTestCompetition(
+    const competition = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id, agent2.id, agent3.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id, agent3.id],
+    });
 
     // Make some trades to differentiate portfolio values
     // We'll have Agent 3 (to be deactivated) make some trades to put them on the leaderboard
@@ -416,11 +429,11 @@ describe("Agent Deactivation API", () => {
 
     // Create competition with both agents
     const competitionName = `Ranking Consistency Test ${Date.now()}`;
-    const competition = await startTestCompetition(
+    const competition = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id, agent2.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+    });
 
     // Make trades to establish different portfolio values
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;

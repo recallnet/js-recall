@@ -43,7 +43,11 @@ describe("Leaderboard Access Control", () => {
 
     // Start a competition with the agent
     const competitionName = `Admin Access Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Verify the admin can still access the leaderboard
     const adminResponse =
