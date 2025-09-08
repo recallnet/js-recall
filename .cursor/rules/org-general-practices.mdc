@@ -16,6 +16,19 @@ alwaysApply: true
 - **Function Size:** Avoid overly long functions.  Break up large functions using helper functions that encapsulate related functionality into smaller and more focused pieces.
 – **Script Usage:** Avoid writing one-off scripts if a more integrated solution is feasible.
 
+## Function Design & Complexity Management
+- **Extract Helper Methods:** When a function exceeds ~30-40 lines or has distinct logical sections (e.g., validation, processing, output), extract helper methods. If you have numbered steps in comments (Step 1, Step 2, etc.), consider if each step should be its own function.
+- **Single Responsibility:** Each function should do ONE thing well. A function should either answer one question OR perform one action, not both.
+- **Fail-Fast Pattern:** Check error conditions early and return/throw immediately. Don't carry invalid state through the entire function. This makes the happy path clearer and reduces nesting.
+- **Avoid Redundant Checking:** Don't check the same condition multiple times across different functions. Check once at the boundary, then pass validated data to inner functions.
+- **Clear Method Contracts:** Helper methods should clearly indicate via their name and signature what they assume (e.g., `calculateValueWithValidPrices` assumes prices are already validated).
+
+## Efficient Code Patterns
+- **Don't Compute What You Don't Need:** Avoid building intermediate data structures (arrays, objects) just to check a property. For example, don't build an array just to check if it's empty - use a boolean check directly.
+- **Choose Appropriate Loops:** Use `for` loops when iteration count is known upfront, `while` for conditional iteration. Modern `for` loops are often cleaner than `while` with manual increment.
+- **Early Exit Strategies:** Prefer methods that can exit early (`.some()`, `.every()`, `.find()`) over methods that process everything (`.filter().length`, `.map()`) when you just need a boolean or single result.
+- **Separation of Concerns:** Separate "what failed" (detailed logging) from "should we continue" (control flow) logic. Log details where the failure is detected, make decisions based on simple booleans.
+
 ## Data Handling
 – **Mocking:** Mock data *only* for automated tests. Never use mocked or stubbed data in development or production environments.
 – **Secrets:** Ensure secrets, API keys, or passwords are *never* committed to the repository. Use environment variables or secure secret management solutions.

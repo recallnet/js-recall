@@ -78,6 +78,19 @@ alwaysApply: false
 - Keep manager methods focused on single responsibilities
 - Always handle errors gracefully and return consistent result objects
 
+### Service Method Design Patterns
+- **Method Complexity:** If a service method has 3+ distinct steps (especially if labeled as "Step 1", "Step 2", etc.), consider extracting each step into a private helper method
+- **Retry Logic Separation:** Extract retry logic with exponential backoff into dedicated helper methods rather than inline in business logic
+- **Batch Operation Helpers:** Create reusable helpers for batch operations (batch fetching, batch processing) that can be shared across methods
+- **Clear Method Contracts:** Helper methods should clearly indicate what they assume about their inputs:
+  - Use descriptive names like `processWithValidatedData` vs just `processData`
+  - Document preconditions in method comments
+  - Consider using TypeScript branded types or type predicates for validated data
+- **Fail-Fast in Service Methods:** 
+  - Validate inputs and check preconditions at the start of public methods
+  - Return early on invalid conditions rather than nesting the entire method body
+  - Let helper methods assume valid inputs (since the public method already validated)
+
 ### Code Reuse & Method Implementation
 - **Before implementing any new method**: Always search the codebase for similar existing functionality using semantic search or grep
 - **If a similar method exists but is not adequate**: You must explicitly explain why the existing method cannot be used or extended, including:

@@ -45,11 +45,11 @@ describe("Competition Timeline API", () => {
 
     // Start a competition
     const competitionName = `Timeline Test Competition ${Date.now()}`;
-    const competitionResponse = await startTestCompetition(
+    const competitionResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id, agent2.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+    });
 
     // Verify competition was started
     const competition = competitionResponse.competition;
@@ -144,11 +144,11 @@ describe("Competition Timeline API", () => {
 
     // Start a competition
     const competitionName = `Public Timeline Test Competition ${Date.now()}`;
-    const competitionResponse = await startTestCompetition(
+    const competitionResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id, agent2.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+    });
 
     // Test: Direct axios call without authentication
     const response = await axios.get(
@@ -256,11 +256,11 @@ describe("Competition Timeline API", () => {
 
     // Start a competition
     const competitionName = `Timeline Test Competition ${Date.now()}`;
-    const competitionResponse = await startTestCompetition(
+    const competitionResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id, agent2.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+    });
 
     // Verify competition was started
     const competition = competitionResponse.competition;

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import keccak256 from "keccak256";
 import { MerkleTree } from "merkletreejs";
 import { encodeAbiParameters } from "viem";
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { competitions } from "@recallnet/db-schema/core/defs";
 import {
@@ -16,12 +16,28 @@ import { db } from "@/database/db.js";
 import { insertRewards } from "@/database/repositories/rewards-repository.js";
 import { RewardsService, createLeafNode } from "@/services/rewards.service.js";
 
+// Mock the RewardsAllocator class
+const mockRewardsAllocator = {
+  allocate: vi.fn().mockResolvedValue({
+    transactionHash:
+      "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    blockNumber: BigInt(12345),
+    gasUsed: BigInt(100000),
+  }),
+};
+
 describe("Rewards Service", () => {
   let rewardsService: RewardsService;
   let testCompetitionId: string;
 
+  // Test constants for the allocate method
+  const testTokenAddress =
+    "0x1234567890123456789012345678901234567890" as `0x${string}`;
+  const testStartTimestamp = Math.floor(Date.now() / 1000); // Current timestamp
+
   beforeEach(async () => {
-    rewardsService = new RewardsService();
+    // Create RewardsService with mock RewardsAllocator
+    rewardsService = new RewardsService(mockRewardsAllocator as any); // eslint-disable-line
 
     // Create a test competition with UUID
     const competitionId = "756fddf2-d5a3-4d07-b769-109583469c88";
@@ -73,8 +89,12 @@ describe("Rewards Service", () => {
     // Insert test rewards into database
     await insertRewards(testRewards);
 
-    // Execute the allocate method
-    await rewardsService.allocate(testCompetitionId);
+    // Execute the allocate method with all required parameters
+    await rewardsService.allocate(
+      testCompetitionId,
+      testTokenAddress,
+      testStartTimestamp,
+    );
 
     // Verify that merkle tree nodes were created
     const treeNodes = await db
@@ -109,13 +129,25 @@ describe("Rewards Service", () => {
     const rootLevel = Math.max(...levels);
     const rootNodes = treeNodes.filter((node) => node.level === rootLevel);
     expect(rootNodes.length).toBe(1);
+
+    // Verify that the mock RewardsAllocator was called
+    expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
+      "0x2139ba0bff060eae6c6def620e29a004f4f3c2ea869066dd258ad30959ed16b7", // root hash
+      testTokenAddress,
+      6n,
+      testStartTimestamp,
+    );
   });
 
   test("allocate method throws error when no rewards exist for competition", async () => {
     // Try to allocate rewards for a competition with no rewards
-    await expect(rewardsService.allocate(testCompetitionId)).rejects.toThrow(
-      "no rewards to allocate",
-    );
+    await expect(
+      rewardsService.allocate(
+        testCompetitionId,
+        testTokenAddress,
+        testStartTimestamp,
+      ),
+    ).rejects.toThrow("no rewards to allocate");
 
     // Verify no tree nodes or root entries were created
     const treeNodes = await db
@@ -155,8 +187,12 @@ describe("Rewards Service", () => {
     // Insert single reward
     await insertRewards(singleReward);
 
-    // Execute allocate
-    await rewardsService.allocate(testCompetitionId);
+    // Execute allocate with all required parameters
+    await rewardsService.allocate(
+      testCompetitionId,
+      testTokenAddress,
+      testStartTimestamp,
+    );
 
     // Verify tree structure for single reward
     const treeNodes = await db
@@ -211,7 +247,11 @@ describe("Rewards Service", () => {
 
     // Insert rewards and build the Merkle tree
     await insertRewards(testRewards);
-    await rewardsService.allocate(testCompetitionId);
+    await rewardsService.allocate(
+      testCompetitionId,
+      testTokenAddress,
+      testStartTimestamp,
+    );
 
     // Create a MerkleTree instance to verify proofs
     const rewardEntries = await db
@@ -297,7 +337,11 @@ describe("Rewards Service", () => {
       },
     ]);
 
-    await rewardsService.allocate(testCompetitionId);
+    await rewardsService.allocate(
+      testCompetitionId,
+      testTokenAddress,
+      testStartTimestamp,
+    );
 
     // Try to retrieve proof for a non-existent reward
     const nonExistentAddress =

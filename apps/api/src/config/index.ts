@@ -383,6 +383,15 @@ export const config = {
       (process.env.ENABLE_SENTRY_DB_MONITORING === "true" ||
         process.env.NODE_ENV === "production"),
   },
+  // Rewards allocation configuration
+  rewards: {
+    // Private key for the rewards allocator account
+    allocatorPrivateKey: process.env.REWARDS_ALLOCATOR_PRIVATE_KEY || "",
+    // Contract address for the rewards contract
+    contractAddress: process.env.REWARDS_CONTRACT_ADDRESS || "",
+    // RPC provider URL for blockchain interactions
+    rpcProvider: process.env.RPC_PROVIDER || "",
+  },
 };
 
 /**
