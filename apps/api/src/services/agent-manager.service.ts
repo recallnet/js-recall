@@ -28,7 +28,6 @@ import {
   findByName,
   findByOwnerId,
   findByWallet,
-  findInactiveAgents,
   findUserAgentCompetitions,
   getBulkAgentTrophies,
   reactivateAgent,
@@ -730,74 +729,6 @@ export class AgentManager {
       throw new Error(
         `Failed to update agent: ${error instanceof Error ? error.message : error}`,
       );
-    }
-  }
-
-  /**
-   * Get all inactive agents
-   * @returns Array of inactive agents
-   */
-  async getInactiveAgents() {
-    try {
-      return await findInactiveAgents();
-    } catch (error) {
-      serviceLogger.error(
-        "[AgentManager] Error retrieving inactive agents:",
-        error,
-      );
-      return [];
-    }
-  }
-
-  /**
-   * Check if an agent is inactive
-   * @param agentId Agent ID to check
-   * @returns Object with inactive status and reason if applicable
-   */
-  async isAgentInactive(agentId: string): Promise<{
-    isInactive: boolean;
-    reason: string | null;
-    date: Date | null;
-  }> {
-    try {
-      // Check cache first
-      const info = this.inactiveAgentsCache.get(agentId);
-      if (info) {
-        return {
-          isInactive: true,
-          reason: info.reason,
-          date: info.date,
-        };
-      }
-
-      // If not in cache, check database
-      const agent = await findById(agentId);
-
-      if (!agent) {
-        return { isInactive: false, reason: null, date: null };
-      }
-
-      if (agent.status !== "active") {
-        // Update cache
-        this.inactiveAgentsCache.set(agentId, {
-          reason: agent.deactivationReason || "No reason provided",
-          date: agent.deactivationDate || new Date(),
-        });
-
-        return {
-          isInactive: true,
-          reason: agent.deactivationReason,
-          date: agent.deactivationDate,
-        };
-      }
-
-      return { isInactive: false, reason: null, date: null };
-    } catch (error) {
-      serviceLogger.error(
-        `[AgentManager] Error checking inactive status for agent ${agentId}:`,
-        error,
-      );
-      return { isInactive: false, reason: null, date: null };
     }
   }
 
