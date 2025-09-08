@@ -26,11 +26,20 @@ export class PortfolioSnapshotter {
 
   /**
    * Take a portfolio snapshot for a specific agent in a competition
+   *
+   * Behavior on price fetch failures:
+   * - Retries with exponential backoff up to maxRetries times
+   * - If prices still cannot be fetched after all retries, the method logs a warning and returns silently
+   * - No snapshot is created when prices are missing (no snapshot is better than an inaccurate one)
+   * - This is NOT an exception - it's an expected condition during high load periods
+   * - The method returns normally to allow batch processing to continue for other agents
+   *
    * @param competitionId The competition ID
    * @param agentId The agent ID
    * @param timestamp Optional timestamp for the snapshot (defaults to current time)
    * @param force Optional flag to force snapshot even if competition has ended
    * @param maxRetries Maximum number of retry attempts if price fetching fails (defaults to 3)
+   * @returns Promise<void> - Completes successfully even if snapshot creation is skipped
    */
   async takePortfolioSnapshotForAgent(
     competitionId: string,
