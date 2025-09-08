@@ -5,7 +5,7 @@
  * for a specific competition, with an optional parameter to ignore a specific snapshot.
  *
  * Usage:
- *   cd apps/api && pnpm tsx scripts/reset-agent-portfolio.ts
+ *   cd apps/api && pnpm tsx scripts/reset-competition-agent.ts
  *
  * The script will:
  * 1. Reset the agent's balances using BalanceManager
