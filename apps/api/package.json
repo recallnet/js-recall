@@ -50,6 +50,7 @@
     "scripts:delete-competitions": "tsx scripts/delete-competitions.ts",
     "scripts:populate-agent-handles": "tsx scripts/populate-agent-handles.ts",
     "scripts:migrate-api-key-hashes": "tsx scripts/migrate-api-key-hashes.ts",
+    "scripts:reset-competition-agent": "tsx scripts/reset-competition-agent.ts",
     "generate-openapi": "tsx -e \"const { swaggerSpec } = require('./src/config/swagger'); require('fs').writeFileSync('./openapi/openapi.json', JSON.stringify(swaggerSpec, null, 2));\"",
     "generate-markdown": "openapi-markdown -i ./openapi/openapi.json -o ./openapi/API.md",
     "generate-docs": "pnpm generate-openapi && pnpm generate-markdown",
