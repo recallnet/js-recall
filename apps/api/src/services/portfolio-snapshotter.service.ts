@@ -104,10 +104,7 @@ export class PortfolioSnapshotter {
     }
 
     // Calculate total portfolio value (we know all prices are available now)
-    const { totalValue, pricesFetched } = this.calculatePortfolioValue(
-      balances,
-      priceMap,
-    );
+    const totalValue = this.calculatePortfolioValue(balances, priceMap);
 
     // All prices fetched successfully - create accurate snapshot
     await createPortfolioSnapshot({
@@ -117,9 +114,12 @@ export class PortfolioSnapshotter {
       totalValue,
     });
 
+    // Count non-zero balances for logging
+    const nonZeroBalances = balances.filter((b) => b.amount > 0).length;
+
     repositoryLogger.debug(
       `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} with calculated total value $${totalValue.toFixed(2)}. ` +
-        `All ${pricesFetched} prices fetched successfully.`,
+        `All ${nonZeroBalances} token prices fetched successfully.`,
     );
   }
 
@@ -332,12 +332,8 @@ export class PortfolioSnapshotter {
   private calculatePortfolioValue(
     balances: Array<{ tokenAddress: string; amount: number; symbol: string }>,
     priceMap: Map<string, PriceReport | null>,
-  ): {
-    totalValue: number;
-    pricesFetched: number;
-  } {
+  ): number {
     let totalValue = 0;
-    let pricesFetched = 0;
 
     for (const balance of balances) {
       // Skip zero balances
@@ -350,10 +346,9 @@ export class PortfolioSnapshotter {
       if (priceResult) {
         const valueUsd = balance.amount * priceResult.price;
         totalValue += valueUsd;
-        pricesFetched++;
       }
     }
 
-    return { totalValue, pricesFetched };
+    return totalValue;
   }
 }
