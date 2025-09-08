@@ -40,11 +40,11 @@ describe("Portfolio Snapshots", () => {
 
     // Start a competition with our agent
     const competitionName = `Snapshot Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
+    const startResult = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Wait for operations to complete
     await wait(500);
@@ -85,11 +85,11 @@ describe("Portfolio Snapshots", () => {
 
     // Start a competition with our agent
     const competitionName = `Periodic Snapshot Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
+    const startResult = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Get the competition ID
     const competitionId = startResult.competition.id;
@@ -155,11 +155,11 @@ describe("Portfolio Snapshots", () => {
 
     // Start a competition with our agent
     const competitionName = `End Snapshot Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
+    const startResult = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Get the competition ID
     const competitionId = startResult.competition.id;
@@ -225,11 +225,11 @@ describe("Portfolio Snapshots", () => {
 
     // Start a competition with our agent
     const competitionName = `Value Calculation Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
+    const startResult = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Get the competition ID
     const competitionId = startResult.competition.id;
