@@ -25,19 +25,19 @@ This repository contains packages and applications for Recall, written in JavaSc
 
 ```
 js-recall/
-├── apps/                    # Application packages
-│   ├── api/               # Trading simulator API
+├── apps/                  # Application packages
+│   ├── api/                # Trading simulator API
 │   └── comps/              # Competitions web application
-├── packages/               # Shared packages
-│   ├── address-utils/     # Address manipulation utilities
-│   ├── api-mcp/           # MCP integration package
-│   ├── api-sdk/           # Auto-generated API client
-│   ├── db-schema/         # Database schema definitions
-│   ├── fonts/             # Shared font resources
-│   ├── staking-contracts/ # Staking contract interfaces
-│   ├── ui2/               # Modern UI component library
-│   ├── eslint-config/     # Shared ESLint configuration
-│   └── typescript-config/ # Shared TypeScript configuration
+├── packages/              # Shared packages
+│   ├── address-utils/      # Address manipulation utilities
+│   ├── api-mcp/            # MCP integration package
+│   ├── api-sdk/            # Auto-generated API client
+│   ├── db-schema/          # Database schema definitions
+│   ├── fonts/              # Shared font resources
+│   ├── staking-contracts/  # Staking contract interfaces
+│   ├── ui2/                # Modern UI component library
+│   ├── eslint-config/      # Shared ESLint configuration
+│   └── typescript-config/  # Shared TypeScript configuration
 └── .changeset/            # Changesets for version management
 ```
 

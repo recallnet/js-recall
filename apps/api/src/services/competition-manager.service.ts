@@ -24,7 +24,7 @@ import {
   getAgentCompetitionRecord,
   getAllCompetitionAgents,
   getBulkAgentCompetitionRecords,
-  getBulkAgentPortfolioSnapshots,
+  getBulkLatestPortfolioSnapshots,
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
   isAgentActiveInCompetition,
@@ -317,26 +317,12 @@ export class CompetitionManager {
       );
     }
 
-    // Update the competition, and use this latest response to have accurate `registeredParticipants`
-    const finalCompetition = await updateCompetition({
-      id: competitionId,
-      status: "active",
-      startDate: new Date(),
-      updatedAt: new Date(),
-    });
-
-    serviceLogger.debug(
-      `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
-    );
-    serviceLogger.debug(
-      `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
-    );
-
+    // Set up trading constraints before taking snapshots
     const existingConstraints =
       await this.tradingConstraintsService.getConstraints(competitionId);
     let newConstraints = existingConstraints;
     if (tradingConstraints && existingConstraints) {
-      // If the caller provided constraints and the already exist, we update
+      // If the caller provided constraints and they already exist, we update
       newConstraints = await this.tradingConstraintsService.updateConstraints(
         competitionId,
         tradingConstraints,
@@ -354,8 +340,32 @@ export class CompetitionManager {
         })) || null;
     }
 
-    // Take initial portfolio snapshots
+    // Take initial portfolio snapshots BEFORE setting status to active
+    // This ensures no trades can happen during snapshot initialization
+    // and the snapshotter has exclusive access to price API rate limits
+    serviceLogger.debug(
+      `[CompetitionManager] Taking initial portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
+    );
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    serviceLogger.debug(
+      `[CompetitionManager] Initial portfolio snapshots completed`,
+    );
+
+    // NOW update the competition status to active
+    // This opens trading and price endpoint access to agents
+    const finalCompetition = await updateCompetition({
+      id: competitionId,
+      status: "active",
+      startDate: new Date(),
+      updatedAt: new Date(),
+    });
+
+    serviceLogger.debug(
+      `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
+    );
+    serviceLogger.debug(
+      `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
+    );
 
     // Reload competition-specific configuration settings
     await this.configurationService.loadCompetitionSettings();
@@ -783,19 +793,21 @@ export class CompetitionManager {
       }> = [];
       if (inactiveAgentIds.length > 0) {
         // 🚀 BULK OPERATIONS: Fetch all inactive agent data
-        const [competitionRecords, portfolioSnapshots] = await Promise.all([
+        const [competitionRecords, latestSnapshots] = await Promise.all([
           getBulkAgentCompetitionRecords(competitionId, inactiveAgentIds),
-          getBulkAgentPortfolioSnapshots(competitionId, inactiveAgentIds),
+          getBulkLatestPortfolioSnapshots(competitionId, inactiveAgentIds),
         ]);
 
         // Create lookup maps for efficient data joining
         const competitionRecordsMap = new Map(
           competitionRecords.map((record) => [record.agentId, record]),
         );
-
-        // Group snapshots by agent and get latest value for each
-        const latestPortfolioValues =
-          this.getLatestPortfolioValuesFromSnapshots(portfolioSnapshots);
+        const latestPortfolioValues = new Map(
+          latestSnapshots.map((snapshot) => [
+            snapshot.agentId,
+            snapshot.totalValue ?? 0,
+          ]),
+        );
 
         // Build inactive agents array efficiently
         inactiveAgents = inactiveAgentIds.map((agentId) => {
@@ -835,40 +847,6 @@ export class CompetitionManager {
         `Failed to retrieve leaderboard data for competition ${competitionId}: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
-  }
-
-  /**
-   * Helper method to extract latest portfolio values from bulk snapshots
-   * @param snapshots Array of portfolio snapshots from getBulkAgentPortfolioSnapshots
-   * @returns Map of agentId to latest portfolio value
-   */
-  private getLatestPortfolioValuesFromSnapshots(
-    snapshots: Awaited<ReturnType<typeof getBulkAgentPortfolioSnapshots>>,
-  ): Map<string, number> {
-    const latestValuesByAgent = new Map<string, number>();
-
-    // Get latest value for each agent using a single-pass approach
-    const latestSnapshotsByAgent = new Map<string, (typeof snapshots)[0]>();
-
-    for (const snapshot of snapshots) {
-      const currentLatestSnapshot = latestSnapshotsByAgent.get(
-        snapshot.agentId,
-      );
-      if (
-        !currentLatestSnapshot ||
-        (snapshot.timestamp?.getTime() ?? 0) >
-          (currentLatestSnapshot.timestamp?.getTime() ?? 0)
-      ) {
-        latestSnapshotsByAgent.set(snapshot.agentId, snapshot);
-      }
-    }
-
-    // Extract total values from latest snapshots
-    for (const [agentId, snapshot] of latestSnapshotsByAgent.entries()) {
-      latestValuesByAgent.set(agentId, snapshot.totalValue ?? 0);
-    }
-
-    return latestValuesByAgent;
   }
 
   /**

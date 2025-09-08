@@ -43,7 +43,11 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Specific Chain Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Use the agent client API to get balances instead of direct DB query
     const balancesResponse = (await client.getBalance()) as BalancesResponse;
@@ -99,7 +103,11 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Trade Chain Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
@@ -176,15 +184,12 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(
+    await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-      undefined,
-      undefined,
-      undefined,
-      noTradingConstraints,
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+      tradingConstraints: noTradingConstraints,
+    });
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
@@ -336,7 +341,11 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Track successfully purchased tokens
     const purchasedTokens: string[] = [];
@@ -440,22 +449,14 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition(
+    await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-      undefined,
-      undefined,
-      undefined,
+      name: competitionName,
+      agentIds: [agent.id],
       // This test fails sometimes because of constraint validation. skipping
       // so that the actual test path always runs.
-      {
-        minimum24hVolumeUsd: 0,
-        minimumFdvUsd: 0,
-        minimumLiquidityUsd: 0,
-        minimumPairAgeHours: 0,
-      },
-    );
+      tradingConstraints: noTradingConstraints,
+    });
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
