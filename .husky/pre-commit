@@ -1,0 +1,9 @@
+#!/bin/sh
+
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged for code quality
+echo "📝 Formatting and linting staged files..."
+pnpm lint-staged
+
+echo "✅ Pre-commit checks passed!"
