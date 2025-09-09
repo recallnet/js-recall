@@ -33,11 +33,10 @@ export abstract class DrizzleQueryInterceptor {
               operation: "execute",
             };
             // Wrap and immediately return the execution result
-            const wrappedExecute = this.handleExecution(
+            return this.handleExecution(
               original.bind(target),
               metadata,
-            );
-            return wrappedExecute(...args);
+            )(...args);
           };
         }
 
