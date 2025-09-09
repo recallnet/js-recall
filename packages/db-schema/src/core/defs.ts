@@ -124,6 +124,9 @@ export const agents = pgTable(
     index("idx_agents_handle").on(table.handle),
     index("idx_agents_api_key").on(table.apiKey),
     index("idx_agents_api_key_hash").on(table.apiKeyHash),
+    // NOTE: There is an extra index not listed here. There is a GIN index on the "name" that is
+    // created via custom migration (0038_left_ultragirl) due to Drizzle limitations. That index
+    // supports case-insensitive queries on agent names.
     foreignKey({
       columns: [table.ownerId],
       foreignColumns: [users.id],
@@ -209,6 +212,12 @@ export const competitions = pgTable(
       table.registeredParticipants,
       table.maxParticipants,
     ),
+    index("idx_competitions_status_type_id").on(
+      table.status,
+      table.type,
+      table.id,
+    ),
+    index("idx_competitions_status_end_date").on(table.status, table.endDate),
   ],
 );
 
@@ -256,6 +265,10 @@ export const competitionAgents = pgTable(
     index("idx_competition_agents_competition_id").on(table.competitionId),
     index("idx_competition_agents_agent_id").on(table.agentId),
     index("idx_competition_agents_deactivated_at").on(table.deactivatedAt),
+    index("idx_competition_agents_competition_status").on(
+      table.competitionId,
+      table.status,
+    ),
   ],
 );
 
@@ -320,7 +333,12 @@ export const votes = pgTable(
     // Indexes for performance
     index("idx_votes_competition_id").on(table.competitionId),
     index("idx_votes_agent_competition").on(table.agentId, table.competitionId),
-    index("idx_votes_user_competition").on(table.userId, table.competitionId),
+    index("idx_votes_user_created").on(table.userId, table.createdAt),
+    index("idx_votes_user_competition_created").on(
+      table.userId,
+      table.competitionId,
+      table.createdAt,
+    ),
     // Unique constraint to prevent duplicate votes
     unique("votes_user_agent_competition_key").on(
       table.userId,
@@ -358,6 +376,10 @@ export const competitionsLeaderboard = pgTable(
     index("idx_competitions_leaderboard_agent_competition").on(
       table.agentId,
       table.competitionId,
+    ),
+    index("idx_competitions_leaderboard_competition_rank").on(
+      table.competitionId,
+      table.rank,
     ),
     foreignKey({
       columns: [table.agentId],
