@@ -38,6 +38,9 @@ export function calculateSlippage(fromValueUSD: number): SlippageResult {
 
   // Calculate final amount with slippage
   const effectiveFromValueUSD = fromValueUSD * (1 - actualSlippage);
+  if (effectiveFromValueUSD < 0) {
+    throw new Error("effectiveFromValueUSD is negative");
+  }
 
   return {
     actualSlippage,
