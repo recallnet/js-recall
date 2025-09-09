@@ -125,7 +125,7 @@ export const agents = pgTable(
     index("idx_agents_api_key").on(table.apiKey),
     index("idx_agents_api_key_hash").on(table.apiKeyHash),
     // NOTE: There is an extra index not listed here. There is a GIN index on the "name" that is
-    // created via custom migration (0038_talented_ben_urich) due to Drizzle limitations. That index
+    // created via custom migration (0038_left_ultragirl) due to Drizzle limitations. That index
     // supports case-insensitive queries on agent names.
     foreignKey({
       columns: [table.ownerId],
