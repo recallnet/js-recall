@@ -224,18 +224,6 @@ async function batchUpsertAgentScores(
   return result.rows as SelectAgentScore[];
 }
 
-/**
- * Get all raw agent ranks (without joins)
- */
-async function getAllRawAgentRanksImpl() {
-  try {
-    return await db.select().from(agentScore).orderBy(desc(agentScore.ordinal));
-  } catch (error) {
-    repositoryLogger.error("Error in getAllRawAgentRanks:", error);
-    throw error;
-  }
-}
-
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -261,10 +249,4 @@ export const getAllAgentRankHistory = createTimedRepositoryFunction(
   getAllAgentRankHistoryImpl,
   "AgentScoreRepository",
   "getAllAgentRankHistory",
-);
-
-export const getAllRawAgentRanks = createTimedRepositoryFunction(
-  getAllRawAgentRanksImpl,
-  "AgentScoreRepository",
-  "getAllRawAgentRanks",
 );
