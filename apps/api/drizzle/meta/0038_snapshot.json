@@ -499,6 +499,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_agents_name_gin": {
+          "name": "idx_agents_name_gin",
+          "columns": [
+            {
+              "expression": "\"name\" gin_trgm_ops",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
