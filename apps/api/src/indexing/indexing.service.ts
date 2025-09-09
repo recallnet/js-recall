@@ -9,9 +9,7 @@ import {
   INDEXING_HYPERSYNC_QUERY,
 } from "@/indexing/blockchain-events-config.js";
 import type { EventData, RawLog } from "@/indexing/blockchain-types.js";
-import { EventProcessor } from "@/indexing/event-processor.js";
-import { EventsRepository } from "@/indexing/events.repository.js";
-import { StakesRepository } from "@/indexing/stakes.repository.js";
+import type { EventProcessor } from "@/indexing/event-processor.js";
 import { type Defer, defer } from "@/lib/defer.js";
 import { delay } from "@/lib/delay.js";
 
@@ -51,6 +49,7 @@ export class IndexingService {
 
   constructor(
     logger: Logger,
+    eventProcessor: EventProcessor,
     indexingQuery: HypersyncQuery | undefined = INDEXING_HYPERSYNC_QUERY,
     eventHashNames = EVENT_HASH_NAMES,
   ) {
@@ -62,15 +61,7 @@ export class IndexingService {
     this.#delayMs = indexingQuery?.delayMs || 3000;
     this.#logger = logger;
     this.#eventHashNames = eventHashNames;
-
-    const eventsRepository = new EventsRepository();
-    const stakesRepository = new StakesRepository();
-    this.#eventProcessor = new EventProcessor(
-      eventsRepository,
-      stakesRepository,
-      logger,
-    );
-
+    this.#eventProcessor = eventProcessor;
     this.#deferStop = undefined;
     this.#abortController = undefined;
   }

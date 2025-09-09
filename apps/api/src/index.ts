@@ -15,8 +15,7 @@ import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
 import { closeDb, migrateDb } from "@/database/db.js";
-import { IndexingService } from "@/indexing/indexing.service.js";
-import { apiLogger, indexingLogger } from "@/lib/logger.js";
+import { apiLogger } from "@/lib/logger.js";
 import { initSentry } from "@/lib/sentry.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
@@ -226,7 +225,7 @@ if (config.sentry?.enabled) {
 app.use(errorHandler);
 
 // Start blockchain indexing, if enabled
-const indexingService = new IndexingService(indexingLogger);
+const indexingService = services.indexingService;
 indexingService.start();
 
 // Start HTTP server

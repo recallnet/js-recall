@@ -406,3 +406,11 @@ export async function closeDb(): Promise<void> {
     throw error;
   }
 }
+
+export type DbTransaction = typeof db.transaction extends (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this is fine, we don't care about that type
+  callback: (tx: infer T) => any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this is fine, we don't care about that type
+) => any
+  ? T
+  : never;
