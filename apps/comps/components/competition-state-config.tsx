@@ -8,6 +8,12 @@ type VotingStatusConfig = {
   phase: string | null;
 };
 
+/**
+ * Determines the configuration for the competition state banner.
+ * This function handles various states including registration capacity limits.
+ * When a competition reaches its maxParticipants limit, it will show
+ * "Registration is full" regardless of the time window remaining.
+ */
 export function getCompetitionStateConfig(
   competition: Competition,
   hasVoted: boolean,
