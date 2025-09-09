@@ -1,10 +1,10 @@
 {
   "global": {
     "thresholds": {
-      "lines": 4,
-      "statements": 4,
-      "functions": 47,
-      "branches": 49
+      "lines": 46,
+      "statements": 46,
+      "functions": 46,
+      "branches": 46
     }
   },
   "packages": {
@@ -30,53 +30,6 @@
       "exclude": ["**/*.test.tsx", "**/*.test.ts"],
       "testFramework": "vitest"
     },
-    "apps/portal": {
-      "thresholds": {
-        "lines": 0,
-        "statements": 0,
-        "functions": 51,
-        "branches": 55
-      },
-      "testFramework": "vitest"
-    },
-    "apps/registration": {
-      "thresholds": {
-        "lines": 0,
-        "statements": 0,
-        "functions": 0,
-        "branches": 0
-      },
-      "testFramework": "vitest"
-    },
-    "apps/faucet": {
-      "thresholds": {
-        "lines": 0,
-        "statements": 0,
-        "functions": 0,
-        "branches": 0
-      },
-      "testFramework": "vitest"
-    },
-    "packages/sdk": {
-      "thresholds": {
-        "lines": 0,
-        "statements": 0,
-        "functions": 0,
-        "branches": 0
-      },
-      "include": ["src/**/*.ts"],
-      "exclude": ["test/**"],
-      "testFramework": "mocha-c8"
-    },
-    "packages/agent-toolkit": {
-      "thresholds": {
-        "lines": 0,
-        "statements": 0,
-        "functions": 0,
-        "branches": 0
-      },
-      "testFramework": "vitest"
-    },
     "packages/api-sdk": {
       "thresholds": {
         "lines": 0,
@@ -85,15 +38,6 @@
         "branches": 0
       },
       "testFramework": "vitest"
-    },
-    "packages/fvm": {
-      "thresholds": {
-        "lines": 0,
-        "statements": 0,
-        "functions": 0,
-        "branches": 0
-      },
-      "testFramework": "mocha-c8"
     }
   }
 }
