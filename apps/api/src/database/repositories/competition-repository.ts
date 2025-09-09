@@ -132,13 +132,6 @@ const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
 
 /**
- * Clear the snapshot cache - used for testing
- */
-export function clearSnapshotCache(): void {
-  snapshotCache.clear();
-}
-
-/**
  * Find all competitions
  */
 async function findAllImpl() {
