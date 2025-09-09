@@ -110,7 +110,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
           <DropdownMenuItem
             onClick={handleLogout}
             className="cursor-pointer p-3 hover:bg-gray-800"
-            disabled={false}
+            disabled={isPending}
           >
             <LogOut className="h-4 w-4 text-gray-600" />
             Log Out
