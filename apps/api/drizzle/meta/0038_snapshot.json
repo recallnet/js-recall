@@ -500,8 +500,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_agents_name_gin": {
-          "name": "idx_agents_name_gin",
+        "agents_name_trgm_idx": {
+          "name": "agents_name_trgm_idx",
           "columns": [
             {
               "expression": "\"name\" gin_trgm_ops",
