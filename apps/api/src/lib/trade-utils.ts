@@ -16,9 +16,24 @@ export interface SlippageResult {
  * @returns SlippageResult containing slippage calculations
  */
 export function calculateSlippage(fromValueUSD: number): SlippageResult {
-  // Apply slippage based on trade size
-  const baseSlippage = (fromValueUSD / 10000) * 0.05; // 0.05% per $10,000 (10x lower than before)
-  const actualSlippage = baseSlippage * (0.9 + Math.random() * 0.2); // ±10% randomness (reduced from ±20%)
+  // Apply slippage based on trade size with logarithmic scaling
+  // This prevents slippage from exceeding reasonable limits for large trades
+  const MAX_SLIPPAGE = 0.15; // 15% maximum slippage
+
+  // Logarithmic scaling: slippage increases with trade size but at a decreasing rate
+  // Base formula: slippage = k * log(1 + value/scale)
+  // where k = 0.02 (2% base) and scale = 10000 ($10k reference)
+  const baseSlippage = Math.min(
+    0.02 * Math.log10(1 + fromValueUSD / 10000),
+    MAX_SLIPPAGE,
+  );
+
+  // Apply randomness: ±10% variation
+  const randomMultiplier = 0.9 + Math.random() * 0.2;
+  const actualSlippage = Math.min(
+    baseSlippage * randomMultiplier,
+    MAX_SLIPPAGE,
+  );
   const slippagePercentage = actualSlippage * 100;
 
   // Calculate final amount with slippage
