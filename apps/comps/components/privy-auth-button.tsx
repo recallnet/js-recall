@@ -1,8 +1,9 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect } from "react";
 
 import {
   Avatar,
@@ -30,31 +31,22 @@ import { Identicon } from "./identicon/index";
 export const PrivyAuthButton: React.FunctionComponent = () => {
   const router = useRouter();
 
-  const {
-    error,
-    isError,
-    login,
-    user,
-    ready,
-    backendUser,
-    isAuthenticated,
-    isPending,
-    logout,
-  } = useSession();
+  const { login, backendUser, isAuthenticated, isPending, logout, error } =
+    useSession();
 
-  // Track error display to avoid multiple toasts
-  const errorDisplayedRef = useRef<string | null>(null);
+  const queryClient = useQueryClient();
 
-  // // Handle error display separately to avoid multiple toasts
-  // useEffect(() => {
-  //   if (authError && authError !== errorDisplayedRef.current) {
-  //     errorDisplayedRef.current = authError;
-  //     toast.error(authError);
-  //   }
-  //   if (!authError) {
-  //     errorDisplayedRef.current = null;
-  //   }
-  // }, [authError]);
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["user-competitions"] });
+    queryClient.invalidateQueries({ queryKey: ["competitions"] });
+    queryClient.invalidateQueries({ queryKey: ["competition"] });
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error.message);
+    }
+  }, [error]);
 
   const handleLogin = async () => {
     try {

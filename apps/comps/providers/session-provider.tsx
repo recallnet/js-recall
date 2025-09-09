@@ -93,6 +93,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       loginToBackend();
     },
     onError: (err) => {
+      if (err === "exited_auth_flow") return;
       setLoginError(new Error(err));
     },
   });
