@@ -12,37 +12,30 @@ import UserCompetitionsSection from "@/components/user-competitions";
 import UserInfoSection from "@/components/user-info";
 import UserVotesSection from "@/components/user-votes";
 import { useUserAgents } from "@/hooks";
-import { useUserSession } from "@/hooks/useAuth";
-import { usePrivyAuth } from "@/hooks/usePrivyAuth";
-import { useUpdateProfile } from "@/hooks/useProfile";
+import { useSession } from "@/hooks/useSession";
 import { UpdateProfileRequest } from "@/types/profile";
 
 export default function ProfilePage() {
-  const session = useUserSession();
+  const { ready, isPending, backendUser, updateBackendUser, linkWallet } =
+    useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const updateProfile = useUpdateProfile();
-  const { linkWallet } = usePrivyAuth();
   const { data: agents, isLoading } = useUserAgents({ limit: 100 });
 
   useEffect(() => {
-    if (!session.isInitialized) return;
+    if (!ready) return;
     // Only redirect when necessary; avoid pushing to the same route
-    if (
-      !session.isLoading &&
-      !session.isProfileUpdated &&
-      pathname !== "/profile/update"
-    ) {
+    if (!isPending && !backendUser?.name && pathname !== "/profile/update") {
       router.push("/profile/update");
     }
-  }, [session, pathname, router]);
+  }, [ready, isPending, backendUser, pathname, router]);
 
-  if (!session.isInitialized || isLoading) {
+  if (!ready || isLoading) {
     return <ProfileSkeleton />;
   }
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
-    await updateProfile.mutateAsync(data);
+    await updateBackendUser(data);
   };
 
   const handleLinkWallet = async () => {
@@ -58,7 +51,7 @@ export default function ProfilePage() {
         ]}
       />
       <UserInfoSection
-        user={session.user!}
+        user={backendUser!}
         onSave={handleUpdateProfile}
         onLinkWallet={handleLinkWallet}
       />

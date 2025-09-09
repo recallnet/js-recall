@@ -7,12 +7,14 @@ export interface User {
   status: "active" | "inactive" | "suspended" | "deleted";
   name?: string;
   email?: string;
+  isSubscribed: boolean;
   imageUrl?: string;
   metadata?: {
     website?: string;
   };
   createdAt: string;
   updatedAt: string;
+  lastLoginAt?: string;
 }
 
 export interface ProfileResponse {

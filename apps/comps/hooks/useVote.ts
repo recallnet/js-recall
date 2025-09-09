@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { useSession } from "@/hooks/useSession";
 import { UnauthorizedError, apiClient } from "@/lib/api-client";
-import { useUser } from "@/state/atoms";
 import {
   CreateVoteRequest,
   EnrichedVotesResponse,
@@ -9,8 +9,6 @@ import {
   VotesResponse,
   VotingStateResponse,
 } from "@/types/vote";
-
-import { useClientCleanup } from "./useAuth";
 
 /**
  * Hook to create a vote
@@ -45,8 +43,8 @@ export const useVote = () => {
  * @returns Query result with votes data
  */
 export const useVotes = (params: GetVotesParams = {}) => {
-  const { status } = useUser();
-  const cleanup = useClientCleanup();
+  const { isAuthenticated } = useSession();
+  // const cleanup = useClientCleanup();
 
   return useQuery({
     queryKey: ["votes", params],
@@ -57,12 +55,12 @@ export const useVotes = (params: GetVotesParams = {}) => {
         return res;
       } catch (error) {
         if (error instanceof UnauthorizedError) {
-          cleanup();
+          // cleanup();
         }
         throw error;
       }
     },
-    enabled: status === "authenticated",
+    enabled: isAuthenticated,
   });
 };
 
@@ -72,8 +70,8 @@ export const useVotes = (params: GetVotesParams = {}) => {
  * @returns Query result with votes data
  */
 export const useEnrichedVotes = (params: GetVotesParams = {}) => {
-  const { status } = useUser();
-  const cleanup = useClientCleanup();
+  const { isAuthenticated } = useSession();
+  // const cleanup = useClientCleanup();
 
   return useQuery({
     queryKey: ["enriched-votes", params],
@@ -84,12 +82,12 @@ export const useEnrichedVotes = (params: GetVotesParams = {}) => {
         return res;
       } catch (error) {
         if (error instanceof UnauthorizedError) {
-          cleanup();
+          // cleanup();
         }
         throw error;
       }
     },
-    enabled: status === "authenticated",
+    enabled: isAuthenticated,
   });
 };
 
@@ -99,8 +97,8 @@ export const useEnrichedVotes = (params: GetVotesParams = {}) => {
  * @returns Query result with voting state
  */
 export const useVotingState = (competitionId: string) => {
-  const { status } = useUser();
-  const cleanup = useClientCleanup();
+  const { isAuthenticated } = useSession();
+  // const cleanup = useClientCleanup();
 
   return useQuery({
     queryKey: ["votingState", competitionId],
@@ -111,11 +109,11 @@ export const useVotingState = (competitionId: string) => {
         return res;
       } catch (error) {
         if (error instanceof UnauthorizedError) {
-          cleanup();
+          // cleanup();
         }
         throw error;
       }
     },
-    enabled: status === "authenticated" && !!competitionId,
+    enabled: isAuthenticated && !!competitionId,
   });
 };

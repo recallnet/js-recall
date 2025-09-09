@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { useSession } from "@/hooks/useSession";
 import { apiClient } from "@/lib/api-client";
-import { useUser } from "@/state/atoms";
 import {
   CompetitionsResponse,
   GetCompetitionsParams,
@@ -28,14 +28,14 @@ export const useCompetitions = (params: GetCompetitionsParams = {}) =>
  * @returns Query result with user's competitions data
  */
 export const useUserCompetitions = (params: GetCompetitionsParams = {}) => {
-  const { status } = useUser();
+  const { isAuthenticated } = useSession();
 
   return useQuery({
     queryKey: ["user-competitions", params],
     queryFn: async (): Promise<UserCompetitionsResponse> => {
       return apiClient.getUserCompetitions(params);
     },
-    enabled: status === "authenticated",
+    enabled: isAuthenticated,
     placeholderData: (prev) => prev,
   });
 };

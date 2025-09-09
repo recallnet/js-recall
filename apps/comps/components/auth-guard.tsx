@@ -2,7 +2,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { DEFAULT_REDIRECT_URL } from "@/constants";
-import { useUserSession } from "@/hooks/useAuth";
+import { useSession } from "@/hooks/useSession";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -15,37 +15,37 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   skeleton = null,
   redirectTo = DEFAULT_REDIRECT_URL,
 }) => {
-  const session = useUserSession();
+  const { ready, isAuthenticated, isPending } = useSession();
   const router = useRouter();
   const lastWasAuthedRef = useRef(false);
 
   // Track last authenticated state to avoid tearing down UI during transient loading
   useEffect(() => {
-    if (session.isInitialized) {
-      lastWasAuthedRef.current = session.isAuthenticated;
+    if (ready) {
+      lastWasAuthedRef.current = isAuthenticated;
     }
-  }, [session]);
+  }, [ready, isAuthenticated]);
 
   useEffect(() => {
-    if (!session.isInitialized) {
+    if (!ready) {
       return;
     }
 
-    if (!session.isLoading && !session.isAuthenticated) {
+    if (!isPending && !isAuthenticated) {
       router.push(redirectTo);
     }
-  }, [session, router, redirectTo]);
+  }, [ready, isPending, isAuthenticated, router, redirectTo]);
 
-  if (!session.isInitialized) {
+  if (!ready) {
     return skeleton;
   }
 
   // While loading, keep previous authed content mounted to avoid flicker
-  if (session.isLoading) {
+  if (isPending) {
     return lastWasAuthedRef.current ? <>{children}</> : skeleton;
   }
 
-  if (session.isAuthenticated) {
+  if (isAuthenticated) {
     return <>{children}</>;
   }
 

@@ -7,8 +7,9 @@ import { useState } from "react";
 
 import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 
-import { PostHogProviderWrapper } from "./posthog-provider";
-import { PrivyProviderWrapper } from "./privy-provider";
+import { PostHogProviderWrapper } from "@/providers/posthog-provider";
+import { PrivyProviderWrapper } from "@/providers/privy-provider";
+import { SessionProvider } from "@/providers/session-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -35,7 +36,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <PostHogProviderWrapper>
           <PrivyProviderWrapper>
-            <NavigationGuardProvider>{children}</NavigationGuardProvider>
+            <SessionProvider>
+              <NavigationGuardProvider>{children}</NavigationGuardProvider>
+            </SessionProvider>
           </PrivyProviderWrapper>
         </PostHogProviderWrapper>
       </QueryClientProvider>

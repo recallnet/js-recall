@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { useSession } from "@/hooks/useSession";
 import { apiClient } from "@/lib/api-client";
-import { useUser } from "@/state/atoms";
 import { AgentsResponse, GetAgentsParams, UpdateAgentRequest } from "@/types";
 
 /**
@@ -25,14 +25,14 @@ export const useAgents = (params: GetAgentsParams = {}) => {
  * @returns Query result with agents data
  */
 export const useUserAgents = (params: GetAgentsParams = {}) => {
-  const { status } = useUser();
+  const { isAuthenticated } = useSession();
 
   return useQuery({
     queryKey: ["agents", params],
     queryFn: async (): Promise<AgentsResponse> => {
       return apiClient.getUserAgents(params);
     },
-    enabled: status === "authenticated",
+    enabled: isAuthenticated,
     placeholderData: (prev) => prev,
   });
 };

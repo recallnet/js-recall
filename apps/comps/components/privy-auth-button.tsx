@@ -1,9 +1,9 @@
 "use client";
 
-import { useAtom } from "jotai";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect } from "react";
 
 import {
   Avatar,
@@ -19,10 +19,9 @@ import {
   DropdownMenuTrigger,
 } from "@recallnet/ui2/components/dropdown-menu";
 import { toast } from "@recallnet/ui2/components/toast";
+import { cn } from "@recallnet/ui2/lib/utils";
 
-import { useLogout, useUserSession } from "@/hooks";
-import { usePrivyAuth } from "@/hooks/usePrivyAuth";
-import { userAtom } from "@/state/atoms";
+import { useSession } from "@/hooks/useSession";
 
 import { Identicon } from "./identicon/index";
 
@@ -31,40 +30,25 @@ import { Identicon } from "./identicon/index";
  */
 export const PrivyAuthButton: React.FunctionComponent = () => {
   const router = useRouter();
-  const session = useUserSession();
-  const [authState] = useAtom(userAtom); // Direct atom access to ensure re-renders
-  const { ready, login, logout, isAuthenticating, authError, clearError } =
-    usePrivyAuth();
-  const { mutateAsync: logoutBackend } = useLogout();
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const { login, backendUser, isAuthenticated, isPending, logout, error } =
+    useSession();
+
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    setIsLoggingOut(false);
-  }, [logout]);
+    queryClient.invalidateQueries({ queryKey: ["user-competitions"] });
+    queryClient.invalidateQueries({ queryKey: ["competitions"] });
+    queryClient.invalidateQueries({ queryKey: ["competition"] });
+  }, [isAuthenticated, queryClient]);
 
-  // Set mounted state after component mounts
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Track error display to avoid multiple toasts
-  const errorDisplayedRef = useRef<string | null>(null);
-
-  // Handle error display separately to avoid multiple toasts
-  useEffect(() => {
-    if (authError && authError !== errorDisplayedRef.current) {
-      errorDisplayedRef.current = authError;
-      toast.error(authError);
+    if (error) {
+      toast.error(error.message);
     }
-    if (!authError) {
-      errorDisplayedRef.current = null;
-    }
-  }, [authError]);
+  }, [error]);
 
   const handleLogin = async () => {
-    clearError();
     try {
       login();
     } catch (error) {
@@ -74,37 +58,18 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
 
   const handleLogout = async () => {
     try {
-      await logoutBackend();
-      setIsLoggingOut(true);
+      await logout();
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
-  // Force re-render when authentication state changes
-  useEffect(() => {
-    // This effect will run whenever session or auth state changes
-    // The dependency on both ensures the component re-renders when auth changes
-  }, [session, authState]);
-
-  // Always check the auth atom first for the most up-to-date state
-  const isAuthenticated =
-    authState.status === "authenticated" && authState.user;
-  const user = authState.user || (session.isInitialized ? session.user : null);
-
-  // Show loading state until mounted to prevent hydration mismatch
-  if (!mounted || (!ready && !isAuthenticated)) {
-    return (
-      <div className="h-14 w-[140px] animate-pulse rounded-none bg-white/10" />
-    );
-  }
-
   // Show authenticated state with dropdown
-  if (user && isAuthenticated) {
-    const displayName = user.name;
-    const walletAddress = user.walletAddress;
-    const avatarUrl = user.imageUrl;
+  if (backendUser && isAuthenticated) {
+    const displayName = backendUser.name;
+    const walletAddress = backendUser.walletAddress;
+    const avatarUrl = backendUser.imageUrl;
 
     return (
       <DropdownMenu>
@@ -145,7 +110,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
           <DropdownMenuItem
             onClick={handleLogout}
             className="cursor-pointer p-3 hover:bg-gray-800"
-            disabled={isLoggingOut}
+            disabled={false}
           >
             <LogOut className="h-4 w-4 text-gray-600" />
             Log Out
@@ -159,9 +124,12 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
   return (
     <Button
       onClick={handleLogin}
-      disabled={isAuthenticating}
+      disabled={isPending}
       variant="ghost"
-      className="h-14 rounded-none px-6 uppercase"
+      className={cn(
+        "h-14 rounded-none px-6 uppercase",
+        isPending && "animate-pulse bg-white/40",
+      )}
     >
       Join / Sign In
     </Button>

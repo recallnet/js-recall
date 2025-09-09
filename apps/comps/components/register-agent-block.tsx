@@ -18,7 +18,7 @@ import {
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
 
-import { useUserSession } from "@/hooks/useAuth";
+import { useSession } from "@/hooks/useSession";
 
 import { ConnectPrivyModal } from "./modals/connect-privy";
 import { SetupAgentModal } from "./modals/setup-agent";
@@ -31,7 +31,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export const RegisterAgentBlock: React.FC = () => {
   const pathname = usePathname();
-  const session = useUserSession();
+  const session = useSession();
   const [activeModal, setActiveModal] = useState<
     "connectAccount" | "setupAgent" | null
   >(null);
@@ -44,7 +44,7 @@ export const RegisterAgentBlock: React.FC = () => {
   });
 
   const handleAddAgent = () => {
-    if (!session.isInitialized) {
+    if (!session.ready) {
       return;
     }
 
