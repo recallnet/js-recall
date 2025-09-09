@@ -6,15 +6,7 @@ import {
   trades,
   tradingCompetitions,
 } from "../trading/defs.js";
-import {
-  rewards,
-  rewardsRoots,
-  rewardsTree,
-  stakes,
-  voteAssignments,
-  votesAvailable,
-  votesPerformed,
-} from "../voting/defs.js";
+import { rewards, rewardsRoots, rewardsTree } from "../voting/defs.js";
 import {
   agents,
   competitionAgents,
@@ -27,10 +19,6 @@ import {
 
 export const usersRelations = relations(users, ({ many }) => ({
   agents: many(agents),
-  stakes: many(stakes),
-  voteAssignments: many(voteAssignments),
-  votesAvailable: many(votesAvailable),
-  votesPerformed: many(votesPerformed),
   votes: many(votes),
 }));
 

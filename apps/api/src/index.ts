@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express from "express";
 
@@ -14,7 +15,9 @@ import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
 import { closeDb, migrateDb } from "@/database/db.js";
-import { apiLogger } from "@/lib/logger.js";
+import { IndexingService } from "@/indexing/indexing.service.js";
+import { apiLogger, indexingLogger } from "@/lib/logger.js";
+import { initSentry } from "@/lib/sentry.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
@@ -37,6 +40,9 @@ import { ServiceRegistry } from "@/services/index.js";
 
 import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
+
+// Initialize Sentry before creating the Express app
+initSentry();
 
 // Create Express app
 const app = express();
@@ -211,8 +217,17 @@ app.get(`${apiBasePath}`, (_req, res) => {
   res.redirect(`${apiBasePath}/api/docs`);
 });
 
+// Apply Sentry error handler before our custom error handler
+if (config.sentry?.enabled) {
+  app.use(Sentry.expressErrorHandler());
+}
+
 // Apply error handler
 app.use(errorHandler);
+
+// Start blockchain indexing, if enabled
+const indexingService = new IndexingService(indexingLogger);
+indexingService.start();
 
 // Start HTTP server
 const mainServer = app.listen(PORT, "0.0.0.0", () => {
@@ -237,6 +252,8 @@ const gracefulShutdown = async (signal: string) => {
   apiLogger.info(
     `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
   );
+
+  await indexingService.close();
 
   // Close both servers
   mainServer.close(async () => {

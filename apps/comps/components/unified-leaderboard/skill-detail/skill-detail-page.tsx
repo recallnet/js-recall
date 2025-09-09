@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Calendar,
@@ -13,7 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 import { Badge } from "@recallnet/ui2/components/badge";
@@ -23,6 +24,8 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
+import { ApiClient } from "@/lib/api-client";
+import { LeaderboardAgent } from "@/types/agent";
 
 import { SkillDetailLeaderboardTable } from "./skill-detail-leaderboard-table";
 import { SkillDetailLeaderboardTableMobile } from "./skill-detail-leaderboard-table-mobile";
@@ -31,11 +34,40 @@ interface SkillDetailPageProps {
   skillId: string;
 }
 
+const apiClient = new ApiClient();
+
 export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   skillId,
 }) => {
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
+  const [additionalAgents, setAdditionalAgents] = useState<LeaderboardAgent[]>(
+    [],
+  );
+  const [currentOffset, setCurrentOffset] = useState(100); // Start at 100 since initial load gets first 100
+
   const { data, isLoading, error } = useUnifiedLeaderboard();
+
+  // Query for loading more agents (only for crypto_trading)
+  const { refetch: loadMoreAgents, isLoading: isLoadingMore } = useQuery({
+    queryKey: ["load-more-agents", currentOffset],
+    queryFn: async () => {
+      const response = await apiClient.getGlobalLeaderboard({
+        type: "trading",
+        limit: 100,
+        offset: currentOffset,
+      });
+      return response;
+    },
+    enabled: false, // Manual trigger
+  });
+
+  const handleLoadMore = useCallback(async () => {
+    const result = await loadMoreAgents();
+    if (result.data?.agents) {
+      setAdditionalAgents((prev) => [...prev, ...result.data.agents]);
+      setCurrentOffset((prev) => prev + 100);
+    }
+  }, [loadMoreAgents]);
 
   if (isLoading) {
     return (
@@ -62,7 +94,22 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   }
 
   const skill = data?.skills[skillId];
-  const skillData = data?.skillData[skillId];
+  let skillData = data?.skillData[skillId];
+
+  // For crypto_trading, merge additional agents
+  if (
+    skillId === "crypto_trading" &&
+    skillData &&
+    additionalAgents.length > 0
+  ) {
+    skillData = {
+      ...skillData,
+      participants: {
+        ...skillData.participants,
+        agents: [...skillData.participants.agents, ...additionalAgents],
+      },
+    };
+  }
 
   if (!skill || !skillData) {
     return (
@@ -296,6 +343,35 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               skillData={skillData}
             />
           </div>
+
+          {/* Load More Button for crypto_trading */}
+          {skillId === "crypto_trading" &&
+            skillData.participants.agents.length <
+              skillData.stats.agentCount && (
+              <div className="mt-6 text-center">
+                <Button
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  variant="outline"
+                  className="min-w-[200px]"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      Load More Agents
+                      <span className="ml-2 text-gray-400">
+                        ({skillData.participants.agents.length} /{" "}
+                        {skillData.stats.agentCount})
+                      </span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
         </div>
 
         {/* Methodology */}

@@ -24,6 +24,7 @@ import {
   generateRandomEthAddress,
   generateTestCompetitions,
   getAdminApiKey,
+  noTradingConstraints,
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   wait,
@@ -1440,10 +1441,10 @@ describe("User API", () => {
 
       // Create 3 competitions where both agents participate
       for (let i = 0; i < 3; i++) {
-        const createResponse = await adminClient.createCompetition(
-          `Multi-Agent Pagination Competition ${i}`,
-          `Competition ${i} with multiple agents from same user`,
-        );
+        const createResponse = await adminClient.createCompetition({
+          name: `Multi-Agent Pagination Competition ${i}`,
+          description: `Competition ${i} with multiple agents from same user`,
+        });
         expect(createResponse.success).toBe(true);
         const createCompResponse = createResponse as CreateCompetitionResponse;
 
@@ -1503,10 +1504,10 @@ describe("User API", () => {
 
       // Create exactly 5 competitions
       for (let i = 0; i < 5; i++) {
-        const createResponse = await adminClient.createCompetition(
-          `HasMore Competition ${i}`,
-          `Competition ${i} for hasMore testing`,
-        );
+        const createResponse = await adminClient.createCompetition({
+          name: `HasMore Competition ${i}`,
+          description: `Competition ${i} for hasMore testing`,
+        });
         expect(createResponse.success).toBe(true);
         const createCompResponse = createResponse as CreateCompetitionResponse;
         await userClient.joinCompetition(
@@ -1563,10 +1564,10 @@ describe("User API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       for (let i = 0; i < 2; i++) {
-        const createResponse = await adminClient.createCompetition(
-          `Edge Test Competition ${i}`,
-          `Competition ${i} for edge testing`,
-        );
+        const createResponse = await adminClient.createCompetition({
+          name: `Edge Test Competition ${i}`,
+          description: `Competition ${i} for edge testing`,
+        });
         expect(createResponse.success).toBe(true);
         const createCompResponse = createResponse as CreateCompetitionResponse;
         await userClient.joinCompetition(
@@ -1612,10 +1613,10 @@ describe("User API", () => {
       const secondComp = "Beta Competition";
       const thirdComp = "Charlie Competition";
 
-      const create1Response = await adminClient.createCompetition(
-        firstComp,
-        `Description for ${firstComp}`,
-      );
+      const create1Response = await adminClient.createCompetition({
+        name: firstComp,
+        description: `Description for ${firstComp}`,
+      });
       expect(create1Response.success).toBe(true);
       const competitionIdForFirstComp = (
         create1Response as CreateCompetitionResponse
@@ -1623,20 +1624,20 @@ describe("User API", () => {
       await userClient.joinCompetition(competitionIdForFirstComp, agent.id);
       await wait(50);
 
-      const create2Response = await adminClient.createCompetition(
-        secondComp,
-        `Description for ${secondComp}`,
-      );
+      const create2Response = await adminClient.createCompetition({
+        name: secondComp,
+        description: `Description for ${secondComp}`,
+      });
       expect(create2Response.success).toBe(true);
       const createCompResponse2 = create2Response as CreateCompetitionResponse;
       const competitionIdForSecondComp = createCompResponse2.competition.id;
       await userClient.joinCompetition(competitionIdForSecondComp, agent.id);
       await wait(50);
 
-      const create3Response = await adminClient.createCompetition(
-        thirdComp,
-        `Description for ${thirdComp}`,
-      );
+      const create3Response = await adminClient.createCompetition({
+        name: thirdComp,
+        description: `Description for ${thirdComp}`,
+      });
       expect(create3Response.success).toBe(true);
       const competitionIdForThirdComp = (
         create3Response as CreateCompetitionResponse
@@ -1645,19 +1646,19 @@ describe("User API", () => {
       await wait(50);
 
       // Start/end the first competition, start/end the second competition, and keep the third pending
-      const startCompResponse = await adminClient.startExistingCompetition(
-        competitionIdForFirstComp,
-        [agent.id],
-      );
+      const startCompResponse = await adminClient.startExistingCompetition({
+        competitionId: competitionIdForFirstComp,
+        agentIds: [agent.id],
+      });
       expect(startCompResponse.success).toBe(true);
       const endCompResponse = await adminClient.endCompetition(
         competitionIdForFirstComp,
       );
       expect(endCompResponse.success).toBe(true);
-      const startCompResponse2 = await adminClient.startExistingCompetition(
-        competitionIdForSecondComp,
-        [agent.id],
-      );
+      const startCompResponse2 = await adminClient.startExistingCompetition({
+        competitionId: competitionIdForSecondComp,
+        agentIds: [agent.id],
+      });
       expect(startCompResponse2.success).toBe(true);
 
       // Test name ascending sort (should work)
@@ -1736,10 +1737,10 @@ describe("User API", () => {
       ];
 
       for (const name of competitionNames) {
-        const createResponse = await adminClient.createCompetition(
+        const createResponse = await adminClient.createCompetition({
           name,
-          `Description for ${name}`,
-        );
+          description: `Description for ${name}`,
+        });
         expect(createResponse.success).toBe(true);
         const createCompResponse = createResponse as CreateCompetitionResponse;
         await userClient.joinCompetition(
@@ -1824,10 +1825,10 @@ describe("User API", () => {
       ];
 
       for (const comp of competitionData) {
-        const createResponse = await adminClient.createCompetition(
-          comp.name,
-          `Description for ${comp.name}`,
-        );
+        const createResponse = await adminClient.createCompetition({
+          name: comp.name,
+          description: `Description for ${comp.name}`,
+        });
         expect(createResponse.success).toBe(true);
         const createCompResponse = createResponse as CreateCompetitionResponse;
         await userClient.joinCompetition(
@@ -1894,10 +1895,10 @@ describe("User API", () => {
       // Create competitions and have different agents join different competitions
       const competitions = [];
       for (let i = 0; i < 3; i++) {
-        const createResponse = await adminClient.createCompetition(
-          `AgentName Sort Competition ${i}`,
-          `Competition ${i} for agentName sorting`,
-        );
+        const createResponse = await adminClient.createCompetition({
+          name: `AgentName Sort Competition ${i}`,
+          description: `Competition ${i} for agentName sorting`,
+        });
         expect(createResponse.success).toBe(true);
         const competition = (createResponse as CreateCompetitionResponse)
           .competition;
@@ -1978,17 +1979,17 @@ describe("User API", () => {
       const agent3 = (agent3Response as AgentProfileResponse).agent;
 
       // Create two competitions
-      const comp1Response = await adminClient.createCompetition(
-        "Multi-Agent Competition 1",
-        "Competition with Charlie and Alpha agents",
-      );
+      const comp1Response = await adminClient.createCompetition({
+        name: "Multi-Agent Competition 1",
+        description: "Competition with Charlie and Alpha agents",
+      });
       expect(comp1Response.success).toBe(true);
       const comp1 = (comp1Response as CreateCompetitionResponse).competition;
 
-      const comp2Response = await adminClient.createCompetition(
-        "Multi-Agent Competition 2",
-        "Competition with Beta and Charlie agents",
-      );
+      const comp2Response = await adminClient.createCompetition({
+        name: "Multi-Agent Competition 2",
+        description: "Competition with Beta and Charlie agents",
+      });
       expect(comp2Response.success).toBe(true);
       const comp2 = (comp2Response as CreateCompetitionResponse).competition;
 
@@ -2056,18 +2057,18 @@ describe("User API", () => {
       }
 
       // Create two competitions with different ranking scenarios
-      const comp1Response = await createTestCompetition(
+      const comp1Response = await createTestCompetition({
         adminClient,
-        "Multi-Agent Competition",
-        "Competition with multiple agents for ranking",
-      );
+        name: "Multi-Agent Competition",
+        description: "Competition with multiple agents for ranking",
+      });
       const comp1 = comp1Response.competition;
 
-      const comp2Response = await createTestCompetition(
+      const comp2Response = await createTestCompetition({
         adminClient,
-        "Single Agent Competition",
-        "Competition with single agent",
-      );
+        name: "Single Agent Competition",
+        description: "Competition with single agent",
+      });
       const comp2 = comp2Response.competition;
 
       // Join competitions
@@ -2077,11 +2078,11 @@ describe("User API", () => {
       await userClient.joinCompetition(comp2.id, agents[0]!.id); // Will be rank 1 (only agent)
 
       // Start first competition and create ranking differences using established patterns
-      await startExistingTestCompetition(adminClient, comp1.id, [
-        agents[0]!.id,
-        agents[1]!.id,
-        agents[2]!.id,
-      ]);
+      await startExistingTestCompetition({
+        adminClient,
+        competitionId: comp1.id,
+        agentIds: [agents[0]!.id, agents[1]!.id, agents[2]!.id],
+      });
 
       // Create ranking differences using the established burn address pattern
       // Agent 1: Small profitable trade (best rank)
@@ -2113,9 +2114,11 @@ describe("User API", () => {
 
       // End first competition and start second
       await adminClient.endCompetition(comp1.id);
-      await startExistingTestCompetition(adminClient, comp2.id, [
-        agents[0]!.id,
-      ]);
+      await startExistingTestCompetition({
+        adminClient,
+        competitionId: comp2.id,
+        agentIds: [agents[0]!.id],
+      });
 
       // Wait for portfolio snapshots to be created
       await wait(2000);
@@ -2184,18 +2187,18 @@ describe("User API", () => {
       const agent = (agentResponse as AgentProfileResponse).agent;
 
       // Create one started competition (will have rank) and one unstarted (no rank)
-      const startedCompResponse = await createTestCompetition(
+      const startedCompResponse = await createTestCompetition({
         adminClient,
-        "Started Competition",
-        "Competition that will be started",
-      );
+        name: "Started Competition",
+        description: "Competition that will be started",
+      });
       const startedComp = startedCompResponse.competition;
 
-      const unstartedCompResponse = await createTestCompetition(
+      const unstartedCompResponse = await createTestCompetition({
         adminClient,
-        "Unstarted Competition",
-        "Competition that will not be started",
-      );
+        name: "Unstarted Competition",
+        description: "Competition that will not be started",
+      });
       const unstartedComp = unstartedCompResponse.competition;
 
       // Join both competitions
@@ -2203,9 +2206,11 @@ describe("User API", () => {
       await userClient.joinCompetition(unstartedComp.id, agent.id);
 
       // Start only one competition
-      await startExistingTestCompetition(adminClient, startedComp.id, [
-        agent.id,
-      ]);
+      await startExistingTestCompetition({
+        adminClient,
+        competitionId: startedComp.id,
+        agentIds: [agent.id],
+      });
       await wait(1000);
 
       // Test rank ascending sort - competitions with undefined ranks should go to end
@@ -2287,10 +2292,10 @@ describe("User API", () => {
 
       // Create competitions with same agent names but different creation times
       for (let i = 0; i < 3; i++) {
-        const createResponse = await adminClient.createCompetition(
-          `Combined Sort Competition ${i}`,
-          `Competition ${i} for combined sort testing`,
-        );
+        const createResponse = await adminClient.createCompetition({
+          name: `Combined Sort Competition ${i}`,
+          description: `Competition ${i} for combined sort testing`,
+        });
         expect(createResponse.success).toBe(true);
         const competition = (createResponse as CreateCompetitionResponse)
           .competition;
@@ -2348,10 +2353,10 @@ describe("User API", () => {
 
       // Create 5 competitions, each with a different agent
       for (let i = 0; i < 5; i++) {
-        const createResponse = await adminClient.createCompetition(
-          `AgentName Pagination Competition ${i}`,
-          `Competition ${i} for agentName pagination testing`,
-        );
+        const createResponse = await adminClient.createCompetition({
+          name: `AgentName Pagination Competition ${i}`,
+          description: `Competition ${i} for agentName pagination testing`,
+        });
         expect(createResponse.success).toBe(true);
         const competition = (createResponse as CreateCompetitionResponse)
           .competition;
@@ -2459,18 +2464,20 @@ describe("User API", () => {
 
       // Create started competitions with different performance levels
       for (let i = 0; i < 2; i++) {
-        const createResponse = await createTestCompetition(
+        const createResponse = await createTestCompetition({
           adminClient,
-          `Started Rank Competition ${i}`,
-          `Started competition ${i} for rank testing`,
-        );
+          name: `Started Rank Competition ${i}`,
+          description: `Started competition ${i} for rank testing`,
+        });
         const competition = createResponse.competition;
         competitions.push(competition);
 
         await userClient.joinCompetition(competition.id, agents[i]!.id);
-        await startExistingTestCompetition(adminClient, competition.id, [
-          agents[i]!.id,
-        ]);
+        await startExistingTestCompetition({
+          adminClient,
+          competitionId: competition.id,
+          agentIds: [agents[i]!.id],
+        });
 
         // Create different performance levels using established burn address pattern
         const agentClient = adminClient.createAgentClient(agents[i]!.apiKey!);
@@ -2498,11 +2505,11 @@ describe("User API", () => {
 
       // Unstarted competitions
       for (let i = 2; i < 4; i++) {
-        const createResponse = await createTestCompetition(
+        const createResponse = await createTestCompetition({
           adminClient,
-          `Unstarted Rank Competition ${i}`,
-          `Unstarted competition ${i} for rank testing`,
-        );
+          name: `Unstarted Rank Competition ${i}`,
+          description: `Unstarted competition ${i} for rank testing`,
+        });
         const competition = createResponse.competition;
         competitions.push(competition);
 
@@ -2581,10 +2588,10 @@ describe("User API", () => {
 
       // Create 6 competitions, each with a different agent
       for (let i = 0; i < 6; i++) {
-        const createResponse = await adminClient.createCompetition(
-          `Computed Pagination Competition ${i}`,
-          `Competition ${i} for computed pagination testing`,
-        );
+        const createResponse = await adminClient.createCompetition({
+          name: `Computed Pagination Competition ${i}`,
+          description: `Competition ${i} for computed pagination testing`,
+        });
         expect(createResponse.success).toBe(true);
         const competition = (createResponse as CreateCompetitionResponse)
           .competition;
@@ -2705,10 +2712,10 @@ describe("User API", () => {
 
       // Create competitions with controlled timing for secondary sort
       for (let i = 0; i < agentData.length; i++) {
-        const createResponse = await adminClient.createCompetition(
-          agentData[i]!.comp,
-          `Competition ${i} for mixed sorting`,
-        );
+        const createResponse = await adminClient.createCompetition({
+          name: agentData[i]!.comp,
+          description: `Competition ${i} for mixed sorting`,
+        });
         expect(createResponse.success).toBe(true);
         const competition = (createResponse as CreateCompetitionResponse)
           .competition;
@@ -2796,37 +2803,21 @@ describe("User API", () => {
 
     // Create and start a competition
     const competitionName = `Best Placement Test Competition ${Date.now()}`;
-    const createCompResult = await adminClient.createCompetition(
-      competitionName,
-      "Test competition for bestPlacement verification",
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      {
-        minimum24hVolumeUsd: 0,
-        minimumFdvUsd: 0,
-        minimumLiquidityUsd: 0,
-        minimumPairAgeHours: 0,
-      },
-    );
+    const createCompResult = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Test competition for bestPlacement verification",
+      tradingConstraints: noTradingConstraints,
+    });
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const competitionId = createCompResponse.competition.id;
 
     // Enter all 5 agents in the competition
     const agentIds = createdAgents.map((agent) => agent.id);
-    const startResult = await adminClient.startExistingCompetition(
+    const startResult = await adminClient.startExistingCompetition({
       competitionId,
       agentIds,
-    );
+    });
     expect(startResult.success).toBe(true);
 
     // Create different performance levels by executing different trades
@@ -3016,19 +3007,19 @@ describe("User API", () => {
 
     // FIRST COMPETITION
     const competition1Name = `Multi Competition Test 1 ${Date.now()}`;
-    const createComp1Result = await adminClient.createCompetition(
-      competition1Name,
-      "First test competition for multi-comp verification",
-    );
+    const createComp1Result = await adminClient.createCompetition({
+      name: competition1Name,
+      description: "First test competition for multi-comp verification",
+    });
     expect(createComp1Result.success).toBe(true);
     const createComp1Response = createComp1Result as CreateCompetitionResponse;
     const competition1Id = createComp1Response.competition.id;
 
     // Start first competition with both agents
-    const startComp1Result = await adminClient.startExistingCompetition(
-      competition1Id,
-      [agent1.id, agent2.id],
-    );
+    const startComp1Result = await adminClient.startExistingCompetition({
+      competitionId: competition1Id,
+      agentIds: [agent1.id, agent2.id],
+    });
     expect(startComp1Result.success).toBe(true);
 
     // Agent 1: Make stable trade (USDC to ETH)
@@ -3056,19 +3047,19 @@ describe("User API", () => {
 
     // SECOND COMPETITION
     const competition2Name = `Multi Competition Test 2 ${Date.now()}`;
-    const createComp2Result = await adminClient.createCompetition(
-      competition2Name,
-      "Second test competition for multi-comp verification",
-    );
+    const createComp2Result = await adminClient.createCompetition({
+      name: competition2Name,
+      description: "Second test competition for multi-comp verification",
+    });
     expect(createComp2Result.success).toBe(true);
     const createComp2Response = createComp2Result as CreateCompetitionResponse;
     const competition2Id = createComp2Response.competition.id;
 
     // Start second competition with both agents
-    const startComp2Result = await adminClient.startExistingCompetition(
-      competition2Id,
-      [agent1.id, agent2.id],
-    );
+    const startComp2Result = await adminClient.startExistingCompetition({
+      competitionId: competition2Id,
+      agentIds: [agent1.id, agent2.id],
+    });
     expect(startComp2Result.success).toBe(true);
 
     // REVERSE THE TRADING PATTERNS

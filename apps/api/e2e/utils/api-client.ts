@@ -430,9 +430,10 @@ export class ApiClient {
   async startCompetition(
     params:
       | {
-          name: string;
+          name?: string;
+          competitionId?: string;
           description?: string;
-          agentIds: string[];
+          agentIds?: string[];
           tradingType?: CrossChainTradingType;
           sandboxMode?: boolean;
           externalUrl?: string;
@@ -491,34 +492,54 @@ export class ApiClient {
   /**
    * Create a competition in PENDING state
    */
-  async createCompetition(
-    name: string,
-    description?: string,
-    tradingType?: CrossChainTradingType,
-    sandboxMode?: boolean,
-    externalUrl?: string,
-    imageUrl?: string,
-    type?: string,
-    endDate?: string,
-    votingStartDate?: string,
-    votingEndDate?: string,
-    joinStartDate?: string,
-    joinEndDate?: string,
-    maxParticipants?: number,
-    tradingConstraints?: TradingConstraints,
-    rewards?: Record<number, number>,
-  ): Promise<CreateCompetitionResponse | ErrorResponse> {
+  async createCompetition({
+    name,
+    description,
+    tradingType,
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+    type,
+    startDate,
+    endDate,
+    votingStartDate,
+    votingEndDate,
+    joinStartDate,
+    joinEndDate,
+    maxParticipants,
+    tradingConstraints,
+    rewards,
+  }: {
+    name?: string;
+    description?: string;
+    tradingType?: CrossChainTradingType;
+    sandboxMode?: boolean;
+    externalUrl?: string;
+    imageUrl?: string;
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+    votingStartDate?: string;
+    votingEndDate?: string;
+    joinStartDate?: string;
+    joinEndDate?: string;
+    maxParticipants?: number;
+    tradingConstraints?: TradingConstraints;
+    rewards?: Record<number, number>;
+  }): Promise<CreateCompetitionResponse | ErrorResponse> {
+    const competitionName = name || `Test competition ${Date.now()}`;
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/competition/create",
         {
-          name,
+          name: competitionName,
           description,
           tradingType,
           sandboxMode,
           externalUrl,
           imageUrl,
           type,
+          startDate,
           endDate,
           votingStartDate,
           votingEndDate,
@@ -539,14 +560,21 @@ export class ApiClient {
   /**
    * Start an existing competition with agents
    */
-  async startExistingCompetition(
-    competitionId: string,
-    agentIds: string[],
-    crossChainTradingType?: CrossChainTradingType,
-    sandboxMode?: boolean,
-    externalUrl?: string,
-    imageUrl?: string,
-  ): Promise<StartCompetitionResponse | ErrorResponse> {
+  async startExistingCompetition({
+    competitionId,
+    agentIds,
+    crossChainTradingType,
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+  }: {
+    competitionId: string;
+    agentIds?: string[];
+    crossChainTradingType?: CrossChainTradingType;
+    sandboxMode?: boolean;
+    externalUrl?: string;
+    imageUrl?: string;
+  }): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/competition/start",
