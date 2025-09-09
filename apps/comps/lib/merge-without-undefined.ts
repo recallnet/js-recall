@@ -6,6 +6,7 @@ export function mergeWithoutUndefined<A, B extends Partial<A>>(
 
   for (const key in objB) {
     if (objB[key] !== undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (result as any)[key] = objB[key];
     }
   }

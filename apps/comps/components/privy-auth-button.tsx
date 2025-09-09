@@ -40,7 +40,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
     queryClient.invalidateQueries({ queryKey: ["user-competitions"] });
     queryClient.invalidateQueries({ queryKey: ["competitions"] });
     queryClient.invalidateQueries({ queryKey: ["competition"] });
-  }, [isAuthenticated]);
+  }, [isAuthenticated, queryClient]);
 
   useEffect(() => {
     if (error) {
