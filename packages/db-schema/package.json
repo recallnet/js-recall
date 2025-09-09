@@ -22,6 +22,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./types": {
+      "import": {
+        "types": "./dist/types.d.ts",
+        "default": "./dist/types.js"
+      },
+      "require": {
+        "types": "./dist/types.d.cts",
+        "default": "./dist/types.cjs"
+      }
+    },
     "./core/defs": {
       "import": {
         "types": "./dist/core/defs.d.ts",

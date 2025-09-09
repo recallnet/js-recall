@@ -1,7 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
 
 import { InsertUser, SelectUser } from "@recallnet/db-schema/core/types";
+import { Transaction } from "@recallnet/db-schema/types";
 
+import { db } from "@/database/db.js";
+import { updateAgentsOwner } from "@/database/repositories/agent-repository.js";
 import {
   count,
   create,
@@ -14,6 +17,7 @@ import {
   searchUsers,
   update,
 } from "@/database/repositories/user-repository.js";
+import { updateVotesOwner } from "@/database/repositories/vote-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { EmailService } from "@/services/email.service.js";
 import { UserMetadata, UserSearchParams } from "@/types/index.js";
@@ -230,8 +234,19 @@ export class UserManager {
         throw new Error(`User with ID ${user.id} not found`);
       }
 
-      const updatedUser = await update({
-        ...user,
+      // Check if another account exists with this wallet address
+      const duplicateAccount = user.walletAddress
+        ? await this.getUserByWalletAddress(user.walletAddress)
+        : null;
+
+      const updatedUser = await db.transaction(async (tx) => {
+        if (duplicateAccount) {
+          await updateAgentsOwner(duplicateAccount.id, user.id, tx);
+          await updateVotesOwner(duplicateAccount.id, user.id, tx);
+          await this.deleteUser(duplicateAccount.id, tx);
+        }
+        const updatedUser = await update({ ...user }, tx);
+        return updatedUser;
       });
 
       // Update cache
@@ -258,13 +273,13 @@ export class UserManager {
    * @param userId The user ID to delete
    * @returns true if user was deleted, false otherwise
    */
-  async deleteUser(userId: string): Promise<boolean> {
+  async deleteUser(userId: string, tx?: Transaction): Promise<boolean> {
     try {
       // Get user first to find wallet address for cache cleanup
       const user = await findById(userId);
 
       // Delete from database
-      const deleted = await deleteUser(userId);
+      const deleted = await deleteUser(userId, tx);
 
       if (deleted && user) {
         // Clean up cache

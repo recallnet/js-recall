@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { users } from "@recallnet/db-schema/core/defs";
 import { InsertUser, SelectUser } from "@recallnet/db-schema/core/types";
+import { Transaction } from "@recallnet/db-schema/types";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
@@ -162,9 +163,11 @@ async function findByPrivyIdImpl(
 /**
  * Update a user
  * @param user User data to update (must include id)
+ * @param tx An optional database transaction to run the opeation in
  */
 async function updateImpl(
   user: PartialExcept<InsertUser, "id">,
+  tx?: Transaction,
 ): Promise<SelectUser> {
   try {
     const now = new Date();
@@ -177,7 +180,8 @@ async function updateImpl(
       embeddedWalletAddress: normalizedEmbeddedWalletAddress,
       updatedAt: now,
     };
-    const [result] = await db
+    const executor = tx || db;
+    const [result] = await executor
       .update(users)
       .set(data)
       .where(eq(users.id, user.id))
@@ -197,11 +201,16 @@ async function updateImpl(
 /**
  * Delete a user by ID
  * @param id User ID to delete
+ * @param tx An optional database transaction to run the operation in
  * @returns true if user was deleted, false otherwise
  */
-async function deleteUserImpl(id: string): Promise<boolean> {
+async function deleteUserImpl(id: string, tx?: Transaction): Promise<boolean> {
   try {
-    const [result] = await db.delete(users).where(eq(users.id, id)).returning();
+    const executor = tx || db;
+    const [result] = await executor
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning();
 
     return !!result;
   } catch (error) {
