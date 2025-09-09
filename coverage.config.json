@@ -30,13 +30,15 @@
       "exclude": ["**/*.test.tsx", "**/*.test.ts"],
       "testFramework": "vitest"
     },
-    "packages/api-sdk": {
+    "packages/rewards": {
       "thresholds": {
-        "lines": 0,
-        "statements": 0,
-        "functions": 0,
-        "branches": 0
+        "lines": 100,
+        "statements": 100,
+        "functions": 100,
+        "branches": 100
       },
+      "include": ["src/**/*.ts"],
+      "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],
       "testFramework": "vitest"
     }
   }
