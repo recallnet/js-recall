@@ -1590,21 +1590,12 @@ describe("Competition API", () => {
     });
 
     // Create a competition
-<<<<<<< HEAD
     const competitionName = `Privy Detail Test Competition ${Date.now()}`;
-    const createResponse = await createTestCompetition(
-      adminClient,
-      competitionName,
-      "Test competition for Privy user access",
-    );
-=======
-    const competitionName = `SIWE Detail Test Competition ${Date.now()}`;
     const createResponse = await createTestCompetition({
       adminClient,
       name: competitionName,
-      description: "Test competition for SIWE user access",
+      description: "Test competition for Privy user access",
     });
->>>>>>> main
 
     // Test Privy user can get competition details by ID
     const detailResponse = await siweClient.getCompetition(
@@ -1722,13 +1713,8 @@ describe("Competition API", () => {
     // Create several competitions in different states
     const pendingComp = await createTestCompetition({
       adminClient,
-<<<<<<< HEAD
-      `Privy Pending Competition ${Date.now()}`,
-    );
-=======
-      name: `SIWE Pending Competition ${Date.now()}`,
+      name: `Pending Competition ${Date.now()}`,
     });
->>>>>>> main
 
     // Register an agent for active competition
     const { agent } = await registerUserAndAgentAndGetClient({
@@ -1738,15 +1724,9 @@ describe("Competition API", () => {
 
     const activeComp = await startTestCompetition({
       adminClient,
-<<<<<<< HEAD
-      `Privy Active Competition ${Date.now()}`,
-      [agent.id],
-    );
-=======
-      name: `SIWE Active Competition ${Date.now()}`,
+      name: `Active Competition ${Date.now()}`,
       agentIds: [agent.id],
     });
->>>>>>> main
 
     // Test Privy user can get pending competitions
     const pendingResponse = await siweClient.getCompetitions("pending");
