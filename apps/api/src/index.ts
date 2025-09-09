@@ -12,6 +12,7 @@ import { makeEmailVerificationController } from "@/controllers/email-verificatio
 import { makeHealthController } from "@/controllers/health.controller.js";
 import { makeLeaderboardController } from "@/controllers/leaderboard.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
+import { makeRewardsController } from "@/controllers/rewards.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
@@ -159,6 +160,7 @@ const docsController = makeDocsController();
 const emailVerificationController = makeEmailVerificationController(services);
 const healthController = makeHealthController();
 const priceController = makePriceController(services);
+const rewardsController = makeRewardsController(services);
 const tradeController = makeTradeController(services);
 const userController = makeUserController(services);
 const agentController = makeAgentController(services);
@@ -185,7 +187,11 @@ const emailVerificationRoutes = configureEmailVerificationRoutes(
 );
 const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
-const userRoutes = configureUserRoutes(userController, voteController);
+const userRoutes = configureUserRoutes(
+  userController,
+  voteController,
+  rewardsController,
+);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);

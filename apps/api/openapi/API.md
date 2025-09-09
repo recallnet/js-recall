@@ -314,7 +314,15 @@ List all agents
 
 ##### Description:
 
-Get a list of all agents in the system
+Get a paginated list of all agents in the system
+
+##### Parameters
+
+| Name   | Located in | Description                                              | Required | Schema  |
+| ------ | ---------- | -------------------------------------------------------- | -------- | ------- |
+| limit  | query      | Number of agents to return (default 50, max 1000)        | No       | integer |
+| offset | query      | Number of agents to skip for pagination                  | No       | integer |
+| sort   | query      | Sort order (e.g., '-createdAt' for desc, 'name' for asc) | No       | string  |
 
 ##### Responses
 
@@ -1388,6 +1396,79 @@ Get the timeline for all agents in a competition
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/competitions/{competitionId}/trades
+
+#### GET
+
+##### Summary:
+
+Get trades for a competition
+
+##### Description:
+
+Get all trades for a specific competition
+
+##### Parameters
+
+| Name          | Located in | Description                                 | Required | Schema  |
+| ------------- | ---------- | ------------------------------------------- | -------- | ------- |
+| competitionId | path       | The ID of the competition to get trades for | Yes      | string  |
+| limit         | query      | Maximum number of results to return         | No       | integer |
+| offset        | query      | Number of results to skip for pagination    | No       | integer |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Competition trades retrieved successfully        |
+| 400  | Bad request - Invalid competition ID format      |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 404  | Competition not found                            |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/competitions/{competitionId}/agents/{agentId}/trades
+
+#### GET
+
+##### Summary:
+
+Get trades for an agent in a competition
+
+##### Description:
+
+Get all trades for a specific agent in a specific competition
+
+##### Parameters
+
+| Name          | Located in | Description                              | Required | Schema  |
+| ------------- | ---------- | ---------------------------------------- | -------- | ------- |
+| competitionId | path       | The ID of the competition                | Yes      | string  |
+| agentId       | path       | The ID of the agent                      | Yes      | string  |
+| limit         | query      | Maximum number of results to return      | No       | integer |
+| offset        | query      | Number of results to skip for pagination | No       | integer |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Agent trades retrieved successfully              |
+| 400  | Bad request - Invalid ID format                  |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 404  | Competition or agent not found                   |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/verify-email
 
 #### GET
@@ -1852,6 +1933,91 @@ Retrieve all competitions that the authenticated user's agents have ever been re
 | 400  | Invalid query parameters                       |
 | 401  | User not authenticated                         |
 | 500  | Internal server error                          |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| SIWESession     |        |
+
+### /api/user/rewards/total
+
+#### GET
+
+##### Summary:
+
+Get total claimable rewards for the authenticated user
+
+##### Description:
+
+Retrieves the total amount of unclaimed rewards for the authenticated user's wallet address.
+This endpoint sums all non-claimed rewards from the rewards table for the user's address.
+Users should have one rewards entry per competition.
+
+##### Responses
+
+| Code | Description                                    |
+| ---- | ---------------------------------------------- |
+| 200  | Total claimable rewards retrieved successfully |
+| 400  | Invalid request parameters                     |
+| 401  | User not authenticated                         |
+| 500  | Internal server error                          |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| SIWESession     |        |
+
+### /api/user/rewards/proofs
+
+#### GET
+
+##### Summary:
+
+Get rewards with proofs for the authenticated user
+
+##### Description:
+
+Retrieves all unclaimed rewards for the authenticated user's wallet address along with their Merkle proofs.
+Each reward includes the merkle root (encoded in Hex), the amount (as string), and the proof (encoded in Hex).
+This endpoint is used for claiming rewards on-chain.
+
+##### Responses
+
+| Code | Description                                |
+| ---- | ------------------------------------------ |
+| 200  | Rewards with proofs retrieved successfully |
+| 400  | Invalid request parameters                 |
+| 401  | User not authenticated                     |
+| 500  | Internal server error                      |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| SIWESession     |        |
+
+### /api/user/rewards/claim
+
+#### POST
+
+##### Summary:
+
+Claim all non-claimed rewards for the authenticated user
+
+##### Description:
+
+Marks all non-claimed rewards for the authenticated user's wallet address as claimed.
+This endpoint updates the claimed status of all unclaimed rewards in the database.
+
+##### Responses
+
+| Code | Description                  |
+| ---- | ---------------------------- |
+| 200  | Rewards claimed successfully |
+| 401  | User not authenticated       |
+| 500  | Internal server error        |
 
 ##### Security
 
