@@ -61,16 +61,13 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Base Trading Test ${Date.now()}`;
-    await startTestCompetition(
+    await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-      undefined, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
+      name: competitionName,
+      agentIds: [agent.id],
       // disable trading constraints for testing base chain functionality
-      noTradingConstraints,
-    );
+      tradingConstraints: noTradingConstraints,
+    });
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -225,7 +222,11 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Cross-Chain Restriction Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -345,16 +346,13 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Spending Limit Test ${Date.now()}`;
-    await startTestCompetition(
+    await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-      undefined, // sandboxMode
-      undefined, // externalUrl
-      undefined, // imageUrl
+      name: competitionName,
+      agentIds: [agent.id],
       // disable trading constraints for testing base chain functionality
-      noTradingConstraints,
-    );
+      tradingConstraints: noTradingConstraints,
+    });
 
     // Wait for balances to be properly initialized
     await wait(500);

@@ -1,4 +1,3 @@
-import { DISABLE_LEADERBOARD } from "@/config";
 import {
   Agent,
   AgentApiKeyResponse,
@@ -427,24 +426,6 @@ export class ApiClient {
   async getGlobalLeaderboard(
     params: GetLeaderboardParams = {},
   ): Promise<LeaderboardResponse> {
-    // TODO(tmp): temporary removal of leaderboard endpoint
-    if (DISABLE_LEADERBOARD) {
-      return {
-        stats: {
-          activeAgents: 0,
-          totalTrades: 0,
-          totalVolume: 0,
-          totalCompetitions: 0,
-        },
-        agents: [],
-        pagination: {
-          total: 0,
-          limit: 10,
-          offset: 0,
-          hasMore: false,
-        },
-      };
-    }
     const queryParams = this.formatQueryParams(params);
     return this.request<LeaderboardResponse>(`/leaderboard${queryParams}`);
   }

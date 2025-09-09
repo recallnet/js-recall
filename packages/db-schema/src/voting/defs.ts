@@ -1,27 +1,31 @@
+import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
   customType,
   index,
   integer,
-  numeric,
+  jsonb,
   pgTable,
-  primaryKey,
   serial,
   text,
   timestamp,
   uniqueIndex,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
 
-import { agents, competitions, users } from "../core/defs.js";
+import { competitions } from "../core/defs.js";
 import { blockchainAddress, tokenAmount } from "../util.js";
 
-const bytea = customType<{ data: Uint8Array; notNull: false; default: false }>({
-  dataType() {
-    return "bytea";
-  },
+const bytea = customType<{
+  data: Uint8Array | Buffer; // what your app uses
+  driverData: Buffer; // what node-postgres returns
+  notNull: false;
+  default: false;
+}>({
+  dataType: () => "bytea",
+  toDriver: (v) => (v instanceof Buffer ? v : Buffer.from(v)),
+  fromDriver: (v) => v, // Buffer
 });
 
 export const epochs = pgTable("epochs", {
@@ -30,116 +34,6 @@ export const epochs = pgTable("epochs", {
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   endedAt: timestamp("ended_at", { withTimezone: true }),
 });
-
-export const stakes = pgTable(
-  "stakes",
-  {
-    id: uuid().primaryKey().notNull(),
-    tokenId: bigint("token_id", { mode: "bigint" }).notNull(),
-    amount: numeric("amount", { precision: 78, scale: 0 }).notNull(),
-    address: blockchainAddress("address").notNull(),
-    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
-    epochCreated: uuid("epoch_created")
-      .notNull()
-      .references(() => epochs.id),
-    stakedAt: timestamp("staked_at").notNull(),
-    canUnstakeAfter: timestamp("can_unstake_after").notNull(),
-    unstakedAt: timestamp("unstaked_at"),
-    canWithdrawAfter: timestamp("can_withdraw_after"),
-    withdrawnAt: timestamp("withdrawn_at"),
-    relockedAt: timestamp("relocked_at"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [index("idx_stakes_address").on(table.address)],
-);
-
-export const voteAssignments = pgTable(
-  "vote_assignments",
-  {
-    stakeId: uuid("stake_id")
-      .notNull()
-      .references(() => stakes.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    epoch: uuid()
-      .notNull()
-      .references(() => epochs.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    amount: tokenAmount("amount").notNull(),
-  },
-  (table) => [
-    primaryKey({
-      columns: [table.stakeId, table.userId, table.epoch],
-      name: "vote_assignments_pkey",
-    }),
-    index("idx_vote_assignments_user_epoch").on(table.userId, table.epoch),
-    index("idx_vote_assignments_epoch").on(table.epoch),
-  ],
-);
-
-export const votesAvailable = pgTable(
-  "votes_available",
-  {
-    address: varchar("address", { length: 50 }).notNull(),
-    epoch: uuid()
-      .notNull()
-      .references(() => epochs.id, { onDelete: "cascade" }),
-    amount: tokenAmount("amount").notNull(),
-    blockNumber: bigint("block_number", { mode: "bigint" }),
-    transactionHash: varchar("transaction_hash", { length: 66 }),
-    logIndex: integer("log_index"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    primaryKey({
-      columns: [table.address, table.epoch],
-      name: "votes_available_pkey",
-    }),
-  ],
-);
-
-export const votesPerformed = pgTable(
-  "votes_performed",
-  {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    agentId: uuid("agent_id")
-      .notNull()
-      .references(() => agents.id, { onDelete: "cascade" }),
-    epoch: uuid()
-      .notNull()
-      .references(() => epochs.id, { onDelete: "cascade" }),
-    amount: tokenAmount("amount").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    primaryKey({
-      columns: [table.userId, table.agentId, table.epoch],
-      name: "votes_performed_pkey",
-    }),
-    index("idx_votes_performed_agent_epoch").on(table.agentId, table.epoch),
-    index("idx_votes_performed_epoch").on(table.epoch),
-  ],
-);
 
 // Define rewards table for storing reward information
 export const rewards = pgTable(
@@ -209,4 +103,111 @@ export const rewardsRoots = pgTable(
   (table) => [
     uniqueIndex("uq_rewards_roots_competition_id").on(table.competitionId),
   ],
+);
+
+/**
+ * Canonical view of each wallet’s Boost balance.
+ *
+ * Purpose:
+ * - Tracks the *current available balance* of Boost.
+ * - One row per (wallet, competitionId) pair.
+ *
+ * Invariants / notes:
+ * - Balance is always ≥ 0 (enforced by CHECK).
+ * - `updatedAt` should be bumped on every change.
+ * - Rows are mutable — this is the live ledger state.
+ *
+ * Coupling:
+ * - Every update to `boost_balances` must have a matching immutable entry
+ *   in `boost_changes` (same transaction) for auditability/idempotency.
+ *
+ * Typical queries:
+ * - Get balance by wallet and competitionId.
+ */
+export const boostBalances = pgTable(
+  "boost_balances",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    wallet: bytea("wallet").notNull(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
+    balance: bigint("balance", { mode: "bigint" })
+      .notNull()
+      .default(sql`0`),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    // enforce one balance per (wallet, competition)
+    walletCompetitionUniq: uniqueIndex(
+      "boost_balances_wallet_competition_uniq",
+    ).on(t.wallet, t.competitionId),
+    // address must be exactly 20 bytes
+    walletLenChk: sql`CHECK (octet_length(${t.wallet}) = 20)`,
+    // balance must never be negative
+    balanceNonNegative: sql`CHECK (${t.balance} >= 0)`,
+    balanceDescIdx: index("boost_balances_balance_desc_idx").on(
+      t.competitionId,
+      sql`${t.balance} DESC`,
+    ),
+    updatedIdx: index("boost_balances_updated_at_idx").on(t.updatedAt),
+    createdIdx: index("boost_balances_created_at_idx").on(t.createdAt),
+  }),
+);
+
+/**
+ * boost_changes
+ *
+ * Immutable journal of all Boost mutations.
+ *
+ * Purpose:
+ * - Append-only log of “earn” (+X) and “spend” (−X) operations.
+ * - Provides audit trail, idempotency, and replay capability.
+ *
+ * Invariants / notes:
+ * - (balance_id, idem_key) is unique → an operation is applied at most once per balance (i.e., wallet x competitionId) entry.
+ * - `delta_amount` is signed: positive for earn, negative for spend.
+ * - `meta` holds structured context (competition id, reason, etc).
+ * - Rows are never updated or deleted.
+ *
+ * Coupling:
+ * - Insert into `boost_changes` and update `boost_balances` in the same transaction.
+ * - If the insert is skipped due to the unique constraint, skip the balance mutation
+ *   (idempotent replay).
+ *
+ * Typical queries:
+ * - Fetch wallet history ordered by created_at.
+ * - Check if a given idem_key has already been applied.
+ */
+export const boostChanges = pgTable(
+  "boost_changes",
+  {
+    id: uuid("id").primaryKey().notNull(),
+    balanceId: uuid("balance_id")
+      .notNull()
+      .references(() => boostBalances.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    deltaAmount: bigint("delta_amount", { mode: "bigint" }).notNull(), // earn:+X, spend:-X
+    meta: jsonb("meta")
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    idemKey: bytea("idem_key").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    // enforce idempotency per wallet
+    uniqBalanceIdx: uniqueIndex("boost_changes_balance_idem_uq").on(
+      t.balanceId,
+      t.idemKey,
+    ),
+    // Query pattern: history-by-wallet in time order
+    balanceCreatedIdx: index("boost_changes_balance_created_idx").on(
+      t.balanceId,
+      sql`${t.createdAt} DESC`,
+    ),
+    createdIdx: index("boost_changes_created_at_idx").on(t.createdAt),
+  }),
 );
