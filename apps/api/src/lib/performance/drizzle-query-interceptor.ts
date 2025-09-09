@@ -39,6 +39,19 @@ export abstract class DrizzleQueryInterceptor {
 
           if (queryBuilderMethods.includes(prop)) {
             return (...args: unknown[]) => {
+              // Special handling for execute method - forward args into the wrapped executor
+              if (prop === "execute") {
+                const metadata: QueryMetadata = {
+                  operation: "execute",
+                };
+                const wrappedExecute = this.handleExecution(
+                  original.bind(target),
+                  metadata,
+                );
+                return wrappedExecute(...args);
+              }
+
+              // For query builders, call the original to obtain the builder instance
               const queryBuilder = original.apply(target, args);
 
               // Extract table name for insert/update/delete operations
@@ -46,15 +59,6 @@ export abstract class DrizzleQueryInterceptor {
               if (args.length > 0 && prop !== "select") {
                 const table = args[0] as any;
                 tableName = this.extractTableName(table);
-              }
-
-              // Special handling for execute method - it directly returns a promise
-              if (prop === "execute") {
-                const metadata: QueryMetadata = {
-                  operation: "execute",
-                };
-                // Apply the execution wrapper to the original method, not the result
-                return this.handleExecution(original.bind(target), metadata);
               }
 
               // Wrap the query builder to intercept execution
