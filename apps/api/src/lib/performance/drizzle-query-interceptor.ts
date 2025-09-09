@@ -26,6 +26,20 @@ export abstract class DrizzleQueryInterceptor {
       get: (target, prop, receiver) => {
         const original = Reflect.get(target, prop, receiver);
 
+        // Handle direct db.execute() for raw SQL execution
+        if (prop === "execute" && typeof original === "function") {
+          return (...args: unknown[]) => {
+            const metadata: QueryMetadata = {
+              operation: "execute",
+            };
+            // Wrap and immediately return the execution result
+            return this.handleExecution(
+              original.bind(target),
+              metadata,
+            )(...args);
+          };
+        }
+
         // Check if this is a query builder method (select, insert, update, delete, with)
         if (typeof original === "function" && typeof prop === "string") {
           const queryBuilderMethods = [
@@ -34,11 +48,11 @@ export abstract class DrizzleQueryInterceptor {
             "update",
             "delete",
             "with",
-            "execute",
           ];
 
           if (queryBuilderMethods.includes(prop)) {
             return (...args: unknown[]) => {
+              // For query builders, call the original to obtain the builder instance
               const queryBuilder = original.apply(target, args);
 
               // Extract table name for insert/update/delete operations
@@ -46,15 +60,6 @@ export abstract class DrizzleQueryInterceptor {
               if (args.length > 0 && prop !== "select") {
                 const table = args[0] as any;
                 tableName = this.extractTableName(table);
-              }
-
-              // Special handling for execute method - it directly returns a promise
-              if (prop === "execute") {
-                const metadata: QueryMetadata = {
-                  operation: "execute",
-                };
-                // Apply the execution wrapper to the original method, not the result
-                return this.handleExecution(original.bind(target), metadata);
               }
 
               // Wrap the query builder to intercept execution

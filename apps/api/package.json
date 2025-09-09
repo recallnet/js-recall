@@ -17,6 +17,7 @@
     "test": "vitest run --project unit",
     "test:watch": "vitest watch --project unit",
     "test:e2e": "vitest run --project e2e",
+    "test:coverage": "vitest run --project unit --coverage",
     "rewards:allocate": "tsx scripts/rewards-allocate.ts",
     "rewards:insert-test-data": "tsx scripts/rewards-insert-test-data.ts",
     "db:gen-migrations": "NODE_OPTIONS='--import tsx' drizzle-kit generate",
@@ -117,12 +118,15 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^9.0.1",
+    "@vitejs/plugin-react": "^5.0.2",
+    "@vitest/coverage-v8": "^3.2.4",
     "axios": "^1.6.0",
     "axios-cookiejar-support": "^6.0.2",
     "chalk": "^5.4.1",
     "copyfiles": "^2.4.1",
     "drizzle-kit": "^0.31.1",
     "drizzle-seed": "^0.3.1",
+    "jsdom": "^26.1.0",
     "openapi-markdown": "^1.2.3",
     "siwe": "^3.0.0",
     "tough-cookie": "^5.1.2",
@@ -132,6 +136,6 @@
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.0.9"
+    "vitest": "^3.2.4"
   }
 }

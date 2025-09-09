@@ -370,25 +370,6 @@ async function countImpl() {
   }
 }
 
-/**
- * Get all trades
- * @param competitionId Optional competition ID to filter by
- */
-async function getAllTradesImpl(competitionId?: string) {
-  try {
-    const query = db.select().from(trades).orderBy(desc(trades.timestamp));
-
-    if (competitionId) {
-      query.where(eq(trades.competitionId, competitionId));
-    }
-
-    return await query;
-  } catch (error) {
-    console.error("[TradeRepository] Error in getAllTrades:", error);
-    throw error;
-  }
-}
-
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -427,12 +408,6 @@ export const count = createTimedRepositoryFunction(
   countImpl,
   "TradeRepository",
   "count",
-);
-
-export const getAllTrades = createTimedRepositoryFunction(
-  getAllTradesImpl,
-  "TradeRepository",
-  "getAllTrades",
 );
 
 export const getCompetitionTradeMetrics = createTimedRepositoryFunction(

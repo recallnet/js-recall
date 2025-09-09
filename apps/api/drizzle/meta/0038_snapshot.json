@@ -1,5 +1,5 @@
 {
-  "id": "e1103e32-3299-484a-9f16-18492fa12d4c",
+  "id": "263eac60-9e8e-48c0-b755-a78662547ae9",
   "prevId": "6df3dd85-c084-4e43-8dce-7118ad58383b",
   "version": "7",
   "dialect": "postgresql",
@@ -367,6 +367,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "is_email_verified": {
+          "name": "is_email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
         "status": {
           "name": "status",
           "type": "actor_status",
@@ -644,6 +651,27 @@
           "columns": [
             {
               "expression": "deactivated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_competition_agents_competition_status": {
+          "name": "idx_competition_agents_competition_status",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -947,6 +975,54 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_competitions_status_type_id": {
+          "name": "idx_competitions_status_type_id",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_competitions_status_end_date": {
+          "name": "idx_competitions_status_end_date",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "end_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -1056,6 +1132,27 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_competitions_leaderboard_competition_rank": {
+          "name": "idx_competitions_leaderboard_competition_rank",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "rank",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1084,6 +1181,136 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.email_verification_tokens": {
+      "name": "email_verification_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent_id": {
+          "name": "agent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token": {
+          "name": "token",
+          "type": "char(36)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used": {
+          "name": "used",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_email_verification_tokens_user_id_token": {
+          "name": "idx_email_verification_tokens_user_id_token",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "token",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_email_verification_tokens_agent_id_token": {
+          "name": "idx_email_verification_tokens_agent_id_token",
+          "columns": [
+            {
+              "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "token",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "email_verification_tokens_user_id_fkey": {
+          "name": "email_verification_tokens_user_id_fkey",
+          "tableFrom": "email_verification_tokens",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "email_verification_tokens_agent_id_fkey": {
+          "name": "email_verification_tokens_agent_id_fkey",
+          "tableFrom": "email_verification_tokens",
+          "tableTo": "agents",
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "email_verification_tokens_token_unique": {
+          "name": "email_verification_tokens_token_unique",
+          "nullsNotDistinct": false,
+          "columns": ["token"]
+        },
+        "email_verification_tokens_token_key": {
+          "name": "email_verification_tokens_token_key",
+          "nullsNotDistinct": false,
+          "columns": ["token"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.users": {
       "name": "users",
       "schema": "",
@@ -1100,24 +1327,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "wallet_last_verified_at": {
-          "name": "wallet_last_verified_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "embedded_wallet_address": {
-          "name": "embedded_wallet_address",
-          "type": "varchar(42)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "privy_id": {
-          "name": "privy_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "name": {
           "name": "name",
           "type": "varchar(100)",
@@ -1130,13 +1339,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_subscribed": {
-          "name": "is_subscribed",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "image_url": {
           "name": "image_url",
           "type": "text",
@@ -1148,6 +1350,13 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_email_verified": {
+          "name": "is_email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
         },
         "status": {
           "name": "status",
@@ -1170,12 +1379,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "last_login_at": {
-          "name": "last_login_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -1184,21 +1387,6 @@
           "columns": [
             {
               "expression": "wallet_address",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_users_privy_id": {
-          "name": "idx_users_privy_id",
-          "columns": [
-            {
-              "expression": "privy_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1233,16 +1421,6 @@
           "nullsNotDistinct": false,
           "columns": ["wallet_address"]
         },
-        "users_embedded_wallet_address_unique": {
-          "name": "users_embedded_wallet_address_unique",
-          "nullsNotDistinct": false,
-          "columns": ["embedded_wallet_address"]
-        },
-        "users_privy_id_unique": {
-          "name": "users_privy_id_unique",
-          "nullsNotDistinct": false,
-          "columns": ["privy_id"]
-        },
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
@@ -1252,11 +1430,6 @@
           "name": "users_wallet_address_key",
           "nullsNotDistinct": false,
           "columns": ["wallet_address"]
-        },
-        "users_privy_id_key": {
-          "name": "users_privy_id_key",
-          "nullsNotDistinct": false,
-          "columns": ["privy_id"]
         }
       },
       "policies": {},
@@ -1343,8 +1516,29 @@
           "method": "btree",
           "with": {}
         },
-        "idx_votes_user_competition": {
-          "name": "idx_votes_user_competition",
+        "idx_votes_user_created": {
+          "name": "idx_votes_user_created",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_votes_user_competition_created": {
+          "name": "idx_votes_user_competition_created",
           "columns": [
             {
               "expression": "user_id",
@@ -1354,6 +1548,12 @@
             },
             {
               "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2543,21 +2743,6 @@
           "method": "btree",
           "with": {}
         },
-        "idx_trades_agent_id": {
-          "name": "idx_trades_agent_id",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_trades_timestamp": {
           "name": "idx_trades_timestamp",
           "columns": [
@@ -2637,6 +2822,33 @@
               "expression": "timestamp",
               "isExpression": false,
               "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_trades_competition_agent_timestamp": {
+          "name": "idx_trades_competition_agent_timestamp",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "\"timestamp\" DESC",
+              "asc": true,
+              "isExpression": true,
               "nulls": "last"
             }
           ],

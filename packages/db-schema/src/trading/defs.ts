@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
@@ -151,7 +152,6 @@ export const trades = tradingComps.table(
     index("idx_trades_competition_id").on(table.competitionId),
     index("idx_trades_from_chain").on(table.fromChain),
     index("idx_trades_from_specific_chain").on(table.fromSpecificChain),
-    index("idx_trades_agent_id").on(table.agentId),
     index("idx_trades_timestamp").on(table.timestamp),
     index("idx_trades_to_chain").on(table.toChain),
     index("idx_trades_to_specific_chain").on(table.toSpecificChain),
@@ -160,6 +160,11 @@ export const trades = tradingComps.table(
     index("idx_trades_competition_timestamp").on(
       table.competitionId,
       table.timestamp,
+    ),
+    index("idx_trades_competition_agent_timestamp").on(
+      table.competitionId,
+      table.agentId,
+      sql`${table.timestamp} DESC`,
     ),
     foreignKey({
       columns: [table.agentId],

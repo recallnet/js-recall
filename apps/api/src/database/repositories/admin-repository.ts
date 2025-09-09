@@ -109,26 +109,6 @@ async function findByEmailImpl(
 }
 
 /**
- * Find an admin by API key
- * @param apiKey The API key to search for
- */
-async function findByApiKeyImpl(
-  apiKey: string,
-): Promise<SelectAdmin | undefined> {
-  try {
-    const [result] = await db
-      .select()
-      .from(admins)
-      .where(eq(admins.apiKey, apiKey));
-
-    return result;
-  } catch (error) {
-    repositoryLogger.error("Error in findByApiKey:", error);
-    throw error;
-  }
-}
-
-/**
  * Update an admin
  * @param admin Admin data to update (must include id)
  */
@@ -356,12 +336,6 @@ export const findByEmail = createTimedRepositoryFunction(
   findByEmailImpl,
   "AdminRepository",
   "findByEmail",
-);
-
-export const findByApiKey = createTimedRepositoryFunction(
-  findByApiKeyImpl,
-  "AdminRepository",
-  "findByApiKey",
 );
 
 export const update = createTimedRepositoryFunction(

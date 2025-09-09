@@ -348,26 +348,6 @@ async function findByOwnerIdImpl(
 }
 
 /**
- * Find an agent by API key
- * @param apiKey The API key to search for
- */
-async function findByApiKeyImpl(
-  apiKey: string,
-): Promise<SelectAgent | undefined> {
-  try {
-    const [result] = await db
-      .select()
-      .from(agents)
-      .where(eq(agents.apiKey, apiKey));
-
-    return result;
-  } catch (error) {
-    console.error("[AgentRepository] Error in findByApiKey:", error);
-    throw error;
-  }
-}
-
-/**
  * Find an agent by API key hash
  * @param apiKeyHash The API key hash to search for
  */
@@ -684,18 +664,6 @@ async function countByNameImpl(name: string): Promise<number> {
     return result?.count ?? 0;
   } catch (error) {
     repositoryLogger.error("Error in countByName:", error);
-    throw error;
-  }
-}
-
-/**
- * Find all inactive agents
- */
-async function findInactiveAgentsImpl(): Promise<SelectAgent[]> {
-  try {
-    return await db.select().from(agents).where(eq(agents.status, "suspended"));
-  } catch (error) {
-    repositoryLogger.error("Error in findInactiveAgents:", error);
     throw error;
   }
 }
@@ -1053,12 +1021,6 @@ export const findByOwnerId = createTimedRepositoryFunction(
   "findByOwnerId",
 );
 
-export const findByApiKey = createTimedRepositoryFunction(
-  findByApiKeyImpl,
-  "AgentRepository",
-  "findByApiKey",
-);
-
 export const findByApiKeyHash = createTimedRepositoryFunction(
   findByApiKeyHashImpl,
   "AgentRepository",
@@ -1129,12 +1091,6 @@ export const countByName = createTimedRepositoryFunction(
   countByNameImpl,
   "AgentRepository",
   "countByName",
-);
-
-export const findInactiveAgents = createTimedRepositoryFunction(
-  findInactiveAgentsImpl,
-  "AgentRepository",
-  "findInactiveAgents",
 );
 
 export const findUserAgentCompetitions = createTimedRepositoryFunction(
