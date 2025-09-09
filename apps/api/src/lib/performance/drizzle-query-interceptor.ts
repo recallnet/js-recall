@@ -26,6 +26,21 @@ export abstract class DrizzleQueryInterceptor {
       get: (target, prop, receiver) => {
         const original = Reflect.get(target, prop, receiver);
 
+        // Handle direct db.execute() for raw SQL execution
+        if (prop === "execute" && typeof original === "function") {
+          return (...args: unknown[]) => {
+            const metadata: QueryMetadata = {
+              operation: "execute",
+            };
+            // Wrap and immediately return the execution result
+            const wrappedExecute = this.handleExecution(
+              original.bind(target),
+              metadata,
+            );
+            return wrappedExecute(...args);
+          };
+        }
+
         // Check if this is a query builder method (select, insert, update, delete, with)
         if (typeof original === "function" && typeof prop === "string") {
           const queryBuilderMethods = [
@@ -34,23 +49,10 @@ export abstract class DrizzleQueryInterceptor {
             "update",
             "delete",
             "with",
-            "execute",
           ];
 
           if (queryBuilderMethods.includes(prop)) {
             return (...args: unknown[]) => {
-              // Special handling for execute method - forward args into the wrapped executor
-              if (prop === "execute") {
-                const metadata: QueryMetadata = {
-                  operation: "execute",
-                };
-                const wrappedExecute = this.handleExecution(
-                  original.bind(target),
-                  metadata,
-                );
-                return wrappedExecute(...args);
-              }
-
               // For query builders, call the original to obtain the builder instance
               const queryBuilder = original.apply(target, args);
 
