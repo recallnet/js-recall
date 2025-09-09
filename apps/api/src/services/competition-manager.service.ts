@@ -942,7 +942,8 @@ export class CompetitionManager {
       return metricsMap;
     } catch (error) {
       serviceLogger.error(
-        `[CompetitionManager] Error in calculateBulkAgentMetrics: ${error}`,
+        `[CompetitionManager] Error in calculateBulkAgentMetrics:`,
+        error,
       );
 
       throw new ApiError(
