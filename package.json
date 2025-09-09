@@ -22,6 +22,7 @@
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@trivago/prettier-plugin-sort-imports": "^5.2.1",
+    "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^9.22.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
