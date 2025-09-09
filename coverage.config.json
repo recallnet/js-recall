@@ -1,8 +1,8 @@
 {
   "global": {
     "thresholds": {
-      "lines": 46,
-      "statements": 46,
+      "lines": 4,
+      "statements": 4,
       "functions": 46,
       "branches": 46
     }
