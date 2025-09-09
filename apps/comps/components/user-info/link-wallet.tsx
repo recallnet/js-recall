@@ -1,11 +1,11 @@
 import { BadgeCheckIcon } from "lucide-react";
 
-import { displayAddress } from "@recallnet/address-utils/display";
 import { Button } from "@recallnet/ui2/components/button";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Clipboard } from "@/components/clipboard";
 import { ProfileResponse } from "@/types/profile";
+import { displayAddress } from "@/utils/address";
 
 export default function LinkWallet({
   user,
