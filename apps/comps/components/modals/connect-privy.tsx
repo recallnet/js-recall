@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 
-import { usePrivyAuth } from "@/hooks/usePrivyAuth";
+import { useSession } from "@/hooks/useSession";
 
 interface ConnectPrivyModalProps {
   isOpen: boolean;
@@ -23,10 +23,9 @@ export const ConnectPrivyModal: React.FC<ConnectPrivyModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { login, isAuthenticating, authError, clearError } = usePrivyAuth();
+  const { login, isPending, error } = useSession();
 
   const handleConnect = async () => {
-    clearError();
     try {
       login();
       onClose(false);
@@ -54,9 +53,9 @@ export const ConnectPrivyModal: React.FC<ConnectPrivyModalProps> = ({
 
         <div className="border-t-1 border-gray-500"></div>
 
-        {authError && (
+        {error && (
           <div className="rounded-md border border-red-500 bg-red-900/20 p-3">
-            <p className="text-sm text-red-400">{authError}</p>
+            <p className="text-sm text-red-400">{error.message}</p>
           </div>
         )}
 
@@ -73,10 +72,10 @@ export const ConnectPrivyModal: React.FC<ConnectPrivyModalProps> = ({
           <div className="flex items-center">
             <Button
               onClick={handleConnect}
-              disabled={isAuthenticating}
+              disabled={isPending}
               className="rounded-lg bg-white text-black hover:bg-gray-300 disabled:opacity-50"
             >
-              {isAuthenticating ? "Connecting..." : "Connect Account"}
+              {isPending ? "Connecting..." : "Connect Account"}
             </Button>
           </div>
         </DialogFooter>

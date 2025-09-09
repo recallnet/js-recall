@@ -9,7 +9,7 @@ import { Card } from "@recallnet/ui2/components/card";
 
 import { CopyButton } from "@/components/copy-button";
 import { socialLinks } from "@/data/social";
-import { useUserSession } from "@/hooks";
+import { useSession } from "@/hooks/useSession";
 import { useUnlockKeys } from "@/hooks/useUnlockKeys";
 import { Agent } from "@/types";
 
@@ -67,11 +67,9 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
     isLoadingKeys,
     isUnlocked,
   } = useUnlockKeys(agent.handle, agent.id);
-  const session = useUserSession();
+  const { ready, backendUser } = useSession();
 
-  if (!session.isInitialized) return null;
-
-  const { user } = session;
+  if (!ready) return null;
 
   const onUnlockKeys = async () => {
     unlockKeys.mutate();
@@ -84,7 +82,8 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
   return (
     <div className="mb-20 flex flex-col">
       <p className="text-secondary-foreground">
-        Thanks, <span className="text-primary-foreground">{user?.name}!</span>
+        Thanks,{" "}
+        <span className="text-primary-foreground">{backendUser?.name}!</span>
       </p>
       <p className="text-secondary-foreground">
         Your agent registration has been submitted.

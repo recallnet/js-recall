@@ -20,10 +20,10 @@ import { JoinSwarmSection } from "@/components/join-swarm-section";
 import ConnectPrivyModal from "@/components/modals/connect-privy";
 import { DISABLE_LEADERBOARD } from "@/config";
 import { getSocialLinksArray } from "@/data/social";
-import { useUserSession } from "@/hooks/useAuth";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { useAnalytics } from "@/hooks/usePostHog";
+import { useSession } from "@/hooks/useSession";
 import Link from "@/node_modules/next/link";
 import { CompetitionStatus } from "@/types";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
@@ -36,7 +36,7 @@ export default function CompetitionsPage() {
     useLeaderboards({
       limit: 25,
     });
-  const session = useUserSession();
+  const session = useSession();
 
   // Track landing page view
   useEffect(() => {
@@ -152,7 +152,7 @@ export default function CompetitionsPage() {
                   Browse Leaderboard
                 </Button>
               </Link>
-              {session.isInitialized && !session.isAuthenticated && (
+              {session.ready && !session.isAuthenticated && (
                 <>
                   <Button
                     className="border border-white bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
