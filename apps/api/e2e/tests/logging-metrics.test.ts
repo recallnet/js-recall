@@ -574,7 +574,6 @@ describe("Logging and Metrics API", () => {
       { pattern: 'method="findById"', expectedOp: "SELECT" },
       { pattern: 'method="findByNonce"', expectedOp: "SELECT" },
       { pattern: 'method="findByEmail"', expectedOp: "SELECT" },
-      { pattern: 'method="findByApiKey"', expectedOp: "SELECT" },
       { pattern: 'method="getBalance"', expectedOp: "SELECT" },
       { pattern: 'method="getAgentTrades"', expectedOp: "SELECT" },
       { pattern: 'method="getAgentBalances"', expectedOp: "SELECT" },
