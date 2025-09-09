@@ -1105,9 +1105,15 @@ async function get24hSnapshotsImpl(
     }
 
     if (!earliestResult || !earliestResult.rows) {
+      repositoryLogger.error(
+        `earliestResult is undefined or missing rows property: ${JSON.stringify(earliestResult)}`,
+      );
       throw new Error("earliestResult is undefined or missing rows property");
     }
     if (!snapshots24hResult || !snapshots24hResult.rows) {
+      repositoryLogger.error(
+        `snapshots24hResult is undefined or missing rows property: ${JSON.stringify(snapshots24hResult)}`,
+      );
       throw new Error(
         "snapshots24hResult is undefined or missing rows property",
       );
