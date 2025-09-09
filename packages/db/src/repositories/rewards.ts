@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sum } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { rewards, rewardsRoots, rewardsTree } from "../schema/voting/defs.js";
@@ -183,6 +183,67 @@ export class RewardsRepository {
       return updated;
     } catch (error) {
       this.#logger.error("Error in markRewardAsClaimed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the total claimable rewards for a specific address
+   * @param address The wallet address to get total claimable rewards for
+   * @returns The total amount of unclaimed rewards as a bigint
+   */
+  async getTotalClaimableRewardsByAddress(address: string): Promise<bigint> {
+    try {
+      const result = await this.#db
+        .select({ total: sum(rewards.amount) })
+        .from(rewards)
+        .where(
+          and(
+            eq(rewards.address, address.toLocaleLowerCase()),
+            eq(rewards.claimed, false),
+          ),
+        );
+
+      const total = result[0]?.total;
+      return total ? BigInt(total) : 0n;
+    } catch (error) {
+      this.#logger.error("Error in getTotalClaimableRewardsByAddress:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get rewards with their corresponding merkle roots for a specific address
+   * @param address The wallet address to get rewards for
+   * @returns Array of rewards with merkle root information
+   */
+  async getRewardsWithRootsByAddress(address: string): Promise<
+    Array<{
+      reward: SelectReward;
+      rootHash: Uint8Array;
+    }>
+  > {
+    try {
+      const result = await this.#db
+        .select({
+          reward: rewards,
+          rootHash: rewardsRoots.rootHash,
+        })
+        .from(rewards)
+        .innerJoin(
+          rewardsRoots,
+          eq(rewards.competitionId, rewardsRoots.competitionId),
+        )
+        .where(
+          and(
+            eq(rewards.address, address.toLocaleLowerCase()),
+            eq(rewards.claimed, false),
+          ),
+        );
+
+      return result;
+    } catch (error) {
+      this.#logger.error("Error in getRewardsWithRootsByAddress:", error);
       throw error;
     }
   }
