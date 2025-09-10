@@ -1,21 +1,26 @@
-import { createPublicClient, createWalletClient, http, type Hex } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
-import { base, baseSepolia } from 'viem/chains';
+import * as fs from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+import {
+  type Hex,
+  type PublicClient,
+  type WalletClient,
+  createPublicClient,
+  createWalletClient,
+  http,
+} from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
-import * as fs from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { Network, getChainForNetwork } from "./network.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const abi = JSON.parse(
-  fs.readFileSync(join(__dirname, '../contracts/abi/RewardAllocation.json'), 'utf8')
+  fs.readFileSync(
+    join(__dirname, "../contracts/abi/RewardAllocation.json"),
+    "utf8",
+  ),
 );
-
-enum Network {
-  BaseSepolia = 'baseSepolia',
-  Base = 'base',
-}
 
 interface AllocationResult {
   transactionHash: string;
@@ -23,29 +28,26 @@ interface AllocationResult {
   gasUsed: bigint;
 }
 
+interface ClaimResult {
+  transactionHash: string;
+  blockNumber: bigint;
+  gasUsed: bigint;
+}
+
 class RewardsAllocator {
-  private walletClient: any;
-  private publicClient: any;
-  private contractAddress: string;
+  private walletClient: WalletClient;
+  private publicClient: PublicClient;
+  private contractAddress: Hex;
 
   constructor(
     privateKey: Hex,
     rpcProviderUrl: string,
     contractAddress: Hex,
-    network: Network = Network.BaseSepolia
+    network: Network = Network.BaseSepolia,
   ) {
     const account = privateKeyToAccount(privateKey);
 
-    let chain;
-    switch (network) {
-      case Network.Base:
-        chain = base;
-        break;
-      case Network.BaseSepolia:
-      default:
-        chain = baseSepolia;
-        break;
-    }
+    const chain = getChainForNetwork(network);
 
     this.publicClient = createPublicClient({
       chain,
@@ -65,36 +67,33 @@ class RewardsAllocator {
     root: string,
     tokenAddress: string,
     totalAmount: bigint,
-    startTimestamp: number
+    startTimestamp: number,
   ): Promise<AllocationResult> {
-    try {
-      const { request } = await this.publicClient.simulateContract({
-        account: this.walletClient.account,
-        address: this.contractAddress,
-        abi: abi,
-        functionName: 'addAllocation',
-        args: [root, tokenAddress, totalAmount, startTimestamp],
-      });
+    const hash = await this.walletClient.writeContract({
+      account: this.walletClient.account!,
+      address: this.contractAddress,
+      abi: abi,
+      functionName: "addAllocation",
+      args: [root, tokenAddress, totalAmount, startTimestamp],
+      chain: this.walletClient.chain,
+    });
 
-      const hash = await this.walletClient.writeContract(request);
+    const receipt = await this.publicClient.waitForTransactionReceipt({
+      hash,
+    });
 
-      const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
-
-      if (receipt.status === 'success') {
-        return {
-          transactionHash: hash,
-          blockNumber: receipt.blockNumber,
-          gasUsed: receipt.gasUsed,
-        };
-      }
-
-      // #TODO: better error handling
-      throw new Error('Transaction failed');
-    } catch (error) {
-      throw error;
+    if (receipt.status === "success") {
+      return {
+        transactionHash: hash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed,
+      };
     }
+
+    throw new Error("Transaction failed. Receipt: " + JSON.stringify(receipt));
   }
 }
 
 export { Network };
+export type { AllocationResult, ClaimResult };
 export default RewardsAllocator;

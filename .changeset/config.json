@@ -14,14 +14,10 @@
   "updateInternalDependencies": "patch",
   "ignore": [
     "comps",
-    "faucet",
-    "portal",
     "api",
     "@recallnet/api-mcp",
-    "registration",
-    "@recallnet/ui",
     "@recallnet/ui2",
-    "@recallnet/react",
-    "@recallnet/api-sdk"
+    "@recallnet/api-sdk",
+    "@recallnet/db-schema"
   ]
 }

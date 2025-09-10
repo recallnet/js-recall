@@ -14,29 +14,33 @@ import {
 import { unionAll } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
 
-import { db, dbRead } from "@/database/db.js";
 import {
   competitionAgents,
   competitionRewards,
   competitions,
   competitionsLeaderboard,
-} from "@/database/schema/core/defs.js";
+} from "@recallnet/db-schema/core/defs";
 // Import for enrichment functionality
-import { votes } from "@/database/schema/core/defs.js";
+import { votes } from "@recallnet/db-schema/core/defs";
 import {
   InsertCompetition,
   InsertCompetitionAgent,
   InsertCompetitionsLeaderboard,
   UpdateCompetition,
-} from "@/database/schema/core/types.js";
+} from "@recallnet/db-schema/core/types";
 import {
   portfolioSnapshots,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
-} from "@/database/schema/trading/defs.js";
-import { tradingConstraints } from "@/database/schema/trading/defs.js";
-import { InsertTradingCompetition } from "@/database/schema/trading/types.js";
-import { InsertPortfolioSnapshot } from "@/database/schema/trading/types.js";
+} from "@recallnet/db-schema/trading/defs";
+import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
+import { InsertTradingCompetition } from "@recallnet/db-schema/trading/types";
+import {
+  InsertPortfolioSnapshot,
+  SelectPortfolioSnapshot,
+} from "@recallnet/db-schema/trading/types";
+
+import { db, dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -126,13 +130,6 @@ interface Snapshot24hResult {
 
 const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
-
-/**
- * Clear the snapshot cache - used for testing
- */
-export function clearSnapshotCache(): void {
-  snapshotCache.clear();
-}
 
 /**
  * Find all competitions
@@ -314,17 +311,7 @@ async function addAgentToCompetitionImpl(
         throw new Error(`Competition ${competitionId} not found`);
       }
 
-      // Check participant limit if one exists
-      if (
-        competition.maxParticipants &&
-        competition.registeredParticipants >= competition.maxParticipants
-      ) {
-        throw new Error(
-          `Competition has reached maximum participant limit (${competition.maxParticipants})`,
-        );
-      }
-
-      // Add the agent to the competition and check if it was actually inserted
+      // Attempt to add the agent to the competition
       const insertResult = await tx
         .insert(competitionAgents)
         .values({
@@ -337,8 +324,20 @@ async function addAgentToCompetitionImpl(
         .onConflictDoNothing()
         .returning({ insertedId: competitionAgents.agentId });
 
-      // Only increment the counter if the agent was actually inserted
+      // Only process if the agent was actually inserted (not a duplicate)
       if (insertResult.length > 0) {
+        // Check participant limit AFTER confirming this is a new registration
+        if (
+          competition.maxParticipants &&
+          competition.registeredParticipants + 1 > competition.maxParticipants
+        ) {
+          // Transaction will rollback, keeping registeredParticipants accurate
+          throw new Error(
+            `Competition has reached maximum participant limit (${competition.maxParticipants})`,
+          );
+        }
+
+        // Increment the participant counter
         await tx
           .update(competitions)
           .set({
@@ -907,7 +906,9 @@ async function createPortfolioSnapshotImpl(snapshot: InsertPortfolioSnapshot) {
  * Get latest portfolio snapshots for all active agents in a competition
  * @param competitionId Competition ID
  */
-async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
+async function getLatestPortfolioSnapshotsImpl(
+  competitionId: string,
+): Promise<SelectPortfolioSnapshot[]> {
   try {
     const result = await dbRead.execute<{
       id: number;
@@ -945,43 +946,58 @@ async function getLatestPortfolioSnapshotsImpl(competitionId: string) {
 }
 
 /**
- * Get portfolio snapshots for multiple agents in a competition efficiently
- * This replaces N+1 query patterns when getting snapshots for multiple agents
+ * Get the latest portfolio snapshot for multiple agents in a competition efficiently
  * @param competitionId Competition ID
- * @param agentIds Array of agent IDs to get snapshots for
- * @returns Array of portfolio snapshots for all specified agents
+ * @param agentIds Array of agent IDs to get latest snapshots for
+ * @returns Array containing only the most recent portfolio snapshot for each agent
  */
-async function getBulkAgentPortfolioSnapshotsImpl(
+async function getBulkLatestPortfolioSnapshotsImpl(
   competitionId: string,
   agentIds: string[],
-) {
+): Promise<SelectPortfolioSnapshot[]> {
   if (agentIds.length === 0) {
     return [];
   }
 
   try {
     repositoryLogger.debug(
-      `getBulkAgentPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
+      `getBulkLatestPortfolioSnapshots called for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
-    const result = await db
-      .select()
-      .from(portfolioSnapshots)
-      .where(
-        and(
-          eq(portfolioSnapshots.competitionId, competitionId),
-          inArray(portfolioSnapshots.agentId, agentIds),
-        ),
-      )
-      .orderBy(desc(portfolioSnapshots.timestamp));
+    // Build the SQL query using LATERAL join to get only the latest snapshot per agent
+    const result = await dbRead.execute<{
+      id: number;
+      agent_id: string;
+      competition_id: string;
+      timestamp: Date;
+      total_value: number;
+    }>(sql`
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+      CROSS JOIN LATERAL (
+        SELECT id, agent_id, competition_id, timestamp, total_value
+        FROM ${portfolioSnapshots} ps
+        WHERE ps.agent_id = agents.agent_id
+          AND ps.competition_id = ${competitionId}
+        ORDER BY ps.timestamp DESC
+        LIMIT 1
+      ) ps
+    `);
 
     repositoryLogger.debug(
-      `Retrieved ${result.length} portfolio snapshots for ${agentIds.length} agents`,
+      `Retrieved ${result.rows.length} latest portfolio snapshots for ${agentIds.length} agents`,
     );
 
-    return result;
+    // Convert snake_case to camelCase to match Drizzle SelectPortfolioSnapshot type
+    return result.rows.map((row) => ({
+      id: row.id,
+      agentId: row.agent_id,
+      competitionId: row.competition_id,
+      timestamp: row.timestamp,
+      totalValue: Number(row.total_value),
+    }));
   } catch (error) {
-    repositoryLogger.error("Error in getBulkAgentPortfolioSnapshots:", error);
+    repositoryLogger.error("Error in getBulkLatestPortfolioSnapshots:", error);
     throw error;
   }
 }
@@ -1030,44 +1046,78 @@ async function get24hSnapshotsImpl(
     const twentyFourHoursAgo = new Date(endTime - 24 * 60 * 60 * 1000);
 
     // Get earliest snapshots for each agent using efficient UNNEST + CROSS JOIN LATERAL
-    const earliestResult = await dbRead.execute<{
-      id: number;
-      agent_id: string;
-      competition_id: string;
-      timestamp: Date;
-      total_value: string;
-    }>(sql`
-      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
-      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
-      CROSS JOIN LATERAL (
-        SELECT id, agent_id, competition_id, timestamp, total_value
-        FROM trading_comps.portfolio_snapshots ps
-        WHERE ps.agent_id = agents.agent_id
-          AND ps.competition_id = ${competitionId}
-        ORDER BY ps.timestamp ASC
-        LIMIT 1
-      ) ps
-    `);
+    let earliestResult;
+    try {
+      earliestResult = await dbRead.execute<{
+        id: number;
+        agent_id: string;
+        competition_id: string;
+        timestamp: Date;
+        total_value: string;
+      }>(sql`
+        SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+        FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+        CROSS JOIN LATERAL (
+          SELECT id, agent_id, competition_id, timestamp, total_value
+          FROM trading_comps.portfolio_snapshots ps
+          WHERE ps.agent_id = agents.agent_id
+            AND ps.competition_id = ${competitionId}
+          ORDER BY ps.timestamp ASC
+          LIMIT 1
+        ) ps
+      `);
+    } catch (error) {
+      repositoryLogger.error("Error executing earliestResult query:", error);
+      throw new Error(
+        `Failed to get earliest snapshots: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
 
     // Get snapshots closest to 24h ago using efficient UNNEST + CROSS JOIN LATERAL
-    const snapshots24hResult = await dbRead.execute<{
-      id: number;
-      agent_id: string;
-      competition_id: string;
-      timestamp: Date;
-      total_value: string;
-    }>(sql`
-      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
-      FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
-      CROSS JOIN LATERAL (
-        SELECT id, agent_id, competition_id, timestamp, total_value
-        FROM trading_comps.portfolio_snapshots ps
-        WHERE ps.agent_id = agents.agent_id
-          AND ps.competition_id = ${competitionId}
-        ORDER BY ABS(EXTRACT(EPOCH FROM ps.timestamp - ${twentyFourHoursAgo}))
-        LIMIT 1
-      ) ps
-    `);
+    let snapshots24hResult;
+    try {
+      snapshots24hResult = await dbRead.execute<{
+        id: number;
+        agent_id: string;
+        competition_id: string;
+        timestamp: Date;
+        total_value: string;
+      }>(sql`
+        SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+        FROM (SELECT UNNEST(${sql`ARRAY[${sql.raw(agentIds.map((id) => `'${id}'`).join(", "))}]::uuid[]`}) as agent_id) agents
+        CROSS JOIN LATERAL (
+          SELECT id, agent_id, competition_id, timestamp, total_value
+          FROM trading_comps.portfolio_snapshots ps
+          WHERE ps.agent_id = agents.agent_id
+            AND ps.competition_id = ${competitionId}
+          ORDER BY ABS(EXTRACT(EPOCH FROM ps.timestamp - ${twentyFourHoursAgo}))
+          LIMIT 1
+        ) ps
+      `);
+    } catch (error) {
+      repositoryLogger.error(
+        "Error executing snapshots24hResult query:",
+        error,
+      );
+      throw new Error(
+        `Failed to get 24h snapshots: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+
+    if (!earliestResult || !earliestResult.rows) {
+      repositoryLogger.error(
+        `earliestResult is undefined or missing rows property: ${JSON.stringify(earliestResult)}`,
+      );
+      throw new Error("earliestResult is undefined or missing rows property");
+    }
+    if (!snapshots24hResult || !snapshots24hResult.rows) {
+      repositoryLogger.error(
+        `snapshots24hResult is undefined or missing rows property: ${JSON.stringify(snapshots24hResult)}`,
+      );
+      throw new Error(
+        "snapshots24hResult is undefined or missing rows property",
+      );
+    }
 
     repositoryLogger.debug(
       `Retrieved ${earliestResult.rows.length} earliest snapshots and ${snapshots24hResult.rows.length} 24h-ago snapshots for ${agentIds.length} agents`,
@@ -1977,10 +2027,10 @@ export const getLatestPortfolioSnapshots = createTimedRepositoryFunction(
   "getLatestPortfolioSnapshots",
 );
 
-export const getBulkAgentPortfolioSnapshots = createTimedRepositoryFunction(
-  getBulkAgentPortfolioSnapshotsImpl,
+export const getBulkLatestPortfolioSnapshots = createTimedRepositoryFunction(
+  getBulkLatestPortfolioSnapshotsImpl,
   "CompetitionRepository",
-  "getBulkAgentPortfolioSnapshots",
+  "getBulkLatestPortfolioSnapshots",
 );
 
 export const getAgentPortfolioSnapshots = createTimedRepositoryFunction(

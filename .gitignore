@@ -23,6 +23,7 @@ node_modules
 
 # Testing
 coverage
+coverage-reports
 
 # Turbo
 .turbo

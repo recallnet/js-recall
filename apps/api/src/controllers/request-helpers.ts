@@ -1,8 +1,9 @@
 import { Request } from "express";
 import qs from "qs";
 
+import { UpdateCompetitionSchema } from "@recallnet/db-schema/core/types";
+
 import { config } from "@/config/index.js";
-import { UpdateCompetitionSchema } from "@/database/schema/core/types.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AdminSearchUsersAndAgentsQuery,
@@ -11,6 +12,7 @@ import {
   AuthenticatedRequest,
   CompetitionAllowedUpdateSchema,
   PagingParamsSchema,
+  PrivyIdentityTokenSchema,
   UuidSchema,
 } from "@/types/index.js";
 
@@ -36,6 +38,24 @@ export function ensureAgentId(req: Request) {
     throw new ApiError(401, "Invalid authentication: agent ID is required");
   }
   return ensureUuid(req.agentId);
+}
+
+/**
+ * Ensure the request has a Privy identity token
+ * @param req Express request
+ * @returns The Privy identity token
+ */
+export function ensurePrivyIdentityToken(req: Request) {
+  const { success, data, error } = PrivyIdentityTokenSchema.safeParse(
+    req.privyToken,
+  );
+  if (!success) {
+    throw new ApiError(
+      401,
+      `Invalid authentication: Privy identity token: ${error.message}`,
+    );
+  }
+  return data;
 }
 
 /**
@@ -161,6 +181,40 @@ export function parseAdminSearchQuery(
     throw new ApiError(400, `Invalid request format: ${error.message}`);
   }
   return data;
+}
+
+/**
+ * Check if the error is a unique constraint violation
+ * @param error The error to check
+ * @returns The constraint if it is a unique constraint violation, undefined otherwise
+ */
+export function checkUniqueConstraintViolation(error: unknown) {
+  const e = error as {
+    code?: string;
+    constraint?: string;
+    message?: string;
+  };
+  if (e?.code === "23505") {
+    return e.constraint;
+  }
+}
+
+/**
+ * Check if the error is a unique constraint violation for a user
+ * @param error The error to check
+ * @returns The constraint if it is a unique constraint violation, undefined otherwise
+ */
+export function checkUserUniqueConstraintViolation(error: unknown) {
+  const constraint = checkUniqueConstraintViolation(error);
+  if (constraint) {
+    return constraint.includes("wallet")
+      ? "walletAddress"
+      : constraint.includes("email")
+        ? "email"
+        : constraint.includes("privy")
+          ? "privyId"
+          : "unique value";
+  }
 }
 
 /**

@@ -1,4 +1,3 @@
-import { DISABLE_LEADERBOARD } from "@/config";
 import {
   Agent,
   AgentApiKeyResponse,
@@ -25,7 +24,7 @@ import {
   GetVotesParams,
   JoinCompetitionResponse,
   LeaderboardResponse,
-  LoginRequest,
+  LinkWalletRequest,
   LoginResponse,
   NonceResponse,
   ProfileResponse,
@@ -39,11 +38,7 @@ import {
   VotingStateResponse,
 } from "@/types";
 
-// Use proxy endpoint when we have a separate API base URL to leverage Next.js rewrites
-// This eliminates cross-origin cookie issues on mobile by making all API calls same-origin
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
-  ? "/backend-api"
-  : "/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 /**
  * Base HTTP error class with status code support
@@ -139,7 +134,7 @@ export class ApiClient {
     const response = await fetch(url, {
       ...options,
       headers,
-      credentials: "include", // Include cookies for auth
+      credentials: "include", // Include cookies for auth (in case automatic cookies are enabled)
     });
 
     if (!response.ok) {
@@ -205,19 +200,20 @@ export class ApiClient {
    * @param data - Login request data
    * @returns Login response
    */
-  async login(data: LoginRequest): Promise<LoginResponse> {
+  async login(): Promise<LoginResponse> {
     return this.request<LoginResponse>("/auth/login", {
       method: "POST",
-      body: JSON.stringify(data),
     });
   }
 
   /**
-   * Logout and clear cookies
+   * Link a wallet to the authenticated user (Privy ID token provides custom wallet info)
+   * @returns Profile response
    */
-  async logout(): Promise<void> {
-    await this.request("/auth/logout", {
+  async linkWallet(data: LinkWalletRequest): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>("/user/wallet/link", {
       method: "POST",
+      body: JSON.stringify(data),
     });
   }
 
@@ -427,24 +423,6 @@ export class ApiClient {
   async getGlobalLeaderboard(
     params: GetLeaderboardParams = {},
   ): Promise<LeaderboardResponse> {
-    // TODO(tmp): temporary removal of leaderboard endpoint
-    if (DISABLE_LEADERBOARD) {
-      return {
-        stats: {
-          activeAgents: 0,
-          totalTrades: 0,
-          totalVolume: 0,
-          totalCompetitions: 0,
-        },
-        agents: [],
-        pagination: {
-          total: 0,
-          limit: 10,
-          offset: 0,
-          hasMore: false,
-        },
-      };
-    }
     const queryParams = this.formatQueryParams(params);
     return this.request<LeaderboardResponse>(`/leaderboard${queryParams}`);
   }
@@ -580,3 +558,9 @@ export class ApiClient {
     );
   }
 }
+
+/**
+ * Singleton API client instance
+ * Use this instead of creating multiple instances
+ */
+export const apiClient = new ApiClient();

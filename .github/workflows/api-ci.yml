@@ -117,8 +117,17 @@ jobs:
           - 5432:5432
 
     steps:
-      - name: Checkout Repository
+      # Setup SSH key for contracts submodule
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.STAKING_CONTRACTS_DEPLOY_KEY }}
+
+      - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -263,9 +272,6 @@ jobs:
 
           # Metrics server configuration
           METRICS_PORT=3003
-
-          # Enable auto-verify user email
-          ENABLE_AUTO_VERIFY_USER_EMAIL=true
 
           # Disable cache API
           DISABLE_CACHE_API=true

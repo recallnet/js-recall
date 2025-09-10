@@ -224,19 +224,19 @@ describe("Logging and Metrics API", () => {
 
     // Step 2: Create and start a competition
     const competitionName = `Logging Test Competition ${Date.now()}`;
-    const createCompResult = await adminClient.createCompetition(
-      competitionName,
-      "Competition to test logging during trading workflow",
-    );
+    const createCompResult = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Competition to test logging during trading workflow",
+    });
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const competitionId = createCompResponse.competition.id;
 
     // Start the competition with both agents
-    const startCompResult = await adminClient.startExistingCompetition(
+    const startCompResult = await adminClient.startExistingCompetition({
       competitionId,
-      [agent1.id, agent2.id],
-    );
+      agentIds: [agent1.id, agent2.id],
+    });
     expect(startCompResult.success).toBe(true);
 
     // Step 3: Execute multiple trades to generate logging activity
@@ -445,19 +445,19 @@ describe("Logging and Metrics API", () => {
 
     // Create a competition to trigger even more database operations
     const competitionName = `DB Classification Test Competition ${Date.now()}`;
-    const createCompResult = await client.createCompetition(
-      competitionName,
-      "Competition to test database operation classification",
-    );
+    const createCompResult = await client.createCompetition({
+      name: competitionName,
+      description: "Competition to test database operation classification",
+    });
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const competitionId = createCompResponse.competition.id;
 
     // Start the competition with the agent
-    const startCompResult = await client.startExistingCompetition(
+    const startCompResult = await client.startExistingCompetition({
       competitionId,
-      [agent.id],
-    );
+      agentIds: [agent.id],
+    });
     expect(startCompResult.success).toBe(true);
 
     // Execute operations that trigger different types of database operations
@@ -574,7 +574,6 @@ describe("Logging and Metrics API", () => {
       { pattern: 'method="findById"', expectedOp: "SELECT" },
       { pattern: 'method="findByNonce"', expectedOp: "SELECT" },
       { pattern: 'method="findByEmail"', expectedOp: "SELECT" },
-      { pattern: 'method="findByApiKey"', expectedOp: "SELECT" },
       { pattern: 'method="getBalance"', expectedOp: "SELECT" },
       { pattern: 'method="getAgentTrades"', expectedOp: "SELECT" },
       { pattern: 'method="getAgentBalances"', expectedOp: "SELECT" },

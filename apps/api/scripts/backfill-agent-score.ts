@@ -4,16 +4,17 @@ import { Rating, rate, rating } from "openskill";
 import * as readline from "readline";
 import { parse } from "ts-command-line-args";
 
-import { db } from "@/database/db.js";
-import * as competitionRepo from "@/database/repositories/competition-repository.js";
 import {
   competitionAgents,
   competitions,
-} from "@/database/schema/core/defs.js";
+} from "@recallnet/db-schema/core/defs";
 import {
   agentScore,
   agentScoreHistory,
-} from "@/database/schema/ranking/defs.js";
+} from "@recallnet/db-schema/ranking/defs";
+
+import { db } from "@/database/db.js";
+import * as competitionRepo from "@/database/repositories/competition-repository.js";
 
 interface Args {
   competitions: string;

@@ -18,9 +18,9 @@ import {
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
 
-import { useUserSession } from "@/hooks/useAuth";
+import { useSession } from "@/hooks/useSession";
 
-import { ConnectWalletModal } from "./modals/connect-wallet";
+import { ConnectPrivyModal } from "./modals/connect-privy";
 import { SetupAgentModal } from "./modals/setup-agent";
 
 const formSchema = z.object({
@@ -31,9 +31,9 @@ type FormData = z.infer<typeof formSchema>;
 
 export const RegisterAgentBlock: React.FC = () => {
   const pathname = usePathname();
-  const session = useUserSession();
+  const session = useSession();
   const [activeModal, setActiveModal] = useState<
-    "connectWallet" | "setupAgent" | null
+    "connectAccount" | "setupAgent" | null
   >(null);
 
   const form = useForm<FormData>({
@@ -44,12 +44,12 @@ export const RegisterAgentBlock: React.FC = () => {
   });
 
   const handleAddAgent = () => {
-    if (!session.isInitialized) {
+    if (!session.ready) {
       return;
     }
 
     if (!session.isAuthenticated) {
-      setActiveModal("connectWallet");
+      setActiveModal("connectAccount");
       return;
     }
 
@@ -139,8 +139,8 @@ export const RegisterAgentBlock: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <ConnectWalletModal
-        isOpen={activeModal === "connectWallet"}
+      <ConnectPrivyModal
+        isOpen={activeModal === "connectAccount"}
         onClose={() => setActiveModal(null)}
       />
       <SetupAgentModal

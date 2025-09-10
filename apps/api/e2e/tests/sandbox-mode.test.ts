@@ -51,12 +51,12 @@ describe("Sandbox Mode", () => {
 
       // Create and start a sandbox competition with the dummy agent
       const competitionName = `Sandbox Test Competition ${Date.now()}`;
-      const competitionResponse = await startTestCompetition(
+      const competitionResponse = await startTestCompetition({
         adminClient,
-        competitionName,
-        [dummyAgent!.id],
-        true, // sandboxMode = true
-      );
+        name: competitionName,
+        agentIds: [dummyAgent!.id],
+        sandboxMode: true,
+      });
       expect(competitionResponse.success).toBe(true);
       const competition = competitionResponse.competition;
       expect(competition.sandboxMode).toBe(true);
@@ -150,12 +150,12 @@ describe("Sandbox Mode", () => {
 
       // Create and start a NON-sandbox competition
       const competitionName = `Non-Sandbox Test Competition ${Date.now()}`;
-      const competitionResponse = await startTestCompetition(
+      const competitionResponse = await startTestCompetition({
         adminClient,
-        competitionName,
-        [dummyAgent!.id],
-        false, // sandboxMode = false
-      );
+        name: competitionName,
+        agentIds: [dummyAgent!.id],
+        sandboxMode: false,
+      });
       expect(competitionResponse.success).toBe(true);
       const competition = competitionResponse.competition;
       expect(competition.sandboxMode).toBe(false);
@@ -275,12 +275,12 @@ describe("Sandbox Mode", () => {
 
       // Create and start a sandbox competition
       const competitionName = `Multi-Agent Sandbox Test ${Date.now()}`;
-      const competitionResponse = await startTestCompetition(
+      const competitionResponse = await startTestCompetition({
         adminClient,
-        competitionName,
-        [dummyAgent!.id],
-        true, // sandboxMode = true
-      );
+        name: competitionName,
+        agentIds: [dummyAgent!.id],
+        sandboxMode: true,
+      });
       expect(competitionResponse.success).toBe(true);
       const competition = competitionResponse.competition;
 
@@ -370,12 +370,12 @@ describe("Sandbox Mode", () => {
 
       // Start a sandbox competition
       const competitionName = `Separate Registration Test ${Date.now()}`;
-      const competitionResponse = await startTestCompetition(
+      const competitionResponse = await startTestCompetition({
         adminClient,
-        competitionName,
-        [dummyAgent!.id],
-        true, // sandboxMode = true
-      );
+        name: competitionName,
+        agentIds: [dummyAgent!.id],
+        sandboxMode: true,
+      });
       expect(competitionResponse.success).toBe(true);
       const competition = competitionResponse.competition;
 
@@ -421,12 +421,12 @@ describe("Sandbox Mode", () => {
 
   test("should create competition with sandboxMode=true", async () => {
     const competitionName = `Sandbox Creation Test ${Date.now()}`;
-    const competitionResponse = await createTestCompetition(
+    const competitionResponse = await createTestCompetition({
       adminClient,
-      competitionName,
-      "Test competition with sandbox mode enabled",
-      true, // sandboxMode = true
-    );
+      name: competitionName,
+      description: "Test competition with sandbox mode enabled",
+      sandboxMode: true,
+    });
 
     expect(competitionResponse.success).toBe(true);
     const competition = competitionResponse.competition;
@@ -437,12 +437,12 @@ describe("Sandbox Mode", () => {
 
   test("should create competition with sandboxMode=false", async () => {
     const competitionName = `Non-Sandbox Creation Test ${Date.now()}`;
-    const competitionResponse = await createTestCompetition(
+    const competitionResponse = await createTestCompetition({
       adminClient,
-      competitionName,
-      "Test competition with sandbox mode disabled",
-      false, // sandboxMode = false
-    );
+      name: competitionName,
+      description: "Test competition with sandbox mode disabled",
+      sandboxMode: false,
+    });
 
     expect(competitionResponse.success).toBe(true);
     const competition = competitionResponse.competition;
@@ -453,11 +453,11 @@ describe("Sandbox Mode", () => {
 
   test("should default sandboxMode to false when not specified", async () => {
     const competitionName = `Default Sandbox Test ${Date.now()}`;
-    const competitionResponse = await createTestCompetition(
+    const competitionResponse = await createTestCompetition({
       adminClient,
-      competitionName,
-      "Test competition with default sandbox mode",
-    );
+      name: competitionName,
+      description: "Test competition with default sandbox mode",
+    });
 
     expect(competitionResponse.success).toBe(true);
     const competition = competitionResponse.competition;
@@ -475,24 +475,23 @@ describe("Sandbox Mode", () => {
 
     // Create a pending competition with sandbox mode
     const competitionName = `Pending Sandbox Start Test ${Date.now()}`;
-    const createResponse = await createTestCompetition(
+    const createResponse = await createTestCompetition({
       adminClient,
-      competitionName,
-      "Test starting pending competition with sandbox mode",
-      true, // sandboxMode = true
-    );
+      name: competitionName,
+      description: "Test starting pending competition with sandbox mode",
+      sandboxMode: true,
+    });
     expect(createResponse.success).toBe(true);
     const pendingCompetition = createResponse.competition;
     expect(pendingCompetition.sandboxMode).toBe(true);
     expect(pendingCompetition.status).toBe("pending");
 
     // Start the competition
-    const startResponse = await adminClient.startExistingCompetition(
-      pendingCompetition.id,
-      [agent1.id, agent2.id],
-      undefined, // crossChainTradingType
-      true, // sandboxMode - should maintain or override the setting
-    );
+    const startResponse = await adminClient.startExistingCompetition({
+      competitionId: pendingCompetition.id,
+      agentIds: [agent1.id, agent2.id],
+      sandboxMode: true, // sandboxMode - should maintain or override the setting,
+    });
     expect(startResponse.success).toBe(true);
     const startedCompetition = (startResponse as StartCompetitionResponse)
       .competition;
@@ -508,12 +507,12 @@ describe("Sandbox Mode", () => {
 
     // Start a sandbox competition with this agent
     const competitionName = `Duplicate Join Test ${Date.now()}`;
-    const competitionResponse = await startTestCompetition(
+    const competitionResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-      true, // sandboxMode = true
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+      sandboxMode: true, // sandboxMode = true
+    });
     expect(competitionResponse.success).toBe(true);
     const competition = competitionResponse.competition;
 
@@ -542,12 +541,12 @@ describe("Sandbox Mode", () => {
 
     // Start first sandbox competition
     const competition1Name = `First Sandbox Competition ${Date.now()}`;
-    const competition1Response = await startTestCompetition(
+    const competition1Response = await startTestCompetition({
       adminClient,
-      competition1Name,
-      [agent1.id],
-      true, // sandboxMode = true
-    );
+      name: competition1Name,
+      agentIds: [agent1.id],
+      sandboxMode: true, // sandboxMode = true
+    });
     expect(competition1Response.success).toBe(true);
     const competition1 = competition1Response.competition;
 
@@ -556,12 +555,12 @@ describe("Sandbox Mode", () => {
 
     // This should fail because only one competition can be active at a time
     try {
-      await startTestCompetition(
+      await startTestCompetition({
         adminClient,
-        competition2Name,
-        [agent2.id],
-        true, // sandboxMode = true
-      );
+        name: competition2Name,
+        agentIds: [agent2.id],
+        sandboxMode: true, // sandboxMode = true
+      });
       // If we get here, the test should fail
       expect(true).toBe(false); // Force failure
     } catch (error) {
@@ -596,12 +595,12 @@ describe("Sandbox Mode", () => {
 
     // Create and start a sandbox competition with the dummy agent
     const competitionName = `Sandbox Test Competition ${Date.now()}`;
-    const competitionResponse = await startTestCompetition(
+    const competitionResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [dummyAgent!.id],
-      true, // sandboxMode = true
-    );
+      name: competitionName,
+      agentIds: [dummyAgent!.id],
+      sandboxMode: true, // sandboxMode = true
+    });
     expect(competitionResponse.success).toBe(true);
     const competition = competitionResponse.competition;
     expect(competition.sandboxMode).toBe(true);

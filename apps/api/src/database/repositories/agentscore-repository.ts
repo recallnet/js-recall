@@ -1,17 +1,18 @@
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
-import { db } from "@/database/db.js";
-import { agents } from "@/database/schema/core/defs.js";
+import { agents } from "@recallnet/db-schema/core/defs";
 import {
   agentScore,
   agentScoreHistory,
-} from "@/database/schema/ranking/defs.js";
+} from "@recallnet/db-schema/ranking/defs";
 import {
   InsertAgentScore,
   InsertAgentScoreHistory,
   SelectAgentScore,
-} from "@/database/schema/ranking/types.js";
+} from "@recallnet/db-schema/ranking/types";
+
+import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { AgentMetadata } from "@/types/index.js";
@@ -223,18 +224,6 @@ async function batchUpsertAgentScores(
   return result.rows as SelectAgentScore[];
 }
 
-/**
- * Get all raw agent ranks (without joins)
- */
-async function getAllRawAgentRanksImpl() {
-  try {
-    return await db.select().from(agentScore).orderBy(desc(agentScore.ordinal));
-  } catch (error) {
-    repositoryLogger.error("Error in getAllRawAgentRanks:", error);
-    throw error;
-  }
-}
-
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -260,10 +249,4 @@ export const getAllAgentRankHistory = createTimedRepositoryFunction(
   getAllAgentRankHistoryImpl,
   "AgentScoreRepository",
   "getAllAgentRankHistory",
-);
-
-export const getAllRawAgentRanks = createTimedRepositoryFunction(
-  getAllRawAgentRanksImpl,
-  "AgentScoreRepository",
-  "getAllRawAgentRanks",
 );

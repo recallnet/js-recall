@@ -17,10 +17,9 @@ alwaysApply: true
 - **Prettier:** Maintain consistent formatting using Prettier (configuration likely shared or in `package.json` under the "format" action).
 
 ## Application Development (Next.js)
-- **Framework:** Use Next.js for web applications (`apps/portal`, `apps/faucet`).
+- **Framework:** Use Next.js for web applications (`apps/comps`).
 - **Structure:** Follow the standard Next.js App Router directory structure (`app/`).
 - **UI:** Implement responsive designs suitable for various screen sizes. The primary UI component library is `@recallnet/ui`. Standard state management patterns are TBD (use component state or React Context unless otherwise specified).
-- **Interactions:** Note that `apps/portal` heavily relies on `@recallnet/ui` and `@recallnet/sdk`.
 
 ## Specific Libraries & Packages
 - **UI Components:** Use the shared `@recallnet/ui` library for common UI elements when possible.
@@ -35,8 +34,7 @@ alwaysApply: true
 Details the specific layout of this monorepo:
 
 ### Apps (`apps/*`)
-- `portal/`: Main web application for Recall ([README](mdc:apps/portal/README.md))
-- `faucet/`: Faucet application
+- `comps/`: Trading competitions web application
 
 ### Packages (`packages/*`)
 **Core Libraries:**
@@ -78,7 +76,7 @@ Before marking a task complete or merging code, the following commands **MUST** 
 Commonly used scripts defined in `package.json` or `turbo.json`:
 
 - `pnpm build`: Build all packages and apps.
-- `pnpm dev`: Run the development environment (likely starts `portal` and potentially other apps).
+- `pnpm dev`: Run the development environment, starting the api and comps apps.
 - `pnpm lint`: Run ESLint checks across the monorepo.
 - `pnpm format`: Format code with Prettier.
 - `pnpm format:check`: Check formatting without making changes.

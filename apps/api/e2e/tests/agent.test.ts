@@ -3,8 +3,9 @@ import { eq } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { agents } from "@recallnet/db-schema/core/defs";
+
 import { config } from "@/config/index.js";
-import { agents } from "@/database/schema/core/defs.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentsListResponse,
@@ -26,7 +27,7 @@ import { dbManager } from "@/e2e/utils/db-manager.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   createAgentVerificationSignature,
-  createSiweAuthenticatedClient,
+  createPrivyAuthenticatedClient,
   createTestClient,
   generateRandomEthAddress,
   getAdminApiKey,
@@ -414,19 +415,19 @@ describe("Agent API", () => {
 
     // Step 2: Create and start first competition with the agent
     const firstCompName = `Competition 1 ${Date.now()}`;
-    const createCompResult = await adminClient.createCompetition(
-      firstCompName,
-      "First test competition",
-    );
+    const createCompResult = await adminClient.createCompetition({
+      name: firstCompName,
+      description: "First test competition",
+    });
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const firstCompetitionId = createCompResponse.competition.id;
 
     // Start the first competition with our agent
-    const startCompResult = await adminClient.startExistingCompetition(
-      firstCompetitionId,
-      [agent.id],
-    );
+    const startCompResult = await adminClient.startExistingCompetition({
+      competitionId: firstCompetitionId,
+      agentIds: [agent.id],
+    });
     expect(startCompResult.success).toBe(true);
 
     // Verify agent can use API during first competition
@@ -447,19 +448,19 @@ describe("Agent API", () => {
 
     // Step 4: Create and start a second competition with the same agent
     const secondCompName = `Competition 2 ${Date.now()}`;
-    const createCompResult2 = await adminClient.createCompetition(
-      secondCompName,
-      "Second test competition",
-    );
+    const createCompResult2 = await adminClient.createCompetition({
+      name: secondCompName,
+      description: "Second test competition",
+    });
     expect(createCompResult2.success).toBe(true);
     const createCompResponse2 = createCompResult2 as CreateCompetitionResponse;
     const secondCompetitionId = createCompResponse2.competition.id;
 
     // Start the second competition with the same agent
-    const startCompResult2 = await adminClient.startExistingCompetition(
-      secondCompetitionId,
-      [agent.id],
-    );
+    const startCompResult2 = await adminClient.startExistingCompetition({
+      competitionId: secondCompetitionId,
+      agentIds: [agent.id],
+    });
     expect(startCompResult2.success).toBe(true);
 
     // Step 5: Verify agent can still use API after being added to second competition
@@ -495,19 +496,19 @@ describe("Agent API", () => {
 
     // Step 2: Create and start a competition with the agent
     const compName = `Cache Test Competition ${Date.now()}`;
-    const createCompResult = await adminClient.createCompetition(
-      compName,
-      "Competition to test cache consistency",
-    );
+    const createCompResult = await adminClient.createCompetition({
+      name: compName,
+      description: "Competition to test cache consistency",
+    });
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const competitionId = createCompResponse.competition.id;
 
     // Start the competition with our agent
-    const startCompResult = await adminClient.startExistingCompetition(
+    const startCompResult = await adminClient.startExistingCompetition({
       competitionId,
-      [agent.id],
-    );
+      agentIds: [agent.id],
+    });
     expect(startCompResult.success).toBe(true);
 
     // Step 3: Verify initial API functionality
@@ -1054,18 +1055,18 @@ describe("Agent API", () => {
 
     // NOTE: we can't have more than one active comp right now
     async function createComp(compName: string) {
-      const createCompResult = await adminClient.createCompetition(
-        compName,
-        `Test competition ${compName}`,
-      );
+      const createCompResult = await adminClient.createCompetition({
+        name: compName,
+        description: `Test competition ${compName}`,
+      });
       expect(createCompResult.success).toBe(true);
       const createCompResponse = createCompResult as CreateCompetitionResponse;
       createdCompetitions.push(createCompResponse.competition);
 
-      const startCompResult = await adminClient.startExistingCompetition(
-        createCompResponse.competition.id,
-        [agent.id],
-      );
+      const startCompResult = await adminClient.startExistingCompetition({
+        competitionId: createCompResponse.competition.id,
+        agentIds: [agent.id],
+      });
 
       expect(startCompResult.success).toBe(true);
     }
@@ -1074,17 +1075,17 @@ describe("Agent API", () => {
     await adminClient.endCompetition(createdCompetitions[0]?.id as string);
     await createComp(competitionNames[1] as string);
 
-    const pendingCompResponse = await adminClient.createCompetition(
-      competitionNames[2] as string,
-      `Test competition ${competitionNames[2] as string}`,
-    );
+    const pendingCompResponse = await adminClient.createCompetition({
+      name: competitionNames[2] as string,
+      description: `Test competition ${competitionNames[2] as string}`,
+    });
     expect(pendingCompResponse.success).toBe(true);
 
     // make sure there is at least one comp that the agent is not part of so we can test that it is not returned in the responses
-    const notJoinedCompResponse = await adminClient.createCompetition(
-      competitionNames[2] as string,
-      `Test competition ${competitionNames[2] as string}`,
-    );
+    const notJoinedCompResponse = await adminClient.createCompetition({
+      name: competitionNames[2] as string,
+      description: `Test competition ${competitionNames[2] as string}`,
+    });
     expect(notJoinedCompResponse.success).toBe(true);
 
     const pendingComp = pendingCompResponse as CreateCompetitionResponse;
@@ -1447,7 +1448,7 @@ describe("Agent API", () => {
       expect(nonceResponse).toEqual({
         success: false,
         error:
-          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
 
@@ -1474,7 +1475,7 @@ Purpose: WALLET_VERIFICATION`;
       expect(verifyResponse).toEqual({
         success: false,
         error:
-          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
     });
@@ -1645,7 +1646,7 @@ Purpose: WALLET_VERIFICATION`;
       expect(response).toEqual({
         success: false,
         error:
-          "Authentication required. No active session and no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
     });
@@ -1806,16 +1807,19 @@ Purpose: WALLET_VERIFICATION`;
 
     // Step 2: Create and start first competition with the agent
     const firstCompName = `Competition 1 ${Date.now()}`;
-    const createCompResult = await adminClient.createCompetition(
-      firstCompName,
-      "First test competition",
-    );
+    const createCompResult = await adminClient.createCompetition({
+      name: firstCompName,
+      description: "First test competition",
+    });
     expect(createCompResult.success).toBe(true);
     const createCompResponse = createCompResult as CreateCompetitionResponse;
     const firstCompetitionId = createCompResponse.competition.id;
 
     // Start the first competition with our agent
-    await adminClient.startExistingCompetition(firstCompetitionId, [agent.id]);
+    await adminClient.startExistingCompetition({
+      competitionId: firstCompetitionId,
+      agentIds: [agent.id],
+    });
     await agentClient.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Burn address - make agent 1 lose
@@ -1948,15 +1952,18 @@ Purpose: WALLET_VERIFICATION`;
 
       // Create and start competition
       const compName = `Leave Competition Test ${Date.now()}`;
-      const createCompResult = await adminClient.createCompetition(
-        compName,
-        "Test competition for leave functionality",
-      );
+      const createCompResult = await adminClient.createCompetition({
+        name: compName,
+        description: "Test competition for leave functionality",
+      });
       expect(createCompResult.success).toBe(true);
       const competitionId = (createCompResult as CreateCompetitionResponse)
         .competition.id;
 
-      await adminClient.startExistingCompetition(competitionId, [agent.id]);
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent.id],
+      });
 
       // Verify agent can access API while in active competition
       const profileResponse1 = await agentClient.getAgentProfile();
@@ -1991,15 +1998,18 @@ Purpose: WALLET_VERIFICATION`;
 
       // Create and start competition
       const compName = `Competition End Test ${Date.now()}`;
-      const createCompResult = await adminClient.createCompetition(
-        compName,
-        "Test competition for end functionality",
-      );
+      const createCompResult = await adminClient.createCompetition({
+        name: compName,
+        description: "Test competition for end functionality",
+      });
       expect(createCompResult.success).toBe(true);
       const competitionId = (createCompResult as CreateCompetitionResponse)
         .competition.id;
 
-      await adminClient.startExistingCompetition(competitionId, [agent.id]);
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent.id],
+      });
 
       // Verify agent can access API during competition
       const profileResponse1 = await agentClient.getAgentProfile();
@@ -2032,15 +2042,18 @@ Purpose: WALLET_VERIFICATION`;
 
       // Create and start competition
       const compName = `History Test ${Date.now()}`;
-      const createCompResult = await adminClient.createCompetition(
-        compName,
-        "Test competition for history preservation",
-      );
+      const createCompResult = await adminClient.createCompetition({
+        name: compName,
+        description: "Test competition for history preservation",
+      });
       expect(createCompResult.success).toBe(true);
       const competitionId = (createCompResult as CreateCompetitionResponse)
         .competition.id;
 
-      await adminClient.startExistingCompetition(competitionId, [agent.id]);
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent.id],
+      });
 
       // Execute a trade to create history
       await agentClient.executeTrade({
@@ -2093,19 +2106,19 @@ Purpose: WALLET_VERIFICATION`;
 
       // Create and start a competition
       const compName = `Enhanced Metrics Test ${Date.now()}`;
-      const createCompResult = await adminClient.createCompetition(
-        compName,
-        "Test competition for enhanced metrics",
-      );
+      const createCompResult = await adminClient.createCompetition({
+        name: compName,
+        description: "Test competition for enhanced metrics",
+      });
       expect(createCompResult.success).toBe(true);
       const createCompResponse = createCompResult as CreateCompetitionResponse;
       const competitionId = createCompResponse.competition.id;
 
       // Start the competition with both agents
-      await adminClient.startExistingCompetition(competitionId, [
-        agent1.id,
-        agent2.id,
-      ]);
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent1.id, agent2.id],
+      });
 
       // Execute some trades for agent1 to generate metrics
       await agentClient1.executeTrade({
@@ -2180,24 +2193,27 @@ Purpose: WALLET_VERIFICATION`;
       const comp1Name = `Competition A ${Date.now()}`;
       const comp2Name = `Competition B ${Date.now()}`;
 
-      const createComp1Result = await adminClient.createCompetition(
-        comp1Name,
-        "First competition for sorting test",
-      );
+      const createComp1Result = await adminClient.createCompetition({
+        name: comp1Name,
+        description: "First competition for sorting test",
+      });
       expect(createComp1Result.success).toBe(true);
       const comp1Id = (createComp1Result as CreateCompetitionResponse)
         .competition.id;
 
-      const createComp2Result = await adminClient.createCompetition(
-        comp2Name,
-        "Second competition for sorting test",
-      );
+      const createComp2Result = await adminClient.createCompetition({
+        name: comp2Name,
+        description: "Second competition for sorting test",
+      });
       expect(createComp2Result.success).toBe(true);
       const comp2Id = (createComp2Result as CreateCompetitionResponse)
         .competition.id;
 
       // Start comp1 first (respecting single active competition constraint)
-      await adminClient.startExistingCompetition(comp1Id, [agent.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: comp1Id,
+        agentIds: [agent.id],
+      });
 
       // Execute different numbers of trades in each competition
       // Competition 1: 1 trade
@@ -2210,7 +2226,10 @@ Purpose: WALLET_VERIFICATION`;
 
       // End comp1 and start comp2 (respecting single active competition constraint)
       await adminClient.endCompetition(comp1Id);
-      await adminClient.startExistingCompetition(comp2Id, [agent.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: comp2Id,
+        agentIds: [agent.id],
+      });
       await agentClient.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
@@ -2301,16 +2320,19 @@ Purpose: WALLET_VERIFICATION`;
 
       // Create a competition but don't execute any trades
       const compName = `No Trades Competition ${Date.now()}`;
-      const createCompResult = await adminClient.createCompetition(
-        compName,
-        "Competition with no trades for edge case testing",
-      );
+      const createCompResult = await adminClient.createCompetition({
+        name: compName,
+        description: "Competition with no trades for edge case testing",
+      });
       expect(createCompResult.success).toBe(true);
       const competitionId = (createCompResult as CreateCompetitionResponse)
         .competition.id;
 
       // Start the competition with just this agent
-      await adminClient.startExistingCompetition(competitionId, [agent.id]);
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent.id],
+      });
 
       // Get competitions without any trades or portfolio snapshots
       const competitionsResponse = await agentClient.getAgentCompetitions(
@@ -2448,19 +2470,19 @@ Purpose: WALLET_VERIFICATION`;
 
       // Create a competition with all 4 agents
       const compName = `Multi-Agent Ranking Test ${Date.now()}`;
-      const createCompResult = await adminClient.createCompetition(
-        compName,
-        "Competition for testing multi-agent ranking accuracy",
-      );
+      const createCompResult = await adminClient.createCompetition({
+        name: compName,
+        description: "Competition for testing multi-agent ranking accuracy",
+      });
       expect(createCompResult.success).toBe(true);
       const competitionId = (createCompResult as CreateCompetitionResponse)
         .competition.id;
 
       // Start competition with all agents
-      await adminClient.startExistingCompetition(
+      await adminClient.startExistingCompetition({
         competitionId,
-        agents.map((agent) => agent.id),
-      );
+        agentIds: agents.map((agent) => agent.id),
+      });
 
       // Execute different trading strategies to create distinct performance levels
       // Agent 1: Top performer (keeps valuable assets - ETH)
@@ -2613,20 +2635,20 @@ Purpose: WALLET_VERIFICATION`;
 
       for (let i = 1; i <= 3; i++) {
         const compName = `Cross-Competition Test ${i} ${Date.now()}`;
-        const createCompResult = await adminClient.createCompetition(
-          compName,
-          `Competition ${i} for cross-competition testing`,
-        );
+        const createCompResult = await adminClient.createCompetition({
+          name: compName,
+          description: `Competition ${i} for cross-competition testing`,
+        });
         expect(createCompResult.success).toBe(true);
         const competitionId = (createCompResult as CreateCompetitionResponse)
           .competition.id;
         competitions.push(competitionId);
 
         // Start this competition with both agents
-        await adminClient.startExistingCompetition(competitionId, [
-          agent1.id,
-          agent2.id,
-        ]);
+        await adminClient.startExistingCompetition({
+          competitionId,
+          agentIds: [agent1.id, agent2.id],
+        });
 
         // Execute trades in this competition with different patterns
         // Agent 1: Escalating strategy (1, 2, 3 trades respectively)
@@ -2822,20 +2844,20 @@ Purpose: WALLET_VERIFICATION`;
 
       // Create a competition with all 3 agents
       const compName = `Active-Disqualified Ranking Test ${Date.now()}`;
-      const createCompResult = await adminClient.createCompetition(
-        compName,
-        "Competition for testing active vs disqualified agent ranking behavior",
-      );
+      const createCompResult = await adminClient.createCompetition({
+        name: compName,
+        description:
+          "Competition for testing active vs disqualified agent ranking behavior",
+      });
       expect(createCompResult.success).toBe(true);
       const competitionId = (createCompResult as CreateCompetitionResponse)
         .competition.id;
 
       // Start competition with all agents
-      await adminClient.startExistingCompetition(competitionId, [
-        agent1.id,
-        agent2.id,
-        agent3.id,
-      ]);
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent1.id, agent2.id, agent3.id],
+      });
 
       // Execute trades to create different performance levels
       // Agent 1: Good performance (buys ETH)
@@ -2995,9 +3017,8 @@ Purpose: WALLET_VERIFICATION`;
 
   describe("Agent handles", () => {
     test("should reject duplicate handles or invalid format", async () => {
-      // Create a SIWE-authenticated client
-      const { client: siweClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy-authenticated client
+      const { client: siweClient } = await createPrivyAuthenticatedClient({
         userName: "Handle Test User",
         userEmail: "handle-test@example.com",
       });
@@ -3107,9 +3128,8 @@ Purpose: WALLET_VERIFICATION`;
     });
 
     test("should update agent handle", async () => {
-      // Create a SIWE-authenticated client
-      const { client: siweClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy-authenticated client
+      const { client: siweClient } = await createPrivyAuthenticatedClient({
         userName: "Handle Update Test User",
         userEmail: "handle-update@example.com",
       });

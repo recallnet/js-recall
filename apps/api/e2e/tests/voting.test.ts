@@ -10,7 +10,7 @@ import {
   VotingStateResponse,
 } from "@/e2e/utils/api-types.js";
 import {
-  createSiweAuthenticatedClient,
+  createPrivyAuthenticatedClient,
   createTestClient,
   createTestCompetition,
   getAdminApiKey,
@@ -32,7 +32,7 @@ describe("Voting API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Register agents with their owner SIWE clients
+      // Register agents with their owner Privy clients
       const { agent: agent1, client: agent1OwnerClient } =
         await registerUserAndAgentAndGetClient({
           adminApiKey,
@@ -50,20 +50,15 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const competitionResponse = await createTestCompetition(
+      const competitionResponse = await createTestCompetition({
         adminClient,
-        competitionName,
-        undefined, // description
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        undefined, // competition type
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+        name: competitionName,
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
       const competition = competitionResponse.competition;
 
-      // Join agents to the competition using their owner's SIWE authentication
+      // Join agents to the competition using their owner's Privy authentication
       const joinResponse1 = await agent1OwnerClient.joinCompetition(
         competition.id,
         agent1.id,
@@ -76,12 +71,13 @@ describe("Voting API", () => {
       );
       expect(joinResponse2.success).toBe(true);
 
-      // Create SIWE authenticated user for voting (different from agent owners)
-      const { client: userClient, user } = await createSiweAuthenticatedClient({
-        adminApiKey,
-        userName: "Voting User",
-        userEmail: "voter@test.com",
-      });
+      // Create Privy authenticated user for voting (different from agent owners)
+      const { client: userClient, user } = await createPrivyAuthenticatedClient(
+        {
+          userName: "Voting User",
+          userEmail: "voter@test.com",
+        },
+      );
 
       // Cast a vote for agent1
       const voteResponse = await userClient.castVote(agent1.id, competition.id);
@@ -117,35 +113,32 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test active competition with voting",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test active competition with voting",
+        tradingType: "disallowAll",
+        type: "trading", // type
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Start the competition with agents
-      await adminClient.startExistingCompetition(competition.id, [
-        agent1.id,
-        agent2.id,
-      ]);
-
-      // Create SIWE authenticated user
-      const { client: userClient, user } = await createSiweAuthenticatedClient({
-        adminApiKey,
-        userName: "Active Voter",
-        userEmail: "active-voter@test.com",
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id, agent2.id],
       });
+
+      // Create Privy authenticated user
+      const { client: userClient, user } = await createPrivyAuthenticatedClient(
+        {
+          userName: "Active Voter",
+          userEmail: "active-voter@test.com",
+        },
+      );
 
       // Cast a vote for agent2
       const voteResponse = await userClient.castVote(agent2.id, competition.id);
@@ -181,32 +174,27 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test duplicate vote prevention",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test duplicate vote prevention",
+        tradingType: "disallowAll",
+        type: "trading", // type
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Start the competition with agents
-      await adminClient.startExistingCompetition(competition.id, [
-        agent1.id,
-        agent2.id,
-      ]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id, agent2.id],
+      });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Duplicate Voter",
         userEmail: "duplicate-voter@test.com",
       });
@@ -253,41 +241,35 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test multiple users voting for same agent",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test multiple users voting for same agent",
+        tradingType: "disallowAll",
+        type: "trading", // type
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Start the competition with agents
-      await adminClient.startExistingCompetition(competition.id, [
-        agent1.id,
-        agent2.id,
-      ]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id, agent2.id],
+      });
 
-      // Create first SIWE authenticated user
+      // Create first Privy authenticated user
       const { client: user1Client, user: user1 } =
-        await createSiweAuthenticatedClient({
-          adminApiKey,
+        await createPrivyAuthenticatedClient({
           userName: "Voter One",
           userEmail: "voter1@test.com",
         });
 
-      // Create second SIWE authenticated user
+      // Create second Privy authenticated user
       const { client: user2Client, user: user2 } =
-        await createSiweAuthenticatedClient({
-          adminApiKey,
+        await createPrivyAuthenticatedClient({
           userName: "Voter Two",
           userEmail: "voter2@test.com",
         });
@@ -325,11 +307,11 @@ describe("Voting API", () => {
 
       // Start a competition
       const competitionName = `Auth Test Competition ${Date.now()}`;
-      const competitionResponse = await startTestCompetition(
+      const competitionResponse = await startTestCompetition({
         adminClient,
-        competitionName,
-        [agent1.id],
-      );
+        name: competitionName,
+        agentIds: [agent1.id],
+      });
       const competition = competitionResponse.competition;
 
       // Create unauthenticated client
@@ -363,16 +345,15 @@ describe("Voting API", () => {
 
       // Start a competition
       const competitionName = `Invalid Agent Test ${Date.now()}`;
-      const competitionResponse = await startTestCompetition(
+      const competitionResponse = await startTestCompetition({
         adminClient,
-        competitionName,
-        [agent1.id],
-      );
+        name: competitionName,
+        agentIds: [agent1.id],
+      });
       const competition = competitionResponse.competition;
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Invalid Agent Voter",
         userEmail: "invalid-agent-voter@test.com",
       });
@@ -409,16 +390,15 @@ describe("Voting API", () => {
 
       // Start a competition with only agent1
       const competitionName = `Participation Test ${Date.now()}`;
-      const competitionResponse = await startTestCompetition(
+      const competitionResponse = await startTestCompetition({
         adminClient,
-        competitionName,
-        [agent1.id],
-      );
+        name: competitionName,
+        agentIds: [agent1.id],
+      });
       const competition = competitionResponse.competition;
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Participation Voter",
         userEmail: "participation-voter@test.com",
       });
@@ -435,9 +415,8 @@ describe("Voting API", () => {
     });
 
     test("should handle invalid request data", async () => {
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Invalid Data Voter",
         userEmail: "invalid-data-voter@test.com",
       });
@@ -474,25 +453,19 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const competitionResponse = await createTestCompetition(
+      const competitionResponse = await createTestCompetition({
         adminClient,
-        competitionName,
-        undefined, // description
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        undefined, // competition type
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+        name: competitionName,
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
       const competition = competitionResponse.competition;
 
       // Join agent to competition
       await adminClient.joinCompetition(competition.id, agent1.id);
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "State Voter",
         userEmail: "state-voter@test.com",
       });
@@ -529,29 +502,26 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test user vote info after voting",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test user vote info after voting",
+        tradingType: "disallowAll",
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Start the competition with agents
-      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id],
+      });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Voted State User",
         userEmail: "voted-state-user@test.com",
       });
@@ -600,32 +570,27 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test canVote false after voting",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test canVote false after voting",
+        tradingType: "disallowAll",
+        type: "trading", // type
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Start the competition with agents
-      await adminClient.startExistingCompetition(competition.id, [
-        agent1.id,
-        agent2.id,
-      ]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id, agent2.id],
+      });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Cannot Vote User",
         userEmail: "cannot-vote-user@test.com",
       });
@@ -666,32 +631,26 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test voting persistence after competition closes",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test voting persistence after competition closes",
+        tradingType: "disallowAll",
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Start the competition with agents
-      await adminClient.startExistingCompetition(competition.id, [
-        agent1.id,
-        agent2.id,
-      ]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id, agent2.id],
+      });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Voting Persistence User",
         userEmail: "voting-persistence-user@test.com",
       });
@@ -737,29 +696,26 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test getting user votes",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test getting user votes",
+        tradingType: "disallowAll",
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Start the competition with agents
-      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id],
+      });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Get Votes User",
         userEmail: "get-votes-user@test.com",
       });
@@ -797,9 +753,8 @@ describe("Voting API", () => {
         agentName: "Agent Sierra",
       });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Filter Votes User",
         userEmail: "filter-votes-user@test.com",
       });
@@ -809,25 +764,23 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse1 = await adminClient.createCompetition(
-        `Competition 1 ${Date.now()}`,
-        "Test filtering votes by competition 1",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse1 = await adminClient.createCompetition({
+        name: `Competition 1 ${Date.now()}`,
+        description: "Test filtering votes by competition 1",
+        tradingType: "disallowAll",
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse1.success).toBe(true);
       const competition1 = (createResponse1 as CreateCompetitionResponse)
         .competition;
 
       // Start first competition with agent1
-      await adminClient.startExistingCompetition(competition1.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition1.id,
+        agentIds: [agent1.id],
+      });
 
       // Cast vote in first competition
       await userClient.castVote(agent1.id, competition1.id);
@@ -836,25 +789,23 @@ describe("Voting API", () => {
       await adminClient.endCompetition(competition1.id);
 
       // Create second competition with proper voting dates
-      const createResponse2 = await adminClient.createCompetition(
-        `Competition 2 ${Date.now()}`,
-        "Test filtering votes by competition 2",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse2 = await adminClient.createCompetition({
+        name: `Competition 2 ${Date.now()}`,
+        description: "Test filtering votes by competition 2",
+        tradingType: "disallowAll",
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse2.success).toBe(true);
       const competition2 = (createResponse2 as CreateCompetitionResponse)
         .competition;
 
       // Start second competition with agent2
-      await adminClient.startExistingCompetition(competition2.id, [agent2.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition2.id,
+        agentIds: [agent2.id],
+      });
 
       // Cast vote in second competition
       await userClient.castVote(agent2.id, competition2.id);
@@ -894,42 +845,34 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test vote counts in competition agent response",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test vote counts in competition agent response",
+        tradingType: "disallowAll",
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Start the competition with agents
-      await adminClient.startExistingCompetition(competition.id, [
-        agent1.id,
-        agent2.id,
-      ]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id, agent2.id],
+      });
 
       // Create multiple users and cast votes
-      const { client: user1Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: user1Client } = await createPrivyAuthenticatedClient({
         userName: "Vote Count User 1",
         userEmail: "vote-count-user1@test.com",
       });
-      const { client: user2Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: user2Client } = await createPrivyAuthenticatedClient({
         userName: "Vote Count User 2",
         userEmail: "vote-count-user2@test.com",
       });
-      const { client: user3Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: user3Client } = await createPrivyAuthenticatedClient({
         userName: "Vote Count User 3",
         userEmail: "vote-count-user3@test.com",
       });
@@ -976,29 +919,26 @@ describe("Voting API", () => {
       const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
       const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test user vote status in competition details",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        votingStartDate.toISOString(), // votingStartDate
-        votingEndDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test user vote status in competition details",
+        tradingType: "disallowAll",
+        votingStartDate: votingStartDate.toISOString(),
+        votingEndDate: votingEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Start the competition with agents
-      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id],
+      });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Vote Status User",
         userEmail: "vote-status-user@test.com",
       });
@@ -1046,29 +986,26 @@ describe("Voting API", () => {
       const futureEndDate = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours from now
       const competitionName = `Future Voting Test ${Date.now()}`;
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test competition with future voting start date",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        futureStartDate.toISOString(), // votingStartDate - in future
-        futureEndDate.toISOString(), // votingEndDate - also in future
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test competition with future voting start date",
+        tradingType: "disallowAll",
+        votingStartDate: futureStartDate.toISOString(),
+        votingEndDate: futureEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Add agent to competition
-      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id],
+      });
 
       // Create user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Future Vote User",
         userEmail: "future-vote@test.com",
       });
@@ -1098,29 +1035,26 @@ describe("Voting API", () => {
       const pastEndDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
       const competitionName = `Past Voting Test ${Date.now()}`;
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test competition with past voting end date",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        pastStartDate.toISOString(), // votingStartDate - in past
-        pastEndDate.toISOString(), // votingEndDate - also in past
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test competition with past voting end date",
+        tradingType: "disallowAll",
+        votingStartDate: pastStartDate.toISOString(),
+        votingEndDate: pastEndDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Add agent to competition
-      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id],
+      });
 
       // Create user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Past Vote User",
         userEmail: "past-vote@test.com",
       });
@@ -1150,32 +1084,31 @@ describe("Voting API", () => {
       const endDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
       const competitionName = `Valid Voting Test ${Date.now()}`;
 
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test competition with valid voting date range",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        startDate.toISOString(), // votingStartDate
-        endDate.toISOString(), // votingEndDate
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test competition with valid voting date range",
+        tradingType: "disallowAll",
+        votingStartDate: startDate.toISOString(),
+        votingEndDate: endDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Add agent to competition
-      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id],
+      });
 
       // Create user
-      const { client: userClient, user } = await createSiweAuthenticatedClient({
-        adminApiKey,
-        userName: "Valid Vote User",
-        userEmail: "valid-vote@test.com",
-      });
+      const { client: userClient, user } = await createPrivyAuthenticatedClient(
+        {
+          userName: "Valid Vote User",
+          userEmail: "valid-vote@test.com",
+        },
+      );
 
       // Vote should succeed
       const voteResponse = await userClient.castVote(agent1.id, competition.id);
@@ -1201,29 +1134,24 @@ describe("Voting API", () => {
 
       // Create competition without voting dates
       const competitionName = `No Voting Dates Test ${Date.now()}`;
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test competition without voting dates",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        undefined, // votingStartDate - not defined
-        undefined, // votingEndDate - not defined
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test competition without voting dates",
+        tradingType: "disallowAll",
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Add agent to competition
-      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id],
+      });
 
       // Create authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Test User",
         userEmail: "test-user@test.com",
       });
@@ -1255,29 +1183,25 @@ describe("Voting API", () => {
       // Create competition with only start date
       const competitionName = `Start Date Only Test ${Date.now()}`;
       const startDate = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test competition with only start date",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        startDate.toISOString(), // votingStartDate - defined
-        undefined, // votingEndDate - not defined
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test competition with only start date",
+        tradingType: "disallowAll",
+        votingStartDate: startDate.toISOString(),
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
         .competition;
 
       // Add agent to competition
-      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id],
+      });
 
       // Create authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Test User 2",
         userEmail: "test-user2@test.com",
       });
@@ -1309,18 +1233,12 @@ describe("Voting API", () => {
       // Create competition with only end date
       const competitionName = `End Date Only Test ${Date.now()}`;
       const endDate = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour from now
-      const createResponse = await adminClient.createCompetition(
-        competitionName,
-        "Test competition with only end date",
-        "disallowAll",
-        undefined, // sandboxMode
-        undefined, // externalUrl
-        undefined, // imageUrl
-        "trading", // type
-        undefined, // endDate
-        undefined, // votingStartDate - not defined
-        endDate, // votingEndDate - defined
-      );
+      const createResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test competition with only end date",
+        tradingType: "disallowAll",
+        votingEndDate: endDate,
+      });
 
       expect(createResponse.success).toBe(true);
       const competition = (createResponse as CreateCompetitionResponse)
@@ -1330,11 +1248,13 @@ describe("Voting API", () => {
       expect(competition.votingEndDate).toBe(endDate);
 
       // Add agent to competition
-      await adminClient.startExistingCompetition(competition.id, [agent1.id]);
+      await adminClient.startExistingCompetition({
+        competitionId: competition.id,
+        agentIds: [agent1.id],
+      });
 
       // Create authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Test User 3",
         userEmail: "test-user3@test.com",
       });

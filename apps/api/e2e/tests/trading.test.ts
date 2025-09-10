@@ -1,10 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { trades as tradesDef } from "@recallnet/db-schema/trading/defs";
+import { InsertTrade } from "@recallnet/db-schema/trading/types";
+
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { trades as tradesDef } from "@/database/schema/trading/defs.js";
-import { InsertTrade } from "@/database/schema/trading/types.js";
 import {
   BalancesResponse,
   BlockchainType,
@@ -203,7 +204,11 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Arbitrary Token Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
@@ -300,11 +305,11 @@ describe("Trading API", () => {
       });
 
     // Start a competition with our agent
-    await startTestCompetition(
+    await startTestCompetition({
       adminClient,
-      `Invalid Trading Test ${Date.now()}`,
-      [agent.id],
-    );
+      name: `Invalid Trading Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
 
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
@@ -421,11 +426,11 @@ describe("Trading API", () => {
       });
 
     // Start a competition with our agent
-    await startTestCompetition(
+    await startTestCompetition({
       adminClient,
-      `Max Trade Limit Test ${Date.now()}`,
-      [agent.id],
-    );
+      name: `Max Trade Limit Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
 
     // Check initial balance
     const initialBalanceResponse =
@@ -510,15 +515,15 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Price Calculation Test ${Date.now()}`;
-    await startTestCompetition(
+    await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-      undefined,
-      undefined,
-      undefined,
-      { ...looseTradingConstraints, minimumLiquidityUsd: 500 },
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+      tradingConstraints: {
+        ...looseTradingConstraints,
+        minimumLiquidityUsd: 500,
+      },
+    });
 
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
@@ -720,7 +725,11 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Chain-Specific Trading Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Check initial balance
     const initialBalanceResponse = await agentClient.getBalance();
@@ -834,7 +843,11 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Reason Verification Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -898,7 +911,11 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Reason Required Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -1260,11 +1277,11 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Reason Required Test ${Date.now()}`;
-    const competition = await startTestCompetition(
+    const competition = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     const smallValue = 2.938e-27;
 
@@ -1318,7 +1335,11 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `USD Amount Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -1413,7 +1434,11 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Symbol Verification Test ${Date.now()}`;
-    await startTestCompetition(adminClient, competitionName, [agent.id]);
+    await startTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     // Get tokens to trade - use tokens we know have symbols
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;

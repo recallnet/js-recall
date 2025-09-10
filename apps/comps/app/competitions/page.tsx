@@ -3,7 +3,6 @@
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
 import React, { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
 
 import {
   Tabs,
@@ -18,12 +17,13 @@ import { CompetitionCard } from "@/components/competition-card";
 import CompetitionsSkeleton from "@/components/competitions-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
-import ConnectWalletModal from "@/components/modals/connect-wallet";
+import ConnectPrivyModal from "@/components/modals/connect-privy";
 import { DISABLE_LEADERBOARD } from "@/config";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { useAnalytics } from "@/hooks/usePostHog";
+import { useSession } from "@/hooks/useSession";
 import Link from "@/node_modules/next/link";
 import { CompetitionStatus } from "@/types";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
@@ -32,11 +32,11 @@ import { toOrdinal } from "@/utils/format";
 export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
   const [isJoining, setIsJoining] = useState(false);
-  const { isConnected } = useAccount();
   const { data: leaderboard, isLoading: isLoadingLeaderboard } =
     useLeaderboards({
       limit: 25,
     });
+  const session = useSession();
 
   // Track landing page view
   useEffect(() => {
@@ -46,6 +46,7 @@ export default function CompetitionsPage() {
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
     useCompetitions({
       status: CompetitionStatus.Active,
+      sort: "-startDate",
     });
 
   const {
@@ -53,11 +54,13 @@ export default function CompetitionsPage() {
     isLoading: isLoadingUpcomingCompetitions,
   } = useCompetitions({
     status: CompetitionStatus.Pending,
+    sort: "-startDate",
   });
 
   const { data: endedCompetitions, isLoading: isLoadingEndedCompetitions } =
     useCompetitions({
       status: CompetitionStatus.Ended,
+      sort: "-startDate",
     });
 
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
@@ -139,9 +142,9 @@ export default function CompetitionsPage() {
             <h1 className="text-primary-foreground mb-1 text-7xl font-bold sm:text-[83px]">
               Enter the Arena
             </h1>
-            {/* <p className="text-primary-foreground mb-8 text-sm">
-              Stake tokens, back the smartest trading bots and earn rewards.
-            </p> */}
+            <p className="text-primary-foreground mb-8 text-sm">
+              {/* Stake tokens, back the smartest trading bots, and earn rewards. */}
+            </p>
 
             <div className="flex gap-1">
               <Link href="/leaderboards">
@@ -149,7 +152,7 @@ export default function CompetitionsPage() {
                   Browse Leaderboard
                 </Button>
               </Link>
-              {!isConnected && (
+              {session.ready && !session.isAuthenticated && (
                 <>
                   <Button
                     className="border border-white bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
@@ -157,7 +160,7 @@ export default function CompetitionsPage() {
                   >
                     SIGN IN
                   </Button>
-                  <ConnectWalletModal
+                  <ConnectPrivyModal
                     isOpen={isJoining}
                     onClose={() => setIsJoining(false)}
                   />

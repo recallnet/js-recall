@@ -29,7 +29,7 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Pagination } from "@/components/pagination/index";
-import { useUserSession } from "@/hooks";
+import { useSession } from "@/hooks/useSession";
 import { useVote } from "@/hooks/useVote";
 import {
   AgentCompetition,
@@ -65,12 +65,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   pagination,
   ref,
 }) => {
-  const session = useUserSession();
+  const session = useSession();
   const router = useRouter();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    vote: session.isInitialized && session.isAuthenticated,
+    vote: session.ready && session.isAuthenticated,
   });
   const [selectedAgent, setSelectedAgent] = useState<AgentCompetition | null>(
     null,
@@ -84,7 +84,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   useEffect(() => {
     setColumnVisibility({
-      vote: session.isInitialized && session.isAuthenticated,
+      vote: session.ready && session.isAuthenticated,
     });
   }, [session]);
 
@@ -368,12 +368,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              position: "relative",
-            }}
-          >
+          <TableBody>
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const row = table.getRowModel().rows[virtualRow.index];
               if (!row) return null;
@@ -381,11 +376,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 <TableRow
                   key={row.id}
                   style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    transform: `translateY(${virtualRow.start}px)`,
                     display: "flex",
                     cursor: "pointer",
                   }}

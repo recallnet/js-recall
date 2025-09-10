@@ -1,13 +1,14 @@
 import { and, desc, count as drizzleCount, eq, sql } from "drizzle-orm";
 
+import { agents } from "@recallnet/db-schema/core/defs";
+import { trades } from "@recallnet/db-schema/trading/defs";
+import { InsertTrade } from "@recallnet/db-schema/trading/types";
+
 import { db } from "@/database/db.js";
 import {
   decrementBalanceInTransaction,
   incrementBalanceInTransaction,
 } from "@/database/repositories/balance-repository.js";
-import { agents } from "@/database/schema/core/defs.js";
-import { trades } from "@/database/schema/trading/defs.js";
-import { InsertTrade } from "@/database/schema/trading/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChainSchema } from "@/types/index.js";
@@ -369,25 +370,6 @@ async function countImpl() {
   }
 }
 
-/**
- * Get all trades
- * @param competitionId Optional competition ID to filter by
- */
-async function getAllTradesImpl(competitionId?: string) {
-  try {
-    const query = db.select().from(trades).orderBy(desc(trades.timestamp));
-
-    if (competitionId) {
-      query.where(eq(trades.competitionId, competitionId));
-    }
-
-    return await query;
-  } catch (error) {
-    console.error("[TradeRepository] Error in getAllTrades:", error);
-    throw error;
-  }
-}
-
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -426,12 +408,6 @@ export const count = createTimedRepositoryFunction(
   countImpl,
   "TradeRepository",
   "count",
-);
-
-export const getAllTrades = createTimedRepositoryFunction(
-  getAllTradesImpl,
-  "TradeRepository",
-  "getAllTrades",
 );
 
 export const getCompetitionTradeMetrics = createTimedRepositoryFunction(

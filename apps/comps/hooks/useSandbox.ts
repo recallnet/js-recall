@@ -45,11 +45,11 @@ export const useCreateSandboxAgent = () => {
  * @param agentName - Name of the agent
  * @returns Query for getting agent API key
  */
-export const useSandboxAgentApiKey = (agentName: string | null) => {
+export const useSandboxAgentApiKey = (agentHandle: string | null) => {
   return useQuery<AdminAgentKeyResponse, Error>({
-    queryKey: ["sandbox-agent-api-key", agentName],
-    queryFn: () => sandboxClient.getAgentApiKey(agentName!),
-    enabled: !!agentName && ENABLE_SANDBOX,
+    queryKey: ["sandbox-agent-api-key", agentHandle],
+    queryFn: () => sandboxClient.getAgentApiKey(agentHandle!),
+    enabled: !!agentHandle && ENABLE_SANDBOX,
   });
 };
 

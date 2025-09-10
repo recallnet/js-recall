@@ -1,8 +1,9 @@
 import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
 
+import { admins } from "@recallnet/db-schema/core/defs";
+import { InsertAdmin, SelectAdmin } from "@recallnet/db-schema/core/types";
+
 import { db } from "@/database/db.js";
-import { admins } from "@/database/schema/core/defs.js";
-import { InsertAdmin, SelectAdmin } from "@/database/schema/core/types.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SearchAdminsParams } from "@/types/index.js";
@@ -103,26 +104,6 @@ async function findByEmailImpl(
     return result;
   } catch (error) {
     repositoryLogger.error("Error in findByEmail:", error);
-    throw error;
-  }
-}
-
-/**
- * Find an admin by API key
- * @param apiKey The API key to search for
- */
-async function findByApiKeyImpl(
-  apiKey: string,
-): Promise<SelectAdmin | undefined> {
-  try {
-    const [result] = await db
-      .select()
-      .from(admins)
-      .where(eq(admins.apiKey, apiKey));
-
-    return result;
-  } catch (error) {
-    repositoryLogger.error("Error in findByApiKey:", error);
     throw error;
   }
 }
@@ -355,12 +336,6 @@ export const findByEmail = createTimedRepositoryFunction(
   findByEmailImpl,
   "AdminRepository",
   "findByEmail",
-);
-
-export const findByApiKey = createTimedRepositoryFunction(
-  findByApiKeyImpl,
-  "AdminRepository",
-  "findByApiKey",
 );
 
 export const update = createTimedRepositoryFunction(
