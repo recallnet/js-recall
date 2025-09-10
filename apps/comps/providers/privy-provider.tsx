@@ -25,12 +25,27 @@ const privyConfig: PrivyClientConfig = {
     accentColor: themeForeground,
     logo: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo_white_full.svg`,
     showWalletLoginFirst: false, // Show social login options first
+    walletList: [
+      "metamask",
+      "base_account",
+      "coinbase_wallet",
+      "okx_wallet",
+      "binance",
+      "detected_ethereum_wallets",
+      "phantom",
+      "rabby_wallet",
+      "rainbow",
+      "safe",
+      "wallet_connect",
+      "wallet_connect_qr",
+      "zerion",
+    ],
   },
 
   // Embedded wallet configuration
   embeddedWallets: {
     ethereum: {
-      createOnLogin: "users-without-wallets", // Create embedded wallet for non-wallet users
+      createOnLogin: "all-users", // Create embedded wallet for all users
     },
   },
 
