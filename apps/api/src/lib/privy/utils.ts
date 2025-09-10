@@ -108,7 +108,7 @@ export function getEmbeddedLinkedWallet(
  */
 export function extractUsernameFromEmail(email: string): string {
   const username = email.split("@")[0];
-  if (!username) {
+  if (!username || username.length === 0) {
     throw new Error(`Invalid email address: ${email}`);
   }
   // Replace periods or underscores with spaces, then remove all other special characters, and

@@ -126,9 +126,9 @@ export class ApiClient {
     options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    const headers: Record<string, string> = {
+    const headers = {
       "Content-Type": "application/json",
-      ...(options.headers as Record<string, string>),
+      ...options.headers,
     };
 
     const response = await fetch(url, {

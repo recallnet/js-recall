@@ -96,8 +96,12 @@ export function parseJwtPayloadToPrivyTypes(
 export async function verifyPrivyIdentityToken(
   idToken: string,
 ): Promise<PrivyIdWithClaims> {
+  const matches = config.privy.jwksPublicKey.match(/.{1,64}/g);
+  if (!matches) {
+    throw new Error("Invalid JWKS public key format");
+  }
   const pem = `-----BEGIN PUBLIC KEY-----
-${config.privy.jwksPublicKey.match(/.{1,64}/g)!.join("\n")}
+${matches.join("\n")}
 -----END PUBLIC KEY-----`;
   const key = await importSPKI(pem, "ES256");
   const jwk = await exportJWK(key);
