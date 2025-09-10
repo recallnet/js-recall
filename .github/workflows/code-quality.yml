@@ -17,9 +17,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        # with:
-        #   submodules: true
-        #   fetch-depth: 0
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.PAT }}
 
       - name: Install Node.js
         uses: actions/setup-node@v4
