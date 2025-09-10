@@ -478,13 +478,6 @@ describe("Privy Authentication", () => {
       expect(votesForOld.length).toBe(1);
       expect(votesForOld[0]?.userId).toBe(legacyUserId);
 
-      // Query users table and log results
-      const usersAfter = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, legacyUserId));
-      console.error("DTB: usersAfter", usersAfter);
-
       // - "Old" user is not deleted (it was updated instead)
       const oldUserRows = await db
         .select()
