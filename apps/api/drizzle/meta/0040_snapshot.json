@@ -1,5 +1,5 @@
 {
-  "id": "a19c8324-298b-4ff4-9bfc-ed3c4f74ee16",
+  "id": "c37db0f6-f6d9-44ce-baa1-d5db4ae3dc86",
   "prevId": "112dcfc1-d1b6-4cd7-adfe-58a4b2a59982",
   "version": "7",
   "dialect": "postgresql",
@@ -2609,6 +2609,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "total_equity": {
+          "name": "total_equity",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "initial_capital": {
+          "name": "initial_capital",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
         "total_volume": {
           "name": "total_volume",
           "type": "numeric",
@@ -2633,14 +2645,20 @@
           "primaryKey": false,
           "notNull": false
         },
-        "margin_used": {
-          "name": "margin_used",
+        "total_fees_paid": {
+          "name": "total_fees_paid",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "win_rate": {
-          "name": "win_rate",
+        "available_balance": {
+          "name": "available_balance",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "margin_used": {
+          "name": "margin_used",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
@@ -2648,18 +2666,6 @@
         "total_trades": {
           "name": "total_trades",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "best_trade": {
-          "name": "best_trade",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "worst_trade": {
-          "name": "worst_trade",
-          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
@@ -2687,14 +2693,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "total_equity": {
-          "name": "total_equity",
+        "roi": {
+          "name": "roi",
           "type": "numeric",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "available_balance": {
-          "name": "available_balance",
+        "roi_percent": {
+          "name": "roi_percent",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
@@ -2703,8 +2709,13 @@
           "name": "account_status",
           "type": "varchar(20)",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'active'"
+          "notNull": false
+        },
+        "raw_data": {
+          "name": "raw_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         },
         "timestamp": {
           "name": "timestamp",

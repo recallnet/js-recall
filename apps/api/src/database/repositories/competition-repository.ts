@@ -903,6 +903,45 @@ async function createPortfolioSnapshotImpl(snapshot: InsertPortfolioSnapshot) {
 }
 
 /**
+ * Batch create multiple portfolio snapshots efficiently
+ * @param snapshots Array of portfolio snapshot data
+ * @returns Array of created snapshots
+ */
+async function batchCreatePortfolioSnapshotsImpl(
+  snapshots: InsertPortfolioSnapshot[],
+): Promise<SelectPortfolioSnapshot[]> {
+  if (snapshots.length === 0) {
+    return [];
+  }
+
+  try {
+    repositoryLogger.debug(
+      `[CompetitionRepository] Batch creating ${snapshots.length} portfolio snapshots`,
+    );
+
+    const now = new Date();
+    const results = await db
+      .insert(portfolioSnapshots)
+      .values(
+        snapshots.map((snapshot) => ({
+          ...snapshot,
+          timestamp: snapshot.timestamp || now,
+        })),
+      )
+      .returning();
+
+    repositoryLogger.debug(
+      `[CompetitionRepository] Successfully created ${results.length} portfolio snapshots`,
+    );
+
+    return results;
+  } catch (error) {
+    repositoryLogger.error("Error in batchCreatePortfolioSnapshots:", error);
+    throw error;
+  }
+}
+
+/**
  * Get latest portfolio snapshots for all active agents in a competition
  * @param competitionId Competition ID
  */
@@ -2019,6 +2058,12 @@ export const createPortfolioSnapshot = createTimedRepositoryFunction(
   createPortfolioSnapshotImpl,
   "CompetitionRepository",
   "createPortfolioSnapshot",
+);
+
+export const batchCreatePortfolioSnapshots = createTimedRepositoryFunction(
+  batchCreatePortfolioSnapshotsImpl,
+  "CompetitionRepository",
+  "batchCreatePortfolioSnapshots",
 );
 
 export const getLatestPortfolioSnapshots = createTimedRepositoryFunction(
