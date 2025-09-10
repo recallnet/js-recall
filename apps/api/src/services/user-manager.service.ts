@@ -14,6 +14,7 @@ import {
   findById,
   findByPrivyId,
   findByWalletAddress,
+  findDuplicateByWalletAddress,
   searchUsers,
   update,
 } from "@/database/repositories/user-repository.js";
@@ -236,8 +237,8 @@ export class UserManager {
 
       // Check if another account exists with this wallet address
       const duplicateAccount = user.walletAddress
-        ? await this.getUserByWalletAddress(user.walletAddress)
-        : null;
+        ? await findDuplicateByWalletAddress(user.walletAddress, user.id)
+        : undefined;
 
       const updatedUser = await db.transaction(async (tx) => {
         if (duplicateAccount) {
