@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, sum } from "drizzle-orm";
 
 import {
   rewards,
@@ -124,6 +124,94 @@ async function getRewardsTreeByCompetitionImpl(
   }
 }
 
+/**
+ * Get the total claimable rewards for a specific address
+ * @param address The wallet address to get total claimable rewards for
+ * @returns The total amount of unclaimed rewards as a bigint
+ */
+async function getTotalClaimableRewardsByAddressImpl(
+  address: string,
+): Promise<bigint> {
+  try {
+    const result = await db
+      .select({ total: sum(rewards.amount) })
+      .from(rewards)
+      .where(
+        and(
+          eq(rewards.address, address.toLocaleLowerCase()),
+          eq(rewards.claimed, false),
+        ),
+      );
+
+    const total = result[0]?.total;
+    return total ? BigInt(total) : 0n;
+  } catch (error) {
+    repositoryLogger.error(
+      "Error in getTotalClaimableRewardsByAddress:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get rewards with their corresponding merkle roots for a specific address
+ * @param address The wallet address to get rewards for
+ * @returns Array of rewards with merkle root information
+ */
+async function getRewardsWithRootsByAddressImpl(address: string): Promise<
+  Array<{
+    reward: SelectReward;
+    rootHash: Uint8Array;
+  }>
+> {
+  try {
+    const result = await db
+      .select({
+        reward: rewards,
+        rootHash: rewardsRoots.rootHash,
+      })
+      .from(rewards)
+      .innerJoin(
+        rewardsRoots,
+        eq(rewards.competitionId, rewardsRoots.competitionId),
+      )
+      .where(
+        and(
+          eq(rewards.address, address.toLocaleLowerCase()),
+          eq(rewards.claimed, false),
+        ),
+      );
+
+    return result;
+  } catch (error) {
+    repositoryLogger.error("Error in getRewardsWithRootsByAddress:", error);
+    throw error;
+  }
+}
+
+/**
+ * Mark all non-claimed rewards as claimed for a specific address
+ */
+async function claimAllRewardsByAddressImpl(address: string): Promise<number> {
+  try {
+    const result = await db
+      .update(rewards)
+      .set({ claimed: true })
+      .where(
+        and(
+          eq(rewards.address, address.toLocaleLowerCase()),
+          eq(rewards.claimed, false),
+        ),
+      );
+
+    return result.rowCount || 0;
+  } catch (error) {
+    repositoryLogger.error("Error in claimAllRewardsByAddress:", error);
+    throw error;
+  }
+}
+
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -156,4 +244,22 @@ export const getRewardsTreeByCompetition = createTimedRepositoryFunction(
   getRewardsTreeByCompetitionImpl,
   "RewardsRepository",
   "getRewardsTreeByCompetition",
+);
+
+export const getTotalClaimableRewardsByAddress = createTimedRepositoryFunction(
+  getTotalClaimableRewardsByAddressImpl,
+  "RewardsRepository",
+  "getTotalClaimableRewardsByAddress",
+);
+
+export const getRewardsWithRootsByAddress = createTimedRepositoryFunction(
+  getRewardsWithRootsByAddressImpl,
+  "RewardsRepository",
+  "getRewardsWithRootsByAddress",
+);
+
+export const claimAllRewardsByAddress = createTimedRepositoryFunction(
+  claimAllRewardsByAddressImpl,
+  "RewardsRepository",
+  "claimAllRewardsByAddress",
 );

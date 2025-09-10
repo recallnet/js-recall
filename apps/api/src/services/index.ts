@@ -11,6 +11,7 @@ import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
+import { RewardsService } from "@/services/rewards.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserManager } from "@/services/user-manager.service.js";
@@ -41,6 +42,7 @@ class ServiceRegistry {
   private _emailVerificationService: EmailVerificationService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
+  private _rewardsService: RewardsService;
 
   constructor() {
     // Initialize services in dependency order
@@ -86,6 +88,9 @@ class ServiceRegistry {
     this._tradingConstraintsService = new TradingConstraintsService();
     // Initialize core reward service (no dependencies)
     this._competitionRewardService = new CompetitionRewardService();
+
+    // Initialize rewards service (no dependencies)
+    this._rewardsService = new RewardsService();
 
     this._competitionManager = new CompetitionManager(
       this._balanceManager,
@@ -178,6 +183,10 @@ class ServiceRegistry {
   get competitionRewardService(): CompetitionRewardService {
     return this._competitionRewardService;
   }
+
+  get rewardsService(): RewardsService {
+    return this._rewardsService;
+  }
 }
 
 export {
@@ -194,6 +203,7 @@ export {
   LeaderboardService,
   PortfolioSnapshotter,
   PriceTracker,
+  RewardsService,
   ServiceRegistry,
   TradeSimulator,
   TradingConstraintsService,
