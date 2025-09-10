@@ -63,9 +63,6 @@ describe("SymphonyPerpsProvider", () => {
           roiPercent: 30.1,
           totalTrades: 25,
           averageTradeSize: 200,
-          winRate: 60,
-          bestTrade: 250,
-          worstTrade: -50,
         },
       },
       openPositions: [
@@ -245,14 +242,11 @@ describe("SymphonyPerpsProvider", () => {
         totalVolume: 5000,
         totalTrades: 25,
         totalFeesPaid: 10.25,
-        winRate: 60,
         openPositionsCount: 2,
         closedPositionsCount: 23,
         liquidatedPositionsCount: 0,
         roi: 30.1,
         roiPercent: 30.1,
-        bestTrade: 250,
-        worstTrade: -50,
         averageTradeSize: 200,
         accountStatus: "active",
         rawData: samplePositionResponse.data,
@@ -285,8 +279,48 @@ describe("SymphonyPerpsProvider", () => {
       const result = await provider.getAccountSummary("0xtest123");
 
       expect(result.roi).toBeUndefined();
-      expect(result.winRate).toBeUndefined();
-      expect(result.bestTrade).toBeUndefined();
+      expect(result.roiPercent).toBeUndefined();
+      expect(result.averageTradeSize).toBeUndefined();
+    });
+
+    it("should handle zero and negative values correctly", async () => {
+      const zeroNegativeResponse = {
+        ...samplePositionResponse,
+        data: {
+          ...samplePositionResponse.data,
+          accountSummary: {
+            ...samplePositionResponse.data.accountSummary,
+            totalEquity: 0,
+            totalPnl: -500,
+            totalRealizedPnl: -300,
+            totalUnrealizedPnl: -200,
+            availableBalance: 0,
+            marginUsed: 0,
+            totalVolume: 0,
+            totalTrades: 0,
+            openPositionsCount: 0,
+            performance: {
+              roi: -100,
+              roiPercent: -100,
+              totalTrades: 0,
+              averageTradeSize: 0,
+            },
+          },
+        },
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: zeroNegativeResponse,
+      });
+
+      const result = await provider.getAccountSummary("0xtest123");
+
+      expect(result.totalEquity).toBe(0);
+      expect(result.totalPnl).toBe(-500);
+      expect(result.totalRealizedPnl).toBe(-300);
+      expect(result.totalUnrealizedPnl).toBe(-200);
+      expect(result.roi).toBe(-100);
+      expect(result.roiPercent).toBe(-100);
     });
 
     it("should retry on transient failures", async () => {
@@ -380,6 +414,95 @@ describe("SymphonyPerpsProvider", () => {
       expect(result).toEqual([]);
     });
 
+    it("should correctly transform short positions", async () => {
+      const shortPositionResponse = {
+        ...samplePositionResponse,
+        data: {
+          ...samplePositionResponse.data,
+          openPositions: [
+            {
+              ...samplePositionResponse.data.openPositions[0],
+              isLong: false,
+              side: "short" as const,
+            },
+          ],
+        },
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: shortPositionResponse,
+      });
+
+      const result = await provider.getPositions("0xtest123");
+
+      expect(result[0]?.side).toBe("short");
+    });
+
+    it("should handle null/undefined optional fields in positions", async () => {
+      const positionWithNulls = {
+        ...samplePositionResponse,
+        data: {
+          ...samplePositionResponse.data,
+          openPositions: [
+            {
+              ...samplePositionResponse.data.openPositions[0],
+              liquidationPrice: null,
+              lastUpdatedTimestamp: undefined,
+              closedAt: null,
+              tpPrice: null,
+              slPrice: null,
+            },
+          ],
+        },
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: positionWithNulls,
+      });
+
+      const result = await provider.getPositions("0xtest123");
+
+      expect(result[0]?.liquidationPrice).toBeUndefined();
+      expect(result[0]?.lastUpdatedAt).toBeUndefined();
+      expect(result[0]?.closedAt).toBeUndefined();
+    });
+
+    it("should handle multiple positions correctly", async () => {
+      const multiplePositionsResponse = {
+        ...samplePositionResponse,
+        data: {
+          ...samplePositionResponse.data,
+          openPositions: [
+            samplePositionResponse.data.openPositions[0],
+            {
+              ...samplePositionResponse.data.openPositions[0],
+              symphonyPositionHash: "0xsymphony789",
+              protocolPositionHash: "0xprotocol456",
+              asset: "ETH",
+              isLong: false,
+              positionSize: 2000,
+              entryPrice: 3000,
+              currentPrice: 2900,
+              pnlUSDValue: -100,
+              pnlPercentage: -5,
+            },
+          ],
+        },
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: multiplePositionsResponse,
+      });
+
+      const result = await provider.getPositions("0xtest123");
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.symbol).toBe("BTC");
+      expect(result[1]?.symbol).toBe("ETH");
+      expect(result[1]?.side).toBe("short");
+      expect(result[1]?.pnlUsdValue).toBe(-100);
+    });
+
     it("should handle unsuccessful response", async () => {
       const unsuccessfulResponse = {
         success: false,
@@ -471,6 +594,19 @@ describe("SymphonyPerpsProvider", () => {
   });
 
   describe("rate limiting", () => {
+    it("should not delay on first request", async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: samplePositionResponse,
+      });
+
+      const startTime = Date.now();
+      await provider.getAccountSummary("0xtest123");
+      const elapsed = Date.now() - startTime;
+
+      // First request should not have any delay
+      expect(elapsed).toBeLessThan(50);
+    });
+
     it("should enforce rate limiting between requests", async () => {
       mockAxiosInstance.get.mockResolvedValue({
         data: samplePositionResponse,
@@ -533,6 +669,145 @@ describe("SymphonyPerpsProvider", () => {
       mockAxiosInstance.get.mockRejectedValueOnce(error);
 
       await expect(provider.getAccountSummary("0xtest123")).rejects.toThrow();
+    });
+  });
+
+  describe("data validation", () => {
+    it("should throw error for invalid required date field (createdTimeStamp)", async () => {
+      const invalidDateResponse = {
+        ...samplePositionResponse,
+        data: {
+          ...samplePositionResponse.data,
+          openPositions: [
+            {
+              ...samplePositionResponse.data.openPositions[0],
+              createdTimeStamp: "invalid-date",
+            },
+          ],
+        },
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: invalidDateResponse,
+      });
+
+      // Should throw error because createdTimeStamp is required
+      await expect(provider.getPositions("0xtest123")).rejects.toThrow(
+        "Invalid createdTimeStamp for position",
+      );
+    });
+
+    it("should handle invalid optional date fields gracefully", async () => {
+      const invalidOptionalDateResponse = {
+        ...samplePositionResponse,
+        data: {
+          ...samplePositionResponse.data,
+          openPositions: [
+            {
+              ...samplePositionResponse.data.openPositions[0],
+              lastUpdatedTimestamp: "2025-13-45T25:99:99Z", // Invalid date
+              closedAt: "not-a-date",
+            },
+          ],
+        },
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: invalidOptionalDateResponse,
+      });
+
+      const result = await provider.getPositions("0xtest123");
+
+      // Optional date fields should be undefined if invalid (logged as warning)
+      expect(result[0]?.lastUpdatedAt).toBeUndefined();
+      expect(result[0]?.closedAt).toBeUndefined();
+    });
+
+    it("should default missing required fields to 0 and log warning", async () => {
+      const missingFieldsResponse = {
+        success: true,
+        data: {
+          userAddress: "0xtest123",
+          accountSummary: {
+            // Missing required fields like totalEquity, initialCapital, etc.
+            totalEquity: undefined,
+            initialCapital: null,
+            totalPnl: null,
+            totalRealizedPnl: undefined,
+            totalUnrealizedPnl: null,
+            availableBalance: undefined,
+            marginUsed: null,
+            totalVolume: undefined,
+            totalTrades: null,
+            totalFeesPaid: undefined,
+            openPositionsCount: null,
+            closedPositionsCount: undefined,
+            liquidatedPositionsCount: null,
+            accountStatus: null,
+          },
+          openPositions: [],
+          lastUpdated: "2025-01-15T12:00:00Z",
+          cacheExpiresAt: "2025-01-15T12:05:00Z",
+        },
+        processingTime: 150,
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: missingFieldsResponse,
+      });
+
+      const result = await provider.getAccountSummary("0xtest123");
+
+      // Should default missing numeric fields to 0
+      expect(result.totalEquity).toBe(0);
+      expect(result.initialCapital).toBe(0);
+      expect(result.totalPnl).toBe(0);
+      expect(result.totalRealizedPnl).toBe(0);
+      expect(result.totalUnrealizedPnl).toBe(0);
+      expect(result.availableBalance).toBe(0);
+      expect(result.marginUsed).toBe(0);
+      expect(result.totalVolume).toBe(0);
+      expect(result.totalTrades).toBe(0);
+      expect(result.totalFeesPaid).toBe(0);
+      expect(result.openPositionsCount).toBe(0);
+      expect(result.closedPositionsCount).toBe(0);
+      expect(result.liquidatedPositionsCount).toBe(0);
+
+      // Should default missing status to 'unknown'
+      expect(result.accountStatus).toBe("unknown");
+    });
+
+    it("should handle very large numbers correctly", async () => {
+      const largeNumberResponse = {
+        ...samplePositionResponse,
+        data: {
+          ...samplePositionResponse.data,
+          accountSummary: {
+            ...samplePositionResponse.data.accountSummary,
+            totalEquity: 999999999999.99,
+            totalVolume: 1e15,
+            totalTrades: Number.MAX_SAFE_INTEGER,
+          },
+          openPositions: [
+            {
+              ...samplePositionResponse.data.openPositions[0],
+              positionSize: 1e12,
+              entryPrice: 0.00000001,
+              currentPrice: 0.00000002,
+            },
+          ],
+        },
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: largeNumberResponse,
+      });
+
+      const result = await provider.getAccountSummary("0xtest123");
+
+      expect(result.totalEquity).toBe(999999999999.99);
+      expect(result.totalVolume).toBe(1e15);
+      expect(result.totalTrades).toBe(Number.MAX_SAFE_INTEGER);
     });
   });
 

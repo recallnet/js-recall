@@ -35,9 +35,6 @@ export interface SymphonyPositionResponse {
         roiPercent: number;
         totalTrades: number;
         averageTradeSize: number;
-        winRate?: number;
-        bestTrade?: number;
-        worstTrade?: number;
       };
     };
     openPositions: SymphonyPosition[];
@@ -197,38 +194,52 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       const data = await this.fetchPositionData(walletAddress);
 
+      // Validate and provide defaults for missing required fields
+      const as = data.accountSummary;
+
+      // Log warning if critical fields are missing
+      const criticalFields = ["totalEquity", "initialCapital", "totalPnl"];
+      const missingFields = criticalFields.filter(
+        (field) =>
+          as[field as keyof typeof as] === undefined ||
+          as[field as keyof typeof as] === null,
+      );
+
+      if (missingFields.length > 0) {
+        serviceLogger.warn(
+          `[SymphonyProvider] Missing critical fields for ${walletAddress}: ${missingFields.join(", ")}. Using 0 as default.`,
+        );
+      }
+
       const summary: PerpsAccountSummary = {
-        // Core metrics
-        totalEquity: data.accountSummary.totalEquity,
-        initialCapital: data.accountSummary.initialCapital,
-        availableBalance: data.accountSummary.availableBalance,
-        marginUsed: data.accountSummary.marginUsed,
+        // Core metrics - use 0 as default for missing numeric values
+        totalEquity: as.totalEquity ?? 0,
+        initialCapital: as.initialCapital ?? 0,
+        availableBalance: as.availableBalance ?? 0,
+        marginUsed: as.marginUsed ?? 0,
 
-        // PnL metrics
-        totalPnl: data.accountSummary.totalPnl,
-        totalRealizedPnl: data.accountSummary.totalRealizedPnl,
-        totalUnrealizedPnl: data.accountSummary.totalUnrealizedPnl,
+        // PnL metrics - use 0 as default
+        totalPnl: as.totalPnl ?? 0,
+        totalRealizedPnl: as.totalRealizedPnl ?? 0,
+        totalUnrealizedPnl: as.totalUnrealizedPnl ?? 0,
 
-        // Trading statistics
-        totalVolume: data.accountSummary.totalVolume,
-        totalTrades: data.accountSummary.totalTrades,
-        totalFeesPaid: data.accountSummary.totalFeesPaid,
-        winRate: data.accountSummary.performance?.winRate,
+        // Trading statistics - use 0 as default
+        totalVolume: as.totalVolume ?? 0,
+        totalTrades: as.totalTrades ?? 0,
+        totalFeesPaid: as.totalFeesPaid ?? 0,
 
-        // Position counts
-        openPositionsCount: data.accountSummary.openPositionsCount,
-        closedPositionsCount: data.accountSummary.closedPositionsCount,
-        liquidatedPositionsCount: data.accountSummary.liquidatedPositionsCount,
+        // Position counts - use 0 as default
+        openPositionsCount: as.openPositionsCount ?? 0,
+        closedPositionsCount: as.closedPositionsCount ?? 0,
+        liquidatedPositionsCount: as.liquidatedPositionsCount ?? 0,
 
-        // Performance metrics
-        roi: data.accountSummary.performance?.roi,
-        roiPercent: data.accountSummary.performance?.roiPercent,
-        bestTrade: data.accountSummary.performance?.bestTrade,
-        worstTrade: data.accountSummary.performance?.worstTrade,
-        averageTradeSize: data.accountSummary.performance?.averageTradeSize,
+        // Performance metrics - these are optional
+        roi: as.performance?.roi,
+        roiPercent: as.performance?.roiPercent,
+        averageTradeSize: as.performance?.averageTradeSize,
 
-        // Status
-        accountStatus: data.accountSummary.accountStatus,
+        // Status - use 'unknown' as default
+        accountStatus: as.accountStatus ?? "unknown",
 
         // Store raw data for debugging
         rawData: data,
@@ -420,36 +431,74 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     positions: SymphonyPosition[],
     status: "Open" | "Closed" | "Liquidated",
   ): PerpsPosition[] {
-    return positions.map((pos) => ({
-      // Identifiers
-      providerPositionId: pos.symphonyPositionHash,
-      providerTradeId: pos.protocolPositionHash,
+    return positions.map((pos) => {
+      // Validate and parse dates
+      const openedAt = this.parseDate(pos.createdTimeStamp, "createdTimeStamp");
+      if (!openedAt) {
+        throw new Error(
+          `Invalid createdTimeStamp for position ${pos.symphonyPositionHash}: ${pos.createdTimeStamp}`,
+        );
+      }
 
-      // Position details
-      symbol: pos.asset,
-      side: pos.isLong ? ("long" as const) : ("short" as const),
-      positionSizeUsd: pos.positionSize,
-      leverage: pos.leverage,
-      collateralAmount: pos.collateralAmount,
+      const lastUpdatedAt = pos.lastUpdatedTimestamp
+        ? this.parseDate(pos.lastUpdatedTimestamp, "lastUpdatedTimestamp")
+        : undefined;
 
-      // Prices
-      entryPrice: pos.entryPrice,
-      currentPrice: pos.currentPrice,
-      liquidationPrice: pos.liquidationPrice || undefined,
+      const closedAt = pos.closedAt
+        ? this.parseDate(pos.closedAt, "closedAt")
+        : undefined;
 
-      // PnL
-      pnlUsdValue: pos.pnlUSDValue,
-      pnlPercentage: pos.pnlPercentage,
+      return {
+        // Identifiers
+        providerPositionId: pos.symphonyPositionHash,
+        providerTradeId: pos.protocolPositionHash,
 
-      // Status
-      status,
+        // Position details
+        symbol: pos.asset,
+        side: pos.isLong ? ("long" as const) : ("short" as const),
+        positionSizeUsd: pos.positionSize,
+        leverage: pos.leverage,
+        collateralAmount: pos.collateralAmount,
 
-      // Timestamps
-      openedAt: new Date(pos.createdTimeStamp),
-      lastUpdatedAt: pos.lastUpdatedTimestamp
-        ? new Date(pos.lastUpdatedTimestamp)
-        : undefined,
-      closedAt: pos.closedAt ? new Date(pos.closedAt) : undefined,
-    }));
+        // Prices
+        entryPrice: pos.entryPrice,
+        currentPrice: pos.currentPrice,
+        liquidationPrice: pos.liquidationPrice || undefined,
+
+        // PnL
+        pnlUsdValue: pos.pnlUSDValue,
+        pnlPercentage: pos.pnlPercentage,
+
+        // Status
+        status,
+
+        // Timestamps
+        openedAt,
+        lastUpdatedAt,
+        closedAt,
+      };
+    });
+  }
+
+  /**
+   * Safely parse a date string
+   */
+  private parseDate(
+    dateStr: string | undefined | null,
+    fieldName: string,
+  ): Date | undefined {
+    if (!dateStr) {
+      return undefined;
+    }
+
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      serviceLogger.warn(
+        `[SymphonyProvider] Invalid date format for ${fieldName}: ${dateStr}`,
+      );
+      return undefined;
+    }
+
+    return date;
   }
 }

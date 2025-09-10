@@ -22,7 +22,6 @@ export interface PerpsAccountSummary {
   // Trading statistics
   totalVolume?: number;
   totalTrades?: number;
-  winRate?: number;
   totalFeesPaid?: number;
 
   // Position counts
@@ -34,8 +33,6 @@ export interface PerpsAccountSummary {
   // Performance metrics
   roi?: number;
   roiPercent?: number;
-  bestTrade?: number;
-  worstTrade?: number;
   averageTradeSize?: number;
 
   // Account status
