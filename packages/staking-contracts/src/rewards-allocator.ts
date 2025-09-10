@@ -90,6 +90,7 @@ class RewardsAllocator {
       };
     }
 
+    /* c8 ignore next */
     throw new Error("Transaction failed. Receipt: " + JSON.stringify(receipt));
   }
 }

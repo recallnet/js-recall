@@ -40,6 +40,17 @@
       "include": ["src/**/*.ts"],
       "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],
       "testFramework": "vitest"
+    },
+    "packages/staking-contracts": {
+      "thresholds": {
+        "lines": 100,
+        "statements": 100,
+        "functions": 100,
+        "branches": 100
+      },
+      "include": ["src/**/*.ts"],
+      "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "contracts/**/*"],
+      "testFramework": "c8"
     }
   }
 }

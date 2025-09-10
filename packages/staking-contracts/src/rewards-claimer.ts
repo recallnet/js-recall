@@ -90,9 +90,11 @@ class RewardsClaimer {
       };
     }
 
+    /* c8 ignore start */
     throw new Error(
       "Claim transaction failed. Receipt: " + JSON.stringify(receipt),
     );
+    /* c8 ignore stop */
   }
 
   /**
