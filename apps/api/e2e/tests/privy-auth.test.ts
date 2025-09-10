@@ -380,8 +380,7 @@ describe("Privy Authentication", () => {
       expect(oldUserRows.length).toBe(0);
     });
 
-    // Note: same test as above, but the Privy user will have the same email
-    test.skip("wallet + email user merges accounts: agents and votes moved, old user deleted", async () => {
+    test("wallet + email user updates account: agents and votes moved, old user deleted", async () => {
       // Admin client
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
@@ -431,8 +430,10 @@ describe("Privy Authentication", () => {
         await createPrivyAuthenticatedClient({
           userName: "Privy Merge Target",
           userEmail: legacyEmail,
+          walletAddress: legacyWallet,
         });
       expect(newUser.email).toBe(legacyEmail);
+      expect(newUser.walletAddress).toBe(legacyWallet);
 
       // 3) Simulate linking legacy wallet in Privy and call link endpoint
       const privyUser = createTestPrivyUser({
@@ -450,6 +451,7 @@ describe("Privy Authentication", () => {
       expect(linkRes.success).toBe(true);
       const linkedUser = (linkRes as LinkUserWalletResponse).user;
       expect(linkedUser.walletAddress).toBe(legacyWallet);
+      expect(linkedUser.id).toBe(legacyUserId);
 
       // 4) Verify migrations
       // - Agent owner moved to new user
@@ -473,14 +475,23 @@ describe("Privy Authentication", () => {
         .select()
         .from(votes)
         .where(eq(votes.userId, legacyUserId));
-      expect(votesForOld.length).toBe(0);
+      expect(votesForOld.length).toBe(1);
+      expect(votesForOld[0]?.userId).toBe(legacyUserId);
 
-      // - Old user is deleted
+      // Query users table and log results
+      const usersAfter = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, legacyUserId));
+      console.error("DTB: usersAfter", usersAfter);
+
+      // - "Old" user is not deleted (it was updated instead)
       const oldUserRows = await db
         .select()
         .from(users)
         .where(eq(users.id, legacyUserId));
-      expect(oldUserRows.length).toBe(0);
+      expect(oldUserRows.length).toBe(1);
+      expect(oldUserRows[0]?.id).toBe(legacyUserId);
     });
   });
 });
