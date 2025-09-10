@@ -68,10 +68,10 @@
     "competition"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT OR Apache-2.0",
   "dependencies": {
+    "@privy-io/server-auth": "^1.31.0",
     "@envio-dev/hypersync-client": "^0.6.5",
-    "@recallnet/api-sdk": "workspace:*",
     "@recallnet/db-schema": "workspace:*",
     "@recallnet/staking-contracts": "workspace:*",
     "@sentry/node": "^10.5.0",
@@ -87,7 +87,7 @@
     "drizzle-orm": "^0.43.1",
     "drizzle-zod": "^0.8.2",
     "express": "^4.18.2",
-    "iron-session": "^8.0.4",
+    "jose": "^6.0.11",
     "jsonwebtoken": "^9.0.2",
     "keccak256": "^1.0.6",
     "lru-cache": "^11.1.0",
@@ -109,7 +109,6 @@
   },
   "devDependencies": {
     "@elizaos/core": "^0.25.9",
-    "@recallnet/api-sdk": "workspace:*",
     "@recallnet/eslint-config": "workspace:^",
     "@recallnet/typescript-config": "workspace:*",
     "@types/bcrypt": "^5.0.0",

@@ -8,7 +8,6 @@ import { makeAgentController } from "@/controllers/agent.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
 import { makeCompetitionController } from "@/controllers/competition.controller.js";
 import { makeDocsController } from "@/controllers/docs.controller.js";
-import { makeEmailVerificationController } from "@/controllers/email-verification.controller.js";
 import { makeHealthController } from "@/controllers/health.controller.js";
 import { makeLeaderboardController } from "@/controllers/leaderboard.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
@@ -25,7 +24,6 @@ import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
 import { loggingMiddleware } from "@/middleware/logging.middleware.js";
 import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
-import { siweSessionMiddleware } from "@/middleware/siwe.middleware.js";
 import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
 import { configureAdminRoutes } from "@/routes/admin.routes.js";
 import { configureAgentRoutes } from "@/routes/agent.routes.js";
@@ -33,7 +31,6 @@ import { configureAgentsRoutes } from "@/routes/agents.routes.js";
 import { configureAuthRoutes } from "@/routes/auth.routes.js";
 import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
-import { configureEmailVerificationRoutes } from "@/routes/email-verification.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
@@ -132,15 +129,12 @@ const authMiddlewareInstance = authMiddleware(
   services.userManager,
   services.adminManager,
 );
+
 // Apply agent API key authentication to agent routes
 app.use(agentApiKeyRoutes, authMiddlewareInstance);
 
 // Apply SIWE session authentication to user routes
-app.use(
-  userSessionRoutes,
-  siweSessionMiddleware, // Apply SIWE session middleware first to populate req.session
-  authMiddlewareInstance,
-);
+app.use(userSessionRoutes, authMiddlewareInstance);
 
 // Apply rate limiting middleware AFTER authentication
 // This ensures we can properly rate limit by agent/user ID
@@ -149,6 +143,7 @@ app.use(rateLimiterMiddleware);
 const adminMiddleware = adminAuthMiddleware(services.adminManager);
 const optionalAuth = optionalAuthMiddleware(
   services.agentManager,
+  services.userManager,
   services.adminManager,
 );
 
@@ -156,7 +151,6 @@ const adminController = makeAdminController(services);
 const authController = makeAuthController(services);
 const competitionController = makeCompetitionController(services);
 const docsController = makeDocsController();
-const emailVerificationController = makeEmailVerificationController(services);
 const healthController = makeHealthController();
 const priceController = makePriceController(services);
 const tradeController = makeTradeController(services);
@@ -167,22 +161,14 @@ const voteController = makeVoteController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
-const authRoutes = configureAuthRoutes(
-  authController,
-  siweSessionMiddleware,
-  authMiddlewareInstance,
-);
+const authRoutes = configureAuthRoutes(authController, authMiddlewareInstance);
 const competitionsRoutes = configureCompetitionsRoutes(
   competitionController,
   optionalAuth,
-  siweSessionMiddleware,
   authMiddlewareInstance,
 );
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
-const emailVerificationRoutes = configureEmailVerificationRoutes(
-  emailVerificationController,
-);
 const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
 const userRoutes = configureUserRoutes(userController, voteController);
@@ -193,7 +179,6 @@ const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
 const activeCompFilter = activeCompMiddleware();
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
-apiRouter.use("/verify-email", emailVerificationRoutes);
 apiRouter.use("/trade", activeCompFilter, tradeRoutes);
 apiRouter.use("/price", activeCompFilter, priceRoutes);
 apiRouter.use("/competitions", competitionsRoutes);

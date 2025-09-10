@@ -41,7 +41,6 @@ import {
   getBulkAgentCompetitionRankings,
   getBulkBoundedSnapshots,
 } from "@/database/repositories/competition-repository.js";
-import { createEmailVerificationToken } from "@/database/repositories/email-verification-repository.js";
 import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
 import { countBulkAgentTradesInCompetitions } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
@@ -186,10 +185,6 @@ export class AgentManager {
         agentId: id,
         key: apiKey,
       });
-
-      if (email) {
-        await this.sendEmailVerification(savedAgent);
-      }
 
       serviceLogger.debug(
         `[AgentManager] Created agent: ${name} (${id}) for owner ${ownerId}`,
@@ -661,12 +656,6 @@ export class AgentManager {
         return undefined;
       }
 
-      // Check if email has changed and needs verification
-      const emailChanged = agent.email && agent.email !== existingAgent.email;
-      if (emailChanged) {
-        agent.isEmailVerified = false;
-      }
-
       // Always set updated timestamp
       agent.updatedAt = new Date();
 
@@ -705,11 +694,6 @@ export class AgentManager {
           }
         }
         throw error;
-      }
-
-      // Send verification email if email has changed
-      if (emailChanged && updatedAgent.email) {
-        await this.sendEmailVerification(updatedAgent);
       }
 
       serviceLogger.debug(
@@ -1900,112 +1884,6 @@ export class AgentManager {
         error,
       );
       return 0;
-    }
-  }
-
-  /**
-   * Create a new email verification token for an agent
-   * @param agentId The ID of the agent to create a token for
-   * @param expiresInHours How many hours until the token expires (default: 24)
-   * @returns The created token string
-   */
-  private async createEmailVerificationToken(
-    agentId: string,
-    expiresInHours: number = 24,
-  ): Promise<string> {
-    try {
-      const token = uuidv4();
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + expiresInHours);
-
-      await createEmailVerificationToken({
-        id: uuidv4(),
-        agentId,
-        token,
-        expiresAt,
-      });
-
-      serviceLogger.debug(
-        `[AgentManager] Created email verification token for agent ${agentId}`,
-      );
-      return token;
-    } catch (error) {
-      serviceLogger.error(
-        `[AgentManager] Error creating email verification token for agent ${agentId}:`,
-        error,
-      );
-      throw new Error(
-        `Failed to create email verification token: ${error instanceof Error ? error.message : error}`,
-      );
-    }
-  }
-
-  /**
-   * Send an email verification link to an agent
-   * @param agent The agent to send the verification email to
-   * @returns The created email verification token
-   */
-  private async sendEmailVerification(agent: SelectAgent): Promise<void> {
-    try {
-      if (!agent.email) {
-        serviceLogger.warn(
-          `[AgentManager] Cannot send verification email: Agent ${agent.id} has no email address`,
-        );
-        return;
-      }
-
-      const tokenString = await this.createEmailVerificationToken(agent.id, 24);
-
-      await this.emailService.sendTransactionalEmail(agent.email, tokenString);
-
-      serviceLogger.debug(
-        `[AgentManager] Sent verification email to ${agent.email} for agent ${agent.id}`,
-      );
-    } catch (error) {
-      serviceLogger.error(
-        `[AgentManager] Error sending verification email to agent ${agent.id}:`,
-        error,
-      );
-      // We don't throw here to prevent registration failure if email sending fails
-    }
-  }
-
-  /**
-   * Mark an agent's email as verified
-   * @param agentId The ID of the agent to update
-   * @returns The updated agent or undefined if not found
-   */
-  async markEmailAsVerified(agentId: string): Promise<SelectAgent | undefined> {
-    try {
-      serviceLogger.debug(
-        `[AgentManager] Marking email as verified for agent ${agentId}`,
-      );
-
-      // Update the agent with email verified flag
-      const updatedAgent = await update({
-        id: agentId,
-        isEmailVerified: true,
-      });
-
-      if (!updatedAgent) {
-        serviceLogger.debug(
-          `[AgentManager] Failed to update email verification status for agent: ${agentId}`,
-        );
-        return undefined;
-      }
-
-      serviceLogger.debug(
-        `[AgentManager] Successfully marked email as verified for agent: ${agentId}`,
-      );
-      return updatedAgent;
-    } catch (error) {
-      serviceLogger.error(
-        `[AgentManager] Error marking email as verified for agent ${agentId}:`,
-        error,
-      );
-      throw new Error(
-        `Failed to mark email as verified: ${error instanceof Error ? error.message : error}`,
-      );
     }
   }
 }

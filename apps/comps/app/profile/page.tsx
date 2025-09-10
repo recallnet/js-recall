@@ -1,39 +1,45 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import { FooterSection } from "@/components/footer-section";
 import ProfileSkeleton from "@/components/profile-skeleton";
 import UserAgentsSection from "@/components/user-agents";
 import UserCompetitionsSection from "@/components/user-competitions";
 import UserInfoSection from "@/components/user-info";
 import UserVotesSection from "@/components/user-votes";
 import { useUserAgents } from "@/hooks";
-import { useUserSession } from "@/hooks/useAuth";
-import { useUpdateProfile } from "@/hooks/useProfile";
+import { useSession } from "@/hooks/useSession";
 import { UpdateProfileRequest } from "@/types/profile";
 
 export default function ProfilePage() {
-  const session = useUserSession();
+  const { ready, isPending, backendUser, updateBackendUser, linkWallet } =
+    useSession();
   const router = useRouter();
-  const updateProfile = useUpdateProfile();
+  const pathname = usePathname();
   const { data: agents, isLoading } = useUserAgents({ limit: 100 });
 
   useEffect(() => {
-    if (!session.isInitialized) return;
-    if (!session.isLoading && !session.isProfileUpdated) {
+    if (!ready) return;
+    // Only redirect when necessary; avoid pushing to the same route
+    if (!isPending && !backendUser?.name && pathname !== "/profile/update") {
       router.push("/profile/update");
     }
-  }, [session, router]);
+  }, [ready, isPending, backendUser, pathname, router]);
 
-  if (!session.isInitialized || isLoading) {
+  if (!ready || isLoading) {
     return <ProfileSkeleton />;
   }
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
-    await updateProfile.mutateAsync(data);
+    await updateBackendUser(data);
+  };
+
+  const handleLinkWallet = async () => {
+    linkWallet();
   };
 
   return (
@@ -44,10 +50,15 @@ export default function ProfilePage() {
           { label: "USER PROFILE" },
         ]}
       />
-      <UserInfoSection user={session.user!} onSave={handleUpdateProfile} />
+      <UserInfoSection
+        user={backendUser!}
+        onSave={handleUpdateProfile}
+        onLinkWallet={handleLinkWallet}
+      />
       <UserCompetitionsSection />
       <UserAgentsSection agents={agents?.agents || []} />
       <UserVotesSection />
+      <FooterSection />
     </AuthGuard>
   );
 }

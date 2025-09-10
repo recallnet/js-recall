@@ -8,7 +8,7 @@ import {
   StartCompetitionResponse,
 } from "@/e2e/utils/api-types.js";
 import {
-  createSiweAuthenticatedClient,
+  createPrivyAuthenticatedClient,
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
@@ -313,14 +313,12 @@ describe("Leaderboard API", () => {
     const firstCompetitionId = competition.id;
 
     // Create 2 users and vote for agent 1 and agent 2, respectively
-    const { client: siweClient1 } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "SIWE Test User",
+    const { client: siweClient1 } = await createPrivyAuthenticatedClient({
+      userName: "Privy Test User",
       userEmail: "siwe-test@example.com",
     });
-    const { client: siweClient2 } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "SIWE Test User 2",
+    const { client: siweClient2 } = await createPrivyAuthenticatedClient({
+      userName: "Privy Test User 2",
       userEmail: "siwe-test2@example.com",
     });
     // Vote for each agent in the first competition
@@ -443,20 +441,17 @@ describe("Leaderboard API", () => {
     });
 
     // Create users for voting before ending competitions
-    const { client: voter1 } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: voter1 } = await createPrivyAuthenticatedClient({
       userName: "Voter One",
       userEmail: "voter1@example.com",
     });
 
-    const { client: voter2 } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: voter2 } = await createPrivyAuthenticatedClient({
       userName: "Voter Two",
       userEmail: "voter2@example.com",
     });
 
-    const { client: voter3 } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: voter3 } = await createPrivyAuthenticatedClient({
       userName: "Voter Three",
       userEmail: "voter3@example.com",
     });

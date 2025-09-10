@@ -8,14 +8,19 @@ import {
   UpdateCompetition,
 } from "@recallnet/db-schema/core/types";
 
-import { config, reloadSecurityConfig } from "@/config/index.js";
+import { reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { ActorStatus, AdminCreateAgentSchema } from "@/types/index.js";
+import {
+  ActorStatus,
+  AdminCreateAgentSchema,
+  User,
+  UserMetadata,
+} from "@/types/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
@@ -42,7 +47,10 @@ import {
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
 } from "./admin.schema.js";
-import { parseAdminSearchQuery } from "./request-helpers.js";
+import {
+  checkUserUniqueConstraintViolation,
+  parseAdminSearchQuery,
+} from "./request-helpers.js";
 
 // TODO: need user deactivation logic
 
@@ -59,18 +67,6 @@ interface Agent {
   apiKey: string;
   metadata: unknown;
   email: string | null;
-  status: ActorStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface User {
-  id: string;
-  walletAddress: string;
-  name: string | null;
-  email: string | null;
-  imageUrl: string | null;
-  metadata: unknown;
   status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -254,6 +250,8 @@ export function makeAdminController(services: ServiceRegistry) {
 
         const {
           walletAddress,
+          embeddedWalletAddress,
+          privyId,
           name,
           email,
           userImageUrl,
@@ -266,19 +264,6 @@ export function makeAdminController(services: ServiceRegistry) {
           agentWalletAddress,
         } = result.data;
 
-        // Check if a user with this wallet address already exists
-        const existingUser =
-          await services.userManager.getUserByWalletAddress(walletAddress);
-
-        if (existingUser) {
-          const errorMessage = `A user with wallet address ${walletAddress} already exists`;
-          adminLogger.warn("Duplicate wallet address error:", errorMessage);
-          return res.status(409).json({
-            success: false,
-            error: errorMessage,
-          });
-        }
-
         try {
           // Create the user
           const user = await services.userManager.registerUser(
@@ -287,6 +272,8 @@ export function makeAdminController(services: ServiceRegistry) {
             email,
             userImageUrl,
             userMetadata,
+            privyId,
+            embeddedWalletAddress,
           );
 
           let agent = null;
@@ -311,13 +298,18 @@ export function makeAdminController(services: ServiceRegistry) {
                 user: {
                   id: user.id,
                   walletAddress: user.walletAddress,
+                  walletLastVerifiedAt: user.walletLastVerifiedAt,
+                  embeddedWalletAddress: user.embeddedWalletAddress,
                   name: user.name,
                   email: user.email,
+                  isSubscribed: user.isSubscribed,
+                  privyId: user.privyId,
                   imageUrl: user.imageUrl,
                   metadata: user.metadata,
                   status: user.status,
                   createdAt: user.createdAt,
                   updatedAt: user.updatedAt,
+                  lastLoginAt: user.lastLoginAt,
                 },
                 agentError:
                   agentError instanceof Error
@@ -332,14 +324,21 @@ export function makeAdminController(services: ServiceRegistry) {
             success: true,
             user: {
               id: user.id,
+              name: user.name ?? undefined,
+              email: user.email ?? undefined,
+              isSubscribed: user.isSubscribed,
+              privyId: user.privyId ?? undefined,
               walletAddress: user.walletAddress,
-              name: user.name,
-              email: user.email,
-              imageUrl: user.imageUrl,
-              metadata: user.metadata,
+              embeddedWalletAddress: user.embeddedWalletAddress ?? "",
+              walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
+              imageUrl: user.imageUrl ?? undefined,
+              metadata: user.metadata
+                ? (user.metadata as UserMetadata)
+                : undefined,
               status: user.status as ActorStatus,
               createdAt: user.createdAt,
               updatedAt: user.updatedAt,
+              lastLoginAt: user.lastLoginAt ?? undefined,
             },
           };
 
@@ -365,17 +364,6 @@ export function makeAdminController(services: ServiceRegistry) {
         } catch (error) {
           adminLogger.error("Error registering user:", error);
 
-          // Check if this is a duplicate wallet address error that somehow got here
-          if (
-            error instanceof Error &&
-            error.message.includes("already exists")
-          ) {
-            return res.status(409).json({
-              success: false,
-              error: error.message,
-            });
-          }
-
           // Check if this is an invalid wallet address error
           if (
             error instanceof Error &&
@@ -385,6 +373,15 @@ export function makeAdminController(services: ServiceRegistry) {
             return res.status(400).json({
               success: false,
               error: error.message,
+            });
+          }
+
+          // Unique constraint violations → 409 Conflict with friendly message
+          const violatedField = checkUserUniqueConstraintViolation(error);
+          if (violatedField) {
+            return res.status(409).json({
+              success: false,
+              error: `A user with this ${violatedField} already exists`,
             });
           }
 
@@ -946,13 +943,18 @@ export function makeAdminController(services: ServiceRegistry) {
         const formattedUsers = users.map((user) => ({
           id: user.id,
           walletAddress: user.walletAddress,
+          walletLastVerifiedAt: user.walletLastVerifiedAt,
+          embeddedWalletAddress: user.embeddedWalletAddress,
           name: user.name,
           email: user.email,
+          isSubscribed: user.isSubscribed,
+          privyId: user.privyId,
           status: user.status,
           imageUrl: user.imageUrl,
           metadata: user.metadata,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          lastLoginAt: user.lastLoginAt,
         }));
 
         // Return the users
@@ -1089,13 +1091,20 @@ export function makeAdminController(services: ServiceRegistry) {
           results.users = users.map((user) => ({
             id: user.id,
             walletAddress: user.walletAddress,
-            name: user.name,
-            email: user.email,
+            walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
+            name: user.name ?? undefined,
+            email: user.email ?? undefined,
+            isSubscribed: user.isSubscribed,
+            privyId: user.privyId ?? undefined,
+            embeddedWalletAddress: user.embeddedWalletAddress ?? undefined,
             status: user.status,
-            imageUrl: user.imageUrl,
-            metadata: user.metadata,
+            imageUrl: user.imageUrl ?? undefined,
+            metadata: user.metadata
+              ? (user.metadata as UserMetadata)
+              : undefined,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+            lastLoginAt: user.lastLoginAt ?? undefined,
           }));
         }
 
@@ -1799,23 +1808,6 @@ export function makeAdminController(services: ServiceRegistry) {
             success: false,
             error: "Agent owner not found",
           });
-        }
-
-        // Auto-verify email (e.g. for development, test, or sandbox modes)
-        if (!owner.isEmailVerified) {
-          if (config.email.autoVerifyUserEmail) {
-            adminLogger.info(
-              `[DEV/TEST] Auto-verifying email for user ${agent.ownerId} in ${process.env.NODE_ENV} mode`,
-            );
-            await services.userManager.markEmailAsVerified(agent.ownerId);
-            // Continue with adding agent to competition since we just verified the email
-          } else {
-            return res.status(403).json({
-              success: false,
-              error:
-                "Agent owner's email must be verified before adding to competition",
-            });
-          }
         }
 
         // Check if agent is already in the competition

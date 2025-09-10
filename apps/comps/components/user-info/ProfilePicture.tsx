@@ -2,7 +2,11 @@ import { useClickAway } from "@uidotdev/usehooks";
 import { SquarePen } from "lucide-react";
 import React, { useState } from "react";
 
-import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
@@ -15,6 +19,7 @@ import {
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { Identicon } from "../identicon/index";
 import { ImageURLInput } from "../image-input/index";
 
 interface ProfilePictureProps {
@@ -22,6 +27,11 @@ interface ProfilePictureProps {
   isLoading?: boolean;
   onSave: (url: string) => Promise<void>;
   className?: string;
+  /** User info for generating fallback display */
+  fallbackData?: {
+    walletAddress?: string;
+    name?: string;
+  };
 }
 
 export const ProfilePicture: React.FC<ProfilePictureProps> = ({
@@ -29,6 +39,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
   isLoading,
   onSave,
   className,
+  fallbackData,
 }) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -112,6 +123,16 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
             alt="Profile picture"
             className="h-full w-full object-cover"
           />
+          <AvatarFallback className="h-full w-full">
+            <Identicon
+              size={296}
+              className="rounded-none"
+              // Note: these are are in the same order as the navbar fallback identicon
+              address={
+                fallbackData?.walletAddress || fallbackData?.name || "User"
+              }
+            />
+          </AvatarFallback>
         </Avatar>
       )}
       {overlay}

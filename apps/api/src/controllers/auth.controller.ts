@@ -1,7 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 
 import { authLogger } from "@/lib/logger.js";
+import { verifyPrivyIdentityTokenAndUpdateUser } from "@/lib/privy/verify.js";
 import { ServiceRegistry } from "@/services/index.js";
+
+import { checkUserUniqueConstraintViolation } from "./request-helpers.js";
 
 export function makeAuthController(services: ServiceRegistry) {
   /**
@@ -9,16 +12,6 @@ export function makeAuthController(services: ServiceRegistry) {
    * Handles auth endpoints
    */
   return {
-    async getNonce(req: Request, res: Response, next: NextFunction) {
-      try {
-        req.session.nonce = await services.authService.getNonce();
-        await req.session.save();
-        res.status(200).json({ nonce: req.session.nonce });
-      } catch (error) {
-        next(error);
-      }
-    },
-
     /**
      * Generate nonce for agent wallet verification
      */
@@ -48,34 +41,35 @@ export function makeAuthController(services: ServiceRegistry) {
       }
     },
 
+    /**
+     * Login a user by updating their last login at. Note: users are automatically created as part
+     * of the authorization middleware.
+     */
     async login(req: Request, res: Response, next: NextFunction) {
       try {
-        const { message, signature } = req.body;
-        const { session } = req;
-        const { success, userId, wallet } = await services.authService.login({
-          message,
-          signature,
-          session,
-        });
-        if (!success) {
-          return res
-            .status(401)
-            .json({ error: "Unauthorized: invalid signature" });
+        const identityToken = req.privyToken;
+        if (!identityToken) {
+          return res.status(401).json({ error: "Unauthorized" });
         }
-        authLogger.debug(
-          `Login successful for ${wallet} (userId: ${userId ? userId : "N/A"})`,
-        );
-        res.status(200).json({ userId, wallet });
-      } catch (error) {
-        next(error);
-      }
-    },
+        const { id: userId, walletAddress } =
+          await verifyPrivyIdentityTokenAndUpdateUser(
+            identityToken,
+            services.userManager,
+          );
 
-    async logout(req: Request, res: Response, next: NextFunction) {
-      try {
-        await services.authService.logout(req.session);
-        res.status(200).json({ message: "Logged out successfully" });
+        authLogger.debug(
+          `Login successful for user '${userId}' with wallet address '${walletAddress}'`,
+        );
+        res.status(200).json({ success: true, userId, wallet: walletAddress });
       } catch (error) {
+        // Unique constraint violations → 409 Conflict with friendly message
+        const violatedField = checkUserUniqueConstraintViolation(error);
+        if (violatedField) {
+          return res.status(409).json({
+            success: false,
+            error: `A user with this ${violatedField} already exists`,
+          });
+        }
         next(error);
       }
     },

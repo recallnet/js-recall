@@ -1,16 +1,20 @@
 export interface User {
   id: string;
   walletAddress: string;
+  walletLastVerifiedAt?: string;
+  embeddedWalletAddress?: string;
+  privyId?: string;
   status: "active" | "inactive" | "suspended" | "deleted";
-  isEmailVerified: boolean;
   name?: string;
   email?: string;
+  isSubscribed: boolean;
   imageUrl?: string;
   metadata?: {
     website?: string;
   };
   createdAt: string;
   updatedAt: string;
+  lastLoginAt?: string;
 }
 
 export interface ProfileResponse {
@@ -30,4 +34,8 @@ export interface UpdateProfileRequest {
 export interface VerifyEmailResponse {
   success: boolean;
   message: string;
+}
+
+export interface LinkWalletRequest {
+  walletAddress: string;
 }

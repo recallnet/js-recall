@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
+ 
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
 // Load coverage configuration
 const coverageConfig = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "../coverage.config.json"), "utf8")
+  fs.readFileSync(path.join(__dirname, "../coverage.config.json"), "utf8"),
 );
 
 // Path to previous report (passed as CLI argument)
@@ -21,19 +21,29 @@ function findCoverageSummaries() {
   const rootDir = path.join(__dirname, "..");
 
   // Get all apps and packages
-  const apps = fs.readdirSync(path.join(rootDir, "apps"), { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => `apps/${dirent.name}`);
+  const apps = fs
+    .readdirSync(path.join(rootDir, "apps"), { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .map((dirent) => `apps/${dirent.name}`);
 
-  const packages = fs.readdirSync(path.join(rootDir, "packages"), { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => `packages/${dirent.name}`);
+  const packages = fs
+    .readdirSync(path.join(rootDir, "packages"), { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .map((dirent) => `packages/${dirent.name}`);
 
-  [...apps, ...packages].forEach(packagePath => {
+  [...apps, ...packages].forEach((packagePath) => {
     // Check for coverage-summary.json (Vitest format)
-    const vitestSummary = path.join(rootDir, packagePath, "coverage/coverage-summary.json");
+    const vitestSummary = path.join(
+      rootDir,
+      packagePath,
+      "coverage/coverage-summary.json",
+    );
     // Check for coverage/coverage-summary.json (c8 format)
-    const c8Summary = path.join(rootDir, packagePath, "coverage/coverage-summary.json");
+    const c8Summary = path.join(
+      rootDir,
+      packagePath,
+      "coverage/coverage-summary.json",
+    );
 
     if (fs.existsSync(vitestSummary)) {
       summaries[packagePath] = vitestSummary;
@@ -83,9 +93,10 @@ function aggregateCoverage(summaryPaths) {
   // Calculate total percentages
   const total = {};
   Object.keys(totals).forEach((key) => {
-    const pct = totals[key].total > 0
-      ? (totals[key].covered / totals[key].total) * 100
-      : 0;
+    const pct =
+      totals[key].total > 0
+        ? (totals[key].covered / totals[key].total) * 100
+        : 0;
     total[key] = {
       ...totals[key],
       pct: parseFloat(pct.toFixed(2)),
@@ -204,10 +215,7 @@ function formatMetric(metric) {
  * Saves coverage report with timestamp
  */
 function saveCoverageReport(coverage) {
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[:.]/g, "-")
-    .slice(0, -5);
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
 
   const dir = path.join(__dirname, "../coverage-reports");
   if (!fs.existsSync(dir)) {
@@ -220,7 +228,7 @@ function saveCoverageReport(coverage) {
   fs.writeFileSync(filepath, JSON.stringify(coverage, null, 2));
   fs.writeFileSync(
     path.join(dir, "coverage-total.latest.json"),
-    JSON.stringify(coverage, null, 2)
+    JSON.stringify(coverage, null, 2),
   );
 
   console.log(`\nCoverage report saved to: ${filepath}`);
@@ -258,7 +266,7 @@ async function main() {
     console.error("\n❌ Coverage thresholds not met:");
     failures.forEach(({ package: pkg, metric, threshold, actual }) => {
       console.error(
-        `   ${pkg} - ${metric}: ${actual.toFixed(2)}% (required: ${threshold}%)`
+        `   ${pkg} - ${metric}: ${actual.toFixed(2)}% (required: ${threshold}%)`,
       );
     });
 

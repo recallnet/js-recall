@@ -1,0 +1,311 @@
+import {
+  ConnectWalletModalOptions,
+  LoginModalOptions,
+  User,
+  WalletWithMetadata,
+  useLinkAccount,
+  useLogin,
+  usePrivy,
+} from "@privy-io/react-auth";
+import {
+  QueryObserverResult,
+  RefetchOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  MouseEvent,
+  createContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import { ApiClient } from "@/lib/api-client";
+import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
+import { User as BackendUser, UpdateProfileRequest } from "@/types";
+
+type Session = {
+  // Login to Privy state
+  ready: boolean;
+  login: (options?: LoginModalOptions | MouseEvent<any, any>) => void;
+  user: User | null;
+  isLoginPending: boolean;
+  loginError: Error | null;
+  logout: () => Promise<void>;
+  // Allow caller to manually promt to link wallet
+  linkWallet: (
+    options?: ConnectWalletModalOptions | MouseEvent<any, any>,
+  ) => void;
+  linkWalletError: Error | null;
+
+  // Fetch user state
+  backendUser: BackendUser | undefined;
+  isFetchBackendUserLoading: boolean;
+  isFetchBackendUserError: boolean;
+  fetchBackendUserError: Error | null;
+  // Allow caller to manually refetch user data
+  refetchBackendUser: (
+    options?: RefetchOptions,
+  ) => Promise<QueryObserverResult<BackendUser | undefined, Error>>;
+
+  // Login to backend state
+  isLoginToBackendPending: boolean;
+  isLoginToBackendError: boolean;
+  loginToBackendError: Error | null;
+
+  // Update backendUser state
+  updateBackendUser: (updates: UpdateProfileRequest) => Promise<BackendUser>;
+  isUpdateBackendUserPending: boolean;
+  isUpdateBackendUserError: boolean;
+  updateBackendUserError: Error | null;
+
+  // Link wallet to backend state
+  isLinkWalletToBackendPending: boolean;
+  isLinkWalletToBackendError: boolean;
+  linkWalletToBackendError: Error | null;
+
+  // Combined state
+  isAuthenticated: boolean;
+  isPending: boolean;
+  isError: boolean;
+  error: Error | null;
+};
+
+export const SessionContext = createContext<Session | null>(null);
+
+export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
+  const apiClient = useRef(new ApiClient());
+
+  const { user, getAccessToken, ready, authenticated, logout, isModalOpen } =
+    usePrivy();
+
+  const [loginError, setLoginError] = useState<Error | null>(null);
+  const [shouldLinkWallet, setShouldLinkWallet] = useState(false);
+  const [linkWalletError, setLinkWalletError] = useState<Error | null>(null);
+
+  const { login: loginInner } = useLogin({
+    onComplete: ({ isNewUser }) => {
+      setShouldLinkWallet(isNewUser);
+      loginToBackend();
+    },
+    onError: (err) => {
+      if (err === "exited_auth_flow") return;
+      setLoginError(new Error(err));
+    },
+  });
+  const login = useCallback(
+    (options?: Parameters<typeof loginInner>[0]) => {
+      setLoginError(null);
+      loginInner(options);
+    },
+    [loginInner, setLoginError],
+  );
+
+  const {
+    mutate: loginToBackend,
+    isSuccess: isLoginToBackendSuccess,
+    isPending: isLoginToBackendPending,
+    isError: isLoginToBackendError,
+    error: loginToBackendError,
+  } = useMutation({
+    mutationFn: async () => {
+      await apiClient.current.login();
+    },
+    onSuccess: () => {
+      refetchBackendUser();
+    },
+    onError: (error) => {
+      console.error("Login to backend failed:", error);
+    },
+  });
+
+  // Query for BackendUser session data
+  const {
+    data: backendUser,
+    isLoading: isFetchBackendUserLoading,
+    isError: isFetchBackendUserError,
+    error: fetchBackendUserError,
+    refetch: refetchBackendUser,
+  } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const response = await apiClient.current.getProfile();
+      if (!response.success) {
+        throw new Error("Failed to fetch user");
+      }
+      return response.user;
+    },
+    enabled: authenticated && ready && isLoginToBackendSuccess,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    // TODO: Use a client that has better error types that include status codes.
+    // retry: (failureCount, error) => {
+    //   // Don't retry on 401/403 errors
+    //   if (error?.status === 401 || error?.status === 403) return false;
+    //   return failureCount < 3;
+    // },
+  });
+
+  const {
+    mutate: linkWalletToBackend,
+    isPending: isLinkWalletToBackendPending,
+    isError: isLinkWalletToBackendError,
+    error: linkWalletToBackendError,
+  } = useMutation({
+    mutationFn: async (walletAddress: string) => {
+      const res = await apiClient.current.linkWallet({ walletAddress });
+      if (!res.success) {
+        throw new Error("Error linking wallet to server.");
+      }
+      return res.user;
+    },
+    onSuccess: () => {
+      refetchBackendUser();
+    },
+  });
+
+  const { linkWallet: linkWalletInner } = useLinkAccount({
+    onSuccess: async ({ user, linkedAccount }) => {
+      const walletAddress = (
+        linkedAccount as WalletWithMetadata
+      ).address.toLowerCase();
+      linkWalletToBackend(walletAddress);
+    },
+    onError: (err) => {
+      if (err === "exited_link_flow") return;
+      setLinkWalletError(new Error(err));
+    },
+  });
+  const linkWallet = useCallback(
+    (options?: Parameters<typeof linkWalletInner>[0]) => {
+      setLinkWalletError(null);
+      linkWalletInner(options);
+    },
+    [linkWalletInner, setLinkWalletError],
+  );
+
+  useEffect(() => {
+    if (backendUser && shouldLinkWallet) {
+      linkWallet();
+      setShouldLinkWallet(false);
+    }
+  }, [backendUser, shouldLinkWallet, linkWallet]);
+
+  // Mutation for updating user data
+  const {
+    mutateAsync: updateBackendUser,
+    isPending: isUpdateBackendUserPending,
+    isError: isUpdateBackendUserError,
+    error: updateBackendUserError,
+  } = useMutation({
+    mutationFn: async (updates: UpdateProfileRequest) => {
+      if (!ready) throw new Error("Auth not ready");
+      if (!authenticated) throw new Error("Not authenticated");
+      const response = await apiClient.current.updateProfile(updates);
+      if (!response.success) {
+        throw new Error("Failed to fetch user");
+      }
+      return response.user;
+    },
+    onMutate: async (updates) => {
+      // Cancel outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ["user"] });
+
+      // Snapshot the previous value
+      const previousUser = queryClient.getQueryData<User>(["user"]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData<BackendUser>(["user"], (old) => {
+        if (!old) return undefined;
+        return mergeWithoutUndefined(old, updates);
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousUser: previousUser };
+    },
+    onError: (error, updates, context) => {
+      // Rollback to the previous value on error
+      if (context?.previousUser) {
+        queryClient.setQueryData(["user"], context.previousUser);
+      }
+    },
+    onSuccess: (updatedUser) => {
+      // Update cache with the actual server response
+      queryClient.setQueryData<BackendUser>(["user"], updatedUser);
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
+
+  const session: Session = {
+    // Login to Privy state
+    ready,
+    login,
+    user,
+    isLoginPending: isModalOpen,
+    loginError,
+    logout,
+    // Allow caller to manually promt to link wallet
+    linkWallet,
+    linkWalletError,
+
+    // Fetch user state
+    backendUser,
+    isFetchBackendUserLoading,
+    isFetchBackendUserError,
+    fetchBackendUserError,
+    // Allow caller to manually refetch user data
+    refetchBackendUser,
+
+    // Login to backend state
+    isLoginToBackendPending,
+    isLoginToBackendError,
+    loginToBackendError,
+
+    // Update user state
+    updateBackendUser,
+    isUpdateBackendUserPending,
+    isUpdateBackendUserError,
+    updateBackendUserError,
+
+    // Link wallet to backend state
+    isLinkWalletToBackendPending,
+    isLinkWalletToBackendError,
+    linkWalletToBackendError,
+
+    // Combined state
+    isAuthenticated: authenticated && backendUser?.status === "active",
+    isPending:
+      isModalOpen ||
+      isFetchBackendUserLoading ||
+      isLoginToBackendPending ||
+      isUpdateBackendUserPending ||
+      isLinkWalletToBackendPending,
+    isError:
+      !!loginError ||
+      !!linkWalletError ||
+      isFetchBackendUserError ||
+      isLoginToBackendError ||
+      isUpdateBackendUserError ||
+      isLinkWalletToBackendError,
+    error:
+      loginError ||
+      linkWalletError ||
+      fetchBackendUserError ||
+      loginToBackendError ||
+      updateBackendUserError ||
+      linkWalletToBackendError,
+  };
+
+  return (
+    <SessionContext.Provider value={session}>
+      {children}
+    </SessionContext.Provider>
+  );
+}
