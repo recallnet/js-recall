@@ -1,4 +1,4 @@
-import { and, count as drizzleCount, eq, ilike, sql } from "drizzle-orm";
+import { and, count as drizzleCount, eq, ilike, ne, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 import { users } from "@recallnet/db-schema/core/defs";
@@ -116,6 +116,32 @@ async function findByWalletAddressImpl(
   } catch (error) {
     repositoryLogger.error(
       "[UserRepository] Error in findByWalletAddress:",
+      error,
+    );
+    throw error;
+  }
+}
+
+async function findDuplicateByWalletAddressImpl(
+  walletAddress: string,
+  distinctFromUserId: string,
+) {
+  try {
+    const normalizedWalletAddress = walletAddress.toLowerCase();
+    const [result] = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.walletAddress, normalizedWalletAddress),
+          ne(users.id, distinctFromUserId),
+        ),
+      );
+
+    return result;
+  } catch (error) {
+    repositoryLogger.error(
+      "[UserRepository] Error in findDuplicateByWalletAddress:",
       error,
     );
     throw error;
@@ -310,6 +336,12 @@ export const findByWalletAddress = createTimedRepositoryFunction(
   findByWalletAddressImpl,
   "UserRepository",
   "findByWalletAddress",
+);
+
+export const findDuplicateByWalletAddress = createTimedRepositoryFunction(
+  findDuplicateByWalletAddressImpl,
+  "UserRepository",
+  "findDuplicateByWalletAddress",
 );
 
 export const findByEmail = createTimedRepositoryFunction(

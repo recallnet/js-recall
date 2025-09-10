@@ -105,6 +105,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [loginInner, setLoginError],
   );
 
+  const {
+    mutate: loginToBackend,
+    isSuccess: isLoginToBackendSuccess,
+    isPending: isLoginToBackendPending,
+    isError: isLoginToBackendError,
+    error: loginToBackendError,
+  } = useMutation({
+    mutationFn: async () => {
+      await apiClient.current.login();
+    },
+    onSuccess: () => {
+      refetchBackendUser();
+    },
+    onError: (error) => {
+      console.error("Login to backend failed:", error);
+    },
+  });
+
   // Query for BackendUser session data
   const {
     data: backendUser,
@@ -121,7 +139,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
       return response.user;
     },
-    enabled: authenticated && ready,
+    enabled: authenticated && ready && isLoginToBackendSuccess,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
     // TODO: Use a client that has better error types that include status codes.
@@ -130,23 +148,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     //   if (error?.status === 401 || error?.status === 403) return false;
     //   return failureCount < 3;
     // },
-  });
-
-  const {
-    mutate: loginToBackend,
-    isPending: isLoginToBackendPending,
-    isError: isLoginToBackendError,
-    error: loginToBackendError,
-  } = useMutation({
-    mutationFn: async () => {
-      await apiClient.current.login();
-    },
-    onSuccess: () => {
-      refetchBackendUser();
-    },
-    onError: (error) => {
-      console.error("Login to backend failed:", error);
-    },
   });
 
   const {
