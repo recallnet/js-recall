@@ -17,10 +17,11 @@ import {
   UserProfileResponse,
 } from "@/e2e/utils/api-types.js";
 import {
-  createSiweAuthenticatedClient,
+  createPrivyAuthenticatedClient,
   createTestAgent,
   createTestClient,
   createTestCompetition,
+  generateRandomEthAddress,
   generateTestCompetitions,
   getAdminApiKey,
   noTradingConstraints,
@@ -29,6 +30,8 @@ import {
   wait,
 } from "@/e2e/utils/test-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
+
+import { generateRandomPrivyId } from "../utils/privy.js";
 
 describe("User API", () => {
   // Clean up test state before each test
@@ -63,8 +66,13 @@ describe("User API", () => {
 
     expect(user).toBeDefined();
     expect(user.id).toBeDefined();
+    expect(user.walletAddress).toBeDefined();
+    expect(user.embeddedWalletAddress).toBeDefined();
     expect(user.name).toBe(userName);
     expect(user.email).toBe(userEmail);
+    expect(user.privyId).toBeDefined();
+    expect(user.walletLastVerifiedAt).toBeDefined();
+    expect(user.lastLoginAt).toBeDefined();
     expect(apiKey).toBeDefined();
 
     // Verify user client is authenticated
@@ -212,51 +220,96 @@ describe("User API", () => {
     expect(foundUser?.imageUrl).toBe(newImageUrl);
   });
 
-  test("fails to update email if already in use", async () => {
-    // Create a SIWE-authenticated client
-    const userEmail = `email@example.com`;
-    await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "SIWE Test User",
-      userEmail,
+  test("creating a new user with duplicate email updates on conflict", async () => {
+    // Create a Privy-authenticated client
+    const originalWalletAddress = generateRandomEthAddress();
+    const originalUserEmail = `email@example.com`;
+    const { user: originalUser } = await createPrivyAuthenticatedClient({
+      userName: "Privy Test User",
+      userEmail: originalUserEmail,
+      embeddedWalletAddress: originalWalletAddress,
+      walletAddress: originalWalletAddress,
     });
+    const originalUserId = originalUser.id;
+    // Name is derived from Privy profile; with email provider it defaults to username from email
+    expect(typeof originalUser.name).toBe("string");
+    expect(originalUser.email).toBe(originalUserEmail);
+    // New users use embedded wallet as primary wallet
+    expect(originalUser.embeddedWalletAddress).toBeDefined();
+    expect(originalUser.walletAddress).toBe(originalUser.embeddedWalletAddress);
+    expect(originalUser.walletLastVerifiedAt).toBeDefined();
+    expect(originalUser.lastLoginAt).toBeDefined();
+    const originalLastLoginAt = originalUser.lastLoginAt;
+    const originalWalletLastVerifiedAt = originalUser.walletLastVerifiedAt;
 
-    // Try to create a user with the same email
-    await expect(
-      createSiweAuthenticatedClient({
-        adminApiKey,
-        userName: "SIWE Test User",
-        userEmail,
-      }),
-    ).rejects.toMatchObject({
-      statusCode: 409,
+    // Try to create a user with the same email - should succeed and update the user name
+    const newName = "Another Privy Test User";
+    // Note: registering a new wallet address on conflict won't update the user's wallet
+    const newWalletAddress = generateRandomEthAddress();
+    // We key off of unique email upon user creation, so this should update the user
+    const existingPrivyId = originalUser.privyId;
+    const { user: updatedUser } = await createPrivyAuthenticatedClient({
+      userName: newName,
+      privyId: existingPrivyId,
+      userEmail: originalUserEmail,
+      walletAddress: newWalletAddress,
     });
-
-    // Create another user with a different email
-    const { client: otherUserClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "Other User",
-      userEmail: "other-user@example.com",
-    });
-    // Try to update the email to the other user's email
-    const updateResponse = await otherUserClient.updateUserProfile({
-      email: userEmail,
-    });
-    expect(updateResponse.success).toBe(false);
-    expect((updateResponse as ErrorResponse).error).toContain(
-      "Email already in use",
+    expect(updatedUser.id).toBe(originalUserId);
+    expect(updatedUser.email).toBe(originalUserEmail);
+    // On duplicate email, wallet info is preserved (still the embedded wallet)
+    expect(updatedUser.walletAddress).toBe(originalUser.embeddedWalletAddress);
+    expect(updatedUser.walletLastVerifiedAt).toBe(originalWalletLastVerifiedAt);
+    expect(updatedUser.embeddedWalletAddress).toBe(
+      originalUser.embeddedWalletAddress,
     );
+    // Should be updated to the "fresh" values
+    expect(updatedUser.name).toBe(newName);
+    expect(updatedUser.lastLoginAt).not.toBe(originalLastLoginAt);
   });
 
-  test("SIWE user can access their profile and manage agents", async () => {
-    // Create a SIWE-authenticated client
-    const { client: siweClient, user } = await createSiweAuthenticatedClient({
-      adminApiKey,
-      userName: "SIWE Test User",
+  test("creating a new user with duplicate wallet address creates a new account", async () => {
+    // Create a Privy-authenticated client
+    const originalWalletAddress = generateRandomEthAddress();
+    const user1Email = `user1@example.com`;
+    const { user: originalUser } = await createPrivyAuthenticatedClient({
+      walletAddress: originalWalletAddress,
+      userEmail: user1Email,
+    });
+    expect(originalUser).toBeDefined();
+
+    // Try to login with the same wallet address - /login is idempotent and should merge
+    const user2Email = `user2@example.com`;
+    const { user: mergedUser } = await createPrivyAuthenticatedClient({
+      userEmail: user2Email,
+      walletAddress: originalWalletAddress,
+    });
+    // The second login uses a different privyId with its own embedded wallet; it should not merge
+    expect(mergedUser.id).not.toBe(originalUser.id);
+  });
+
+  test("creating a new user with duplicate privyId is idempotent on login", async () => {
+    // Create a Privy-authenticated client
+    const originalPrivyId = generateRandomPrivyId();
+    const { user: originalUser } = await createPrivyAuthenticatedClient({
+      privyId: originalPrivyId,
+    });
+    expect(originalUser).toBeDefined();
+
+    // Try to login again with the same privyId - should update lastLoginAt
+    const { user: again } = await createPrivyAuthenticatedClient({
+      privyId: originalPrivyId,
+    });
+    expect(again.id).toBe(originalUser.id);
+  });
+
+  test("user can access their profile and manage agents", async () => {
+    // Create a Privy-authenticated client
+    const { client: siweClient, user } = await createPrivyAuthenticatedClient({
+      userName: "Privy Test User",
       userEmail: "siwe-test@example.com",
     });
 
-    // Test: User can get their profile via SIWE session
+    // Test: User can get their profile via Privy session
     const profileResponse = await siweClient.getUserProfile();
     expect(profileResponse.success).toBe(true);
     expect((profileResponse as UserProfileResponse).user).toBeDefined();
@@ -264,8 +317,8 @@ describe("User API", () => {
     expect((profileResponse as UserProfileResponse).user.name).toBe(user.name);
     expect((profileResponse as UserProfileResponse).user.metadata).toBeNull();
 
-    // Test: User can update their profile via SIWE session, including metadata
-    const newName = "Updated SIWE User";
+    // Test: User can update their profile via Privy session, including metadata
+    const newName = "Updated Privy User";
     const newMetadata = {
       foo: "bar",
     };
@@ -279,28 +332,28 @@ describe("User API", () => {
       newMetadata,
     );
 
-    // Test: User can create an agent via SIWE session
+    // Test: User can create an agent via Privy session
     const createAgentResponse = await createTestAgent(
       siweClient,
-      "SIWE Created Agent",
-      "Agent created via SIWE session",
+      "Privy Created Agent",
+      "Agent created via Privy session",
     );
     expect(createAgentResponse.success).toBe(true);
     expect((createAgentResponse as AgentProfileResponse).agent).toBeDefined();
     expect((createAgentResponse as AgentProfileResponse).agent.name).toBe(
-      "SIWE Created Agent",
+      "Privy Created Agent",
     );
 
-    // Test: User can list their agents via SIWE session
+    // Test: User can list their agents via Privy session
     const agentsResponse =
       (await siweClient.getUserAgents()) as GetUserAgentsResponse;
     expect(agentsResponse.success).toBe(true);
     expect(agentsResponse.agents).toBeDefined();
     expect(agentsResponse.agents.length).toBe(1);
-    expect(agentsResponse.agents[0]?.name).toBe("SIWE Created Agent");
+    expect(agentsResponse.agents[0]?.name).toBe("Privy Created Agent");
     expect(agentsResponse.agents[0]?.isVerified).toBe(false);
 
-    // Test: User can get a specific agent via SIWE session
+    // Test: User can get a specific agent via Privy session
     const agentId = (createAgentResponse as AgentProfileResponse).agent.id;
     const specificAgentResponse = await siweClient.getUserAgent(agentId);
     expect(specificAgentResponse.success).toBe(true);
@@ -309,15 +362,14 @@ describe("User API", () => {
     );
   });
 
-  test("SIWE user can update their agent profiles", async () => {
-    // Create a SIWE-authenticated client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+  test("user can update their agent profiles", async () => {
+    // Create a Privy-authenticated client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Agent Profile Test User",
       userEmail: "agent-profile-test@example.com",
     });
 
-    // Create an agent via SIWE session
+    // Create an agent via Privy session
     const createAgentResponse = await createTestAgent(
       siweClient,
       "Original Agent Name",
@@ -442,14 +494,13 @@ describe("User API", () => {
   });
 
   test("user cannot update an agent they don't own", async () => {
-    // Create a SIWE-authenticated client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Agent Profile Test User",
       userEmail: "agent-profile-test@example.com",
     });
 
-    // Create an agent via SIWE session
+    // Create an agent via Privy session
     const createAgentResponse = await createTestAgent(
       siweClient,
       "Original Agent Name",
@@ -461,8 +512,7 @@ describe("User API", () => {
 
     // Test: User cannot update agent they don't own
     // Create another user and try to update the first user's agent
-    const { client: otherUserClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: otherUserClient } = await createPrivyAuthenticatedClient({
       userName: "Other User",
       userEmail: "other-user@example.com",
     });
@@ -478,14 +528,13 @@ describe("User API", () => {
   });
 
   test("user cannot update an agent with invalid fields", async () => {
-    // Create a SIWE-authenticated client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Agent Profile Test User",
       userEmail: "agent-profile-test@example.com",
     });
 
-    // Create an agent via SIWE session
+    // Create an agent via Privy session
     const createAgentResponse = await createTestAgent(
       siweClient,
       "Original Agent Name",
@@ -510,9 +559,8 @@ describe("User API", () => {
   });
 
   test("get user agents pagination works with default parameters", async () => {
-    // Create a SIWE-authenticated client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Pagination Test User",
       userEmail: "pagination-test@example.com",
     });
@@ -557,8 +605,7 @@ describe("User API", () => {
   });
 
   test("user agents pagination respects limit parameter", async () => {
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Limit Test User",
       userEmail: "limit-test@example.com",
     });
@@ -595,8 +642,7 @@ describe("User API", () => {
   });
 
   test("user agents pagination respects offset parameter", async () => {
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Offset Test User",
       userEmail: "offset-test@example.com",
     });
@@ -639,8 +685,7 @@ describe("User API", () => {
   });
 
   test("user agents pagination combines limit and offset correctly", async () => {
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Limit Offset Test User",
       userEmail: "limit-offset-test@example.com",
     });
@@ -694,8 +739,7 @@ describe("User API", () => {
   });
 
   test("user agents sorting works correctly", async () => {
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Sort Test User",
       userEmail: "sort-test@example.com",
     });
@@ -764,8 +808,7 @@ describe("User API", () => {
   });
 
   test("user agents sorting combined with pagination", async () => {
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Sort Pagination Test User",
       userEmail: "sort-pagination-test@example.com",
     });
@@ -810,14 +853,12 @@ describe("User API", () => {
 
   test("user agents pagination only returns agents owned by authenticated user", async () => {
     // Create two different users
-    const { client: user1Client } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: user1Client } = await createPrivyAuthenticatedClient({
       userName: "User 1",
       userEmail: "user1@example.com",
     });
 
-    const { client: user2Client } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: user2Client } = await createPrivyAuthenticatedClient({
       userName: "User 2",
       userEmail: "user2@example.com",
     });
@@ -875,8 +916,7 @@ describe("User API", () => {
   });
 
   test("user agents API returns consistent structure with pagination", async () => {
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Structure Test User",
       userEmail: "structure-test@example.com",
     });
@@ -935,8 +975,7 @@ describe("User API", () => {
   });
 
   test("user agents pagination handles edge cases gracefully", async () => {
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Edge Case Test User",
       userEmail: "edge-case-test@example.com",
     });
@@ -972,9 +1011,8 @@ describe("User API", () => {
   });
 
   test("user cannot create agents with duplicate names", async () => {
-    // Create a SIWE-authenticated client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Duplicate Agent Name Test User",
       userEmail: "duplicate-agent-name-test@example.com",
     });
@@ -1005,9 +1043,8 @@ describe("User API", () => {
 
   describe("User Agent API Key Access", () => {
     test("user can retrieve their own agent's API key", async () => {
-      // Create a SIWE authenticated user client
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy authenticated user client
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "API Key Test User",
         userEmail: "api-key-test@example.com",
       });
@@ -1035,14 +1072,12 @@ describe("User API", () => {
 
     test("user cannot retrieve API key for agent they don't own", async () => {
       // Create two different users
-      const { client: user1Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: user1Client } = await createPrivyAuthenticatedClient({
         userName: "User 1",
         userEmail: "user1-apikey@example.com",
       });
 
-      const { client: user2Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: user2Client } = await createPrivyAuthenticatedClient({
         userName: "User 2",
         userEmail: "user2-apikey@example.com",
       });
@@ -1067,8 +1102,7 @@ describe("User API", () => {
 
     test("unauthenticated user cannot retrieve any agent API key", async () => {
       // Create an agent first
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Agent Owner",
         userEmail: "agent-owner@example.com",
       });
@@ -1095,9 +1129,8 @@ describe("User API", () => {
     });
 
     test("user gets 404 for non-existent agent API key", async () => {
-      // Create a SIWE authenticated user client
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy authenticated user client
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "404 Test User",
         userEmail: "404-test@example.com",
       });
@@ -1113,9 +1146,8 @@ describe("User API", () => {
     });
 
     test("user gets 400 for invalid agent ID format", async () => {
-      // Create a SIWE authenticated user client
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy authenticated user client
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Invalid ID Test User",
         userEmail: "invalid-id-test@example.com",
       });
@@ -1132,9 +1164,8 @@ describe("User API", () => {
     });
 
     test("API key endpoint returns consistent format", async () => {
-      // Create a SIWE authenticated user client
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy authenticated user client
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Format Test User",
         userEmail: "format-test@example.com",
       });
@@ -1172,9 +1203,8 @@ describe("User API", () => {
     });
 
     test("retrieved API key works for agent authentication", async () => {
-      // Create a SIWE authenticated user client
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create a Privy authenticated user client
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Auth Test User",
         userEmail: "auth-test@example.com",
       });
@@ -1209,7 +1239,7 @@ describe("User API", () => {
     });
   });
 
-  test("SIWE user can get competitions for their agents", async () => {
+  test("user can get competitions for their agents", async () => {
     const { client1, user1 } = await generateTestCompetitions(adminApiKey);
     // Test: User can get competitions for their agents
     const competitionsResponse =
@@ -1354,8 +1384,7 @@ describe("User API", () => {
   describe("User Competitions Sorting and Pagination", () => {
     test("user competitions throw 400 error for invalid sort fields", async () => {
       // Create a user with agent
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Invalid Sort Test User",
         userEmail: "invalid-sort-test@example.com",
       });
@@ -1388,8 +1417,7 @@ describe("User API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a user with multiple agents
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Pagination Bug Test User",
         userEmail: "pagination-bug-test@example.com",
       });
@@ -1461,8 +1489,7 @@ describe("User API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a user with agent
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "HasMore Test User",
         userEmail: "hasmore-test@example.com",
       });
@@ -1519,8 +1546,7 @@ describe("User API", () => {
 
     test("user competitions pagination handles offset beyond total", async () => {
       // Create a user with agent and limited competitions
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Offset Edge Test User",
         userEmail: "offset-edge-test@example.com",
       });
@@ -1569,8 +1595,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Valid Sort Test User",
         userEmail: "valid-sort-test@example.com",
       });
@@ -1691,8 +1716,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Correct Format Test User",
         userEmail: "correct-format-test@example.com",
       });
@@ -1780,8 +1804,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Multiple Sort Test User",
         userEmail: "multiple-sort-test@example.com",
       });
@@ -1850,8 +1873,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "AgentName Sort Test User",
         userEmail: "agentname-sort-test@example.com",
       });
@@ -1926,8 +1948,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Multi-Agent Sort Test User",
         userEmail: "multi-agent-sort-test@example.com",
       });
@@ -2018,8 +2039,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Rank Sort Test User",
         userEmail: "rank-sort-test@example.com",
       });
@@ -2153,8 +2173,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Undefined Rank Test User",
         userEmail: "undefined-rank-test@example.com",
       });
@@ -2214,8 +2233,7 @@ describe("User API", () => {
 
     test("user competitions new sort fields validation", async () => {
       // Test that the new sort fields are properly validated
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "New Sort Validation User",
         userEmail: "new-sort-validation@example.com",
       });
@@ -2259,8 +2277,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Combined Sort Test User",
         userEmail: "combined-sort-test@example.com",
       });
@@ -2309,8 +2326,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "AgentName Pagination Test User",
         userEmail: "agentname-pagination-test@example.com",
       });
@@ -2426,8 +2442,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Rank Pagination Test User",
         userEmail: "rank-pagination-test@example.com",
       });
@@ -2552,8 +2567,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Computed Pagination Test User",
         userEmail: "computed-pagination-test@example.com",
       });
@@ -2671,8 +2685,7 @@ describe("User API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Mixed Sort Pagination User",
         userEmail: "mixed-sort-pagination@example.com",
       });
@@ -2755,9 +2768,8 @@ describe("User API", () => {
   });
 
   test("user agents have correct stats after one competition", async () => {
-    // Create a SIWE-authenticated client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Best Placement Test User",
       userEmail: "bestplacement-test@example.com",
     });
@@ -2953,9 +2965,8 @@ describe("User API", () => {
   });
 
   test("two agents in multiple competitions have correct stats", async () => {
-    // Create a SIWE-authenticated client
-    const { client: siweClient } = await createSiweAuthenticatedClient({
-      adminApiKey,
+    // Create a Privy-authenticated client
+    const { client: siweClient } = await createPrivyAuthenticatedClient({
       userName: "Multi Competition Test User",
       userEmail: "multicomp-test@example.com",
     });
@@ -3129,36 +3140,5 @@ describe("User API", () => {
     // Ensure ranks are the same since each agent has won one comp
     expect(agentFoxtrotRank).toBe(agentHotelRank);
     expect(agentFoxtrotRank).toBe(1);
-  });
-
-  describe("Email Verification", () => {
-    test("unauthenticated user cannot verify email", async () => {
-      // Create unauthenticated client
-      const unauthenticatedClient = createTestClient();
-
-      // Try to verify email without authentication
-      const unauthResponse = await unauthenticatedClient.verifyEmail();
-      expect(unauthResponse.success).toBe(false);
-      expect((unauthResponse as ErrorResponse).status).toBe(401);
-    });
-
-    test("email verification endpoint returns consistent response structure", async () => {
-      // Create a SIWE-authenticated client
-      const { client: siweClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
-        userName: "Response Structure Test User",
-        userEmail: "response-structure-test@example.com",
-      });
-
-      // Test response structure with invalid token (we know this will fail)
-      const response = await siweClient.verifyEmail();
-
-      // Verify response structure regardless of success/failure
-      expect(response).toHaveProperty("success");
-      expect(response.success).toBe(true);
-      expect(response.message).toBe(
-        "Email verification initiated successfully",
-      );
-    });
   });
 });

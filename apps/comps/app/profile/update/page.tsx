@@ -6,28 +6,26 @@ import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import ProfileSkeleton from "@/components/profile-skeleton";
 import { UpdateProfile } from "@/components/update-profile";
-import { useUserSession } from "@/hooks/useAuth";
-import { useUpdateProfile } from "@/hooks/useProfile";
 import { useRedirectTo } from "@/hooks/useRedirectTo";
+import { useSession } from "@/hooks/useSession";
 import { UpdateProfileRequest } from "@/types/profile";
 
 function UpdateProfileView() {
-  const updateProfile = useUpdateProfile();
-  const session = useUserSession();
+  const session = useSession();
   const { redirect } = useRedirectTo("/profile");
 
   useEffect(() => {
-    if (session.isInitialized && session.isProfileUpdated) {
+    if (session.ready && session.backendUser?.name) {
       redirect();
     }
   }, [session, redirect]);
 
-  if (!session.isInitialized) {
+  if (!session.ready) {
     return <ProfileSkeleton />;
   }
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
-    await updateProfile.mutateAsync(data);
+    await session.updateBackendUser(data);
     redirect();
   };
 

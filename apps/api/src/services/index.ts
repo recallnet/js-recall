@@ -1,12 +1,10 @@
 import { AdminManager } from "@/services/admin-manager.service.js";
 import { AgentManager } from "@/services/agent-manager.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
-import { AuthService } from "@/services/auth.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
-import { EmailVerificationService } from "@/services/email-verification.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
@@ -24,7 +22,6 @@ class ServiceRegistry {
   private static instance: ServiceRegistry;
 
   // Services
-  private _authService: AuthService;
   private _balanceManager: BalanceManager;
   private _priceTracker: PriceTracker;
   private _tradeSimulator: TradeSimulator;
@@ -38,7 +35,6 @@ class ServiceRegistry {
   private _voteManager: VoteManager;
   private _agentRankService: AgentRankService;
   private _emailService: EmailService;
-  private _emailVerificationService: EmailVerificationService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
 
@@ -56,9 +52,6 @@ class ServiceRegistry {
       this._portfolioSnapshotter,
     );
 
-    // Initialize auth service (no dependencies needed)
-    this._authService = new AuthService();
-
     // Configuration service for dynamic settings
     this._configurationService = new ConfigurationService();
 
@@ -75,12 +68,6 @@ class ServiceRegistry {
     this._userManager = new UserManager(this._emailService);
     this._agentManager = new AgentManager(this._emailService);
     this._adminManager = new AdminManager();
-
-    // Initialize email verification service (requires user and agent managers)
-    this._emailVerificationService = new EmailVerificationService(
-      this._userManager,
-      this._agentManager,
-    );
 
     // Initialize trading constraints service (no dependencies)
     this._tradingConstraintsService = new TradingConstraintsService();
@@ -111,10 +98,6 @@ class ServiceRegistry {
   }
 
   // Service getters
-  get authService(): AuthService {
-    return this._authService;
-  }
-
   get balanceManager(): BalanceManager {
     return this._balanceManager;
   }
@@ -167,10 +150,6 @@ class ServiceRegistry {
     return this._emailService;
   }
 
-  get emailVerificationService(): EmailVerificationService {
-    return this._emailVerificationService;
-  }
-
   get tradingConstraintsService(): TradingConstraintsService {
     return this._tradingConstraintsService;
   }
@@ -184,12 +163,10 @@ export {
   AdminManager,
   AgentManager,
   AgentRankService,
-  AuthService,
   BalanceManager,
   CompetitionManager,
   CompetitionRewardService,
   ConfigurationService,
-  EmailVerificationService,
   EmailService,
   LeaderboardService,
   PortfolioSnapshotter,

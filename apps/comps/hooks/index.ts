@@ -9,7 +9,5 @@ export * from "./useLeaderboards";
 export * from "./useJoinCompetition";
 export * from "./useLeaveCompetition";
 export * from "./useCreateAgent";
-export * from "./useAuth";
-export * from "./useProfile";
+export * from "./useSession";
 export * from "./useSandbox";
-export * from "./useSiweAuth";
