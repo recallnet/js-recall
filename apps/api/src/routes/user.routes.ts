@@ -1026,7 +1026,7 @@ export function configureUserRoutes(
   /**
    * @openapi
    * /api/user/subscribe:
-   *   get:
+   *   post:
    *     summary: Subscribe to Loops mailing list
    *     description: Subscribe the authenticated user to the Loops mailing list
    *     tags:
@@ -1066,7 +1066,7 @@ export function configureUserRoutes(
    *
    * @openapi
    * /api/user/unsubscribe:
-   *   get:
+   *   post:
    *     summary: Unsubscribe from Loops mailing list
    *     description: Unsubscribe the authenticated user from the Loops mailing list
    *     tags:
