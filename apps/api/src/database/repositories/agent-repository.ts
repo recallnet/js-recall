@@ -16,6 +16,7 @@ import {
   competitionsLeaderboard,
 } from "@recallnet/db-schema/core/defs";
 import { InsertAgent, SelectAgent } from "@recallnet/db-schema/core/types";
+import { Transaction } from "@recallnet/db-schema/types";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
@@ -944,6 +945,31 @@ async function getBulkAgentTrophiesImpl(agentIds: string[]): Promise<
   }
 }
 
+/**
+ * Update the agent owner for all of their agents
+ * @param userId The userId of the existing owner
+ * @param newUserId The userId of the new owner
+ * @param tx An optional database transaction to run the operation in
+ * @returns The number of rows updated
+ */
+async function updateAgentsOwnerImpl(
+  userId: string,
+  newUserId: string,
+  tx?: Transaction,
+) {
+  try {
+    const executor = tx || db;
+    const res = await executor
+      .update(agents)
+      .set({ ownerId: newUserId })
+      .where(eq(agents.ownerId, userId));
+    return res.rowCount || 0;
+  } catch (error) {
+    console.error("[AgentRepository] Error in updateAgentsOwner:", error);
+    throw error;
+  }
+}
+
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -1077,4 +1103,10 @@ export const getBulkAgentTrophies = createTimedRepositoryFunction(
   getBulkAgentTrophiesImpl,
   "AgentRepository",
   "getBulkAgentTrophies",
+);
+
+export const updateAgentsOwner = createTimedRepositoryFunction(
+  updateAgentsOwnerImpl,
+  "AgentRepository",
+  "updateAgentsOwner",
 );

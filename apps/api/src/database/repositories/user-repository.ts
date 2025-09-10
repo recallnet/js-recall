@@ -1,8 +1,9 @@
-import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
+import { and, count as drizzleCount, eq, ilike, ne, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 import { users } from "@recallnet/db-schema/core/defs";
 import { InsertUser, SelectUser } from "@recallnet/db-schema/core/types";
+import { Transaction } from "@recallnet/db-schema/types";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
@@ -23,62 +24,50 @@ import { PartialExcept } from "./types.js";
 async function createImpl(user: InsertUser): Promise<SelectUser> {
   try {
     const now = new Date();
-    const normalizedWalletAddress = user.walletAddress.toLowerCase();
+    const normalizedWalletAddress = user.walletAddress?.toLowerCase();
+    const normalizedEmbeddedWalletAddress =
+      user.embeddedWalletAddress?.toLowerCase();
     const data = {
       ...user,
+      id: user.id ?? uuidv4(),
       walletAddress: normalizedWalletAddress,
+      embeddedWalletAddress: normalizedEmbeddedWalletAddress,
       createdAt: user.createdAt || now,
       updatedAt: user.updatedAt || now,
+      lastLoginAt: user.lastLoginAt || now,
     };
-    const [result] = await db.insert(users).values(data).returning();
+    // Idempotent create: on email conflict, update existing record with new data
+    const [row] = await db
+      .insert(users)
+      .values(data)
+      .onConflictDoUpdate({
+        target: users.email,
+        set: {
+          // Backfill fields if they don't exist, but preserve existing values when present
+          walletAddress: sql`COALESCE(${users.walletAddress}, EXCLUDED.wallet_address)`,
+          walletLastVerifiedAt: sql`COALESCE(${users.walletLastVerifiedAt}, EXCLUDED.wallet_last_verified_at )`,
+          embeddedWalletAddress: sql`COALESCE(${users.embeddedWalletAddress}, EXCLUDED.embedded_wallet_address)`,
+          privyId: sql`COALESCE(${users.privyId}, EXCLUDED.privy_id)`,
+          name: sql`COALESCE(${users.name}, EXCLUDED.name)`,
+          imageUrl: sql`COALESCE(${users.imageUrl}, EXCLUDED.image_url)`,
+          metadata: sql`COALESCE(${users.metadata}, EXCLUDED.metadata)`,
+          isSubscribed: sql`COALESCE(EXCLUDED.is_subscribed, ${users.isSubscribed})`,
 
-    if (!result) {
-      throw new Error("Failed to create user - no result returned");
-    }
+          // Prefer new values for timestamp fields
+          updatedAt: sql`GREATEST(${users.updatedAt}, EXCLUDED.updated_at)`,
+          lastLoginAt: sql`GREATEST(${users.lastLoginAt}, EXCLUDED.last_login_at)`,
+        },
+      })
+      .returning();
 
-    return result;
-  } catch (error) {
-    console.error("[UserRepository] Error in create:", error);
-    throw error;
-  }
-}
-
-/**
- * Create a new user from a wallet address
- * This is typically used during the SIWE login process if a user record
- * doesn't exist yet for a successfully authenticated wallet.
- * @param walletAddress The wallet address of the user to create
- * @returns The newly created user object
- */
-async function createUserFromWalletImpl(
-  walletAddress: string,
-): Promise<SelectUser> {
-  try {
-    const now = new Date();
-    const normalizedWalletAddress = walletAddress.toLowerCase();
-    const newUser: InsertUser = {
-      id: uuidv4(),
-      walletAddress: normalizedWalletAddress,
-      status: "active",
-      createdAt: now,
-      updatedAt: now,
-    };
-    const [result] = await db.insert(users).values(newUser).returning();
-
-    if (!result) {
+    if (!row) {
       throw new Error(
-        `[UserRepository] Failed to create user from wallet ${normalizedWalletAddress} - no result returned`,
+        "Failed to create or retrieve existing user after conflict",
       );
     }
-    repositoryLogger.debug(
-      `Created new user ${result.id} for wallet ${normalizedWalletAddress}`,
-    );
-    return result;
+    return row;
   } catch (error) {
-    console.error(
-      `[UserRepository] Error in createUserFromWallet for wallet ${walletAddress}:`,
-      error,
-    );
+    repositoryLogger.error("[UserRepository] Error in create:", error);
     throw error;
   }
 }
@@ -90,7 +79,7 @@ async function findAllImpl(): Promise<SelectUser[]> {
   try {
     return await db.select().from(users);
   } catch (error) {
-    console.error("[UserRepository] Error in findAll:", error);
+    repositoryLogger.error("[UserRepository] Error in findAll:", error);
     throw error;
   }
 }
@@ -104,7 +93,7 @@ async function findByIdImpl(id: string): Promise<SelectUser | undefined> {
     const [result] = await db.select().from(users).where(eq(users.id, id));
     return result;
   } catch (error) {
-    console.error("[UserRepository] Error in findById:", error);
+    repositoryLogger.error("[UserRepository] Error in findById:", error);
     throw error;
   }
 }
@@ -125,7 +114,36 @@ async function findByWalletAddressImpl(
 
     return result;
   } catch (error) {
-    console.error("[UserRepository] Error in findByWalletAddress:", error);
+    repositoryLogger.error(
+      "[UserRepository] Error in findByWalletAddress:",
+      error,
+    );
+    throw error;
+  }
+}
+
+async function findDuplicateByWalletAddressImpl(
+  walletAddress: string,
+  distinctFromUserId: string,
+) {
+  try {
+    const normalizedWalletAddress = walletAddress.toLowerCase();
+    const [result] = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.walletAddress, normalizedWalletAddress),
+          ne(users.id, distinctFromUserId),
+        ),
+      );
+
+    return result;
+  } catch (error) {
+    repositoryLogger.error(
+      "[UserRepository] Error in findDuplicateByWalletAddress:",
+      error,
+    );
     throw error;
   }
 }
@@ -143,7 +161,27 @@ async function findByEmailImpl(email: string): Promise<SelectUser | undefined> {
 
     return result;
   } catch (error) {
-    console.error("[UserRepository] Error in findByEmail:", error);
+    repositoryLogger.error("[UserRepository] Error in findByEmail:", error);
+    throw error;
+  }
+}
+
+/**
+ * Find a user by Privy ID
+ * @param privyId The Privy ID to search for
+ */
+async function findByPrivyIdImpl(
+  privyId: string,
+): Promise<SelectUser | undefined> {
+  try {
+    const [result] = await db
+      .select()
+      .from(users)
+      .where(eq(users.privyId, privyId));
+
+    return result;
+  } catch (error) {
+    repositoryLogger.error("[UserRepository] Error in findByPrivyId:", error);
     throw error;
   }
 }
@@ -151,19 +189,25 @@ async function findByEmailImpl(email: string): Promise<SelectUser | undefined> {
 /**
  * Update a user
  * @param user User data to update (must include id)
+ * @param tx An optional database transaction to run the opeation in
  */
 async function updateImpl(
   user: PartialExcept<InsertUser, "id">,
+  tx?: Transaction,
 ): Promise<SelectUser> {
   try {
     const now = new Date();
     const normalizedWalletAddress = user.walletAddress?.toLowerCase();
+    const normalizedEmbeddedWalletAddress =
+      user.embeddedWalletAddress?.toLowerCase();
     const data = {
       ...user,
       walletAddress: normalizedWalletAddress,
+      embeddedWalletAddress: normalizedEmbeddedWalletAddress,
       updatedAt: now,
     };
-    const [result] = await db
+    const executor = tx || db;
+    const [result] = await executor
       .update(users)
       .set(data)
       .where(eq(users.id, user.id))
@@ -175,7 +219,7 @@ async function updateImpl(
 
     return result;
   } catch (error) {
-    console.error("[UserRepository] Error in update:", error);
+    repositoryLogger.error("[UserRepository] Error in update:", error);
     throw error;
   }
 }
@@ -183,15 +227,20 @@ async function updateImpl(
 /**
  * Delete a user by ID
  * @param id User ID to delete
+ * @param tx An optional database transaction to run the operation in
  * @returns true if user was deleted, false otherwise
  */
-async function deleteUserImpl(id: string): Promise<boolean> {
+async function deleteUserImpl(id: string, tx?: Transaction): Promise<boolean> {
   try {
-    const [result] = await db.delete(users).where(eq(users.id, id)).returning();
+    const executor = tx || db;
+    const [result] = await executor
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning();
 
     return !!result;
   } catch (error) {
-    console.error("[UserRepository] Error in delete:", error);
+    repositoryLogger.error("[UserRepository] Error in delete:", error);
     throw error;
   }
 }
@@ -238,7 +287,7 @@ async function searchUsersImpl(
       .from(users)
       .where(and(...conditions));
   } catch (error) {
-    console.error("[UserRepository] Error in searchUsers:", error);
+    repositoryLogger.error("[UserRepository] Error in searchUsers:", error);
     throw error;
   }
 }
@@ -251,7 +300,7 @@ async function countImpl(): Promise<number> {
     const [result] = await db.select({ count: drizzleCount() }).from(users);
     return result?.count ?? 0;
   } catch (error) {
-    console.error("[UserRepository] Error in count:", error);
+    repositoryLogger.error("[UserRepository] Error in count:", error);
     throw error;
   }
 }
@@ -269,12 +318,6 @@ export const create = createTimedRepositoryFunction(
   createImpl,
   "UserRepository",
   "create",
-);
-
-export const createUserFromWallet = createTimedRepositoryFunction(
-  createUserFromWalletImpl,
-  "UserRepository",
-  "createUserFromWallet",
 );
 
 export const findAll = createTimedRepositoryFunction(
@@ -295,10 +338,22 @@ export const findByWalletAddress = createTimedRepositoryFunction(
   "findByWalletAddress",
 );
 
+export const findDuplicateByWalletAddress = createTimedRepositoryFunction(
+  findDuplicateByWalletAddressImpl,
+  "UserRepository",
+  "findDuplicateByWalletAddress",
+);
+
 export const findByEmail = createTimedRepositoryFunction(
   findByEmailImpl,
   "UserRepository",
   "findByEmail",
+);
+
+export const findByPrivyId = createTimedRepositoryFunction(
+  findByPrivyIdImpl,
+  "UserRepository",
+  "findByPrivyId",
 );
 
 export const update = createTimedRepositoryFunction(

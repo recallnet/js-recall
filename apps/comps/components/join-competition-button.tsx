@@ -5,14 +5,14 @@ import { Button } from "@recallnet/ui2/components/button";
 import { toast } from "@recallnet/ui2/components/toast";
 
 import { useUserAgents } from "@/hooks/useAgents";
-import { useUserSession } from "@/hooks/useAuth";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useJoinCompetition } from "@/hooks/useJoinCompetition";
+import { useSession } from "@/hooks/useSession";
 
 import AgentRegisteredModal from "./modals/agent-registered";
 import { ChooseAgentModal } from "./modals/choose-agent";
 import ConfirmAgentEntryModal from "./modals/confirm-agent-entry";
-import { ConnectWalletModal } from "./modals/connect-wallet";
+import { ConnectPrivyModal } from "./modals/connect-privy";
 import { CreateAccountModal } from "./modals/create-account";
 import { SetupAgentModal } from "./modals/setup-agent";
 
@@ -24,7 +24,7 @@ interface JoinCompetitionButtonProps
 }
 
 type ModalTypes =
-  | "connectWallet"
+  | "connectAccount"
   | "chooseAgent"
   | "setupAgent"
   | "createAccount"
@@ -39,7 +39,7 @@ export function JoinCompetitionButton({
   children = "Join Competition",
   ...props
 }: JoinCompetitionButtonProps) {
-  const session = useUserSession();
+  const session = useSession();
   const { data: userAgents } = useUserAgents();
   const { data: competition } = useCompetition(competitionId);
   const [activeModal, setActiveModal] = useState<ModalTypes>(null);
@@ -92,7 +92,7 @@ export function JoinCompetitionButton({
   };
 
   const handleClick = () => {
-    if (!session.isInitialized) {
+    if (!session.ready) {
       return;
     }
 
@@ -139,11 +139,11 @@ export function JoinCompetitionButton({
     }
 
     if (!session.isAuthenticated) {
-      setActiveModal("connectWallet");
+      setActiveModal("connectAccount");
       return;
     }
 
-    if (!session.isProfileUpdated) {
+    if (!session.backendUser?.name) {
       setActiveModal("createAccount");
       return;
     }
@@ -201,8 +201,8 @@ export function JoinCompetitionButton({
       >
         {children}
       </Button>
-      <ConnectWalletModal
-        isOpen={activeModal === "connectWallet"}
+      <ConnectPrivyModal
+        isOpen={activeModal === "connectAccount"}
         onClose={() => setActiveModal(null)}
       />
       <ChooseAgentModal

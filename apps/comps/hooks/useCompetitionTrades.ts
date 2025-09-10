@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { useSession } from "@/hooks/useSession";
 import { ApiClient } from "@/lib/api-client";
-import { useUser } from "@/state/atoms";
 import { CompetitionTradesResponse, GetCompetitionTradesParams } from "@/types";
 
 const apiClient = new ApiClient();
@@ -16,7 +16,7 @@ export const useCompetitionTrades = (
   competitionId?: string,
   params: GetCompetitionTradesParams = {},
 ) => {
-  const user = useUser();
+  const { isAuthenticated } = useSession();
 
   return useQuery({
     queryKey: ["competition-trades", competitionId, params],
@@ -24,7 +24,7 @@ export const useCompetitionTrades = (
       if (!competitionId) throw new Error("Competition ID is required");
       return apiClient.getCompetitionTrades(competitionId, params);
     },
-    enabled: !!competitionId && user.status === "authenticated",
+    enabled: !!competitionId && isAuthenticated,
     placeholderData: (prev) => prev,
   });
 };

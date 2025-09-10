@@ -22,3 +22,11 @@ export function extractApiKey(req: Request): string | undefined {
 
   return apiKey;
 }
+
+/**
+ * Check if a path is the login endpoint
+ * @param path - The path to check
+ * @returns True if the path is a login endpoint, false otherwise
+ */
+export const isLoginEndpoint = (path: string) =>
+  path.includes("/api/auth/login");

@@ -76,7 +76,7 @@ Before marking a task complete or merging code, the following commands **MUST** 
 Commonly used scripts defined in `package.json` or `turbo.json`:
 
 - `pnpm build`: Build all packages and apps.
-- `pnpm dev`: Run the development environment (likely starts `portal` and potentially other apps).
+- `pnpm dev`: Run the development environment, starting the api and comps apps.
 - `pnpm lint`: Run ESLint checks across the monorepo.
 - `pnpm format`: Format code with Prettier.
 - `pnpm format:check`: Check formatting without making changes.

@@ -10,7 +10,7 @@ import {
   VotingStateResponse,
 } from "@/e2e/utils/api-types.js";
 import {
-  createSiweAuthenticatedClient,
+  createPrivyAuthenticatedClient,
   createTestClient,
   createTestCompetition,
   getAdminApiKey,
@@ -32,7 +32,7 @@ describe("Voting API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Register agents with their owner SIWE clients
+      // Register agents with their owner Privy clients
       const { agent: agent1, client: agent1OwnerClient } =
         await registerUserAndAgentAndGetClient({
           adminApiKey,
@@ -58,7 +58,7 @@ describe("Voting API", () => {
       });
       const competition = competitionResponse.competition;
 
-      // Join agents to the competition using their owner's SIWE authentication
+      // Join agents to the competition using their owner's Privy authentication
       const joinResponse1 = await agent1OwnerClient.joinCompetition(
         competition.id,
         agent1.id,
@@ -71,12 +71,13 @@ describe("Voting API", () => {
       );
       expect(joinResponse2.success).toBe(true);
 
-      // Create SIWE authenticated user for voting (different from agent owners)
-      const { client: userClient, user } = await createSiweAuthenticatedClient({
-        adminApiKey,
-        userName: "Voting User",
-        userEmail: "voter@test.com",
-      });
+      // Create Privy authenticated user for voting (different from agent owners)
+      const { client: userClient, user } = await createPrivyAuthenticatedClient(
+        {
+          userName: "Voting User",
+          userEmail: "voter@test.com",
+        },
+      );
 
       // Cast a vote for agent1
       const voteResponse = await userClient.castVote(agent1.id, competition.id);
@@ -130,12 +131,14 @@ describe("Voting API", () => {
         competitionId: competition.id,
         agentIds: [agent1.id, agent2.id],
       });
-      // Create SIWE authenticated user
-      const { client: userClient, user } = await createSiweAuthenticatedClient({
-        adminApiKey,
-        userName: "Active Voter",
-        userEmail: "active-voter@test.com",
-      });
+
+      // Create Privy authenticated user
+      const { client: userClient, user } = await createPrivyAuthenticatedClient(
+        {
+          userName: "Active Voter",
+          userEmail: "active-voter@test.com",
+        },
+      );
 
       // Cast a vote for agent2
       const voteResponse = await userClient.castVote(agent2.id, competition.id);
@@ -190,9 +193,8 @@ describe("Voting API", () => {
         agentIds: [agent1.id, agent2.id],
       });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Duplicate Voter",
         userEmail: "duplicate-voter@test.com",
       });
@@ -258,18 +260,16 @@ describe("Voting API", () => {
         agentIds: [agent1.id, agent2.id],
       });
 
-      // Create first SIWE authenticated user
+      // Create first Privy authenticated user
       const { client: user1Client, user: user1 } =
-        await createSiweAuthenticatedClient({
-          adminApiKey,
+        await createPrivyAuthenticatedClient({
           userName: "Voter One",
           userEmail: "voter1@test.com",
         });
 
-      // Create second SIWE authenticated user
+      // Create second Privy authenticated user
       const { client: user2Client, user: user2 } =
-        await createSiweAuthenticatedClient({
-          adminApiKey,
+        await createPrivyAuthenticatedClient({
           userName: "Voter Two",
           userEmail: "voter2@test.com",
         });
@@ -352,9 +352,8 @@ describe("Voting API", () => {
       });
       const competition = competitionResponse.competition;
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Invalid Agent Voter",
         userEmail: "invalid-agent-voter@test.com",
       });
@@ -398,9 +397,8 @@ describe("Voting API", () => {
       });
       const competition = competitionResponse.competition;
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Participation Voter",
         userEmail: "participation-voter@test.com",
       });
@@ -417,9 +415,8 @@ describe("Voting API", () => {
     });
 
     test("should handle invalid request data", async () => {
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Invalid Data Voter",
         userEmail: "invalid-data-voter@test.com",
       });
@@ -467,9 +464,8 @@ describe("Voting API", () => {
       // Join agent to competition
       await adminClient.joinCompetition(competition.id, agent1.id);
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "State Voter",
         userEmail: "state-voter@test.com",
       });
@@ -524,9 +520,8 @@ describe("Voting API", () => {
         agentIds: [agent1.id],
       });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Voted State User",
         userEmail: "voted-state-user@test.com",
       });
@@ -594,9 +589,8 @@ describe("Voting API", () => {
         agentIds: [agent1.id, agent2.id],
       });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Cannot Vote User",
         userEmail: "cannot-vote-user@test.com",
       });
@@ -655,9 +649,8 @@ describe("Voting API", () => {
         agentIds: [agent1.id, agent2.id],
       });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Voting Persistence User",
         userEmail: "voting-persistence-user@test.com",
       });
@@ -721,9 +714,8 @@ describe("Voting API", () => {
         agentIds: [agent1.id],
       });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Get Votes User",
         userEmail: "get-votes-user@test.com",
       });
@@ -761,9 +753,8 @@ describe("Voting API", () => {
         agentName: "Agent Sierra",
       });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Filter Votes User",
         userEmail: "filter-votes-user@test.com",
       });
@@ -873,18 +864,15 @@ describe("Voting API", () => {
       });
 
       // Create multiple users and cast votes
-      const { client: user1Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: user1Client } = await createPrivyAuthenticatedClient({
         userName: "Vote Count User 1",
         userEmail: "vote-count-user1@test.com",
       });
-      const { client: user2Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: user2Client } = await createPrivyAuthenticatedClient({
         userName: "Vote Count User 2",
         userEmail: "vote-count-user2@test.com",
       });
-      const { client: user3Client } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: user3Client } = await createPrivyAuthenticatedClient({
         userName: "Vote Count User 3",
         userEmail: "vote-count-user3@test.com",
       });
@@ -949,9 +937,8 @@ describe("Voting API", () => {
         agentIds: [agent1.id],
       });
 
-      // Create SIWE authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      // Create Privy authenticated user
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Vote Status User",
         userEmail: "vote-status-user@test.com",
       });
@@ -1018,8 +1005,7 @@ describe("Voting API", () => {
       });
 
       // Create user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Future Vote User",
         userEmail: "future-vote@test.com",
       });
@@ -1068,8 +1054,7 @@ describe("Voting API", () => {
       });
 
       // Create user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Past Vote User",
         userEmail: "past-vote@test.com",
       });
@@ -1118,11 +1103,12 @@ describe("Voting API", () => {
       });
 
       // Create user
-      const { client: userClient, user } = await createSiweAuthenticatedClient({
-        adminApiKey,
-        userName: "Valid Vote User",
-        userEmail: "valid-vote@test.com",
-      });
+      const { client: userClient, user } = await createPrivyAuthenticatedClient(
+        {
+          userName: "Valid Vote User",
+          userEmail: "valid-vote@test.com",
+        },
+      );
 
       // Vote should succeed
       const voteResponse = await userClient.castVote(agent1.id, competition.id);
@@ -1165,8 +1151,7 @@ describe("Voting API", () => {
       });
 
       // Create authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Test User",
         userEmail: "test-user@test.com",
       });
@@ -1216,8 +1201,7 @@ describe("Voting API", () => {
       });
 
       // Create authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Test User 2",
         userEmail: "test-user2@test.com",
       });
@@ -1270,8 +1254,7 @@ describe("Voting API", () => {
       });
 
       // Create authenticated user
-      const { client: userClient } = await createSiweAuthenticatedClient({
-        adminApiKey,
+      const { client: userClient } = await createPrivyAuthenticatedClient({
         userName: "Test User 3",
         userEmail: "test-user3@test.com",
       });
