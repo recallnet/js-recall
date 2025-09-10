@@ -403,7 +403,7 @@ async function getBulkLatestAccountSummariesImpl(
   try {
     // Process in batches to avoid query size limits (PostgreSQL IN clause limit)
     const summaries: SelectPerpsAccountSummary[] = [];
-    const batchSize = 500; // Increased batch size for better efficiency
+    const batchSize = 500; // PostgreSQL can handle large IN clauses efficiently
 
     for (let i = 0; i < agentIds.length; i += batchSize) {
       const batchAgentIds = agentIds.slice(i, i + batchSize);
@@ -711,7 +711,16 @@ async function batchSyncAgentsPerpsDataImpl(
     );
 
     batchResults.forEach((result, index) => {
-      const agentId = batch[index]!.agentId;
+      const agent = batch[index];
+      if (!agent) {
+        // This should never happen, but handle it defensively
+        repositoryLogger.error(
+          `[PerpsRepository] Unexpected missing agent at index ${index}`,
+        );
+        return;
+      }
+
+      const agentId = agent.agentId;
       if (result.status === "fulfilled") {
         successful.push(result.value);
       } else {
