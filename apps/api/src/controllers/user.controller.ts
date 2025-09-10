@@ -479,6 +479,97 @@ export function makeUserController(services: ServiceRegistry) {
         next(error);
       }
     },
+
+    /**
+     * Subscribe to Loops mailing list
+     * @param req Express request with userId from session
+     * @param res Express response
+     * @param next Express next function
+     */
+    async subscribe(req: Request, res: Response, next: NextFunction) {
+      try {
+        const userId = ensureUserId(req);
+        const user = await services.userManager.getUser(userId);
+        if (!user) {
+          throw new ApiError(404, "User not found");
+        }
+        const { email, isSubscribed } = user;
+        if (!email) {
+          // Note: this should never happen post-Privy migration since Privy guarantees an email
+          throw new ApiError(404, "User email not found");
+        }
+        if (isSubscribed) {
+          throw new ApiError(400, "User already subscribed");
+        }
+        // Subscribe to Loops mailing list
+        const result = await services.emailService.subscribeUser(email);
+        if (!result?.success) {
+          throw new ApiError(502, "Failed to subscribe user to mailing list");
+        }
+        const updatedUser = await services.userManager.updateUser({
+          id: userId,
+          isSubscribed: true,
+        });
+        if (!updatedUser) {
+          throw new ApiError(500, "Failed to update user");
+        }
+
+        res.status(200).json({
+          success: true,
+          userId,
+          isSubscribed: updatedUser.isSubscribed,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Unsubscribe from Loops mailing list
+     * @param req Express request with userId from session
+     * @param res Express response
+     * @param next Express next function
+     */
+    async unsubscribe(req: Request, res: Response, next: NextFunction) {
+      try {
+        const userId = ensureUserId(req);
+        const user = await services.userManager.getUser(userId);
+        if (!user) {
+          throw new ApiError(404, "User not found");
+        }
+        const { email, isSubscribed } = user;
+        if (!email) {
+          // Note: this should never happen post-Privy migration since Privy guarantees an email
+          throw new ApiError(404, "User email not found");
+        }
+        if (!isSubscribed) {
+          throw new ApiError(400, "User already unsubscribed");
+        }
+        // Unsubscribe from Loops mailing list
+        const result = await services.emailService.unsubscribeUser(email);
+        if (!result?.success) {
+          throw new ApiError(
+            502,
+            "Failed to unsubscribe user from mailing list",
+          );
+        }
+        const updatedUser = await services.userManager.updateUser({
+          id: userId,
+          isSubscribed: false,
+        });
+        if (!updatedUser) {
+          throw new ApiError(500, "Failed to update user");
+        }
+
+        res.status(200).json({
+          success: true,
+          userId,
+          isSubscribed: updatedUser.isSubscribed,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 }
 

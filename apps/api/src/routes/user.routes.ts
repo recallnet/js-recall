@@ -1023,6 +1023,86 @@ export function configureUserRoutes(
    */
   router.get("/competitions", userController.getCompetitions);
 
+  /**
+   * @openapi
+   * /api/user/subscribe:
+   *   get:
+   *     summary: Subscribe to Loops mailing list
+   *     description: Subscribe the authenticated user to the Loops mailing list
+   *     tags:
+   *       - User
+   *     security:
+   *       - PrivyCookie: []
+   *     responses:
+   *       200:
+   *         description: User subscribed to Loops mailing list successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 userId:
+   *                   type: string
+   *                   format: uuid
+   *                 isSubscribed:
+   *                   type: boolean
+   *                   example: true
+   *       400:
+   *         description: User already subscribed
+   *       401:
+   *         description: User not authenticated
+   *       404:
+   *         description: User not found
+   *       500:
+   *         description: Internal server error
+   *       502:
+   *         description: Failed to subscribe user to mailing list
+   */
+  router.post("/subscribe", userController.subscribe);
+  /**
+   *
+   * @openapi
+   * /api/user/unsubscribe:
+   *   get:
+   *     summary: Unsubscribe from Loops mailing list
+   *     description: Unsubscribe the authenticated user from the Loops mailing list
+   *     tags:
+   *       - User
+   *     security:
+   *       - PrivyCookie: []
+   *     responses:
+   *       200:
+   *         description: User unsubscribed from Loops mailing list successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 userId:
+   *                   type: string
+   *                   format: uuid
+   *                 isSubscribed:
+   *                   type: boolean
+   *                   example: false
+   *       400:
+   *         description: User already unsubscribed
+   *       401:
+   *         description: User not authenticated
+   *       404:
+   *         description: User not found
+   *       500:
+   *         description: Internal server error
+   *       502:
+   *         description: Failed to unsubscribe user from mailing list
+   */
+  router.post("/unsubscribe", userController.unsubscribe);
+
   // Include vote routes under user namespace
   router.use(configureVoteRoutes(voteController));
 

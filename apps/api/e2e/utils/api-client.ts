@@ -57,6 +57,7 @@ import {
   UserMetadata,
   UserProfileResponse,
   UserRegistrationResponse,
+  UserSubscriptionResponse,
   UserVotesResponse,
   VoteResponse,
   VotingStateResponse,
@@ -1755,6 +1756,36 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "link user wallet");
+    }
+  }
+
+  /**
+   * Subscribe to the Loops mailing list
+   * @returns A promise that resolves to the subscription response
+   */
+  async subscribeToMailingList(): Promise<
+    UserSubscriptionResponse | ErrorResponse
+  > {
+    try {
+      const response = await this.axiosInstance.post("/api/user/subscribe");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "subscribe to mailing list");
+    }
+  }
+
+  /**
+   * Unsubscribe from the Loops mailing list
+   * @returns A promise that resolves to the unsubscribe response
+   */
+  async unsubscribeFromMailingList(): Promise<
+    UserSubscriptionResponse | ErrorResponse
+  > {
+    try {
+      const response = await this.axiosInstance.post("/api/user/unsubscribe");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "unsubscribe from mailing list");
     }
   }
 }

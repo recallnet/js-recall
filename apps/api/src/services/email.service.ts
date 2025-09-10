@@ -9,7 +9,7 @@ const LOOPS_SOURCE = "comps_app";
 /**
  * Response from the Loops API
  */
-interface LoopsResponse {
+export interface LoopsResponse {
   success: boolean;
   id?: string;
   message?: string;
@@ -19,7 +19,7 @@ interface LoopsResponse {
  * Loops API payload for updating a contact
  * Note: the `email` field is the only required field in the payload.
  */
-interface LoopsPayload {
+export interface LoopsPayload {
   email: string;
   userId?: string;
   firstName?: string;
@@ -156,6 +156,15 @@ export class EmailService {
   private async updateContact(
     payload: LoopsPayload,
   ): Promise<{ success: boolean; error?: string }> {
+    // In test mode, use a local mock to avoid external HTTP calls
+    if (config.server.nodeEnv === "test") {
+      const { updateContactMock } = await import("@/lib/loops/mock.js");
+      const data = await updateContactMock(payload);
+      if (!data.success) {
+        return { success: false, error: data.message || "Mock Loops error" };
+      }
+      return { success: true };
+    }
     try {
       const response = await fetch(`${this.baseUrl}/contacts/update`, {
         method: "PUT",
