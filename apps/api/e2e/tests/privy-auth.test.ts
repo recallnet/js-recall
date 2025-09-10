@@ -1,19 +1,33 @@
+import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { afterEach, beforeAll, describe, expect, test } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "vitest";
 
-import { users } from "@recallnet/db-schema/core/defs";
+import { agents, users, votes } from "@recallnet/db-schema/core/defs";
 
+import { CreateCompetitionResponse } from "@/e2e/utils/api-types.js";
 import {
   ErrorResponse,
   LinkUserWalletResponse,
   LoginResponse,
   UserProfileResponse,
+  UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
 import { connectToDb } from "@/e2e/utils/db-manager.js";
 
 import { ApiClient } from "../utils/api-client.js";
 import { createMockPrivyToken, createTestPrivyUser } from "../utils/privy.js";
-import { createPrivyAuthenticatedClient } from "../utils/test-helpers.js";
+import {
+  createPrivyAuthenticatedClient,
+  createTestClient,
+  getAdminApiKey,
+} from "../utils/test-helpers.js";
 import { generateRandomEthAddress } from "../utils/test-helpers.js";
 
 describe("Privy Authentication", () => {
@@ -179,9 +193,14 @@ describe("Privy Authentication", () => {
   //    - Users with wallet but no email (i.e., they never verified their email, pre-Privy)
   describe("Backfilling users with Privy data", () => {
     let db: Awaited<ReturnType<typeof connectToDb>>;
+    let adminApiKey: string;
 
     beforeAll(async () => {
       db = await connectToDb();
+    });
+
+    beforeEach(async () => {
+      adminApiKey = await getAdminApiKey();
     });
 
     afterEach(async () => {
@@ -256,6 +275,212 @@ describe("Privy Authentication", () => {
       // Wallet address is not verified yet, so we don't set it as verified
       expect(user.walletLastVerifiedAt).toBeNull();
       expect(user.embeddedWalletAddress).toBeDefined();
+    });
+
+    test("wallet-only user merges accounts: agents and votes moved, old user deleted", async () => {
+      // Admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // 1) Create legacy-ish user A with a known wallet and an agent
+      const legacyWallet = generateRandomEthAddress();
+      const legacyEmail = `legacy-${Date.now()}@example.com`;
+      const legacyData = (await adminClient.registerUser({
+        walletAddress: legacyWallet,
+        name: "Legacy User",
+        email: legacyEmail,
+        agentName: "Legacy Agent",
+      })) as UserRegistrationResponse;
+      expect(legacyData.success).toBe(true);
+      expect(legacyData.user.walletAddress).toBe(legacyWallet);
+      expect(legacyData.user.email).toBe(legacyEmail);
+      // Privy info should not exist
+      expect(legacyData.user.privyId).toBeUndefined();
+
+      const legacyUserId = legacyData.user.id;
+      expect(legacyData.agent).toBeDefined();
+      const legacyAgentId = legacyData.agent!.id;
+
+      // Create a competition row to satisfy FK for a vote
+      const compResponse = await adminClient.createCompetition({
+        name: `Merge Test Competition ${Date.now()}`,
+        // ensure voting window is valid though we insert vote directly
+        votingStartDate: new Date(Date.now() - 60_000).toISOString(),
+        votingEndDate: new Date(Date.now() + 3_600_000).toISOString(),
+      });
+      expect(compResponse.success).toBe(true);
+      const competitionId = (compResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Insert a vote tied to legacy user directly (so we can verify migration)
+      const db = await connectToDb();
+      await db.insert(votes).values({
+        id: uuidv4(),
+        userId: legacyUserId,
+        agentId: legacyAgentId,
+        competitionId,
+      });
+
+      // 2) Create a new Privy-authenticated user B
+      // This user will have the same wallet as the legacy user, but a different email
+      const newEmail = `merge-target-${Date.now()}@example.com`;
+      const { client: siweClient, user: newUser } =
+        await createPrivyAuthenticatedClient({
+          userName: "Privy Merge Target",
+          userEmail: newEmail,
+        });
+      expect(newUser.email).toBe(newEmail);
+
+      // 3) Simulate linking legacy wallet in Privy and call link endpoint
+      const privyUser = createTestPrivyUser({
+        privyId: newUser.privyId,
+        name: newUser.name,
+        email: newUser.email,
+        walletAddress: newUser.walletAddress,
+        provider: "email",
+      });
+      const updatedToken = await createMockPrivyToken(privyUser, {
+        newLinkedWallets: [legacyWallet],
+      });
+      siweClient.setJwtToken(updatedToken);
+      const linkRes = await siweClient.linkUserWallet(legacyWallet);
+      expect(linkRes.success).toBe(true);
+      const linkedUser = (linkRes as LinkUserWalletResponse).user;
+      expect(linkedUser.walletAddress).toBe(legacyWallet);
+
+      // 4) Verify migrations
+      // - Agent owner moved to new user
+      const agentAfter = await db
+        .select()
+        .from(agents)
+        .where(eq(agents.id, legacyAgentId));
+      expect(agentAfter[0]).toBeDefined();
+      expect(agentAfter[0]?.ownerId).toBe(linkedUser.id);
+
+      // - Votes moved to new user
+      const votesForNew = await db
+        .select()
+        .from(votes)
+        .where(eq(votes.userId, linkedUser.id));
+      expect(votesForNew.length).toBe(1);
+      expect(votesForNew[0]?.agentId).toBe(legacyAgentId);
+      expect(votesForNew[0]?.competitionId).toBe(competitionId);
+
+      const votesForOld = await db
+        .select()
+        .from(votes)
+        .where(eq(votes.userId, legacyUserId));
+      expect(votesForOld.length).toBe(0);
+
+      // - Old user is deleted
+      const oldUserRows = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, legacyUserId));
+      expect(oldUserRows.length).toBe(0);
+    });
+
+    // Note: same test as above, but the Privy user will have the same email
+    test.skip("wallet + email user merges accounts: agents and votes moved, old user deleted", async () => {
+      // Admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // 1) Create legacy-ish user A with a known wallet and an agent
+      const legacyWallet = generateRandomEthAddress();
+      const legacyEmail = `legacy-${Date.now()}@example.com`;
+      const legacyData = (await adminClient.registerUser({
+        walletAddress: legacyWallet,
+        name: "Legacy User",
+        email: legacyEmail,
+        agentName: "Legacy Agent",
+      })) as UserRegistrationResponse;
+      expect(legacyData.success).toBe(true);
+      expect(legacyData.user.walletAddress).toBe(legacyWallet);
+      expect(legacyData.user.email).toBe(legacyEmail);
+      // Privy info should not exist
+      expect(legacyData.user.privyId).toBeUndefined();
+
+      const legacyUserId = legacyData.user.id;
+      expect(legacyData.agent).toBeDefined();
+      const legacyAgentId = legacyData.agent!.id;
+
+      // Create a competition row to satisfy FK for a vote
+      const compResponse = await adminClient.createCompetition({
+        name: `Merge Test Competition ${Date.now()}`,
+        // ensure voting window is valid though we insert vote directly
+        votingStartDate: new Date(Date.now() - 60_000).toISOString(),
+        votingEndDate: new Date(Date.now() + 3_600_000).toISOString(),
+      });
+      expect(compResponse.success).toBe(true);
+      const competitionId = (compResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Insert a vote tied to legacy user directly (so we can verify migration)
+      const db = await connectToDb();
+      await db.insert(votes).values({
+        id: uuidv4(),
+        userId: legacyUserId,
+        agentId: legacyAgentId,
+        competitionId,
+      });
+
+      // 2) Create a new Privy-authenticated user B
+      // This user will have the same wallet + email as the legacy user
+      const { client: siweClient, user: newUser } =
+        await createPrivyAuthenticatedClient({
+          userName: "Privy Merge Target",
+          userEmail: legacyEmail,
+        });
+      expect(newUser.email).toBe(legacyEmail);
+
+      // 3) Simulate linking legacy wallet in Privy and call link endpoint
+      const privyUser = createTestPrivyUser({
+        privyId: newUser.privyId,
+        name: newUser.name,
+        email: newUser.email,
+        walletAddress: newUser.walletAddress,
+        provider: "email",
+      });
+      const updatedToken = await createMockPrivyToken(privyUser, {
+        newLinkedWallets: [legacyWallet],
+      });
+      siweClient.setJwtToken(updatedToken);
+      const linkRes = await siweClient.linkUserWallet(legacyWallet);
+      expect(linkRes.success).toBe(true);
+      const linkedUser = (linkRes as LinkUserWalletResponse).user;
+      expect(linkedUser.walletAddress).toBe(legacyWallet);
+
+      // 4) Verify migrations
+      // - Agent owner moved to new user
+      const agentAfter = await db
+        .select()
+        .from(agents)
+        .where(eq(agents.id, legacyAgentId));
+      expect(agentAfter[0]).toBeDefined();
+      expect(agentAfter[0]?.ownerId).toBe(linkedUser.id);
+
+      // - Votes moved to new user
+      const votesForNew = await db
+        .select()
+        .from(votes)
+        .where(eq(votes.userId, linkedUser.id));
+      expect(votesForNew.length).toBe(1);
+      expect(votesForNew[0]?.agentId).toBe(legacyAgentId);
+      expect(votesForNew[0]?.competitionId).toBe(competitionId);
+
+      const votesForOld = await db
+        .select()
+        .from(votes)
+        .where(eq(votes.userId, legacyUserId));
+      expect(votesForOld.length).toBe(0);
+
+      // - Old user is deleted
+      const oldUserRows = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, legacyUserId));
+      expect(oldUserRows.length).toBe(0);
     });
   });
 });
