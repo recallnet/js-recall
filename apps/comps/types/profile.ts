@@ -39,3 +39,9 @@ export interface VerifyEmailResponse {
 export interface LinkWalletRequest {
   walletAddress: string;
 }
+
+export interface UserSubscriptionResponse {
+  success: boolean;
+  userId: string;
+  isSubscribed: boolean;
+}

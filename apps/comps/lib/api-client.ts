@@ -32,6 +32,7 @@ import {
   UpdateAgentResponse,
   UpdateProfileRequest,
   UserCompetitionsResponse,
+  UserSubscriptionResponse,
   VerifyEmailResponse,
   VoteResponse,
   VotesResponse,
@@ -214,6 +215,26 @@ export class ApiClient {
     return this.request<ProfileResponse>("/user/wallet/link", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Subscribe to mailing list
+   * @returns Profile response
+   */
+  async subscribeToMailingList(): Promise<UserSubscriptionResponse> {
+    return this.request<UserSubscriptionResponse>("/user/subscribe", {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Unsubscribe from mailing list
+   * @returns Profile response
+   */
+  async unsubscribeFromMailingList(): Promise<UserSubscriptionResponse> {
+    return this.request<UserSubscriptionResponse>("/user/unsubscribe", {
+      method: "POST",
     });
   }
 
