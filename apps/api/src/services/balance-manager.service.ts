@@ -4,7 +4,6 @@ import {
   getAgentBalances,
   getAgentsBulkBalances,
   getBalance,
-  initializeAgentBalances,
   resetAgentBalances,
 } from "@/database/repositories/balance-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
@@ -37,42 +36,6 @@ export class BalanceManager {
       this.balanceCache.set(agentId, new Map<string, number>());
     }
     this.balanceCache.get(agentId)?.set(tokenAddress, absoluteBalance);
-  }
-
-  /**
-   * Initialize an agent's balances with default values
-   * @param agentId The agent ID
-   */
-  async initializeAgentBalances(agentId: string): Promise<void> {
-    serviceLogger.debug(
-      `[BalanceManager] Initializing balances for agent ${agentId}`,
-    );
-
-    try {
-      const initialBalances = new Map<
-        string,
-        { amount: number; symbol: string }
-      >();
-
-      // Add specific chain token balances (more granular)
-      this.addSpecificChainTokensToBalances(initialBalances);
-
-      // Save to database
-      await initializeAgentBalances(agentId, initialBalances);
-
-      // Update cache
-      const balanceMap = new Map<string, number>();
-      initialBalances.forEach(({ amount }, tokenAddress) => {
-        balanceMap.set(tokenAddress, amount);
-      });
-      this.balanceCache.set(agentId, balanceMap);
-    } catch (error) {
-      serviceLogger.error(
-        `[BalanceManager] Error initializing balances for agent ${agentId}:`,
-        error,
-      );
-      throw error;
-    }
   }
 
   /**

@@ -87,53 +87,6 @@ export async function getAgentsBulkBalances(agentIds: string[]) {
 }
 
 /**
- * Initialize default balances for an agent
- * @param agentId Agent ID
- * @param initialBalances Map of token addresses to amounts and symbols
- */
-async function initializeAgentBalancesImpl(
-  agentId: string,
-  initialBalances: Map<string, { amount: number; symbol: string }>,
-) {
-  try {
-    const now = new Date();
-    await db.transaction(async (tx) => {
-      for (const [
-        tokenAddress,
-        { amount, symbol },
-      ] of initialBalances.entries()) {
-        const specificChain = getTokenSpecificChain(
-          tokenAddress,
-        ) as SpecificChain;
-        await tx
-          .insert(balances)
-          .values({
-            agentId,
-            tokenAddress,
-            amount,
-            specificChain,
-            symbol,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .onConflictDoUpdate({
-            target: [balances.agentId, balances.tokenAddress],
-            set: {
-              amount,
-              specificChain,
-              symbol,
-              updatedAt: now,
-            },
-          });
-      }
-    });
-  } catch (error) {
-    repositoryLogger.error("Error in initializeAgentBalances:", error);
-    throw error;
-  }
-}
-
-/**
  * Determine the specific chain for a token address based on token patterns
  * @param tokenAddress The token address
  * @returns The specific chain string or null if not determined
@@ -354,12 +307,6 @@ export const getAgentBalances = createTimedRepositoryFunction(
   getAgentBalancesImpl,
   "BalanceRepository",
   "getAgentBalances",
-);
-
-export const initializeAgentBalances = createTimedRepositoryFunction(
-  initializeAgentBalancesImpl,
-  "BalanceRepository",
-  "initializeAgentBalances",
 );
 
 export const resetAgentBalances = createTimedRepositoryFunction(

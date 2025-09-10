@@ -1840,13 +1840,17 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Apply sandbox mode logic if the competition is in sandbox mode
+        // In sandbox mode, we need to reset the agent's balances to starting values when the agent
+        // joins the always on competition, since we can't rely on 'startCompetition' to do so.
+        // For non-sandbox mode, we must *not* do this, since agents can join competitions before
+        // they've started, when they might be in another ongoing competition as well, and we don't
+        // want to reset their balances in the middle of the ongoing competition. So in that case
+        // wait for the new competition to start and let 'startCompetition' do the reset.
         if (competition.sandboxMode) {
           adminLogger.info(
-            `Applying sandbox mode logic for agent ${agentId} in competition ${competitionId}`,
+            `Resetting agent balance as part of applying sandbox mode logic for admin adding agent ${agentId} to competition ${competitionId}`,
           );
 
-          // Reset the agent's balances to starting values (consistent with startCompetition order)
           await services.balanceManager.resetAgentBalances(agentId);
         }
 
@@ -1865,9 +1869,9 @@ export function makeAdminController(services: ServiceRegistry) {
           throw error;
         }
 
-        // Complete sandbox mode logic if enabled
+        // In sandbox mode, we need to take the initial portfolio snapshot when the agent joins
+        // the always on competition, since we can't rely on 'startCompetition' to do so.
         if (competition.sandboxMode) {
-          // Take a portfolio snapshot for the newly joined agent
           await services.portfolioSnapshotter.takePortfolioSnapshotForAgent(
             competitionId,
             agentId,
