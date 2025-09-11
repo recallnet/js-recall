@@ -252,7 +252,11 @@ export class CompetitionManager {
   }
 
   /**
-   * Start a competition
+   * Start a competition.
+   * For all agents in the competition, resets their portfolio balances to starting values,
+   * ensures they are registered and active in the competition, and takes an initial portfolio
+   * snapshot.  If the operation fails midway through, some of this can be left incomplete, but
+   * each step is idempotent and can be safely retried until the competition starts successfully.
    * @param competitionId The competition ID
    * @param agentIds Array of agent IDs participating in the competition
    * @param tradingConstraints Optional trading constraints for the competition
@@ -1023,7 +1027,10 @@ export class CompetitionManager {
   }
 
   /**
-   * Join an agent to a competition
+   * Join an agent to a competition.  Note that in the sandbox this is handled by the admin
+   * controller via the sandbox proxy.  If agents were to ever be added to the sandbox competition
+   * via this function, it would need to be updated to handle the sandbox mode logic (reseting
+   * balances, taking initial snapshot, etc.)
    * @param competitionId Competition ID
    * @param agentId Agent ID
    * @param userId User ID (for ownership validation)
@@ -1326,78 +1333,6 @@ export class CompetitionManager {
    */
   async getAllCompetitionAgents(competitionId: string): Promise<string[]> {
     return await getAllCompetitionAgents(competitionId);
-  }
-
-  /**
-   * Automatically join an agent to the active competition if one exists
-   * Used in sandbox mode to auto-join newly registered agents
-   * @param agentId The agent ID to join to the active competition
-   */
-  async autoJoinAgentToActiveCompetition(agentId: string): Promise<void> {
-    try {
-      // Check if there's an active competition
-      const activeCompetition = await this.getActiveCompetition();
-      if (!activeCompetition) {
-        serviceLogger.debug(
-          `[CompetitionManager] No active competition found for auto-join of agent ${agentId}`,
-        );
-        return;
-      }
-
-      // Check if agent exists and is active
-      const agent = await findAgentById(agentId);
-      if (!agent) {
-        serviceLogger.debug(
-          `[CompetitionManager] Agent ${agentId} not found, skipping auto-join`,
-        );
-        return;
-      }
-
-      if (agent.status !== "active") {
-        serviceLogger.debug(
-          `[CompetitionManager] Agent ${agentId} is not active (status: ${agent.status}), skipping auto-join`,
-        );
-        return;
-      }
-
-      // Check if agent is already in the competition
-      const isAlreadyInCompetition = await this.isAgentInCompetition(
-        activeCompetition.id,
-        agentId,
-      );
-      if (isAlreadyInCompetition) {
-        serviceLogger.debug(
-          `[CompetitionManager] Agent ${agentId} is already in competition ${activeCompetition.id}, skipping auto-join`,
-        );
-        return;
-      }
-
-      serviceLogger.debug(
-        `[CompetitionManager] Auto-joining agent ${agentId} to active competition ${activeCompetition.id}`,
-      );
-
-      // Reset the agent's balances to starting values (consistent with startCompetition order)
-      await this.balanceManager.resetAgentBalances(agentId);
-
-      // Add the agent to the competition
-      await addAgentToCompetition(activeCompetition.id, agentId);
-
-      // Take a portfolio snapshot for the newly joined agent
-      await this.portfolioSnapshotter.takePortfolioSnapshotForAgent(
-        activeCompetition.id,
-        agentId,
-      );
-
-      serviceLogger.debug(
-        `[CompetitionManager] Successfully auto-joined agent ${agentId} to competition ${activeCompetition.id}`,
-      );
-    } catch (error) {
-      // Log the error but don't throw - we don't want auto-join failures to break agent registration
-      serviceLogger.error(
-        `[CompetitionManager] Error auto-joining agent ${agentId} to active competition:`,
-        error,
-      );
-    }
   }
 
   /**

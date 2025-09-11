@@ -139,7 +139,172 @@ describe("calculate rewards for users", () => {
   });
 });
 
+describe("calculate rewards for users", () => {
+  // Add edge case tests to improve branch coverage
+  it("should return empty array when leaderBoard is empty", () => {
+    const prizePool = 1000n * 10n ** 18n;
+    const boostAllocations = [
+      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+    ];
+    const window = {
+      start: new Date("2024-01-01T00:00:00Z"),
+      end: new Date("2024-01-05T00:00:00Z"),
+    };
+
+    const rewards = calculateRewardsForUsers(
+      prizePool,
+      boostAllocations,
+      [],
+      window,
+    );
+    expect(rewards).toEqual([]);
+  });
+
+  it("should return empty array when boostAllocations is empty", () => {
+    const prizePool = 1000n * 10n ** 18n;
+    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const window = {
+      start: new Date("2024-01-01T00:00:00Z"),
+      end: new Date("2024-01-05T00:00:00Z"),
+    };
+
+    const rewards = calculateRewardsForUsers(
+      prizePool,
+      [],
+      leaderBoard,
+      window,
+    );
+    expect(rewards).toEqual([]);
+  });
+
+  it("should throw error when window end is before start", () => {
+    const prizePool = 1000n * 10n ** 18n;
+    const boostAllocations = [
+      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+    ];
+    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const window = {
+      start: new Date("2024-01-05T00:00:00Z"),
+      end: new Date("2024-01-01T00:00:00Z"), // end before start
+    };
+
+    expect(() =>
+      calculateRewardsForUsers(
+        prizePool,
+        boostAllocations,
+        leaderBoard,
+        window,
+      ),
+    ).toThrow("Invalid boost allocation window");
+  });
+
+  it("should throw error when prizePoolDecayRate is too low", () => {
+    const prizePool = 1000n * 10n ** 18n;
+    const boostAllocations = [
+      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+    ];
+    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const window = {
+      start: new Date("2024-01-01T00:00:00Z"),
+      end: new Date("2024-01-05T00:00:00Z"),
+    };
+
+    expect(() =>
+      calculateRewardsForUsers(
+        prizePool,
+        boostAllocations,
+        leaderBoard,
+        window,
+        0.05,
+      ),
+    ).toThrow("Invalid prize pool decay rate");
+  });
+
+  it("should throw error when prizePoolDecayRate is too high", () => {
+    const prizePool = 1000n * 10n ** 18n;
+    const boostAllocations = [
+      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+    ];
+    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const window = {
+      start: new Date("2024-01-01T00:00:00Z"),
+      end: new Date("2024-01-05T00:00:00Z"),
+    };
+
+    expect(() =>
+      calculateRewardsForUsers(
+        prizePool,
+        boostAllocations,
+        leaderBoard,
+        window,
+        0.95,
+      ),
+    ).toThrow("Invalid prize pool decay rate");
+  });
+
+  it("should throw error when boostTimeDecayRate is too low", () => {
+    const prizePool = 1000n * 10n ** 18n;
+    const boostAllocations = [
+      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+    ];
+    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const window = {
+      start: new Date("2024-01-01T00:00:00Z"),
+      end: new Date("2024-01-05T00:00:00Z"),
+    };
+
+    expect(() =>
+      calculateRewardsForUsers(
+        prizePool,
+        boostAllocations,
+        leaderBoard,
+        window,
+        0.5,
+        0.05,
+      ),
+    ).toThrow("Invalid boost time decay rate");
+  });
+
+  it("should throw error when boostTimeDecayRate is too high", () => {
+    const prizePool = 1000n * 10n ** 18n;
+    const boostAllocations = [
+      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+    ];
+    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const window = {
+      start: new Date("2024-01-01T00:00:00Z"),
+      end: new Date("2024-01-05T00:00:00Z"),
+    };
+
+    expect(() =>
+      calculateRewardsForUsers(
+        prizePool,
+        boostAllocations,
+        leaderBoard,
+        window,
+        0.5,
+        0.95,
+      ),
+    ).toThrow("Invalid boost time decay rate");
+  });
+});
+
 describe("calculate rewards for competitors", () => {
+  it("should return empty array when leaderBoard is empty", () => {
+    const prizePool = 1000n * 10n ** 18n;
+    const rewards = calculateRewardsForCompetitors(prizePool, []);
+    expect(rewards).toEqual([]);
+  });
+
+  it("should throw error when prizePoolDecayRate is invalid for competitors", () => {
+    const prizePool = 1000n * 10n ** 18n;
+    const leaderBoard = [{ competitor: "A", rank: 1 }];
+
+    expect(() =>
+      calculateRewardsForCompetitors(prizePool, leaderBoard, 0.05),
+    ).toThrow("Invalid prize pool decay rate");
+  });
+
   it("should calculate rewards correctly for 1000 ETH prize pool with 3 competitors", () => {
     const prizePool = 1000n * 10n ** 18n; // 1000 ETH in WEI
     const leaderBoard: Leaderboard = [

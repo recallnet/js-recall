@@ -98,6 +98,27 @@ To start the development server, run the following. It should run on port `3001`
 PORT=3001 pnpm dev
 ```
 
+## Sandbox Proxy Routes
+
+⚠️ **IMPORTANT**: These are Next.js API routes that act as a PROXY to the sandbox server.
+
+### How it works:
+
+1. Frontend calls `/api/sandbox/competitions/{id}/agents/{id}` (this Next.js route)
+2. This route adds admin authentication
+3. Forwards to `https://api.sandbox.competitions.recall.network/admin/competitions/{id}/agents/{id}`
+
+### Why this exists:
+
+- Hides admin API keys from the browser
+- Allows users to join sandbox competitions without direct admin access
+- Enables balance reset on join (via admin endpoint)
+
+### Key difference from regular API:
+
+- Regular: `/competitions/{id}/agents/{id}` - NO balance reset
+- Admin proxy: `/admin/competitions/{id}/agents/{id}` - RESETS balances
+
 ## Contributing
 
 PRs accepted.
