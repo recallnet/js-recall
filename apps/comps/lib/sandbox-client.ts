@@ -11,7 +11,7 @@ import {
   AdminUserResponse,
 } from "@/types/admin";
 
-const SANDBOX_API_BASE = "/api/sandbox";
+const SANDBOX_PROXY_BASE = "/api/sandbox";
 
 /**
  * Client for interacting with sandbox API endpoints
@@ -22,7 +22,7 @@ export class SandboxClient {
    * @returns User creation response
    */
   async createUser(): Promise<AdminUserResponse> {
-    const response = await fetch(`${SANDBOX_API_BASE}/users`, {
+    const response = await fetch(`${SANDBOX_PROXY_BASE}/users`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -51,7 +51,7 @@ export class SandboxClient {
     email?: string;
     metadata?: Record<string, unknown>;
   }): Promise<AdminCreateAgentResponse> {
-    const response = await fetch(`${SANDBOX_API_BASE}/agents`, {
+    const response = await fetch(`${SANDBOX_PROXY_BASE}/agents`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -75,7 +75,7 @@ export class SandboxClient {
    */
   async getAgentApiKey(agentHandle: string): Promise<AdminAgentKeyResponse> {
     const response = await fetch(
-      `${SANDBOX_API_BASE}/api-key?handle=${encodeURIComponent(agentHandle)}`,
+      `${SANDBOX_PROXY_BASE}/api-key?handle=${encodeURIComponent(agentHandle)}`,
       {
         method: "GET",
         headers: {
@@ -110,7 +110,7 @@ export class SandboxClient {
       metadata?: Record<string, unknown>;
     },
   ): Promise<AdminAgentUpdateResponse> {
-    const response = await fetch(`${SANDBOX_API_BASE}/agents/${agentId}`, {
+    const response = await fetch(`${SANDBOX_PROXY_BASE}/agents/${agentId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -131,7 +131,7 @@ export class SandboxClient {
    * Get competitions
    */
   async getCompetitions(): Promise<CompetitionsResponse> {
-    const response = await fetch(`${SANDBOX_API_BASE}/competitions`, {
+    const response = await fetch(`${SANDBOX_PROXY_BASE}/competitions`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -159,7 +159,7 @@ export class SandboxClient {
     agentId: string,
   ): Promise<JoinCompetitionResponse> {
     const response = await fetch(
-      `${SANDBOX_API_BASE}/competitions/${competitionId}/agents/${agentId}`,
+      `${SANDBOX_PROXY_BASE}/competitions/${competitionId}/agents/${agentId}`,
       {
         method: "POST",
         headers: {
@@ -189,7 +189,7 @@ export class SandboxClient {
   ): Promise<AgentCompetitionsResponse> {
     const queryParams = this.formatQueryParams(params);
     const response = await fetch(
-      `${SANDBOX_API_BASE}/agents/${agentId}/competitions${queryParams}`,
+      `${SANDBOX_PROXY_BASE}/agents/${agentId}/competitions${queryParams}`,
       {
         method: "GET",
         headers: {
