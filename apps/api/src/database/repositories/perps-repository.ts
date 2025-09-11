@@ -595,6 +595,68 @@ async function getAgentSelfFundingAlertsImpl(
   }
 }
 
+/**
+ * Batch get self-funding alerts for multiple agents (fixes N+1 query problem)
+ * @param agentIds Array of agent IDs
+ * @param competitionId Competition ID
+ * @returns Map of agent ID to their alerts
+ */
+async function batchGetAgentsSelfFundingAlertsImpl(
+  agentIds: string[],
+  competitionId: string,
+): Promise<Map<string, SelectPerpsSelfFundingAlert[]>> {
+  try {
+    // Initialize map with empty arrays for all agents
+    const alertsMap = new Map<string, SelectPerpsSelfFundingAlert[]>();
+    agentIds.forEach((agentId) => {
+      alertsMap.set(agentId, []);
+    });
+
+    // Return empty map if no agent IDs provided
+    if (agentIds.length === 0) {
+      return alertsMap;
+    }
+
+    // Process in batches to avoid query size limits (PostgreSQL IN clause limit)
+    const batchSize = 500; // PostgreSQL can handle large IN clauses efficiently
+    const allAlerts: SelectPerpsSelfFundingAlert[] = [];
+
+    for (let i = 0; i < agentIds.length; i += batchSize) {
+      const batchAgentIds = agentIds.slice(i, i + batchSize);
+
+      const batchAlerts = await dbRead
+        .select()
+        .from(perpsSelfFundingAlerts)
+        .where(
+          and(
+            inArray(perpsSelfFundingAlerts.agentId, batchAgentIds),
+            eq(perpsSelfFundingAlerts.competitionId, competitionId),
+          ),
+        )
+        .orderBy(desc(perpsSelfFundingAlerts.detectedAt));
+
+      allAlerts.push(...batchAlerts);
+    }
+
+    // Populate alerts for each agent
+    allAlerts.forEach((alert) => {
+      const agentAlerts = alertsMap.get(alert.agentId);
+      if (agentAlerts) {
+        agentAlerts.push(alert);
+      }
+    });
+
+    repositoryLogger.debug(
+      `[PerpsRepository] Batch fetched alerts for ${agentIds.length} agents in ${Math.ceil(agentIds.length / batchSize)} batches: found ${allAlerts.length} total alerts`,
+    );
+
+    return alertsMap;
+  } catch (error) {
+    repositoryLogger.error("Error in batchGetAgentsSelfFundingAlerts:", error);
+    throw error;
+  }
+}
+
 // =============================================================================
 // ATOMIC SYNC OPERATIONS
 // =============================================================================
@@ -898,6 +960,12 @@ export const getAgentSelfFundingAlerts = createTimedRepositoryFunction(
   getAgentSelfFundingAlertsImpl,
   "PerpsRepository",
   "getAgentSelfFundingAlerts",
+);
+
+export const batchGetAgentsSelfFundingAlerts = createTimedRepositoryFunction(
+  batchGetAgentsSelfFundingAlertsImpl,
+  "PerpsRepository",
+  "batchGetAgentsSelfFundingAlerts",
 );
 
 export const getPerpsCompetitionStats = createTimedRepositoryFunction(

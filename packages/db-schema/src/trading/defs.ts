@@ -369,18 +369,23 @@ export const perpsAccountSummaries = tradingComps.table(
       .references(() => agents.id),
     competitionId: uuid("competition_id").notNull(),
 
-    // Account metrics from provider
-    totalVolume: numeric("total_volume"),
-    totalUnrealizedPnl: numeric("total_unrealized_pnl"),
-    totalRealizedPnl: numeric("total_realized_pnl"),
-    totalPnl: numeric("total_pnl"),
+    // Core equity metrics
+    initialCapital: numeric("initial_capital"),
+    totalEquity: numeric("total_equity").notNull(),
+    availableBalance: numeric("available_balance"),
     marginUsed: numeric("margin_used"),
 
+    // PnL metrics
+    totalPnl: numeric("total_pnl"),
+    totalRealizedPnl: numeric("total_realized_pnl"),
+    totalUnrealizedPnl: numeric("total_unrealized_pnl"),
+
+    // Trading activity metrics
+    totalVolume: numeric("total_volume"),
+    totalFeesPaid: numeric("total_fees_paid"),
+
     // Trading statistics
-    winRate: numeric("win_rate"),
     totalTrades: integer("total_trades"),
-    bestTrade: numeric("best_trade"),
-    worstTrade: numeric("worst_trade"),
     averageTradeSize: numeric("average_trade_size"),
 
     // Position counts
@@ -388,14 +393,15 @@ export const perpsAccountSummaries = tradingComps.table(
     closedPositionsCount: integer("closed_positions_count"),
     liquidatedPositionsCount: integer("liquidated_positions_count"),
 
-    // Calculated total equity (critical for ranking)
-    totalEquity: numeric("total_equity").notNull(),
-    availableBalance: numeric("available_balance"),
+    // Performance metrics
+    roi: numeric("roi"),
+    roiPercent: numeric("roi_percent"),
 
     // Account status
-    accountStatus: varchar("account_status", { length: 20 })
-      .notNull()
-      .default("active"),
+    accountStatus: varchar("account_status", { length: 20 }),
+
+    // Store raw provider response for audit
+    rawData: jsonb("raw_data"),
 
     timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow(),
   },

@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
+import { DexScreenerProvider } from "@/services/providers/price/dexscreener.provider.js";
 import { BlockchainType } from "@/types/index.js";
 
 // Load environment variables

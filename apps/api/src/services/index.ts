@@ -7,6 +7,7 @@ import { CompetitionRewardService } from "@/services/competition-reward.service.
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
+import { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
 import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { TradeSimulator } from "@/services/trade-simulator.service.js";
@@ -37,6 +38,7 @@ class ServiceRegistry {
   private _emailService: EmailService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
+  private _perpsDataProcessor: PerpsDataProcessor;
 
   constructor() {
     // Initialize services in dependency order
@@ -88,6 +90,9 @@ class ServiceRegistry {
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentManager);
+
+    // Initialize PerpsDataProcessor (provider will be passed at runtime)
+    this._perpsDataProcessor = new PerpsDataProcessor();
   }
 
   public static getInstance(): ServiceRegistry {
@@ -157,6 +162,10 @@ class ServiceRegistry {
   get competitionRewardService(): CompetitionRewardService {
     return this._competitionRewardService;
   }
+
+  get perpsDataProcessor(): PerpsDataProcessor {
+    return this._perpsDataProcessor;
+  }
 }
 
 export {
@@ -169,6 +178,7 @@ export {
   ConfigurationService,
   EmailService,
   LeaderboardService,
+  PerpsDataProcessor,
   PortfolioSnapshotter,
   PriceTracker,
   ServiceRegistry,
