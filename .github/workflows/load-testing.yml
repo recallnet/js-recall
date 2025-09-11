@@ -1,4 +1,4 @@
-name: Load Tests
+name: Agent Trading Load Tests
 
 on:
   schedule:
@@ -6,11 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-load-tests:
+  run-agent-trading-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test-script: [test:agent-trading, test:users-api]
 
     steps:
       - name: Checkout repository
@@ -37,29 +34,15 @@ jobs:
           echo "ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}" >> .env
           echo "AGENTS_COUNT=50" >> .env
           echo "TRADES_COUNT=100" >> .env
-          echo "USERS_COUNT=2000" >> .env
 
-      - name: Run load test
-        run: pnpm --filter @recallnet/load-test ${{ matrix.test-script }}
+      - name: Run agent trading load test
+        run: pnpm --filter @recallnet/load-test test:agent-trading
 
-      - name: Generate HTML report for agent-trading
-        if: matrix.test-script == 'test:agent-trading'
+      - name: Generate HTML report
         run: pnpm --filter @recallnet/load-test report:agent-trading
 
-      - name: Generate HTML report for users-api
-        if: matrix.test-script == 'test:users-api'
-        run: pnpm --filter @recallnet/load-test report:users-api
-
-      - name: Upload agent-trading report
-        if: matrix.test-script == 'test:agent-trading'
+      - name: Upload agent trading report
         uses: actions/upload-artifact@v4
         with:
           name: load-test-report-agent-trading
           path: packages/load-test/reports/agent-trading.html
-
-      - name: Upload users-api report
-        if: matrix.test-script == 'test:users-api'
-        uses: actions/upload-artifact@v4
-        with:
-          name: load-test-report-users-api
-          path: packages/load-test/reports/users-api.html

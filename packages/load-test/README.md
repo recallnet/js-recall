@@ -1,6 +1,6 @@
-# Load Test Package
+# Agent Trading Load Test Package
 
-This package contains load tests for Recall using Artillery (HTTP & Playwright engines).
+This package contains load tests for Recall Agent Trading using Artillery HTTP engine.
 
 - Documentation: [Artillery HTTP engine](https://www.artillery.io/docs/reference/engines/http)
 
@@ -13,50 +13,30 @@ This package contains load tests for Recall using Artillery (HTTP & Playwright e
 
 The following variables are read by the test scripts (from `.env` via `--env-file .env`):
 
-- `API_HOST`: Base URL for API requests used by HTTP scenarios (e.g., `http://localhost:3001`).
-- `HOST`: Base URL used by the Playwright scenario target (e.g., `http://localhost:3000`).
-- `USERS_COUNT`: Max concurrent virtual users for the Users API load test.
+- `API_HOST`: Base URL for API requests (e.g., `http://localhost:3000`).
 - `AGENTS_COUNT`: Number of agents to create/drive and the max vusers for Agent Trading.
 - `TRADES_COUNT`: Number of trades each agent will execute.
-- `ADMIN_API_KEY`: Admin API key used only by the Agent Trading setup/trading flows.
+- `ADMIN_API_KEY`: Admin API key used for agent trading setup/trading flows.
 
 Create `.env` in this folder with values appropriate for your environment. Example:
 
 ```bash
-# API (used by HTTP tests and agent trading)
+# API (used by agent trading tests)
 API_HOST=http://localhost:3000
 
-# Web (used by Playwright test)
-HOST=http://localhost:3001
-
-# Concurrency controls
-USERS_COUNT=100
+# Agent trading controls
 AGENTS_COUNT=20
 TRADES_COUNT=100
 
-# Admin (required for agent-trading only)
+# Admin (required for agent-trading)
 ADMIN_API_KEY=replace-with-admin-key
 ```
 
-## How to Run Each Load Test
+## How to Run Agent Trading Load Test
 
 All commands should be run from the monorepo root. Use `--filter` to target this package.
 
-### 1) Users API (public, non-admin HTTP endpoints)
-
-Run the test and generate a report:
-
-```bash
-pnpm --filter @recallnet/load-test test:users-api
-pnpm --filter @recallnet/load-test report:users-api
-```
-
-Artifacts:
-
-- JSON report: `packages/load-test/reports/users-api.json`
-- HTML report: `packages/load-test/reports/users-api.html`
-
-### 2) Agent Trading (admin setup + trade execution)
+### Agent Trading (admin setup + trade execution)
 
 Run the test and generate a report:
 
@@ -75,51 +55,21 @@ Notes:
 - Requires `ADMIN_API_KEY` and a reachable `API_HOST`.
 - Uses an Artillery processor to prepare agents and competitions.
 
-### 3) Leaderboard (Playwright UI scenario)
+## Project Structure
 
-Run the test and generate a report:
-
-```bash
-pnpm --filter @recallnet/load-test test:leaderboard
-pnpm --filter @recallnet/load-test report:leaderboard
+```
+src/
+└── agent-trading/           # Agent trading load tests
+    ├── agent-trading.ts     # Main test configuration
+    └── processors/          # Test processors
+        └── agent-trading-processor.ts
 ```
 
-Artifacts:
+Future load test types can be added as separate subdirectories under `src/` (e.g., `src/user-api/`, `src/leaderboard/`, etc.).
 
-- JSON report: `packages/load-test/reports/leaderboard.json`
-- HTML report: `packages/load-test/reports/leaderboard.html`
+## What The Test Does
 
-Notes:
-
-- Ensure `HOST` points to the web app (e.g., `apps/comps`/`apps/portal`).
-
-## What Each Test Does
-
-### Users API (`src/users-api.ts`)
-
-Uses the Artillery HTTP engine against public, non-admin endpoints under `/api/*`.
-
-- Scenarios:
-  - `Leaderboard`:
-    - GET `/api/leaderboard?limit=10&offset=0&type=trading`
-    - GET `/api/leaderboard?limit=10&offset=10&type=trading`
-    - GET `/api/leaderboard?limit=10&offset=20&type=trading`
-  - `Competitions Hub`:
-    - In parallel: GET `/api/leaderboard?limit=25&type=trading`,
-      GET `/api/competitions?status=active` (capture first `competitionId`),
-      GET `/api/competitions?status=pending` (capture first `competitionId`),
-      GET `/api/competitions?status=ended` (capture first `competitionId`).
-    - Then, for any captured IDs: GET `/api/competitions/{competitionId}/agents`.
-  - `Active Competition`:
-    - GET `/api/competitions?status=active` (capture first `competitionId`).
-    - GET `/api/competitions/{competitionId}` using the captured ID.
-
-Traffic model (excerpt):
-
-- Warmup: `arrivalCount: 100`
-- Load: `arrivalRate: 50`, `maxVusers: ${USERS_COUNT}`
-
-### Agent Trading (`src/agent-trading.ts`)
+### Agent Trading (`src/agent-trading/agent-trading.ts`)
 
 Uses admin endpoints to create or recycle a competition, generate `AGENTS_COUNT` users & agents,
 register them into a competition, start it, and then simulate trading for each agent.
@@ -135,37 +85,30 @@ register them into a competition, start it, and then simulate trading for each a
   - Each of the `AGENTS_COUNT` agents executes `TRADES_COUNT` trades. A trade consists of fetching balances and then executing a buy/sell POST request to `/api/trade/execute`.
 - Traffic model: `arrivalCount: ${AGENTS_COUNT}`, `maxVusers: ${AGENTS_COUNT}`.
 
-### Leaderboard (Playwright) (`src/leaderboard.ts`)
+## Trade Strategy
 
-End-to-end UI flow against the web app:
-
-- Navigate to `/leaderboards`, wait for table to render.
-- Click next-page chevron (if present) and wait for responses that include `/leaderboard`.
-- Click the first row to navigate to the agent profile page.
-- Target is `HOST` from environment.
+The load test includes sophisticated rebalancing logic between USDC and WETH with realistic trading patterns.
 
 ## Reports
 
-Each `test:*` script creates a JSON report under `reports/`. Use the matching `report:*` script
+The `test:agent-trading` script creates a JSON report under `reports/`. Use the `report:agent-trading` script
 to convert it into an HTML report for easier analysis.
 
 Example:
 
 ```bash
-pnpm --filter @recallnet/load-test test:users-api
-pnpm --filter @recallnet/load-test report:users-api
-open packages/load-test/reports/users-api.html
+pnpm --filter @recallnet/load-test test:agent-trading
+pnpm --filter @recallnet/load-test report:agent-trading
+open packages/load-test/reports/agent-trading.html
 ```
 
 ## Tips
 
-- Keep `USERS_COUNT`/`AGENTS_COUNT` sized appropriately for your environment.
+- Keep `AGENTS_COUNT` sized appropriately for your environment.
 - For debugging HTTP requests, you may set `DEBUG=http*` when running Artillery.
 - Refer to the OpenAPI spec under `apps/api/openapi/openapi.json` for exact endpoint
   shapes and query parameters used by these scenarios.
 
 ## CI/CD
 
-A GitHub Actions workflow is configured to run the `test:agent-trading` and `test:users-api` tests daily at midnight. See [`.github/workflows/load-testing.yml`](../../.github/workflows/load-testing.yml) for details.
-
-The reports are uploaded as artifacts to each workflow run.
+A GitHub Actions workflow is configured to run the `test:agent-trading` test. The reports are uploaded as artifacts to each workflow run.

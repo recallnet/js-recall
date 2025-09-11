@@ -19,15 +19,6 @@ services:
     volumes:
       - "postgres-data:/var/lib/postgresql/data"
 
-  redis:
-    image: redis:alpine
-    container_name: recall-redis
-    restart: always
-    networks:
-      - recall-network
-    volumes:
-      - "redis-data:/data"
-
   api:
     build:
       context: .
@@ -42,13 +33,11 @@ services:
       - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/postgres
-      REDIS_URL: redis://redis:6379
       API_PREFIX: ${API_PREFIX:-}
       PORT: ${API_PORT:-3000}
       METRICS_PORT: ${METRICS_PORT:-3003}
     depends_on:
       - db
-      - redis
 
   comps:
     build:
@@ -71,4 +60,3 @@ services:
 
 volumes:
   postgres-data:
-  redis-data:
