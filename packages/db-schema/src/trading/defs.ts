@@ -369,16 +369,20 @@ export const perpsAccountSummaries = tradingComps.table(
       .references(() => agents.id),
     competitionId: uuid("competition_id").notNull(),
 
-    // Account metrics from provider
-    totalEquity: numeric("total_equity").notNull(),
+    // Core equity metrics
     initialCapital: numeric("initial_capital"),
-    totalVolume: numeric("total_volume"),
-    totalUnrealizedPnl: numeric("total_unrealized_pnl"),
-    totalRealizedPnl: numeric("total_realized_pnl"),
-    totalPnl: numeric("total_pnl"),
-    totalFeesPaid: numeric("total_fees_paid"),
+    totalEquity: numeric("total_equity").notNull(),
     availableBalance: numeric("available_balance"),
     marginUsed: numeric("margin_used"),
+
+    // PnL metrics
+    totalPnl: numeric("total_pnl"),
+    totalRealizedPnl: numeric("total_realized_pnl"),
+    totalUnrealizedPnl: numeric("total_unrealized_pnl"),
+
+    // Trading activity metrics
+    totalVolume: numeric("total_volume"),
+    totalFeesPaid: numeric("total_fees_paid"),
 
     // Trading statistics
     totalTrades: integer("total_trades"),
