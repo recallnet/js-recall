@@ -42,7 +42,7 @@ describe("PerpsDataProcessor", () => {
     roiPercent: 5,
     averageTradeSize: 5000,
     accountStatus: "active",
-    rawData: { test: "data" },
+    // rawData is optional - test both with and without
   };
 
   const samplePosition: PerpsPosition = {
@@ -332,6 +332,126 @@ describe("PerpsDataProcessor", () => {
       // Verify result is returned
       expect(result).toBeDefined();
       expect(result.positions).toHaveLength(0);
+    });
+
+    it("should handle NaN totalEquity from provider", async () => {
+      const nanSummary: PerpsAccountSummary = {
+        ...sampleAccountSummary,
+        totalEquity: NaN,
+      };
+
+      mockProvider.getAccountSummary = vi.fn().mockResolvedValue(nanSummary);
+
+      await processor.processAgentData(
+        "agent-1",
+        "comp-1",
+        "0x123",
+        mockProvider,
+      );
+
+      // Should transform NaN to "0" in database
+      expect(perpsRepo.syncAgentPerpsData).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+        expect.any(Array),
+        expect.objectContaining({
+          totalEquity: "0", // NaN becomes "0"
+        }),
+      );
+
+      // Portfolio snapshot should use 0 for NaN
+      expect(competitionRepo.createPortfolioSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalValue: 0,
+        }),
+      );
+    });
+
+    it("should handle null/undefined totalEquity from provider", async () => {
+      const nullSummary: PerpsAccountSummary = {
+        ...sampleAccountSummary,
+        totalEquity: null as unknown as number,
+      };
+
+      mockProvider.getAccountSummary = vi.fn().mockResolvedValue(nullSummary);
+
+      await processor.processAgentData(
+        "agent-1",
+        "comp-1",
+        "0x123",
+        mockProvider,
+      );
+
+      // Should transform null to "0" in database
+      expect(perpsRepo.syncAgentPerpsData).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+        expect.any(Array),
+        expect.objectContaining({
+          totalEquity: "0", // null becomes "0"
+        }),
+      );
+
+      // Portfolio snapshot should use 0 for null
+      expect(competitionRepo.createPortfolioSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalValue: 0,
+        }),
+      );
+    });
+
+    it("should handle both presence and absence of rawData", async () => {
+      // Test with rawData
+      const summaryWithRaw: PerpsAccountSummary = {
+        ...sampleAccountSummary,
+        rawData: { provider: "test", originalData: { foo: "bar" } },
+      };
+
+      mockProvider.getAccountSummary = vi
+        .fn()
+        .mockResolvedValueOnce(summaryWithRaw);
+
+      await processor.processAgentData(
+        "agent-1",
+        "comp-1",
+        "0x123",
+        mockProvider,
+      );
+
+      expect(perpsRepo.syncAgentPerpsData).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+        expect.any(Array),
+        expect.objectContaining({
+          rawData: { provider: "test", originalData: { foo: "bar" } },
+        }),
+      );
+
+      // Test without rawData
+      const summaryWithoutRaw: PerpsAccountSummary = {
+        ...sampleAccountSummary,
+        rawData: undefined,
+      };
+
+      mockProvider.getAccountSummary = vi
+        .fn()
+        .mockResolvedValueOnce(summaryWithoutRaw);
+
+      await processor.processAgentData(
+        "agent-2",
+        "comp-1",
+        "0x456",
+        mockProvider,
+      );
+
+      expect(perpsRepo.syncAgentPerpsData).toHaveBeenCalledWith(
+        "agent-2",
+        "comp-1",
+        expect.any(Array),
+        expect.objectContaining({
+          rawData: undefined,
+        }),
+      );
     });
   });
 

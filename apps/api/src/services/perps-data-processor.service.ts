@@ -105,6 +105,10 @@ export class PerpsDataProcessor {
     if (value === undefined || value === null) {
       return null;
     }
+    // Handle NaN explicitly - treat as null
+    if (isNaN(value)) {
+      return null;
+    }
     // Handle zero explicitly
     if (value === 0) {
       return "0";
@@ -218,18 +222,23 @@ export class PerpsDataProcessor {
       );
 
       // 5. Create portfolio snapshot for leaderboard
+      // Use 0 if totalEquity is invalid (consistent with our transform logic)
+      const snapshotValue =
+        accountSummary.totalEquity != null && !isNaN(accountSummary.totalEquity)
+          ? accountSummary.totalEquity
+          : 0;
       await createPortfolioSnapshot({
         agentId,
         competitionId,
         timestamp: new Date(),
-        totalValue: accountSummary.totalEquity,
+        totalValue: snapshotValue,
       });
 
       const processingTime = Date.now() - startTime;
 
       serviceLogger.info(
         `[PerpsDataProcessor] Processed agent ${agentId}: ` +
-          `equity=$${accountSummary.totalEquity.toFixed(2)}, ` +
+          `equity=$${accountSummary.totalEquity?.toFixed(2) ?? "N/A"}, ` +
           `positions=${positions.length}, ` +
           `time=${processingTime}ms`,
       );
@@ -383,7 +392,9 @@ export class PerpsDataProcessor {
           const agentData = syncDataMap.get(r.agentId);
           if (!agentData) return null;
 
+          // totalEquity string is guaranteed to be valid ("0" at minimum) due to transform
           const totalEquity = parseFloat(agentData.accountSummary.totalEquity);
+
           return {
             agentId: r.agentId,
             competitionId,
