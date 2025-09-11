@@ -60,7 +60,8 @@ describe("PerpsDataProcessor", () => {
     lastUpdatedAt: new Date("2024-01-02"),
   };
 
-  // Helper function to create a mock sync result based on input
+  // Helper function to create a mock sync result that matches what the repository would return
+  // This simulates the database layer returning the stored data with all fields as strings
   const createMockSyncResult = (
     agentId: string,
     positions: Array<Record<string, unknown>>,
@@ -869,6 +870,7 @@ describe("PerpsDataProcessor", () => {
 
     it("should handle batch with duplicate agent IDs gracefully", async () => {
       // This tests the Map behavior with duplicate keys
+      // In reality, duplicate agent IDs indicate a data integrity issue that should be prevented upstream
       const agents = [
         { agentId: "agent-1", walletAddress: "0x111" },
         { agentId: "agent-1", walletAddress: "0x222" }, // Duplicate ID, different wallet
@@ -881,12 +883,22 @@ describe("PerpsDataProcessor", () => {
         mockProvider,
       );
 
-      // All should be fetched
+      // All 3 agents will be fetched from the provider
       expect(mockProvider.getAccountSummary).toHaveBeenCalledTimes(3);
 
-      // The Map will keep the last occurrence of agent-1
-      // This is actually a data integrity issue that should be caught upstream
+      // The service will process all 3, but the Map used for portfolio snapshots
+      // will only keep the last occurrence of agent-1. This is a data integrity
+      // issue that should ideally be caught and logged as a warning.
       expect(result.successful).toHaveLength(3);
+
+      // Verify that all 3 were passed to batchSync
+      expect(perpsRepo.batchSyncAgentsPerpsData).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ agentId: "agent-1" }),
+          expect.objectContaining({ agentId: "agent-1" }),
+          expect.objectContaining({ agentId: "agent-2" }),
+        ]),
+      );
     });
   });
 
