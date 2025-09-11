@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
@@ -7,10 +7,6 @@ import { DexScreenerProvider } from "../dexscreener.provider.js";
 import { MultiChainProvider } from "../multi-chain.provider.js";
 
 describe("Batch Functionality Tests", () => {
-  beforeEach(() => {
-    vi.setConfig({ testTimeout: 15_000 });
-  });
-
   describe("DexScreenerProvider batch methods", () => {
     it("should fetch batch prices for multiple tokens", async () => {
       const provider = new DexScreenerProvider();
@@ -267,6 +263,6 @@ describe("Batch Functionality Tests", () => {
           expect(batchResult.timestamp).toBe(individualResult.timestamp);
         }
       });
-    });
+    }, 15_000);
   });
 });
