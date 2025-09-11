@@ -106,10 +106,7 @@ class ServiceRegistry {
     this._stakesRepository = new StakesRepository(db);
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
-    this._boostAwardService = new BoostAwardService(
-      this._boostRepository,
-      this._competitionManager,
-    );
+    this._boostAwardService = new BoostAwardService(this._boostRepository);
     this._eventProcessor = new EventProcessor(
       db,
       this._eventsRepository,

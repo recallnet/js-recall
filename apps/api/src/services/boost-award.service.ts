@@ -3,7 +3,6 @@ import type {
   BoostDiffResult,
   BoostRepository,
 } from "@/database/repositories/boost.repository.js";
-import type { CompetitionManager } from "@/services/competition-manager.service.js";
 
 export { BoostAwardService };
 
@@ -27,15 +26,10 @@ const DECIMALS = 18; // FIXME Config??
 
 class BoostAwardService {
   readonly #boostRepository: BoostRepository;
-  readonly #competitionManager: CompetitionManager;
   readonly #divisor: bigint;
 
-  constructor(
-    boostRepository: BoostRepository,
-    competitionManager: CompetitionManager,
-  ) {
+  constructor(boostRepository: BoostRepository) {
     this.#boostRepository = boostRepository;
-    this.#competitionManager = competitionManager;
     this.#divisor = 10n ** BigInt(DECIMALS);
   }
 
