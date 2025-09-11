@@ -13,7 +13,7 @@ import {
   SymphonyPerpsProvider,
   SymphonyPositionResponse,
   SymphonyTransferResponse,
-} from "@/services/providers/symphony-perps.provider.js";
+} from "@/services/providers/perps/symphony-perps.provider.js";
 
 // Mock axios
 vi.mock("axios");

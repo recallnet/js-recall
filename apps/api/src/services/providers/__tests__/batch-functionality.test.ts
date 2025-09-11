@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { PriceTracker } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
 
-import { DexScreenerProvider } from "../dexscreener.provider.js";
 import { MultiChainProvider } from "../multi-chain.provider.js";
+import { DexScreenerProvider } from "../price/dexscreener.provider.js";
 
 describe("Batch Functionality Tests", () => {
   describe("DexScreenerProvider batch methods", () => {
