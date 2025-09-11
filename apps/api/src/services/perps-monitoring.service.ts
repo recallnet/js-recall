@@ -54,7 +54,8 @@ interface AgentMonitoringResult {
  */
 export class PerpsMonitoringService {
   // Default thresholds (in USD)
-  private static readonly DEFAULT_TRANSFER_THRESHOLD = 10; // Any deposit > $10
+  // Competition rules: NO external deposits allowed during competition
+  private static readonly DEFAULT_TRANSFER_THRESHOLD = 0; // Any deposit > $0 is suspicious
   private static readonly DEFAULT_RECONCILIATION_THRESHOLD = 100; // Unexplained > $100
   private static readonly DEFAULT_CRITICAL_THRESHOLD = 500; // Critical if > $500
 
@@ -116,9 +117,15 @@ export class PerpsMonitoringService {
       );
     }
 
-    const selfFundingThreshold = competitionConfig.selfFundingThresholdUsd
+    // Parse threshold with validation for invalid values
+    const parsedThreshold = competitionConfig.selfFundingThresholdUsd
       ? parseFloat(competitionConfig.selfFundingThresholdUsd)
-      : this.config.transferThreshold;
+      : NaN;
+
+    const selfFundingThreshold =
+      !isNaN(parsedThreshold) && parsedThreshold > 0
+        ? parsedThreshold
+        : this.config.transferThreshold;
 
     // Batch fetch existing alerts for all agents to avoid N+1 queries
     const existingAlerts = await this.batchGetExistingAlerts(
@@ -301,6 +308,7 @@ export class PerpsMonitoringService {
 
   /**
    * Check transfer history for deposits after competition start
+   * Detects both individual large deposits and cumulative small deposits (structuring)
    */
   private async checkTransferHistory(
     walletAddress: string,
@@ -320,26 +328,49 @@ export class PerpsMonitoringService {
         competitionStartDate,
       );
 
-      // Filter for deposits after competition start
-      const suspiciousDeposits = transfers.filter(
+      // Get ALL deposits to this address after competition start
+      const allDeposits = transfers.filter(
         (t) =>
           t.type === "deposit" &&
           t.to.toLowerCase() === walletAddress.toLowerCase() &&
-          t.timestamp > competitionStartDate &&
-          t.amount > threshold,
+          t.timestamp > competitionStartDate,
       );
 
-      if (suspiciousDeposits.length === 0) {
+      if (allDeposits.length === 0) {
         return null;
       }
 
-      const totalDeposited = suspiciousDeposits.reduce(
-        (sum, t) => sum + t.amount,
-        0,
-      );
+      // Calculate total deposited
+      const totalDeposited = allDeposits.reduce((sum, t) => sum + t.amount, 0);
+
+      // Check for violations:
+      // 1. Any single deposit exceeds threshold
+      // 2. Total of all deposits exceeds threshold (catches structuring)
+      const largeDeposits = allDeposits.filter((t) => t.amount > threshold);
+      const hasLargeDeposit = largeDeposits.length > 0;
+      const hasSuspiciousTotal = totalDeposited > threshold;
+
+      if (!hasLargeDeposit && !hasSuspiciousTotal) {
+        return null;
+      }
+
+      // Determine confidence and description based on pattern
+      let confidence: "high" | "medium" | "low";
+      let note: string;
+
+      if (hasLargeDeposit) {
+        // Clear violation: individual deposit(s) exceed threshold
+        confidence = "high";
+        note = `Detected ${largeDeposits.length} large deposit(s) exceeding $${threshold} threshold, total: $${totalDeposited.toFixed(2)}`;
+      } else {
+        // Potential structuring: many small deposits that add up
+        const avgDepositSize = totalDeposited / allDeposits.length;
+        confidence = allDeposits.length > 5 ? "high" : "medium"; // Higher confidence if many small deposits
+        note = `Potential structuring: ${allDeposits.length} deposits averaging $${avgDepositSize.toFixed(2)} each, totaling $${totalDeposited.toFixed(2)} (exceeds $${threshold} threshold)`;
+      }
 
       serviceLogger.warn(
-        `[PerpsMonitoringService] Detected self-funding via transfers for agent ${agentId}: $${totalDeposited}`,
+        `[PerpsMonitoringService] Detected self-funding via transfers for agent ${agentId}: ${note}`,
       );
 
       return {
@@ -349,13 +380,13 @@ export class PerpsMonitoringService {
         actualEquity: accountSummary.totalEquity,
         unexplainedAmount: totalDeposited,
         detectionMethod: "transfer_history",
-        confidence: "high", // Direct evidence
+        confidence,
         severity:
           totalDeposited > this.config.criticalAmountThreshold
             ? "critical"
             : "warning",
-        evidence: suspiciousDeposits,
-        note: `Detected ${suspiciousDeposits.length} deposit(s) totaling $${totalDeposited}`,
+        evidence: allDeposits, // Include ALL deposits as evidence
+        note,
         accountSnapshot: accountSummary,
       };
     } catch (error) {
@@ -407,11 +438,11 @@ export class PerpsMonitoringService {
       unexplainedAmount,
       detectionMethod: "balance_reconciliation",
       confidence:
-        unexplainedAmount > this.config.criticalAmountThreshold
+        Math.abs(unexplainedAmount) > this.config.criticalAmountThreshold
           ? "high"
           : "medium",
       severity:
-        unexplainedAmount > this.config.criticalAmountThreshold
+        Math.abs(unexplainedAmount) > this.config.criticalAmountThreshold
           ? "critical"
           : "warning",
       note: `Unexplained balance discrepancy. May include funding rates or platform-specific fees.`,
@@ -461,7 +492,8 @@ export class PerpsMonitoringService {
         ? parseFloat(config.selfFundingThresholdUsd)
         : 0;
 
-      return threshold > 0;
+      // Only monitor if threshold is a valid positive number
+      return !isNaN(threshold) && threshold > 0;
     } catch (error) {
       serviceLogger.error(
         `[PerpsMonitoringService] Error checking competition config:`,
