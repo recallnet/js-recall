@@ -197,12 +197,22 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       // Validate and provide defaults for missing required fields
       const as = data.accountSummary;
 
+      // Helper to check for missing fields in a type-safe way
+      const isFieldMissing = (
+        obj: Record<string, unknown>,
+        field: string,
+      ): boolean => {
+        return obj[field] === undefined || obj[field] === null;
+      };
+
       // Log warning if critical fields are missing
-      const criticalFields = ["totalEquity", "initialCapital", "totalPnl"];
-      const missingFields = criticalFields.filter(
-        (field) =>
-          as[field as keyof typeof as] === undefined ||
-          as[field as keyof typeof as] === null,
+      const criticalFields = [
+        "totalEquity",
+        "initialCapital",
+        "totalPnl",
+      ] as const;
+      const missingFields = criticalFields.filter((field) =>
+        isFieldMissing(as, field),
       );
 
       if (missingFields.length > 0) {
