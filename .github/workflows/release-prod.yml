@@ -1,0 +1,39 @@
+name: Release Prod
+
+permissions:
+  contents: read
+
+on:
+  push:
+    tags:
+      - '*'
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  trigger-api-deployment:
+    if: ${{ github.repository_owner == 'recallnet' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate docker image name
+        id: image-name
+        run: |
+          set -eux
+
+          hash=$(git rev-parse --short=7 HEAD)
+          image=textile/js-recall:sha-$hash
+
+          echo "image=$image" >> $GITHUB_OUTPUT
+
+      - uses: ./.github/actions/trigger-deployment
+        with:
+          app-id: ${{ secrets.RECALL_WORKFLOW_TRIGGER_APP_ID }}
+          app-private-key: ${{ secrets.RECALL_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          stage: prod
+          version: v0
+          image: ${{ steps.image-name.outputs.image }}
