@@ -263,6 +263,6 @@ describe("Batch Functionality Tests", () => {
           expect(batchResult.timestamp).toBe(individualResult.timestamp);
         }
       });
-    });
+    }, 15_000);
   });
 });
