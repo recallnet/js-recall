@@ -623,7 +623,10 @@ describe("SymphonyPerpsProvider", () => {
       const elapsed = Date.now() - start;
 
       // Second request should be delayed by at least MIN_REQUEST_INTERVAL (100ms)
-      expect(elapsed).toBeGreaterThanOrEqual(100);
+      // Allow 5ms tolerance for timing precision issues in CI/test environments
+      // This still validates rate limiting is working (without it, elapsed would be ~1-2ms)
+      expect(elapsed).toBeGreaterThanOrEqual(95);
+      expect(elapsed).toBeLessThan(150); // Ensure it's not delayed too much
     });
   });
 
