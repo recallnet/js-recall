@@ -78,7 +78,7 @@ export const CompetitionVotingBanner: React.FC<
             </span>
           )}
           {displayConfig.description && (
-            <span className="text-md max-w-2xl overflow-hidden text-ellipsis whitespace-nowrap opacity-80 transition-opacity duration-150 ease-out">
+            <span className="text-md hidden max-w-2xl overflow-hidden text-ellipsis whitespace-nowrap opacity-80 transition-opacity duration-150 ease-out sm:block">
               {displayConfig.description}
             </span>
           )}
