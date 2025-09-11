@@ -1,7 +1,6 @@
 import { features } from "@/config/index.js";
 import { findActive } from "@/database/repositories/competition-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { CrossChainTradingType } from "@/types/index.js";
 
 /**
  * Configuration Service
