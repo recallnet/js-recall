@@ -48,19 +48,56 @@ export class PerpsDataProcessor {
       providerTradeId: position.providerTradeId || null,
       asset: position.symbol,
       isLong: position.side === "long",
-      leverage: position.leverage?.toString() || null,
-      positionSize: position.positionSizeUsd.toString(),
-      collateralAmount: position.collateralAmount?.toString() || "0",
-      entryPrice: position.entryPrice.toString(),
-      currentPrice: position.currentPrice?.toString() || null,
-      liquidationPrice: position.liquidationPrice?.toString() || null,
-      pnlUsdValue: position.pnlUsdValue?.toString() || null,
-      pnlPercentage: position.pnlPercentage?.toString() || null,
+      leverage: this.numberToString(position.leverage),
+      positionSize: this.numberToString(position.positionSizeUsd) || "0",
+      collateralAmount: this.numberToString(position.collateralAmount) || "0",
+      entryPrice: this.numberToString(position.entryPrice) || "0",
+      currentPrice: this.numberToString(position.currentPrice),
+      liquidationPrice: this.numberToString(position.liquidationPrice),
+      pnlUsdValue: this.numberToString(position.pnlUsdValue),
+      pnlPercentage: this.numberToString(position.pnlPercentage),
       status: position.status,
       createdAt: position.openedAt,
       lastUpdatedAt: position.lastUpdatedAt || null,
       closedAt: position.closedAt || null,
     };
+  }
+
+  /**
+   * Convert number to string, handling scientific notation and zero values
+   */
+  private numberToString(value: number | undefined | null): string | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+    // Handle zero explicitly
+    if (value === 0) {
+      return "0";
+    }
+
+    // For very small or very large numbers, use a different approach
+    const absValue = Math.abs(value);
+
+    // For very small numbers (like 1e-8), use toFixed with appropriate precision
+    if (absValue < 0.0001 && absValue > 0) {
+      const str = value.toFixed(20);
+      // Remove trailing zeros but keep the number accurate
+      return str.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+    }
+
+    // For regular numbers, convert to string and check for scientific notation
+    let str = value.toString();
+
+    // If it's in scientific notation, convert it
+    if (str.includes("e")) {
+      // Use toFixed with reasonable precision, then clean up
+      const precision = str.includes("e-") ? 20 : 10;
+      str = value.toFixed(precision);
+      // Remove trailing zeros after decimal point
+      str = str.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+    }
+
+    return str;
   }
 
   /**
@@ -76,21 +113,21 @@ export class PerpsDataProcessor {
       competitionId,
       timestamp: new Date(),
       totalEquity: summary.totalEquity.toString(),
-      initialCapital: (summary.initialCapital || 0).toString(),
-      totalVolume: summary.totalVolume?.toString() || null,
-      totalUnrealizedPnl: summary.totalUnrealizedPnl?.toString() || null,
-      totalRealizedPnl: summary.totalRealizedPnl?.toString() || null,
-      totalPnl: summary.totalPnl?.toString() || null,
-      totalFeesPaid: summary.totalFeesPaid?.toString() || null,
-      availableBalance: summary.availableBalance?.toString() || null,
-      marginUsed: summary.marginUsed?.toString() || null,
-      totalTrades: summary.totalTrades || null,
-      openPositionsCount: summary.openPositionsCount || null,
-      closedPositionsCount: summary.closedPositionsCount || null,
-      liquidatedPositionsCount: summary.liquidatedPositionsCount || null,
-      roi: summary.roi?.toString() || null,
-      roiPercent: summary.roiPercent?.toString() || null,
-      averageTradeSize: summary.averageTradeSize?.toString() || null,
+      initialCapital: (summary.initialCapital ?? 0).toString(),
+      totalVolume: this.numberToString(summary.totalVolume),
+      totalUnrealizedPnl: this.numberToString(summary.totalUnrealizedPnl),
+      totalRealizedPnl: this.numberToString(summary.totalRealizedPnl),
+      totalPnl: this.numberToString(summary.totalPnl),
+      totalFeesPaid: this.numberToString(summary.totalFeesPaid),
+      availableBalance: this.numberToString(summary.availableBalance),
+      marginUsed: this.numberToString(summary.marginUsed),
+      totalTrades: summary.totalTrades ?? null,
+      openPositionsCount: summary.openPositionsCount ?? null,
+      closedPositionsCount: summary.closedPositionsCount ?? null,
+      liquidatedPositionsCount: summary.liquidatedPositionsCount ?? null,
+      roi: this.numberToString(summary.roi),
+      roiPercent: this.numberToString(summary.roiPercent),
+      averageTradeSize: this.numberToString(summary.averageTradeSize),
       accountStatus: summary.accountStatus || undefined,
       rawData: summary.rawData || undefined,
     };
