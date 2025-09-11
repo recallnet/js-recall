@@ -49,17 +49,6 @@ async function proxy(req: Request, path: string[]) {
     }
   }
 
-  // Caching strategy:
-  // - Unauthenticated GETs: allow short revalidation (good for public endpoints)
-  // - Authenticated requests or non-GET: disable caching
-  const isAuthed = Boolean(token);
-  const isGet = method === "GET";
-  if (!isAuthed && isGet) {
-    fetchInit.next = { revalidate: 30 };
-  } else {
-    fetchInit.cache = "no-store";
-  }
-
   const upstream = await fetch(upstreamUrl, fetchInit);
 
   // 4) Don’t forward Set-Cookie from another domain
