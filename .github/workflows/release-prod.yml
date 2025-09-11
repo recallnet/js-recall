@@ -1,5 +1,8 @@
 name: Release Prod
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
