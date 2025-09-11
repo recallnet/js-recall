@@ -2,7 +2,7 @@ import { InsertPerpsSelfFundingAlert } from "@recallnet/db-schema/trading/types"
 
 import {
   batchCreatePerpsSelfFundingAlerts,
-  getAgentSelfFundingAlerts,
+  batchGetAgentsSelfFundingAlerts,
   getPerpsCompetitionConfig,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
@@ -14,8 +14,9 @@ import {
 
 /**
  * Alert creation data with detection details
+ * This is the internal representation used by the monitoring service
  */
-interface SelfFundingDetection {
+interface SelfFundingAlert {
   agentId: string;
   competitionId: string;
   expectedEquity: number;
@@ -23,9 +24,9 @@ interface SelfFundingDetection {
   unexplainedAmount: number;
   detectionMethod: "transfer_history" | "balance_reconciliation";
   confidence: "high" | "medium" | "low";
-  severity: "critical" | "warning" | "info";
+  severity: "critical" | "warning";
   evidence?: Transfer[];
-  note?: string;
+  note: string;
   accountSnapshot: PerpsAccountSummary;
 }
 
@@ -44,7 +45,7 @@ interface MonitoringConfig {
 interface AgentMonitoringResult {
   agentId: string;
   walletAddress: string;
-  alerts: SelfFundingDetection[];
+  alerts: SelfFundingAlert[];
   error?: string;
 }
 
@@ -85,14 +86,23 @@ export class PerpsMonitoringService {
   }
 
   /**
-   * Monitor multiple agents for self-funding violations
-   * Optimized for batch processing to avoid n+1 issues
+   * Monitor multiple agents for self-funding violations with pre-fetched data
+   * This is the main entry point from PerpsDataProcessor in production
+   * @param agents Array of agents to monitor
+   * @param accountSummaries Pre-fetched account summaries (optional)
+   * @param competitionId Competition ID
+   * @param competitionStartDate Competition start date
+   * @param initialCapital Initial capital for the competition
+   * @param selfFundingThreshold Self-funding threshold in USD
+   * @returns Monitoring results
    */
-  async monitorAgents(
+  async monitorAgentsWithData(
     agents: Array<{ agentId: string; walletAddress: string }>,
+    accountSummaries: Map<string, PerpsAccountSummary> | undefined,
     competitionId: string,
     competitionStartDate: Date,
     initialCapital: number,
+    selfFundingThreshold: number,
   ): Promise<{
     successful: AgentMonitoringResult[];
     failed: AgentMonitoringResult[];
@@ -106,43 +116,27 @@ export class PerpsMonitoringService {
       `[PerpsMonitoringService] Starting monitoring for ${agents.length} agents in competition ${competitionId}`,
     );
 
-    // Get competition config for thresholds
-    const competitionConfig = await getPerpsCompetitionConfig(competitionId);
-    if (!competitionConfig) {
-      serviceLogger.error(
-        `[PerpsMonitoringService] No perps config found for competition ${competitionId}`,
-      );
-      throw new Error(
-        `Competition ${competitionId} is not a perps competition`,
-      );
-    }
-
-    // Parse threshold with validation for invalid values
-    const parsedThreshold = competitionConfig.selfFundingThresholdUsd
-      ? parseFloat(competitionConfig.selfFundingThresholdUsd)
-      : NaN;
-
-    const selfFundingThreshold =
-      !isNaN(parsedThreshold) && parsedThreshold > 0
-        ? parsedThreshold
-        : this.config.transferThreshold;
-
     // Batch fetch existing alerts for all agents to avoid N+1 queries
     const existingAlerts = await this.batchGetExistingAlerts(
       agents.map((a) => a.agentId),
       competitionId,
     );
 
-    // Process agents and collect results
+    // DECISION: Using Promise.allSettled for monitoring multiple agents because:
+    // 1. Monitoring one agent should never prevent monitoring others
+    // 2. Self-funding detection is independent per agent
+    // 3. We want to detect and alert on as many violations as possible
+    // 4. Failed monitoring is tracked per agent in the results
     const results = await Promise.allSettled(
       agents.map((agent) =>
         this.monitorSingleAgent(
           agent,
+          accountSummaries?.get(agent.agentId),
           competitionId,
           competitionStartDate,
           initialCapital,
           selfFundingThreshold,
-          existingAlerts.get(agent.agentId) || [],
+          existingAlerts.get(agent.agentId) ?? [],
         ),
       ),
     );
@@ -205,39 +199,36 @@ export class PerpsMonitoringService {
 
   /**
    * Batch fetch existing alerts to avoid N+1 queries
+   * Now uses efficient batch method that fetches all alerts in 1-2 DB queries
    */
   private async batchGetExistingAlerts(
     agentIds: string[],
     competitionId: string,
   ): Promise<Map<string, Array<{ reviewed: boolean | null }>>> {
-    const alertsMap = new Map<string, Array<{ reviewed: boolean | null }>>();
+    try {
+      // Batch method to fetch all alerts efficiently
+      const alertsMap = await batchGetAgentsSelfFundingAlerts(
+        agentIds,
+        competitionId,
+      );
 
-    // Initialize map with empty arrays
-    agentIds.forEach((id) => alertsMap.set(id, []));
+      // The batch method returns Map<string, SelectPerpsSelfFundingAlert[]>
+      // which is compatible since SelectPerpsSelfFundingAlert includes reviewed field
+      return alertsMap;
+    } catch (error) {
+      serviceLogger.error(
+        `[PerpsMonitoringService] Failed to batch fetch alerts:`,
+        error,
+      );
 
-    // Batch fetch all alerts for these agents
-    // Note: We need to fetch individually since the repository doesn't have a batch method
-    // This is still better than fetching inside the loop
-    const alertPromises = agentIds.map((agentId) =>
-      getAgentSelfFundingAlerts(agentId, competitionId)
-        .then((alerts) => ({ agentId, alerts }))
-        .catch((error) => {
-          serviceLogger.error(
-            `[PerpsMonitoringService] Failed to fetch alerts for agent ${agentId}:`,
-            error,
-          );
-          return { agentId, alerts: [] };
-        }),
-    );
-
-    const results = await Promise.all(alertPromises);
-
-    // Populate the map
-    results.forEach(({ agentId, alerts }) => {
-      alertsMap.set(agentId, alerts);
-    });
-
-    return alertsMap;
+      // DECISION: Return empty alerts map on database error rather than failing.
+      // This allows monitoring to continue and potentially create new alerts.
+      // The risk is we might create duplicate alerts, but that's better than
+      // missing new violations due to a database query failure.
+      const emptyMap = new Map<string, Array<{ reviewed: boolean | null }>>();
+      agentIds.forEach((id) => emptyMap.set(id, []));
+      return emptyMap;
+    }
   }
 
   /**
@@ -245,13 +236,14 @@ export class PerpsMonitoringService {
    */
   private async monitorSingleAgent(
     agent: { agentId: string; walletAddress: string },
+    preFetchedSummary: PerpsAccountSummary | undefined,
     competitionId: string,
     competitionStartDate: Date,
     initialCapital: number,
     selfFundingThreshold: number,
     existingAlerts: Array<{ reviewed: boolean | null }>,
   ): Promise<AgentMonitoringResult> {
-    const alerts: SelfFundingDetection[] = [];
+    const alerts: SelfFundingAlert[] = [];
 
     try {
       // Skip if we already have unreviewed alerts (treat null as unreviewed)
@@ -263,10 +255,18 @@ export class PerpsMonitoringService {
         return { ...agent, alerts: [] };
       }
 
-      // Fetch account summary (needed for both checks)
-      const accountSummary = await this.provider.getAccountSummary(
-        agent.walletAddress,
-      );
+      // DECISION: Account summary is required - if it fails, the entire agent monitoring fails.
+      // This is intentional because we cannot calculate equity or detect self-funding without it.
+      // The provider has built-in retry logic to handle transient failures.
+      const accountSummary =
+        preFetchedSummary ||
+        (await this.provider.getAccountSummary(agent.walletAddress));
+
+      if (preFetchedSummary) {
+        serviceLogger.debug(
+          `[PerpsMonitoringService] Using pre-fetched account summary for agent ${agent.agentId}`,
+        );
+      }
 
       // 1. Check transfer history (if provider supports it)
       if (this.provider.getTransferHistory) {
@@ -317,7 +317,7 @@ export class PerpsMonitoringService {
     accountSummary: PerpsAccountSummary,
     agentId: string,
     competitionId: string,
-  ): Promise<SelfFundingDetection | null> {
+  ): Promise<SelfFundingAlert | null> {
     try {
       if (!this.provider.getTransferHistory) {
         return null;
@@ -376,7 +376,7 @@ export class PerpsMonitoringService {
       return {
         agentId,
         competitionId,
-        expectedEquity: accountSummary.initialCapital || 0,
+        expectedEquity: accountSummary.initialCapital ?? 0,
         actualEquity: accountSummary.totalEquity,
         unexplainedAmount: totalDeposited,
         detectionMethod: "transfer_history",
@@ -394,7 +394,11 @@ export class PerpsMonitoringService {
         `[PerpsMonitoringService] Error checking transfer history:`,
         error,
       );
-      // Don't throw - continue with reconciliation
+      // DECISION: Transfer history is optional - we continue with balance reconciliation.
+      // This is because:
+      // 1. Not all providers support transfer history
+      // 2. Transfer history API might be less reliable than account data
+      // 3. Balance reconciliation can still detect self-funding without transfer data
       return null;
     }
   }
@@ -407,10 +411,10 @@ export class PerpsMonitoringService {
     initialCapital: number,
     agentId: string,
     competitionId: string,
-  ): SelfFundingDetection | null {
+  ): SelfFundingAlert | null {
     // Defensive: ensure we have required fields
-    const totalEquity = accountSummary.totalEquity || 0;
-    const totalPnl = accountSummary.totalPnl || 0;
+    const totalEquity = accountSummary.totalEquity ?? 0;
+    const totalPnl = accountSummary.totalPnl ?? 0;
 
     // Calculate expected equity
     // Note: This formula might need adjustment based on how the platform
@@ -454,7 +458,7 @@ export class PerpsMonitoringService {
    * Map detection to database alert format
    */
   private mapDetectionToAlert(
-    detection: SelfFundingDetection,
+    detection: SelfFundingAlert,
   ): InsertPerpsSelfFundingAlert {
     return {
       agentId: detection.agentId,
@@ -487,13 +491,15 @@ export class PerpsMonitoringService {
         return false;
       }
 
-      // Check if self-funding monitoring is enabled (threshold > 0)
-      const threshold = config.selfFundingThresholdUsd
-        ? parseFloat(config.selfFundingThresholdUsd)
-        : 0;
+      // Check if self-funding monitoring is enabled
+      if (!config.selfFundingThresholdUsd) {
+        // null/undefined means monitoring is disabled
+        return false;
+      }
 
-      // Only monitor if threshold is a valid positive number
-      return !isNaN(threshold) && threshold > 0;
+      const threshold = parseFloat(config.selfFundingThresholdUsd);
+      // Monitor if threshold is a valid number >= 0 (0 means any deposit is flagged)
+      return !isNaN(threshold) && threshold >= 0;
     } catch (error) {
       serviceLogger.error(
         `[PerpsMonitoringService] Error checking competition config:`,

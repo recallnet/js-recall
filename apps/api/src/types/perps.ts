@@ -172,15 +172,3 @@ export interface PerpsProcessingResult {
   summaryCreated: boolean;
   error?: string;
 }
-
-/**
- * Self-funding detection result
- */
-export interface SelfFundingDetection {
-  detected: boolean;
-  method: "transfer_history" | "balance_reconciliation";
-  unexplainedAmount?: number;
-  violations?: Transfer[];
-  expectedEquity?: number;
-  actualEquity?: number;
-}

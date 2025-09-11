@@ -88,7 +88,10 @@ describe("PerpsMonitoringService", () => {
     vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
       mockCompetitionConfig,
     );
-    vi.mocked(perpsRepo.getAgentSelfFundingAlerts).mockResolvedValue([]);
+    // Mock the new batch method to return an empty Map by default
+    vi.mocked(perpsRepo.batchGetAgentsSelfFundingAlerts).mockResolvedValue(
+      new Map(),
+    );
     vi.mocked(perpsRepo.batchCreatePerpsSelfFundingAlerts).mockResolvedValue(
       [],
     );
@@ -120,17 +123,20 @@ describe("PerpsMonitoringService", () => {
     });
   });
 
-  describe("monitorAgents", () => {
+  describe("monitorAgentsWithData", () => {
     const competitionStartDate = new Date("2024-01-01");
     const initialCapital = 10000;
+    const selfFundingThreshold = 100; // Standard test threshold
 
     describe("empty agents handling", () => {
       it("should return immediately for empty agents array", async () => {
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           [],
+          undefined, // No pre-fetched summaries
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         expect(result).toEqual({
@@ -140,102 +146,171 @@ describe("PerpsMonitoringService", () => {
         });
 
         // Should not make any repository calls
-        expect(perpsRepo.getPerpsCompetitionConfig).not.toHaveBeenCalled();
-        expect(perpsRepo.getAgentSelfFundingAlerts).not.toHaveBeenCalled();
+        expect(
+          perpsRepo.batchGetAgentsSelfFundingAlerts,
+        ).not.toHaveBeenCalled();
+        expect(
+          perpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).not.toHaveBeenCalled();
       });
     });
 
-    describe("competition config handling", () => {
-      it("should throw error if competition config not found", async () => {
-        vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(null);
-
+    describe("threshold handling", () => {
+      it("should detect transfers above the provided threshold", async () => {
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        await expect(
-          service.monitorAgents(
-            agents,
-            "comp-1",
-            competitionStartDate,
-            initialCapital,
-          ),
-        ).rejects.toThrow("Competition comp-1 is not a perps competition");
-      });
-
-      it("should use competition threshold when available", async () => {
-        const configWithHighThreshold: SelectPerpsCompetitionConfig = {
-          ...mockCompetitionConfig,
-          selfFundingThresholdUsd: "500", // High threshold
-        };
-        vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
-          configWithHighThreshold,
-        );
-
-        // Set up a transfer below 500 but above default (10)
-        const smallTransfer: Transfer = {
-          ...sampleTransfer,
-          amount: 100, // Below competition threshold of 500
-        };
+        // Set up self-funding alert
         vi.mocked(
           mockProviderWithTransfers.getTransferHistory!,
-        ).mockResolvedValue([smallTransfer]);
+        ).mockResolvedValue([
+          { ...sampleTransfer, amount: 150 }, // Above threshold (100)
+        ]);
 
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold, // 100
         );
 
-        // Should not create alert since transfer is below competition threshold
+        expect(result.successful).toHaveLength(1);
+        expect(result.successful[0]?.alerts).toHaveLength(1);
+
+        const firstAgent = result.successful[0];
+        expect(firstAgent).toBeDefined();
+        expect(firstAgent?.alerts[0]).toBeDefined();
+
+        const alert = firstAgent?.alerts[0];
+        if (alert) {
+          // The presence of an alert means it was detected
+          expect(alert).toBeDefined();
+          expect(alert.detectionMethod).toBe("transfer_history");
+          expect(alert.unexplainedAmount).toBe(150);
+          expect(alert.evidence).toBeDefined();
+          expect(alert.evidence?.[0]?.amount).toBe(150);
+        }
+      });
+
+      it("should not detect transfers below the provided threshold", async () => {
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        // Small transfer below threshold
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([
+          { ...sampleTransfer, amount: 50 }, // Below threshold (100)
+        ]);
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold, // 100
+        );
+
+        expect(result.successful).toHaveLength(1);
+        expect(result.successful[0]?.alerts).toHaveLength(0);
         expect(result.totalAlertsCreated).toBe(0);
       });
 
-      it("should handle invalid threshold string gracefully", async () => {
-        const configWithInvalidThreshold: SelectPerpsCompetitionConfig = {
-          ...mockCompetitionConfig,
-          selfFundingThresholdUsd: "invalid", // Not a number
-        };
-        vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
-          configWithInvalidThreshold,
-        );
-
+      it("should handle zero threshold (flag any deposit)", async () => {
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        // Even tiny transfer should be detected with zero threshold
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([{ ...sampleTransfer, amount: 0.01 }]);
+
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          0, // Zero threshold
         );
 
-        // Should use default threshold when config is invalid
         expect(result.successful).toHaveLength(1);
-        expect(result.failed).toHaveLength(0);
+        expect(result.successful[0]?.alerts).toHaveLength(1);
+
+        const firstAgent = result.successful[0];
+        expect(firstAgent).toBeDefined();
+        expect(firstAgent?.alerts[0]).toBeDefined();
+
+        const alert = firstAgent?.alerts[0];
+        if (alert) {
+          // The presence of an alert means it was detected
+          expect(alert).toBeDefined();
+          expect(alert.detectionMethod).toBe("transfer_history");
+          expect(alert.unexplainedAmount).toBe(0.01);
+          expect(alert.evidence).toBeDefined();
+          expect(alert.evidence?.[0]?.amount).toBe(0.01);
+        }
       });
 
-      it("should handle null threshold in config", async () => {
-        const configWithNullThreshold: SelectPerpsCompetitionConfig = {
-          ...mockCompetitionConfig,
-          selfFundingThresholdUsd: null,
-        };
-        vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
-          configWithNullThreshold,
-        );
-
+      it("should handle high threshold values", async () => {
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        // Transfer below high threshold
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([
+          { ...sampleTransfer, amount: 999 }, // Below threshold (1000)
+        ]);
+
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          1000, // High threshold
         );
 
-        // Should use default threshold when config is null
         expect(result.successful).toHaveLength(1);
-        expect(result.failed).toHaveLength(0);
+        expect(result.successful[0]?.alerts).toHaveLength(0);
+      });
+
+      it("should use pre-fetched account summaries when provided (production use case)", async () => {
+        const agents = [
+          { agentId: "agent-1", walletAddress: "0x123" },
+          { agentId: "agent-2", walletAddress: "0x456" },
+        ];
+
+        // Pre-fetched summaries from PerpsDataProcessor
+        const preFetchedSummaries = new Map<string, PerpsAccountSummary>();
+        preFetchedSummaries.set("agent-1", {
+          ...sampleAccountSummary,
+          totalEquity: 10050, // 50 unexplained (below threshold of 100)
+          totalPnl: 50, // Ensure PnL matches the equity change
+        });
+        preFetchedSummaries.set("agent-2", {
+          ...sampleAccountSummary,
+          totalEquity: 11000, // 1000 unexplained (above threshold of 100)
+          totalPnl: 0, // No PnL, so all equity increase is unexplained
+        });
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          preFetchedSummaries, // Providing pre-fetched data
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold, // 100
+        );
+
+        // Should not call getAccountSummary since we provided pre-fetched data
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).not.toHaveBeenCalled();
+
+        // Should still detect issues based on the provided summaries
+        expect(result.successful).toHaveLength(2);
+        expect(result.totalAlertsCreated).toBe(1); // Only agent-2 has unexplained amount >= threshold
       });
     });
 
@@ -258,17 +333,21 @@ describe("PerpsMonitoringService", () => {
           actionTaken: null,
         };
 
-        vi.mocked(perpsRepo.getAgentSelfFundingAlerts).mockResolvedValue([
-          unreviewedAlert,
-        ]);
+        const alertsMap = new Map<string, SelectPerpsSelfFundingAlert[]>();
+        alertsMap.set("agent-1", [unreviewedAlert]);
+        vi.mocked(perpsRepo.batchGetAgentsSelfFundingAlerts).mockResolvedValue(
+          alertsMap,
+        );
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should not fetch account summary since agent is skipped
@@ -296,17 +375,21 @@ describe("PerpsMonitoringService", () => {
           actionTaken: null,
         };
 
-        vi.mocked(perpsRepo.getAgentSelfFundingAlerts).mockResolvedValue([
-          unreviewedAlert,
-        ]);
+        const alertsMap = new Map<string, SelectPerpsSelfFundingAlert[]>();
+        alertsMap.set("agent-1", [unreviewedAlert]);
+        vi.mocked(perpsRepo.batchGetAgentsSelfFundingAlerts).mockResolvedValue(
+          alertsMap,
+        );
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         expect(
@@ -333,17 +416,21 @@ describe("PerpsMonitoringService", () => {
           actionTaken: "dismissed",
         };
 
-        vi.mocked(perpsRepo.getAgentSelfFundingAlerts).mockResolvedValue([
-          reviewedAlert,
-        ]);
+        const alertsMap = new Map<string, SelectPerpsSelfFundingAlert[]>();
+        alertsMap.set("agent-1", [reviewedAlert]);
+        vi.mocked(perpsRepo.batchGetAgentsSelfFundingAlerts).mockResolvedValue(
+          alertsMap,
+        );
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should process the agent since all alerts are reviewed
@@ -372,11 +459,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Verify alert creation was called with correct data (strings)
@@ -416,11 +505,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }]; // Lowercase
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should detect the transfer despite case difference
@@ -444,11 +535,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should not create alert for old transfer
@@ -473,11 +566,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         expect(result.totalAlertsCreated).toBe(0);
@@ -512,11 +607,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should create alert with total amount
@@ -540,11 +637,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await serviceNoTransfers.monitorAgents(
+        const result = await serviceNoTransfers.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should only check reconciliation, not transfers
@@ -572,11 +671,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should not create alert (threshold is >, not >=)
@@ -600,11 +701,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should not detect transfer to different address
@@ -628,11 +731,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should not detect transfer at exact start time (uses > not >=)
@@ -668,11 +773,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await serviceWithDefaults.monitorAgents(
+        const result = await serviceWithDefaults.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          0, // Using default threshold for competitions
         );
 
         // Should detect even $0.01 since default threshold is 0
@@ -728,11 +835,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should detect structuring attempt
@@ -775,11 +884,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should detect with HIGH confidence due to many deposits
@@ -831,11 +942,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should detect with HIGH confidence due to large deposit
@@ -872,11 +985,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Expected: 10000 + 500 = 10500
@@ -911,11 +1026,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Unexplained: -200, but Math.abs used for threshold
@@ -949,11 +1066,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // 50 is below default reconciliation threshold of 100
@@ -976,11 +1095,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should use 0 for missing fields
@@ -1015,11 +1136,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        await service.monitorAgents(
+        await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         expect(
@@ -1049,11 +1172,13 @@ describe("PerpsMonitoringService", () => {
           mockProviderWithTransfers.getAccountSummary,
         ).mockResolvedValue(mediumDiscrepancy);
 
-        await service.monitorAgents(
+        await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         expect(
@@ -1084,11 +1209,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should detect if discrepancy exists
@@ -1112,11 +1239,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Expected: 10000 + (-10500) = -500
@@ -1139,11 +1268,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Expected: 10000 + (-5000) = 5000
@@ -1192,11 +1323,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should create 2 alerts
@@ -1234,18 +1367,20 @@ describe("PerpsMonitoringService", () => {
           // Agent 3: Success
           .mockResolvedValueOnce(sampleAccountSummary);
 
-        vi.mocked(perpsRepo.getAgentSelfFundingAlerts).mockImplementation(
+        vi.mocked(perpsRepo.batchGetAgentsSelfFundingAlerts).mockImplementation(
           async () => {
             // All agents have no existing alerts
-            return [];
+            return new Map();
           },
         );
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         expect(result.successful).toHaveLength(2);
@@ -1275,11 +1410,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should still report success for agent monitoring
@@ -1294,34 +1431,29 @@ describe("PerpsMonitoringService", () => {
           { agentId: "agent-3", walletAddress: "0x333" },
         ];
 
-        await service.monitorAgents(
+        await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
-        // Should fetch alerts for all agents upfront
-        expect(perpsRepo.getAgentSelfFundingAlerts).toHaveBeenCalledTimes(3);
-        expect(perpsRepo.getAgentSelfFundingAlerts).toHaveBeenCalledWith(
-          "agent-1",
-          "comp-1",
+        // Should batch fetch alerts for all agents in one call
+        expect(perpsRepo.batchGetAgentsSelfFundingAlerts).toHaveBeenCalledTimes(
+          1,
         );
-        expect(perpsRepo.getAgentSelfFundingAlerts).toHaveBeenCalledWith(
-          "agent-2",
-          "comp-1",
-        );
-        expect(perpsRepo.getAgentSelfFundingAlerts).toHaveBeenCalledWith(
-          "agent-3",
+        expect(perpsRepo.batchGetAgentsSelfFundingAlerts).toHaveBeenCalledWith(
+          ["agent-1", "agent-2", "agent-3"],
           "comp-1",
         );
       });
 
       it("should handle alert fetch failures gracefully", async () => {
-        vi.mocked(perpsRepo.getAgentSelfFundingAlerts)
-          .mockResolvedValueOnce([]) // agent-1: success
-          .mockRejectedValueOnce(new Error("DB error")) // agent-2: failure
-          .mockResolvedValueOnce([]); // agent-3: success
+        vi.mocked(
+          perpsRepo.batchGetAgentsSelfFundingAlerts,
+        ).mockRejectedValueOnce(new Error("DB error")); // Fail on first call
 
         const agents = [
           { agentId: "agent-1", walletAddress: "0x111" },
@@ -1329,11 +1461,13 @@ describe("PerpsMonitoringService", () => {
           { agentId: "agent-3", walletAddress: "0x333" },
         ];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should still process all agents (failed fetch = empty alerts)
@@ -1372,10 +1506,14 @@ describe("PerpsMonitoringService", () => {
           reviewedBy: "admin-1",
         };
 
-        vi.mocked(perpsRepo.getAgentSelfFundingAlerts)
-          .mockResolvedValueOnce([unreviewedAlert]) // agent-1: unreviewed
-          .mockResolvedValueOnce([]) // agent-2: no alerts
-          .mockResolvedValueOnce([reviewedAlert]); // agent-3: reviewed
+        // Mock batch alerts to return different results for the agents
+        const alertsMap = new Map<string, SelectPerpsSelfFundingAlert[]>();
+        alertsMap.set("agent-1", [unreviewedAlert]); // agent-1: unreviewed
+        alertsMap.set("agent-2", []); // agent-2: no alerts
+        alertsMap.set("agent-3", [reviewedAlert]); // agent-3: reviewed
+        vi.mocked(perpsRepo.batchGetAgentsSelfFundingAlerts).mockResolvedValue(
+          alertsMap,
+        );
 
         const agents = [
           { agentId: "agent-1", walletAddress: "0x111" },
@@ -1383,11 +1521,13 @@ describe("PerpsMonitoringService", () => {
           { agentId: "agent-3", walletAddress: "0x333" },
         ];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should only process agents 2 and 3 (agent 1 skipped)
@@ -1416,13 +1556,17 @@ describe("PerpsMonitoringService", () => {
           .mockResolvedValueOnce(sampleAccountSummary) // agent-1: success
           .mockRejectedValueOnce(new Error("Provider error")); // agent-2: failure
 
-        vi.mocked(perpsRepo.getAgentSelfFundingAlerts).mockResolvedValue([]);
+        vi.mocked(perpsRepo.batchGetAgentsSelfFundingAlerts).mockResolvedValue(
+          new Map(),
+        );
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         expect(result.successful).toHaveLength(1);
@@ -1446,11 +1590,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should not create alert (threshold is >, not >=)
@@ -1470,11 +1616,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should handle large numbers correctly
@@ -1497,11 +1645,13 @@ describe("PerpsMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        const result = await service.monitorAgents(
+        const result = await service.monitorAgentsWithData(
           agents,
+          undefined,
           "comp-1",
           competitionStartDate,
           initialCapital,
+          selfFundingThreshold,
         );
 
         // Should continue with reconciliation check
@@ -1519,7 +1669,7 @@ describe("PerpsMonitoringService", () => {
       expect(result).toBe(false);
     });
 
-    it("should return false if threshold is zero", async () => {
+    it("should return true if threshold is zero (monitor for ANY deposits)", async () => {
       const zeroThresholdConfig: SelectPerpsCompetitionConfig = {
         ...mockCompetitionConfig,
         selfFundingThresholdUsd: "0",
@@ -1529,7 +1679,7 @@ describe("PerpsMonitoringService", () => {
       );
 
       const result = await service.shouldMonitorCompetition("comp-1");
-      expect(result).toBe(false);
+      expect(result).toBe(true); // Zero threshold means monitor for ANY deposits
     });
 
     it("should return false if threshold is missing", async () => {

@@ -16,6 +16,8 @@ import {
   syncAgentPerpsData,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
+import { PerpsMonitoringService } from "@/services/perps-monitoring.service.js";
+import { PerpsProviderFactory } from "@/services/providers/perps-provider.factory.js";
 import type {
   AgentPerpsSyncResult,
   BatchPerpsSyncResult,
@@ -24,6 +26,7 @@ import type {
   IPerpsDataProvider,
   PerpsAccountSummary,
   PerpsPosition,
+  PerpsProviderConfig,
 } from "@/types/perps.js";
 
 /**
@@ -31,7 +34,9 @@ import type {
  * Orchestrates fetching data from providers and storing in database
  */
 export class PerpsDataProcessor {
-  constructor() {}
+  constructor() {
+    // No initialization needed
+  }
 
   /**
    * Transform provider position to database format
@@ -61,6 +66,36 @@ export class PerpsDataProcessor {
       lastUpdatedAt: position.lastUpdatedAt || null,
       closedAt: position.closedAt || null,
     };
+  }
+
+  /**
+   * Type guard to validate jsonb data is a valid PerpsProviderConfig
+   */
+  private isValidProviderConfig(
+    config: unknown,
+  ): config is PerpsProviderConfig {
+    if (!config || typeof config !== "object" || config === null) {
+      return false;
+    }
+
+    // Use 'in' operator for type narrowing instead of casting
+    if (
+      !("type" in config) ||
+      typeof config.type !== "string" ||
+      !["external_api", "onchain_indexing", "hybrid"].includes(config.type)
+    ) {
+      return false;
+    }
+
+    // For external_api type, provider field is expected
+    if (
+      config.type === "external_api" &&
+      (!("provider" in config) || typeof config.provider !== "string")
+    ) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -112,8 +147,8 @@ export class PerpsDataProcessor {
       agentId,
       competitionId,
       timestamp: new Date(),
-      totalEquity: summary.totalEquity.toString(),
-      initialCapital: (summary.initialCapital ?? 0).toString(),
+      totalEquity: this.numberToString(summary.totalEquity) || "0",
+      initialCapital: this.numberToString(summary.initialCapital) || "0",
       totalVolume: this.numberToString(summary.totalVolume),
       totalUnrealizedPnl: this.numberToString(summary.totalUnrealizedPnl),
       totalRealizedPnl: this.numberToString(summary.totalRealizedPnl),
@@ -128,8 +163,8 @@ export class PerpsDataProcessor {
       roi: this.numberToString(summary.roi),
       roiPercent: this.numberToString(summary.roiPercent),
       averageTradeSize: this.numberToString(summary.averageTradeSize),
-      accountStatus: summary.accountStatus || undefined,
-      rawData: summary.rawData || undefined,
+      accountStatus: summary.accountStatus ?? undefined,
+      rawData: summary.rawData ?? undefined,
     };
   }
 
@@ -213,13 +248,18 @@ export class PerpsDataProcessor {
    * @param agents Array of agent data to process
    * @param competitionId Competition ID
    * @param provider The perps data provider to use
-   * @returns Batch processing results
+   * @returns Batch processing results with raw account summaries
    */
   async processBatchAgentData(
     agents: Array<{ agentId: string; walletAddress: string }>,
     competitionId: string,
     provider: IPerpsDataProvider,
-  ): Promise<BatchPerpsSyncResult> {
+  ): Promise<
+    BatchPerpsSyncResult & {
+      accountSummaries: Map<string, PerpsAccountSummary>;
+      agents: Array<{ agentId: string; walletAddress: string }>;
+    }
+  > {
     if (!provider) {
       throw new Error("[PerpsDataProcessor] Provider is required");
     }
@@ -248,9 +288,16 @@ export class PerpsDataProcessor {
         );
 
         const batchPromises = batch.map(async ({ agentId, walletAddress }) => {
-          const accountSummary =
-            await provider.getAccountSummary(walletAddress);
-          const positions = await provider.getPositions(walletAddress);
+          // DECISION: Using Promise.all for account summary + positions because:
+          // 1. These data points are tightly coupled for perpetual futures
+          // 2. Partial data could lead to incorrect PnL calculations
+          // 3. The Symphony provider has built-in retry logic (3 retries with exponential backoff)
+          // 4. The outer Promise.allSettled provides per-agent resilience - if this agent fails,
+          //    others will still be processed
+          const [accountSummary, positions] = await Promise.all([
+            provider.getAccountSummary(walletAddress),
+            provider.getPositions(walletAddress),
+          ]);
 
           // Transform to database format
           const dbPositions = positions.map((p) =>
@@ -267,10 +314,16 @@ export class PerpsDataProcessor {
             competitionId,
             positions: dbPositions,
             accountSummary: dbAccountSummary,
+            // Include raw account summary for monitoring to reuse
+            rawAccountSummary: accountSummary,
           };
         });
 
-        // Use allSettled to handle individual failures without failing the entire batch
+        // DECISION: Using Promise.allSettled for batch agent processing because:
+        // 1. One agent's failure should not prevent processing other agents
+        // 2. We want to collect as much data as possible and report failures
+        // 3. Competitions may have hundreds of agents - partial success is valuable
+        // 4. Failed agents are tracked and reported separately in the result
         const batchResults = await Promise.allSettled(batchPromises);
 
         // Process results and separate successes from failures
@@ -299,11 +352,29 @@ export class PerpsDataProcessor {
         }
       }
 
-      // Batch sync all agent data
-      const batchResult = await batchSyncAgentsPerpsData(syncDataArray);
+      // Build all needed data structures in a single pass for efficiency
+      const rawAccountSummaries = new Map<string, PerpsAccountSummary>();
+      const syncDataMap = new Map<string, (typeof syncDataArray)[0]>();
+      const syncDataForDb = [];
 
-      // Create a Map for O(1) lookups instead of using Array.find()
-      const syncDataMap = new Map(syncDataArray.map((d) => [d.agentId, d]));
+      for (const data of syncDataArray) {
+        // Store raw account summary for monitoring
+        rawAccountSummaries.set(data.agentId, data.rawAccountSummary);
+
+        // Store full data for portfolio snapshot creation (O(1) lookup later)
+        syncDataMap.set(data.agentId, data);
+
+        // Add DB data (without rawAccountSummary)
+        syncDataForDb.push({
+          agentId: data.agentId,
+          competitionId: data.competitionId,
+          positions: data.positions,
+          accountSummary: data.accountSummary,
+        });
+      }
+
+      // Batch sync all agent data
+      const batchResult = await batchSyncAgentsPerpsData(syncDataForDb);
 
       // Prepare portfolio snapshots for successful syncs
       const now = new Date();
@@ -355,6 +426,8 @@ export class PerpsDataProcessor {
       return {
         successful: batchResult.successful,
         failed: allFailures,
+        accountSummaries: rawAccountSummaries,
+        agents,
       };
     } catch (error) {
       serviceLogger.error(
@@ -368,6 +441,8 @@ export class PerpsDataProcessor {
           agentId,
           error: error instanceof Error ? error : new Error(String(error)),
         })),
+        accountSummaries: new Map(),
+        agents,
       };
     }
   }
@@ -376,12 +451,17 @@ export class PerpsDataProcessor {
    * Process all agents in a competition
    * @param competitionId Competition ID
    * @param provider The perps data provider to use
-   * @returns Batch processing results
+   * @returns Batch processing results with account summaries
    */
   async processCompetitionAgents(
     competitionId: string,
     provider: IPerpsDataProvider,
-  ): Promise<BatchPerpsSyncResult> {
+  ): Promise<
+    BatchPerpsSyncResult & {
+      accountSummaries: Map<string, PerpsAccountSummary>;
+      agents: Array<{ agentId: string; walletAddress: string }>;
+    }
+  > {
     if (!provider) {
       throw new Error("[PerpsDataProcessor] Provider is required");
     }
@@ -390,7 +470,7 @@ export class PerpsDataProcessor {
       `[PerpsDataProcessor] Processing all agents for competition ${competitionId}`,
     );
 
-    // Get all agent IDs in the competition
+    // Get competition agents
     const agentIds = await getCompetitionAgents(competitionId);
 
     if (agentIds.length === 0) {
@@ -401,18 +481,23 @@ export class PerpsDataProcessor {
       return {
         successful: [],
         failed: [],
+        accountSummaries: new Map(),
+        agents: [],
       };
     }
 
-    // Get full agent details with wallet addresses
+    // Fetch agent details
     const agents = await findAgentsByIds(agentIds);
 
     // Filter out agents without wallet addresses and map to required format
     const agentData = agents
-      .filter((agent) => agent.walletAddress !== null)
+      .filter(
+        (agent): agent is typeof agent & { walletAddress: string } =>
+          agent.walletAddress !== null,
+      )
       .map((agent) => ({
         agentId: agent.id,
-        walletAddress: agent.walletAddress as string,
+        walletAddress: agent.walletAddress,
       }));
 
     if (agentData.length < agents.length) {
@@ -450,5 +535,185 @@ export class PerpsDataProcessor {
     }
 
     return competition.type === "perpetual_futures";
+  }
+
+  /**
+   * High-level orchestration method for perps competitions
+   * Handles data sync and optional self-funding monitoring
+   * @param competitionId Competition ID
+   * @returns Combined results from sync and monitoring
+   */
+  async processPerpsCompetition(competitionId: string): Promise<{
+    syncResult: BatchPerpsSyncResult;
+    monitoringResult?: {
+      successful: number;
+      failed: number;
+      alertsCreated: number;
+    };
+    error?: string;
+  }> {
+    let syncResult: BatchPerpsSyncResult = { successful: [], failed: [] };
+
+    try {
+      // 1. Get competition and config
+      // DECISION: Using Promise.all here because both are required for processing.
+      // If either the competition or config is missing/fails, the entire process
+      // should stop - there's no value in partial data at this level.
+      const [competition, perpsConfig] = await Promise.all([
+        findCompetitionById(competitionId),
+        getPerpsCompetitionConfig(competitionId),
+      ]);
+
+      if (!competition) {
+        throw new Error(`Competition ${competitionId} not found`);
+      }
+
+      if (!perpsConfig) {
+        throw new Error(
+          `No perps configuration found for competition ${competitionId}`,
+        );
+      }
+
+      if (competition.type !== "perpetual_futures") {
+        throw new Error(
+          `Competition ${competitionId} is not a perpetual futures competition`,
+        );
+      }
+
+      // Parse self-funding threshold early for validation
+      const earlyThreshold = perpsConfig.selfFundingThresholdUsd
+        ? parseFloat(perpsConfig.selfFundingThresholdUsd)
+        : null;
+
+      // Validate and extract competition start date (needed for monitoring)
+      let competitionStartDate: Date | null = null;
+      if (this.shouldRunMonitoring(earlyThreshold)) {
+        if (!competition.startDate) {
+          throw new Error(
+            `Competition ${competitionId} has no start date, cannot process perps data`,
+          );
+        }
+        competitionStartDate = competition.startDate; // Now safely non-null
+
+        if (competitionStartDate > new Date()) {
+          serviceLogger.warn(
+            `[PerpsDataProcessor] Competition ${competitionId} hasn't started yet (starts ${competitionStartDate.toISOString()})`,
+          );
+        }
+      }
+
+      // 2. Validate and create provider
+      if (!perpsConfig.dataSourceConfig) {
+        throw new Error(
+          `No data source configuration found for competition ${competitionId}`,
+        );
+      }
+
+      if (!this.isValidProviderConfig(perpsConfig.dataSourceConfig)) {
+        throw new Error(
+          `Invalid data source configuration for competition ${competitionId}`,
+        );
+      }
+
+      const provider = PerpsProviderFactory.createProvider(
+        perpsConfig.dataSourceConfig,
+      );
+
+      serviceLogger.info(
+        `[PerpsDataProcessor] Processing perps competition ${competitionId} with provider ${provider.getName()}`,
+      );
+
+      // 3. Process all agents (filtering handled internally)
+      const result = await this.processCompetitionAgents(
+        competitionId,
+        provider,
+      );
+
+      syncResult = result;
+      const { accountSummaries, agents } = result;
+
+      serviceLogger.info(
+        `[PerpsDataProcessor] Data sync complete: ${syncResult.successful.length} successful, ${syncResult.failed.length} failed`,
+      );
+
+      // 4. Run monitoring if configured (reuse pre-fetched account summaries)
+      let monitoringResult;
+
+      // Use the threshold we already parsed earlier
+      if (
+        this.shouldRunMonitoring(earlyThreshold) &&
+        syncResult.successful.length > 0
+      ) {
+        serviceLogger.info(
+          `[PerpsDataProcessor] Running self-funding monitoring for competition ${competitionId}`,
+        );
+
+        const monitoring = new PerpsMonitoringService(provider);
+
+        // Use agents from the result instead of fetching again
+        const successfulAgentIds = new Set(
+          syncResult.successful.map((r) => r.agentId),
+        );
+
+        // Filter agents to only include those that were successfully synced
+        const agentsToMonitor = agents.filter((agent) =>
+          successfulAgentIds.has(agent.agentId),
+        );
+
+        // competitionStartDate is guaranteed to be non-null here because:
+        // 1. We only enter this block if shouldRunMonitoring() returns true
+        // 2. We validated and set competitionStartDate when shouldRunMonitoring() was true earlier
+        if (!competitionStartDate) {
+          throw new Error(
+            `Competition ${competitionId} start date validation failed unexpectedly`,
+          );
+        }
+
+        // Use monitorAgentsWithData to pass pre-fetched summaries and config
+        const monitorResult = await monitoring.monitorAgentsWithData(
+          agentsToMonitor,
+          accountSummaries,
+          competitionId,
+          competitionStartDate, // Now TypeScript knows this is non-null
+          parseFloat(perpsConfig.initialCapital || "500"),
+          earlyThreshold ?? 0,
+        );
+
+        monitoringResult = {
+          successful: monitorResult.successful.length,
+          failed: monitorResult.failed.length,
+          alertsCreated: monitorResult.totalAlertsCreated,
+        };
+
+        serviceLogger.info(
+          `[PerpsDataProcessor] Monitoring complete: ${monitoringResult.alertsCreated} alerts created`,
+        );
+      }
+
+      return {
+        syncResult,
+        monitoringResult,
+      };
+    } catch (error) {
+      serviceLogger.error(
+        `[PerpsDataProcessor] Error processing perps competition ${competitionId}:`,
+        error,
+      );
+
+      return {
+        syncResult, // Return any partial results we have
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
+    }
+  }
+
+  /**
+   * Determine if self-funding monitoring should run
+   * @param threshold Parsed self-funding threshold value (null if not set)
+   * @returns True if monitoring should run
+   */
+  private shouldRunMonitoring(threshold: number | null): boolean {
+    return threshold !== null && !isNaN(threshold) && threshold >= 0;
   }
 }
