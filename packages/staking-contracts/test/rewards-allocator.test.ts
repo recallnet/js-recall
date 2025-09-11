@@ -8,6 +8,31 @@ import RewardsAllocator, { Network } from "../src/rewards-allocator.js";
 import RewardsClaimer from "../src/rewards-claimer.js";
 import { RewardAllocationTestHelper } from "../src/test-helper.js";
 
+describe("Allocator Error Path", () => {
+  it("should throw error on transaction failure", async () => {
+    // Mock a failed transaction to hit line 93
+    const allocator = new RewardsAllocator(
+      "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+      "http://invalid-url", // Invalid RPC to trigger failure
+      "0x0000000000000000000000000000000000000000",
+      Network.Hardhat,
+    );
+
+    await assert.rejects(
+      () =>
+        allocator.allocate(
+          "0x0000000000000000000000000000000000000000000000000000000000000000", // 32-byte merkle root
+          "0x0000000000000000000000000000000000000000", // 20-byte address
+          1n,
+          1,
+        ),
+      (error: Error) =>
+        error.message.includes("fetch") ||
+        error.message.includes("ECONNREFUSED"),
+    );
+  });
+});
+
 describe("Allocate Rewards", async function () {
   const network = await RewardAllocationTestHelper.initializeNetwork();
 
