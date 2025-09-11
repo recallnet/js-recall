@@ -120,7 +120,7 @@ export function getCompetitionStateConfig(
     if (isRegistrationFull) {
       return {
         subTitle: "Registration is full",
-        description: "",
+        description: `Maximum capacity reached (${competition.maxParticipants} participants)`,
         variant: "gray",
         untilTime: null,
         phase: null,
@@ -146,7 +146,7 @@ export function getCompetitionStateConfig(
     if (isRegistrationFull) {
       return {
         subTitle: "Registration is full",
-        description: "",
+        description: `Maximum capacity reached (${competition.maxParticipants} participants)`,
         variant: "gray",
         untilTime: null,
         phase: null,
