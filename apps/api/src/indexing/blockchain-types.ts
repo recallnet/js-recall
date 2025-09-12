@@ -58,8 +58,15 @@ export type EventData = {
  * - "unstake"  → Unstake(staker, tokenId, amountToUnstake, withdrawAllowedTime)
  * - "relock"   → Relock(staker, tokenId, updatedOldStakeAmount)
  * - "withdraw" → Withdraw(staker, tokenId, amount)
- * - "unknown"  → Fallback when topic0 doesn’t match our ABI set.
+ * - "rewardClaimed" → RewardClaimed(root, user, amount)
+ * - "unknown"  → Fallback when topic0 doesn't match our ABI set.
  *
  * This is the discriminator used throughout the indexer / DB schema.
  */
-export type EventType = "stake" | "unstake" | "relock" | "withdraw" | "unknown";
+export type EventType =
+  | "stake"
+  | "unstake"
+  | "relock"
+  | "withdraw"
+  | "rewardClaimed"
+  | "unknown";

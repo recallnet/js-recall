@@ -2,6 +2,10 @@ import type { Logger } from "pino";
 import { decodeEventLog } from "viem";
 
 import { db } from "@/database/db.js";
+import {
+  findCompetitionByRootHash,
+  markRewardAsClaimed,
+} from "@/database/repositories/rewards-repository.js";
 import { EVENTS } from "@/indexing/blockchain-events-config.js";
 import type { EventData } from "@/indexing/blockchain-types.js";
 import type { EventsRepository } from "@/indexing/events.repository.js";
@@ -123,6 +127,9 @@ class EventProcessor {
         break;
       case "Withdraw":
         await this.processWithdrawEvent(event);
+        break;
+      case "RewardClaimed":
+        await this.processRewardClaimedEvent(event);
         break;
       default:
         this.#logger.warn(
@@ -321,6 +328,60 @@ class EventProcessor {
       txHash: event.transactionHash,
       logIndex: event.logIndex,
     });
+  }
+
+  /**
+   * Handle the "RewardClaimed" event.
+   *
+   * Decoding (from `EVENTS.RewardClaimed.abi`):
+   * - root: bytes32 (merkle root hash)
+   * - user: address (user who claimed the reward)
+   * - amount: uint256 (amount of reward claimed)
+   *
+   * Persistence:
+   * - Calls `findCompetitionByRootHash` to get the competition ID from the root hash
+   * - Calls `markRewardAsClaimed` to update the claimed status in the rewards table
+   */
+  async processRewardClaimedEvent(event: EventData) {
+    const decodedEvent = decodeEventLog({
+      abi: EVENTS.RewardClaimed.abi,
+      data: event.raw.data,
+      topics: event.raw.topics,
+    });
+
+    const root = decodedEvent.args.root;
+    const user = decodedEvent.args.user;
+    const amount = decodedEvent.args.amount;
+
+    // Convert the root hash to Uint8Array for database lookup
+    const rootHashBytes = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) {
+      rootHashBytes[i] = parseInt(root.slice(2 + i * 2, 4 + i * 2), 16);
+    }
+
+    const competitionId = await findCompetitionByRootHash(rootHashBytes);
+    if (!competitionId) {
+      this.#logger.warn(
+        `No competition found for root hash ${root} in RewardClaimed event (${event.transactionHash})`,
+      );
+      return;
+    }
+
+    const updatedReward = await markRewardAsClaimed(
+      competitionId,
+      user,
+      amount,
+    );
+
+    if (updatedReward) {
+      this.#logger.info(
+        `Marked reward as claimed for user ${user} in competition ${competitionId}`,
+      );
+    } else {
+      this.#logger.warn(
+        `No reward found to mark as claimed for user ${user} in competition ${competitionId}`,
+      );
+    }
   }
 
   /**

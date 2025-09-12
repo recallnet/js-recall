@@ -116,7 +116,7 @@ describe("Rewards Service", () => {
 
     expect(rootEntries.length).toBe(1);
     expect(Buffer.from(rootEntries[0]!.rootHash).toString("hex")).toBe(
-      "2139ba0bff060eae6c6def620e29a004f4f3c2ea869066dd258ad30959ed16b7",
+      "d51936bc70b4ce0dbbb215268fcefa9f45c42dda306fae38c87e28fff0ad84e2",
     );
     expect(rootEntries[0]?.rootHash.length).toBe(32); // Should have 32 bytes
     expect(rootEntries[0]?.competitionId).toBe(testCompetitionId);
@@ -132,7 +132,7 @@ describe("Rewards Service", () => {
 
     // Verify that the mock RewardsAllocator was called
     expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
-      "0x2139ba0bff060eae6c6def620e29a004f4f3c2ea869066dd258ad30959ed16b7", // root hash
+      "0xd51936bc70b4ce0dbbb215268fcefa9f45c42dda306fae38c87e28fff0ad84e2", // root hash
       testTokenAddress,
       6n,
       testStartTimestamp,
