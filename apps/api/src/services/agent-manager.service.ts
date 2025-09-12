@@ -42,6 +42,7 @@ import {
   getBulkBoundedSnapshots,
 } from "@/database/repositories/competition-repository.js";
 import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
+import { countBulkAgentPositionsInCompetitions } from "@/database/repositories/perps-repository.js";
 import { countBulkAgentTradesInCompetitions } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
 import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
@@ -1406,20 +1407,36 @@ export class AgentManager {
     try {
       const competitionIds = competitions.map((comp) => comp.id);
 
-      // Fetch all data in bulk with just 3 queries
-      const [snapshotsMap, tradeCountsMap, rankingsMap] = await Promise.all([
-        getBulkBoundedSnapshots(agentId, competitionIds),
-        countBulkAgentTradesInCompetitions(agentId, competitionIds),
-        getAgentRankingsInCompetitions(agentId, competitionIds),
-      ]);
+      // Separate competitions by type for optimized queries
+      const paperTradingCompetitions = competitions.filter(
+        (comp) => comp.type === "trading",
+      );
+      const perpsCompetitions = competitions.filter(
+        (comp) => comp.type === "perpetual_futures",
+      );
 
-      // Map results back to competitions
+      const paperTradingIds = paperTradingCompetitions.map((comp) => comp.id);
+      const perpsIds = perpsCompetitions.map((comp) => comp.id);
+
+      // Fetch data in parallel - only fetch what's needed for each type
+      const [snapshotsMap, tradeCountsMap, positionCountsMap, rankingsMap] =
+        await Promise.all([
+          getBulkBoundedSnapshots(agentId, competitionIds),
+          paperTradingIds.length > 0
+            ? countBulkAgentTradesInCompetitions(agentId, paperTradingIds)
+            : Promise.resolve(new Map<string, number>()),
+          perpsIds.length > 0
+            ? countBulkAgentPositionsInCompetitions(agentId, perpsIds)
+            : Promise.resolve(new Map<string, number>()),
+          getAgentRankingsInCompetitions(agentId, competitionIds),
+        ]);
+
+      // Map results back to competitions with type-aware metrics
       return competitions.map((competition) => {
         const snapshots = snapshotsMap.get(competition.id);
-        const tradeCount = tradeCountsMap.get(competition.id) || 0;
         const bestPlacement = rankingsMap.get(competition.id);
 
-        // Calculate PnL from snapshots
+        // Calculate PnL from snapshots (works for both types)
         let portfolioValue = 0;
         let pnl = 0;
         let pnlPercent = 0;
@@ -1431,14 +1448,28 @@ export class AgentManager {
           pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
         }
 
-        return {
+        // Build response with appropriate metrics based on competition type
+        const baseMetrics = {
           ...competition,
           portfolioValue,
           pnl,
           pnlPercent,
-          totalTrades: tradeCount,
           bestPlacement,
+          competitionType: competition.type, // Always include type for client awareness
         };
+
+        // Add type-specific metrics
+        if (competition.type === "perpetual_futures") {
+          return {
+            ...baseMetrics,
+            totalPositions: positionCountsMap.get(competition.id) || 0,
+          };
+        } else {
+          return {
+            ...baseMetrics,
+            totalTrades: tradeCountsMap.get(competition.id) || 0,
+          };
+        }
       });
     } catch (error) {
       serviceLogger.error(

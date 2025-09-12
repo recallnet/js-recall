@@ -458,7 +458,10 @@ export interface EnhancedCompetition {
   portfolioValue: number;
   pnl: number;
   pnlPercent: number;
-  totalTrades: number;
+  // Competition-type specific metrics
+  competitionType?: CompetitionType; // Included for client awareness
+  totalTrades?: number; // For paper trading competitions
+  totalPositions?: number; // For perpetual futures competitions
   // TODO: dry out the type for best placement
   bestPlacement?: {
     rank: number;

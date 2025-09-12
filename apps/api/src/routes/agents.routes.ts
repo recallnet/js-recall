@@ -364,10 +364,18 @@ export function configureAgentsRoutes(
    *                         type: number
    *                         description: "Agent's profit/loss percentage in this competition"
    *                         example: 5.01
+   *                       competitionType:
+   *                         type: string
+   *                         enum: ["trading", "perpetual_futures"]
+   *                         description: "Type of competition determining which metrics are available"
    *                       totalTrades:
    *                         type: integer
-   *                         description: "Total number of trades made by agent in this competition"
+   *                         description: "Total number of trades made by agent (only for paper trading competitions)"
    *                         example: 15
+   *                       totalPositions:
+   *                         type: integer
+   *                         description: "Total number of positions held by agent (only for perpetual futures competitions)"
+   *                         example: 3
    *                       bestPlacement:
    *                         type: object
    *                         nullable: true

@@ -918,6 +918,71 @@ async function getPerpsCompetitionStatsImpl(
   }
 }
 
+/**
+ * Count positions for an agent across multiple competitions in bulk
+ * Optimized single query with GROUP BY to avoid N+1 queries
+ * @param agentId Agent ID
+ * @param competitionIds Array of competition IDs
+ * @returns Map of competition ID to position count
+ */
+async function countBulkAgentPositionsInCompetitionsImpl(
+  agentId: string,
+  competitionIds: string[],
+): Promise<Map<string, number>> {
+  if (competitionIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    repositoryLogger.debug(
+      `countBulkAgentPositionsInCompetitions called for agent ${agentId} in ${competitionIds.length} competitions`,
+    );
+
+    // Get position counts for all competitions in one query
+    const results = await dbRead
+      .select({
+        competitionId: perpetualPositions.competitionId,
+        count: drizzleCount(),
+      })
+      .from(perpetualPositions)
+      .where(
+        and(
+          eq(perpetualPositions.agentId, agentId),
+          sql`${perpetualPositions.competitionId} IN (${sql.join(
+            competitionIds.map((id) => sql`${id}`),
+            sql`, `,
+          )})`,
+        ),
+      )
+      .groupBy(perpetualPositions.competitionId);
+
+    // Create map with results
+    const countMap = new Map<string, number>();
+
+    // Initialize all competitions with 0 (important for competitions with no positions)
+    for (const competitionId of competitionIds) {
+      countMap.set(competitionId, 0);
+    }
+
+    // Update with actual counts
+    for (const result of results) {
+      countMap.set(result.competitionId, result.count);
+    }
+
+    repositoryLogger.debug(
+      `Found positions in ${results.length}/${competitionIds.length} competitions`,
+    );
+
+    return countMap;
+  } catch (error) {
+    repositoryLogger.error(
+      "Error in countBulkAgentPositionsInCompetitions:",
+      error,
+    );
+    throw error;
+  }
+}
+
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -1048,3 +1113,10 @@ export const batchSyncAgentsPerpsData = createTimedRepositoryFunction(
   "PerpsRepository",
   "batchSyncAgentsPerpsData",
 );
+
+export const countBulkAgentPositionsInCompetitions =
+  createTimedRepositoryFunction(
+    countBulkAgentPositionsInCompetitionsImpl,
+    "PerpsRepository",
+    "countBulkAgentPositionsInCompetitions",
+  );
