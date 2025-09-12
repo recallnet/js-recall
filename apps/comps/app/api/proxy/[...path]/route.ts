@@ -113,13 +113,13 @@ async function proxy(req: Request, path: string[]) {
 
   // 6) Strongly discourage CDN caching of proxied responses
   respHeaders.set("cache-control", "no-store");
-
-  // 7) Remove compression and hop-by-hop headers to match actual bytes
-  respHeaders.delete("content-encoding");
-  respHeaders.delete("content-length");
-  respHeaders.delete("transfer-encoding");
-  respHeaders.delete("connection");
-
+  const incoming = new Headers(req.headers);
+  if (hasBody && !incoming.get("accept-encoding")) {
+    respHeaders.delete("content-encoding");
+    respHeaders.delete("content-length");
+    respHeaders.delete("transfer-encoding");
+    respHeaders.delete("connection");  
+  }
   return new Response(upstream.body, {
     status: upstream.status,
     headers: respHeaders,
