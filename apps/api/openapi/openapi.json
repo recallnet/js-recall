@@ -8396,7 +8396,7 @@
         ],
         "responses": {
           "200": {
-            "description": "User subscribed to Loops mailing list successfully",
+            "description": "User subscribed to Loops mailing list successfully, or already subscribed",
             "content": {
               "application/json": {
                 "schema": {
@@ -8418,9 +8418,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "User already subscribed"
           },
           "401": {
             "description": "User not authenticated"
@@ -8449,7 +8446,7 @@
         ],
         "responses": {
           "200": {
-            "description": "User unsubscribed from Loops mailing list successfully",
+            "description": "User unsubscribed from Loops mailing list successfully, or already unsubscribed",
             "content": {
               "application/json": {
                 "schema": {
@@ -8471,9 +8468,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "User already unsubscribed"
           },
           "401": {
             "description": "User not authenticated"

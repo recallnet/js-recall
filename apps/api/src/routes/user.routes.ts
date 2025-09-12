@@ -1035,7 +1035,7 @@ export function configureUserRoutes(
    *       - PrivyCookie: []
    *     responses:
    *       200:
-   *         description: User subscribed to Loops mailing list successfully
+   *         description: User subscribed to Loops mailing list successfully, or already subscribed
    *         content:
    *           application/json:
    *             schema:
@@ -1050,8 +1050,6 @@ export function configureUserRoutes(
    *                 isSubscribed:
    *                   type: boolean
    *                   example: true
-   *       200:
-   *         description: Already subscribed
    *       401:
    *         description: User not authenticated
    *       404:
@@ -1075,7 +1073,7 @@ export function configureUserRoutes(
    *       - PrivyCookie: []
    *     responses:
    *       200:
-   *         description: User unsubscribed from Loops mailing list successfully
+   *         description: User unsubscribed from Loops mailing list successfully, or already unsubscribed
    *         content:
    *           application/json:
    *             schema:
@@ -1090,8 +1088,6 @@ export function configureUserRoutes(
    *                 isSubscribed:
    *                   type: boolean
    *                   example: false
-   *       200:
-   *         description: Already unsubscribed
    *       401:
    *         description: User not authenticated
    *       404:

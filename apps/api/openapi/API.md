@@ -1889,14 +1889,13 @@ Subscribe the authenticated user to the Loops mailing list
 
 ##### Responses
 
-| Code | Description                                        |
-| ---- | -------------------------------------------------- |
-| 200  | User subscribed to Loops mailing list successfully |
-| 400  | User already subscribed                            |
-| 401  | User not authenticated                             |
-| 404  | User not found                                     |
-| 500  | Internal server error                              |
-| 502  | Failed to subscribe user to mailing list           |
+| Code | Description                                                               |
+| ---- | ------------------------------------------------------------------------- |
+| 200  | User subscribed to Loops mailing list successfully, or already subscribed |
+| 401  | User not authenticated                                                    |
+| 404  | User not found                                                            |
+| 500  | Internal server error                                                     |
+| 502  | Failed to subscribe user to mailing list                                  |
 
 ##### Security
 
@@ -1918,14 +1917,13 @@ Unsubscribe the authenticated user from the Loops mailing list
 
 ##### Responses
 
-| Code | Description                                            |
-| ---- | ------------------------------------------------------ |
-| 200  | User unsubscribed from Loops mailing list successfully |
-| 400  | User already unsubscribed                              |
-| 401  | User not authenticated                                 |
-| 404  | User not found                                         |
-| 500  | Internal server error                                  |
-| 502  | Failed to unsubscribe user from mailing list           |
+| Code | Description                                                                     |
+| ---- | ------------------------------------------------------------------------------- |
+| 200  | User unsubscribed from Loops mailing list successfully, or already unsubscribed |
+| 401  | User not authenticated                                                          |
+| 404  | User not found                                                                  |
+| 500  | Internal server error                                                           |
+| 502  | Failed to unsubscribe user from mailing list                                    |
 
 ##### Security
 
