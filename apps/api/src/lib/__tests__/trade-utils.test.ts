@@ -13,17 +13,17 @@ describe("trade-utils", () => {
 
     it("should apply minimal slippage for small trades", () => {
       const result = calculateSlippage(100); // $100 trade
-      expect(result.actualSlippage).toBeGreaterThan(0);
-      expect(result.actualSlippage).toBeLessThan(0.001); // Less than 0.1%
-      expect(result.effectiveFromValueUSD).toBeGreaterThan(99);
+      expect(result.actualSlippage).toBeGreaterThanOrEqual(0.0005); // At least MIN_SLIPPAGE (5 bps)
+      expect(result.actualSlippage).toBeLessThan(0.002); // Less than 0.2%
+      expect(result.effectiveFromValueUSD).toBeGreaterThan(99.8);
       expect(result.effectiveFromValueUSD).toBeLessThan(100);
     });
 
     it("should apply moderate slippage for medium trades", () => {
       const result = calculateSlippage(10000); // $10k trade
-      expect(result.actualSlippage).toBeGreaterThan(0.005); // More than 0.5%
-      expect(result.actualSlippage).toBeLessThan(0.01); // Less than 1%
-      expect(result.effectiveFromValueUSD).toBeGreaterThan(9900);
+      expect(result.actualSlippage).toBeGreaterThan(0.01); // More than 1%
+      expect(result.actualSlippage).toBeLessThan(0.04); // Less than 4%
+      expect(result.effectiveFromValueUSD).toBeGreaterThan(9600);
       expect(result.effectiveFromValueUSD).toBeLessThan(10000);
     });
 
@@ -63,10 +63,17 @@ describe("trade-utils", () => {
       const minSlippage = Math.min(...results);
       const maxSlippage = Math.max(...results);
 
-      // Check that randomness is within expected bounds (±10%)
-      const expectedBase = 0.02 * Math.log10(1 + tradeValue / 10000);
-      const expectedMin = expectedBase * 0.9;
-      const expectedMax = Math.min(expectedBase * 1.1, 0.15);
+      // Formula uses K=0.035, SCALE=5000, and randomness [0.95, 1.20]
+      const K = 0.035;
+      const SCALE = 5000;
+      const MIN_SLIPPAGE = 0.0005;
+      const MAX_SLIPPAGE = 0.15;
+      const expectedBase = Math.min(
+        K * (Math.log1p(tradeValue / SCALE) / Math.LN10),
+        0.15,
+      );
+      const expectedMin = Math.max(expectedBase * 0.95, MIN_SLIPPAGE); // MIN_SLIPPAGE floor
+      const expectedMax = Math.min(expectedBase * 1.2, MAX_SLIPPAGE); // MAX_SLIPPAGE cap
 
       expect(minSlippage).toBeGreaterThanOrEqual(expectedMin * 0.99); // Allow for small floating point differences
       expect(maxSlippage).toBeLessThanOrEqual(expectedMax * 1.01);
