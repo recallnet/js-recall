@@ -61,31 +61,32 @@ async function proxy(req: Request, path: string[]) {
   });
 }
 
-type Ctx =
-  | { params: { path: string[] } }
-  | { params: Promise<{ path: string[] }> };
+interface RouteContext {
+  params: Promise<{ path: string[] }>;
+}
 
-export async function GET(req: Request, ctx: Ctx) {
-  const { path } = await (ctx.params as Promise<{ path: string[] }>);
+async function handleRequest(req: Request, ctx: RouteContext) {
+  const params = await ctx.params;
+  const { path } = params;
   return proxy(req, path);
 }
 
-export async function POST(req: Request, ctx: Ctx) {
-  const { path } = await (ctx.params as Promise<{ path: string[] }>);
-  return proxy(req, path);
+export async function GET(req: Request, ctx: RouteContext) {
+  return handleRequest(req, ctx);
 }
 
-export async function PUT(req: Request, ctx: Ctx) {
-  const { path } = await (ctx.params as Promise<{ path: string[] }>);
-  return proxy(req, path);
+export async function POST(req: Request, ctx: RouteContext) {
+  return handleRequest(req, ctx);
 }
 
-export async function PATCH(req: Request, ctx: Ctx) {
-  const { path } = await (ctx.params as Promise<{ path: string[] }>);
-  return proxy(req, path);
+export async function PUT(req: Request, ctx: RouteContext) {
+  return handleRequest(req, ctx);
 }
 
-export async function DELETE(req: Request, ctx: Ctx) {
-  const { path } = await (ctx.params as Promise<{ path: string[] }>);
-  return proxy(req, path);
+export async function PATCH(req: Request, ctx: RouteContext) {
+  return handleRequest(req, ctx);
+}
+
+export async function DELETE(req: Request, ctx: RouteContext) {
+  return handleRequest(req, ctx);
 }
