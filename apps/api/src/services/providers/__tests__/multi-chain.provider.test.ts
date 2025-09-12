@@ -7,6 +7,9 @@ import { BlockchainType } from "@/types/index.js";
 // Load environment variables
 dotenv.config();
 
+// Set timeout for all tests in this file to 30 seconds
+vi.setConfig({ testTimeout: 30_000 });
+
 // Test tokens
 const solanaTokens = {
   SOL: "So11111111111111111111111111111111111111112",
@@ -28,7 +31,6 @@ describe("MultiChainProvider", () => {
 
   beforeEach(() => {
     provider = new MultiChainProvider();
-    vi.setConfig({ testTimeout: 30_000 }); // Increase timeout for API calls
   });
 
   describe("Basic functionality", () => {

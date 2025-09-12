@@ -33,6 +33,7 @@ export const actorStatus = pgEnum("actor_status", [
 export const competitionStatus = pgEnum("competition_status", [
   "pending",
   "active",
+  "ending",
   "ended",
 ]);
 

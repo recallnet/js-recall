@@ -9,6 +9,7 @@ import {
   inArray,
   isNotNull,
   lte,
+  or,
   sql,
 } from "drizzle-orm";
 import { unionAll } from "drizzle-orm/pg-core";
@@ -26,6 +27,8 @@ import {
   InsertCompetition,
   InsertCompetitionAgent,
   InsertCompetitionsLeaderboard,
+  SelectCompetition,
+  SelectCompetitionsLeaderboard,
   UpdateCompetition,
 } from "@recallnet/db-schema/core/types";
 import {
@@ -60,6 +63,16 @@ import { PartialExcept } from "./types.js";
  * Competition Repository
  * Handles database operations for competitions
  */
+
+// Type for database transaction
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// Type for leaderboard entries. Contains the fields stored in the database, enhanced with optional
+// PnL data (for trading competitions)
+type LeaderboardEntry = InsertCompetitionsLeaderboard & {
+  pnl?: number;
+  startingValue?: number;
+};
 
 /**
  * Builds the base competition query with rewards included
@@ -283,6 +296,82 @@ async function updateOneImpl(
 }
 
 /**
+ * Mark competition as ending (active -> ending)
+ * This is used to claim a competition for ending processing
+ * @param competitionId Competition ID
+ * @returns The competition if successfully marked as ending, null otherwise
+ */
+async function markCompetitionAsEndingImpl(
+  competitionId: string,
+): Promise<SelectCompetition | null> {
+  try {
+    return await db.transaction(async (tx) => {
+      const [competition] = await tx
+        .select()
+        .from(competitions)
+        .where(
+          and(
+            eq(competitions.id, competitionId),
+            eq(competitions.status, "active"),
+          ),
+        )
+        .for("update")
+        .limit(1);
+
+      if (!competition) return null;
+
+      const [updated] = await tx
+        .update(competitions)
+        .set({
+          status: "ending" as const,
+          endDate: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(competitions.id, competitionId))
+        .returning();
+
+      return updated || null;
+    });
+  } catch (error) {
+    repositoryLogger.error("Error marking competition as ending:", error);
+    throw error;
+  }
+}
+
+/**
+ * Mark competition as ended (ending -> ended) within a transaction
+ * This acts as a guard to ensure only one process can finalize a competition
+ * @param competitionId Competition ID
+ * @param tx Database transaction
+ * @returns The competition if successfully marked as ended, null otherwise
+ */
+async function markCompetitionAsEndedImpl(
+  competitionId: string,
+  tx: DatabaseTransaction,
+): Promise<SelectCompetition | null> {
+  try {
+    const [updated] = await tx
+      .update(competitions)
+      .set({
+        status: "ended" as const,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(competitions.id, competitionId),
+          eq(competitions.status, "ending"),
+        ),
+      )
+      .returning();
+
+    return updated || null;
+  } catch (error) {
+    repositoryLogger.error("Error marking competition as ended:", error);
+    throw error;
+  }
+}
+
+/**
  * Atomically add an agent to a competition with participant limit validation
  * This function checks the participant limit and adds the agent in a single transaction
  * to prevent race conditions when multiple agents try to join simultaneously.
@@ -499,13 +588,22 @@ async function addAgentsImpl(competitionId: string, agentIds: string[]) {
  * Get agents in a competition
  * @param competitionId Competition ID
  * @param status Optional status filter - defaults to active only
+ * @param tx Optional database transaction
  */
 async function getAgentsImpl(
   competitionId: string,
   status: CompetitionAgentStatus = "active",
-) {
+  tx?: DatabaseTransaction,
+): Promise<string[]> {
+  // If no transaction provided, create one and call recursively
+  if (!tx) {
+    return await db.transaction(async (newTx) => {
+      return await getAgentsImpl(competitionId, status, newTx);
+    });
+  }
+
   try {
-    const result = await db
+    const result = await tx
       .select({ agentId: competitionAgents.agentId })
       .from(competitionAgents)
       .where(
@@ -526,12 +624,14 @@ async function getAgentsImpl(
  * Alias for getAgents for better semantic naming
  * @param competitionId Competition ID
  * @param status Optional status filter - defaults to active only
+ * @param tx Optional database transaction
  */
 async function getCompetitionAgentsImpl(
   competitionId: string,
   status?: CompetitionAgentStatus,
+  tx?: DatabaseTransaction,
 ) {
-  return getAgentsImpl(competitionId, status);
+  return getAgentsImpl(competitionId, status, tx);
 }
 
 /**
@@ -1644,11 +1744,16 @@ async function findBestPlacementForAgentImpl(agentId: string) {
  * @returns Array of inserted leaderboard entries
  */
 export async function batchInsertLeaderboardImpl(
-  entries: (Omit<InsertCompetitionsLeaderboard, "id"> & {
-    pnl?: number;
-    startingValue?: number;
-  })[],
-) {
+  entries: Omit<LeaderboardEntry, "id">[],
+  tx?: DatabaseTransaction,
+): Promise<LeaderboardEntry[]> {
+  // If no transaction provided, create one and call recursively
+  if (!tx) {
+    return await db.transaction(async (newTx) => {
+      return await batchInsertLeaderboardImpl(entries, newTx);
+    });
+  }
+
   if (!entries.length) {
     return [];
   }
@@ -1663,17 +1768,14 @@ export async function batchInsertLeaderboardImpl(
       id: uuidv4(),
     }));
 
-    let results: (InsertCompetitionsLeaderboard & {
-      pnl?: number;
-      startingValue?: number;
-    })[] = await db
+    let results: LeaderboardEntry[] = await tx
       .insert(competitionsLeaderboard)
       .values(valuesToInsert)
       .returning();
 
     const pnlsToInsert = valuesToInsert.filter((e) => e.pnl !== undefined);
     if (pnlsToInsert.length) {
-      const pnlResults = await db
+      const pnlResults = await tx
         .insert(tradingCompetitionsLeaderboard)
         .values(
           pnlsToInsert.map((entry) => {
@@ -1707,11 +1809,22 @@ export async function batchInsertLeaderboardImpl(
 /**
  * Find leaderboard entries for a specific competition
  * @param competitionId The competition ID
+ * @param tx Optional database transaction
  * @returns Array of leaderboard entries sorted by rank
  */
-async function findLeaderboardByCompetitionImpl(competitionId: string) {
+async function findLeaderboardByCompetitionImpl(
+  competitionId: string,
+  tx?: DatabaseTransaction,
+): Promise<SelectCompetitionsLeaderboard[]> {
+  // If no transaction provided, create one and call recursively
+  if (!tx) {
+    return await db.transaction(async (newTx) => {
+      return await findLeaderboardByCompetitionImpl(competitionId, newTx);
+    });
+  }
+
   try {
-    return await db
+    return await tx
       .select()
       .from(competitionsLeaderboard)
       .where(eq(competitionsLeaderboard.competitionId, competitionId))
@@ -1876,10 +1989,10 @@ async function getBulkAgentCompetitionRankingsImpl(
 }
 
 /**
- * Find active competitions that have reached their end date
- * @returns Array of active competitions that should be ended
+ * Find competitions that need ending (active past end date or stuck in ending)
+ * @returns Array of competitions that should be processed
  */
-async function findActiveCompetitionsPastEndDateImpl() {
+async function findCompetitionsNeedingEndingImpl() {
   try {
     const now = new Date();
 
@@ -1894,16 +2007,21 @@ async function findActiveCompetitionsPastEndDateImpl() {
         eq(tradingCompetitions.competitionId, competitions.id),
       )
       .where(
-        and(
-          eq(competitions.status, "active"),
-          isNotNull(competitions.endDate),
-          lte(competitions.endDate, now),
+        or(
+          // Normal case: active competitions past end date
+          and(
+            eq(competitions.status, "active"),
+            isNotNull(competitions.endDate),
+            lte(competitions.endDate, now),
+          ),
+          // Recovery case: competitions stuck in "ending" state
+          eq(competitions.status, "ending"),
         ),
       );
     return result;
   } catch (error) {
     console.error(
-      "[CompetitionRepository] Error in findActiveCompetitionsPastEndDateImpl:",
+      "[CompetitionRepository] Error in findCompetitionsNeedingEndingImpl:",
       error,
     );
     throw error;
@@ -1947,6 +2065,18 @@ export const updateOne = createTimedRepositoryFunction(
   updateOneImpl,
   "CompetitionRepository",
   "updateOne",
+);
+
+export const markCompetitionAsEnding = createTimedRepositoryFunction(
+  markCompetitionAsEndingImpl,
+  "CompetitionRepository",
+  "markCompetitionAsEnding",
+);
+
+export const markCompetitionAsEnded = createTimedRepositoryFunction(
+  markCompetitionAsEndedImpl,
+  "CompetitionRepository",
+  "markCompetitionAsEnded",
 );
 
 export const addAgentToCompetition = createTimedRepositoryFunction(
@@ -2123,10 +2253,10 @@ export const getBulkAgentCompetitionRankings = createTimedRepositoryFunction(
   "getBulkAgentCompetitionRankings",
 );
 
-export const findActiveCompetitionsPastEndDate = createTimedRepositoryFunction(
-  findActiveCompetitionsPastEndDateImpl,
+export const findCompetitionsNeedingEnding = createTimedRepositoryFunction(
+  findCompetitionsNeedingEndingImpl,
   "CompetitionRepository",
-  "findActiveCompetitionsPastEndDate",
+  "findCompetitionsNeedingEnding",
 );
 
 /**
