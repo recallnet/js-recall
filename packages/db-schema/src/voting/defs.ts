@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-  bigint,
   boolean,
   customType,
   index,
@@ -132,7 +131,7 @@ export const boostBalances = pgTable(
     competitionId: uuid("competition_id")
       .notNull()
       .references(() => competitions.id, { onDelete: "cascade" }),
-    balance: bigint("balance", { mode: "bigint" })
+    balance: tokenAmount("balance")
       .notNull()
       .default(sql`0`),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -190,7 +189,7 @@ export const boostChanges = pgTable(
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
-    deltaAmount: bigint("delta_amount", { mode: "bigint" }).notNull(), // earn:+X, spend:-X
+    deltaAmount: tokenAmount("delta_amount").notNull(), // earn:+X, spend:-X
     meta: jsonb("meta")
       .notNull()
       .default(sql`'{}'::jsonb`),
@@ -222,7 +221,7 @@ export const agentBoostTotals = pgTable(
     competitionId: uuid("competition_id")
       .notNull()
       .references(() => competitions.id, { onDelete: "cascade" }),
-    total: bigint("total", { mode: "bigint" })
+    total: tokenAmount("total")
       .notNull()
       .default(sql`0`),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
