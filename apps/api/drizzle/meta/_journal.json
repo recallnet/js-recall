@@ -281,13 +281,6 @@
       "when": 1757461044810,
       "tag": "0039_condemned_naoko",
       "breakpoints": true
-    },
-    {
-      "idx": 40,
-      "version": "7",
-      "when": 1757631929450,
-      "tag": "0040_rich_warbird",
-      "breakpoints": true
     }
   ]
 }
