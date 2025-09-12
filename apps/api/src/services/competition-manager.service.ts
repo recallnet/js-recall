@@ -484,7 +484,9 @@ export class CompetitionManager {
     // Final transaction to persist results
     const { competition, leaderboardCount } = await db.transaction(
       async (tx) => {
-        // Mark as ended (this is our guard against concurrent execution)
+        // Mark as ended. This is our guard against concurrent execution - if another process is
+        // ending the same competition in parallel, only one will manage to mark it as ended, and
+        // the other one's transaction will fail.
         const updated = await markCompetitionAsEnded(competitionId, tx);
         if (!updated) {
           throw new Error(
