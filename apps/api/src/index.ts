@@ -124,10 +124,7 @@ const agentApiKeyRoutes = [
   `${apiBasePath}/api/price`,
 ];
 
-const userSessionRoutes = [
-  `${apiBasePath}/api/user`,
-  `${apiBasePath}/api/boost`,
-];
+const userSessionRoutes = [`${apiBasePath}/api/user`];
 const authMiddlewareInstance = authMiddleware(
   services.agentManager,
   services.userManager,
