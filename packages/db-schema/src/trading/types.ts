@@ -20,3 +20,23 @@ export type SelectTradingConstraints =
   typeof defs.tradingConstraints.$inferSelect;
 export type InsertTradingConstraints =
   typeof defs.tradingConstraints.$inferInsert;
+
+export type SelectPerpsCompetitionConfig =
+  typeof defs.perpsCompetitionConfig.$inferSelect;
+export type InsertPerpsCompetitionConfig =
+  typeof defs.perpsCompetitionConfig.$inferInsert;
+
+export type SelectPerpetualPosition =
+  typeof defs.perpetualPositions.$inferSelect;
+export type InsertPerpetualPosition =
+  typeof defs.perpetualPositions.$inferInsert;
+
+export type SelectPerpsAccountSummary =
+  typeof defs.perpsAccountSummaries.$inferSelect;
+export type InsertPerpsAccountSummary =
+  typeof defs.perpsAccountSummaries.$inferInsert;
+
+export type SelectPerpsSelfFundingAlert =
+  typeof defs.perpsSelfFundingAlerts.$inferSelect;
+export type InsertPerpsSelfFundingAlert =
+  typeof defs.perpsSelfFundingAlerts.$inferInsert;
