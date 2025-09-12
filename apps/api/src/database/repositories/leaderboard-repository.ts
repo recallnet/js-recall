@@ -18,6 +18,7 @@ import {
 } from "@recallnet/db-schema/core/defs";
 import { agentScore } from "@recallnet/db-schema/ranking/defs";
 import {
+  perpetualPositions,
   trades,
   tradingCompetitionsLeaderboard,
 } from "@recallnet/db-schema/trading/defs";
@@ -126,6 +127,7 @@ async function getBulkAgentMetricsImpl(
       competitionCounts: [],
       voteCounts: [],
       tradeCounts: [],
+      positionCounts: [],
       bestPlacements: [],
       bestPnls: [],
       totalRois: [],
@@ -181,7 +183,7 @@ async function getBulkAgentMetricsImpl(
       .where(inArray(votes.agentId, agentIds))
       .groupBy(votes.agentId);
 
-    // Query 4: Trade counts
+    // Query 4: Trade counts (for paper trading competitions)
     const tradeCountsQuery = dbRead
       .select({
         agentId: trades.agentId,
@@ -190,6 +192,16 @@ async function getBulkAgentMetricsImpl(
       .from(trades)
       .where(inArray(trades.agentId, agentIds))
       .groupBy(trades.agentId);
+
+    // Query 4b: Position counts (for perpetual futures competitions)
+    const positionCountsQuery = dbRead
+      .select({
+        agentId: perpetualPositions.agentId,
+        totalPositions: drizzleCount(),
+      })
+      .from(perpetualPositions)
+      .where(inArray(perpetualPositions.agentId, agentIds))
+      .groupBy(perpetualPositions.agentId);
 
     // Query 5: Best placements - get the best rank for each agent
     const bestPlacementsSubquery = dbRead
@@ -285,6 +297,7 @@ async function getBulkAgentMetricsImpl(
       competitionCounts,
       voteCounts,
       tradeCounts,
+      positionCounts,
       bestPlacements,
       bestPnls,
       totalRois,
@@ -294,6 +307,7 @@ async function getBulkAgentMetricsImpl(
       competitionCountsQuery,
       voteCountsQuery,
       tradeCountsQuery,
+      positionCountsQuery,
       bestPlacementsQuery,
       bestPnlQuery,
       totalRoiQuery,
@@ -310,6 +324,7 @@ async function getBulkAgentMetricsImpl(
       competitionCounts,
       voteCounts,
       tradeCounts,
+      positionCounts,
       bestPlacements,
       bestPnls,
       totalRois,

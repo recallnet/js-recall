@@ -258,6 +258,7 @@ export interface AdminMetadata {
 export const AgentStatsSchema = z.object({
   completedCompetitions: z.number(),
   totalTrades: z.number(),
+  totalPositions: z.number(),
   totalVotes: z.number(),
   bestPlacement: z
     .object({

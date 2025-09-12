@@ -182,6 +182,10 @@ export function configureAgentsRoutes(
    *                           type: integer
    *                         totalTrades:
    *                           type: integer
+   *                           description: "Total number of trades across all paper trading competitions"
+   *                         totalPositions:
+   *                           type: integer
+   *                           description: "Total number of positions across all perpetual futures competitions"
    *                         totalVotes:
    *                           type: integer
    *                         bestPlacement:
