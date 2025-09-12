@@ -14,6 +14,16 @@
         "types": "./dist/rewards-allocator.d.cts",
         "default": "./dist/rewards-allocator.cjs"
       }
+    },
+    "./rewards-claimer": {
+      "import": {
+        "types": "./dist/rewards-claimer.d.ts",
+        "default": "./dist/rewards-claimer.js"
+      },
+      "require": {
+        "types": "./dist/rewards-claimer.d.cts",
+        "default": "./dist/rewards-claimer.cjs"
+      }
     }
   },
   "scripts": {

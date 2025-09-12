@@ -1,6 +1,6 @@
 import keccak256 from "keccak256";
 import { MerkleTree } from "merkletreejs";
-import { Hex, encodeAbiParameters } from "viem";
+import { Hex, encodeAbiParameters, encodePacked } from "viem";
 
 import { rewardsRoots, rewardsTree } from "@recallnet/db-schema/voting/defs";
 import { InsertReward } from "@recallnet/db-schema/voting/types";
@@ -248,10 +248,7 @@ export class RewardsService {
  */
 export function createLeafNode(address: `0x${string}`, amount: bigint): Buffer {
   return keccak256(
-    encodeAbiParameters(
-      [{ type: "string" }, { type: "address" }, { type: "uint256" }],
-      ["rl", address, amount],
-    ),
+    encodePacked(["string", "address", "uint256"], ["rl", address, amount]),
   );
 }
 
