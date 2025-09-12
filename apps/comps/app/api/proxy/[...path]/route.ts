@@ -1,59 +1,125 @@
 import { cookies } from "next/headers";
+import { NextRequest } from "next/server";
 
 import { API_BASE_URL } from "@/config";
 
-async function proxy(req: Request, path: string[]) {
-  // 1) Read HttpOnly cookie server-side (SameSite Strict is fine here)
-  const token = (await cookies()).get("privy-id-token")?.value;
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-  // 2) Build upstream URL safely
-  const incomingUrl = new URL(req.url);
+/**
+ * Route context type
+ */
+interface RouteContext {
+  params: Promise<{ path: string[] }>;
+}
+
+/**
+ * Build the upstream URL
+ * @param req - The request to proxy
+ * @param path - The path to proxy the request to
+ * @returns The upstream URL
+ */
+function buildUpstreamUrl(req: Request, path: string[]): URL {
+  if (!API_BASE_URL) {
+    throw new Error("API_BASE_URL is not set");
+  }
+  const incoming = new URL(req.url);
   const safePath = (path ?? []).map(encodeURIComponent).join("/");
-  const upstreamUrl = new URL(`${API_BASE_URL}/${safePath}`);
-  upstreamUrl.search = incomingUrl.search; // preserve query string
+  const url = new URL(`${API_BASE_URL.replace(/\/+$/, "")}/${safePath}`);
+  url.search = incoming.search; // preserve query string
+  return url;
+}
 
-  // 3) Prepare headers for upstream (don’t leak app cookies)
-  const hdr = new Headers(req.headers);
-  hdr.delete("cookie"); // remove app cookies
-  hdr.delete("host");
-  hdr.delete("connection");
-  hdr.delete("keep-alive");
-  hdr.delete("transfer-encoding");
-  hdr.delete("upgrade");
+/**
+ * Build the headers for the upstream request
+ * @param req - The request to proxy
+ * @param token - The token to use for authentication
+ * @returns The headers for the upstream request
+ */
+function buildHeaders(req: Request, token?: string): Headers {
+  const incoming = new Headers(req.headers);
+
+  // Header allowlist
+  const hdr = new Headers();
+
+  // Typical safe forwards
+  const accept = incoming.get("accept");
+  if (accept) hdr.set("accept", accept);
+  const contentType = incoming.get("content-type");
+  if (contentType) hdr.set("content-type", contentType);
+  const userAgent = incoming.get("user-agent");
+  if (userAgent) hdr.set("user-agent", userAgent);
+
+  // Forward origin/referrer (e.g., for CSRF checks upstream)
+  const origin = incoming.get("origin");
+  if (origin) hdr.set("origin", origin);
+  const referer = incoming.get("referer");
+  if (referer) hdr.set("referer", referer);
+
+  // Proxy headers that are helpful for Express behind proxy
+  const xfwdFor = incoming.get("x-forwarded-for");
+  if (xfwdFor) hdr.set("x-forwarded-for", xfwdFor);
+  const xfwdHost = incoming.get("x-forwarded-host") ?? incoming.get("host");
+  if (xfwdHost) hdr.set("x-forwarded-host", xfwdHost);
+  const xfwdProto = incoming.get("x-forwarded-proto") ?? "https";
+  hdr.set("x-forwarded-proto", xfwdProto);
+
+  // Prevent compressed TE mismatches (note: `fetch` decides)
   hdr.delete("accept-encoding");
-  hdr.delete("content-length");
 
-  // Authenticate upstream via cookie only if a token exists
+  // Auth from cookie -> cookie
   if (token) {
     hdr.set("cookie", `privy-id-token=${token}`);
   }
 
-  const method = req.method;
+  return hdr;
+}
+
+/**
+ * Proxy a request to the core backend competitions API
+ * @param req - The request to proxy
+ * @param path - The path to proxy the request to
+ * @returns The response from the core backend competitions API
+ */
+async function proxy(req: Request, path: string[]) {
+  // 1) Pre-process HttpOnly cookie server-side
+  const token = (await cookies()).get("privy-id-token")?.value;
+
+  // 2) Build core backend competitions API URL safely & prepare headers
+  const upstreamUrl = buildUpstreamUrl(req, path);
+  const method = req.method.toUpperCase();
   const hasBody = !["GET", "HEAD"].includes(method);
-
-  type NextFetchInit = RequestInit & {
-    next?: { revalidate?: number };
-    cache?: RequestCache;
-  };
-
-  const fetchInit: NextFetchInit = {
+  const init: RequestInit & { cache?: RequestCache } = {
     method,
-    headers: hdr,
+    headers: buildHeaders(req, token),
+    cache: "no-store",
+    signal: req.signal,
   };
 
-  // Only attach a body for methods that support it
+  // 3) Only attach a body for methods that support it
   if (hasBody) {
-    const bodyBuffer = await req.arrayBuffer();
-    if (bodyBuffer && bodyBuffer.byteLength > 0) {
-      fetchInit.body = bodyBuffer;
-    }
+    // Consume body safely (note: `fetch` will set content-length)
+    const body = await req.arrayBuffer();
+    if (body.byteLength > 0) init.body = body;
   }
 
-  const upstream = await fetch(upstreamUrl, fetchInit);
+  // 4) Fetch from the core backend competitions API
+  let upstream: Response;
+  try {
+    upstream = await fetch(upstreamUrl, init);
+  } catch (e) {
+    return Response.json(
+      { error: "Bad gateway", detail: String(e) },
+      { status: 502, headers: { "cache-control": "no-store" } },
+    );
+  }
 
-  // 4) Don’t forward Set-Cookie from another domain
+  // 5) Copy headers & drop Set-Cookie from another domain
   const respHeaders = new Headers(upstream.headers);
   respHeaders.delete("set-cookie");
+
+  // 6) Strongly discourage CDN caching of proxied responses
+  respHeaders.set("cache-control", "no-store");
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -61,32 +127,36 @@ async function proxy(req: Request, path: string[]) {
   });
 }
 
-interface RouteContext {
-  params: Promise<{ path: string[] }>;
-}
-
-async function handleRequest(req: Request, ctx: RouteContext) {
-  const params = await ctx.params;
-  const { path } = params;
+/**
+ * Handle a request to the proxy endpoint
+ * @param req - The request to handle
+ * @param ctx - The route context
+ * @returns The response from the proxy endpoint
+ */
+async function handle(req: NextRequest | Request, ctx: RouteContext) {
+  const { path } = await ctx.params;
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+        "access-control-allow-headers": "content-type, authorization",
+        "cache-control": "no-store",
+      },
+    });
+  }
+  if (req.method === "HEAD") {
+    const res = await proxy(req, path);
+    return new Response(null, { status: res.status, headers: res.headers });
+  }
   return proxy(req, path);
 }
 
-export async function GET(req: Request, ctx: RouteContext) {
-  return handleRequest(req, ctx);
-}
-
-export async function POST(req: Request, ctx: RouteContext) {
-  return handleRequest(req, ctx);
-}
-
-export async function PUT(req: Request, ctx: RouteContext) {
-  return handleRequest(req, ctx);
-}
-
-export async function PATCH(req: Request, ctx: RouteContext) {
-  return handleRequest(req, ctx);
-}
-
-export async function DELETE(req: Request, ctx: RouteContext) {
-  return handleRequest(req, ctx);
-}
+export const GET = handle;
+export const POST = handle;
+export const PUT = handle;
+export const PATCH = handle;
+export const DELETE = handle;
+export const OPTIONS = handle;
+export const HEAD = handle;
