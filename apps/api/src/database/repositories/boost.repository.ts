@@ -1,8 +1,13 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, sum } from "drizzle-orm";
 import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 
+import { Transaction } from "@recallnet/db-schema/types";
 import * as schema from "@recallnet/db-schema/voting/defs";
+import {
+  SelectAgentBoost,
+  SelectAgentBoostTotal,
+} from "@recallnet/db-schema/voting/types";
 
 import { db } from "@/database/db.js";
 import { BlockchainAddressAsU8A } from "@/lib/coders.js";
@@ -53,8 +58,42 @@ type BoostDiffArgs = {
  * - Idempotent no-op: returns existing balance when the same idemKey was seen.
  */
 type BoostDiffResult =
-  | { changeId: string; balanceAfter: bigint; idemKey: Uint8Array } // change applied
-  | { balance: bigint; idemKey: Uint8Array }; // noop (already applied)
+  | {
+      type: "applied";
+      changeId: string;
+      balanceAfter: bigint;
+      idemKey: Uint8Array;
+    } // change applied
+  | { type: "noop"; balance: bigint; idemKey: Uint8Array }; // noop (already applied)
+
+type BoostAgentArgs = {
+  userId: string;
+  /** EVM address; will be lowercased before persisting. */
+  wallet: string;
+  agentId: string;
+  /** Competition ID */
+  competitionId: string;
+  /**
+   * Amount to apply:
+   */
+  amount: bigint;
+  /**
+   * Idempotency key (unique per balance_id = (wallet, competitionId)).
+   * Reusing the same key makes the call safe to retry.
+   */
+  idemKey?: Uint8Array;
+};
+
+type BoostAgentResult =
+  | {
+      type: "applied";
+      agentBoost: SelectAgentBoost;
+      agentBoostTotal: SelectAgentBoostTotal;
+    }
+  | {
+      type: "noop";
+      agentBoostTotal: SelectAgentBoostTotal;
+    };
 
 /**
  * BoostRepository
@@ -146,7 +185,7 @@ class BoostRepository {
    * - `amount` must be `>= 0n`. Zero-amount credits will only create a journal row
    *   on first application (useful for marking events without changing balance).
    */
-  increase(args: BoostDiffArgs): Promise<BoostDiffResult> {
+  increase(args: BoostDiffArgs, tx?: Transaction): Promise<BoostDiffResult> {
     const amount = args.amount;
     if (amount < 0n) {
       throw new Error("amount must be non-negative");
@@ -156,7 +195,9 @@ class BoostRepository {
     const meta = args.meta || DEFAULT_META;
     const competitionId = args.competitionId;
 
-    return this.#db.transaction(async (tx) => {
+    const executor = tx || this.#db;
+
+    return executor.transaction(async (tx) => {
       let balanceRow: { id: string; balance: bigint };
       const [inserted] = await tx
         .insert(schema.boostBalances)
@@ -239,6 +280,7 @@ class BoostRepository {
           });
 
         return {
+          type: "applied",
           balanceAfter: updated!.balance,
           changeId: insertedChange.id,
           idemKey: idemKey,
@@ -246,6 +288,7 @@ class BoostRepository {
       } else {
         // Already applied earlier: do NOT touch balance, just return the current value
         return {
+          type: "noop",
           balance: balanceRow.balance,
           idemKey: idemKey,
         };
@@ -279,7 +322,7 @@ class BoostRepository {
    * - Row-level locks ensure two concurrent `decrease` calls on the same wallet
    *   are serialized and preserve the non-negative balance invariant.
    */
-  decrease(args: BoostDiffArgs): Promise<BoostDiffResult> {
+  decrease(args: BoostDiffArgs, tx?: Transaction): Promise<BoostDiffResult> {
     const amount = args.amount;
     if (amount <= 0n) {
       throw new Error("amount must be positive");
@@ -289,7 +332,9 @@ class BoostRepository {
     const meta = args.meta || DEFAULT_META;
     const competitionId = args.competitionId;
 
-    return this.#db.transaction(async (tx) => {
+    const executor = tx || this.#db;
+
+    return executor.transaction(async (tx) => {
       // 1) Lock the wallet balance row if it exists
       const [balanceRow] = await tx
         .select({
@@ -330,6 +375,7 @@ class BoostRepository {
       if (existing) {
         // already applied
         return {
+          type: "noop",
           balance: currentBalance,
           idemKey,
         };
@@ -378,9 +424,248 @@ class BoostRepository {
       }
 
       return {
+        type: "applied",
         changeId: change.id,
         balanceAfter: updatedRow.balance,
         idemKey,
+      };
+    });
+  }
+
+  /**
+   * Retrieve the current Boost balance for a wallet in a specific competition.
+   *
+   * Behavior:
+   * 1) Query the `boost_balances` table for the wallet and competition combination.
+   * 2) Return the current balance if a record exists, otherwise return 0n.
+   * 3) The wallet address is automatically lowercased before querying (consistent with other methods).
+   *
+   * Read-Only Operation:
+   * - This method only reads data and does not modify any balances or create records.
+   * - No locking is performed as this is a simple balance lookup.
+   * - Safe to call concurrently with other operations.
+   *
+   * Returns:
+   * - The current balance as a `bigint` (0n if no balance record exists).
+   *
+   * Notes:
+   * - A missing balance record is treated as having a balance of 0n.
+   * - This method does not create a balance record if one doesn't exist.
+   * - The balance reflects the net result of all increase/decrease operations.
+   *
+   * @param args - The balance query parameters
+   * @param args.wallet - EVM address of the wallet to query (will be lowercased)
+   * @param args.competitionId - ID of the competition context
+   * @param args.tx - Optional database transaction to use for the query
+   * @returns Promise resolving to the current balance (0n if no record exists)
+   */
+  async walletBoostBalance(
+    {
+      wallet,
+      competitionId,
+    }: {
+      wallet: string;
+      competitionId: string;
+    },
+    tx?: Transaction,
+  ) {
+    const executor = tx || this.#db;
+    const [res] = await executor
+      .select()
+      .from(schema.boostBalances)
+      .where(
+        and(
+          eq(
+            schema.boostBalances.wallet,
+            BlockchainAddressAsU8A.encode(wallet),
+          ),
+          eq(schema.boostBalances.competitionId, competitionId),
+        ),
+      )
+      .limit(1);
+    return res?.balance || 0n;
+  }
+
+  /**
+   * Retrieve all boost totals for agents that a user has boosted in a specific competition.
+   *
+   * Behavior:
+   * 1) Join `agent_boosts` with `boost_changes` to get the actual boost amounts.
+   * 2) Group by agent ID and sum the delta amounts to get total boosts per agent.
+   * 3) Transform the results into an object keyed by agent ID for efficient lookups.
+   *
+   * Read-Only Operation:
+   * - This method only reads data and does not modify any records.
+   * - Safe to call concurrently with other operations.
+   *
+   * Returns:
+   * - Object with agent IDs as keys and boost totals (as bigint) as values.
+   * - Empty object `{}` if the user hasn't boosted any agents in the competition.
+   * - Example: `{ "agent-123": 1000n, "agent-456": 2500n }`
+   *
+   * Notes:
+   * - The `boostTotal` is converted from string (returned by SQL SUM) to bigint using `.mapWith(BigInt)`.
+   * - Only includes agents that the user has actually boosted (non-zero totals).
+   * - Results are grouped by agent, so each agent appears at most once as a key.
+   * - The object format allows for efficient O(1) lookups by agent ID.
+   *
+   * @param args - The query parameters
+   * @param args.userId - ID of the user whose boosts to retrieve
+   * @param args.competitionId - ID of the competition context
+   * @param tx - Optional database transaction to use for the query
+   * @returns Promise resolving to object mapping agent IDs to their boost totals
+   */
+  async userBoosts(
+    { userId, competitionId }: { userId: string; competitionId: string },
+    tx?: Transaction,
+  ) {
+    const executor = tx || this.#db;
+    const res = await executor
+      .select({
+        agentId: schema.agentBoosts.agentId,
+        boostTotal: sum(schema.boostChanges.deltaAmount).mapWith(BigInt),
+      })
+      .from(schema.agentBoosts)
+      .innerJoin(
+        schema.boostChanges,
+        eq(schema.agentBoosts.changeId, schema.boostChanges.id),
+      )
+      .where(
+        and(
+          eq(schema.agentBoosts.userId, userId),
+          eq(schema.agentBoosts.competitionId, competitionId),
+        ),
+      )
+      .groupBy(schema.agentBoosts.agentId);
+
+    const map = res.reduce<Record<string, bigint>>((acc, curr) => {
+      return { ...acc, [curr.agentId]: curr.boostTotal };
+    }, {});
+
+    return map;
+  }
+
+  /**
+   * Boost an agent by transferring Boost from a user's balance to the agent's total.
+   *
+   * Behavior:
+   * 1) Lock the agent's boost total row if it exists to serialize concurrent boosts.
+   * 2) Debit the specified amount from the user's wallet using the `decrease` method.
+   *    - If the debit fails (insufficient balance, non-existent wallet), the operation fails.
+   *    - If the debit is idempotent (same idemKey used before), return existing totals.
+   * 3) Insert a record into `agent_boosts` linking the user, agent, and boost change.
+   * 4) Upsert the agent's total boost amount in `agent_boost_totals`:
+   *    - Create a new record if the agent has never been boosted in this competition.
+   *    - Otherwise increment the existing total and update `updated_at`.
+   *
+   * Idempotency:
+   * - Reusing the same `idemKey` for the same wallet will not double-boost.
+   * - The underlying wallet debit uses the same idempotency mechanism as `decrease`.
+   *
+   * Returns:
+   * - `{ agentBoost, agentBoostTotal }` when the boost was applied successfully.
+   * - `{ agentBoostTotal }` when it was a prior duplicate (no balance changes).
+   *
+   * Errors:
+   * - Throws if the user's wallet doesn't exist or has insufficient balance.
+   * - Throws if database operations fail (agent boost or total insertion/update).
+   *
+   * Concurrency:
+   * - Row-level locks on agent boost totals ensure concurrent boosts to the same agent
+   *   are serialized and totals are calculated correctly.
+   *
+   * @param args - The boost operation parameters
+   * @param args.userId - ID of the user performing the boost
+   * @param args.wallet - EVM address of the user's wallet (will be lowercased)
+   * @param args.agentId - ID of the agent being boosted
+   * @param args.competitionId - ID of the competition context
+   * @param args.amount - Amount of Boost to transfer (must be > 0n)
+   * @param args.idemKey - Optional idempotency key for retry safety
+   * @param tx - Optional database transaction to use
+   * @returns Promise resolving to boost operation result
+   */
+  async boostAgent(
+    { agentId, amount, competitionId, userId, wallet, idemKey }: BoostAgentArgs,
+    tx?: Transaction,
+  ): Promise<BoostAgentResult> {
+    const executor = tx || this.#db;
+    return await executor.transaction(async (tx) => {
+      // 1) Lock the agent boost total row if it exists
+      const [agentBoostTotal] = await tx
+        .select()
+        .from(schema.agentBoostTotals)
+        .where(
+          and(
+            eq(schema.agentBoostTotals.agentId, agentId),
+            eq(schema.agentBoostTotals.competitionId, competitionId),
+          ),
+        )
+        .limit(1)
+        .for("update"); // locks this row until tx ends
+
+      // Decrease the user's boost balance
+      const diffRes = await this.decrease(
+        { amount, competitionId, wallet, idemKey },
+        tx,
+      );
+      if (diffRes.type === "noop") {
+        if (!agentBoostTotal) {
+          throw new Error(
+            `Boost deduction already executed from wallet ${wallet} for competition ${competitionId}, but no agent boost total record exists for agent ${agentId}`,
+          );
+        }
+        return {
+          type: "noop",
+          agentBoostTotal,
+        };
+      }
+
+      // Insert into our immutable log of boosts for agents, referencing the boost change log
+      const [agentBoost] = await executor
+        .insert(schema.agentBoosts)
+        .values({
+          id: randomUUID(),
+          userId,
+          agentId,
+          competitionId,
+          changeId: diffRes.changeId,
+        })
+        .returning();
+      if (!agentBoost) {
+        throw new Error(
+          `Failed to boost agentId ${agentId} in competition ${competitionId} by user ${userId} `,
+        );
+      }
+
+      // Upsert into the agent boost totals table
+      const [updatedAgentBoostTotal] = await executor
+        .insert(schema.agentBoostTotals)
+        .values({
+          id: randomUUID(),
+          agentId,
+          competitionId,
+          total: amount,
+        })
+        .onConflictDoUpdate({
+          target: [
+            schema.agentBoostTotals.agentId,
+            schema.agentBoostTotals.competitionId,
+          ],
+          set: {
+            total: agentBoostTotal?.total || 0n + amount,
+            updatedAt: sql`now()`,
+          },
+        })
+        .returning();
+      if (!updatedAgentBoostTotal) {
+        throw new Error(
+          `Failed to boost agentId ${agentId} in competition ${competitionId} by user ${userId} `,
+        );
+      }
+      return {
+        type: "applied",
+        agentBoost,
+        agentBoostTotal: updatedAgentBoostTotal,
       };
     });
   }

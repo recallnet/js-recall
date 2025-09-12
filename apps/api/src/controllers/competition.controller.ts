@@ -858,6 +858,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           competitionId,
           registeredParticipants: competition.registeredParticipants,
           maxParticipants: competition.maxParticipants,
+          // TODO: Each agent contains a bigint totalBoost. How to serialize?
           agents,
           pagination: buildPaginationResponse(
             total,
