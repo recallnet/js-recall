@@ -106,6 +106,7 @@ export class IndexingService {
     this.#logger.info("Starting blockchain indexing");
     if (this.isRunning) return;
     this.#abortController = new AbortController();
+    console.log("defer", defer);
     this.#deferStop = defer();
     void this.loop(query);
   }

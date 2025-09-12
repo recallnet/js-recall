@@ -367,7 +367,8 @@ export const config = {
   },
   stakingIndex: {
     isEnabled: process.env.INDEXING_ENABLED === "true",
-    recallContract: process.env.INDEXING_STAKING_CONTRACT,
+    stakingContract: process.env.INDEXING_STAKING_CONTRACT,
+    rewardsContract: process.env.REWARDS_CONTRACT_ADDRESS,
     startBlock: process.env.INDEXING_START_BLOCK
       ? parseInt(process.env.INDEXING_START_BLOCK, 10)
       : 27459229,

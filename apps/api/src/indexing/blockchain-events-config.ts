@@ -168,6 +168,37 @@ export const EVENTS = {
       },
     ],
   },
+  RewardClaimed: {
+    name: "RewardClaimed",
+    type: "rewardClaimed",
+    abi: [
+      {
+        anonymous: false,
+        inputs: [
+          {
+            indexed: true,
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            indexed: true,
+            internalType: "address",
+            name: "user",
+            type: "address",
+          },
+          {
+            indexed: false,
+            internalType: "uint256",
+            name: "amount",
+            type: "uint256",
+          },
+        ],
+        name: "RewardClaimed",
+        type: "event",
+      },
+    ],
+  },
 } as const;
 
 /**
@@ -225,15 +256,19 @@ if (isIndexingEnabled) {
   if (!fromBlock) {
     throw new Error("startBlock is not set for indexing");
   }
-  const contractAddress = config.stakingIndex.recallContract;
-  if (!contractAddress) {
-    throw new Error("contractAddress is not set for indexing");
+  const stakingContractAddress = config.stakingIndex.stakingContract;
+  if (!stakingContractAddress) {
+    throw new Error("stakingContractAddress is not set for indexing");
+  }
+  const rewardsContractAddress = config.stakingIndex.rewardsContract;
+  if (!rewardsContractAddress) {
+    throw new Error("rewardsContractAddress is not set for indexing");
   }
   query_ = {
     fromBlock: fromBlock,
     logs: [
       {
-        address: [contractAddress],
+        address: [stakingContractAddress, rewardsContractAddress],
         topics: [Object.keys(EVENT_HASH_NAMES)],
       },
     ],
@@ -270,7 +305,8 @@ if (isIndexingEnabled) {
  *
  * Built from config:
  * - startBlock (`config.stakingIndex.startBlock`) — required
- * - recallContract (`config.stakingIndex.recallContract`) — required
+ * - stakingContract (`config.stakingIndex.stakingContract`) — required
+ * - rewardsContract (`config.stakingIndex.rewardsContract`) — required
  * - delayMs (`config.stakingIndex.delayMs`) — polling backoff
  *
  * Filters:
