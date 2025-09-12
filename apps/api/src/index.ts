@@ -38,6 +38,7 @@ import { configureUserRoutes } from "@/routes/user.routes.js";
 import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
+import { makeBoostController } from "./controllers/boost.controller.js";
 import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
@@ -133,7 +134,7 @@ const authMiddlewareInstance = authMiddleware(
 // Apply agent API key authentication to agent routes
 app.use(agentApiKeyRoutes, authMiddlewareInstance);
 
-// Apply SIWE session authentication to user routes
+// Apply session authentication to user routes
 app.use(userSessionRoutes, authMiddlewareInstance);
 
 // Apply rate limiting middleware AFTER authentication
@@ -158,12 +159,14 @@ const userController = makeUserController(services);
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
 const voteController = makeVoteController(services);
+const boostController = makeBoostController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(authController, authMiddlewareInstance);
 const competitionsRoutes = configureCompetitionsRoutes(
   competitionController,
+  boostController,
   optionalAuth,
   authMiddlewareInstance,
 );

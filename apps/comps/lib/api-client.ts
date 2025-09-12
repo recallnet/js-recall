@@ -1,6 +1,7 @@
 import {
   Agent,
   AgentApiKeyResponse,
+  AgentCompetition,
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
   AgentWithOwnerResponse,
@@ -271,10 +272,29 @@ export class ApiClient {
     competitionId: string,
     params: GetCompetitionAgentsParams = {},
   ): Promise<AgentCompetitionResponse> {
+    type AgentCompetitionWithStringBoost = Omit<
+      AgentCompetition,
+      "boostTotal"
+    > & {
+      boostTotal: string;
+    };
+    type AgentCompetitionResponseWithStringBoost = Omit<
+      AgentCompetitionResponse,
+      "agents"
+    > & {
+      agents: AgentCompetitionWithStringBoost[];
+    };
     const queryParams = this.formatQueryParams(params);
-    return this.request<AgentCompetitionResponse>(
+    const res = await this.request<AgentCompetitionResponseWithStringBoost>(
       `/competitions/${competitionId}/agents${queryParams}`,
     );
+    return {
+      ...res,
+      agents: res.agents.map((agent) => ({
+        ...agent,
+        boostTotal: BigInt(agent.boostTotal),
+      })),
+    };
   }
 
   /**
@@ -577,6 +597,87 @@ export class ApiClient {
     return this.request<VotingStateResponse>(
       `/user/votes/${competitionId}/state`,
     );
+  }
+
+  /**
+   * Get user's boost balance for a competition
+   * @param competitionId - Competition ID
+   * @returns User's balance
+   */
+  async getBoostBalance({ competitionId }: { competitionId: string }): Promise<{
+    success: boolean;
+    balance: bigint;
+  }> {
+    const res = await this.request<{ success: boolean; balance: string }>(
+      `/competitions/${competitionId}/boost`,
+    );
+
+    return {
+      ...res,
+      balance: BigInt(res.balance),
+    };
+  }
+
+  /**
+   * Get user's agent boost totals for a competition
+   * @param competitionId - Competition ID
+   * @returns Users total boost amount per agent id
+   */
+  async getBoosts({
+    competitionId,
+  }: {
+    competitionId: string;
+  }): Promise<{ success: boolean; boosts: Record<string, bigint> }> {
+    const res = await this.request<{
+      success: boolean;
+      boosts: Record<string, string>;
+    }>(`/competitions/${competitionId}/boosts`);
+
+    return {
+      ...res,
+      boosts: Object.fromEntries(
+        Object.entries(res.boosts).map(([key, value]) => [key, BigInt(value)]),
+      ),
+    };
+  }
+
+  /**
+   * Boost an agent in a compeition
+   * @param competitionId - Competition ID
+   * @param agentId - The agent to boost
+   * @param currentAgentBoostTotal - The current agent boost total, used for idempotency
+   * @param amount - The amount to boost
+   * @returns The new agent boost total
+   */
+  async boostAgent({
+    competitionId,
+    agentId,
+    currentAgentBoostTotal,
+    amount,
+  }: {
+    competitionId: string;
+    agentId: string;
+    currentAgentBoostTotal: bigint;
+    amount: bigint;
+  }): Promise<{ success: boolean; agentTotal: bigint }> {
+    const idemKey = btoa(
+      `${competitionId}-${agentId}-${currentAgentBoostTotal.toString()}`,
+    );
+
+    const data = {
+      amount: amount.toString(),
+      idemKey,
+    };
+
+    const res = await this.request<{ success: boolean; agentTotal: string }>(
+      `/competitions/${competitionId}/agents/${agentId}/boost`,
+      { method: "POST", body: JSON.stringify(data) },
+    );
+
+    return {
+      ...res,
+      agentTotal: BigInt(res.agentTotal),
+    };
   }
 }
 
