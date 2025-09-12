@@ -10,6 +10,7 @@ import {
   sum,
 } from "drizzle-orm";
 
+import { competitionAgents } from "@recallnet/db-schema/core/defs";
 import {
   perpetualPositions,
   perpsAccountSummaries,
@@ -809,6 +810,62 @@ async function batchSyncAgentsPerpsDataImpl(
 // =============================================================================
 
 /**
+ * Get latest account summaries for all agents in a competition, sorted for leaderboard
+ * Efficient single-query solution that avoids N+1 issues
+ * @param competitionId Competition ID
+ * @returns Array of latest account summaries sorted by totalEquity DESC
+ */
+async function getCompetitionLeaderboardSummariesImpl(
+  competitionId: string,
+): Promise<SelectPerpsAccountSummary[]> {
+  try {
+    // Single efficient query using DISTINCT ON to get latest per agent
+    // Then sort by totalEquity for leaderboard
+    const summaries = await dbRead
+      .selectDistinctOn([perpsAccountSummaries.agentId])
+      .from(perpsAccountSummaries)
+      .innerJoin(
+        competitionAgents,
+        and(
+          eq(perpsAccountSummaries.agentId, competitionAgents.agentId),
+          eq(
+            perpsAccountSummaries.competitionId,
+            competitionAgents.competitionId,
+          ),
+          eq(competitionAgents.status, "active"), // Only active agents
+        ),
+      )
+      .where(eq(perpsAccountSummaries.competitionId, competitionId))
+      .orderBy(
+        perpsAccountSummaries.agentId,
+        desc(perpsAccountSummaries.timestamp),
+      );
+
+    // Sort by totalEquity DESC for leaderboard (in memory since DISTINCT ON requires specific order)
+    // This is still efficient as we've already filtered to just the latest summaries
+    const sortedSummaries = summaries
+      .map((row) => row.perps_account_summaries) // Extract just the summary part
+      .sort((a, b) => {
+        const aEquity = Number(a.totalEquity) || 0;
+        const bEquity = Number(b.totalEquity) || 0;
+        return bEquity - aEquity;
+      });
+
+    repositoryLogger.debug(
+      `[PerpsRepository] Retrieved ${sortedSummaries.length} account summaries for competition leaderboard`,
+    );
+
+    return sortedSummaries;
+  } catch (error) {
+    repositoryLogger.error(
+      "Error in getCompetitionLeaderboardSummaries:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Get perps competition statistics using efficient SQL aggregations
  * @param competitionId Competition ID
  * @returns Competition statistics
@@ -972,6 +1029,12 @@ export const getPerpsCompetitionStats = createTimedRepositoryFunction(
   getPerpsCompetitionStatsImpl,
   "PerpsRepository",
   "getPerpsCompetitionStats",
+);
+
+export const getCompetitionLeaderboardSummaries = createTimedRepositoryFunction(
+  getCompetitionLeaderboardSummariesImpl,
+  "PerpsRepository",
+  "getCompetitionLeaderboardSummaries",
 );
 
 export const syncAgentPerpsData = createTimedRepositoryFunction(

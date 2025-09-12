@@ -33,6 +33,7 @@ import {
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
+import { getCompetitionLeaderboardSummaries } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -672,12 +673,29 @@ export class CompetitionManager {
 
   /**
    * Calculates leaderboard from current live portfolio values
+   * Handles both paper trading and perpetual futures competitions efficiently
    * @param competitionId The competition ID
    * @returns Leaderboard entries sorted by portfolio value (descending)
    */
   private async calculateLeaderboardFromLivePortfolios(
     competitionId: string,
   ): Promise<LeaderboardEntry[]> {
+    // Check competition type to determine data source
+    const competition = await findById(competitionId);
+
+    if (competition?.type === "perpetual_futures") {
+      // For perps: Use efficient single-query method to get latest account summaries
+      // Already sorted by totalEquity DESC and filtered to active agents only
+      const summaries = await getCompetitionLeaderboardSummaries(competitionId);
+
+      return summaries.map((summary) => ({
+        agentId: summary.agentId,
+        value: Number(summary.totalEquity) || 0,
+        pnl: Number(summary.totalPnl) || 0, // Perps have PnL data available
+      }));
+    }
+
+    // For paper trading: Use existing balance-based calculation
     const agents = await getCompetitionAgents(competitionId);
 
     // Use bulk portfolio value calculation
