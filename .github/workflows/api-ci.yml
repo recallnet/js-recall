@@ -276,9 +276,10 @@ jobs:
           # Disable cache API
           DISABLE_CACHE_API=true
 
-          # Faux Loops API values
+          # Faux Loops API settings
           LOOPS_API_KEY=faux_loops_api_key
           LOOPS_MAILING_LIST_ID=faux_loops_mailing_list_id
+          LOOPS_BASE_URL=http://127.0.0.1:4010
           EOF
 
       - name: Run E2E tests

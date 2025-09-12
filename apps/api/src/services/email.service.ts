@@ -38,17 +38,21 @@ export interface LoopsPayload {
 export class EmailService {
   private readonly apiKey: string;
   private readonly mailingListId: string;
-  private readonly baseUrl = "https://app.loops.so/api/v1";
+  private readonly baseUrl: string;
 
   constructor() {
     this.apiKey = config.email.apiKey;
     this.mailingListId = config.email.mailingListId;
+    this.baseUrl = config.email.baseUrl;
 
     if (!this.apiKey) {
       serviceLogger.warn("[EmailService] LOOPS_API_KEY not configured");
     }
     if (!this.mailingListId) {
       serviceLogger.warn("[EmailService] LOOPS_MAILING_LIST_ID not configured");
+    }
+    if (!this.baseUrl) {
+      serviceLogger.warn("[EmailService] LOOPS_BASE_URL not configured");
     }
   }
 
@@ -156,15 +160,6 @@ export class EmailService {
   private async updateContact(
     payload: LoopsPayload,
   ): Promise<{ success: boolean; error?: string }> {
-    // In test mode, use a local mock to avoid external HTTP calls
-    if (config.server.nodeEnv === "test") {
-      const { updateContactMock } = await import("@/lib/loops/mock.js");
-      const data = await updateContactMock(payload);
-      if (!data.success) {
-        return { success: false, error: data.message || "Mock Loops error" };
-      }
-      return { success: true };
-    }
     try {
       const response = await fetch(`${this.baseUrl}/contacts/update`, {
         method: "PUT",
@@ -194,6 +189,6 @@ export class EmailService {
    * Check if Loops is properly configured (e.g., we ignore unless configured)
    */
   isConfigured(): boolean {
-    return !!(this.apiKey && this.mailingListId);
+    return !!(this.apiKey && this.mailingListId && this.baseUrl);
   }
 }

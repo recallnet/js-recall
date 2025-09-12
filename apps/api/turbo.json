@@ -66,6 +66,7 @@
         "npm_package_version",
         "API_DOMAIN",
         "LOOPS_API_KEY",
+        "LOOPS_BASE_URL",
         "LOOPS_MAILING_LIST_ID",
         "REPOSITORY_LOG_SAMPLE_RATE",
         "HTTP_LOG_SAMPLE_RATE",

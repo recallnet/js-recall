@@ -191,6 +191,8 @@ export const config = {
   email: {
     apiKey: process.env.LOOPS_API_KEY || "",
     mailingListId: process.env.LOOPS_MAILING_LIST_ID || "",
+    // Allow overriding Loops base URL for testing/mocking
+    baseUrl: process.env.LOOPS_BASE_URL || "https://app.loops.so/api/v1",
   },
   privy: {
     appId: process.env.PRIVY_APP_ID || "",
