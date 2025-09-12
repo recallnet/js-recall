@@ -100,6 +100,32 @@ export function makeBoostController(services: ServiceRegistry) {
 
         const { amount, idemKey } = BoostAgentSchema.parse(req.body);
 
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+
+        if (!competition) {
+          throw new ApiError(404, "No competition found.");
+        }
+
+        if (competition.startDate == null || competition.endDate == null) {
+          throw new ApiError(
+            500,
+            "Can't boost in a competition with no defined start date or end date.",
+          );
+        }
+
+        const now = Date.now();
+        // TODO: Make the window size configurable.
+        // 3 days before competition start.
+        const windowStart =
+          competition.startDate.getTime() - 3 * 24 * 60 * 60 * 1000;
+        if (!(windowStart < now && now < competition.endDate.getTime())) {
+          throw new ApiError(
+            400,
+            "Can't boost in a competition outside of the boost time window.",
+          );
+        }
+
         const result = await boostRepository.boostAgent({
           userId,
           wallet: user.walletAddress,
