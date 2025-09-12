@@ -6,8 +6,7 @@ permissions:
 on:
   push:
     tags:
-      - '*'
-      - '!@*'
+      - "release-*"
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
