@@ -137,7 +137,7 @@ async function showCompetitionStatus() {
 
     // Map participating agent IDs to agent objects
     const participatingAgents = participatingAgentIds
-      .map((id) => agentMap.get(id))
+      .map((id: string) => agentMap.get(id))
       .filter((agent) => agent !== undefined);
 
     // Get the leaderboard

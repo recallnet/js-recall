@@ -8,6 +8,7 @@ import {
   competitionAgents,
   competitions,
 } from "@recallnet/db-schema/core/defs";
+import type { SelectCompetitionsLeaderboard } from "@recallnet/db-schema/core/types";
 import {
   agentScore,
   agentScoreHistory,
@@ -118,7 +119,7 @@ async function backfillCompetitionScores(competitionId: string) {
   console.log(chalk.gray(`Processing ${activeAgents.length} active agents`));
 
   // Get the leaderboard for this competition (might be incomplete)
-  const leaderboard =
+  const leaderboard: SelectCompetitionsLeaderboard[] | null =
     await competitionRepo.findLeaderboardByCompetition(competitionId);
 
   // Create a map for easy lookup of leaderboard positions

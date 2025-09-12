@@ -97,7 +97,15 @@ async function getAllAgentRanksImpl(
 async function batchUpdateAgentRanksImpl(
   dataArray: Array<Omit<InsertAgentScore, "id" | "createdAt" | "updatedAt">>,
   competitionId: string,
+  tx?: DatabaseTransaction,
 ): Promise<InsertAgentScore[]> {
+  // If no transaction provided, create one and call recursively
+  if (!tx) {
+    return await db.transaction(async (newTx) => {
+      return await batchUpdateAgentRanksImpl(dataArray, competitionId, newTx);
+    });
+  }
+
   if (dataArray.length === 0) {
     repositoryLogger.debug("No agent ranks to update in batch");
     return [];
@@ -106,45 +114,43 @@ async function batchUpdateAgentRanksImpl(
   try {
     repositoryLogger.debug(`Batch updating ${dataArray.length} agent ranks`);
 
-    return await db.transaction(async (tx) => {
-      // Prepare rank data with IDs
-      const rankDataArray: InsertAgentScore[] = dataArray.map((data) => ({
+    // Prepare rank data with IDs
+    const rankDataArray: InsertAgentScore[] = dataArray.map((data) => ({
+      id: uuidv4(),
+      agentId: data.agentId,
+      mu: data.mu,
+      sigma: data.sigma,
+      ordinal: data.ordinal,
+    }));
+
+    // Prepare history data with IDs
+    const historyDataArray: InsertAgentScoreHistory[] = dataArray.map(
+      (data) => ({
         id: uuidv4(),
         agentId: data.agentId,
+        competitionId: competitionId,
         mu: data.mu,
         sigma: data.sigma,
         ordinal: data.ordinal,
-      }));
+      }),
+    );
 
-      // Prepare history data with IDs
-      const historyDataArray: InsertAgentScoreHistory[] = dataArray.map(
-        (data) => ({
-          id: uuidv4(),
-          agentId: data.agentId,
-          competitionId: competitionId,
-          mu: data.mu,
-          sigma: data.sigma,
-          ordinal: data.ordinal,
-        }),
+    // Batch update agent ranks using a single query
+    const results = await batchUpsertAgentScores(tx, rankDataArray);
+
+    // Batch insert history entries
+    const historyResults = await tx
+      .insert(agentScoreHistory)
+      .values(historyDataArray)
+      .returning();
+
+    if (historyResults.length !== historyDataArray.length) {
+      throw new Error(
+        `Failed to create all agent rank history entries: expected ${historyDataArray.length}, got ${historyResults.length}`,
       );
+    }
 
-      // Batch update agent ranks using a single query
-      const results = await batchUpsertAgentScores(tx, rankDataArray);
-
-      // Batch insert history entries
-      const historyResults = await tx
-        .insert(agentScoreHistory)
-        .values(historyDataArray)
-        .returning();
-
-      if (historyResults.length !== historyDataArray.length) {
-        throw new Error(
-          `Failed to create all agent rank history entries: expected ${historyDataArray.length}, got ${historyResults.length}`,
-        );
-      }
-
-      return results;
-    });
+    return results;
   } catch (error) {
     repositoryLogger.error("Error in batchUpdateAgentRanks:", error);
     throw error;
