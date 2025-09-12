@@ -225,7 +225,6 @@ async function findByCompetitionImpl(
     const whereConditions = [
       eq(competitionAgents.competitionId, competitionId),
       eq(competitionAgents.status, "active"), // Only show active agents in competition
-      eq(agentBoostTotals.competitionId, competitionId),
     ];
 
     if (filter) {
@@ -240,7 +239,7 @@ async function findByCompetitionImpl(
         competitions,
         eq(competitionAgents.competitionId, competitions.id),
       )
-      .innerJoin(agentBoostTotals, eq(agentBoostTotals.agentId, agents.id))
+      .leftJoin(agentBoostTotals, eq(agentBoostTotals.agentId, agents.id))
       .where(and(...whereConditions))
       .$dynamic();
 
@@ -275,7 +274,7 @@ async function findByCompetitionImpl(
     // Extract agent data from the joined result
     const agentsData = agentsResult.map((row) => ({
       ...row.agents,
-      boostTotal: row.agent_boost_totals.total,
+      boostTotal: row.agent_boost_totals?.total || 0n,
     }));
 
     return {

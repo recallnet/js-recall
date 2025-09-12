@@ -523,7 +523,9 @@ class BoostRepository {
     const res = await executor
       .select({
         agentId: schema.agentBoosts.agentId,
-        boostTotal: sum(schema.boostChanges.deltaAmount).mapWith(BigInt),
+        boostTotal: sum(schema.boostChanges.deltaAmount).mapWith(
+          (val) => BigInt(val) * -1n,
+        ),
       })
       .from(schema.agentBoosts)
       .innerJoin(
