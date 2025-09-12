@@ -19,15 +19,8 @@ export function configureLeaderboardRoutes(
    *     tags:
    *       - Leaderboard
    *     summary: Get global leaderboard
-   *     description: Get global leaderboard data across all relevant competitions
+   *     description: Get global leaderboard data aggregated across ALL competition types (paper trading and perpetual futures)
    *     parameters:
-   *       - in: query
-   *         name: type
-   *         schema:
-   *           type: string
-   *           enum:
-   *             - trading
-   *         default: trading
    *       - in: query
    *         name: limit
    *         schema:
@@ -79,19 +72,22 @@ export function configureLeaderboardRoutes(
    *                   properties:
    *                     activeAgents:
    *                       type: number
-   *                       description: Total number of active agents
+   *                       description: Total number of active agents across all competitions
    *                     totalTrades:
    *                       type: number
-   *                       description: Total number of trades
+   *                       description: Total number of trades (paper trading competitions)
+   *                     totalPositions:
+   *                       type: number
+   *                       description: Total number of positions (perpetual futures competitions)
    *                     totalVolume:
    *                       type: number
-   *                       description: Total volume of trades
+   *                       description: Combined volume from all competition types
    *                     totalCompetitions:
    *                       type: number
-   *                       description: Total number of competitions
+   *                       description: Total number of ended competitions
    *                     totalVotes:
    *                       type: number
-   *                       description: Total number of votes
+   *                       description: Total number of votes across all competitions
    *                 agents:
    *                   type: array
    *                   items:

@@ -19,6 +19,7 @@ import {
 import { agentScore } from "@recallnet/db-schema/ranking/defs";
 import {
   perpetualPositions,
+  perpsAccountSummaries,
   trades,
   tradingCompetitionsLeaderboard,
 } from "@recallnet/db-schema/trading/defs";
@@ -35,11 +36,12 @@ import { CompetitionType } from "@/types/index.js";
  */
 
 /**
- * Get global statistics for a specific competition type across all relevant competitions.
+ * Get statistics for a SPECIFIC competition type.
+ * Use this when you need filtered stats for just paper trading OR perps.
+ * For global/aggregate stats across all types, use getGlobalStatsAllTypes() instead.
  * Relevant competitions are those with status 'ended'.
- * @param type The type of competition (e.g., 'trading')
- * @returns Object containing the total number of active agents, trades, volume,
- * competitions, and competition IDs for active or ended competitions.
+ * @param type The type of competition ('trading' or 'perpetual_futures')
+ * @returns Object containing stats for the specified competition type only
  */
 async function getGlobalStatsImpl(type: CompetitionType): Promise<{
   activeAgents: number;
@@ -107,6 +109,142 @@ async function getGlobalStatsImpl(type: CompetitionType): Promise<{
     totalCompetitions: relevantCompetitions.length,
     totalVotes: voteStatsResult[0]?.totalVotes ?? 0,
     competitionIds: relevantCompetitionIds,
+  };
+}
+
+/**
+ * Get aggregated statistics across ALL competition types (global platform stats).
+ * Use this for the global leaderboard and platform-wide metrics.
+ * For type-specific stats, use getGlobalStats(type) instead.
+ * Aggregates stats from both paper trading and perpetual futures competitions.
+ * Only includes competitions with status 'ended'.
+ * @returns Object containing combined stats: totalTrades (paper), totalPositions (perps), combined volume, etc.
+ */
+async function getGlobalStatsAllTypesImpl(): Promise<{
+  activeAgents: number;
+  totalTrades: number;
+  totalPositions: number;
+  totalVolume: number;
+  totalCompetitions: number;
+  totalVotes: number;
+  competitionIds: string[];
+}> {
+  repositoryLogger.debug("getGlobalStatsAllTypes called");
+
+  // Get all ended competitions, separated by type
+  const allEndedCompetitions = await dbRead
+    .select({ id: competitions.id, type: competitions.type })
+    .from(competitions)
+    .where(eq(competitions.status, "ended"));
+
+  if (allEndedCompetitions.length === 0) {
+    return {
+      activeAgents: 0,
+      totalTrades: 0,
+      totalPositions: 0,
+      totalVolume: 0,
+      totalCompetitions: 0,
+      totalVotes: 0,
+      competitionIds: [],
+    };
+  }
+
+  // Separate competition IDs by type for efficient querying
+  const paperTradingIds = allEndedCompetitions
+    .filter((c) => c.type === "trading")
+    .map((c) => c.id);
+  const perpsIds = allEndedCompetitions
+    .filter((c) => c.type === "perpetual_futures")
+    .map((c) => c.id);
+  const allCompetitionIds = allEndedCompetitions.map((c) => c.id);
+
+  // Run all queries in parallel for maximum efficiency
+  const [
+    tradeStats,
+    positionStats,
+    perpsVolumeStats,
+    voteStats,
+    activeAgentStats,
+  ] = await Promise.all([
+    // 1. Get trade stats for paper trading competitions only
+    paperTradingIds.length > 0
+      ? dbRead
+          .select({
+            totalTrades: drizzleCount(trades.id),
+            totalVolume: sum(trades.tradeAmountUsd).mapWith(Number),
+          })
+          .from(trades)
+          .where(inArray(trades.competitionId, paperTradingIds))
+      : Promise.resolve([{ totalTrades: 0, totalVolume: 0 }]),
+
+    // 2. Get position stats for perps competitions only
+    perpsIds.length > 0
+      ? dbRead
+          .select({
+            totalPositions: drizzleCount(perpetualPositions.id),
+          })
+          .from(perpetualPositions)
+          .where(inArray(perpetualPositions.competitionId, perpsIds))
+      : Promise.resolve([{ totalPositions: 0 }]),
+
+    // 3. Get volume stats for perps competitions
+    perpsIds.length > 0
+      ? dbRead
+          .selectDistinctOn([perpsAccountSummaries.agentId], {
+            totalVolume: perpsAccountSummaries.totalVolume,
+          })
+          .from(perpsAccountSummaries)
+          .where(inArray(perpsAccountSummaries.competitionId, perpsIds))
+          .orderBy(
+            perpsAccountSummaries.agentId,
+            desc(perpsAccountSummaries.timestamp),
+          )
+      : Promise.resolve([]),
+
+    // 4. Get vote stats for all competitions
+    dbRead
+      .select({
+        totalVotes: drizzleCount(votes.id),
+      })
+      .from(votes)
+      .where(inArray(votes.competitionId, allCompetitionIds)),
+
+    // 5. Get active agent count across all competitions
+    dbRead
+      .select({
+        totalActiveAgents: countDistinct(competitionAgents.agentId),
+      })
+      .from(competitionAgents)
+      .where(
+        and(
+          inArray(competitionAgents.competitionId, allCompetitionIds),
+          eq(competitionAgents.status, "active"),
+        ),
+      ),
+  ]);
+
+  // Calculate total perps volume from the latest account summaries
+  const perpsVolume = perpsVolumeStats.reduce((total, summary) => {
+    const volume = Number(summary.totalVolume) || 0;
+    return total + volume;
+  }, 0);
+
+  // Combine volumes from both competition types
+  const totalVolume = (tradeStats[0]?.totalVolume ?? 0) + perpsVolume;
+
+  repositoryLogger.debug(
+    `Global stats: ${allEndedCompetitions.length} competitions, ` +
+      `${paperTradingIds.length} paper trading, ${perpsIds.length} perps`,
+  );
+
+  return {
+    activeAgents: activeAgentStats[0]?.totalActiveAgents ?? 0,
+    totalTrades: tradeStats[0]?.totalTrades ?? 0,
+    totalPositions: positionStats[0]?.totalPositions ?? 0,
+    totalVolume,
+    totalCompetitions: allEndedCompetitions.length,
+    totalVotes: voteStats[0]?.totalVotes ?? 0,
+    competitionIds: allCompetitionIds,
   };
 }
 
@@ -437,6 +575,12 @@ export const getGlobalStats = createTimedRepositoryFunction(
   getGlobalStatsImpl,
   "LeaderboardRepository",
   "getGlobalStats",
+);
+
+export const getGlobalStatsAllTypes = createTimedRepositoryFunction(
+  getGlobalStatsAllTypesImpl,
+  "LeaderboardRepository",
+  "getGlobalStatsAllTypes",
 );
 
 export const getBulkAgentMetrics = createTimedRepositoryFunction(
