@@ -698,28 +698,67 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
-        // Get trade metrics for this competition
-        const { totalTrades, totalVolume, uniqueTokens } =
-          await services.tradeSimulator.getCompetitionTradeMetrics(
-            competitionId,
+        // Get competition-specific metrics based on type
+        let stats: {
+          totalTrades?: number;
+          totalPositions?: number;
+          totalAgents: number;
+          totalVolume: number;
+          totalVotes: number;
+          uniqueTokens?: number;
+          competitionType: string;
+        };
+
+        if (competition.type === "perpetual_futures") {
+          // Get perps-specific stats
+          const perpsStats =
+            await services.perpsDataProcessor.getCompetitionStats(
+              competitionId,
+            );
+
+          // Get vote counts for this competition
+          const voteCountsMap =
+            await services.voteManager.getVoteCountsByCompetition(
+              competitionId,
+            );
+          const totalVotes = Array.from(voteCountsMap.values()).reduce(
+            (sum, count) => sum + count,
+            0,
           );
 
-        // Get vote counts for this competition
-        const voteCountsMap =
-          await services.voteManager.getVoteCountsByCompetition(competitionId);
-        const totalVotes = Array.from(voteCountsMap.values()).reduce(
-          (sum, count) => sum + count,
-          0,
-        );
+          stats = {
+            totalPositions: perpsStats.totalPositions,
+            totalAgents: perpsStats.totalAgents,
+            totalVolume: perpsStats.totalVolume,
+            totalVotes,
+            competitionType: competition.type,
+          };
+        } else {
+          // Get paper trading metrics
+          const { totalTrades, totalVolume, uniqueTokens } =
+            await services.tradeSimulator.getCompetitionTradeMetrics(
+              competitionId,
+            );
 
-        // Get stats for this competition
-        const stats = {
-          totalTrades,
-          totalAgents: competition.registeredParticipants,
-          totalVolume,
-          totalVotes,
-          uniqueTokens,
-        };
+          // Get vote counts for this competition
+          const voteCountsMap =
+            await services.voteManager.getVoteCountsByCompetition(
+              competitionId,
+            );
+          const totalVotes = Array.from(voteCountsMap.values()).reduce(
+            (sum, count) => sum + count,
+            0,
+          );
+
+          stats = {
+            totalTrades,
+            totalAgents: competition.registeredParticipants,
+            totalVolume,
+            totalVotes,
+            uniqueTokens,
+            competitionType: competition.type,
+          };
+        }
 
         const rewards =
           await services.competitionRewardService.getRewardsByCompetition(

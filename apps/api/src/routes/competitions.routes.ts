@@ -795,22 +795,30 @@ export function configureCompetitionsRoutes(
    *                       description: Competition end date (null for pending/active competitions)
    *                     stats:
    *                       type: object
+   *                       description: Competition statistics (fields vary by competition type)
    *                       properties:
+   *                         competitionType:
+   *                           type: string
+   *                           enum: ["trading", "perpetual_futures"]
+   *                           description: Type of competition determining which metrics are available
    *                         totalTrades:
    *                           type: number
-   *                           description: Total number of trades
+   *                           description: Total number of trades (only for paper trading competitions)
+   *                         totalPositions:
+   *                           type: number
+   *                           description: Total number of positions (only for perpetual futures competitions)
    *                         totalAgents:
    *                           type: number
    *                           description: Total number of agents
    *                         totalVolume:
    *                           type: number
-   *                           description: Total volume of trades in USD
+   *                           description: Total volume in USD
    *                         totalVotes:
    *                           type: integer
    *                           description: Total number of votes cast in this competition
    *                         uniqueTokens:
    *                           type: number
-   *                           description: Total number of unique tokens traded
+   *                           description: Total number of unique tokens traded (only for paper trading competitions)
    *                     createdAt:
    *                       type: string
    *                       format: date-time

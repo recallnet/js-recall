@@ -13,6 +13,7 @@ import {
 import {
   batchSyncAgentsPerpsData,
   getPerpsCompetitionConfig,
+  getPerpsCompetitionStats,
   syncAgentPerpsData,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
@@ -21,6 +22,7 @@ import { PerpsProviderFactory } from "@/services/providers/perps-provider.factor
 import type {
   AgentPerpsSyncResult,
   BatchPerpsSyncResult,
+  PerpsCompetitionStats,
 } from "@/types/index.js";
 import type {
   IPerpsDataProvider,
@@ -726,5 +728,24 @@ export class PerpsDataProcessor {
    */
   private shouldRunMonitoring(threshold: number | null): boolean {
     return threshold !== null && !isNaN(threshold) && threshold >= 0;
+  }
+
+  /**
+   * Get competition statistics for a perpetual futures competition
+   * @param competitionId Competition ID
+   * @returns Competition statistics including positions, volume, and agents
+   */
+  async getCompetitionStats(
+    competitionId: string,
+  ): Promise<PerpsCompetitionStats> {
+    try {
+      return await getPerpsCompetitionStats(competitionId);
+    } catch (error) {
+      serviceLogger.error(
+        `[PerpsDataProcessor] Error getting competition stats for ${competitionId}:`,
+        error,
+      );
+      throw error;
+    }
   }
 }
