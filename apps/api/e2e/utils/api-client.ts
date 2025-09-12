@@ -28,6 +28,7 @@ import {
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
+  CompetitionPerpsPositionsResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CompetitionTimelineResponse,
@@ -41,6 +42,8 @@ import {
   LeaderboardResponse,
   LinkUserWalletResponse,
   LoginResponse,
+  PerpsAccountResponse,
+  PerpsPositionsResponse,
   PriceResponse,
   PublicAgentResponse,
   QuoteResponse,
@@ -434,6 +437,7 @@ export class ApiClient {
           competitionId?: string;
           description?: string;
           agentIds?: string[];
+          type?: string;
           tradingType?: CrossChainTradingType;
           sandboxMode?: boolean;
           externalUrl?: string;
@@ -441,6 +445,13 @@ export class ApiClient {
           votingStartDate?: string;
           votingEndDate?: string;
           tradingConstraints?: TradingConstraints;
+          rewards?: Record<number, number>;
+          perpsProvider?: {
+            provider: string;
+            initialCapital?: number;
+            selfFundingThreshold?: number;
+            apiUrl?: string;
+          };
         }
       | string,
     description?: string,
@@ -1755,6 +1766,63 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "link user wallet");
+    }
+  }
+
+  /**
+   * Get agent perps positions
+   * @param agentId The agent ID
+   * @returns A promise that resolves to the perps positions response
+   */
+  async getAgentPerpsPositions(
+    agentId: string,
+  ): Promise<PerpsPositionsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/agents/${agentId}/perps/positions`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent perps positions");
+    }
+  }
+
+  /**
+   * Get agent perps account summary
+   * @param agentId The agent ID
+   * @returns A promise that resolves to the perps account response
+   */
+  async getAgentPerpsAccount(
+    agentId: string,
+  ): Promise<PerpsAccountResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/agents/${agentId}/perps/account`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent perps account");
+    }
+  }
+
+  /**
+   * Get competition perps positions
+   * @param competitionId The competition ID
+   * @param params Pagination parameters
+   * @returns A promise that resolves to the competition perps positions response
+   */
+  async getCompetitionPerpsPositions(
+    competitionId: string,
+    params?: PagingParams,
+  ): Promise<CompetitionPerpsPositionsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/competitions/${competitionId}/perps/positions`,
+        { params },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get competition perps positions");
     }
   }
 }

@@ -59,6 +59,16 @@ export const RewardsSchema = z
   .optional();
 
 /**
+ * Perps provider configuration schema
+ */
+export const PerpsProviderSchema = z.object({
+  provider: z.enum(["symphony", "hyperliquid"]).default("symphony"),
+  initialCapital: z.number().positive().default(500), // Default $500 initial capital
+  selfFundingThreshold: z.number().min(0).default(0), // Default 0 (no self-funding allowed)
+  apiUrl: z.string().url().optional(),
+});
+
+/**
  * Admin create or update competition schema
  */
 export const AdminCreateCompetitionSchema = z
@@ -79,6 +89,7 @@ export const AdminCreateCompetitionSchema = z
     maxParticipants: z.number().int().min(1).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
+    perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
   })
   .refine(
     (data) => {
@@ -124,6 +135,7 @@ export const AdminStartCompetitionSchema = z
     joinEndDate: z.iso.datetime().optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
+    perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",

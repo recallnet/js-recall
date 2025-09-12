@@ -2274,8 +2274,9 @@ Purpose: WALLET_VERIFICATION`;
       const secondComp = testComps[1];
       // TODO: this should assert existence, not use conditional
       if (firstComp && secondComp) {
-        expect(firstComp.totalTrades).toBeGreaterThanOrEqual(
-          secondComp.totalTrades,
+        // totalTrades may be undefined for perps competitions
+        expect(firstComp.totalTrades ?? 0).toBeGreaterThanOrEqual(
+          secondComp.totalTrades ?? 0,
         );
       }
 

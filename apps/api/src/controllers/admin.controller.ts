@@ -533,6 +533,7 @@ export function makeAdminController(services: ServiceRegistry) {
           maxParticipants,
           tradingConstraints,
           rewards,
+          perpsProvider,
         } = result.data;
 
         // Create a new competition
@@ -556,6 +557,7 @@ export function makeAdminController(services: ServiceRegistry) {
             maxParticipants,
             tradingConstraints,
             rewards,
+            perpsProvider,
           },
         );
 
@@ -600,6 +602,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinEndDate,
           tradingConstraints,
           rewards,
+          perpsProvider,
         } = result.data;
 
         // Validate that all provided agent IDs exist in the database and are active
@@ -702,6 +705,7 @@ export function makeAdminController(services: ServiceRegistry) {
             maxParticipants: undefined,
             tradingConstraints,
             rewards,
+            perpsProvider,
           });
         }
 

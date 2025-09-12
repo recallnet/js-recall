@@ -28,6 +28,7 @@ import {
   generateTestHandle,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
+  startPerpsTestCompetition,
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
@@ -1677,5 +1678,76 @@ describe("Admin API", () => {
       rank: 3,
       reward: 250,
     });
+  });
+
+  test("should create a perps competition as admin", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create a perps competition with required provider configuration
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Test Perps Competition",
+        description: "A test perpetual futures competition",
+        type: "perpetual_futures",
+        perpsProvider: {
+          provider: "symphony",
+          initialCapital: 500,
+          selfFundingThreshold: 0,
+          apiUrl: "http://localhost:4567", // Mock server URL
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.data.success).toBe(true);
+    expect(createResponse.data.competition).toBeDefined();
+    expect(createResponse.data.competition.name).toBe("Test Perps Competition");
+    expect(createResponse.data.competition.type).toBe("perpetual_futures");
+    expect(createResponse.data.competition.status).toBe("pending");
+  });
+
+  test("should start a perps competition with agents", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents for the competition
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Perps Agent 1",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Perps Agent 2",
+    });
+
+    // Start a perps competition with the agents
+    const competitionName = `Perps Competition ${Date.now()}`;
+    const startResponse = await startPerpsTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+    });
+
+    // Verify the competition was started successfully
+    expect(startResponse.success).toBe(true);
+    expect(startResponse.competition).toBeDefined();
+    expect(startResponse.competition.name).toBe(competitionName);
+    expect(startResponse.competition.type).toBe("perpetual_futures");
+    expect(startResponse.competition.status).toBe("active");
+
+    // For perps competitions, the agents are participating in the competition
+    // The initializedAgents field may not be present for perps competitions since
+    // we don't initialize traditional balances
+    expect(startResponse.competition.agentIds).toBeDefined();
+    expect(Array.isArray(startResponse.competition.agentIds)).toBe(true);
+    expect(startResponse.competition.agentIds).toContain(agent1.id);
+    expect(startResponse.competition.agentIds).toContain(agent2.id);
   });
 });

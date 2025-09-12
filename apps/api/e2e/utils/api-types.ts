@@ -55,6 +55,16 @@ export const COMPETITION_STATUS = {
   ENDED: "ended",
 } as const;
 
+// Competition type values
+export const COMPETITION_TYPE = {
+  TRADING: "trading",
+  PERPETUAL_FUTURES: "perpetual_futures",
+} as const;
+
+// Competition type
+export type CompetitionType =
+  (typeof COMPETITION_TYPE)[keyof typeof COMPETITION_TYPE];
+
 /**
  * USER AND AGENT TYPES
  */
@@ -134,6 +144,7 @@ export interface Agent {
   stats?: {
     completedCompetitions: number;
     totalTrades: number;
+    totalPositions?: number; // For perps competitions
     totalVotes: number;
     bestPlacement?: {
       competitionId: string;
@@ -341,17 +352,20 @@ export interface Competition {
   startDate: string | null;
   endDate: string | null;
   status: CompetitionStatus;
+  type?: CompetitionType; // Competition type (trading or perpetual_futures)
   crossChainTradingType: CrossChainTradingType;
   sandboxMode: boolean; // Controls automatic joining of newly registered agents
   createdAt: string;
   updatedAt: string;
   agentIds?: string[];
   stats?: {
-    totalTrades: number;
+    totalTrades?: number; // Optional - only for paper trading
+    totalPositions?: number; // Optional - only for perps
     totalAgents: number;
     totalVolume: number;
     totalVotes: number;
-    uniqueTokens: number;
+    uniqueTokens?: number; // Optional - only for paper trading
+    competitionType?: string; // Type indicator for clients
   };
   // Vote-related fields
   votingStartDate: string | null;
@@ -754,6 +768,7 @@ export interface GlobalLeaderboardResponse extends ApiResponse {
   stats: {
     activeAgents: number;
     totalTrades: number;
+    totalPositions?: number; // For perps competitions
     totalVolume: number;
     totalCompetitions: number;
     totalVotes: number;
@@ -848,7 +863,9 @@ export interface EnhancedCompetition extends Competition {
   portfolioValue: number;
   pnl: number;
   pnlPercent: number;
-  totalTrades: number;
+  totalTrades?: number; // Optional - only for paper trading
+  totalPositions?: number; // Optional - only for perps
+  competitionType?: string; // Type indicator for clients
   bestPlacement?: {
     rank: number;
     totalAgents: number;
@@ -924,4 +941,70 @@ export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
 export interface LinkUserWalletResponse extends ApiResponse {
   success: true;
   user: User;
+}
+
+/**
+ * PERPETUAL FUTURES TYPES
+ */
+
+// Perps position
+export interface PerpsPosition {
+  id: string;
+  agentId: string;
+  competitionId: string;
+  positionId: string;
+  marketId: string;
+  marketSymbol: string;
+  side: "long" | "short";
+  size: string;
+  averagePrice: string;
+  markPrice: string;
+  unrealizedPnl: string;
+  realizedPnl: string;
+  margin: string;
+  leverage: string;
+  liquidationPrice: string | null;
+  timestamp: string;
+}
+
+// Perps account summary
+export interface PerpsAccountSummary {
+  id: string;
+  agentId: string;
+  competitionId: string;
+  accountId: string;
+  totalEquity: string;
+  availableBalance: string;
+  marginUsed: string;
+  totalPnl: string;
+  totalVolume: string;
+  openPositions: number;
+  timestamp: string;
+}
+
+// Perps positions response
+export interface PerpsPositionsResponse extends ApiResponse {
+  success: true;
+  agentId: string;
+  positions: PerpsPosition[];
+}
+
+// Perps account response
+export interface PerpsAccountResponse extends ApiResponse {
+  success: true;
+  agentId: string;
+  account: PerpsAccountSummary;
+}
+
+// Competition perps positions response
+export interface CompetitionPerpsPositionsResponse extends ApiResponse {
+  success: true;
+  competitionId: string;
+  positions: PerpsPosition[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
 }

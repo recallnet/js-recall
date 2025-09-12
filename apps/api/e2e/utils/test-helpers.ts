@@ -620,3 +620,120 @@ export async function getAdminApiKey() {
 
   return adminApiKey;
 }
+
+/**
+ * Create a perps competition in PENDING state
+ */
+export async function createPerpsTestCompetition({
+  adminClient,
+  name,
+  description,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  startDate,
+  endDate,
+  votingStartDate,
+  votingEndDate,
+  joinStartDate,
+  joinEndDate,
+  maxParticipants,
+  tradingConstraints,
+  rewards,
+}: {
+  adminClient: ApiClient;
+  name?: string;
+  description?: string;
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  startDate?: string;
+  endDate?: string;
+  votingStartDate?: string;
+  votingEndDate?: string;
+  joinStartDate?: string;
+  joinEndDate?: string;
+  maxParticipants?: number;
+  tradingConstraints?: TradingConstraints;
+  rewards?: Record<number, number>;
+}): Promise<CreateCompetitionResponse> {
+  const competitionName = name || `Perps Test Competition ${Date.now()}`;
+  const result = await adminClient.createCompetition({
+    name: competitionName,
+    description: description || `Perpetual futures test competition`,
+    type: "perpetual_futures", // Key difference - explicitly set type
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+    startDate,
+    endDate,
+    votingStartDate,
+    votingEndDate,
+    joinStartDate,
+    joinEndDate,
+    maxParticipants,
+    tradingConstraints,
+    rewards,
+  });
+
+  if (!result.success) {
+    throw new Error("Failed to create perps competition");
+  }
+
+  return result as CreateCompetitionResponse;
+}
+
+/**
+ * Start a perps competition directly (create and start in one go)
+ */
+export async function startPerpsTestCompetition({
+  adminClient,
+  name,
+  agentIds,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  tradingConstraints,
+  rewards,
+  perpsProvider = {
+    provider: "symphony" as const,
+    initialCapital: 500,
+    selfFundingThreshold: 0,
+    apiUrl: "http://localhost:4567", // Point to mock server by default
+  },
+}: {
+  adminClient: ApiClient;
+  name?: string;
+  agentIds?: string[];
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  tradingConstraints?: TradingConstraints;
+  rewards?: Record<number, number>;
+  perpsProvider?: {
+    provider: "symphony" | "hyperliquid";
+    initialCapital?: number;
+    selfFundingThreshold?: number;
+    apiUrl?: string;
+  };
+}): Promise<StartCompetitionResponse> {
+  const competitionName = name || `Perps Test Competition ${Date.now()}`;
+  const result = await adminClient.startCompetition({
+    name: competitionName,
+    description: `Perpetual futures test competition for ${competitionName}`,
+    type: "perpetual_futures", // Key difference - explicitly set type
+    agentIds: agentIds || [],
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+    tradingConstraints,
+    rewards,
+    perpsProvider,
+  });
+
+  if (!result.success) {
+    throw new Error("Failed to start perps competition");
+  }
+
+  return result as StartCompetitionResponse;
+}

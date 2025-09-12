@@ -33,7 +33,10 @@ import {
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
-import { getCompetitionLeaderboardSummaries } from "@/database/repositories/perps-repository.js";
+import {
+  createPerpsCompetitionConfig,
+  getCompetitionLeaderboardSummaries,
+} from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -157,6 +160,7 @@ export class CompetitionManager {
     maxParticipants,
     tradingConstraints,
     rewards,
+    perpsProvider,
   }: {
     name: string;
     description?: string;
@@ -174,6 +178,12 @@ export class CompetitionManager {
     maxParticipants?: number;
     tradingConstraints?: TradingConstraintsInput;
     rewards?: Record<number, number>;
+    perpsProvider?: {
+      provider: "symphony" | "hyperliquid";
+      initialCapital?: number;
+      selfFundingThreshold?: number;
+      apiUrl?: string;
+    };
   }) {
     const id = uuidv4();
 
@@ -199,6 +209,34 @@ export class CompetitionManager {
     };
 
     await createCompetition(competition);
+
+    // Create perps competition config if it's a perps competition
+    if (type === "perpetual_futures") {
+      // Validate that perpsProvider is provided for perps competitions
+      if (!perpsProvider) {
+        throw new ApiError(
+          400,
+          "Perps provider configuration is required for perpetual futures competitions",
+        );
+      }
+
+      const perpsConfig = {
+        competitionId: id,
+        dataSource: "external_api" as const,
+        dataSourceConfig: {
+          provider: perpsProvider.provider,
+          apiUrl: perpsProvider.apiUrl,
+        },
+        initialCapital: perpsProvider.initialCapital?.toString() ?? "500.00",
+        selfFundingThresholdUsd:
+          perpsProvider.selfFundingThreshold?.toString() ?? "0.00",
+      };
+
+      await createPerpsCompetitionConfig(perpsConfig);
+      serviceLogger.debug(
+        `[CompetitionManager] Created perps config for competition ${id}: ${JSON.stringify(perpsConfig)}`,
+      );
+    }
 
     let createdRewards: SelectCompetitionReward[] = [];
     if (rewards) {
