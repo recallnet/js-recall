@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 
 import { API_BASE_URL } from "@/config";
@@ -36,7 +35,7 @@ function buildUpstreamUrl(req: Request, path: string[]): URL {
  * @param token - The token to use for authentication
  * @returns The headers for the upstream request
  */
-function buildHeaders(req: Request, token?: string): Headers {
+function buildHeaders(req: Request): Headers {
   const incoming = new Headers(req.headers);
 
   // Header allowlist
@@ -45,10 +44,16 @@ function buildHeaders(req: Request, token?: string): Headers {
   // Typical safe forwards
   const accept = incoming.get("accept");
   if (accept) hdr.set("accept", accept);
+  const acceptLang = incoming.get("accept-language");
+  if (acceptLang) hdr.set("accept-language", acceptLang);
   const contentType = incoming.get("content-type");
   if (contentType) hdr.set("content-type", contentType);
+  const cookie = incoming.get("cookie");
+  if (cookie) hdr.set("cookie", cookie);
   const userAgent = incoming.get("user-agent");
   if (userAgent) hdr.set("user-agent", userAgent);
+  const acceptEncoding = incoming.get("accept-encoding");
+  if (acceptEncoding) hdr.set("accept-encoding", acceptEncoding);
 
   // Forward origin/referrer (e.g., for CSRF checks upstream)
   const origin = incoming.get("origin");
@@ -64,15 +69,6 @@ function buildHeaders(req: Request, token?: string): Headers {
   const xfwdProto = incoming.get("x-forwarded-proto") ?? "https";
   hdr.set("x-forwarded-proto", xfwdProto);
 
-  // Avoid content-decoding mismatch
-  const acceptEncoding = incoming.get("accept-encoding");
-  if (acceptEncoding) hdr.set("accept-encoding", acceptEncoding);
-
-  // Auth from cookie -> cookie
-  if (token) {
-    hdr.set("cookie", `privy-id-token=${token}`);
-  }
-
   return hdr;
 }
 
@@ -83,16 +79,13 @@ function buildHeaders(req: Request, token?: string): Headers {
  * @returns The response from the core backend competitions API
  */
 async function proxy(req: Request, path: string[]) {
-  // 1) Pre-process HttpOnly cookie server-side
-  const token = (await cookies()).get("privy-id-token")?.value;
-
   // 2) Build core backend competitions API URL safely & prepare headers
   const upstreamUrl = buildUpstreamUrl(req, path);
   const method = req.method.toUpperCase();
   const hasBody = !["GET", "HEAD"].includes(method);
   const init: RequestInit & { cache?: RequestCache } = {
     method,
-    headers: buildHeaders(req, token),
+    headers: buildHeaders(req),
     cache: "no-store",
     signal: req.signal,
   };
