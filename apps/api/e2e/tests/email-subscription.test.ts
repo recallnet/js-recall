@@ -4,7 +4,6 @@ import { describe, expect, test } from "vitest";
 import { users } from "@recallnet/db-schema/core/defs";
 
 import {
-  ErrorResponse,
   UserProfileResponse,
   UserSubscriptionResponse,
 } from "@/e2e/utils/api-types.js";
@@ -34,7 +33,7 @@ describe("email subscription", () => {
     expect(user.isSubscribed).toBe(true);
   });
 
-  test("subscribes user and prevents duplicate subscribe", async () => {
+  test("subscribes user and is idempotent on subscribe", async () => {
     const client = new ApiClient();
 
     // Manually create a user via db write
@@ -74,13 +73,14 @@ describe("email subscription", () => {
     expect(sub.success).toBe(true);
     expect(sub.isSubscribed).toBe(true);
 
-    // Duplicate subscribe -> 400
-    const dup = (await userClient.subscribeToMailingList()) as ErrorResponse;
-    expect(dup.success).toBe(false);
-    expect(dup.status).toBe(400);
+    // Duplicate subscribe -> idempotent 200
+    const dup =
+      (await userClient.subscribeToMailingList()) as UserSubscriptionResponse;
+    expect(dup.success).toBe(true);
+    expect(dup.isSubscribed).toBe(true);
   });
 
-  test("unsubscribes user and prevents duplicate unsubscribe", async () => {
+  test("unsubscribes user and is idempotent on unsubscribe", async () => {
     const client = new ApiClient();
     const userClient = await client.createPrivyUserClient();
 
@@ -95,10 +95,10 @@ describe("email subscription", () => {
     expect(unsub.success).toBe(true);
     expect(unsub.isSubscribed).toBe(false);
 
-    // Duplicate unsubscribe -> 400
+    // Duplicate unsubscribe -> idempotent 200
     const dupUnsub =
-      (await userClient.unsubscribeFromMailingList()) as ErrorResponse;
-    expect(dupUnsub.success).toBe(false);
-    expect(dupUnsub.status).toBe(400);
+      (await userClient.unsubscribeFromMailingList()) as UserSubscriptionResponse;
+    expect(dupUnsub.success).toBe(true);
+    expect(dupUnsub.isSubscribed).toBe(false);
   });
 });

@@ -499,7 +499,11 @@ export function makeUserController(services: ServiceRegistry) {
           throw new ApiError(404, "User email not found");
         }
         if (isSubscribed) {
-          throw new ApiError(400, "User already subscribed");
+          return res.status(200).json({
+            success: true,
+            userId,
+            isSubscribed: true,
+          });
         }
         // Subscribe to Loops mailing list
         const result = await services.emailService.subscribeUser(email);
@@ -543,7 +547,11 @@ export function makeUserController(services: ServiceRegistry) {
           throw new ApiError(404, "User email not found");
         }
         if (!isSubscribed) {
-          throw new ApiError(400, "User already unsubscribed");
+          return res.status(200).json({
+            success: true,
+            userId,
+            isSubscribed: false,
+          });
         }
         // Unsubscribe from Loops mailing list
         const result = await services.emailService.unsubscribeUser(email);

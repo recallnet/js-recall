@@ -1050,8 +1050,8 @@ export function configureUserRoutes(
    *                 isSubscribed:
    *                   type: boolean
    *                   example: true
-   *       400:
-   *         description: User already subscribed
+   *       200:
+   *         description: Already subscribed
    *       401:
    *         description: User not authenticated
    *       404:
@@ -1090,8 +1090,8 @@ export function configureUserRoutes(
    *                 isSubscribed:
    *                   type: boolean
    *                   example: false
-   *       400:
-   *         description: User already unsubscribed
+   *       200:
+   *         description: Already unsubscribed
    *       401:
    *         description: User not authenticated
    *       404:
