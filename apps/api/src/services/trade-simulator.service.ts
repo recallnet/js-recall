@@ -844,8 +844,8 @@ export class TradeSimulator {
       toPrice.price == null
     ) {
       serviceLogger.debug(`[TradeSimulator] Missing price data:
-            From Token Price: ${fromPrice}
-            To Token Price: ${toPrice}
+            From Token Price: ${fromPrice ? fromPrice.price : "null"}
+            To Token Price: ${toPrice ? toPrice.price : "null"}
         `);
       throw new ApiError(400, "Unable to determine price for tokens");
     }
