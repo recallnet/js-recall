@@ -64,8 +64,9 @@ function buildHeaders(req: Request, token?: string): Headers {
   const xfwdProto = incoming.get("x-forwarded-proto") ?? "https";
   hdr.set("x-forwarded-proto", xfwdProto);
 
-  // Prevent compressed TE mismatches (note: `fetch` decides)
-  hdr.delete("accept-encoding");
+  // Avoid content-decoding mismatch
+  const acceptEncoding = incoming.get("accept-encoding");
+  if (acceptEncoding) hdr.set("accept-encoding", acceptEncoding);
 
   // Auth from cookie -> cookie
   if (token) {
