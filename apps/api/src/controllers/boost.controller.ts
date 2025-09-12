@@ -107,19 +107,22 @@ export function makeBoostController(services: ServiceRegistry) {
           throw new ApiError(404, "No competition found.");
         }
 
-        if (competition.startDate == null || competition.endDate == null) {
+        if (
+          competition.votingStartDate == null ||
+          competition.votingEndDate == null
+        ) {
           throw new ApiError(
             500,
-            "Can't boost in a competition with no defined start date or end date.",
+            "Can't boost in a competition with no defined boost start date or end date.",
           );
         }
 
-        const now = Date.now();
-        // TODO: Make the window size configurable.
-        // 3 days before competition start.
-        const windowStart =
-          competition.startDate.getTime() - 3 * 24 * 60 * 60 * 1000;
-        if (!(windowStart < now && now < competition.endDate.getTime())) {
+        const now = new Date();
+        if (
+          !(
+            competition.votingStartDate < now && now < competition.votingEndDate
+          )
+        ) {
           throw new ApiError(
             400,
             "Can't boost in a competition outside of the boost time window.",
