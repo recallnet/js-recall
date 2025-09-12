@@ -14,7 +14,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { competitions } from "../core/defs.js";
+import { agents, competitions, users } from "../core/defs.js";
 import { blockchainAddress, tokenAmount } from "../util.js";
 
 const bytea = customType<{
@@ -210,4 +210,56 @@ export const boostChanges = pgTable(
     ),
     createdIdx: index("boost_changes_created_at_idx").on(t.createdAt),
   }),
+);
+
+export const agentBoostTotals = pgTable(
+  "agent_boost_totals",
+  {
+    id: uuid("id").primaryKey().notNull(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
+    total: bigint("total", { mode: "bigint" })
+      .notNull()
+      .default(sql`0`),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("agent_boost_totals_agent_id_idx").on(t.agentId),
+    index("agent_boost_totals_competition_id_idx").on(t.competitionId),
+    uniqueIndex("agent_boost_totals_agent_id_competition_id_idx").on(
+      t.agentId,
+      t.competitionId,
+    ),
+  ],
+);
+
+export const agentBoosts = pgTable(
+  "agent_boosts",
+  {
+    id: uuid("id").primaryKey().notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
+    changeId: uuid("change_id")
+      .notNull()
+      .references(() => boostChanges.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("agent_boots_user_id_idx").on(t.userId),
+    index("agent_boots_agent_id_idx").on(t.agentId),
+    index("agent_boosts_competition_id_idx").on(t.competitionId),
+    index("agent_boosts_change_idx").on(t.changeId),
+  ],
 );
