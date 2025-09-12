@@ -858,8 +858,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
           competitionId,
           registeredParticipants: competition.registeredParticipants,
           maxParticipants: competition.maxParticipants,
-          // TODO: Each agent contains a bigint totalBoost. How to serialize?
-          agents,
+          agents: agents.map((agent) => ({
+            ...agent,
+            boostTotal: agent.boostTotal.toString(),
+          })),
           pagination: buildPaginationResponse(
             total,
             queryParams.limit,
