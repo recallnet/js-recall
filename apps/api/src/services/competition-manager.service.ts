@@ -5,6 +5,7 @@ import {
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@recallnet/db-schema/core/types";
+import type { Transaction as DatabaseTransaction } from "@recallnet/db-schema/types";
 
 import { db } from "@/database/db.js";
 import {
@@ -17,10 +18,10 @@ import {
   batchInsertLeaderboard,
   create as createCompetition,
   findActive,
-  findActiveCompetitionsPastEndDate,
   findAll,
   findById,
   findByStatus,
+  findCompetitionsNeedingEnding,
   findLeaderboardByTradingComp,
   get24hSnapshots,
   getAgentCompetitionRecord,
@@ -30,6 +31,8 @@ import {
   getCompetitionAgents,
   getLatestPortfolioSnapshots,
   isAgentActiveInCompetition,
+  markCompetitionAsEnded,
+  markCompetitionAsEnding,
   updateAgentCompetitionStatus,
   update as updateCompetition,
   updateOne,
@@ -392,11 +395,13 @@ export class CompetitionManager {
    * Calculates final leaderboard, enriches with PnL data, and persists to database
    * @param competitionId The competition ID
    * @param totalAgents Total number of agents in the competition
+   * @param tx Database transaction
    * @returns Number of leaderboard entries that were saved
    */
   private async calculateAndPersistFinalLeaderboard(
     competitionId: string,
     totalAgents: number,
+    tx: DatabaseTransaction,
   ): Promise<number> {
     // Get the leaderboard (calculated from final snapshots)
     const leaderboard = await this.getLeaderboard(competitionId);
@@ -429,7 +434,7 @@ export class CompetitionManager {
 
     // Persist to database
     if (enrichedEntries.length > 0) {
-      await batchInsertLeaderboard(enrichedEntries);
+      await batchInsertLeaderboard(enrichedEntries, tx);
     }
 
     return enrichedEntries.length;
@@ -441,50 +446,77 @@ export class CompetitionManager {
    * @returns The updated competition
    */
   async endCompetition(competitionId: string) {
-    const competition = await findById(competitionId);
-    if (!competition) {
-      throw new Error(`Competition not found: ${competitionId}`);
-    }
+    // Mark as ending (active -> ending)
+    const markedAsEnding = await markCompetitionAsEnding(competitionId);
 
-    if (competition.status !== "active") {
-      throw new Error(`Competition is not active: ${competition.status}`);
+    if (!markedAsEnding) {
+      const current = await findById(competitionId);
+      if (!current) {
+        throw new Error(`Competition not found: ${competitionId}`);
+      }
+      if (current.status === "ended") {
+        return current; // Already ended
+      }
+      if (current.status !== "ending") {
+        throw new Error(
+          `Competition is not active or ending: ${current.status}`,
+        );
+      }
+      // If "ending", continue processing (retry scenario)
     }
-
-    // Update the competition status FIRST to prevent new trades from being processed
-    const finalCompetition = await updateCompetition({
-      id: competitionId,
-      status: "ended",
-      endDate: new Date(),
-      updatedAt: new Date(),
-    });
 
     serviceLogger.debug(
-      `[CompetitionManager] Ending competition: ${competition.name} (${competitionId}) - status updated to ENDED`,
+      `[CompetitionManager] Marked competition as ending: ${competitionId}`,
     );
 
-    // Take final portfolio snapshots (force=true to ensure we get final values even though status is ENDED)
+    // Take final portfolio snapshots (force=true to ensure we get final values even though comp
+    // is ending). We do this outside the transaction since it is idempotent, to keep the amount
+    // of work done in the transaction to a minimum.
     await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId, true);
 
-    // Get agents in the competition
+    // Get agents in the competition (outside transaction - they won't change)
     const competitionAgents = await getCompetitionAgents(competitionId);
 
     // Reload configuration settings (revert to environment defaults)
     await this.configurationService.loadCompetitionSettings();
 
-    // Calculate final leaderboard, enrich with PnL data, and persist to database
-    const leaderboardCount = await this.calculateAndPersistFinalLeaderboard(
-      competitionId,
-      competitionAgents.length,
+    // Final transaction to persist results
+    const { competition, leaderboardCount } = await db.transaction(
+      async (tx) => {
+        // Mark as ended. This is our guard against concurrent execution - if another process is
+        // ending the same competition in parallel, only one will manage to mark it as ended, and
+        // the other one's transaction will fail.
+        const updated = await markCompetitionAsEnded(competitionId, tx);
+        if (!updated) {
+          throw new Error(
+            "Competition was already ended or not in ending state",
+          );
+        }
+
+        // Calculate final leaderboard, enrich with PnL data, and persist to database
+        const leaderboardCount = await this.calculateAndPersistFinalLeaderboard(
+          competitionId,
+          competitionAgents.length,
+          tx,
+        );
+
+        // Update agent ranks based on competition results
+        await this.agentRankService.updateAgentRanksForCompetition(
+          competitionId,
+          tx,
+        );
+
+        return { competition: updated, leaderboardCount };
+      },
     );
 
-    // Update agent ranks based on competition results
-    await this.agentRankService.updateAgentRanksForCompetition(competitionId);
-
+    // Log success only after transaction has committed
     serviceLogger.debug(
-      `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ${competitionAgents.length} agents, ${leaderboardCount} leaderboard entries`,
+      `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ` +
+        `${competitionAgents.length} agents, ${leaderboardCount} leaderboard entries`,
     );
 
-    return finalCompetition;
+    return competition;
   }
 
   /**
@@ -646,7 +678,7 @@ export class CompetitionManager {
     const portfolioValues =
       await this.tradeSimulator.calculateBulkPortfolioValues(agents);
 
-    const leaderboard = agents.map((agentId) => ({
+    const leaderboard = agents.map((agentId: string) => ({
       agentId,
       value: portfolioValues.get(agentId) || 0,
       pnl: 0, // PnL not available without historical data
@@ -673,7 +705,7 @@ export class CompetitionManager {
     );
 
     return agents
-      .map((agentId) => ({
+      .map((agentId: string) => ({
         agentId,
         value: 0, // No portfolio value for pending competitions
         pnl: 0,
@@ -729,7 +761,8 @@ export class CompetitionManager {
           // Fall through to calculate from snapshots
         }
 
-        case "active": {
+        case "active":
+        case "ending": {
           // Try snapshots first
           const snapshotLeaderboard =
             await this.calculateLeaderboardFromSnapshots(competitionId);
@@ -1376,7 +1409,7 @@ export class CompetitionManager {
    */
   async processCompetitionEndDateChecks(): Promise<void> {
     try {
-      const competitionsToEnd = await findActiveCompetitionsPastEndDate();
+      const competitionsToEnd = await findCompetitionsNeedingEnding();
 
       if (competitionsToEnd.length === 0) {
         serviceLogger.debug(
@@ -1392,7 +1425,7 @@ export class CompetitionManager {
       for (const competition of competitionsToEnd) {
         try {
           serviceLogger.debug(
-            `[CompetitionManager] Auto-ending competition: ${competition.name} (${competition.id}) - scheduled end: ${competition.endDate!.toISOString()}`,
+            `[CompetitionManager] Auto-ending competition: ${competition.name} (${competition.id}) - scheduled end: ${competition.endDate!.toISOString()} - status: ${competition.status}`,
           );
 
           await this.endCompetition(competition.id);
