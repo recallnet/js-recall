@@ -278,6 +278,7 @@ export const competitions = pgTable(
       table.id,
     ),
     index("idx_competitions_status_end_date").on(table.status, table.endDate),
+    index("idx_competitions_created").on(table.createdAt),
   ],
 );
 

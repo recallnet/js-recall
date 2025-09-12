@@ -1,7 +1,6 @@
 import { features } from "@/config/index.js";
 import { findActive } from "@/database/repositories/competition-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { CrossChainTradingType } from "@/types/index.js";
 
 /**
  * Configuration Service
@@ -20,7 +19,7 @@ export class ConfigurationService {
       if (activeCompetition) {
         // Override the environment-based settings with competition-specific settings
         features.CROSS_CHAIN_TRADING_TYPE =
-          activeCompetition.crossChainTradingType as CrossChainTradingType;
+          activeCompetition.crossChainTradingType;
         features.SANDBOX_MODE = activeCompetition.sandboxMode;
 
         serviceLogger.debug(

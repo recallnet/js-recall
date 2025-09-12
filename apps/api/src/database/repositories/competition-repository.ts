@@ -26,6 +26,7 @@ import {
   InsertCompetition,
   InsertCompetitionAgent,
   InsertCompetitionsLeaderboard,
+  SelectCompetition,
   UpdateCompetition,
 } from "@recallnet/db-schema/core/types";
 import {
@@ -34,7 +35,10 @@ import {
   tradingCompetitionsLeaderboard,
 } from "@recallnet/db-schema/trading/defs";
 import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
-import { InsertTradingCompetition } from "@recallnet/db-schema/trading/types";
+import {
+  InsertTradingCompetition,
+  SelectTradingCompetition,
+} from "@recallnet/db-schema/trading/types";
 import {
   InsertPortfolioSnapshot,
   SelectPortfolioSnapshot,
@@ -853,7 +857,11 @@ async function markAgentAsWithdrawnImpl(
 /**
  * Find active competition
  */
-async function findActiveImpl() {
+async function findActiveImpl(): Promise<
+  | undefined
+  | (SelectCompetition &
+      Pick<SelectTradingCompetition, "crossChainTradingType">)
+> {
   try {
     const [result] = await db
       .select({

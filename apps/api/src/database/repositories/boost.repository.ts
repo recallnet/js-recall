@@ -4,8 +4,7 @@ import { z } from "zod";
 
 import * as schema from "@recallnet/db-schema/voting/defs";
 
-import { db } from "@/database/db.js";
-import { BlockchainAddressAsU8A } from "@/lib/coders.js";
+import { type DbTransaction, db } from "@/database/db.js";
 
 export { BoostRepository, BoostChangeMetaSchema };
 export type { BoostDiffArgs, BoostDiffResult, BoostChangeMeta };
@@ -26,8 +25,8 @@ const DEFAULT_META: BoostChangeMeta = {};
  *   If omitted, a random UUID is generated (non-idempotent across retries).
  */
 type BoostDiffArgs = {
-  /** EVM address; will be lowercased before persisting. */
-  wallet: string;
+  /** EVM address */
+  wallet: Uint8Array;
   /** Competition ID */
   competitionId: string;
   /**
@@ -53,8 +52,13 @@ type BoostDiffArgs = {
  * - Idempotent no-op: returns existing balance when the same idemKey was seen.
  */
 type BoostDiffResult =
-  | { changeId: string; balanceAfter: bigint; idemKey: Uint8Array } // change applied
-  | { balance: bigint; idemKey: Uint8Array }; // noop (already applied)
+  | {
+      isChange: true;
+      changeId: string;
+      balanceAfter: bigint;
+      idemKey: Uint8Array;
+    } // change applied
+  | { isChange: false; balance: bigint; idemKey: Uint8Array }; // noop (already applied)
 
 /**
  * BoostRepository
@@ -146,17 +150,18 @@ class BoostRepository {
    * - `amount` must be `>= 0n`. Zero-amount credits will only create a journal row
    *   on first application (useful for marking events without changing balance).
    */
-  increase(args: BoostDiffArgs): Promise<BoostDiffResult> {
+  increase(args: BoostDiffArgs, tx?: DbTransaction): Promise<BoostDiffResult> {
     const amount = args.amount;
     if (amount < 0n) {
       throw new Error("amount must be non-negative");
     }
     const idemKey = args.idemKey ?? randomBytes(32);
-    const wallet = BlockchainAddressAsU8A.encode(args.wallet);
+    const wallet = args.wallet;
     const meta = args.meta || DEFAULT_META;
     const competitionId = args.competitionId;
 
-    return this.#db.transaction(async (tx) => {
+    const db = tx || this.#db;
+    return db.transaction(async (tx) => {
       let balanceRow: { id: string; balance: bigint };
       const [inserted] = await tx
         .insert(schema.boostBalances)
@@ -239,6 +244,7 @@ class BoostRepository {
           });
 
         return {
+          isChange: true,
           balanceAfter: updated!.balance,
           changeId: insertedChange.id,
           idemKey: idemKey,
@@ -246,6 +252,7 @@ class BoostRepository {
       } else {
         // Already applied earlier: do NOT touch balance, just return the current value
         return {
+          isChange: false,
           balance: balanceRow.balance,
           idemKey: idemKey,
         };
@@ -279,17 +286,18 @@ class BoostRepository {
    * - Row-level locks ensure two concurrent `decrease` calls on the same wallet
    *   are serialized and preserve the non-negative balance invariant.
    */
-  decrease(args: BoostDiffArgs): Promise<BoostDiffResult> {
+  decrease(args: BoostDiffArgs, tx?: DbTransaction): Promise<BoostDiffResult> {
     const amount = args.amount;
     if (amount <= 0n) {
       throw new Error("amount must be positive");
     }
     const idemKey = args.idemKey ?? randomBytes(32);
-    const wallet = BlockchainAddressAsU8A.encode(args.wallet);
+    const wallet = args.wallet;
     const meta = args.meta || DEFAULT_META;
     const competitionId = args.competitionId;
 
-    return this.#db.transaction(async (tx) => {
+    const db = tx || this.#db;
+    return db.transaction(async (tx) => {
       // 1) Lock the wallet balance row if it exists
       const [balanceRow] = await tx
         .select({
@@ -330,6 +338,7 @@ class BoostRepository {
       if (existing) {
         // already applied
         return {
+          isChange: false,
           balance: currentBalance,
           idemKey,
         };
@@ -378,6 +387,7 @@ class BoostRepository {
       }
 
       return {
+        isChange: true,
         changeId: change.id,
         balanceAfter: updatedRow.balance,
         idemKey,

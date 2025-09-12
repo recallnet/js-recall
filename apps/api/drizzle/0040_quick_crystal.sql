@@ -1,0 +1,1 @@
+CREATE INDEX "idx_competitions_created" ON "competitions" USING btree ("created_at");

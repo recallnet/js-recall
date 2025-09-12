@@ -1,9 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 
 import {
+  SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@recallnet/db-schema/core/types";
+import { SelectTradingCompetition } from "@recallnet/db-schema/trading/types";
 
 import {
   findById as findAgentById,
@@ -499,7 +501,11 @@ export class CompetitionManager {
    * Get the currently active competition
    * @returns The active competition or null if none
    */
-  async getActiveCompetition() {
+  async getActiveCompetition(): Promise<
+    | (SelectCompetition &
+        Pick<SelectTradingCompetition, "crossChainTradingType">)
+    | undefined
+  > {
     return findActive();
   }
 
