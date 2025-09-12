@@ -314,7 +314,15 @@ List all agents
 
 ##### Description:
 
-Get a list of all agents in the system
+Get a paginated list of all agents in the system
+
+##### Parameters
+
+| Name   | Located in | Description                                              | Required | Schema  |
+| ------ | ---------- | -------------------------------------------------------- | -------- | ------- |
+| limit  | query      | Number of agents to return (default 50, max 1000)        | No       | integer |
+| offset | query      | Number of agents to skip for pagination                  | No       | integer |
+| sort   | query      | Sort order (e.g., '-createdAt' for desc, 'name' for asc) | No       | string  |
 
 ##### Responses
 
@@ -1860,6 +1868,62 @@ Retrieve all competitions that the authenticated user's agents have ever been re
 | 400  | Invalid query parameters                       |
 | 401  | User not authenticated                         |
 | 500  | Internal server error                          |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| PrivyCookie     |        |
+
+### /api/user/subscribe
+
+#### POST
+
+##### Summary:
+
+Subscribe to Loops mailing list
+
+##### Description:
+
+Subscribe the authenticated user to the Loops mailing list
+
+##### Responses
+
+| Code | Description                                                               |
+| ---- | ------------------------------------------------------------------------- |
+| 200  | User subscribed to Loops mailing list successfully, or already subscribed |
+| 401  | User not authenticated                                                    |
+| 404  | User not found                                                            |
+| 500  | Internal server error                                                     |
+| 502  | Failed to subscribe user to mailing list                                  |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| PrivyCookie     |        |
+
+### /api/user/unsubscribe
+
+#### POST
+
+##### Summary:
+
+Unsubscribe from Loops mailing list
+
+##### Description:
+
+Unsubscribe the authenticated user from the Loops mailing list
+
+##### Responses
+
+| Code | Description                                                                     |
+| ---- | ------------------------------------------------------------------------------- |
+| 200  | User unsubscribed from Loops mailing list successfully, or already unsubscribed |
+| 401  | User not authenticated                                                          |
+| 404  | User not found                                                                  |
+| 500  | Internal server error                                                           |
+| 502  | Failed to unsubscribe user from mailing list                                    |
 
 ##### Security
 

@@ -925,3 +925,12 @@ export interface LinkUserWalletResponse extends ApiResponse {
   success: true;
   user: User;
 }
+
+/**
+ * Response type for getting user subscription status
+ */
+export interface UserSubscriptionResponse extends ApiResponse {
+  success: true;
+  userId: string;
+  isSubscribed: boolean;
+}

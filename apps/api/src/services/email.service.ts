@@ -9,7 +9,7 @@ const LOOPS_SOURCE = "comps_app";
 /**
  * Response from the Loops API
  */
-interface LoopsResponse {
+export interface LoopsResponse {
   success: boolean;
   id?: string;
   message?: string;
@@ -19,7 +19,7 @@ interface LoopsResponse {
  * Loops API payload for updating a contact
  * Note: the `email` field is the only required field in the payload.
  */
-interface LoopsPayload {
+export interface LoopsPayload {
   email: string;
   userId?: string;
   firstName?: string;
@@ -38,17 +38,21 @@ interface LoopsPayload {
 export class EmailService {
   private readonly apiKey: string;
   private readonly mailingListId: string;
-  private readonly baseUrl = "https://app.loops.so/api/v1";
+  private readonly baseUrl: string;
 
   constructor() {
     this.apiKey = config.email.apiKey;
     this.mailingListId = config.email.mailingListId;
+    this.baseUrl = config.email.baseUrl;
 
     if (!this.apiKey) {
       serviceLogger.warn("[EmailService] LOOPS_API_KEY not configured");
     }
     if (!this.mailingListId) {
       serviceLogger.warn("[EmailService] LOOPS_MAILING_LIST_ID not configured");
+    }
+    if (!this.baseUrl) {
+      serviceLogger.warn("[EmailService] LOOPS_BASE_URL not configured");
     }
   }
 
@@ -185,6 +189,6 @@ export class EmailService {
    * Check if Loops is properly configured (e.g., we ignore unless configured)
    */
   isConfigured(): boolean {
-    return !!(this.apiKey && this.mailingListId);
+    return !!(this.apiKey && this.mailingListId && this.baseUrl);
   }
 }
