@@ -76,6 +76,9 @@ class ServiceRegistry {
     // Initialize core reward service (no dependencies)
     this._competitionRewardService = new CompetitionRewardService();
 
+    // Initialize PerpsDataProcessor before CompetitionManager (as it's a dependency)
+    this._perpsDataProcessor = new PerpsDataProcessor();
+
     this._competitionManager = new CompetitionManager(
       this._balanceManager,
       this._tradeSimulator,
@@ -86,13 +89,11 @@ class ServiceRegistry {
       this._voteManager,
       this._tradingConstraintsService,
       this._competitionRewardService,
+      this._perpsDataProcessor,
     );
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentManager);
-
-    // Initialize PerpsDataProcessor (provider will be passed at runtime)
-    this._perpsDataProcessor = new PerpsDataProcessor();
   }
 
   public static getInstance(): ServiceRegistry {

@@ -10,6 +10,7 @@ import {
   findByCompetition,
 } from "@/database/repositories/agent-repository.js";
 import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
+import { resetAgentBalances } from "@/database/repositories/balance-repository.js";
 import {
   addAgentToCompetition,
   batchInsertLeaderboard,
@@ -41,6 +42,7 @@ import {
   AgentRankService,
   BalanceManager,
   ConfigurationService,
+  PerpsDataProcessor,
   PortfolioSnapshotter,
   TradeSimulator,
   TradingConstraintsService,
@@ -91,6 +93,7 @@ export class CompetitionManager {
   private voteManager: VoteManager;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
+  private perpsDataProcessor: PerpsDataProcessor;
 
   constructor(
     balanceManager: BalanceManager,
@@ -102,6 +105,7 @@ export class CompetitionManager {
     voteManager: VoteManager,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
+    perpsDataProcessor: PerpsDataProcessor,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -112,6 +116,7 @@ export class CompetitionManager {
     this.voteManager = voteManager;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
+    this.perpsDataProcessor = perpsDataProcessor;
   }
 
   /**
@@ -281,8 +286,18 @@ export class CompetitionManager {
 
     // Process all agent additions and activations
     for (const agentId of agentIds) {
-      // Reset balances
-      await this.balanceManager.resetAgentBalances(agentId);
+      // Handle balances based on competition type
+      if (competition.type === "trading") {
+        // Paper trading: Reset to standard balances (5k USDC per chain)
+        await this.balanceManager.resetAgentBalances(agentId);
+      } else if (competition.type === "perpetual_futures") {
+        // Perps: Clear all balances to prevent confusion
+        // Pass empty Map to delete all balances without creating new ones
+        await resetAgentBalances(agentId, new Map());
+        serviceLogger.debug(
+          `[CompetitionManager] Cleared balances for perps agent ${agentId}`,
+        );
+      }
 
       // Ensure agent is globally active (but don't force reactivation)
       const agent = await findAgentById(agentId);
@@ -342,14 +357,43 @@ export class CompetitionManager {
 
     // Take initial portfolio snapshots BEFORE setting status to active
     // This ensures no trades can happen during snapshot initialization
-    // and the snapshotter has exclusive access to price API rate limits
-    serviceLogger.debug(
-      `[CompetitionManager] Taking initial portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
-    );
-    await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
-    serviceLogger.debug(
-      `[CompetitionManager] Initial portfolio snapshots completed`,
-    );
+    // Different approach based on competition type:
+    if (competition.type === "trading") {
+      // Paper trading: Use portfolio snapshotter with reset balances
+      serviceLogger.debug(
+        `[CompetitionManager] Taking initial paper trading portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
+      );
+      await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+      serviceLogger.debug(
+        `[CompetitionManager] Initial paper trading portfolio snapshots completed`,
+      );
+    } else if (competition.type === "perpetual_futures") {
+      // Perps: Sync from Symphony to get initial $500 balance state
+      serviceLogger.debug(
+        `[CompetitionManager] Syncing initial perps data from Symphony for ${agentIds.length} agents (competition still pending)`,
+      );
+
+      const result =
+        await this.perpsDataProcessor.processPerpsCompetition(competitionId);
+
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
+
+      serviceLogger.debug(
+        `[CompetitionManager] Initial perps sync completed: ${successCount}/${totalCount} agents synced successfully`,
+      );
+
+      if (failedCount > 0) {
+        // Log which agents failed but don't throw - some agents may not have Symphony accounts yet
+        const failedAgentIds = result.syncResult.failed.map((f) => f.agentId);
+        serviceLogger.warn(
+          `[CompetitionManager] Failed to sync ${failedCount} agents during competition start: ${failedAgentIds.join(", ")}`,
+        );
+      }
+    } else {
+      throw new Error(`Unknown competition type: ${competition.type}`);
+    }
 
     // NOW update the competition status to active
     // This opens trading and price endpoint access to agents
