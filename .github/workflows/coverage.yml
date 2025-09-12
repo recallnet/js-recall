@@ -18,9 +18,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          submodules: true
           fetch-depth: 0
-          submodules: recursive
-          token: ${{ secrets.PAT }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
