@@ -114,9 +114,8 @@ async function proxy(req: Request, path: string[]) {
     );
   }
 
-  // 5) Copy headers & drop Set-Cookie from another domain
+  // 5) Copy headers
   const respHeaders = new Headers(upstream.headers);
-  respHeaders.delete("set-cookie");
 
   // 6) Strongly discourage CDN caching of proxied responses
   respHeaders.set("cache-control", "no-store");
