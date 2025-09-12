@@ -119,9 +119,7 @@ ${matches.join("\n")}
     const finalPayload = parseJwtPayloadToPrivyTypes(payload);
     return { privyId: payload.sub, claims: finalPayload };
   } catch (error) {
-    authLogger.error(
-      `Privy identity token verification failed: ${JSON.stringify(error)}`,
-    );
+    authLogger.error("Privy identity token verification failed:", error);
     throw new Error("Authentication failed");
   }
 }

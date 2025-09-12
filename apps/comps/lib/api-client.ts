@@ -39,7 +39,7 @@ import {
   VotingStateResponse,
 } from "@/types";
 
-const PROXY_API_ENDPOINT = "/api/proxy";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 /**
  * Base HTTP error class with status code support
@@ -112,7 +112,7 @@ export class ServerError extends HttpError {
 export class ApiClient {
   private readonly baseUrl: string;
 
-  constructor(baseUrl: string = PROXY_API_ENDPOINT) {
+  constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
   }
 
