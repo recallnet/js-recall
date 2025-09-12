@@ -501,8 +501,38 @@ export class CompetitionManager {
       `[CompetitionManager] Ending competition: ${competition.name} (${competitionId}) - status updated to ENDED`,
     );
 
-    // Take final portfolio snapshots (force=true to ensure we get final values even though status is ENDED)
-    await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId, true);
+    // Take final data snapshot based on competition type
+    // force=true ensures we get final values even though status is ENDED
+    if (competition.type === "trading") {
+      // Paper trading: Take portfolio snapshots from balances
+      await this.portfolioSnapshotter.takePortfolioSnapshots(
+        competitionId,
+        true,
+      );
+      serviceLogger.debug(
+        `[CompetitionManager] Final paper trading portfolio snapshots completed`,
+      );
+    } else if (competition.type === "perpetual_futures") {
+      // Perps: Sync final data from Symphony
+      // This fetches final account summaries and positions, creating portfolio snapshots
+      const result =
+        await this.perpsDataProcessor.processPerpsCompetition(competitionId);
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      serviceLogger.debug(
+        `[CompetitionManager] Final perps sync completed: ${successCount}/${successCount + failedCount} agents synced successfully`,
+      );
+      if (failedCount > 0) {
+        // Log warning but don't fail the competition ending
+        serviceLogger.warn(
+          `[CompetitionManager] Failed to sync final data for ${failedCount} agents in ending competition`,
+        );
+      }
+    } else {
+      serviceLogger.warn(
+        `[CompetitionManager] Unknown competition type ${competition.type} - skipping final snapshot`,
+      );
+    }
 
     // Get agents in the competition
     const competitionAgents = await getCompetitionAgents(competitionId);
