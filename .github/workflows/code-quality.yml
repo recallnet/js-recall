@@ -15,12 +15,11 @@ jobs:
     name: Check lint, format, and build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
           fetch-depth: 0
-          token: ${{ secrets.PAT }}
 
       - name: Install Node.js
         uses: actions/setup-node@v4
