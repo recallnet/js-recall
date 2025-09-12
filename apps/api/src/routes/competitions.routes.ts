@@ -1277,8 +1277,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for a competition
-   *     description: Get all trades for a specific competition
+   *     summary: Get trades for a competition (Paper Trading Only)
+   *     description: Get all trades for a specific competition. Only available for paper trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -1322,7 +1322,18 @@ export function configureCompetitionsRoutes(
    *                   items:
    *                     type: object
    *       400:
-   *         description: Bad request - Invalid competition ID format
+   *         description: Bad request - Invalid competition ID format or endpoint not available for perpetual futures competitions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is not available for perpetual futures competitions. Use GET /api/competitions/{id}/perps/positions for current positions."
    *       404:
    *         description: Competition not found
    *       401:
@@ -1342,8 +1353,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for an agent in a competition
-   *     description: Get all trades for a specific agent in a specific competition
+   *     summary: Get trades for an agent in a competition (Paper Trading Only)
+   *     description: Get all trades for a specific agent in a specific competition. Only available for paper trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -1393,7 +1404,18 @@ export function configureCompetitionsRoutes(
    *                   items:
    *                     type: object
    *       400:
-   *         description: Bad request - Invalid ID format
+   *         description: Bad request - Invalid ID format or endpoint not available for perpetual futures competitions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is not available for perpetual futures competitions. Use GET /api/competitions/{id}/agents/{agentId}/perps/positions for agent positions."
    *       404:
    *         description: Competition or agent not found
    *       401:

@@ -190,8 +190,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    * @openapi
    * /api/agent/balances:
    *   get:
-   *     summary: Get agent balances
-   *     description: Retrieve all token balances with current prices for the authenticated agent
+   *     summary: Get agent balances (Paper Trading Only)
+   *     description: Retrieve all token balances with current prices for the authenticated agent. Only available during paper trading competitions.
    *     tags:
    *       - Agent
    *     security:
@@ -238,6 +238,19 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       specificChain:
    *                         type: string
    *                         example: "svm"
+   *       400:
+   *         description: Bad Request - Endpoint not available for perpetual futures competitions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is not available for perpetual futures competitions. Use GET /api/agent/perps/account for account summary."
    *       401:
    *         description: Agent not authenticated
    *       500:
@@ -249,8 +262,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    * @openapi
    * /api/agent/trades:
    *   get:
-   *     summary: Get agent trade history
-   *     description: Retrieve the trading history for the authenticated agent
+   *     summary: Get agent trade history (Paper Trading Only)
+   *     description: Retrieve the trading history for the authenticated agent. Only available during paper trading competitions.
    *     tags:
    *       - Agent
    *     security:
@@ -341,6 +354,19 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                         description: Specific chain for the destination token
    *                         example: "svm"
    *                         nullable: true
+   *       400:
+   *         description: Bad Request - Endpoint not available for perpetual futures competitions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is not available for perpetual futures competitions. Use GET /api/agent/perps/positions for current positions."
    *       401:
    *         description: Agent not authenticated
    *       500:

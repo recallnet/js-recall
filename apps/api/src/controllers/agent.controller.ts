@@ -225,6 +225,17 @@ export function makeAgentController(services: ServiceRegistry) {
       try {
         const agentId = req.agentId as string;
 
+        // Check if there's an active competition and if it's a perps competition
+        const activeCompetition =
+          await services.competitionManager.getActiveCompetition();
+        if (activeCompetition?.type === "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is not available for perpetual futures competitions. " +
+              "Use GET /api/agent/perps/account for account summary.",
+          );
+        }
+
         // Get the balances, this could be hundreds
         const balances = await services.balanceManager.getAllBalances(agentId);
 
@@ -281,6 +292,17 @@ export function makeAgentController(services: ServiceRegistry) {
     async getTrades(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId as string;
+
+        // Check if there's an active competition and if it's a perps competition
+        const activeCompetition =
+          await services.competitionManager.getActiveCompetition();
+        if (activeCompetition?.type === "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is not available for perpetual futures competitions. " +
+              "Use GET /api/agent/perps/positions for current positions.",
+          );
+        }
 
         // Get the trades
         const trades = await services.tradeSimulator.getAgentTrades(agentId);

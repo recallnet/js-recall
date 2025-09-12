@@ -1342,6 +1342,15 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
+        // Check if this is a perps competition
+        if (competition.type === "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is not available for perpetual futures competitions. " +
+              "Use GET /api/competitions/{id}/perps/positions for current positions.",
+          );
+        }
+
         // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
         const shouldCacheResponse = checkShouldCacheResponse(req);
         const cacheKey = generateCacheKey(req, "competitionTrades", {
@@ -1412,6 +1421,15 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const agent = await services.agentManager.getAgent(agentId);
         if (!agent) {
           throw new ApiError(404, "Agent not found");
+        }
+
+        // Check if this is a perps competition
+        if (competition.type === "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is not available for perpetual futures competitions. " +
+              "Use GET /api/competitions/{id}/agents/{agentId}/perps/positions for agent positions.",
+          );
         }
 
         // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
