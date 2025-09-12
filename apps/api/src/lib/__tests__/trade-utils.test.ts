@@ -103,6 +103,16 @@ describe("trade-utils", () => {
         { value: 10000, maxPercentage: 5 },
         { value: 100000, maxPercentage: 10 },
         { value: 1000000, maxPercentage: 15 },
+        { value: 10000000, maxPercentage: 15 },
+        { value: 100000000, maxPercentage: 15 },
+        { value: 1000000000, maxPercentage: 15 },
+        { value: 10000000000, maxPercentage: 15 },
+        { value: 100000000000, maxPercentage: 15 },
+        { value: 1000000000000, maxPercentage: 15 },
+        { value: 10000000000000, maxPercentage: 15 },
+        { value: Number.MAX_SAFE_INTEGER, maxPercentage: 15 },
+        { value: Number.MAX_VALUE, maxPercentage: 15 },
+        { value: Number.MIN_VALUE, maxPercentage: 15 },
       ];
 
       for (const testCase of testCases) {
@@ -112,6 +122,33 @@ describe("trade-utils", () => {
         );
         expect(result.slippagePercentage).toBe(result.actualSlippage * 100);
       }
+    });
+
+    it("should handle negative and non-finite values", () => {
+      expect(() => calculateSlippage(-1)).toThrow(
+        "fromValueUSD must be a finite, non-negative number",
+      );
+      expect(() => calculateSlippage(NaN)).toThrow(
+        "fromValueUSD must be a finite, non-negative number",
+      );
+      expect(() => calculateSlippage(Infinity)).toThrow(
+        "fromValueUSD must be a finite, non-negative number",
+      );
+      expect(() => calculateSlippage(-Infinity)).toThrow(
+        "fromValueUSD must be a finite, non-negative number",
+      );
+      expect(() => calculateSlippage(Number.MIN_SAFE_INTEGER)).toThrow(
+        "fromValueUSD must be a finite, non-negative number",
+      );
+      expect(() => calculateSlippage(Number.NEGATIVE_INFINITY)).toThrow(
+        "fromValueUSD must be a finite, non-negative number",
+      );
+      expect(() => calculateSlippage(Number.POSITIVE_INFINITY)).toThrow(
+        "fromValueUSD must be a finite, non-negative number",
+      );
+      expect(() => calculateSlippage(Number.NaN)).toThrow(
+        "fromValueUSD must be a finite, non-negative number",
+      );
     });
   });
 });
