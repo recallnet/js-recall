@@ -114,10 +114,16 @@ async function proxy(req: Request, path: string[]) {
   // 6) Strongly discourage CDN caching of proxied responses
   respHeaders.set("cache-control", "no-store");
 
-  // 7) Fix Safari issue with compression
-  respHeaders.delete("content-encoding");
-  respHeaders.delete("transfer-encoding");
-
+  // 7) Fix Safari header issues by stripping all encoding headers
+  const ua = req.headers.get("user-agent") ?? "";
+  const isSafari =
+    /\bSafari\//.test(ua) && !/\bChrome\//.test(ua) && !/\bChromium\//.test(ua);
+  if (isSafari) {
+    respHeaders.delete("content-encoding");
+    respHeaders.delete("content-type");
+    respHeaders.delete("transfer-encoding");
+    respHeaders.delete("connection");
+  }
   return new Response(upstream.body, {
     status: upstream.status,
     headers: respHeaders,
