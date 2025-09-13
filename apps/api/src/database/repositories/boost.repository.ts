@@ -671,7 +671,7 @@ class BoostRepository {
             schema.agentBoostTotals.competitionId,
           ],
           set: {
-            total: agentBoostTotal?.total || 0n + amount,
+            total: sql`${schema.agentBoostTotals.total} + ${amount}`,
             updatedAt: sql`now()`,
           },
         })

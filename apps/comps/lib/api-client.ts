@@ -681,13 +681,9 @@ export class ApiClient {
     currentAgentBoostTotal: bigint;
     amount: bigint;
   }): Promise<{ success: boolean; agentTotal: bigint }> {
-    console.log(
-      `${competitionId}-${agentId}-${currentAgentBoostTotal.toString()}`,
-    );
     const idemKey = btoa(
       `${competitionId}-${agentId}-${currentAgentBoostTotal.toString()}`,
     );
-    console.log(idemKey);
 
     const data = {
       amount: amount.toString(),
