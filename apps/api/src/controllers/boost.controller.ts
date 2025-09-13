@@ -57,6 +57,28 @@ export function makeBoostController(services: ServiceRegistry) {
       }
     },
 
+    async agentBoostTotals(req: Request, res: Response, next: NextFunction) {
+      try {
+        const competitionId = ensureUuid(req.params.competitionId);
+
+        const boosts = await boostRepository.agentBoostTotals({
+          competitionId,
+        });
+
+        res.status(200).json({
+          success: true,
+          boostTotals: Object.fromEntries(
+            Object.entries(boosts).map(([key, value]) => [
+              key,
+              value.toString(),
+            ]),
+          ),
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
     async boostsForCompetition(
       req: Request,
       res: Response,

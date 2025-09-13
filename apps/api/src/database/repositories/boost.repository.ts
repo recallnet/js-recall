@@ -271,7 +271,7 @@ class BoostRepository {
               schema.boostBalances.competitionId,
             ],
             set: {
-              balance: sql`${schema.boostBalances.balance} + excluded.${schema.boostBalances.balance}`,
+              balance: sql`${schema.boostBalances.balance} + excluded.balance`,
               updatedAt: sql`now()`,
             },
           })
@@ -486,6 +486,23 @@ class BoostRepository {
     return res?.balance || 0n;
   }
 
+  async agentBoostTotals(
+    { competitionId }: { competitionId: string },
+    tx?: Transaction,
+  ) {
+    const executor = tx || this.#db;
+    const res = await executor
+      .select()
+      .from(schema.agentBoostTotals)
+      .where(eq(schema.agentBoostTotals.competitionId, competitionId));
+
+    const map = res.reduce<Record<string, bigint>>((acc, curr) => {
+      return { ...acc, [curr.agentId]: curr.total };
+    }, {});
+
+    return map;
+  }
+
   /**
    * Retrieve all boost totals for agents that a user has boosted in a specific competition.
    *
@@ -623,7 +640,7 @@ class BoostRepository {
       }
 
       // Insert into our immutable log of boosts for agents, referencing the boost change log
-      const [agentBoost] = await executor
+      const [agentBoost] = await tx
         .insert(schema.agentBoosts)
         .values({
           id: randomUUID(),
@@ -640,7 +657,7 @@ class BoostRepository {
       }
 
       // Upsert into the agent boost totals table
-      const [updatedAgentBoostTotal] = await executor
+      const [updatedAgentBoostTotal] = await tx
         .insert(schema.agentBoostTotals)
         .values({
           id: randomUUID(),

@@ -641,6 +641,27 @@ export class ApiClient {
     };
   }
 
+  async getAgentBoostTotals({
+    competitionId,
+  }: {
+    competitionId: string;
+  }): Promise<{ success: boolean; boostTotals: Record<string, bigint> }> {
+    const res = await this.request<{
+      success: boolean;
+      boostTotals: Record<string, string>;
+    }>(`/competitions/${competitionId}/agents/boosts`);
+
+    return {
+      ...res,
+      boostTotals: Object.fromEntries(
+        Object.entries(res.boostTotals).map(([key, value]) => [
+          key,
+          BigInt(value),
+        ]),
+      ),
+    };
+  }
+
   /**
    * Boost an agent in a compeition
    * @param competitionId - Competition ID
@@ -660,9 +681,13 @@ export class ApiClient {
     currentAgentBoostTotal: bigint;
     amount: bigint;
   }): Promise<{ success: boolean; agentTotal: bigint }> {
+    console.log(
+      `${competitionId}-${agentId}-${currentAgentBoostTotal.toString()}`,
+    );
     const idemKey = btoa(
       `${competitionId}-${agentId}-${currentAgentBoostTotal.toString()}`,
     );
+    console.log(idemKey);
 
     const data = {
       amount: amount.toString(),

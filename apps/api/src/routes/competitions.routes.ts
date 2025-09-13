@@ -1093,6 +1093,8 @@ export function configureCompetitionsRoutes(
     competitionController.getCompetitionAgents,
   );
 
+  router.get("/:competitionId/agents/boosts", boostController.agentBoostTotals);
+
   /**
    * @openapi
    * /api/competitions/{competitionId}/agents/{agentId}:
