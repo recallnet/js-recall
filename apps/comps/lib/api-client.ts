@@ -1,7 +1,6 @@
 import {
   Agent,
   AgentApiKeyResponse,
-  AgentCompetition,
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
   AgentWithOwnerResponse,
