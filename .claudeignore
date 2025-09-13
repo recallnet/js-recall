@@ -1,0 +1,6 @@
+!.agent
+!.agent/**/*
+
+
+!coverage
+!coverage-reports
