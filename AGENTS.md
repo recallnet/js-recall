@@ -2,6 +2,12 @@
 
 This file provides guidance to AI coding agents when working with code in this repository.
 
+## Code Philosophy
+
+- NEVER add fallbacks to production code. Errors are information, fallbacks hide reality.
+- Tests are meant to test real production cases. Never stub tests, fake tests, or create junk tests.
+- Never decrease code coverage requirements. If you increase the current coverage, you should increase the coverage requirements in QA and CI scripts such that they never regress.
+
 ## Essential Commands
 
 **Development:**
