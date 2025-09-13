@@ -127,7 +127,6 @@ export interface AgentCompetition {
   change24h: number;
   change24hPercent: number;
   voteCount: number;
-  boostTotal: bigint;
 }
 
 export interface CreateAgentRequest {

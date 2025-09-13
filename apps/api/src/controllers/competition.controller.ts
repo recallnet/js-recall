@@ -858,10 +858,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           competitionId,
           registeredParticipants: competition.registeredParticipants,
           maxParticipants: competition.maxParticipants,
-          agents: agents.map((agent) => ({
-            ...agent,
-            boostTotal: agent.boostTotal.toString(),
-          })),
+          agents,
           pagination: buildPaginationResponse(
             total,
             queryParams.limit,

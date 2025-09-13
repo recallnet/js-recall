@@ -589,7 +589,6 @@ export class CompetitionManager {
         change24h: metrics.change24h,
         change24hPercent: metrics.change24hPercent,
         voteCount,
-        boostTotal: agent.boostTotal,
       };
     });
 

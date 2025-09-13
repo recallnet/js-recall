@@ -17,7 +17,6 @@ import {
 } from "@recallnet/db-schema/core/defs";
 import { InsertAgent, SelectAgent } from "@recallnet/db-schema/core/types";
 import { Transaction } from "@recallnet/db-schema/types";
-import { agentBoostTotals } from "@recallnet/db-schema/voting/defs";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
@@ -217,7 +216,7 @@ async function findByCompetitionImpl(
   competitionId: string,
   params: AgentQueryParams,
   isComputedSort: boolean = false,
-) {
+): Promise<{ agents: SelectAgent[]; total: number }> {
   try {
     const { filter, sort, limit, offset } = params;
 
@@ -239,7 +238,6 @@ async function findByCompetitionImpl(
         competitions,
         eq(competitionAgents.competitionId, competitions.id),
       )
-      .leftJoin(agentBoostTotals, eq(agentBoostTotals.agentId, agents.id))
       .where(and(...whereConditions))
       .$dynamic();
 
@@ -272,10 +270,7 @@ async function findByCompetitionImpl(
     const total = countResult[0]?.count ?? 0;
 
     // Extract agent data from the joined result
-    const agentsData = agentsResult.map((row) => ({
-      ...row.agents,
-      boostTotal: row.agent_boost_totals?.total || 0n,
-    }));
+    const agentsData = agentsResult.map((row) => row.agents);
 
     return {
       agents: agentsData,

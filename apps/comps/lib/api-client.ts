@@ -272,29 +272,10 @@ export class ApiClient {
     competitionId: string,
     params: GetCompetitionAgentsParams = {},
   ): Promise<AgentCompetitionResponse> {
-    type AgentCompetitionWithStringBoost = Omit<
-      AgentCompetition,
-      "boostTotal"
-    > & {
-      boostTotal: string;
-    };
-    type AgentCompetitionResponseWithStringBoost = Omit<
-      AgentCompetitionResponse,
-      "agents"
-    > & {
-      agents: AgentCompetitionWithStringBoost[];
-    };
     const queryParams = this.formatQueryParams(params);
-    const res = await this.request<AgentCompetitionResponseWithStringBoost>(
+    return this.request<AgentCompetitionResponse>(
       `/competitions/${competitionId}/agents${queryParams}`,
     );
-    return {
-      ...res,
-      agents: res.agents.map((agent) => ({
-        ...agent,
-        boostTotal: BigInt(agent.boostTotal),
-      })),
-    };
   }
 
   /**
