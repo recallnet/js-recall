@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { Request } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
