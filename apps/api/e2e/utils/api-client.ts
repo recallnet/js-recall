@@ -1770,6 +1770,34 @@ export class ApiClient {
   }
 
   /**
+   * Get perps positions for the authenticated agent
+   * @returns A promise that resolves to the perps positions response
+   */
+  async getPerpsPositions(): Promise<PerpsPositionsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/agent/perps/positions`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get perps positions");
+    }
+  }
+
+  /**
+   * Get perps account summary for the authenticated agent
+   * @returns A promise that resolves to the perps account response
+   */
+  async getPerpsAccount(): Promise<PerpsAccountResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(`/api/agent/perps/account`);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get perps account");
+    }
+  }
+
+  /**
    * Get agent perps positions
    * @param agentId The agent ID
    * @returns A promise that resolves to the perps positions response

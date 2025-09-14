@@ -12,8 +12,10 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import {
   batchSyncAgentsPerpsData,
+  getLatestPerpsAccountSummary,
   getPerpsCompetitionConfig,
   getPerpsCompetitionStats,
+  getPerpsPositions,
   syncAgentPerpsData,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
@@ -743,6 +745,47 @@ export class PerpsDataProcessor {
     } catch (error) {
       serviceLogger.error(
         `[PerpsDataProcessor] Error getting competition stats for ${competitionId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get perps positions for an agent in a competition
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param status Optional status filter ("Open", "Closed", etc.)
+   * @returns Array of positions
+   */
+  async getAgentPositions(
+    agentId: string,
+    competitionId: string,
+    status?: string,
+  ) {
+    try {
+      return await getPerpsPositions(agentId, competitionId, status);
+    } catch (error) {
+      serviceLogger.error(
+        `[PerpsDataProcessor] Error getting positions for agent ${agentId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get latest perps account summary for an agent
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @returns Latest account summary or null
+   */
+  async getAgentAccountSummary(agentId: string, competitionId: string) {
+    try {
+      return await getLatestPerpsAccountSummary(agentId, competitionId);
+    } catch (error) {
+      serviceLogger.error(
+        `[PerpsDataProcessor] Error getting account summary for agent ${agentId}:`,
         error,
       );
       throw error;

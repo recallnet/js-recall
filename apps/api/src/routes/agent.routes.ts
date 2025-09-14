@@ -406,5 +406,177 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    */
   router.post("/reset-api-key", agentController.resetApiKey);
 
+  /**
+   * @openapi
+   * /api/agent/perps/positions:
+   *   get:
+   *     summary: Get perps positions for the authenticated agent
+   *     description: Returns current perpetual futures positions for the authenticated agent in the active competition
+   *     tags:
+   *       - Agent
+   *       - Perpetual Futures
+   *     security:
+   *       - BearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Positions retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 agentId:
+   *                   type: string
+   *                   format: uuid
+   *                 competitionId:
+   *                   type: string
+   *                   format: uuid
+   *                 positions:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       agentId:
+   *                         type: string
+   *                         format: uuid
+   *                       competitionId:
+   *                         type: string
+   *                         format: uuid
+   *                       positionId:
+   *                         type: string
+   *                         description: Provider-specific position ID
+   *                       marketId:
+   *                         type: string
+   *                         description: Market identifier
+   *                       marketSymbol:
+   *                         type: string
+   *                         example: "BTC-USD"
+   *                       side:
+   *                         type: string
+   *                         enum: ["long", "short"]
+   *                       size:
+   *                         type: string
+   *                         description: Position size as string
+   *                       averagePrice:
+   *                         type: string
+   *                         description: Average entry price as string
+   *                       markPrice:
+   *                         type: string
+   *                         description: Current mark price as string
+   *                       unrealizedPnl:
+   *                         type: string
+   *                         description: Unrealized PnL as string
+   *                       realizedPnl:
+   *                         type: string
+   *                         description: Realized PnL as string
+   *                       margin:
+   *                         type: string
+   *                         description: Margin/collateral as string
+   *                       leverage:
+   *                         type: string
+   *                         description: Leverage as string
+   *                       liquidationPrice:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Liquidation price as string
+   *                       timestamp:
+   *                         type: string
+   *                         format: date-time
+   *       400:
+   *         description: Not a perpetual futures competition
+   *       401:
+   *         description: Agent not authenticated
+   *       403:
+   *         description: Agent not registered in competition
+   *       404:
+   *         description: No active competition found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get("/perps/positions", agentController.getPerpsPositions);
+
+  /**
+   * @openapi
+   * /api/agent/perps/account:
+   *   get:
+   *     summary: Get perps account summary for the authenticated agent
+   *     description: Returns the perpetual futures account summary including equity, PnL, and statistics
+   *     tags:
+   *       - Agent
+   *       - Perpetual Futures
+   *     security:
+   *       - BearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Account summary retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 agentId:
+   *                   type: string
+   *                   format: uuid
+   *                 competitionId:
+   *                   type: string
+   *                   format: uuid
+   *                 account:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       format: uuid
+   *                     agentId:
+   *                       type: string
+   *                       format: uuid
+   *                     competitionId:
+   *                       type: string
+   *                       format: uuid
+   *                     accountId:
+   *                       type: string
+   *                       description: Provider-specific account ID
+   *                     totalEquity:
+   *                       type: string
+   *                       example: "520.50"
+   *                     availableBalance:
+   *                       type: string
+   *                       example: "300.00"
+   *                     marginUsed:
+   *                       type: string
+   *                       example: "220.50"
+   *                     totalPnl:
+   *                       type: string
+   *                       example: "20.50"
+   *                     totalVolume:
+   *                       type: string
+   *                       example: "15000.00"
+   *                     openPositions:
+   *                       type: integer
+   *                       example: 3
+   *                     timestamp:
+   *                       type: string
+   *                       format: date-time
+   *       400:
+   *         description: Not a perpetual futures competition
+   *       401:
+   *         description: Agent not authenticated
+   *       403:
+   *         description: Agent not registered in competition
+   *       404:
+   *         description: No active competition found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get("/perps/account", agentController.getPerpsAccount);
+
   return router;
 }

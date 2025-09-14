@@ -224,6 +224,7 @@ export class CompetitionManager {
         competitionId: id,
         dataSource: "external_api" as const,
         dataSourceConfig: {
+          type: "external_api" as const, // Required field for validation
           provider: perpsProvider.provider,
           apiUrl: perpsProvider.apiUrl,
         },
