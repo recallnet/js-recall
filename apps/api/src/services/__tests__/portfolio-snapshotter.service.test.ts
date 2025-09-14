@@ -550,7 +550,9 @@ describe("PortfolioSnapshotter", () => {
         totalValue: 1000,
       });
 
+      const startTime = Date.now();
       await portfolioSnapshotter.takePortfolioSnapshots("test-competition");
+      const duration = Date.now() - startTime;
 
       expect(competitionRepository.getCompetitionAgents).toHaveBeenCalledWith(
         "test-competition",
@@ -568,6 +570,19 @@ describe("PortfolioSnapshotter", () => {
       agents.forEach((agentId) => {
         expect(mockBalanceManager.getAllBalances).toHaveBeenCalledWith(agentId);
       });
+
+      // Verify all snapshots have the same timestamp (sequential processing)
+      const snapshotCalls = vi.mocked(
+        competitionRepository.createPortfolioSnapshot,
+      ).mock.calls;
+      const firstTimestamp = snapshotCalls[0]?.[0]?.timestamp;
+      expect(firstTimestamp).toBeDefined();
+      snapshotCalls.forEach((call) => {
+        expect(call[0]?.timestamp).toEqual(firstTimestamp);
+      });
+
+      // Verify processing completes within reasonable time
+      expect(duration).toBeLessThan(1000);
     });
 
     it("should continue processing other agents even if one fails", async () => {
@@ -606,6 +621,58 @@ describe("PortfolioSnapshotter", () => {
 
       // Verify all agents were attempted
       expect(competitionRepository.findById).toHaveBeenCalledTimes(2); // Stops at failure
+    });
+
+    it("should handle database constraints and ensure data integrity", async () => {
+      const agents = ["agent1"];
+      const expectedTotalValue = 6000; // From mockBalances calculation
+
+      vi.mocked(competitionRepository.getCompetitionAgents).mockResolvedValue(
+        agents,
+      );
+      vi.mocked(competitionRepository.findById).mockResolvedValue(
+        mockCompetition,
+      );
+      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+        mockBalances,
+      );
+      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+        mockPriceReports,
+      );
+
+      // Mock database constraint violation, then success on retry
+      let snapshotCallCount = 0;
+      vi.mocked(
+        competitionRepository.createPortfolioSnapshot,
+      ).mockImplementation(async (data) => {
+        snapshotCallCount++;
+        if (snapshotCallCount === 1) {
+          throw new Error("UNIQUE constraint failed");
+        }
+        return {
+          id: 1,
+          competitionId: data.competitionId,
+          agentId: data.agentId,
+          timestamp: data.timestamp || new Date(),
+          totalValue: data.totalValue,
+        };
+      });
+
+      // Should propagate the database error
+      await expect(
+        portfolioSnapshotter.takePortfolioSnapshots("test-competition"),
+      ).rejects.toThrow("UNIQUE constraint failed");
+
+      // Verify we tried to create snapshot with exact financial calculation
+      const snapshotCall = vi.mocked(
+        competitionRepository.createPortfolioSnapshot,
+      ).mock.calls[0];
+      expect(snapshotCall?.[0]).toEqual({
+        agentId: "agent1",
+        competitionId: "test-competition",
+        timestamp: expect.any(Date),
+        totalValue: expectedTotalValue, // Exact value must match
+      });
     });
   });
 
@@ -712,6 +779,225 @@ describe("PortfolioSnapshotter", () => {
 
       expect(result).toBe(false);
       expect(competitionRepository.findAll).toHaveBeenCalled();
+    });
+  });
+
+  describe("financial calculation accuracy", () => {
+    it("should calculate precise portfolio values with decimal precision", async () => {
+      // Test real-world financial precision requirements
+      const precisionBalances = [
+        {
+          id: 1,
+          agentId: "test-agent-id",
+          tokenAddress: "usdc-token",
+          amount: 1000.123456789, // High precision amount
+          symbol: "USDC",
+          specificChain: "eth",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 2,
+          agentId: "test-agent-id",
+          tokenAddress: "btc-token",
+          amount: 0.00123456, // Small BTC amount
+          symbol: "BTC",
+          specificChain: "eth",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 3,
+          agentId: "test-agent-id",
+          tokenAddress: "eth-token",
+          amount: 2.5, // Standard ETH amount
+          symbol: "ETH",
+          specificChain: "eth",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      const precisionPriceReports = new Map([
+        [
+          "usdc-token",
+          {
+            token: "usdc-token",
+            price: 1.0001, // Slightly above $1 (realistic)
+            timestamp: new Date(),
+            chain: BlockchainType.EVM,
+            specificChain: "eth" as SpecificChain,
+            symbol: "USDC",
+          },
+        ],
+        [
+          "btc-token",
+          {
+            token: "btc-token",
+            price: 45678.90123, // High precision BTC price
+            timestamp: new Date(),
+            chain: BlockchainType.EVM,
+            specificChain: "eth" as SpecificChain,
+            symbol: "BTC",
+          },
+        ],
+        [
+          "eth-token",
+          {
+            token: "eth-token",
+            price: 2345.6789, // Realistic ETH price
+            timestamp: new Date(),
+            chain: BlockchainType.EVM,
+            specificChain: "eth" as SpecificChain,
+            symbol: "ETH",
+          },
+        ],
+      ]);
+
+      vi.mocked(competitionRepository.findById).mockResolvedValue(
+        mockCompetition,
+      );
+      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+        precisionBalances,
+      );
+      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+        precisionPriceReports,
+      );
+      vi.mocked(
+        competitionRepository.createPortfolioSnapshot,
+      ).mockResolvedValue({
+        id: 1,
+        competitionId: "mock-competition",
+        agentId: "mock-agent",
+        timestamp: new Date(),
+        totalValue: 1000,
+      });
+
+      await portfolioSnapshotter.takePortfolioSnapshotForAgent(
+        "test-competition",
+        "test-agent",
+      );
+
+      // Calculate expected value with financial precision
+      // USDC: 1000.123456789 * 1.0001 = 1000.223478913...
+      // BTC: 0.00123456 * 45678.90123 = 56.403636...
+      // ETH: 2.5 * 2345.6789 = 5864.19725
+      // Total: ~6920.824...
+
+      const expectedTotal =
+        1000.123456789 * 1.0001 + 0.00123456 * 45678.90123 + 2.5 * 2345.6789;
+
+      const snapshotCall = vi.mocked(
+        competitionRepository.createPortfolioSnapshot,
+      ).mock.calls[0];
+      expect(snapshotCall?.[0]?.totalValue).toBeCloseTo(expectedTotal, 5); // 5 decimal precision
+      expect(typeof snapshotCall?.[0]?.totalValue).toBe("number");
+      expect(Number.isFinite(snapshotCall?.[0]?.totalValue)).toBe(true);
+    });
+
+    it("should handle zero-value tokens correctly in financial calculations", async () => {
+      const mixedZeroBalances = [
+        {
+          id: 1,
+          agentId: "test-agent-id",
+          tokenAddress: "valuable-token",
+          amount: 100,
+          symbol: "VALUE",
+          specificChain: "eth",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 2,
+          agentId: "test-agent-id",
+          tokenAddress: "zero-balance-token",
+          amount: 0, // Zero balance
+          symbol: "ZERO",
+          specificChain: "eth",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 3,
+          agentId: "test-agent-id",
+          tokenAddress: "worthless-token",
+          amount: 1000000, // Large amount but worthless
+          symbol: "WORTHLESS",
+          specificChain: "eth",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      const mixedZeroPrices = new Map([
+        [
+          "valuable-token",
+          {
+            token: "valuable-token",
+            price: 50,
+            timestamp: new Date(),
+            chain: BlockchainType.EVM,
+            specificChain: "eth" as SpecificChain,
+            symbol: "VALUE",
+          },
+        ],
+        [
+          "zero-balance-token",
+          {
+            token: "zero-balance-token",
+            price: 100, // Price exists but balance is zero
+            timestamp: new Date(),
+            chain: BlockchainType.EVM,
+            specificChain: "eth" as SpecificChain,
+            symbol: "ZERO",
+          },
+        ],
+        [
+          "worthless-token",
+          {
+            token: "worthless-token",
+            price: 0, // Worthless token
+            timestamp: new Date(),
+            chain: BlockchainType.EVM,
+            specificChain: "eth" as SpecificChain,
+            symbol: "WORTHLESS",
+          },
+        ],
+      ]);
+
+      vi.mocked(competitionRepository.findById).mockResolvedValue(
+        mockCompetition,
+      );
+      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+        mixedZeroBalances,
+      );
+      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+        mixedZeroPrices,
+      );
+      vi.mocked(
+        competitionRepository.createPortfolioSnapshot,
+      ).mockResolvedValue({
+        id: 1,
+        competitionId: "mock-competition",
+        agentId: "mock-agent",
+        timestamp: new Date(),
+        totalValue: 1000,
+      });
+
+      await portfolioSnapshotter.takePortfolioSnapshotForAgent(
+        "test-competition",
+        "test-agent",
+      );
+
+      // Only valuable-token should contribute: 100 * 50 = 5000
+      // zero-balance-token: 0 * 100 = 0 (skipped due to zero balance)
+      // worthless-token: 1000000 * 0 = 0
+      const expectedTotal = 5000;
+
+      const snapshotCall = vi.mocked(
+        competitionRepository.createPortfolioSnapshot,
+      ).mock.calls[0];
+      expect(snapshotCall?.[0]?.totalValue).toBe(expectedTotal);
     });
   });
 
@@ -895,6 +1181,77 @@ describe("PortfolioSnapshotter", () => {
           totalValue: 350,
         }),
       );
+    });
+
+    it("should handle concurrent snapshot operations deterministically", async () => {
+      // Test that concurrent operations on different agents don't interfere
+      const timestamp = new Date("2024-06-01T12:00:00Z");
+      vi.setSystemTime(timestamp);
+
+      vi.mocked(competitionRepository.findById).mockResolvedValue(
+        mockCompetition,
+      );
+      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+        mockBalances,
+      );
+      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+        mockPriceReports,
+      );
+
+      let snapshotCounter = 0;
+      vi.mocked(
+        competitionRepository.createPortfolioSnapshot,
+      ).mockImplementation(async (data) => {
+        snapshotCounter++;
+        // Synchronous mock - no real timing delays
+        return {
+          id: snapshotCounter,
+          competitionId: data.competitionId,
+          agentId: data.agentId,
+          timestamp: data.timestamp || new Date(),
+          totalValue: data.totalValue,
+        };
+      });
+
+      // Run concurrent snapshot operations
+      const results = await Promise.all([
+        portfolioSnapshotter.takePortfolioSnapshotForAgent(
+          "test-competition",
+          "agent1",
+          timestamp,
+        ),
+        portfolioSnapshotter.takePortfolioSnapshotForAgent(
+          "test-competition",
+          "agent2",
+          timestamp,
+        ),
+        portfolioSnapshotter.takePortfolioSnapshotForAgent(
+          "test-competition",
+          "agent3",
+          timestamp,
+        ),
+      ]);
+
+      // All operations should complete successfully
+      expect(results).toHaveLength(3);
+      results.forEach((result) => expect(result).toBeUndefined());
+
+      // Each agent should have exactly one snapshot created
+      expect(
+        competitionRepository.createPortfolioSnapshot,
+      ).toHaveBeenCalledTimes(3);
+
+      // Verify each snapshot has correct agent ID and same timestamp
+      const calls = vi.mocked(competitionRepository.createPortfolioSnapshot)
+        .mock.calls;
+      const agentIds = calls.map((call) => call[0]?.agentId).sort();
+      expect(agentIds).toEqual(["agent1", "agent2", "agent3"]);
+
+      // All should have the same timestamp (deterministic)
+      calls.forEach((call) => {
+        expect(call[0]?.timestamp).toEqual(timestamp);
+        expect(call[0]?.totalValue).toBe(6000); // Same calculation for all
+      });
     });
   });
 });
