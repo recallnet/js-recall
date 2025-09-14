@@ -726,6 +726,129 @@ describe("TradingConstraintsService", () => {
         expect(result.isValid).toBe(true);
         expect(result.errors).toHaveLength(0);
       });
+
+      it("should validate financial constraints realistically for high-frequency trading", () => {
+        const input = {
+          competitionId: testCompetitionId,
+          minimumPairAgeHours: 1, // Very new pair
+          minimum24hVolumeUsd: 50000, // Lower volume threshold
+          minimumLiquidityUsd: 25000, // Minimal liquidity
+          minimumFdvUsd: 500000, // Smaller market cap
+          minTradesPerDay: 100, // High frequency trading
+        };
+
+        const result = service.validateConstraints(input);
+
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it("should handle institutional-level constraints validation", () => {
+        const input = {
+          competitionId: testCompetitionId,
+          minimumPairAgeHours: 720, // 30 days
+          minimum24hVolumeUsd: 50000000, // $50M daily volume
+          minimumLiquidityUsd: 10000000, // $10M liquidity
+          minimumFdvUsd: 100000000000, // $100B FDV
+          minTradesPerDay: 1000, // Institutional trading volume
+        };
+
+        const result = service.validateConstraints(input);
+
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it("should fail validation when liquidity exceeds maximum safe trading threshold", () => {
+        const input = {
+          competitionId: testCompetitionId,
+          minimumLiquidityUsd: 1000000001, // Just over 1 billion
+        };
+
+        const result = service.validateConstraints(input);
+
+        expect(result.isValid).toBe(false);
+        expect(result.errors).toContain(
+          "minimumLiquidityUsd cannot exceed 1 billion USD",
+        );
+      });
+    });
+  });
+
+  describe("Financial Edge Cases and Risk Scenarios", () => {
+    it("should handle market crash scenario with extreme constraints", async () => {
+      mockUpdate.mockResolvedValue({
+        ...mockConstraintsRecord,
+        minimum24hVolumeUsd: 500000000, // $500M volume during crisis
+        minimumLiquidityUsd: 100000000, // $100M liquidity requirement
+        minimumFdvUsd: 50000000000, // $50B FDV minimum
+      });
+
+      const extremeConstraints = {
+        minimum24hVolumeUsd: 500000000,
+        minimumLiquidityUsd: 100000000,
+        minimumFdvUsd: 50000000000,
+      };
+
+      const result = await service.updateConstraints(
+        testCompetitionId,
+        extremeConstraints,
+      );
+
+      expect(result.minimum24hVolumeUsd).toBe(500000000);
+      expect(result.minimumLiquidityUsd).toBe(100000000);
+      expect(result.minimumFdvUsd).toBe(50000000000);
+    });
+
+    it("should enforce minimum trading frequency for competition safety", () => {
+      const constraints = {
+        competitionId: testCompetitionId,
+        minTradesPerDay: 1, // Minimum viable trading activity
+      };
+
+      const result = service.validateConstraints(constraints);
+
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("should reject unreasonable pair age for active trading", () => {
+      const constraints = {
+        competitionId: testCompetitionId,
+        minimumPairAgeHours: 8761, // Over 1 year
+      };
+
+      const result = service.validateConstraints(constraints);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain(
+        "minimumPairAgeHours cannot exceed 8760 hours (1 year)",
+      );
+    });
+
+    it("should handle DeFi blue-chip token constraints", async () => {
+      mockCreate.mockResolvedValue({
+        ...mockConstraintsRecord,
+        minimum24hVolumeUsd: 10000000, // $10M daily volume
+        minimumLiquidityUsd: 5000000, // $5M liquidity
+        minimumFdvUsd: 1000000000, // $1B FDV
+        minimumPairAgeHours: 2160, // 90 days established
+      });
+
+      const blueChipConstraints = {
+        competitionId: testCompetitionId,
+        minimum24hVolumeUsd: 10000000,
+        minimumLiquidityUsd: 5000000,
+        minimumFdvUsd: 1000000000,
+        minimumPairAgeHours: 2160,
+      };
+
+      const result = await service.createConstraints(blueChipConstraints);
+
+      expect(result?.minimum24hVolumeUsd).toBe(10000000);
+      expect(result?.minimumLiquidityUsd).toBe(5000000);
+      expect(result?.minimumFdvUsd).toBe(1000000000);
+      expect(result?.minimumPairAgeHours).toBe(2160);
     });
   });
 
@@ -763,6 +886,49 @@ describe("TradingConstraintsService", () => {
       await expect(
         service.createConstraints({ competitionId: testCompetitionId }),
       ).rejects.toThrow("Database deadlock detected");
+    });
+
+    it("should handle race conditions during constraint updates", async () => {
+      const concurrencyError = new Error(
+        "could not serialize access due to concurrent update",
+      );
+      mockUpdate.mockRejectedValueOnce(concurrencyError);
+
+      await expect(
+        service.updateConstraints(testCompetitionId, {
+          minimumPairAgeHours: 200,
+        }),
+      ).rejects.toThrow("could not serialize access due to concurrent update");
+    });
+
+    it("should maintain constraint consistency during partial repository failures", async () => {
+      mockFindByCompetitionId.mockResolvedValue(null);
+      mockUpsert.mockResolvedValue(mockConstraintsRecord);
+
+      const result = await service.upsertConstraints({
+        competitionId: testCompetitionId,
+        minimumPairAgeHours: 168,
+      });
+
+      expect(mockUpsert).toHaveBeenCalledWith({
+        competitionId: testCompetitionId,
+        minimumPairAgeHours: 168,
+        minimum24hVolumeUsd:
+          config.tradingConstraints.defaultMinimum24hVolumeUsd,
+        minimumLiquidityUsd:
+          config.tradingConstraints.defaultMinimumLiquidityUsd,
+        minimumFdvUsd: config.tradingConstraints.defaultMinimumFdvUsd,
+        minTradesPerDay: null,
+      });
+      expect(result).toEqual(mockConstraintsRecord);
+    });
+
+    it("should handle memory pressure during bulk constraint operations", async () => {
+      mockCreate.mockRejectedValue(new Error("out of memory"));
+
+      await expect(
+        service.createConstraints({ competitionId: testCompetitionId }),
+      ).rejects.toThrow("out of memory");
     });
   });
 });
