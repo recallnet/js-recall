@@ -382,6 +382,102 @@ describe("authMiddleware", () => {
       expect(mockNext).toHaveBeenCalledWith();
     });
 
+    it("should handle database timeout during user lookup", async () => {
+      const mockToken = "valid-privy-token";
+      const mockPrivyId = "privy-user-123";
+
+      vi.mocked(privyUtils.extractPrivyIdentityToken).mockReturnValue(
+        mockToken,
+      );
+      vi.mocked(privyVerify.verifyPrivyIdentityToken).mockResolvedValue({
+        privyId: mockPrivyId,
+        claims: {
+          cr: "test-cr",
+          linked_accounts: [],
+        },
+      });
+      vi.mocked(mockUserManager.getUserByPrivyId).mockRejectedValue(
+        new Error("Database timeout"),
+      );
+      // Mock no API keys available to force final error
+      vi.mocked(authHelpers.extractApiKey).mockReturnValue(undefined);
+
+      await middleware(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = (mockNext as any).mock.calls[0][0];
+      // The middleware logs the database error but continues to API key auth
+      // Since no API key is provided, it fails with the no auth error
+      expect(error.message).toContain("Authentication required");
+    });
+
+    it("should handle service unavailable during agent validation", async () => {
+      const mockApiKey = "test-api-key";
+
+      vi.mocked(privyUtils.extractPrivyIdentityToken).mockReturnValue(
+        undefined,
+      );
+      vi.mocked(authHelpers.extractApiKey).mockReturnValue(mockApiKey);
+      vi.mocked(mockAgentManager.validateApiKey).mockRejectedValue(
+        new Error("Service temporarily unavailable"),
+      );
+      vi.mocked(mockAdminManager.validateApiKey).mockResolvedValue(null);
+
+      await middleware(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = (mockNext as any).mock.calls[0][0];
+      expect(error.message).toContain("Invalid API key");
+    });
+
+    it("should handle concurrent authentication attempts gracefully", async () => {
+      const mockApiKey = "concurrent-test-key";
+      const mockAgentId = "agent-123";
+      const mockAgent = { id: mockAgentId, ownerId: "user-456" };
+
+      vi.mocked(privyUtils.extractPrivyIdentityToken).mockReturnValue(
+        undefined,
+      );
+      vi.mocked(authHelpers.extractApiKey).mockReturnValue(mockApiKey);
+      vi.mocked(mockAgentManager.validateApiKey).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => resolve(mockAgentId), 10);
+          }),
+      );
+      vi.mocked(mockAgentManager.getAgent).mockResolvedValue(mockAgent as any);
+
+      // Simulate concurrent calls
+      await Promise.all([
+        middleware(mockReq as Request, mockRes as Response, mockNext),
+        middleware(mockReq as Request, mockRes as Response, mockNext),
+      ]);
+
+      // Both should succeed without interfering with each other
+      expect(mockNext).toHaveBeenCalledTimes(2);
+      expect(mockReq.agentId).toBe(mockAgentId);
+    });
+
+    it("should handle extremely long API keys", async () => {
+      const veryLongApiKey = "a".repeat(10000); // Extremely long key
+      const mockAgentId = "agent-123";
+      const mockAgent = { id: mockAgentId, ownerId: "user-456" };
+
+      vi.mocked(privyUtils.extractPrivyIdentityToken).mockReturnValue(
+        undefined,
+      );
+      vi.mocked(authHelpers.extractApiKey).mockReturnValue(veryLongApiKey);
+      vi.mocked(mockAgentManager.validateApiKey).mockResolvedValue(mockAgentId);
+      vi.mocked(mockAgentManager.getAgent).mockResolvedValue(mockAgent as any);
+
+      await middleware(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockAgentManager.validateApiKey).toHaveBeenCalledWith(
+        veryLongApiKey,
+      );
+      expect(mockNext).toHaveBeenCalledWith();
+    });
+
     it("should handle admin with no details", async () => {
       const mockApiKey = "admin-api-key";
       const mockAdminId = "admin-123";
@@ -458,6 +554,59 @@ describe("authMiddleware", () => {
       expect(mockReq.agentId).toBeUndefined();
       expect(mockReq.adminId).toBeUndefined();
       expect(mockReq.isAdmin).toBeUndefined();
+    });
+
+    it("should ensure context isolation between requests", async () => {
+      const mockToken = "valid-privy-token";
+      const mockPrivyId = "privy-user-123";
+      const mockUser = { id: "user-456", privyId: mockPrivyId };
+
+      // First request setup
+      const firstReq = { ...mockReq };
+      const firstRes = { ...mockRes };
+      const firstNext = vi.fn();
+
+      vi.mocked(privyUtils.extractPrivyIdentityToken).mockReturnValue(
+        mockToken,
+      );
+      vi.mocked(privyVerify.verifyPrivyIdentityToken).mockResolvedValue({
+        privyId: mockPrivyId,
+        claims: {
+          cr: "test-cr",
+          linked_accounts: [],
+        },
+      });
+      vi.mocked(mockUserManager.getUserByPrivyId).mockResolvedValue(
+        mockUser as any,
+      );
+
+      // Process first request
+      await middleware(firstReq as Request, firstRes as Response, firstNext);
+
+      // Second request with different auth
+      const secondReq = { ...mockReq };
+      const secondRes = { ...mockRes };
+      const secondNext = vi.fn();
+
+      vi.mocked(privyUtils.extractPrivyIdentityToken).mockReturnValue(
+        undefined,
+      );
+      vi.mocked(authHelpers.extractApiKey).mockReturnValue("admin-key");
+      vi.mocked(mockAgentManager.validateApiKey).mockResolvedValue(null);
+      vi.mocked(mockAdminManager.validateApiKey).mockResolvedValue("admin-123");
+      vi.mocked(mockAdminManager.getAdmin).mockResolvedValue({
+        id: "admin-123",
+        username: "admin",
+        name: "Admin User",
+      } as any);
+
+      await middleware(secondReq as Request, secondRes as Response, secondNext);
+
+      // Verify isolation - first request should not affect second
+      expect(firstReq.userId).toBe("user-456");
+      expect(firstReq.adminId).toBeUndefined();
+      expect(secondReq.userId).toBeUndefined();
+      expect(secondReq.adminId).toBe("admin-123");
     });
 
     it("should correctly set all request context for agent auth", async () => {
