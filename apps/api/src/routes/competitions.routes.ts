@@ -1579,7 +1579,98 @@ export function configureCompetitionsRoutes(
    */
   router.get(
     "/:competitionId/agents/:agentId/perps/positions",
+    ...authMiddlewares,
     controller.getAgentPerpsPositionsInCompetition,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/perps/summary:
+   *   get:
+   *     tags:
+   *       - Competitions
+   *     summary: Get perps competition summary statistics
+   *     description: |
+   *       Returns aggregate statistics for a perpetual futures competition including
+   *       total agents, positions, volume, and average equity.
+   *       This endpoint is only available for perpetual futures competitions.
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: The competition ID
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Competition summary statistics
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 competitionId:
+   *                   type: string
+   *                   format: uuid
+   *                 summary:
+   *                   type: object
+   *                   properties:
+   *                     totalAgents:
+   *                       type: number
+   *                       example: 50
+   *                     totalPositions:
+   *                       type: number
+   *                       example: 250
+   *                     totalVolume:
+   *                       type: number
+   *                       example: 5000000
+   *                     averageEquity:
+   *                       type: number
+   *                       example: 10000
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       400:
+   *         description: Competition is not a perpetual futures competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is only available for perpetual futures competitions."
+   *       404:
+   *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Competition not found"
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/perps/summary",
+    ...authMiddlewares,
+    controller.getPerpsCompetitionSummary,
   );
 
   return router;

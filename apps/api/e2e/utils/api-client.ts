@@ -30,6 +30,7 @@ import {
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
   CompetitionPerpsPositionsResponse,
+  CompetitionPerpsSummaryResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CompetitionTimelineResponse,
@@ -1270,6 +1271,26 @@ export class ApiClient {
       return this.handleApiError(
         error,
         `get agent perps positions in competition: competitionId=${competitionId}, agentId=${agentId}`,
+      );
+    }
+  }
+
+  /**
+   * Get perps competition summary statistics
+   * @param competitionId Competition ID
+   * @returns A promise that resolves to the competition perps summary response
+   */
+  async getCompetitionPerpsSummary(
+    competitionId: string,
+  ): Promise<CompetitionPerpsSummaryResponse | ErrorResponse> {
+    try {
+      const url = `/api/competitions/${competitionId}/perps/summary`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as CompetitionPerpsSummaryResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get competition perps summary: competitionId=${competitionId}`,
       );
     }
   }

@@ -1015,3 +1015,15 @@ export interface AgentPerpsPositionsResponse extends ApiResponse {
   agentId: string;
   positions: PerpsPosition[];
 }
+
+export interface CompetitionPerpsSummaryResponse extends ApiResponse {
+  success: true;
+  competitionId: string;
+  summary: {
+    totalAgents: number;
+    totalPositions: number;
+    totalVolume: number;
+    averageEquity: number;
+  };
+  timestamp: string;
+}

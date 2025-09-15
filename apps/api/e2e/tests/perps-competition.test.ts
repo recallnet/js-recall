@@ -834,6 +834,92 @@ describe("Perps Competition", () => {
     }
   });
 
+  test("should get perps competition summary", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents for this test
+    const { agent: agent1, client: agent1Client } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Summary Test Agent 1",
+      });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Summary Test Agent 2",
+    });
+
+    // Start a perps competition with multiple agents
+    const competitionResponse = await startPerpsTestCompetition({
+      adminClient,
+      name: `Perps Summary Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id],
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    // Wait for competition start to fully commit
+    await wait(1000);
+
+    // Trigger sync from Symphony (simulating what the cron job does)
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for sync to complete
+    await wait(500);
+
+    // Get competition summary
+    const summaryResponse = await agent1Client.getCompetitionPerpsSummary(
+      competition.id,
+    );
+
+    expect(summaryResponse.success).toBe(true);
+    if (summaryResponse.success) {
+      expect(summaryResponse.competitionId).toBe(competition.id);
+      expect(summaryResponse.summary).toBeDefined();
+      expect(summaryResponse.summary.totalAgents).toBeGreaterThanOrEqual(2);
+      expect(summaryResponse.summary.totalPositions).toBeGreaterThanOrEqual(0);
+      expect(summaryResponse.summary.totalVolume).toBeGreaterThanOrEqual(0);
+      expect(summaryResponse.summary.averageEquity).toBeGreaterThanOrEqual(0);
+      expect(summaryResponse.timestamp).toBeDefined();
+    }
+  });
+
+  test("should return 400 for paper trading competition when getting summary", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent for this test
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Paper Trading Summary Test Agent",
+      });
+
+    // Start a PAPER TRADING competition (not perps)
+    const competitionResponse = await startTestCompetition({
+      adminClient,
+      name: `Paper Trading Summary Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    // Try to get perps summary for a paper trading competition
+    const summaryResponse = await agentClient.getCompetitionPerpsSummary(
+      competition.id,
+    );
+
+    expect(summaryResponse.success).toBe(false);
+    expect((summaryResponse as ErrorResponse).error).toContain(
+      "This endpoint is only available for perpetual futures competitions",
+    );
+  });
+
   test("should return 403 when agent not in perps competition", async () => {
     // Setup admin client
     const adminClient = createTestClient(getBaseUrl());

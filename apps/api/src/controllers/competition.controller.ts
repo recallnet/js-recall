@@ -69,6 +69,11 @@ const caches = {
     max: config.cache.api.competitions.maxCacheSize,
     ttl: config.cache.api.competitions.ttlMs,
   }),
+  // Used for: `/competitions/:id/perps/summary`
+  perpsStats: new LRUCache<string, object>({
+    max: config.cache.api.competitions.maxCacheSize,
+    ttl: config.cache.api.competitions.ttlMs,
+  }),
 } as const;
 
 export function makeCompetitionController(services: ServiceRegistry) {
@@ -1386,7 +1391,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
-              "Use GET /api/competitions/{id}/perps/positions for current positions.",
+              "Use GET /api/competitions/{id}/perps/summary for competition statistics.",
           );
         }
 
@@ -1605,6 +1610,75 @@ export function makeCompetitionController(services: ServiceRegistry) {
         } as const;
 
         res.status(200).json(responseBody);
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get perps competition summary statistics
+     * @param req Request
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getPerpsCompetitionSummary(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID from path parameter
+        const competitionId = ensureUuid(req.params.competitionId);
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Check if this is a perps competition
+        if (competition.type !== "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is only available for perpetual futures competitions.",
+          );
+        }
+
+        // Cache only public (unauthenticated or authenticated user) requests (and disable in test/dev mode)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "perpsCompetitionSummary", {
+          competitionId,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.perpsStats.get(cacheKey);
+          if (cached) {
+            return res.status(200).json(cached);
+          }
+        }
+
+        // Get stats from the perps data processor
+        const stats =
+          await services.perpsDataProcessor.getCompetitionStats(competitionId);
+
+        const responseBody = {
+          success: true,
+          competitionId,
+          summary: {
+            totalAgents: stats.totalAgents,
+            totalPositions: stats.totalPositions,
+            totalVolume: stats.totalVolume,
+            averageEquity: stats.averageEquity,
+          },
+          timestamp: new Date().toISOString(),
+        };
+
+        // Cache the response for 1 minute (60 seconds)
+        if (shouldCacheResponse) {
+          caches.perpsStats.set(cacheKey, responseBody, { ttl: 60 * 1000 });
+        }
+
+        return res.status(200).json(responseBody);
       } catch (error) {
         next(error);
       }
