@@ -4,6 +4,7 @@ import {
 } from "@recallnet/db-schema/trading/types";
 
 import { config } from "@/config/index.js";
+import { db } from "@/database/db.js";
 import {
   create,
   deleteConstraints as deleteConstraintsRepo,
@@ -11,6 +12,9 @@ import {
   update,
   upsert,
 } from "@/database/repositories/trading-constraints-repository.js";
+
+// Type for database transaction
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export interface TradingConstraintsInput {
   competitionId: string;
@@ -65,6 +69,7 @@ export class TradingConstraintsService {
   async updateConstraints(
     competitionId: string,
     input: Partial<TradingConstraintsInput>,
+    tx?: DatabaseTransaction,
   ): Promise<SelectTradingConstraints> {
     const updateData: Partial<InsertTradingConstraints> = {};
 
@@ -84,7 +89,7 @@ export class TradingConstraintsService {
       updateData.minTradesPerDay = input.minTradesPerDay;
     }
 
-    const result = await update(competitionId, updateData);
+    const result = await update(competitionId, updateData, tx);
     if (!result) {
       throw new Error(
         `Failed to update trading constraints for competition ${competitionId}`,

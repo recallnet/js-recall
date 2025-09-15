@@ -5,7 +5,11 @@ import {
   SelectCompetitionReward,
 } from "@recallnet/db-schema/core/types";
 
+import { db } from "@/database/db.js";
 import * as competitionRewardsRepository from "@/database/repositories/competition-rewards-repository.js";
+
+// Type for database transaction
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * CompetitionRewardService
@@ -32,11 +36,13 @@ export class CompetitionRewardService {
    * Create rewards for a competition
    * @param competitionId The competition ID
    * @param rewards The rewards
+   * @param tx Optional database transaction
    * @returns The created rewards
    */
   async createRewards(
     competitionId: string,
     rewards: Record<number, number>,
+    tx?: DatabaseTransaction,
   ): Promise<SelectCompetitionReward[]> {
     const rewardsData: InsertCompetitionReward[] = Object.entries(rewards).map(
       ([rank, reward]) => ({
@@ -46,7 +52,7 @@ export class CompetitionRewardService {
         reward,
       }),
     );
-    return competitionRewardsRepository.createRewards(rewardsData);
+    return competitionRewardsRepository.createRewards(rewardsData, tx);
   }
 
   /**
@@ -122,14 +128,19 @@ export class CompetitionRewardService {
    * Replace rewards for a competition
    * @param competitionId The competition ID
    * @param rewards The new rewards
+   * @param tx Optional database transaction
    * @returns The updated rewards
    */
   async replaceRewards(
     competitionId: string,
     rewards: Record<number, number>,
+    tx?: DatabaseTransaction,
   ): Promise<SelectCompetitionReward[]> {
-    await this.deleteRewardsByCompetition(competitionId);
-    return this.createRewards(competitionId, rewards);
+    await competitionRewardsRepository.deleteRewardsByCompetition(
+      competitionId,
+      tx,
+    );
+    return this.createRewards(competitionId, rewards, tx);
   }
 
   /**

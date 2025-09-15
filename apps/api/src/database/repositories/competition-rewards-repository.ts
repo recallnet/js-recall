@@ -11,6 +11,9 @@ import { db } from "@/database/db.js";
 import { competitionRewardsLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
+// Type for database transaction
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 /**
  * Core Rewards Repository
  * Handles database operations for competition rewards (core schema)
@@ -19,11 +22,13 @@ import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 /**
  * Create multiple rewards
  * @param rewardsData Array of reward data to create
+ * @param tx Optional database transaction
  * @returns Array of created reward records
  * @throws Error if reward creation fails or if duplicates exist
  */
 export async function createRewardsImpl(
   rewardsData: InsertCompetitionReward[],
+  tx?: DatabaseTransaction,
 ): Promise<SelectCompetitionReward[]> {
   try {
     const data: InsertCompetitionReward[] = rewardsData.map((reward) => ({
@@ -33,7 +38,11 @@ export async function createRewardsImpl(
       reward: reward.reward,
       agentId: reward.agentId,
     }));
-    const result = await db.insert(competitionRewards).values(data).returning();
+    const dbClient = tx || db;
+    const result = await dbClient
+      .insert(competitionRewards)
+      .values(data)
+      .returning();
     if (!result || result.length === 0) {
       throw new Error("Failed to create rewards - no results returned");
     }
@@ -189,13 +198,16 @@ export async function deleteRewardImpl(id: string): Promise<boolean> {
 /**
  * Delete all rewards for a competition
  * @param competitionId The competition ID
+ * @param tx Optional database transaction
  * @returns True if deleted, false otherwise
  */
 export async function deleteRewardsByCompetitionImpl(
   competitionId: string,
+  tx?: DatabaseTransaction,
 ): Promise<boolean> {
   try {
-    const result = await db
+    const dbClient = tx || db;
+    const result = await dbClient
       .delete(competitionRewards)
       .where(eq(competitionRewards.competitionId, competitionId));
     return (result?.rowCount ?? 0) > 0;

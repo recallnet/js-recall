@@ -3,10 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import {
-  SelectCompetitionReward,
-  UpdateCompetition,
-} from "@recallnet/db-schema/core/types";
+import { UpdateCompetition } from "@recallnet/db-schema/core/types";
 
 import { reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
@@ -809,30 +806,14 @@ export function makeAdminController(services: ServiceRegistry) {
           throw new ApiError(400, "No valid fields provided for update");
         }
 
-        // Update the competition
-        const updatedCompetition =
+        // Update the competition atomically
+        const { competition: updatedCompetition, updatedRewards } =
           await services.competitionManager.updateCompetition(
             competitionId,
             updates,
-          );
-
-        // Update the trading constraints
-        if (tradingConstraints) {
-          await services.tradingConstraintsService.updateConstraints(
-            competitionId,
             tradingConstraints,
+            rewards,
           );
-        }
-
-        // Update the rewards
-        let updatedRewards: SelectCompetitionReward[] = [];
-        if (rewards) {
-          updatedRewards =
-            await services.competitionRewardService.replaceRewards(
-              competitionId,
-              rewards,
-            );
-        }
 
         // Return the updated competition
         res.status(200).json({

@@ -26,6 +26,7 @@ import {
   InsertCompetition,
   InsertCompetitionAgent,
   InsertCompetitionsLeaderboard,
+  SelectCompetition,
   UpdateCompetition,
 } from "@recallnet/db-schema/core/types";
 import {
@@ -130,6 +131,9 @@ interface Snapshot24hResult {
 
 const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
+
+// Type for database transaction
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Find all competitions
@@ -256,13 +260,17 @@ async function updateImpl(
  * Update a single competition by ID
  * @param competitionId Competition ID
  * @param updateData Update data for the competition
+ * @param tx Optional database transaction
+ * @returns Updated competition record
  */
 async function updateOneImpl(
   competitionId: string,
   updateData: UpdateCompetition,
-) {
+  tx?: DatabaseTransaction,
+): Promise<SelectCompetition> {
   try {
-    const [result] = await db
+    const dbClient = tx || db;
+    const [result] = await dbClient
       .update(competitions)
       .set({
         ...updateData,
