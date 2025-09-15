@@ -428,7 +428,7 @@ export class CompetitionManager {
         // Log which agents failed but don't throw - some agents may not have Symphony accounts yet
         const failedAgentIds = result.syncResult.failed.map((f) => f.agentId);
         serviceLogger.warn(
-          `[CompetitionManager] Failed to sync ${failedCount} agents during competition start: ${failedAgentIds.join(", ")}`,
+          `[CompetitionManager] Failed to sync ${failedCount} out of ${totalCount} agents during competition start: ${failedAgentIds.join(", ")}`,
         );
       }
     } else {

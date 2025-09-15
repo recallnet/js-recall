@@ -948,10 +948,7 @@ async function countBulkAgentPositionsInCompetitionsImpl(
       .where(
         and(
           eq(perpetualPositions.agentId, agentId),
-          sql`${perpetualPositions.competitionId} IN (${sql.join(
-            competitionIds.map((id) => sql`${id}`),
-            sql`, `,
-          )})`,
+          inArray(perpetualPositions.competitionId, competitionIds),
         ),
       )
       .groupBy(perpetualPositions.competitionId);
