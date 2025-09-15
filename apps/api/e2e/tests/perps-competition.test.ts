@@ -189,46 +189,6 @@ describe("Perps Competition", () => {
     }
   });
 
-  test.skip("should get all perps positions in a competition", async () => {
-    // SKIPPED: Competition-wide perps endpoints not implemented yet
-    // Setup admin client
-    const adminClient = createTestClient(getBaseUrl());
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agents for this test
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Perps Comp Agent 1",
-    });
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Perps Comp Agent 2",
-    });
-
-    // Start a perps competition
-    const response = await startPerpsTestCompetition({
-      adminClient,
-      name: `Perps All Positions Test ${Date.now()}`,
-      agentIds: [agent1.id, agent2.id],
-    });
-
-    expect(response.success).toBe(true);
-    const competition = response.competition;
-
-    // Get all positions in the competition
-    const positionsResponse = await adminClient.getCompetitionPerpsPositions(
-      competition.id,
-    );
-
-    expect(positionsResponse.success).toBe(true);
-    if (positionsResponse.success) {
-      expect(positionsResponse.positions).toBeDefined();
-      expect(Array.isArray(positionsResponse.positions)).toBe(true);
-      // Mock server returns no positions by default
-      expect(positionsResponse.positions.length).toBe(0);
-    }
-  });
-
   test("should show perps competition in agent's competition list", async () => {
     // Setup admin client
     const adminClient = createTestClient(getBaseUrl());

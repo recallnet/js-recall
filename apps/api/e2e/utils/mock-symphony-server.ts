@@ -1,6 +1,8 @@
 import express, { Express, Request, Response } from "express";
 import { Server } from "http";
 
+import { createLogger } from "@/lib/logger.js";
+
 /**
  * Mock Symphony API server for E2E testing
  * Mimics the actual Symphony API endpoints and response structure
@@ -9,6 +11,7 @@ export class MockSymphonyServer {
   private app: Express;
   private server: Server | null = null;
   private port: number;
+  private logger = createLogger("MockSymphonyServer");
 
   // Store mock data for different wallet addresses
   private mockData: Map<string, MockAgentData> = new Map();
@@ -209,7 +212,7 @@ export class MockSymphonyServer {
   public async start(): Promise<void> {
     return new Promise((resolve) => {
       this.server = this.app.listen(this.port, () => {
-        console.log(`Mock Symphony server running on port ${this.port}`);
+        this.logger.info(`Mock Symphony server running on port ${this.port}`);
         resolve();
       });
     });
