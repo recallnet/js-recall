@@ -260,27 +260,33 @@ describe("SymphonyPerpsProvider", () => {
       );
     });
 
-    it("should handle missing performance data gracefully", async () => {
-      const responseWithoutPerformance = {
+    it("should handle zero performance values for new accounts", async () => {
+      // Symphony confirmed performance is ALWAYS present, with 0 values for new accounts
+      const newAccountResponse = {
         ...samplePositionResponse,
         data: {
           ...samplePositionResponse.data,
           accountSummary: {
             ...samplePositionResponse.data.accountSummary,
-            performance: undefined,
+            performance: {
+              roi: 0,
+              roiPercent: 0,
+              totalTrades: 0,
+              averageTradeSize: 0,
+            },
           },
         },
       };
 
       mockAxiosInstance.get.mockResolvedValueOnce({
-        data: responseWithoutPerformance,
+        data: newAccountResponse,
       });
 
       const result = await provider.getAccountSummary("0xtest123");
 
-      expect(result.roi).toBeUndefined();
-      expect(result.roiPercent).toBeUndefined();
-      expect(result.averageTradeSize).toBeUndefined();
+      expect(result.roi).toBe(0);
+      expect(result.roiPercent).toBe(0);
+      expect(result.averageTradeSize).toBe(0);
     });
 
     it("should handle zero and negative values correctly", async () => {
@@ -747,6 +753,13 @@ describe("SymphonyPerpsProvider", () => {
             closedPositionsCount: undefined,
             liquidatedPositionsCount: null,
             accountStatus: null,
+            // Performance is ALWAYS present per Symphony confirmation
+            performance: {
+              roi: 0,
+              roiPercent: 0,
+              totalTrades: 0,
+              averageTradeSize: 0,
+            },
           },
           openPositions: [],
           lastUpdated: "2025-01-15T12:00:00Z",
@@ -775,6 +788,11 @@ describe("SymphonyPerpsProvider", () => {
       expect(result.openPositionsCount).toBe(0);
       expect(result.closedPositionsCount).toBe(0);
       expect(result.liquidatedPositionsCount).toBe(0);
+
+      // Performance fields should have zero values
+      expect(result.roi).toBe(0);
+      expect(result.roiPercent).toBe(0);
+      expect(result.averageTradeSize).toBe(0);
 
       // Should default missing status to 'unknown'
       expect(result.accountStatus).toBe("unknown");

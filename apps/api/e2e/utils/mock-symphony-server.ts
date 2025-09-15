@@ -76,12 +76,16 @@ export class MockSymphonyServer {
 
       if (!userAddress) {
         return res.status(400).json({
-          success: false,
-          error: "userAddress is required",
+          status: "error",
+          error: {
+            message: "Invalid or missing parameters",
+            details: "userAddress is required",
+          },
         });
       }
 
       const data = this.getAgentData(userAddress);
+      // Symphony uses timestamps with milliseconds: "2025-09-12T20:49:15.000Z"
       const now = new Date().toISOString();
 
       // Return Symphony-formatted response
@@ -153,8 +157,11 @@ export class MockSymphonyServer {
 
       if (!walletAddress) {
         return res.status(400).json({
-          success: false,
-          error: "walletAddress is required",
+          status: "error",
+          error: {
+            message: "Invalid or missing parameters",
+            details: "walletAddress is required",
+          },
         });
       }
 
@@ -187,8 +194,11 @@ export class MockSymphonyServer {
     // 404 for unknown endpoints
     this.app.use((req: Request, res: Response) => {
       res.status(404).json({
-        success: false,
-        error: "Endpoint not found",
+        status: "error",
+        error: {
+          message: "Endpoint not found",
+          details: `No handler for ${req.method} ${req.path}`,
+        },
       });
     });
   }
