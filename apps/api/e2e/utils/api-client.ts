@@ -18,6 +18,7 @@ import {
   AgentCompetitionsResponse,
   AgentMetadata,
   AgentNonceResponse,
+  AgentPerpsPositionsResponse,
   AgentProfileResponse,
   AgentWalletVerificationResponse,
   AgentsGetResponse,
@@ -1247,6 +1248,28 @@ export class ApiClient {
       return this.handleApiError(
         error,
         `get agent trades in competition: competitionId=${competitionId}, agentId=${agentId}, limit=${limit}, offset=${offset}`,
+      );
+    }
+  }
+
+  /**
+   * Get perps positions for an agent in a competition (public endpoint)
+   * @param competitionId The competition ID
+   * @param agentId The agent ID
+   * @returns Perps positions response or error
+   */
+  async getAgentPerpsPositionsInCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<AgentPerpsPositionsResponse | ErrorResponse> {
+    try {
+      const url = `/api/competitions/${competitionId}/agents/${agentId}/perps/positions`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as AgentPerpsPositionsResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get agent perps positions in competition: competitionId=${competitionId}, agentId=${agentId}`,
       );
     }
   }

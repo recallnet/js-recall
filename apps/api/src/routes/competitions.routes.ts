@@ -1437,5 +1437,150 @@ export function configureCompetitionsRoutes(
     controller.getAgentTradesInCompetition,
   );
 
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/agents/{agentId}/perps/positions:
+   *   get:
+   *     tags:
+   *       - Competitions
+   *     summary: Get perps positions for an agent in a competition
+   *     description: |
+   *       Returns the current perpetual futures positions for a specific agent in a specific competition.
+   *       This endpoint is only available for perpetual futures competitions.
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: agentId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Agent ID
+   *     responses:
+   *       200:
+   *         description: Successfully retrieved perps positions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 competitionId:
+   *                   type: string
+   *                   format: uuid
+   *                 agentId:
+   *                   type: string
+   *                   format: uuid
+   *                 positions:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       agentId:
+   *                         type: string
+   *                         format: uuid
+   *                       competitionId:
+   *                         type: string
+   *                         format: uuid
+   *                       positionId:
+   *                         type: string
+   *                         description: Provider-specific position ID
+   *                       marketId:
+   *                         type: string
+   *                         description: Market identifier
+   *                       marketSymbol:
+   *                         type: string
+   *                         example: "BTC-USD"
+   *                       side:
+   *                         type: string
+   *                         enum: ["long", "short"]
+   *                       size:
+   *                         type: string
+   *                         description: Position size as string
+   *                         example: "0.5"
+   *                       averagePrice:
+   *                         type: string
+   *                         description: Average entry price as string
+   *                         example: "45000.00"
+   *                       markPrice:
+   *                         type: string
+   *                         description: Current mark price as string
+   *                         example: "46000.00"
+   *                       liquidationPrice:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Liquidation price as string
+   *                         example: "40000.00"
+   *                       unrealizedPnl:
+   *                         type: string
+   *                         description: Unrealized PnL as string
+   *                         example: "500.00"
+   *                       realizedPnl:
+   *                         type: string
+   *                         description: Realized PnL as string
+   *                         example: "100.00"
+   *                       margin:
+   *                         type: string
+   *                         description: Margin/collateral amount as string
+   *                         example: "2250.00"
+   *                       leverage:
+   *                         type: string
+   *                         description: Leverage as string
+   *                         example: "10"
+   *                       status:
+   *                         type: string
+   *                         description: Position status
+   *                         example: "Open"
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *       400:
+   *         description: Bad request - Not a perpetual futures competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is only available for perpetual futures competitions. Use GET /api/competitions/{id}/agents/{agentId}/trades for paper trading competitions."
+   *       404:
+   *         description: Competition, agent, or participation not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Competition not found"
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/agents/:agentId/perps/positions",
+    controller.getAgentPerpsPositionsInCompetition,
+  );
+
   return router;
 }

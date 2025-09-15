@@ -1513,6 +1513,102 @@ export function makeCompetitionController(services: ServiceRegistry) {
         next(error);
       }
     },
+
+    /**
+     * Get perps positions for an agent in a competition
+     * @param req Request
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getAgentPerpsPositionsInCompetition(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID and agent ID from path parameters
+        const { competitionId, agentId } = CompetitionAgentParamsSchema.parse(
+          req.params,
+        );
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Check if this is a perps competition
+        if (competition.type !== "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is only available for perpetual futures competitions. " +
+              "Use GET /api/competitions/{id}/agents/{agentId}/trades for paper trading competitions.",
+          );
+        }
+
+        // Check if agent exists
+        const agent = await services.agentManager.getAgent(agentId);
+        if (!agent) {
+          throw new ApiError(404, "Agent not found");
+        }
+
+        // Check if the agent is in the competition
+        const agentInCompetition =
+          await services.competitionManager.isAgentInCompetition(
+            competitionId,
+            agentId,
+          );
+
+        if (!agentInCompetition) {
+          throw new ApiError(
+            404,
+            "Agent is not participating in this competition",
+          );
+        }
+
+        // Get positions from the perps data processor
+        const positions = await services.perpsDataProcessor.getAgentPositions(
+          agentId,
+          competitionId,
+        );
+
+        // Convert to match the same format as authenticated endpoint for consistency
+        const formattedPositions = positions.map((position) => ({
+          id: position.id,
+          agentId: position.agentId,
+          competitionId: position.competitionId,
+          positionId: position.providerPositionId || "",
+          marketId: position.asset || "",
+          marketSymbol: position.asset || "",
+          side: position.isLong ? "long" : "short",
+          size: position.positionSize || "0",
+          averagePrice: position.entryPrice || "0",
+          markPrice: position.currentPrice || "0",
+          liquidationPrice: position.liquidationPrice || null,
+          unrealizedPnl: position.pnlUsdValue || "0",
+          realizedPnl: "0", // Not tracked in this table
+          margin: position.collateralAmount || "0",
+          leverage: position.leverage || "1",
+          status: position.status || "Open",
+          createdAt: position.createdAt.toISOString(),
+          updatedAt: (
+            position.lastUpdatedAt || position.createdAt
+          ).toISOString(),
+        }));
+
+        const responseBody = {
+          success: true,
+          competitionId,
+          agentId,
+          positions: formattedPositions,
+        } as const;
+
+        res.status(200).json(responseBody);
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 }
 

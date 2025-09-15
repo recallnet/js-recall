@@ -1008,3 +1008,10 @@ export interface CompetitionPerpsPositionsResponse extends ApiResponse {
     hasMore: boolean;
   };
 }
+
+export interface AgentPerpsPositionsResponse extends ApiResponse {
+  success: true;
+  competitionId: string;
+  agentId: string;
+  positions: PerpsPosition[];
+}

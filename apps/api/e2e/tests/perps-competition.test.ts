@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
@@ -631,6 +632,136 @@ describe("Perps Competition", () => {
       expect(account.openPositions).toBe(0);
       expect(account.timestamp).toBeDefined();
     }
+  });
+
+  test("should get perps positions for an agent in a competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent for this test
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Competition Perps Positions Test Agent",
+      });
+
+    // Start a perps competition with the agent
+    const competitionResponse = await startPerpsTestCompetition({
+      adminClient,
+      name: `Competition Perps Positions Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    // Wait for competition start to fully commit
+    await wait(1000);
+
+    // Trigger sync from Symphony (simulating what the cron job does)
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for sync to complete
+    await wait(500);
+
+    // Test getting positions via competition endpoint (requires auth)
+    const positionsResponse =
+      await agentClient.getAgentPerpsPositionsInCompetition(
+        competition.id,
+        agent.id,
+      );
+
+    expect(positionsResponse.success).toBe(true);
+    if (positionsResponse.success) {
+      expect(positionsResponse.competitionId).toBe(competition.id);
+      expect(positionsResponse.agentId).toBe(agent.id);
+      expect(Array.isArray(positionsResponse.positions)).toBe(true);
+
+      // The mock Symphony server should provide some positions
+      if (positionsResponse.positions.length > 0) {
+        const position = positionsResponse.positions[0];
+        expect(position).toBeDefined();
+        expect(position?.agentId).toBe(agent.id);
+        expect(position?.competitionId).toBe(competition.id);
+        expect(position?.marketSymbol).toBeDefined();
+        expect(position?.side).toMatch(/^(long|short)$/);
+        expect(position?.size).toBeDefined();
+        expect(position?.averagePrice).toBeDefined();
+      }
+    }
+  });
+
+  test("should return 404 for non-existent agent in competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register a dummy agent to start the competition (required)
+    const { agent: dummyAgent, client: dummyClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Dummy Agent for Competition Start",
+      });
+
+    // Start a perps competition with the dummy agent
+    const competitionResponse = await startPerpsTestCompetition({
+      adminClient,
+      name: `Perps 404 Test ${Date.now()}`,
+      agentIds: [dummyAgent.id],
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    // Try to get positions for a DIFFERENT non-existent agent
+    const randomAgentId = randomUUID();
+    const positionsResponse =
+      await dummyClient.getAgentPerpsPositionsInCompetition(
+        competition.id,
+        randomAgentId,
+      );
+
+    expect(positionsResponse.success).toBe(false);
+    expect((positionsResponse as ErrorResponse).error).toContain(
+      "Agent not found",
+    );
+  });
+
+  test("should return 400 for paper trading competition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent for this test
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Paper Trading Test Agent",
+      });
+
+    // Start a PAPER TRADING competition (not perps) using the test helper
+    const competitionResponse = await startTestCompetition({
+      adminClient,
+      name: `Paper Trading Competition ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    // Try to get perps positions for a paper trading competition
+    const positionsResponse =
+      await agentClient.getAgentPerpsPositionsInCompetition(
+        competition.id,
+        agent.id,
+      );
+
+    expect(positionsResponse.success).toBe(false);
+    expect((positionsResponse as ErrorResponse).error).toContain(
+      "This endpoint is only available for perpetual futures competitions",
+    );
   });
 
   test("should return 404 when no active competition for perps endpoints", async () => {
