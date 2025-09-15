@@ -253,7 +253,8 @@ export function checkShouldCacheResponse(req: Request) {
  *
  * @param req Express request
  * @param name The name of the cache
- * @param params (Optional) arbitrary parameters to include in the cache key as a JSON string
+ * @param params (Optional) arbitrary parameters to include in the cache key as a JSON string.
+ * Note: For user-specific data, include userId in the params object.
  * @returns The cache key
  */
 export function generateCacheKey(
