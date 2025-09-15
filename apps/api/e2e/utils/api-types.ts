@@ -955,15 +955,21 @@ export interface PerpsPosition {
   positionId: string | null;
   marketId: string | null;
   marketSymbol: string | null;
-  side: "long" | "short";
+  asset?: string;
+  side?: "long" | "short";
+  isLong?: boolean;
   size: string;
+  collateral?: number;
   averagePrice: string;
   markPrice: string;
   unrealizedPnl: string;
   realizedPnl: string;
-  margin: string;
+  margin?: string;
   leverage: string;
   liquidationPrice: string | null;
+  status?: string;
+  openedAt?: string;
+  closedAt?: string | null;
   timestamp: string;
 }
 
@@ -996,11 +1002,33 @@ export interface PerpsAccountResponse extends ApiResponse {
   account: PerpsAccountSummary;
 }
 
-// Competition perps positions response
+// Perps position with embedded agent info (for competition-wide endpoints)
+export interface PerpsPositionWithAgent extends PerpsPosition {
+  agent: {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    description: string | null;
+  };
+}
+
+// Competition perps positions response (old endpoint - agent-specific)
 export interface CompetitionPerpsPositionsResponse extends ApiResponse {
   success: true;
   competitionId: string;
   positions: PerpsPosition[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+// Competition all perps positions response (new endpoint - all agents)
+export interface CompetitionAllPerpsPositionsResponse extends ApiResponse {
+  success: true;
+  positions: PerpsPositionWithAgent[];
   pagination: {
     total: number;
     limit: number;

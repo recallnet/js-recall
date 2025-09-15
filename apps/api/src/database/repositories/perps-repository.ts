@@ -10,7 +10,7 @@ import {
   sum,
 } from "drizzle-orm";
 
-import { competitionAgents } from "@recallnet/db-schema/core/defs";
+import { agents, competitionAgents } from "@recallnet/db-schema/core/defs";
 import {
   perpetualPositions,
   perpsAccountSummaries,
@@ -980,6 +980,94 @@ async function countBulkAgentPositionsInCompetitionsImpl(
   }
 }
 
+/**
+ * Get all perps positions for a competition with pagination
+ * Similar to getCompetitionTradesImpl but for perps positions
+ * @param competitionId Competition ID
+ * @param limit Optional result limit
+ * @param offset Optional result offset
+ * @param statusFilter Optional status filter (defaults to "Open")
+ * @returns Object with positions array and total count
+ */
+async function getCompetitionPerpsPositionsImpl(
+  competitionId: string,
+  limit?: number,
+  offset?: number,
+  statusFilter?: string,
+) {
+  try {
+    const conditions = [eq(perpetualPositions.competitionId, competitionId)];
+
+    // Default to showing only open positions unless specified otherwise
+    if (statusFilter !== "all") {
+      conditions.push(eq(perpetualPositions.status, statusFilter || "Open"));
+    }
+
+    // Build the main query with agent join - following same pattern as getCompetitionTradesImpl
+    const positionsQuery = dbRead
+      .select({
+        // All position fields from perpetualPositions table
+        id: perpetualPositions.id,
+        competitionId: perpetualPositions.competitionId,
+        agentId: perpetualPositions.agentId,
+        providerPositionId: perpetualPositions.providerPositionId,
+        providerTradeId: perpetualPositions.providerTradeId,
+        asset: perpetualPositions.asset,
+        isLong: perpetualPositions.isLong,
+        leverage: perpetualPositions.leverage,
+        positionSize: perpetualPositions.positionSize,
+        collateralAmount: perpetualPositions.collateralAmount,
+        entryPrice: perpetualPositions.entryPrice,
+        currentPrice: perpetualPositions.currentPrice,
+        liquidationPrice: perpetualPositions.liquidationPrice,
+        pnlUsdValue: perpetualPositions.pnlUsdValue,
+        pnlPercentage: perpetualPositions.pnlPercentage,
+        status: perpetualPositions.status,
+        createdAt: perpetualPositions.createdAt,
+        lastUpdatedAt: perpetualPositions.lastUpdatedAt,
+        closedAt: perpetualPositions.closedAt,
+        capturedAt: perpetualPositions.capturedAt,
+        // Agent info embedded like in trades
+        agent: {
+          id: agents.id,
+          name: agents.name,
+          imageUrl: agents.imageUrl,
+          description: agents.description,
+        },
+      })
+      .from(perpetualPositions)
+      .leftJoin(agents, eq(perpetualPositions.agentId, agents.id))
+      .where(and(...conditions))
+      .orderBy(desc(perpetualPositions.lastUpdatedAt));
+
+    // Apply pagination
+    if (limit !== undefined) {
+      positionsQuery.limit(limit);
+    }
+
+    if (offset !== undefined) {
+      positionsQuery.offset(offset);
+    }
+
+    // Build count query
+    const totalQuery = dbRead
+      .select({ count: drizzleCount() })
+      .from(perpetualPositions)
+      .where(and(...conditions));
+
+    // Execute both queries in parallel for efficiency
+    const [results, total] = await Promise.all([positionsQuery, totalQuery]);
+
+    return {
+      positions: results,
+      total: total[0]?.count ?? 0,
+    };
+  } catch (error) {
+    repositoryLogger.error("Error in getCompetitionPerpsPositions:", error);
+    throw error;
+  }
+}
+
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -1117,3 +1205,9 @@ export const countBulkAgentPositionsInCompetitions =
     "PerpsRepository",
     "countBulkAgentPositionsInCompetitions",
   );
+
+export const getCompetitionPerpsPositions = createTimedRepositoryFunction(
+  getCompetitionPerpsPositionsImpl,
+  "PerpsRepository",
+  "getCompetitionPerpsPositions",
+);

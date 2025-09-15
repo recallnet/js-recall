@@ -1556,6 +1556,47 @@ This endpoint is only available for perpetual futures competitions.
 | --------------- | ------ |
 | bearerAuth      |        |
 
+### /api/competitions/{competitionId}/perps/all-positions
+
+#### GET
+
+##### Summary:
+
+Get all perps positions for a competition
+
+##### Description:
+
+Returns all perpetual futures positions for a competition with pagination support.
+Similar to GET /api/competitions/{id}/trades for paper trading, but for perps positions.
+By default returns only open positions. Use status query param to filter.
+Includes embedded agent information for each position.
+
+##### Parameters
+
+| Name          | Located in | Description                                                                     | Required | Schema        |
+| ------------- | ---------- | ------------------------------------------------------------------------------- | -------- | ------------- |
+| competitionId | path       | The competition ID                                                              | Yes      | string (uuid) |
+| status        | query      | Filter positions by status. Use "all" to get all positions regardless of status | No       | string        |
+| limit         | query      | Number of positions to return                                                   | No       | integer       |
+| offset        | query      | Number of positions to skip                                                     | No       | integer       |
+| sort          | query      | Sort order (currently unused but included for consistency)                      | No       | string        |
+
+##### Responses
+
+| Code | Description                                        |
+| ---- | -------------------------------------------------- |
+| 200  | List of positions with pagination info             |
+| 400  | Competition is not a perpetual futures competition |
+| 401  | Unauthorized - Missing or invalid authentication   |
+| 404  | Competition not found                              |
+| 500  | Server error                                       |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| bearerAuth      |        |
+
 ### /api/health
 
 #### GET

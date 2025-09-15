@@ -26,6 +26,7 @@ import {
   BalancesResponse,
   BlockchainType,
   CompetitionAgentsResponse,
+  CompetitionAllPerpsPositionsResponse,
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
@@ -1291,6 +1292,37 @@ export class ApiClient {
       return this.handleApiError(
         error,
         `get competition perps summary: competitionId=${competitionId}`,
+      );
+    }
+  }
+
+  /**
+   * Get all perps positions for a competition with pagination
+   * @param competitionId Competition ID
+   * @param limit Optional number of positions to return
+   * @param offset Optional offset for pagination
+   * @param status Optional status filter (Open, Closed, Liquidated, all)
+   * @returns Array of perps positions with embedded agent info
+   */
+  async getCompetitionAllPerpsPositions(
+    competitionId: string,
+    limit?: number,
+    offset?: number,
+    status?: string,
+  ): Promise<CompetitionAllPerpsPositionsResponse | ErrorResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
+      if (status !== undefined) params.append("status", status);
+
+      const url = `/api/competitions/${competitionId}/perps/all-positions?${params.toString()}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as CompetitionAllPerpsPositionsResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get competition all perps positions: competitionId=${competitionId}`,
       );
     }
   }

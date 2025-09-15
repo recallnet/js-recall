@@ -941,6 +941,132 @@ describe("Perps Competition", () => {
     }
   });
 
+  test("should get all perps positions for a competition with pagination and embedded agent info", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with pre-configured wallet addresses
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent With Multiple Positions",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111", // BTC/ETH positions
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent With Single Position",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222", // SOL position
+    });
+
+    // Start a perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Perps All Positions Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Trigger sync to populate positions
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Test 1: Get all positions without pagination
+    const allPositions = await adminClient.getCompetitionAllPerpsPositions(
+      competition.id,
+    );
+    expect(allPositions.success).toBe(true);
+    if (allPositions.success) {
+      expect(allPositions.positions).toHaveLength(3); // BTC, ETH, SOL
+      expect(allPositions.pagination.total).toBe(3);
+      expect(allPositions.pagination.hasMore).toBe(false);
+
+      // Verify embedded agent info is present
+      const btcPosition = allPositions.positions.find(
+        (p) => p.marketSymbol === "BTC",
+      );
+      expect(btcPosition).toBeDefined();
+      expect(btcPosition?.agent).toBeDefined();
+      expect(btcPosition?.agent.name).toBe("Agent With Multiple Positions");
+      expect(btcPosition?.agent.id).toBe(agent1.id);
+
+      const solPosition = allPositions.positions.find(
+        (p) => p.marketSymbol === "SOL",
+      );
+      expect(solPosition).toBeDefined();
+      expect(solPosition?.agent).toBeDefined();
+      expect(solPosition?.agent.name).toBe("Agent With Single Position");
+      expect(solPosition?.agent.id).toBe(agent2.id);
+    }
+
+    // Test 2: Get positions with pagination
+    const page1 = await adminClient.getCompetitionAllPerpsPositions(
+      competition.id,
+      2, // limit
+      0, // offset
+    );
+    expect(page1.success).toBe(true);
+    if (page1.success) {
+      expect(page1.positions).toHaveLength(2);
+      expect(page1.pagination.total).toBe(3);
+      expect(page1.pagination.hasMore).toBe(true);
+      expect(page1.pagination.limit).toBe(2);
+      expect(page1.pagination.offset).toBe(0);
+    }
+
+    const page2 = await adminClient.getCompetitionAllPerpsPositions(
+      competition.id,
+      2, // limit
+      2, // offset
+    );
+    expect(page2.success).toBe(true);
+    if (page2.success) {
+      expect(page2.positions).toHaveLength(1);
+      expect(page2.pagination.total).toBe(3);
+      expect(page2.pagination.hasMore).toBe(false);
+      expect(page2.pagination.limit).toBe(2);
+      expect(page2.pagination.offset).toBe(2);
+    }
+
+    // Test 3: Get positions with status filter (all positions are Open by default)
+    const openPositions = await adminClient.getCompetitionAllPerpsPositions(
+      competition.id,
+      undefined, // no limit
+      undefined, // no offset
+      "Open", // status filter
+    );
+    expect(openPositions.success).toBe(true);
+    if (openPositions.success) {
+      expect(openPositions.positions).toHaveLength(3); // All are open
+      openPositions.positions.forEach((pos) => {
+        expect(pos.status).toBe("Open");
+      });
+    }
+
+    // Test 4: Try to access from paper trading competition (should fail)
+    const paperTradingComp = await adminClient.createCompetition({
+      name: `Paper Trading ${Date.now()}`,
+      type: "trading",
+      startDate: new Date().toISOString(),
+      endDate: new Date(Date.now() + 86400000).toISOString(),
+    });
+
+    if (paperTradingComp.success) {
+      const invalidResponse = await adminClient.getCompetitionAllPerpsPositions(
+        paperTradingComp.competition.id,
+      );
+      expect(invalidResponse.success).toBe(false);
+      if (!invalidResponse.success) {
+        const errorResponse = invalidResponse as ErrorResponse;
+        expect(errorResponse.status).toBe(400);
+        expect(errorResponse.error).toContain("perpetual futures");
+      }
+    }
+  });
+
   test("should get perps competition summary", async () => {
     // Setup admin client
     const adminClient = createTestClient(getBaseUrl());

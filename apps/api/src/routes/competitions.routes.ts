@@ -1341,7 +1341,7 @@ export function configureCompetitionsRoutes(
    *                   example: false
    *                 error:
    *                   type: string
-   *                   example: "This endpoint is not available for perpetual futures competitions. Use GET /api/competitions/{id}/perps/positions for current positions."
+   *                   example: "This endpoint is not available for perpetual futures competitions. Use GET /api/competitions/{id}/perps/all-positions for perps positions."
    *       404:
    *         description: Competition not found
    *       401:
@@ -1674,6 +1674,203 @@ export function configureCompetitionsRoutes(
     "/:competitionId/perps/summary",
     ...authMiddlewares,
     controller.getPerpsCompetitionSummary,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/perps/all-positions:
+   *   get:
+   *     tags:
+   *       - Competitions
+   *     summary: Get all perps positions for a competition
+   *     description: |
+   *       Returns all perpetual futures positions for a competition with pagination support.
+   *       Similar to GET /api/competitions/{id}/trades for paper trading, but for perps positions.
+   *       By default returns only open positions. Use status query param to filter.
+   *       Includes embedded agent information for each position.
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: The competition ID
+   *       - in: query
+   *         name: status
+   *         required: false
+   *         schema:
+   *           type: string
+   *           enum: [Open, Closed, Liquidated, all]
+   *           default: Open
+   *         description: Filter positions by status. Use "all" to get all positions regardless of status
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 10
+   *         description: Number of positions to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         description: Number of positions to skip
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           default: ""
+   *         description: Sort order (currently unused but included for consistency)
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of positions with pagination info
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 positions:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       competitionId:
+   *                         type: string
+   *                         format: uuid
+   *                       agentId:
+   *                         type: string
+   *                         format: uuid
+   *                       agent:
+   *                         type: object
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                             format: uuid
+   *                           name:
+   *                             type: string
+   *                           imageUrl:
+   *                             type: string
+   *                             nullable: true
+   *                           description:
+   *                             type: string
+   *                             nullable: true
+   *                       positionId:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Provider-specific position ID
+   *                       marketId:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Market identifier (currently same as asset)
+   *                       marketSymbol:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Market symbol (currently same as asset)
+   *                       asset:
+   *                         type: string
+   *                         example: "BTC"
+   *                       isLong:
+   *                         type: boolean
+   *                       leverage:
+   *                         type: number
+   *                         example: 10
+   *                       size:
+   *                         type: number
+   *                         example: 0.5
+   *                       collateral:
+   *                         type: number
+   *                         example: 1000
+   *                       averagePrice:
+   *                         type: number
+   *                         example: 50000
+   *                       markPrice:
+   *                         type: number
+   *                         example: 51000
+   *                       liquidationPrice:
+   *                         type: number
+   *                         nullable: true
+   *                         example: 45000
+   *                       unrealizedPnl:
+   *                         type: number
+   *                         example: 500
+   *                       realizedPnl:
+   *                         type: number
+   *                         example: 0
+   *                       status:
+   *                         type: string
+   *                         example: "Open"
+   *                       openedAt:
+   *                         type: string
+   *                         format: date-time
+   *                       closedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         nullable: true
+   *                       timestamp:
+   *                         type: string
+   *                         format: date-time
+   *                 pagination:
+   *                   type: object
+   *                   properties:
+   *                     total:
+   *                       type: integer
+   *                       example: 250
+   *                     limit:
+   *                       type: integer
+   *                       example: 10
+   *                     offset:
+   *                       type: integer
+   *                       example: 0
+   *                     hasMore:
+   *                       type: boolean
+   *                       example: true
+   *       400:
+   *         description: Competition is not a perpetual futures competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is only available for perpetual futures competitions. Use GET /api/competitions/{id}/trades for paper trading competitions."
+   *       404:
+   *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Competition not found"
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/perps/all-positions",
+    ...authMiddlewares,
+    controller.getCompetitionPerpsPositions,
   );
 
   return router;

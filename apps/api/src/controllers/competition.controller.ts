@@ -1391,7 +1391,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
-              "Use GET /api/competitions/{id}/perps/summary for competition statistics.",
+              "Use GET /api/competitions/{id}/perps/all-positions for perps positions.",
           );
         }
 
@@ -1679,6 +1679,114 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         return res.status(200).json(responseBody);
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get all perps positions for a competition with pagination
+     * Similar to getCompetitionTrades but for perps positions
+     * @param req Request with competitionId param and pagination query params
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getCompetitionPerpsPositions(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Get competition ID from path parameter
+        const competitionId = ensureUuid(req.params.competitionId);
+        const pagingParams = PagingParamsSchema.parse(req.query);
+
+        // Optional status filter (defaults to "Open" in repository)
+        const statusFilter = req.query.status as string | undefined;
+
+        // Check if competition exists
+        const competition =
+          await services.competitionManager.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Check if this is a perps competition
+        if (competition.type !== "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is only available for perpetual futures competitions. " +
+              "Use GET /api/competitions/{id}/trades for paper trading competitions.",
+          );
+        }
+
+        // Cache only public requests (similar to getCompetitionTrades)
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const cacheKey = generateCacheKey(req, "competitionPerpsPositions", {
+          competitionId,
+          ...pagingParams,
+          statusFilter,
+        });
+        if (shouldCacheResponse) {
+          const cached = caches.trades.get(cacheKey); // Reuse trades cache
+          if (cached) {
+            return res.status(200).json(cached);
+          }
+        }
+
+        // Get positions from perps data processor
+        const { positions, total } =
+          await services.perpsDataProcessor.getCompetitionPerpsPositions(
+            competitionId,
+            pagingParams.limit,
+            pagingParams.offset,
+            statusFilter,
+          );
+
+        // Map the response to match EXACT same format as agent.controller.ts
+        const mappedPositions = positions.map((pos) => ({
+          id: pos.id,
+          competitionId: pos.competitionId,
+          agentId: pos.agentId,
+          agent: pos.agent, // Embedded agent info
+          positionId: pos.providerPositionId || null,
+          marketId: pos.asset || null, // Same as agent controller
+          marketSymbol: pos.asset || null, // Same as agent controller
+          asset: pos.asset,
+          isLong: pos.isLong,
+          leverage: Number(pos.leverage || 0),
+          size: Number(pos.positionSize),
+          collateral: Number(pos.collateralAmount),
+          averagePrice: Number(pos.entryPrice),
+          markPrice: Number(pos.currentPrice || 0),
+          liquidationPrice: pos.liquidationPrice
+            ? Number(pos.liquidationPrice)
+            : null,
+          unrealizedPnl: Number(pos.pnlUsdValue || 0),
+          realizedPnl: 0, // Not tracked in our schema
+          status: pos.status,
+          openedAt: pos.createdAt.toISOString(),
+          closedAt: pos.closedAt ? pos.closedAt.toISOString() : null,
+          timestamp: pos.lastUpdatedAt
+            ? pos.lastUpdatedAt.toISOString()
+            : pos.createdAt.toISOString(),
+        }));
+
+        const responseBody = {
+          success: true,
+          positions: mappedPositions,
+          pagination: buildPaginationResponse(
+            total,
+            pagingParams.limit,
+            pagingParams.offset,
+          ),
+        } as const;
+
+        if (shouldCacheResponse) {
+          caches.trades.set(cacheKey, responseBody); // 1 minute TTL by default
+        }
+
+        res.status(200).json(responseBody);
       } catch (error) {
         next(error);
       }
