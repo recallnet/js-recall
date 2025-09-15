@@ -1,10 +1,13 @@
 import type { Logger } from "pino";
 import { decodeEventLog } from "viem";
 
+import { db } from "@/database/db.js";
 import { EVENTS } from "@/indexing/blockchain-events-config.js";
 import type { EventData } from "@/indexing/blockchain-types.js";
 import type { EventsRepository } from "@/indexing/events.repository.js";
 import type { StakesRepository } from "@/indexing/stakes.repository.js";
+import type { BoostAwardService } from "@/services/boost-award.service.js";
+import type { CompetitionManager } from "@/services/index.js";
 
 export { EventProcessor };
 
@@ -45,14 +48,23 @@ class EventProcessor {
   readonly #eventsRepository: EventsRepository;
   readonly #stakesRepository: StakesRepository;
   readonly #logger: Logger;
+  readonly #boostAwardService: BoostAwardService;
+  readonly #competitionManager: CompetitionManager;
+  readonly #db: typeof db;
 
   constructor(
+    database: typeof db,
     eventsRepository: EventsRepository,
     stakesRepository: StakesRepository,
+    boostAwardService: BoostAwardService,
+    competitionManager: CompetitionManager,
     logger: Logger,
   ) {
+    this.#db = database;
     this.#eventsRepository = eventsRepository;
     this.#stakesRepository = stakesRepository;
+    this.#boostAwardService = boostAwardService;
+    this.#competitionManager = competitionManager;
     this.#logger = logger;
   }
 
@@ -161,16 +173,47 @@ class EventProcessor {
     const stakedAt = Math.floor(event.blockTimestamp.getTime() / 1000); // seconds;
     const lockupEndTime = Number(decodedEvent.args.lockupEndTime); // seconds;
     const duration = lockupEndTime - stakedAt;
-    const isStakeAdded = await this.#stakesRepository.stake({
-      stakeId: tokenId,
-      wallet: staker,
-      amount: amount,
-      duration: duration,
-      blockNumber: event.blockNumber,
-      blockHash: event.blockHash,
-      blockTimestamp: event.blockTimestamp,
-      txHash: event.transactionHash,
-      logIndex: event.logIndex,
+    const isStakeAdded = await this.#db.transaction(async (tx) => {
+      const stake = await this.#stakesRepository.stake(
+        {
+          stakeId: tokenId,
+          wallet: staker,
+          amount: amount,
+          duration: duration,
+          blockNumber: event.blockNumber,
+          blockHash: event.blockHash,
+          blockTimestamp: event.blockTimestamp,
+          txHash: event.transactionHash,
+          logIndex: event.logIndex,
+        },
+        tx,
+      );
+      if (stake) {
+        const competition =
+          await this.#competitionManager.getActiveCompetition();
+        if (
+          competition &&
+          competition.votingStartDate &&
+          competition.votingEndDate
+        ) {
+          await this.#boostAwardService.awardForStake(
+            {
+              id: tokenId,
+              wallet: staker,
+              amount: amount,
+              stakedAt: stake.stakedAt,
+              canUnstakeAfter: stake.canUnstakeAfter,
+            },
+            {
+              id: competition.id,
+              votingStartDate: competition.votingStartDate,
+              votingEndDate: competition.votingEndDate,
+            },
+            tx,
+          );
+        }
+      }
+      return stake;
     });
     if (isStakeAdded) {
       this.#logger.info(

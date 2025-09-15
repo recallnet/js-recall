@@ -19,6 +19,17 @@ import { getTraceId } from "@/lib/trace-context.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Drizzle `db` or transaction type.
+ */
+export type DbTransaction = typeof db.transaction extends (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this is fine, we don't care about that type
+  callback: (tx: infer T) => any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this is fine, we don't care about that type
+) => any
+  ? T
+  : never;
+
 // Prometheus metrics for database operations - check if already registered
 const getOrCreateDbMetrics = () => {
   // Try to get existing metric first

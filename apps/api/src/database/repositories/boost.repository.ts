@@ -2,7 +2,7 @@ import { and, eq, sql, sum } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
-import { Transaction } from "@recallnet/db-schema/types";
+import type { Transaction } from "@recallnet/db-schema/types";
 import * as schema from "@recallnet/db-schema/voting/defs";
 import {
   SelectAgentBoost,
