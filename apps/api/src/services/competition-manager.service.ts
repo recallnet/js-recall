@@ -558,13 +558,14 @@ export class CompetitionManager {
         await this.perpsDataProcessor.processPerpsCompetition(competitionId);
       const successCount = result.syncResult.successful.length;
       const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
       serviceLogger.debug(
-        `[CompetitionManager] Final perps sync completed: ${successCount}/${successCount + failedCount} agents synced successfully`,
+        `[CompetitionManager] Final perps sync completed: ${successCount}/${totalCount} agents synced successfully`,
       );
       if (failedCount > 0) {
         // Log warning but don't fail the competition ending
         serviceLogger.warn(
-          `[CompetitionManager] Failed to sync final data for ${failedCount} agents in ending competition`,
+          `[CompetitionManager] Failed to sync final data for ${failedCount} out of ${totalCount} agents in ending competition`,
         );
       }
     } else {
