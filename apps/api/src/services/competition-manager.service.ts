@@ -1,10 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
 
 import {
+  SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@recallnet/db-schema/core/types";
 
+import { db } from "@/database/db.js";
 import {
   findById as findAgentById,
   findByCompetition,
@@ -1006,24 +1008,58 @@ export class CompetitionManager {
   /**
    * Update a competition
    * @param competitionId The competition ID
-   * @param updates The fields to update
-   * @returns The updated competition
+   * @param updates The core competition fields to update
+   * @param tradingConstraints Optional trading constraints to update
+   * @param rewards Optional rewards to replace
+   * @returns The updated competition with constraints and rewards
    */
-  async updateCompetition(competitionId: string, updates: UpdateCompetition) {
+  async updateCompetition(
+    competitionId: string,
+    updates: UpdateCompetition,
+    tradingConstraints?: TradingConstraintsInput,
+    rewards?: Record<number, number>,
+  ): Promise<{
+    competition: SelectCompetition;
+    updatedRewards: SelectCompetitionReward[];
+  }> {
     // Get the existing competition
     const existingCompetition = await findById(competitionId);
     if (!existingCompetition) {
       throw new Error(`Competition not found: ${competitionId}`);
     }
 
-    // Update the competition
-    const updatedCompetition = await updateOne(competitionId, updates);
+    // Execute all updates in a single transaction
+    const result = await db.transaction(async (tx) => {
+      // Update the competition
+      const updatedCompetition = await updateOne(competitionId, updates, tx);
+
+      // Update trading constraints if provided
+      if (tradingConstraints) {
+        await this.tradingConstraintsService.updateConstraints(
+          competitionId,
+          tradingConstraints,
+          tx,
+        );
+      }
+
+      // Replace rewards if provided
+      let updatedRewards: SelectCompetitionReward[] = [];
+      if (rewards) {
+        updatedRewards = await this.competitionRewardService.replaceRewards(
+          competitionId,
+          rewards,
+          tx,
+        );
+      }
+
+      return { competition: updatedCompetition, updatedRewards };
+    });
 
     serviceLogger.debug(
       `[CompetitionManager] Updated competition: ${competitionId}`,
     );
 
-    return updatedCompetition;
+    return result;
   }
 
   /**
