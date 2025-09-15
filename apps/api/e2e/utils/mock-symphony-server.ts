@@ -38,6 +38,89 @@ export class MockSymphonyServer {
       openPositions: [],
       transfers: [],
     });
+
+    // Pre-configured test wallet with BTC and ETH positions
+    this.setAgentData("0x1111111111111111111111111111111111111111", {
+      initialCapital: 1000,
+      totalEquity: 1250,
+      availableBalance: 450,
+      marginUsed: 800,
+      totalVolume: 25000,
+      totalTrades: 15,
+      totalUnrealizedPnl: 250,
+      totalRealizedPnl: 0,
+      totalFeesPaid: 50,
+      openPositions: [
+        {
+          isLong: true,
+          leverage: 2,
+          positionSize: 0.5,
+          entryPrice: 45000,
+          currentPrice: 47000,
+          collateralAmount: 500,
+          pnlPercentage: 4.44,
+          pnlUSDValue: 1000,
+          asset: "BTC",
+          createdTimeStamp: new Date().toISOString(),
+        },
+        {
+          isLong: false,
+          leverage: 2,
+          positionSize: 2,
+          entryPrice: 3200,
+          currentPrice: 3150,
+          collateralAmount: 300,
+          pnlPercentage: 1.56,
+          pnlUSDValue: 100,
+          asset: "ETH",
+          createdTimeStamp: new Date().toISOString(),
+        },
+      ],
+      transfers: [],
+    });
+
+    // Pre-configured test wallet with SOL position (negative PnL)
+    this.setAgentData("0x2222222222222222222222222222222222222222", {
+      initialCapital: 1000,
+      totalEquity: 950,
+      availableBalance: 750,
+      marginUsed: 200,
+      totalVolume: 5000,
+      totalTrades: 3,
+      totalUnrealizedPnl: -50,
+      totalRealizedPnl: 0,
+      totalFeesPaid: 10,
+      openPositions: [
+        {
+          isLong: true,
+          leverage: 5,
+          positionSize: 10,
+          entryPrice: 100,
+          currentPrice: 95,
+          collateralAmount: 200,
+          pnlPercentage: -5,
+          pnlUSDValue: -50,
+          asset: "SOL",
+          createdTimeStamp: new Date().toISOString(),
+        },
+      ],
+      transfers: [],
+    });
+
+    // Pre-configured test wallet with no positions but has traded
+    this.setAgentData("0x3333333333333333333333333333333333333333", {
+      initialCapital: 1000,
+      totalEquity: 1100,
+      availableBalance: 1100,
+      marginUsed: 0,
+      totalVolume: 10000,
+      totalTrades: 20,
+      totalUnrealizedPnl: 0,
+      totalRealizedPnl: 100,
+      totalFeesPaid: 25,
+      openPositions: [],
+      transfers: [],
+    });
   }
 
   /**

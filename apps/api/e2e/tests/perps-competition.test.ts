@@ -794,6 +794,153 @@ describe("Perps Competition", () => {
     }
   });
 
+  test("should sync and persist agent positions from Symphony to database", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with pre-configured wallet addresses
+    // These wallets have mock data pre-configured in MockSymphonyServer
+    const { agent: agent1, client: agent1Client } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent With BTC ETH Positions",
+        agentWalletAddress: "0x1111111111111111111111111111111111111111", // Pre-configured with BTC/ETH positions
+      });
+
+    const { agent: agent2, client: agent2Client } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent With SOL Position",
+        agentWalletAddress: "0x2222222222222222222222222222222222222222", // Pre-configured with SOL position
+      });
+
+    const { agent: agent3, client: agent3Client } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent With History No Positions",
+        agentWalletAddress: "0x3333333333333333333333333333333333333333", // Pre-configured with trading history but no positions
+      });
+
+    // Start a perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Perps Position Sync Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id, agent3.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Trigger sync from Symphony (simulating what the cron job does)
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for sync to complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify agent1's positions (BTC and ETH) were persisted
+    const agent1Positions = await agent1Client.getPerpsPositions();
+    expect(agent1Positions.success).toBe(true);
+    if (agent1Positions.success) {
+      expect(agent1Positions.positions).toHaveLength(2);
+
+      const btcPosition = agent1Positions.positions.find(
+        (p) => p.marketSymbol === "BTC",
+      );
+      expect(btcPosition).toBeDefined();
+      expect(btcPosition?.side).toBe("long");
+      expect(btcPosition?.size).toBe("0.5");
+      expect(btcPosition?.averagePrice).toBe("45000");
+      expect(btcPosition?.markPrice).toBe("47000");
+      expect(btcPosition?.unrealizedPnl).toBe("1000");
+
+      const ethPosition = agent1Positions.positions.find(
+        (p) => p.marketSymbol === "ETH",
+      );
+      expect(ethPosition).toBeDefined();
+      expect(ethPosition?.side).toBe("short");
+      expect(ethPosition?.size).toBe("2");
+    }
+
+    // Verify agent1's account summary
+    const agent1Account = await agent1Client.getPerpsAccount();
+    expect(agent1Account.success).toBe(true);
+    if (agent1Account.success) {
+      expect(agent1Account.account.totalEquity).toBe("1250");
+      expect(agent1Account.account.availableBalance).toBe("450");
+      expect(agent1Account.account.marginUsed).toBe("800");
+      expect(agent1Account.account.totalVolume).toBe("25000");
+      expect(agent1Account.account.openPositions).toBe(2);
+    }
+
+    // Verify agent2's position (SOL with negative PnL) was persisted
+    const agent2Positions = await agent2Client.getPerpsPositions();
+    expect(agent2Positions.success).toBe(true);
+    if (agent2Positions.success) {
+      expect(agent2Positions.positions).toHaveLength(1);
+
+      const solPosition = agent2Positions.positions[0];
+      expect(solPosition?.marketSymbol).toBe("SOL");
+      expect(solPosition?.side).toBe("long");
+      expect(solPosition?.size).toBe("10");
+      expect(solPosition?.unrealizedPnl).toBe("-50");
+    }
+
+    // Verify agent2's account summary
+    const agent2Account = await agent2Client.getPerpsAccount();
+    expect(agent2Account.success).toBe(true);
+    if (agent2Account.success) {
+      expect(agent2Account.account.totalEquity).toBe("950");
+      expect(agent2Account.account.marginUsed).toBe("200");
+      expect(agent2Account.account.openPositions).toBe(1);
+    }
+
+    // Verify agent3's data (has trading history but no positions)
+    const agent3Positions = await agent3Client.getPerpsPositions();
+    expect(agent3Positions.success).toBe(true);
+    if (agent3Positions.success) {
+      expect(agent3Positions.positions).toHaveLength(0);
+    }
+
+    const agent3Account = await agent3Client.getPerpsAccount();
+    expect(agent3Account.success).toBe(true);
+    if (agent3Account.success) {
+      expect(agent3Account.account.totalEquity).toBe("1100");
+      expect(agent3Account.account.availableBalance).toBe("1100");
+      expect(agent3Account.account.marginUsed).toBe("0");
+      expect(agent3Account.account.totalVolume).toBe("10000");
+      expect(agent3Account.account.openPositions).toBe(0);
+    }
+
+    // Verify competition summary reflects all agents' data
+    const summaryResponse = await adminClient.getCompetitionPerpsSummary(
+      competition.id,
+    );
+    expect(summaryResponse.success).toBe(true);
+    if (summaryResponse.success) {
+      expect(summaryResponse.summary.totalAgents).toBe(3);
+      expect(summaryResponse.summary.totalPositions).toBe(3); // 2 for agent1 + 1 for agent2 + 0 for agent3
+      expect(summaryResponse.summary.totalVolume).toBe(40000); // 25000 + 5000 + 10000
+      expect(summaryResponse.summary.averageEquity).toBe(1100); // (1250 + 950 + 1100) / 3
+    }
+
+    // Verify agent-specific competition endpoint also works
+    const agent1CompPositions =
+      await adminClient.getAgentPerpsPositionsInCompetition(
+        competition.id,
+        agent1.id,
+      );
+    expect(agent1CompPositions.success).toBe(true);
+    if (agent1CompPositions.success) {
+      expect(agent1CompPositions.positions).toHaveLength(2);
+      // Verify the positions match what we set up
+      const positions = agent1CompPositions.positions;
+      expect(positions.some((p) => p.marketSymbol === "BTC")).toBe(true);
+      expect(positions.some((p) => p.marketSymbol === "ETH")).toBe(true);
+    }
+  });
+
   test("should get perps competition summary", async () => {
     // Setup admin client
     const adminClient = createTestClient(getBaseUrl());
