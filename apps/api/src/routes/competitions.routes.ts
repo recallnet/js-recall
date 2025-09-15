@@ -1495,12 +1495,15 @@ export function configureCompetitionsRoutes(
    *                         format: uuid
    *                       positionId:
    *                         type: string
+   *                         nullable: true
    *                         description: Provider-specific position ID
    *                       marketId:
    *                         type: string
+   *                         nullable: true
    *                         description: Market identifier
    *                       marketSymbol:
    *                         type: string
+   *                         nullable: true
    *                         example: "BTC-USD"
    *                       side:
    *                         type: string

@@ -952,9 +952,9 @@ export interface PerpsPosition {
   id: string;
   agentId: string;
   competitionId: string;
-  positionId: string;
-  marketId: string;
-  marketSymbol: string;
+  positionId: string | null;
+  marketId: string | null;
+  marketSymbol: string | null;
   side: "long" | "short";
   size: string;
   averagePrice: string;
