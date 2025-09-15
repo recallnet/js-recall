@@ -1,5 +1,5 @@
 {
-  "id": "aec2cdb6-a7a6-4ffd-83cb-b47d50247af0",
+  "id": "9ab6219c-056a-41cf-ab34-faf5eb1083c7",
   "prevId": "112dcfc1-d1b6-4cd7-adfe-58a4b2a59982",
   "version": "7",
   "dialect": "postgresql",
@@ -3010,7 +3010,8 @@
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "agent_id": {
           "name": "agent_id",
@@ -3133,22 +3134,11 @@
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "agent_id": {
-          "name": "agent_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "competition_id": {
-          "name": "competition_id",
+        "agent_boost_total_id": {
+          "name": "agent_boost_total_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -3168,41 +3158,11 @@
         }
       },
       "indexes": {
-        "agent_boots_user_id_idx": {
-          "name": "agent_boots_user_id_idx",
+        "agent_boosts_agent_boost_total_id_idx": {
+          "name": "agent_boosts_agent_boost_total_id_idx",
           "columns": [
             {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "agent_boots_agent_id_idx": {
-          "name": "agent_boots_agent_id_idx",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "agent_boosts_competition_id_idx": {
-          "name": "agent_boosts_competition_id_idx",
-          "columns": [
-            {
-              "expression": "competition_id",
+              "expression": "agent_boost_total_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3227,35 +3187,53 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "agent_boosts_created_at_idx": {
+          "name": "agent_boosts_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "agent_boosts_agent_boost_total_id_change_id_idx": {
+          "name": "agent_boosts_agent_boost_total_id_change_id_idx",
+          "columns": [
+            {
+              "expression": "agent_boost_total_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "change_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
-        "agent_boosts_user_id_users_id_fk": {
-          "name": "agent_boosts_user_id_users_id_fk",
+        "agent_boosts_agent_boost_total_id_agent_boost_totals_id_fk": {
+          "name": "agent_boosts_agent_boost_total_id_agent_boost_totals_id_fk",
           "tableFrom": "agent_boosts",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
+          "tableTo": "agent_boost_totals",
+          "columnsFrom": ["agent_boost_total_id"],
           "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "agent_boosts_agent_id_agents_id_fk": {
-          "name": "agent_boosts_agent_id_agents_id_fk",
-          "tableFrom": "agent_boosts",
-          "tableTo": "agents",
-          "columnsFrom": ["agent_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "agent_boosts_competition_id_competitions_id_fk": {
-          "name": "agent_boosts_competition_id_competitions_id_fk",
-          "tableFrom": "agent_boosts",
-          "tableTo": "competitions",
-          "columnsFrom": ["competition_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
         },
         "agent_boosts_change_id_boost_changes_id_fk": {
           "name": "agent_boosts_change_id_boost_changes_id_fk",
@@ -3284,9 +3262,9 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "wallet": {
-          "name": "wallet",
-          "type": "bytea",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -3319,11 +3297,11 @@
         }
       },
       "indexes": {
-        "boost_balances_wallet_competition_uniq": {
-          "name": "boost_balances_wallet_competition_uniq",
+        "boost_balances_user_competition_uniq": {
+          "name": "boost_balances_user_competition_uniq",
           "columns": [
             {
-              "expression": "wallet",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3393,6 +3371,15 @@
         }
       },
       "foreignKeys": {
+        "boost_balances_user_id_users_id_fk": {
+          "name": "boost_balances_user_id_users_id_fk",
+          "tableFrom": "boost_balances",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "boost_balances_competition_id_competitions_id_fk": {
           "name": "boost_balances_competition_id_competitions_id_fk",
           "tableFrom": "boost_balances",
@@ -3417,11 +3404,18 @@
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "balance_id": {
           "name": "balance_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "wallet": {
+          "name": "wallet",
+          "type": "bytea",
           "primaryKey": false,
           "notNull": true
         },
@@ -3495,6 +3489,21 @@
           "method": "btree",
           "with": {}
         },
+        "boost_changes_wallet_idx": {
+          "name": "boost_changes_wallet_idx",
+          "columns": [
+            {
+              "expression": "wallet",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "boost_changes_created_at_idx": {
           "name": "boost_changes_created_at_idx",
           "columns": [
@@ -3536,7 +3545,8 @@
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "number": {
           "name": "number",
@@ -3579,7 +3589,8 @@
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "competition_id": {
           "name": "competition_id",
@@ -3684,7 +3695,8 @@
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "competition_id": {
           "name": "competition_id",
@@ -3754,7 +3766,8 @@
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "competition_id": {
           "name": "competition_id",

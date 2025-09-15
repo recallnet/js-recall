@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
-  customType,
   index,
   integer,
   jsonb,
@@ -12,20 +11,9 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { tokenAmount } from "../util.js";
+import { bytea, tokenAmount } from "../util.js";
 
 export { indexingEvents, stakes, stakeChanges };
-
-const bytea = customType<{
-  data: Uint8Array | Buffer; // what your app uses
-  driverData: Buffer; // what node-postgres returns
-  notNull: false;
-  default: false;
-}>({
-  dataType: () => "bytea",
-  toDriver: (v) => (v instanceof Buffer ? v : Buffer.from(v)),
-  fromDriver: (v) => v, // Buffer
-});
 
 /**
  * Source-of-truth feed of *raw on-chain events* we indexed (stake/unstake/relock/withdraw).

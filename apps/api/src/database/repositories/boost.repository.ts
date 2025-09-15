@@ -1,5 +1,5 @@
 import { and, eq, sql, sum } from "drizzle-orm";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import { Transaction } from "@recallnet/db-schema/types";
@@ -31,6 +31,8 @@ const DEFAULT_META: BoostChangeMeta = {};
  *   If omitted, a random UUID is generated (non-idempotent across retries).
  */
 type BoostDiffArgs = {
+  /** User ID */
+  userId: string;
   /** EVM address; will be lowercased before persisting. */
   wallet: string;
   /** Competition ID */
@@ -186,6 +188,7 @@ class BoostRepository {
    *   on first application (useful for marking events without changing balance).
    */
   increase(args: BoostDiffArgs, tx?: Transaction): Promise<BoostDiffResult> {
+    const userId = args.userId;
     const amount = args.amount;
     if (amount < 0n) {
       throw new Error("amount must be non-negative");
@@ -202,13 +205,13 @@ class BoostRepository {
       const [inserted] = await tx
         .insert(schema.boostBalances)
         .values({
-          wallet: wallet,
+          userId,
           balance: 0n,
           competitionId: competitionId,
         })
         .onConflictDoNothing({
           target: [
-            schema.boostBalances.wallet,
+            schema.boostBalances.userId,
             schema.boostBalances.competitionId,
           ],
         })
@@ -227,7 +230,7 @@ class BoostRepository {
           .from(schema.boostBalances)
           .where(
             and(
-              eq(schema.boostBalances.wallet, wallet),
+              eq(schema.boostBalances.userId, userId),
               eq(schema.boostBalances.competitionId, competitionId),
             ),
           )
@@ -245,7 +248,7 @@ class BoostRepository {
       const [insertedChange] = await tx
         .insert(schema.boostChanges)
         .values({
-          id: randomUUID(),
+          wallet,
           balanceId: balanceRow.id,
           deltaAmount: amount,
           meta,
@@ -261,13 +264,13 @@ class BoostRepository {
         const [updated] = await tx
           .insert(schema.boostBalances)
           .values({
-            wallet: wallet,
+            userId,
             balance: amount,
             competitionId: competitionId,
           })
           .onConflictDoUpdate({
             target: [
-              schema.boostBalances.wallet,
+              schema.boostBalances.userId,
               schema.boostBalances.competitionId,
             ],
             set: {
@@ -327,6 +330,7 @@ class BoostRepository {
     if (amount <= 0n) {
       throw new Error("amount must be positive");
     }
+    const userId = args.userId;
     const idemKey = args.idemKey ?? randomBytes(32);
     const wallet = BlockchainAddressAsU8A.encode(args.wallet);
     const meta = args.meta || DEFAULT_META;
@@ -344,7 +348,7 @@ class BoostRepository {
         .from(schema.boostBalances)
         .where(
           and(
-            eq(schema.boostBalances.wallet, wallet),
+            eq(schema.boostBalances.userId, userId),
             eq(schema.boostBalances.competitionId, competitionId),
           ),
         )
@@ -390,7 +394,7 @@ class BoostRepository {
         })
         .where(
           and(
-            eq(schema.boostBalances.wallet, wallet),
+            eq(schema.boostBalances.userId, userId),
             eq(schema.boostBalances.competitionId, competitionId),
           ),
         )
@@ -406,7 +410,7 @@ class BoostRepository {
       const [change] = await tx
         .insert(schema.boostChanges)
         .values({
-          id: randomUUID(),
+          wallet,
           balanceId: balanceRow.id,
           deltaAmount: -amount,
           meta,
@@ -454,17 +458,17 @@ class BoostRepository {
    * - The balance reflects the net result of all increase/decrease operations.
    *
    * @param args - The balance query parameters
-   * @param args.wallet - EVM address of the wallet to query (will be lowercased)
+   * @param args.userId - User ID whose balance to retrieve
    * @param args.competitionId - ID of the competition context
    * @param args.tx - Optional database transaction to use for the query
    * @returns Promise resolving to the current balance (0n if no record exists)
    */
-  async walletBoostBalance(
+  async userBoostBalance(
     {
-      wallet,
+      userId,
       competitionId,
     }: {
-      wallet: string;
+      userId: string;
       competitionId: string;
     },
     tx?: Transaction,
@@ -475,10 +479,7 @@ class BoostRepository {
       .from(schema.boostBalances)
       .where(
         and(
-          eq(
-            schema.boostBalances.wallet,
-            BlockchainAddressAsU8A.encode(wallet),
-          ),
+          eq(schema.boostBalances.userId, userId),
           eq(schema.boostBalances.competitionId, competitionId),
         ),
       )
@@ -539,23 +540,31 @@ class BoostRepository {
     const executor = tx || this.#db;
     const res = await executor
       .select({
-        agentId: schema.agentBoosts.agentId,
+        agentId: schema.agentBoostTotals.agentId,
         boostTotal: sum(schema.boostChanges.deltaAmount).mapWith(
           (val) => BigInt(val) * -1n,
         ),
       })
-      .from(schema.agentBoosts)
+      .from(schema.agentBoostTotals)
+      .innerJoin(
+        schema.agentBoosts,
+        eq(schema.agentBoostTotals.id, schema.agentBoosts.agentBoostTotalId),
+      )
       .innerJoin(
         schema.boostChanges,
         eq(schema.agentBoosts.changeId, schema.boostChanges.id),
       )
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
       .where(
         and(
-          eq(schema.agentBoosts.userId, userId),
-          eq(schema.agentBoosts.competitionId, competitionId),
+          eq(schema.boostBalances.userId, userId),
+          eq(schema.agentBoostTotals.competitionId, competitionId),
         ),
       )
-      .groupBy(schema.agentBoosts.agentId);
+      .groupBy(schema.agentBoostTotals.agentId);
 
     const map = res.reduce<Record<string, bigint>>((acc, curr) => {
       return { ...acc, [curr.agentId]: curr.boostTotal };
@@ -624,7 +633,7 @@ class BoostRepository {
 
       // Decrease the user's boost balance
       const diffRes = await this.decrease(
-        { amount, competitionId, wallet, idemKey },
+        { userId, amount, competitionId, wallet, idemKey },
         tx,
       );
       if (diffRes.type === "noop") {
@@ -639,28 +648,10 @@ class BoostRepository {
         };
       }
 
-      // Insert into our immutable log of boosts for agents, referencing the boost change log
-      const [agentBoost] = await tx
-        .insert(schema.agentBoosts)
-        .values({
-          id: randomUUID(),
-          userId,
-          agentId,
-          competitionId,
-          changeId: diffRes.changeId,
-        })
-        .returning();
-      if (!agentBoost) {
-        throw new Error(
-          `Failed to boost agentId ${agentId} in competition ${competitionId} by user ${userId} `,
-        );
-      }
-
       // Upsert into the agent boost totals table
       const [updatedAgentBoostTotal] = await tx
         .insert(schema.agentBoostTotals)
         .values({
-          id: randomUUID(),
           agentId,
           competitionId,
           total: amount,
@@ -677,6 +668,19 @@ class BoostRepository {
         })
         .returning();
       if (!updatedAgentBoostTotal) {
+        throw new Error(
+          `Failed to boost agentId ${agentId} in competition ${competitionId} by user ${userId} `,
+        );
+      }
+      // Insert into our immutable log of boosts for agents, referencing the boost change log
+      const [agentBoost] = await tx
+        .insert(schema.agentBoosts)
+        .values({
+          agentBoostTotalId: updatedAgentBoostTotal.id,
+          changeId: diffRes.changeId,
+        })
+        .returning();
+      if (!agentBoost) {
         throw new Error(
           `Failed to boost agentId ${agentId} in competition ${competitionId} by user ${userId} `,
         );

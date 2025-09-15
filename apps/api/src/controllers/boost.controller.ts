@@ -43,8 +43,8 @@ export function makeBoostController(services: ServiceRegistry) {
           throw new ApiError(404, "User not found");
         }
 
-        const balance = await boostRepository.walletBoostBalance({
-          wallet: user.walletAddress,
+        const balance = await boostRepository.userBoostBalance({
+          userId: user.id,
           competitionId,
         });
 
