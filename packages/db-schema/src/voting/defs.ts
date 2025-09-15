@@ -114,7 +114,7 @@ export const rewardsRoots = pgTable(
 export const boostBalances = pgTable(
   "boost_balances",
   {
-    id: uuid("id").defaultRandom().primaryKey().defaultRandom(),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

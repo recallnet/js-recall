@@ -643,7 +643,7 @@ export class ApiClient {
   }
 
   /**
-   * Boost an agent in a compeition
+   * Boost an agent in a competition
    * @param competitionId - Competition ID
    * @param agentId - The agent to boost
    * @param currentAgentBoostTotal - The current agent boost total, used for idempotency

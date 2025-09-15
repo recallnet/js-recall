@@ -18,7 +18,7 @@ export default defineConfig({
       ],
     },
     reporters: ["default", "e2e/utils/log-reporter.ts"],
-    workspace: [
+    projects: [
       {
         extends: true,
         test: {
