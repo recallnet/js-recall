@@ -143,8 +143,16 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
           <div className="grid grid-cols-3">
             <div className="flex flex-col items-start justify-center gap-2 border-r p-4 sm:p-[25px]">
-              <CellTitle>Total Trades</CellTitle>
-              <span className="font-bold">{competition.stats.totalTrades}</span>
+              <CellTitle>
+                {competition.type === "perpetual_futures"
+                  ? "Total Positions"
+                  : "Total Trades"}
+              </CellTitle>
+              <span className="font-bold">
+                {competition.type === "perpetual_futures"
+                  ? (competition.stats.totalPositions ?? 0)
+                  : (competition.stats.totalTrades ?? 0)}
+              </span>
             </div>
             <div className="flex flex-col items-start justify-center gap-2 border-r p-4 sm:p-[25px]">
               <CellTitle>Volume</CellTitle>
@@ -157,9 +165,21 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               </span>
             </div>
             <div className="flex flex-col items-start justify-center gap-2 p-4 sm:p-[25px]">
-              <CellTitle>Tokens Traded</CellTitle>
+              <CellTitle>
+                {competition.type === "perpetual_futures"
+                  ? "Average Equity"
+                  : "Tokens Traded"}
+              </CellTitle>
               <span className="font-bold">
-                {competition.stats.uniqueTokens}
+                {competition.type === "perpetual_futures"
+                  ? `$${(competition.stats.averageEquity ?? 0).toLocaleString(
+                      undefined,
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      },
+                    )}`
+                  : (competition.stats.uniqueTokens ?? 0)}
               </span>
             </div>
           </div>

@@ -52,11 +52,13 @@ export interface Competition {
   createdAt: string;
   updatedAt: string;
   stats: {
-    totalTrades: number;
+    totalTrades?: number; // Only for paper trading competitions
     totalAgents: number;
     totalVolume: number;
     totalVotes: number;
-    uniqueTokens: number;
+    uniqueTokens?: number; // Only for paper trading competitions
+    totalPositions?: number; // Only for perpetual futures competitions
+    averageEquity?: number; // Only for perpetual futures competitions
   };
   votingEnabled: boolean;
   votingStartDate: string | null;
@@ -73,7 +75,8 @@ export interface Competition {
   portfolioValue?: number;
   pnl?: number;
   pnlPercent?: number;
-  totalTrades?: number;
+  totalTrades?: number; // Agent's total trades (paper trading competitions)
+  totalPositions?: number; // Agent's total positions (perpetual futures competitions)
   bestPlacement?: {
     rank?: number;
     totalAgents?: number;
@@ -191,8 +194,62 @@ export interface GetCompetitionTradesParams {
   offset?: number;
 }
 
+export interface GetCompetitionPerpsPositionsParams {
+  limit?: number;
+  offset?: number;
+  status?: string; // Optional filter: "Open", "Closed", "Liquidated"
+}
+
 export interface CompetitionTradesResponse {
   success: boolean;
   trades: Trade[];
   pagination: PaginationResponse;
+}
+
+export interface PerpsPosition {
+  id: string;
+  competitionId: string;
+  agentId: string;
+  positionId: string | null;
+  marketId: string | null;
+  marketSymbol: string | null;
+  asset: string;
+  isLong: boolean;
+  leverage: number;
+  size: number;
+  collateral: number;
+  averagePrice: number;
+  markPrice: number;
+  liquidationPrice: number | null;
+  unrealizedPnl: number;
+  realizedPnl: number;
+  status?: string;
+  openedAt: string;
+  closedAt: string | null;
+  timestamp: string;
+  agent?: {
+    id: string;
+    name: string;
+    imageUrl: string;
+    handle?: string;
+    description?: string;
+  };
+}
+
+export interface CompetitionPerpsPositionsResponse {
+  success: boolean;
+  positions: PerpsPosition[];
+  pagination: PaginationResponse;
+}
+
+export interface CompetitionPerpsSummaryResponse {
+  success: boolean;
+  competitionId: string;
+  summary: {
+    totalAgents: number;
+    totalPositions: number;
+    totalVolume: number;
+    averageEquity: number;
+  };
+  timestamp: string;
 }

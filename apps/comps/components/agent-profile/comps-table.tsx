@@ -45,7 +45,7 @@ export function CompetitionTable({
             <TableRow
               className={cn(
                 "grid w-full",
-                canClaim ? "grid-cols-8" : "grid-cols-7",
+                canClaim ? "grid-cols-9" : "grid-cols-8",
               )}
             >
               <SortableTableHeader
@@ -75,6 +75,12 @@ export function CompetitionTable({
                 sortState={sortState["totalTrades"]}
               >
                 Trades
+              </SortableTableHeader>
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("totalPositions")}
+                sortState={sortState["totalPositions"]}
+              >
+                Positions
               </SortableTableHeader>
               <TableHead>Placement</TableHead>
               {/* TODO: fix `bestPlacement.rank` sorting bug */}
@@ -114,7 +120,7 @@ export function CompetitionTable({
                     onClick={() => router.push(`/competitions/${comp.id}`)}
                     className={cn(
                       "grid w-full cursor-pointer",
-                      canClaim ? "grid-cols-8" : "grid-cols-7",
+                      canClaim ? "grid-cols-9" : "grid-cols-8",
                     )}
                   >
                     <TableCell className="flex flex-col justify-center">
@@ -134,12 +140,27 @@ export function CompetitionTable({
                       {/* Future skills mapping */}
                     </TableCell>
                     <TableCell className="text-md text-secondary-foreground flex items-center font-medium">
-                      {typeof comp.portfolioValue === "number"
-                        ? `$${comp.portfolioValue.toFixed(2)}`
-                        : "n/a"}
-                      <span className="ml-2 text-xs">USDC</span>
+                      {comp.type === "perpetual_futures" ? (
+                        <div className="flex flex-col">
+                          <span>
+                            {typeof comp.portfolioValue === "number"
+                              ? `$${comp.portfolioValue.toFixed(2)}`
+                              : "n/a"}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            Total Equity
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          {typeof comp.portfolioValue === "number"
+                            ? `$${comp.portfolioValue.toFixed(2)}`
+                            : "n/a"}
+                          <span className="ml-2 text-xs">USDC</span>
+                        </>
+                      )}
                     </TableCell>
-                    <TableCell className="w-30 flex items-center justify-center font-medium">
+                    <TableCell className="w-30 flex items-center font-medium">
                       <span className="text-secondary-foreground flex flex-col">
                         {typeof comp.pnlPercent === "number"
                           ? `${Math.round(comp.pnlPercent)}%`
@@ -147,7 +168,10 @@ export function CompetitionTable({
                       </span>
                     </TableCell>
                     <TableCell className="w-30 text-md fond-semibold text-secondary-foreground flex items-center text-center">
-                      {comp.totalTrades}
+                      {comp.totalTrades ?? 0}
+                    </TableCell>
+                    <TableCell className="w-30 text-md fond-semibold text-secondary-foreground flex items-center text-center">
+                      {comp.totalPositions ?? 0}
                     </TableCell>
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
                       {comp.bestPlacement?.rank &&
@@ -178,7 +202,7 @@ export function CompetitionTable({
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="p-5 text-center">
+                <TableCell colSpan={8} className="p-5 text-center">
                   <div className="flex flex-col">
                     <span className="text-secondary-foreground font-bold">
                       This agent hasn&apos;t joined any competitions yet
