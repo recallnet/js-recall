@@ -315,56 +315,6 @@ async function getLatestPerpsAccountSummaryImpl(
   }
 }
 
-/**
- * Get latest account summaries for multiple agents in bulk
- * @param competitionId Competition ID
- * @param agentIds Array of agent IDs
- * @returns Array of latest summaries
- */
-async function getBulkLatestAccountSummariesImpl(
-  competitionId: string,
-  agentIds: string[],
-): Promise<SelectPerpsAccountSummary[]> {
-  if (agentIds.length === 0) {
-    return [];
-  }
-
-  try {
-    // Process in batches to avoid query size limits (PostgreSQL IN clause limit)
-    const summaries: SelectPerpsAccountSummary[] = [];
-    const batchSize = 500; // PostgreSQL can handle large IN clauses efficiently
-
-    for (let i = 0; i < agentIds.length; i += batchSize) {
-      const batchAgentIds = agentIds.slice(i, i + batchSize);
-
-      const batchResults = await dbRead
-        .selectDistinctOn([perpsAccountSummaries.agentId])
-        .from(perpsAccountSummaries)
-        .where(
-          and(
-            inArray(perpsAccountSummaries.agentId, batchAgentIds),
-            eq(perpsAccountSummaries.competitionId, competitionId),
-          ),
-        )
-        .orderBy(
-          perpsAccountSummaries.agentId,
-          desc(perpsAccountSummaries.timestamp),
-        );
-
-      summaries.push(...batchResults);
-    }
-
-    repositoryLogger.debug(
-      `[PerpsRepository] Retrieved ${summaries.length} latest account summaries for ${agentIds.length} agents`,
-    );
-
-    return summaries;
-  } catch (error) {
-    repositoryLogger.error("Error in getBulkLatestAccountSummaries:", error);
-    throw error;
-  }
-}
-
 // =============================================================================
 // SELF-FUNDING ALERTS
 // =============================================================================
@@ -1047,12 +997,6 @@ export const getLatestPerpsAccountSummary = createTimedRepositoryFunction(
   getLatestPerpsAccountSummaryImpl,
   "PerpsRepository",
   "getLatestPerpsAccountSummary",
-);
-
-export const getBulkLatestAccountSummaries = createTimedRepositoryFunction(
-  getBulkLatestAccountSummariesImpl,
-  "PerpsRepository",
-  "getBulkLatestAccountSummaries",
 );
 
 export const createPerpsSelfFundingAlert = createTimedRepositoryFunction(
