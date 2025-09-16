@@ -22,10 +22,10 @@ import { serviceLogger } from "@/lib/logger.js";
 import { AdminMetadata, SearchAdminsParams } from "@/types/index.js";
 
 /**
- * Admin Manager Service
+ * Admin Service
  * Manages admin accounts, authentication, and session management
  */
-export class AdminManager {
+export class AdminService {
   // In-memory cache for API keys to avoid database lookups on every request
   private apiKeyCache: Map<string, string>; // apiKey -> adminId
   // Cache for admin profiles by ID

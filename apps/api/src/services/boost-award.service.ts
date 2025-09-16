@@ -4,7 +4,7 @@ import type {
   BoostDiffResult,
   BoostRepository,
 } from "@/database/repositories/boost.repository.js";
-import type { UserManager } from "@/services/user-manager.service.js";
+import type { UserService } from "@/services/user.service.js";
 
 export { BoostAwardService };
 
@@ -28,12 +28,12 @@ const DECIMALS = 18; // RECALL TOKEN DECIMALS
 
 class BoostAwardService {
   readonly #boostRepository: BoostRepository;
-  readonly #userManager: UserManager;
+  readonly #userService: UserService;
   readonly #divisor: bigint;
 
-  constructor(boostRepository: BoostRepository, userManager: UserManager) {
+  constructor(boostRepository: BoostRepository, userService: UserService) {
     this.#boostRepository = boostRepository;
-    this.#userManager = userManager;
+    this.#userService = userService;
     this.#divisor = 10n ** BigInt(DECIMALS);
   }
 
@@ -48,7 +48,7 @@ class BoostAwardService {
       stake: stake.id.toString(),
     }).toString();
     const idemKey = TEXT_ENCODER.encode(idemKeyString);
-    const user = await this.#userManager.getUserByWalletAddress(wallet);
+    const user = await this.#userService.getUserByWalletAddress(wallet);
     if (!user) {
       return {
         type: "noop",

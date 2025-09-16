@@ -65,7 +65,7 @@ describe("Competition End Date Processing", () => {
     await wait(7000);
 
     const services = new ServiceRegistry();
-    await services.competitionManager.processCompetitionEndDateChecks();
+    await services.competitionService.processCompetitionEndDateChecks();
 
     // Check if competition has been automatically ended
     const endedCompetition = await adminClient.getCompetition(competition.id);
@@ -121,7 +121,7 @@ describe("Competition End Date Processing", () => {
 
     // This is simulating a cron execution of auto-end-competitions script.
     const services = new ServiceRegistry();
-    await services.competitionManager.processCompetitionEndDateChecks();
+    await services.competitionService.processCompetitionEndDateChecks();
 
     // Competition should still be active since end date hasn't passed
     const stillActiveCompetition = await adminClient.getCompetition(

@@ -21,7 +21,7 @@ async function autoEndCompetitions() {
   try {
     // Process competition end date checks
     logger.info("Checking competition end dates...");
-    await services.competitionManager.processCompetitionEndDateChecks();
+    await services.competitionService.processCompetitionEndDateChecks();
 
     const duration = Date.now() - startTime;
     logger.info(

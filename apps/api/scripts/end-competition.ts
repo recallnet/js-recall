@@ -57,7 +57,7 @@ async function endCompetition() {
 
     // Check if a competition is active
     const activeCompetition =
-      await services.competitionManager.getActiveCompetition();
+      await services.competitionService.getActiveCompetition();
 
     if (!activeCompetition) {
       console.log(
@@ -91,7 +91,7 @@ async function endCompetition() {
     console.log(
       `\n${colors.blue}Fetching current leaderboard...${colors.reset}`,
     );
-    const leaderboard = await services.competitionManager.getLeaderboard(
+    const leaderboard = await services.competitionService.getLeaderboard(
       activeCompetition.id,
     );
 
@@ -141,12 +141,12 @@ async function endCompetition() {
 
     // End the competition
     console.log(`\n${colors.blue}Ending competition...${colors.reset}`);
-    const endedCompetition = await services.competitionManager.endCompetition(
+    const endedCompetition = await services.competitionService.endCompetition(
       activeCompetition.id,
     );
 
     // Get final leaderboard
-    const finalLeaderboard = await services.competitionManager.getLeaderboard(
+    const finalLeaderboard = await services.competitionService.getLeaderboard(
       activeCompetition.id,
     );
 

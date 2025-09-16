@@ -10,10 +10,10 @@ import { serviceLogger } from "@/lib/logger.js";
 import { SpecificChain } from "@/types/index.js";
 
 /**
- * Balance Manager Service
+ * Balance Service
  * Manages token balances for agents
  */
-export class BalanceManager {
+export class BalanceService {
   // Cache of agentId -> Map of tokenAddress -> balance
   private balanceCache: Map<string, Map<string, number>>;
 

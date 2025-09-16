@@ -125,9 +125,9 @@ const agentApiKeyRoutes = [
 
 const userSessionRoutes = [`${apiBasePath}/api/user`];
 const authMiddlewareInstance = authMiddleware(
-  services.agentManager,
-  services.userManager,
-  services.adminManager,
+  services.agentService,
+  services.userService,
+  services.adminService,
 );
 
 // Apply agent API key authentication to agent routes
@@ -140,11 +140,11 @@ app.use(userSessionRoutes, authMiddlewareInstance);
 // This ensures we can properly rate limit by agent/user ID
 app.use(rateLimiterMiddleware);
 
-const adminMiddleware = adminAuthMiddleware(services.adminManager);
+const adminMiddleware = adminAuthMiddleware(services.adminService);
 const optionalAuth = optionalAuthMiddleware(
-  services.agentManager,
-  services.userManager,
-  services.adminManager,
+  services.agentService,
+  services.userService,
+  services.adminService,
 );
 
 const adminController = makeAdminController(services);

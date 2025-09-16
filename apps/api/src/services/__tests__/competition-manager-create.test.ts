@@ -5,16 +5,16 @@ import type { SelectTradingConstraints } from "@recallnet/db-schema/trading/type
 
 import { db } from "@/database/db.js";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";
-import type { AgentManager } from "@/services/agent-manager.service.js";
+import type { AgentService } from "@/services/agent.service.js";
 import type { AgentRankService } from "@/services/agentrank.service.js";
-import type { BalanceManager } from "@/services/balance-manager.service.js";
-import { CompetitionManager } from "@/services/competition-manager.service.js";
+import type { BalanceService } from "@/services/balance.service.js";
 import type { CompetitionRewardService } from "@/services/competition-reward.service.js";
+import { CompetitionService } from "@/services/competition.service.js";
 import type { ConfigurationService } from "@/services/configuration.service.js";
-import type { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
-import type { TradeSimulator } from "@/services/trade-simulator.service.js";
+import type { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
+import type { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import type { TradingConstraintsService } from "@/services/trading-constraints.service.js";
-import type { VoteManager } from "@/services/vote-manager.service.js";
+import type { VoteService } from "@/services/vote.service.js";
 
 // Mock logger first to prevent db initialization
 vi.mock("@/lib/logger.js", () => ({
@@ -41,8 +41,8 @@ vi.mock("@/database/repositories/competition-repository.js");
 vi.mock("@/services/competition-reward.service.js");
 vi.mock("@/services/trading-constraints.service.js");
 
-describe("CompetitionManager - createCompetition", () => {
-  let competitionManager: CompetitionManager;
+describe("CompetitionService - createCompetition", () => {
+  let competitionService: CompetitionService;
   let mockCompetitionRewardService: Partial<CompetitionRewardService>;
   let mockTradingConstraintsService: Partial<TradingConstraintsService>;
   let mockDb: { transaction: ReturnType<typeof vi.fn> };
@@ -105,23 +105,24 @@ describe("CompetitionManager - createCompetition", () => {
     }));
 
     // Create mock services for all dependencies
-    const mockBalanceManager = {} as unknown as BalanceManager;
-    const mockTradeSimulator = {} as unknown as TradeSimulator;
-    const mockPortfolioSnapshotter = {} as unknown as PortfolioSnapshotter;
-    const mockAgentManager = {} as unknown as AgentManager;
+    const mockBalanceService = {} as unknown as BalanceService;
+    const mockTradeSimulatorService = {} as unknown as TradeSimulatorService;
+    const mockPortfolioSnapshotterService =
+      {} as unknown as PortfolioSnapshotterService;
+    const mockAgentService = {} as unknown as AgentService;
     const mockConfigurationService = {} as unknown as ConfigurationService;
     const mockAgentRankService = {} as unknown as AgentRankService;
-    const mockVoteManager = {} as unknown as VoteManager;
+    const mockVoteService = {} as unknown as VoteService;
 
     // Create competition manager instance with all mocked dependencies
-    competitionManager = new CompetitionManager(
-      mockBalanceManager,
-      mockTradeSimulator,
-      mockPortfolioSnapshotter,
-      mockAgentManager,
+    competitionService = new CompetitionService(
+      mockBalanceService,
+      mockTradeSimulatorService,
+      mockPortfolioSnapshotterService,
+      mockAgentService,
       mockConfigurationService,
       mockAgentRankService,
-      mockVoteManager,
+      mockVoteService,
       mockTradingConstraintsService as unknown as TradingConstraintsService,
       mockCompetitionRewardService as unknown as CompetitionRewardService,
     );
@@ -138,7 +139,7 @@ describe("CompetitionManager - createCompetition", () => {
       return await callback(mockTx);
     });
 
-    const result = await competitionManager.createCompetition({
+    const result = await competitionService.createCompetition({
       name: "New Competition",
       description: "Test Description",
       tradingType: "disallowAll",
@@ -212,7 +213,7 @@ describe("CompetitionManager - createCompetition", () => {
       return await callback(mockTx);
     });
 
-    const result = await competitionManager.createCompetition({
+    const result = await competitionService.createCompetition({
       name: "No Rewards Competition",
       description: "Test without rewards",
       tradingType: "disallowAll",
@@ -239,7 +240,7 @@ describe("CompetitionManager - createCompetition", () => {
     );
 
     await expect(
-      competitionManager.createCompetition({
+      competitionService.createCompetition({
         name: "Failing Competition",
         description: "This should fail",
       }),
@@ -267,7 +268,7 @@ describe("CompetitionManager - createCompetition", () => {
     );
 
     await expect(
-      competitionManager.createCompetition({
+      competitionService.createCompetition({
         name: "Competition with Bad Rewards",
         description: "Rewards will fail",
         rewards: {
@@ -297,7 +298,7 @@ describe("CompetitionManager - createCompetition", () => {
     ).mockRejectedValue(new Error("Invalid constraints"));
 
     await expect(
-      competitionManager.createCompetition({
+      competitionService.createCompetition({
         name: "Competition with Bad Constraints",
         description: "Constraints will fail",
         tradingConstraints: {

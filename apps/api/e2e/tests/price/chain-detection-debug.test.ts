@@ -8,7 +8,7 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
-import { PriceTracker } from "@/services/price-tracker.service.js";
+import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
 
 // Load environment variables
@@ -29,7 +29,7 @@ describe("Chain Detection Debug", () => {
   // Create variables for authenticated clients
   let adminClient: ApiClient;
   let client: ApiClient;
-  let priceTracker: PriceTracker;
+  let priceTracker: PriceTrackerService;
   let adminApiKey: string;
 
   // Clean up test state before each test
@@ -55,7 +55,7 @@ describe("Chain Detection Debug", () => {
     expect(startResp.success).toBe(true);
 
     // Initialize price tracker
-    priceTracker = new PriceTracker();
+    priceTracker = new PriceTrackerService();
   });
 
   describe("Local Chain Detection", () => {

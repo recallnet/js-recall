@@ -69,7 +69,7 @@ export function makeTradeController(services: ServiceRegistry) {
 
         // Fetch the competition and check if end date has passed
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, `Competition not found: ${competitionId}`);
         }
@@ -85,7 +85,7 @@ export function makeTradeController(services: ServiceRegistry) {
 
         // Check if agent is registered and active in the competition
         const isAgentActive =
-          await services.competitionManager.isAgentActiveInCompetition(
+          await services.competitionService.isAgentActiveInCompetition(
             competitionId,
             agentId,
           );
@@ -115,7 +115,7 @@ export function makeTradeController(services: ServiceRegistry) {
         }
 
         // Execute the trade with optional chain parameters
-        const trade = await services.tradeSimulator.executeTrade(
+        const trade = await services.tradeSimulatorService.executeTrade(
           agentId,
           competitionId,
           fromToken,
@@ -203,13 +203,13 @@ export function makeTradeController(services: ServiceRegistry) {
         }
 
         // Get token prices with chain information for better performance
-        const fromPrice = await services.priceTracker.getPrice(
+        const fromPrice = await services.priceTrackerService.getPrice(
           fromToken as string,
           fromTokenChain,
           fromTokenSpecificChain,
         );
 
-        const toPrice = await services.priceTracker.getPrice(
+        const toPrice = await services.priceTrackerService.getPrice(
           toToken as string,
           toTokenChain,
           toTokenSpecificChain,
@@ -252,10 +252,10 @@ export function makeTradeController(services: ServiceRegistry) {
           chains: {
             fromChain:
               fromTokenChain ||
-              services.priceTracker.determineChain(fromToken as string),
+              services.priceTrackerService.determineChain(fromToken as string),
             toChain:
               toTokenChain ||
-              services.priceTracker.determineChain(toToken as string),
+              services.priceTrackerService.determineChain(toToken as string),
           },
         });
       } catch (error) {

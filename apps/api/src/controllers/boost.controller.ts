@@ -37,7 +37,7 @@ export function makeBoostController(services: ServiceRegistry) {
         const competitionId = ensureUuid(req.params.competitionId);
 
         // Get the user using the service
-        const user = await services.userManager.getUser(userId);
+        const user = await services.userService.getUser(userId);
 
         if (!user) {
           throw new ApiError(404, "User not found");
@@ -112,7 +112,7 @@ export function makeBoostController(services: ServiceRegistry) {
         const userId = ensureUuid(req.userId);
         const competitionId = ensureUuid(req.params.competitionId);
 
-        const user = await services.userManager.getUser(userId);
+        const user = await services.userService.getUser(userId);
 
         if (!user) {
           throw new ApiError(404, "User not found");
@@ -123,7 +123,7 @@ export function makeBoostController(services: ServiceRegistry) {
         const { amount, idemKey } = BoostAgentSchema.parse(req.body);
 
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
 
         if (!competition) {
           throw new ApiError(404, "No competition found.");

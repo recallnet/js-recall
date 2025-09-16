@@ -3,9 +3,9 @@ import { NextFunction, Request, Response } from "express";
 import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
 import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
-import type { AdminManager } from "@/services/admin-manager.service.js";
-import type { AgentManager } from "@/services/agent-manager.service.js";
-import { UserManager } from "@/services/user-manager.service.js";
+import type { AdminService } from "@/services/admin.service.js";
+import type { AgentService } from "@/services/agent.service.js";
+import { UserService } from "@/services/user.service.js";
 
 /**
  * Optional Authentication Middleware
@@ -17,14 +17,14 @@ import { UserManager } from "@/services/user-manager.service.js";
  *
  * This is perfect for public routes that should provide enhanced data for authenticated users.
  *
- * @param agentManager - Agent management service
- * @param adminManager - Admin management service
+ * @param agentService - Agent service
+ * @param adminService - Admin service
  * @returns Express middleware function
  */
 export function optionalAuthMiddleware(
-  agentManager: AgentManager,
-  userManager: UserManager,
-  adminManager: AdminManager,
+  agentService: AgentService,
+  userService: UserService,
+  adminService: AdminService,
 ) {
   return async (req: Request, _: Response, next: NextFunction) => {
     try {
@@ -34,7 +34,7 @@ export function optionalAuthMiddleware(
           const { privyId } = await verifyPrivyIdentityToken(identityToken);
 
           req.privyToken = identityToken;
-          const user = await userManager.getUserByPrivyId(privyId);
+          const user = await userService.getUserByPrivyId(privyId);
           if (user) {
             req.userId = user.id;
             return next();
@@ -54,11 +54,11 @@ export function optionalAuthMiddleware(
 
       // Try agent API key authentication
       try {
-        const agentId = await agentManager.validateApiKey(apiKey);
+        const agentId = await agentService.validateApiKey(apiKey);
         if (agentId) {
           req.agentId = agentId;
           // Get the agent to find its owner
-          const agent = await agentManager.getAgent(agentId);
+          const agent = await agentService.getAgent(agentId);
           if (agent) {
             req.userId = agent.ownerId;
           }
@@ -70,7 +70,7 @@ export function optionalAuthMiddleware(
 
       // Try admin API key authentication
       try {
-        const adminId = await adminManager.validateApiKey(apiKey);
+        const adminId = await adminService.validateApiKey(apiKey);
         if (adminId) {
           req.isAdmin = true;
           req.adminId = adminId;

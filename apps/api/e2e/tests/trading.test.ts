@@ -447,7 +447,8 @@ describe("Trading API", () => {
       if (tokenAddress === usdcTokenAddress) continue;
 
       // Only consolidate Solana (SVM) tokens - we want to avoid cross-chain trades
-      const tokenChain = services.priceTracker.determineChain(tokenAddress);
+      const tokenChain =
+        services.priceTrackerService.determineChain(tokenAddress);
       if (tokenChain !== BlockchainType.SVM) {
         continue;
       }

@@ -2527,7 +2527,9 @@ Purpose: WALLET_VERIFICATION`;
 
       // Trigger portfolio snapshots proactively
       const services = new ServiceRegistry();
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+      );
 
       // Check rankings for each agent
       const rankingResults = [];
@@ -2886,7 +2888,9 @@ Purpose: WALLET_VERIFICATION`;
 
       // Trigger portfolio snapshots
       const services = new ServiceRegistry();
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+      );
 
       // Get initial rankings with all agents active
       const initialRankings = [];
@@ -2943,7 +2947,9 @@ Purpose: WALLET_VERIFICATION`;
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Trigger portfolio snapshots again to ensure data is updated
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+      );
 
       // Wait a bit more for snapshots to be processed
       await new Promise((resolve) => setTimeout(resolve, 2000));

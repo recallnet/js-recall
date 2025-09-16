@@ -64,10 +64,10 @@ import {
 import { AgentQueryParams } from "@/types/sort/agent.js";
 
 /**
- * Agent Manager Service
+ * Agent Service
  * Manages agent registration and API key authentication
  */
-export class AgentManager {
+export class AgentService {
   // In-memory cache for API keys to avoid database lookups on every request
   private apiKeyCache: Map<string, ApiAuth>;
   // Cache for inactive agents to avoid repeated database lookups

@@ -42,7 +42,7 @@ export function makeUserController(services: ServiceRegistry) {
         const userId = data;
 
         // Get the user using the service
-        const user = await services.userManager.getUser(userId);
+        const user = await services.userService.getUser(userId);
 
         if (!user) {
           throw new ApiError(404, "User not found");
@@ -80,7 +80,7 @@ export function makeUserController(services: ServiceRegistry) {
         } = data;
 
         // Get the current user
-        const user = await services.userManager.getUser(userId);
+        const user = await services.userService.getUser(userId);
         if (!user) {
           throw new ApiError(404, "User not found");
         }
@@ -94,7 +94,7 @@ export function makeUserController(services: ServiceRegistry) {
         };
 
         // Update the user using UserManager
-        const updatedUser = await services.userManager.updateUser(updateData);
+        const updatedUser = await services.userService.updateUser(updateData);
 
         if (!updatedUser) {
           throw new ApiError(500, "Failed to update user profile");
@@ -139,7 +139,7 @@ export function makeUserController(services: ServiceRegistry) {
 
         // Link the wallet
         const now = new Date();
-        const linkedUser = await services.userManager.updateUser({
+        const linkedUser = await services.userService.updateUser({
           id: userId,
           walletAddress,
           walletLastVerifiedAt: now,
@@ -176,13 +176,13 @@ export function makeUserController(services: ServiceRegistry) {
         } = data;
 
         // Verify the user exists
-        const user = await services.userManager.getUser(userId);
+        const user = await services.userService.getUser(userId);
         if (!user) {
           throw new ApiError(404, "User not found");
         }
 
         // Create the agent using AgentManager
-        const agent = await services.agentManager.createAgent({
+        const agent = await services.agentService.createAgent({
           ownerId: userId,
           name,
           handle,
@@ -199,7 +199,7 @@ export function makeUserController(services: ServiceRegistry) {
         // Return the created agent (API key must be retrieved via separate endpoint)
         res.status(201).json({
           success: true,
-          agent: services.agentManager.sanitizeAgent(agent),
+          agent: services.agentService.sanitizeAgent(agent),
         });
       } catch (error) {
         next(error);
@@ -218,18 +218,18 @@ export function makeUserController(services: ServiceRegistry) {
         const paging = ensurePaging(req);
 
         // Get agents owned by this user
-        const agents = await services.agentManager.getAgentsByOwner(
+        const agents = await services.agentService.getAgentsByOwner(
           userId,
           paging,
         );
 
         // Remove sensitive fields and attach metrics efficiently using bulk queries
         const sanitizedAgents = agents.map((agent) =>
-          services.agentManager.sanitizeAgent(agent),
+          services.agentService.sanitizeAgent(agent),
         );
 
         const agentsWithMetrics =
-          await services.agentManager.attachBulkAgentMetrics(sanitizedAgents);
+          await services.agentService.attachBulkAgentMetrics(sanitizedAgents);
 
         // Add back email and deactivation fields since the user should see them
         const finalAgents = agentsWithMetrics.map(
@@ -269,7 +269,7 @@ export function makeUserController(services: ServiceRegistry) {
         const { userId, agentId } = data;
 
         // Get the agent
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
 
         if (!agent) {
           throw new ApiError(404, "Agent not found");
@@ -281,9 +281,9 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Remove sensitive fields, but add back the email and deactivation since the user should see them
-        const sanitizedAgent = services.agentManager.sanitizeAgent(agent);
+        const sanitizedAgent = services.agentService.sanitizeAgent(agent);
         const computedAgent = {
-          ...(await services.agentManager.attachAgentMetrics(sanitizedAgent)),
+          ...(await services.agentService.attachAgentMetrics(sanitizedAgent)),
           email: agent.email,
           deactivationReason: agent.deactivationReason,
           deactivationDate: agent.deactivationDate,
@@ -316,7 +316,7 @@ export function makeUserController(services: ServiceRegistry) {
         const { userId, agentId } = data;
 
         // Get the agent to verify ownership
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
 
         if (!agent) {
           throw new ApiError(404, "Agent not found");
@@ -328,14 +328,14 @@ export function makeUserController(services: ServiceRegistry) {
         }
 
         // Check if user's email is verified (security layer)
-        const user = await services.userManager.getUser(userId);
+        const user = await services.userService.getUser(userId);
         if (!user) {
           throw new ApiError(404, "User not found");
         }
 
         // Get the decrypted API key using existing admin infrastructure
         const result =
-          await services.agentManager.getDecryptedApiKeyById(agentId);
+          await services.agentService.getDecryptedApiKeyById(agentId);
 
         if (!result.success) {
           // If there was an error, use the error code and message from the service
@@ -388,7 +388,7 @@ export function makeUserController(services: ServiceRegistry) {
         } = data;
 
         // Get the agent to verify ownership
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
 
         if (!agent) {
           throw new ApiError(404, "Agent not found");
@@ -411,7 +411,7 @@ export function makeUserController(services: ServiceRegistry) {
         };
 
         // Update the agent using AgentManager
-        const updatedAgent = await services.agentManager.updateAgent({
+        const updatedAgent = await services.agentService.updateAgent({
           ...agent,
           ...updateData,
         });
@@ -422,7 +422,7 @@ export function makeUserController(services: ServiceRegistry) {
 
         // Remove sensitive fields, but add back the email and deactivation since the user should see them
         const sanitizedAgent = {
-          ...services.agentManager.sanitizeAgent(updatedAgent),
+          ...services.agentService.sanitizeAgent(updatedAgent),
           email: updatedAgent.email,
           deactivationReason: updatedAgent.deactivationReason,
           deactivationDate: updatedAgent.deactivationDate,
@@ -459,7 +459,7 @@ export function makeUserController(services: ServiceRegistry) {
 
         // Get competitions for all user's agents
         const results =
-          await services.agentManager.getCompetitionsForUserAgents(
+          await services.agentService.getCompetitionsForUserAgents(
             userId,
             params,
           );
@@ -489,7 +489,7 @@ export function makeUserController(services: ServiceRegistry) {
     async subscribe(req: Request, res: Response, next: NextFunction) {
       try {
         const userId = ensureUserId(req);
-        const user = await services.userManager.getUser(userId);
+        const user = await services.userService.getUser(userId);
         if (!user) {
           throw new ApiError(404, "User not found");
         }
@@ -510,7 +510,7 @@ export function makeUserController(services: ServiceRegistry) {
         if (!result?.success) {
           throw new ApiError(502, "Failed to subscribe user to mailing list");
         }
-        const updatedUser = await services.userManager.updateUser({
+        const updatedUser = await services.userService.updateUser({
           id: userId,
           isSubscribed: true,
         });
@@ -537,7 +537,7 @@ export function makeUserController(services: ServiceRegistry) {
     async unsubscribe(req: Request, res: Response, next: NextFunction) {
       try {
         const userId = ensureUserId(req);
-        const user = await services.userManager.getUser(userId);
+        const user = await services.userService.getUser(userId);
         if (!user) {
           throw new ApiError(404, "User not found");
         }
@@ -561,7 +561,7 @@ export function makeUserController(services: ServiceRegistry) {
             "Failed to unsubscribe user from mailing list",
           );
         }
-        const updatedUser = await services.userManager.updateUser({
+        const updatedUser = await services.userService.updateUser({
           id: userId,
           isSubscribed: false,
         });

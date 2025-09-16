@@ -27,7 +27,7 @@ export function makeAuthController(services: ServiceRegistry) {
 
         // Agent nonce generation - store in database
         const result =
-          await services.agentManager.generateNonceForAgent(agentId);
+          await services.agentService.generateNonceForAgent(agentId);
 
         if (!result.success) {
           return res.status(500).json({
@@ -54,7 +54,7 @@ export function makeAuthController(services: ServiceRegistry) {
         const { id: userId, walletAddress } =
           await verifyPrivyIdentityTokenAndUpdateUser(
             identityToken,
-            services.userManager,
+            services.userService,
           );
 
         authLogger.debug(
@@ -94,7 +94,7 @@ export function makeAuthController(services: ServiceRegistry) {
             .json({ error: "Message and signature are required" });
         }
 
-        const result = await services.agentManager.verifyWalletOwnership(
+        const result = await services.agentService.verifyWalletOwnership(
           agentId,
           message,
           signature,

@@ -2249,7 +2249,9 @@ describe("Competition API", () => {
     });
     // Force a snapshot directly
     const services = new ServiceRegistry();
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
 
     // Test sorting by default (rank)
     const rankDefaultResponse = (await client.getCompetitionAgents(

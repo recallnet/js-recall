@@ -40,7 +40,7 @@ export function makeVoteController(services: ServiceRegistry) {
 
         try {
           // Cast the vote using VoteManager
-          const vote = await services.voteManager.castVote(
+          const vote = await services.voteService.castVote(
             userId,
             agentId,
             competitionId,
@@ -109,7 +109,7 @@ export function makeVoteController(services: ServiceRegistry) {
         const { competitionId, limit, offset } = data;
 
         // Get user's votes
-        const votes = await services.voteManager.getUserVotes(
+        const votes = await services.voteService.getUserVotes(
           userId,
           competitionId,
         );
@@ -160,7 +160,7 @@ export function makeVoteController(services: ServiceRegistry) {
 
         // Get voting state
         const votingState =
-          await services.voteManager.getCompetitionVotingState(
+          await services.voteService.getCompetitionVotingState(
             userId,
             competitionId,
           );

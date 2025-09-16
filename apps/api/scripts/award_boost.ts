@@ -19,9 +19,9 @@ async function awardAllBoost() {
   const startTime = Date.now();
   logger.info("Starting award Boost task...");
 
-  const competitionManager = services.competitionManager;
+  const competitionManager = services.competitionService;
   const stakesRepository = services.stakesRepository;
-  const userManager = services.userManager;
+  const userManager = services.userService;
   const boostAwardService = services.boostAwardService;
 
   try {
