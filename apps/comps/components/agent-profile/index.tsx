@@ -13,7 +13,11 @@ import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
-import { DISABLE_LEADERBOARD, ENABLE_SANDBOX } from "@/config";
+import {
+  DISABLE_LEADERBOARD,
+  ENABLE_SANDBOX,
+  NEXT_PUBLIC_FRONTEND_URL,
+} from "@/config";
 import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
 import {
@@ -191,7 +195,7 @@ export default function AgentProfile({
         >
           <div className="absolute right-10 top-10 z-20 flex w-full justify-end">
             <ShareModal
-              url={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/agents/${agent.id}`}
+              url={`${NEXT_PUBLIC_FRONTEND_URL}/agents/${agent.id}`}
               title="Share Agent"
               subtitle={
                 <p className="text-muted-foreground text-sm">
