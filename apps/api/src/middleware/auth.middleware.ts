@@ -5,9 +5,9 @@ import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
 import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
 import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import { AdminService } from "@/services/admin-manager.service.js";
-import { AgentService } from "@/services/agent-manager.service.js";
-import { UserService } from "@/services/user-manager.service.js";
+import { AdminService } from "@/services/admin.service.js";
+import { AgentService } from "@/services/agent.service.js";
+import { UserService } from "@/services/user.service.js";
 
 /**
  * Unified Authentication Middleware

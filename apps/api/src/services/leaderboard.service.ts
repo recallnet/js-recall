@@ -10,7 +10,7 @@ import {
   LeaderboardParams,
 } from "@/types/index.js";
 
-import { AgentService } from "./agent-manager.service.js";
+import { AgentService } from "./agent.service.js";
 
 /**
  * Leaderboard Service

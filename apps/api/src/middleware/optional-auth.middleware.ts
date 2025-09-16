@@ -3,9 +3,9 @@ import { NextFunction, Request, Response } from "express";
 import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
 import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
-import type { AdminService } from "@/services/admin-manager.service.js";
-import type { AgentService } from "@/services/agent-manager.service.js";
-import { UserService } from "@/services/user-manager.service.js";
+import type { AdminService } from "@/services/admin.service.js";
+import type { AgentService } from "@/services/agent.service.js";
+import { UserService } from "@/services/user.service.js";
 
 /**
  * Optional Authentication Middleware

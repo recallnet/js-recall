@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import { middlewareLogger } from "@/lib/logger.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import { AdminService } from "@/services/admin-manager.service.js";
+import { AdminService } from "@/services/admin.service.js";
 
 /**
  * Admin Authentication Middleware

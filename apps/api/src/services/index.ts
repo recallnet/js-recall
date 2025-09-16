@@ -5,13 +5,13 @@ import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
 import { StakesRepository } from "@/indexing/stakes.repository.js";
 import { indexingLogger } from "@/lib/logger.js";
-import { AdminService } from "@/services/admin-manager.service.js";
-import { AgentService } from "@/services/agent-manager.service.js";
+import { AdminService } from "@/services/admin.service.js";
+import { AgentService } from "@/services/agent.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
-import { BalanceService } from "@/services/balance-manager.service.js";
+import { BalanceService } from "@/services/balance.service.js";
 import { BoostAwardService } from "@/services/boost-award.service.js";
-import { CompetitionService } from "@/services/competition-manager.service.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
+import { CompetitionService } from "@/services/competition.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
@@ -19,8 +19,8 @@ import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.se
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
-import { UserService } from "@/services/user-manager.service.js";
-import { VoteService } from "@/services/vote-manager.service.js";
+import { UserService } from "@/services/user.service.js";
+import { VoteService } from "@/services/vote.service.js";
 
 /**
  * Service Registry

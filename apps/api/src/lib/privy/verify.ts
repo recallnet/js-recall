@@ -9,7 +9,7 @@ import { SelectUser } from "@recallnet/db-schema/core/types";
 
 import { config } from "@/config/index.js";
 import { authLogger } from "@/lib/logger.js";
-import type { UserService } from "@/services/user-manager.service.js";
+import type { UserService } from "@/services/user.service.js";
 
 import { PRIVY_ISSUER, PrivyUserInfo, extractPrivyUserInfo } from "./utils.js";
 

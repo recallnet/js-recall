@@ -4,7 +4,7 @@ import type {
   BoostDiffResult,
   BoostRepository,
 } from "@/database/repositories/boost.repository.js";
-import type { UserService } from "@/services/user-manager.service.js";
+import type { UserService } from "@/services/user.service.js";
 
 export { BoostAwardService };
 

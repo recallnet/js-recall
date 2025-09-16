@@ -13,16 +13,16 @@ import {
 
 import { db } from "@/database/db.js";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";
-import type { AgentService } from "@/services/agent-manager.service.js";
+import type { AgentService } from "@/services/agent.service.js";
 import type { AgentRankService } from "@/services/agentrank.service.js";
-import type { BalanceService } from "@/services/balance-manager.service.js";
-import { CompetitionService } from "@/services/competition-manager.service.js";
+import type { BalanceService } from "@/services/balance.service.js";
 import type { CompetitionRewardService } from "@/services/competition-reward.service.js";
+import { CompetitionService } from "@/services/competition.service.js";
 import type { ConfigurationService } from "@/services/configuration.service.js";
 import type { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
 import type { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import type { TradingConstraintsService } from "@/services/trading-constraints.service.js";
-import type { VoteService } from "@/services/vote-manager.service.js";
+import type { VoteService } from "@/services/vote.service.js";
 
 // Mock logger first to prevent db initialization
 vi.mock("@/lib/logger.js", () => ({
