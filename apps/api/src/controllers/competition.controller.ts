@@ -711,6 +711,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           totalVolume: number;
           totalVotes: number;
           uniqueTokens?: number;
+          averageEquity?: number;
           competitionType: string;
         };
 
@@ -735,6 +736,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             totalPositions: perpsStats.totalPositions,
             totalAgents: perpsStats.totalAgents,
             totalVolume: perpsStats.totalVolume,
+            averageEquity: perpsStats.averageEquity,
             totalVotes,
             competitionType: competition.type,
           };

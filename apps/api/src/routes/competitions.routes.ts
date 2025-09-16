@@ -819,6 +819,9 @@ export function configureCompetitionsRoutes(
    *                         uniqueTokens:
    *                           type: number
    *                           description: Total number of unique tokens traded (only for paper trading competitions)
+   *                         averageEquity:
+   *                           type: number
+   *                           description: Average equity across all agents (only for perpetual futures competitions)
    *                     createdAt:
    *                       type: string
    *                       format: date-time
