@@ -1,5 +1,5 @@
 {
-  "id": "a19c8324-298b-4ff4-9bfc-ed3c4f74ee16",
+  "id": "a8dec348-6c0a-4dc8-9cce-ea39fbc801f9",
   "prevId": "112dcfc1-d1b6-4cd7-adfe-58a4b2a59982",
   "version": "7",
   "dialect": "postgresql",
@@ -2743,6 +2743,33 @@
               "expression": "timestamp",
               "isExpression": false,
               "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_perps_summaries_agent_comp_timestamp": {
+          "name": "idx_perps_summaries_agent_comp_timestamp",
+          "columns": [
+            {
+              "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": false,
               "nulls": "last"
             }
           ],

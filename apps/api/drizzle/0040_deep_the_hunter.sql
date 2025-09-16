@@ -86,6 +86,7 @@ CREATE INDEX "idx_perp_positions_status" ON "trading_comps"."perpetual_positions
 CREATE INDEX "idx_perp_positions_created" ON "trading_comps"."perpetual_positions" USING btree ("created_at" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "idx_perps_summaries_agent_comp" ON "trading_comps"."perps_account_summaries" USING btree ("agent_id","competition_id");--> statement-breakpoint
 CREATE INDEX "idx_perps_summaries_timestamp" ON "trading_comps"."perps_account_summaries" USING btree ("timestamp");--> statement-breakpoint
+CREATE INDEX "idx_perps_summaries_agent_comp_timestamp" ON "trading_comps"."perps_account_summaries" USING btree ("agent_id","competition_id","timestamp" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "idx_perps_alerts_agent_comp" ON "trading_comps"."perps_self_funding_alerts" USING btree ("agent_id","competition_id");--> statement-breakpoint
 CREATE INDEX "idx_perps_alerts_comp_reviewed" ON "trading_comps"."perps_self_funding_alerts" USING btree ("competition_id","reviewed");--> statement-breakpoint
 CREATE INDEX "idx_perps_alerts_detected" ON "trading_comps"."perps_self_funding_alerts" USING btree ("detected_at" DESC NULLS LAST);
