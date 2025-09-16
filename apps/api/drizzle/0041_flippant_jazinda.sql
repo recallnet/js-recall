@@ -1,0 +1,1 @@
+ALTER TYPE "public"."competition_status" ADD VALUE 'ending' BEFORE 'ended';
