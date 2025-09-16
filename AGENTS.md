@@ -76,6 +76,9 @@ All API endpoints return consistent format with `success`, `data`, and `error` f
 **Database Access:**
 Use repository pattern - never write raw SQL in controllers or services. All database operations go through repositories in `src/database/repositories/`.
 
+**Serialization and business logic separation:**
+Use controller pattern: Controllers should handle serialization and deserialization of arguments and responses, but should not include business logic, and should generally be kept thin and simple, and should never call into the repository layer directly. The controller layer should call into the service layer which contains all business logic, and which in turn should call into the repository layer for database interactions.
+
 **Multi-Chain Support:**
 The system supports EVM chains (Ethereum, Polygon, Base, Arbitrum, Optimism) and SVM (Solana). Chain-specific logic is handled in provider services.
 

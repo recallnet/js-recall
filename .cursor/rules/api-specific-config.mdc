@@ -71,6 +71,11 @@ alwaysApply: false
 
 ## Service Layer Architecture
 
+### Controller Patterns
+- Controller functions should be focused primarily on serialization/deserialization of requests and responses
+- Controllers should avoid any complex business logic, instead calling into specialized manager classes in the service layer to handle business logic.
+- Controller functions should never call into the Repository layer directly.
+
 ### Manager Service Patterns
 - Business logic must be in manager services (`apps/api/src/services/*-manager.service.ts`)
 - Manager services should inject repository dependencies in constructor
