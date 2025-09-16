@@ -411,6 +411,12 @@ export const perpsAccountSummaries = tradingComps.table(
       table.competitionId,
     ),
     index("idx_perps_summaries_timestamp").on(table.timestamp),
+    // Composite index for efficient DISTINCT ON queries to get latest summary per agent
+    index("idx_perps_summaries_agent_comp_timestamp").on(
+      table.agentId,
+      table.competitionId,
+      table.timestamp.desc(),
+    ),
   ],
 );
 
