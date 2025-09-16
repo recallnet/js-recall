@@ -136,7 +136,8 @@ async function findCompetitionByRootHashImpl(
     const [result] = await db
       .select({ competitionId: rewardsRoots.competitionId })
       .from(rewardsRoots)
-      .where(eq(rewardsRoots.rootHash, rootHash));
+      .where(eq(rewardsRoots.rootHash, rootHash))
+      .limit(1);
 
     return result?.competitionId;
   } catch (error) {

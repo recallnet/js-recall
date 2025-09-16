@@ -1,5 +1,5 @@
 import type { Logger } from "pino";
-import { decodeEventLog } from "viem";
+import { decodeEventLog, hexToBytes } from "viem";
 
 import { db } from "@/database/db.js";
 import {
@@ -353,11 +353,7 @@ class EventProcessor {
     const user = decodedEvent.args.user;
     const amount = decodedEvent.args.amount;
 
-    // Convert the root hash to Uint8Array for database lookup
-    const rootHashBytes = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) {
-      rootHashBytes[i] = parseInt(root.slice(2 + i * 2, 4 + i * 2), 16);
-    }
+    const rootHashBytes = hexToBytes(root);
 
     const competitionId = await findCompetitionByRootHash(rootHashBytes);
     if (!competitionId) {

@@ -1,5 +1,7 @@
 import * as dotenv from "dotenv";
+import { blue, cyan, green, magenta, red, yellow } from "kleur/colors";
 import * as path from "path";
+import { PropertyOptions, parse } from "ts-command-line-args";
 
 import { Network } from "@recallnet/staking-contracts/rewards-allocator";
 import RewardsClaimer from "@recallnet/staking-contracts/rewards-claimer";
@@ -9,16 +11,17 @@ import { config } from "@/config/index.js";
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-// Colors for console output
-const colors = {
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  green: "\x1b[32m",
-  blue: "\x1b[34m",
-  cyan: "\x1b[36m",
-  magenta: "\x1b[35m",
-  reset: "\x1b[0m",
-};
+/**
+ * Interface for command line arguments
+ */
+interface IClaimRewardsArgs {
+  privateKey: string;
+  merkleRoot: string;
+  proof: string;
+  amount: string;
+  network?: Network;
+  help?: boolean;
+}
 
 /**
  * Claims rewards using a merkle proof
@@ -26,93 +29,116 @@ const colors = {
  * with the provided merkle root, proof, and amount
  */
 async function claimRewards() {
-  // Get the required parameters from command line arguments
-  const privateKey = process.argv[2];
-  const merkleRoot = process.argv[3];
-  const proofString = process.argv[4];
-  const amount = process.argv[5];
-  const network = process.argv[6] as Network;
+  // Parse command line arguments
+  const args = parse<IClaimRewardsArgs>(
+    {
+      privateKey: {
+        type: String,
+        alias: "k",
+        description:
+          "The private key of the account claiming rewards (0x... format)",
+      },
+      merkleRoot: {
+        type: String,
+        alias: "r",
+        description: "The merkle root hash for the reward allocation",
+      },
+      proof: {
+        type: String,
+        alias: "p",
+        description:
+          'JSON array of proof hashes (e.g., \'["0x1234...","0x5678..."]\')',
+      },
+      amount: {
+        type: String,
+        alias: "a",
+        description: "The amount of tokens to claim (in wei)",
+      },
+      network: {
+        type: String,
+        alias: "n",
+        optional: true,
+        defaultValue: Network.BaseSepolia,
+        description:
+          "The network to use (baseSepolia, base, hardhat) - defaults to baseSepolia",
+      } as PropertyOptions<Network | undefined>,
+      help: {
+        type: Boolean,
+        alias: "h",
+        optional: true,
+        description: "Show this help message",
+      },
+    },
+    {
+      helpArg: "help",
+      headerContentSections: [
+        {
+          header: "Rewards Claim Script",
+          content:
+            "Claims rewards using a merkle proof from the rewards contract.",
+        },
+      ],
+      footerContentSections: [
+        {
+          header: "Environment Variables",
+          content: [
+            "REWARDS_CONTRACT_ADDRESS: The address of the rewards contract",
+            "RPC_PROVIDER: The RPC provider URL for the blockchain",
+          ].join("\n"),
+        },
+        {
+          header: "Example",
+          content:
+            'pnpm rewards:claim --privateKey 0x1234... --merkleRoot 0xabcd... --proof \'["0x1234...","0x5678..."]\' --amount 1000000000000000000 --network baseSepolia',
+        },
+        {
+          header: "Alternative Short Flags",
+          content:
+            'pnpm rewards:claim -k 0x1234... -r 0xabcd... -p \'["0x1234...","0x5678..."]\' -a 1000000000000000000 -n baseSepolia',
+        },
+      ],
+    },
+  );
 
   // Get contract address and RPC provider from environment variables
   const contractAddress = config.rewards.contractAddress;
   const rpcProviderUrl = config.rewards.rpcProvider;
 
-  // Validate required parameters
-  if (!privateKey || !merkleRoot || !proofString || !amount) {
-    console.error(
-      `${colors.red}Error: Missing required parameters.${colors.reset}`,
-    );
-    console.log(
-      `${colors.cyan}Usage: pnpm rewards:claim <privateKey> <merkleRoot> <proof> <amount> [network]${colors.reset}`,
-    );
-    console.log(
-      `${colors.cyan}Example: pnpm rewards:claim 0x1234... 0xabcd... '["0x1234...","0x5678..."]' 1000000000000000000 baseSepolia${colors.reset}`,
-    );
-    console.log(`${colors.yellow}Parameters:${colors.reset}`);
-    console.log(
-      `  ${colors.blue}privateKey${colors.reset}: The private key of the account claiming rewards (0x... format)`,
-    );
-    console.log(
-      `  ${colors.blue}merkleRoot${colors.reset}: The merkle root hash for the reward allocation`,
-    );
-    console.log(
-      `  ${colors.blue}proof${colors.reset}: JSON array of proof hashes (e.g., '["0x1234...","0x5678..."]')`,
-    );
-    console.log(
-      `  ${colors.blue}amount${colors.reset}: The amount of tokens to claim (in wei)`,
-    );
-    console.log(
-      `  ${colors.blue}network${colors.reset}: The network to use (baseSepolia, base, hardhat) - defaults to baseSepolia`,
-    );
-    console.log(`\n${colors.yellow}Environment Variables:${colors.reset}`);
-    console.log(
-      `  ${colors.blue}REWARDS_CONTRACT_ADDRESS${colors.reset}: The address of the rewards contract`,
-    );
-    console.log(
-      `  ${colors.blue}RPC_PROVIDER${colors.reset}: The RPC provider URL for the blockchain`,
-    );
-    process.exit(1);
-  }
-
   // Validate environment variables
   if (!contractAddress || !rpcProviderUrl) {
-    console.error(
-      `${colors.red}Error: Missing required environment variables.${colors.reset}`,
-    );
-    console.log(
-      `${colors.yellow}Please set the following environment variables:${colors.reset}`,
-    );
+    console.error(`${red("Error: Missing required environment variables.")}`);
+    console.log(`${yellow("Please set the following environment variables:")}`);
     if (!contractAddress) {
       console.log(
-        `  ${colors.blue}REWARDS_CONTRACT_ADDRESS${colors.reset}: The address of the rewards contract`,
+        `  ${blue("REWARDS_CONTRACT_ADDRESS:")} The address of the rewards contract`,
       );
     }
     if (!rpcProviderUrl) {
       console.log(
-        `  ${colors.blue}RPC_PROVIDER${colors.reset}: The RPC provider URL for the blockchain`,
+        `  ${blue("RPC_PROVIDER:")} The RPC provider URL for the blockchain`,
       );
     }
     process.exit(1);
   }
 
   // Parse and validate the proof
-  const proof = JSON.parse(proofString);
+  const proof = JSON.parse(args.proof);
   if (!Array.isArray(proof)) {
     throw new Error("Proof must be an array");
   }
 
   // Validate private key format
-  if (!privateKey.startsWith("0x") || privateKey.length !== 66) {
+  if (!args.privateKey.startsWith("0x") || args.privateKey.length !== 66) {
     console.error(
-      `${colors.red}Error: Invalid private key format. Must be a 64-character hex string starting with 0x.${colors.reset}`,
+      `${red("Error: Invalid private key format. Must be a 64-character hex string starting with 0x.")}`,
     );
     process.exit(1);
   }
 
   // Validate merkle root format
-  if (!merkleRoot.startsWith("0x") || merkleRoot.length !== 66) {
+  if (!args.merkleRoot.startsWith("0x") || args.merkleRoot.length !== 66) {
     console.error(
-      `${colors.red}Error: Invalid merkle root format. Must be a 64-character hex string starting with 0x.${colors.reset}`,
+      `${red("Error: Invalid merkle root format. Must be a 64-character hex string starting with 0x.")}`,
     );
     process.exit(1);
   }
@@ -120,93 +146,87 @@ async function claimRewards() {
   // Validate contract address format
   if (!contractAddress.startsWith("0x") || contractAddress.length !== 42) {
     console.error(
-      `${colors.red}Error: Invalid contract address format in REWARDS_CONTRACT_ADDRESS. Must be a 40-character hex string starting with 0x.${colors.reset}`,
+      `${red("Error: Invalid contract address format in REWARDS_CONTRACT_ADDRESS. Must be a 40-character hex string starting with 0x.")}`,
     );
     process.exit(1);
   }
 
   // Validate amount is a valid number
-  const claimAmount = BigInt(amount);
+  const claimAmount = BigInt(args.amount);
   if (claimAmount <= 0n) {
     throw new Error("Amount must be greater than 0");
   }
 
   // Validate network
   const validNetworks = Object.values(Network);
-  const selectedNetwork = network || Network.BaseSepolia;
-  if (network && !validNetworks.includes(network)) {
+  const selectedNetwork = args.network || Network.BaseSepolia;
+  if (args.network && !validNetworks.includes(args.network)) {
     console.error(
-      `${colors.red}Error: Invalid network. Must be one of: ${validNetworks.join(", ")}${colors.reset}`,
+      `${red("Error: Invalid network. Must be one of:")} ${validNetworks.join(", ")}`,
     );
     process.exit(1);
   }
 
   try {
     console.log(
-      `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
+      cyan(
+        `╔════════════════════════════════════════════════════════════════╗`,
+      ),
     );
     console.log(
-      `${colors.cyan}║                     CLAIMING REWARDS                          ║${colors.reset}`,
+      cyan(`║                     CLAIMING REWARDS                          ║`),
     );
     console.log(
-      `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
+      cyan(
+        `╚════════════════════════════════════════════════════════════════╝`,
+      ),
     );
 
+    console.log(`\n${blue("Claiming rewards with the following parameters:")}`);
     console.log(
-      `\n${colors.blue}Claiming rewards with the following parameters:${colors.reset}`,
+      `${blue("Private Key:")} ${yellow(args.privateKey.slice(0, 10) + "..." + args.privateKey.slice(-4))}`,
+    );
+    console.log(`${blue("Merkle Root:")} ${yellow(args.merkleRoot)}`);
+    console.log(`${blue("Proof Length:")} ${yellow(proof.length + " hashes")}`);
+    console.log(
+      `${blue("Amount:")} ${yellow(claimAmount.toString() + " wei")}`,
     );
     console.log(
-      `${colors.blue}Private Key: ${colors.yellow}${privateKey.slice(0, 10)}...${privateKey.slice(-4)}${colors.reset}`,
+      `${blue("Contract Address:")} ${yellow(contractAddress)} (from REWARDS_CONTRACT_ADDRESS)`,
     );
     console.log(
-      `${colors.blue}Merkle Root: ${colors.yellow}${merkleRoot}${colors.reset}`,
+      `${blue("RPC Provider:")} ${yellow(rpcProviderUrl)} (from RPC_PROVIDER)`,
     );
-    console.log(
-      `${colors.blue}Proof Length: ${colors.yellow}${proof.length} hashes${colors.reset}`,
-    );
-    console.log(
-      `${colors.blue}Amount: ${colors.yellow}${claimAmount.toString()} wei${colors.reset}`,
-    );
-    console.log(
-      `${colors.blue}Contract Address: ${colors.yellow}${contractAddress}${colors.reset} (from REWARDS_CONTRACT_ADDRESS)`,
-    );
-    console.log(
-      `${colors.blue}RPC Provider: ${colors.yellow}${rpcProviderUrl}${colors.reset} (from RPC_PROVIDER)`,
-    );
-    console.log(
-      `${colors.blue}Network: ${colors.yellow}${selectedNetwork}${colors.reset}`,
-    );
+    console.log(`${blue("Network:")} ${yellow(selectedNetwork)}`);
 
     // Instantiate the RewardsClaimer
     const rewardsClaimer = new RewardsClaimer(
-      privateKey as `0x${string}`,
+      args.privateKey as `0x${string}`,
       rpcProviderUrl,
       contractAddress as `0x${string}`,
       selectedNetwork,
     );
 
-    console.log(
-      `\n${colors.magenta}Submitting claim transaction...${colors.reset}`,
-    );
+    console.log(`\n${magenta("Submitting claim transaction...")}`);
 
     // Call the claim method with all required parameters
-    const result = await rewardsClaimer.claim(merkleRoot, claimAmount, proof);
+    const result = await rewardsClaimer.claim(
+      args.merkleRoot,
+      claimAmount,
+      proof,
+    );
 
+    console.log(`\n${green("Successfully claimed rewards!")}`);
     console.log(
-      `\n${colors.green}Successfully claimed rewards!${colors.reset}`,
+      `${green("Transaction Hash:")} ${yellow(result.transactionHash)}`,
     );
     console.log(
-      `${colors.green}Transaction Hash: ${colors.yellow}${result.transactionHash}${colors.reset}`,
+      `${green("Block Number:")} ${yellow(result.blockNumber.toString())}`,
     );
-    console.log(
-      `${colors.green}Block Number: ${colors.yellow}${result.blockNumber.toString()}${colors.reset}`,
-    );
-    console.log(
-      `${colors.green}Gas Used: ${colors.yellow}${result.gasUsed.toString()}${colors.reset}`,
-    );
+    console.log(`${green("Gas Used:")} ${yellow(result.gasUsed.toString())}`);
   } catch (error) {
     console.error(
-      `\n${colors.red}Error claiming rewards:${colors.reset}`,
+      `\n${red("Error claiming rewards:")}`,
       error instanceof Error ? error.message : error,
     );
 
@@ -214,19 +234,19 @@ async function claimRewards() {
     if (error instanceof Error) {
       if (error.message.includes("insufficient funds")) {
         console.log(
-          `\n${colors.yellow}Tip: Make sure the account has enough ETH to pay for gas fees.${colors.reset}`,
+          `\n${yellow("Tip: Make sure the account has enough ETH to pay for gas fees.")}`,
         );
       } else if (error.message.includes("invalid merkle proof")) {
         console.log(
-          `\n${colors.yellow}Tip: Verify that the merkle root, proof, and amount are correct for this allocation.${colors.reset}`,
+          `\n${yellow("Tip: Verify that the merkle root, proof, and amount are correct for this allocation.")}`,
         );
       } else if (error.message.includes("already claimed")) {
         console.log(
-          `\n${colors.yellow}Tip: This reward has already been claimed for this allocation.${colors.reset}`,
+          `\n${yellow("Tip: This reward has already been claimed for this allocation.")}`,
         );
       } else if (error.message.includes("claim period not yet active")) {
         console.log(
-          `\n${colors.yellow}Tip: The claim period for this allocation has not started yet.${colors.reset}`,
+          `\n${yellow("Tip: The claim period for this allocation has not started yet.")}`,
         );
       }
     }
