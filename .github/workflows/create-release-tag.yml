@@ -40,7 +40,7 @@ jobs:
           # Strip optional leading v
           VER="${RAW#v}"
           # Basic semver (allows pre-release/build metadata)
-          if ! echo "$VER" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.][A-Za-z0-9.]+)?([+][A-Za-z0-9.]+)?$'; then
+          if ! echo "$VER" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+(\.[A-Za-z0-9]+)*)?(\+[A-Za-z0-9]+(\.[A-Za-z0-9]+)*)?$'; then
             echo "Invalid version: $RAW"
             exit 1
           fi
@@ -80,9 +80,13 @@ jobs:
           set -euo pipefail
           TAG="release-v${{ steps.ver.outputs.ver }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag already exists locally: $TAG"; exit 1; fi
+            echo "Tag already exists locally: $TAG"
+            exit 1
+          fi
           if git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
-            echo "Tag already exists on origin: $TAG"; exit 1; fi
+            echo "Tag already exists on origin: $TAG"
+            exit 1
+          fi
 
       - name: Create and push tag
         run: |
