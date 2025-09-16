@@ -1,13 +1,14 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
+import Link from "next/link";
 import React, { useState } from "react";
 
 import {
   Tabs,
   TabsContent,
-  // TabsList,  // Temporarily commented out
-  // TabsTrigger,  // Temporarily commented out
+  TabsList,
+  TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -68,7 +69,6 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
   return (
     <Tabs defaultValue="info" className={cn(className, "text-white")}>
-      {/* Temporarily hiding tabs UI - only showing info content
       <TabsList className="mb-4 gap-2">
         <TabsTrigger
           value="info"
@@ -83,7 +83,6 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           Rules
         </TabsTrigger>
       </TabsList>
-      */}
 
       <TabsContent value="info" className="border">
         <div>
@@ -129,13 +128,26 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
                   <div className="pointer-events-none absolute bottom-0 left-0 h-8 w-full bg-gradient-to-t from-black to-transparent" />
                 )}
               </div>
+              <p className="mt-2 text-sm text-gray-400">
+                {competition.externalUrl &&
+                  !competition.externalUrl.includes("example.com") && (
+                    <Link
+                      href={competition.externalUrl}
+                      target="_blank"
+                      className="inline-flex items-center whitespace-nowrap"
+                    >
+                      Read more about the official competition rules{" "}
+                      <ArrowUpRight size={16} className="ml-1" />
+                    </Link>
+                  )}
+              </p>
               {isLong && (
                 <button
                   className="hover: mt-2 self-start transition-colors"
                   onClick={() => setExpanded((v) => !v)}
                   aria-expanded={expanded}
                 >
-                  {expanded ? "SHOW LESS" : "READ MORE"}
+                  {expanded ? "SHOW LESS" : "SHOW MORE"}
                 </button>
               )}
             </div>
