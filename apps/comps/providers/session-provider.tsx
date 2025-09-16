@@ -7,6 +7,7 @@ import {
   useLogin,
   usePrivy,
 } from "@privy-io/react-auth";
+import * as Sentry from "@sentry/nextjs";
 import {
   QueryObserverResult,
   RefetchOptions,
@@ -30,14 +31,14 @@ import { User as BackendUser, UpdateProfileRequest } from "@/types";
 type Session = {
   // Login to Privy state
   ready: boolean;
-  login: (options?: LoginModalOptions | MouseEvent<any, any>) => void;
+  login: (options?: LoginModalOptions | MouseEvent<HTMLElement>) => void;
   user: User | null;
   isLoginPending: boolean;
   loginError: Error | null;
   logout: () => Promise<void>;
-  // Allow caller to manually promt to link wallet
+  // Allow caller to manually prompt to link wallet
   linkWallet: (
-    options?: ConnectWalletModalOptions | MouseEvent<any, any>,
+    options?: ConnectWalletModalOptions | MouseEvent<HTMLElement>,
   ) => void;
   linkWalletError: Error | null;
 
@@ -80,7 +81,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const apiClient = useRef(new ApiClient());
 
-  const { user, getAccessToken, ready, authenticated, logout, isModalOpen } =
+  const { user, ready, authenticated, logout, isModalOpen, createWallet } =
     usePrivy();
 
   const [loginError, setLoginError] = useState<Error | null>(null);
@@ -88,7 +89,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [linkWalletError, setLinkWalletError] = useState<Error | null>(null);
 
   const { login: loginInner } = useLogin({
-    onComplete: ({ isNewUser }) => {
+    onComplete: async ({ user, isNewUser }) => {
+      // Note: Privy has a known issue where embedded wallets are, sometimes, not created for a
+      // user. If an embedded wallet exists, it'll always be available in the `user.wallet`
+      // property. Thus, we can simply check if it exists, else, trigger its creation explicitly.
+      if (!user.wallet) {
+        const message = `Privy failed to create embedded wallet. Creating wallet for user DID: ${user.id}`;
+        console.warn(message);
+        Sentry.captureMessage(message, "warning");
+        await createWallet();
+      }
       setShouldLinkWallet(isNewUser);
       loginToBackend();
     },
@@ -119,7 +129,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       refetchBackendUser();
     },
     onError: (error) => {
-      console.error("Login to backend failed:", error);
+      const message = `Login to backend failed: ${error}`;
+      console.error(message);
+      Sentry.captureException(message);
     },
   });
 
@@ -169,7 +181,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   });
 
   const { linkWallet: linkWalletInner } = useLinkAccount({
-    onSuccess: async ({ user, linkedAccount }) => {
+    onSuccess: async ({ linkedAccount }) => {
       const walletAddress = (
         linkedAccount as WalletWithMetadata
       ).address.toLowerCase();
@@ -227,7 +239,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // Return a context object with the snapshotted value
       return { previousUser: previousUser };
     },
-    onError: (error, updates, context) => {
+    onError: (_, __, context) => {
       // Rollback to the previous value on error
       if (context?.previousUser) {
         queryClient.setQueryData(["user"], context.previousUser);
@@ -251,7 +263,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isLoginPending: isModalOpen,
     loginError,
     logout,
-    // Allow caller to manually promt to link wallet
+    // Allow caller to manually prompt to link wallet
     linkWallet,
     linkWalletError,
 
