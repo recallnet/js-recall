@@ -13,7 +13,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
 import { Competition } from "@/types/competition";
-import { formatCompetitionType } from "@/utils/competition-utils";
+import { getCompetitionSkills } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
 import { CompetitionStatusBadge } from "./competition-status-badge";
@@ -110,9 +110,14 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           <div className="flex items-center gap-2 border-b p-4 sm:p-[25px]">
             <CellTitle>Skills</CellTitle>
             <div className="flex flex-wrap gap-2">
-              <span className="rounded border p-2 text-xs capitalize">
-                {formatCompetitionType(competition.type)}
-              </span>
+              {getCompetitionSkills(competition.type).map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded border p-2 text-xs capitalize"
+                >
+                  {skill}
+                </span>
+              ))}
             </div>
           </div>
 
