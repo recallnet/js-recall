@@ -3,8 +3,6 @@
 import { PrivyClientConfig, PrivyProvider } from "@privy-io/react-auth";
 import { ReactNode, useEffect } from "react";
 
-import { NEXT_PUBLIC_FRONTEND_URL } from "@/config";
-
 const themeBackground = "#15191f";
 const themeForeground = "#ffffff";
 
@@ -25,7 +23,7 @@ const privyConfig: PrivyClientConfig = {
   appearance: {
     theme: themeBackground, // Use dark theme as base since your CSS uses dark colors
     accentColor: themeForeground,
-    logo: `${NEXT_PUBLIC_FRONTEND_URL}/logo_white_full.svg`,
+    logo: "https://5pskttgrmgbdllus.public.blob.vercel-storage.com/logo_white.png",
     showWalletLoginFirst: false, // Show social login options first
     walletList: [
       "metamask",
