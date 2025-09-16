@@ -1,6 +1,5 @@
-import keccak256 from "keccak256";
 import { MerkleTree } from "merkletreejs";
-import { Hex, encodeAbiParameters } from "viem";
+import { Hex, encodePacked, hexToBytes, keccak256 } from "viem";
 
 import { rewardsRoots, rewardsTree } from "@recallnet/db-schema/voting/defs";
 import { InsertReward } from "@recallnet/db-schema/voting/types";
@@ -189,7 +188,7 @@ export class RewardsService {
       let leafIdx: number | null = null;
       for (const [idxStr, hash] of Object.entries(treeNodes[0] || {})) {
         const idx = parseInt(idxStr);
-        if (areUint8ArraysEqual(hash, leafHash)) {
+        if (areUint8ArraysEqual(hash, hexToBytes(leafHash))) {
           leafIdx = idx;
           break;
         }
@@ -246,12 +245,9 @@ export class RewardsService {
  * @param amount The reward amount as a bigint
  * @returns Buffer containing the keccak256 hash of the encoded parameters
  */
-export function createLeafNode(address: `0x${string}`, amount: bigint): Buffer {
+export function createLeafNode(address: `0x${string}`, amount: bigint): Hex {
   return keccak256(
-    encodeAbiParameters(
-      [{ type: "string" }, { type: "address" }, { type: "uint256" }],
-      ["rl", address, amount],
-    ),
+    encodePacked(["string", "address", "uint256"], ["rl", address, amount]),
   );
 }
 
@@ -261,10 +257,10 @@ export function createLeafNode(address: `0x${string}`, amount: bigint): Buffer {
  * @returns Buffer containing the keccak256 hash of the encoded parameters with zero address and amount
  * @remarks This node is used as the first leaf in the Merkle tree to ensure unique tree structure
  */
-function createFauxLeafNode(competitionId: string): Buffer {
+export function createFauxLeafNode(competitionId: string): Hex {
   return keccak256(
-    encodeAbiParameters(
-      [{ type: "string" }, { type: "address" }, { type: "uint256" }],
+    encodePacked(
+      ["string", "address", "uint256"],
       [
         competitionId,
         "0x0000000000000000000000000000000000000000" as `0x${string}`,

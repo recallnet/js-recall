@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
-import keccak256 from "keccak256";
 import { MerkleTree } from "merkletreejs";
-import { encodeAbiParameters } from "viem";
+import { hexToBytes, keccak256 } from "viem";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { competitions } from "@recallnet/db-schema/core/defs";
@@ -14,7 +13,11 @@ import { InsertReward } from "@recallnet/db-schema/voting/types";
 
 import { db } from "@/database/db.js";
 import { insertRewards } from "@/database/repositories/rewards-repository.js";
-import { RewardsService, createLeafNode } from "@/services/rewards.service.js";
+import {
+  RewardsService,
+  createFauxLeafNode,
+  createLeafNode,
+} from "@/services/rewards.service.js";
 
 // Mock the RewardsAllocator class
 const mockRewardsAllocator = {
@@ -81,7 +84,7 @@ describe("Rewards Service", () => {
         competitionId: testCompetitionId,
         address,
         amount,
-        leafHash: new Uint8Array(leafHashBuffer), // Convert Buffer to Uint8Array
+        leafHash: hexToBytes(leafHashBuffer), // Convert Buffer to Uint8Array
         claimed: false,
       });
     }
@@ -116,7 +119,7 @@ describe("Rewards Service", () => {
 
     expect(rootEntries.length).toBe(1);
     expect(Buffer.from(rootEntries[0]!.rootHash).toString("hex")).toBe(
-      "2139ba0bff060eae6c6def620e29a004f4f3c2ea869066dd258ad30959ed16b7",
+      "dff434aaf652bbb60e68c978041653e565ff2ee478d62fe2e1ff42ae3e6b6177",
     );
     expect(rootEntries[0]?.rootHash.length).toBe(32); // Should have 32 bytes
     expect(rootEntries[0]?.competitionId).toBe(testCompetitionId);
@@ -132,7 +135,7 @@ describe("Rewards Service", () => {
 
     // Verify that the mock RewardsAllocator was called
     expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
-      "0x2139ba0bff060eae6c6def620e29a004f4f3c2ea869066dd258ad30959ed16b7", // root hash
+      "0xdff434aaf652bbb60e68c978041653e565ff2ee478d62fe2e1ff42ae3e6b6177", // root hash
       testTokenAddress,
       6n,
       testStartTimestamp,
@@ -179,7 +182,7 @@ describe("Rewards Service", () => {
         competitionId: testCompetitionId,
         address,
         amount,
-        leafHash: new Uint8Array(leafHashBuffer), // Convert Buffer to Uint8Array
+        leafHash: hexToBytes(leafHashBuffer), // Convert Buffer to Uint8Array
         claimed: false,
       },
     ];
@@ -239,7 +242,7 @@ describe("Rewards Service", () => {
           competitionId: testCompetitionId,
           address,
           amount,
-          leafHash: new Uint8Array(leafHashBuffer),
+          leafHash: hexToBytes(leafHashBuffer),
           claimed: false,
         };
       },
@@ -260,16 +263,7 @@ describe("Rewards Service", () => {
       .where(eq(rewards.competitionId, testCompetitionId));
 
     // Create the leaves array with the faux leaf first
-    const fauxLeaf = keccak256(
-      encodeAbiParameters(
-        [{ type: "string" }, { type: "address" }, { type: "uint256" }],
-        [
-          testCompetitionId,
-          "0x0000000000000000000000000000000000000000" as `0x${string}`,
-          BigInt("0"),
-        ],
-      ),
-    );
+    const fauxLeaf = createFauxLeafNode(testCompetitionId);
 
     const leaves = [
       fauxLeaf,
@@ -332,7 +326,7 @@ describe("Rewards Service", () => {
         competitionId: testCompetitionId,
         address: existingAddress,
         amount: existingAmount,
-        leafHash: new Uint8Array(leafHashBuffer),
+        leafHash: hexToBytes(leafHashBuffer),
         claimed: false,
       },
     ]);

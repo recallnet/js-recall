@@ -203,6 +203,14 @@ class ServiceRegistry {
   get boostAwardService(): BoostAwardService {
     return this._boostAwardService;
   }
+
+  get eventProcessor(): EventProcessor {
+    return this._eventProcessor;
+  }
+
+  get eventsRepository(): EventsRepository {
+    return this._eventsRepository;
+  }
 }
 
 export {

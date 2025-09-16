@@ -1,21 +1,22 @@
 import * as dotenv from "dotenv";
+import { blue, cyan, green, red, yellow } from "kleur/colors";
 import * as path from "path";
+import { parse } from "ts-command-line-args";
 
 import { RewardsService } from "@/services/rewards.service.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-// Colors for console output
-const colors = {
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  green: "\x1b[32m",
-  blue: "\x1b[34m",
-  cyan: "\x1b[36m",
-  magenta: "\x1b[35m",
-  reset: "\x1b[0m",
-};
+/**
+ * Interface for command line arguments
+ */
+interface IAllocateRewardsArgs {
+  competitionId: string;
+  tokenAddress: string;
+  startTimestamp: string;
+  help?: boolean;
+}
 
 /**
  * Allocate rewards for a specific competition
@@ -23,61 +24,91 @@ const colors = {
  * on the provided competitionId
  */
 async function allocateRewards() {
-  // Get the required parameters from command line arguments
-  const competitionId = process.argv[2];
-  const tokenAddress = process.argv[3];
-  const startTimestamp = process.argv[4];
-
-  if (!competitionId || !tokenAddress || !startTimestamp) {
-    console.error(
-      `${colors.red}Error: Missing required parameters.${colors.reset}`,
-    );
-    console.log(
-      `${colors.cyan}Example: pnpm rewards:allocate 123e4567-e89b-12d3-a456-426614174000 0x1234567890123456789012345678901234567890 1704067200${colors.reset}`,
-    );
-    process.exit(1);
-  }
+  // Parse command line arguments
+  const args = parse<IAllocateRewardsArgs>(
+    {
+      competitionId: {
+        type: String,
+        alias: "c",
+        description: "The competition ID (UUID format)",
+      },
+      tokenAddress: {
+        type: String,
+        alias: "t",
+        description: "The token contract address (0x... format)",
+      },
+      startTimestamp: {
+        type: String,
+        alias: "s",
+        description:
+          "The start timestamp for the reward allocation (Unix timestamp)",
+      },
+      help: {
+        type: Boolean,
+        alias: "h",
+        optional: true,
+        description: "Show this help message",
+      },
+    },
+    {
+      helpArg: "help",
+      headerContentSections: [
+        {
+          header: "Rewards Allocation Script",
+          content:
+            "Allocates rewards for a specific competition by building a Merkle tree and storing it in the database.",
+        },
+      ],
+      footerContentSections: [
+        {
+          header: "Example",
+          content:
+            "pnpm rewards:allocate --competitionId 123e4567-e89b-12d3-a456-426614174000 --tokenAddress 0x1234567890123456789012345678901234567890 --startTimestamp 1704067200",
+        },
+      ],
+    },
+  );
 
   try {
     console.log(
-      `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
+      cyan(
+        `╔════════════════════════════════════════════════════════════════╗`,
+      ),
     );
     console.log(
-      `${colors.cyan}║                   ALLOCATING REWARDS                          ║${colors.reset}`,
+      cyan(`║                   ALLOCATING REWARDS                          ║`),
     );
     console.log(
-      `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
+      cyan(
+        `╚════════════════════════════════════════════════════════════════╝`,
+      ),
     );
 
     console.log(
-      `\n${colors.blue}Allocating rewards for competition: ${colors.yellow}${competitionId}${colors.reset}`,
+      `\n${blue("Allocating rewards for competition:")} ${yellow(args.competitionId)}`,
     );
-    console.log(
-      `${colors.blue}Token Address: ${colors.yellow}${tokenAddress}${colors.reset}`,
-    );
-    console.log(
-      `${colors.blue}Start Timestamp: ${colors.yellow}${startTimestamp}${colors.reset}`,
-    );
+    console.log(`${blue("Token Address:")} ${yellow(args.tokenAddress)}`);
+    console.log(`${blue("Start Timestamp:")} ${yellow(args.startTimestamp)}`);
 
     // Instantiate the RewardsService (will use config-based RewardsAllocator)
     const rewardsService = new RewardsService();
 
     // Call the allocate method with all required parameters
     await rewardsService.allocate(
-      competitionId,
-      tokenAddress as `0x${string}`,
-      parseInt(startTimestamp),
+      args.competitionId,
+      args.tokenAddress as `0x${string}`,
+      parseInt(args.startTimestamp),
     );
 
     console.log(
-      `\n${colors.green}Successfully allocated rewards for competition: ${colors.yellow}${competitionId}${colors.reset}`,
+      `\n${green("Successfully allocated rewards for competition:")} ${yellow(args.competitionId)}`,
     );
     console.log(
-      `${colors.green}Merkle tree has been built and stored in the database.${colors.reset}`,
+      green(`Merkle tree has been built and stored in the database.`),
     );
   } catch (error) {
     console.error(
-      `\n${colors.red}Error allocating rewards:${colors.reset}`,
+      `\n${red("Error allocating rewards:")}`,
       error instanceof Error ? error.message : error,
     );
     process.exit(1);
