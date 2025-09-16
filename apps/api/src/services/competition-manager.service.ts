@@ -197,44 +197,60 @@ export class CompetitionManager {
       updatedAt: new Date(),
     };
 
-    await createCompetition(competition);
+    // Execute all operations in a single transaction
+    const result = await db.transaction(async (tx) => {
+      // Create the competition
+      await createCompetition(competition, tx);
 
-    let createdRewards: SelectCompetitionReward[] = [];
-    if (rewards) {
-      createdRewards = await this.competitionRewardService.createRewards(
-        id,
-        rewards,
-      );
+      let createdRewards: SelectCompetitionReward[] = [];
+      if (rewards) {
+        createdRewards = await this.competitionRewardService.createRewards(
+          id,
+          rewards,
+          tx,
+        );
+        serviceLogger.debug(
+          `[CompetitionManager] Created rewards for competition ${id}: ${JSON.stringify(
+            createdRewards,
+          )}`,
+        );
+      }
+
+      // Always create trading constraints (with defaults if not provided)
+      const constraints =
+        await this.tradingConstraintsService.createConstraints(
+          {
+            competitionId: id,
+            ...tradingConstraints,
+          },
+          tx,
+        );
       serviceLogger.debug(
-        `[CompetitionManager] Created rewards for competition ${id}: ${JSON.stringify(
-          createdRewards,
-        )}`,
+        `[CompetitionManager] Created trading constraints for competition ${id}`,
       );
-    }
 
-    // Always create trading constraints (with defaults if not provided)
-    const constraints = await this.tradingConstraintsService.createConstraints({
-      competitionId: id,
-      ...tradingConstraints,
+      return {
+        competition,
+        createdRewards,
+        constraints,
+      };
     });
-    serviceLogger.debug(
-      `[CompetitionManager] Created trading constraints for competition ${id}`,
-    );
 
     serviceLogger.debug(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}, type: ${type}}`,
     );
+
     return {
-      ...competition,
-      rewards: createdRewards.map((reward) => ({
+      ...result.competition,
+      rewards: result.createdRewards.map((reward) => ({
         rank: reward.rank,
         reward: reward.reward,
       })),
       tradingConstraints: {
-        minimumPairAgeHours: constraints?.minimumPairAgeHours,
-        minimum24hVolumeUsd: constraints?.minimum24hVolumeUsd,
-        minimumLiquidityUsd: constraints?.minimumLiquidityUsd,
-        minimumFdvUsd: constraints?.minimumFdvUsd,
+        minimumPairAgeHours: result.constraints?.minimumPairAgeHours,
+        minimum24hVolumeUsd: result.constraints?.minimum24hVolumeUsd,
+        minimumLiquidityUsd: result.constraints?.minimumLiquidityUsd,
+        minimumFdvUsd: result.constraints?.minimumFdvUsd,
       },
     };
   }

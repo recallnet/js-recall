@@ -14,12 +14,18 @@ type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /**
  * Creates trading constraints for a competition
  * @param data - The trading constraints data to insert
+ * @param tx - Optional database transaction
  * @returns The created trading constraints record
  */
 async function createImpl(
   data: InsertTradingConstraints,
+  tx?: DatabaseTransaction,
 ): Promise<SelectTradingConstraints | undefined> {
-  const [result] = await db.insert(tradingConstraints).values(data).returning();
+  const dbClient = tx || db;
+  const [result] = await dbClient
+    .insert(tradingConstraints)
+    .values(data)
+    .returning();
   return result;
 }
 
