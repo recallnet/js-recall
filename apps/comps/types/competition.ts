@@ -222,6 +222,7 @@ export interface PerpsPosition {
   markPrice: number;
   liquidationPrice: number | null;
   unrealizedPnl: number;
+  pnlPercentage: number;
   realizedPnl: number;
   status?: string;
   openedAt: string;

@@ -1580,28 +1580,33 @@ export function makeCompetitionController(services: ServiceRegistry) {
           competitionId,
         );
 
-        // Convert to match the same format as authenticated endpoint for consistency
+        // Convert to match the same format as all-positions endpoint for consistency
         const formattedPositions = positions.map((position) => ({
           id: position.id,
-          agentId: position.agentId,
           competitionId: position.competitionId,
+          agentId: position.agentId,
           positionId: position.providerPositionId || null,
           marketId: position.asset || null,
           marketSymbol: position.asset || null,
-          side: position.isLong ? "long" : "short",
-          size: position.positionSize || "0",
-          averagePrice: position.entryPrice || "0",
-          markPrice: position.currentPrice || "0",
-          liquidationPrice: position.liquidationPrice || null,
-          unrealizedPnl: position.pnlUsdValue || "0",
-          realizedPnl: "0", // Not tracked in this table
-          margin: position.collateralAmount || "0",
-          leverage: position.leverage || "1",
+          asset: position.asset,
+          isLong: position.isLong,
+          leverage: Number(position.leverage || 0),
+          size: Number(position.positionSize),
+          collateral: Number(position.collateralAmount),
+          averagePrice: Number(position.entryPrice),
+          markPrice: Number(position.currentPrice || 0),
+          liquidationPrice: position.liquidationPrice
+            ? Number(position.liquidationPrice)
+            : null,
+          unrealizedPnl: Number(position.pnlUsdValue || 0),
+          pnlPercentage: Number(position.pnlPercentage || 0),
+          realizedPnl: 0,
           status: position.status || "Open",
-          createdAt: position.createdAt.toISOString(),
-          updatedAt: (
-            position.lastUpdatedAt || position.createdAt
-          ).toISOString(),
+          openedAt: position.createdAt.toISOString(),
+          closedAt: position.closedAt ? position.closedAt.toISOString() : null,
+          timestamp: position.lastUpdatedAt
+            ? position.lastUpdatedAt.toISOString()
+            : position.createdAt.toISOString(),
         }));
 
         const responseBody = {
@@ -1765,6 +1770,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             ? Number(pos.liquidationPrice)
             : null,
           unrealizedPnl: Number(pos.pnlUsdValue || 0),
+          pnlPercentage: Number(pos.pnlPercentage || 0),
           realizedPnl: 0, // Not tracked in our schema
           status: pos.status,
           openedAt: pos.createdAt.toISOString(),

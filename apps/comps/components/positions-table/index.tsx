@@ -124,10 +124,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
         header: () => "PnL",
         cell: ({ row }) => {
           const pnl = row.original.unrealizedPnl;
-          const pnlPercent =
-            row.original.collateral > 0
-              ? (pnl / row.original.collateral) * 100
-              : 0;
+          const pnlPercent = row.original.pnlPercentage; // Use Symphony's calculation
           const isPositive = pnl >= 0;
 
           return (

@@ -533,7 +533,8 @@ describe("Perps Competition", () => {
         expect(position?.agentId).toBe(agent.id);
         expect(position?.competitionId).toBe(competition.id);
         expect(position?.marketSymbol).toBeDefined();
-        expect(position?.side).toMatch(/^(long|short)$/);
+        expect(position?.isLong).toBeDefined();
+        expect(typeof position?.isLong).toBe("boolean");
         expect(position?.size).toBeDefined();
         expect(position?.averagePrice).toBeDefined();
       }
@@ -646,7 +647,8 @@ describe("Perps Competition", () => {
         expect(position?.agentId).toBe(agent.id);
         expect(position?.competitionId).toBe(competition.id);
         expect(position?.marketSymbol).toBeDefined();
-        expect(position?.side).toMatch(/^(long|short)$/);
+        expect(position?.isLong).toBeDefined();
+        expect(typeof position?.isLong).toBe("boolean");
         expect(position?.size).toBeDefined();
         expect(position?.averagePrice).toBeDefined();
       }
@@ -849,18 +851,18 @@ describe("Perps Competition", () => {
         (p) => p.marketSymbol === "BTC",
       );
       expect(btcPosition).toBeDefined();
-      expect(btcPosition?.side).toBe("long");
-      expect(btcPosition?.size).toBe("0.5");
-      expect(btcPosition?.averagePrice).toBe("45000");
-      expect(btcPosition?.markPrice).toBe("47000");
-      expect(btcPosition?.unrealizedPnl).toBe("1000");
+      expect(btcPosition?.isLong).toBe(true);
+      expect(btcPosition?.size).toBe(0.5);
+      expect(btcPosition?.averagePrice).toBe(45000);
+      expect(btcPosition?.markPrice).toBe(47000);
+      expect(btcPosition?.unrealizedPnl).toBe(1000);
 
       const ethPosition = agent1Positions.positions.find(
         (p) => p.marketSymbol === "ETH",
       );
       expect(ethPosition).toBeDefined();
-      expect(ethPosition?.side).toBe("short");
-      expect(ethPosition?.size).toBe("2");
+      expect(ethPosition?.isLong).toBe(false);
+      expect(ethPosition?.size).toBe(2);
     }
 
     // Verify agent1's account summary
@@ -882,9 +884,9 @@ describe("Perps Competition", () => {
 
       const solPosition = agent2Positions.positions[0];
       expect(solPosition?.marketSymbol).toBe("SOL");
-      expect(solPosition?.side).toBe("long");
-      expect(solPosition?.size).toBe("10");
-      expect(solPosition?.unrealizedPnl).toBe("-50");
+      expect(solPosition?.isLong).toBe(true);
+      expect(solPosition?.size).toBe(10);
+      expect(solPosition?.unrealizedPnl).toBe(-50);
     }
 
     // Verify agent2's account summary

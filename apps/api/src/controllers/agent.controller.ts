@@ -427,30 +427,36 @@ export function makeAgentController(services: ServiceRegistry) {
           activeCompetition.id,
         );
 
-        // Return the positions matching PerpsPosition type
+        // Return the positions with consistent format across all endpoints
         res.status(200).json({
           success: true,
           agentId,
           positions: positions.map((pos) => ({
             id: pos.id,
-            agentId: pos.agentId,
             competitionId: pos.competitionId,
+            agentId: pos.agentId,
             positionId: pos.providerPositionId || null,
             marketId: pos.asset || null,
             marketSymbol: pos.asset || null,
-            side: pos.isLong ? ("long" as const) : ("short" as const),
-            size: pos.positionSize || "0",
-            averagePrice: pos.entryPrice || "0",
-            markPrice: pos.currentPrice || pos.entryPrice || "0",
-            unrealizedPnl: pos.pnlUsdValue || "0",
-            realizedPnl: "0", // Not tracked in current schema
-            margin: pos.collateralAmount || "0",
-            leverage: pos.leverage || "1",
-            liquidationPrice: pos.liquidationPrice || null,
-            timestamp:
-              pos.lastUpdatedAt?.toISOString() ||
-              pos.createdAt?.toISOString() ||
-              new Date().toISOString(),
+            asset: pos.asset,
+            isLong: pos.isLong,
+            leverage: Number(pos.leverage || 0),
+            size: Number(pos.positionSize),
+            collateral: Number(pos.collateralAmount),
+            averagePrice: Number(pos.entryPrice),
+            markPrice: Number(pos.currentPrice || 0),
+            liquidationPrice: pos.liquidationPrice
+              ? Number(pos.liquidationPrice)
+              : null,
+            unrealizedPnl: Number(pos.pnlUsdValue || 0),
+            pnlPercentage: Number(pos.pnlPercentage || 0), // Include Symphony's calculation
+            realizedPnl: 0, // Not tracked in current schema
+            status: pos.status || "Open",
+            openedAt: pos.createdAt.toISOString(),
+            closedAt: pos.closedAt ? pos.closedAt.toISOString() : null,
+            timestamp: pos.lastUpdatedAt
+              ? pos.lastUpdatedAt.toISOString()
+              : pos.createdAt.toISOString(),
           })),
         });
       } catch (error) {
