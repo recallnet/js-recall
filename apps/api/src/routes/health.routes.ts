@@ -104,6 +104,11 @@ export function configureHealthRoutes(
    *                     agentManager:
    *                       type: string
    *                       description: Status of the agent manager service
+   *                       example: ok
+   *                     watchlistService:
+   *                       type: string
+   *                       description: Status of the watchlist service (Chainalysis integration)
+   *                       example: ok
    *       500:
    *         description: Server error
    */

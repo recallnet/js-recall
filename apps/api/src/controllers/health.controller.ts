@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
-export function makeHealthController() {
+import { ServiceRegistry } from "@/services/index.js";
+
+export function makeHealthController(services: ServiceRegistry) {
   /**
    * Health Controller
    * Handles health check endpoints
@@ -49,6 +51,9 @@ export function makeHealthController() {
             competitionManager: "ok",
             userManager: "ok",
             agentManager: "ok",
+            watchlistService: services.watchlistService.isConfigured()
+              ? "ok"
+              : "not_configured",
           },
         });
       } catch (error) {

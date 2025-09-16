@@ -137,6 +137,16 @@ export function makeUserController(services: ServiceRegistry) {
           throw new ApiError(400, "Wallet not linked to user");
         }
 
+        // Check wallet against sanctions list
+        const isSanctioned =
+          await services.watchlistService.isAddressSanctioned(walletAddress);
+        if (isSanctioned) {
+          throw new ApiError(
+            403,
+            "This wallet address is not permitted for use on this platform",
+          );
+        }
+
         // Link the wallet
         const now = new Date();
         const linkedUser = await services.userManager.updateUser({

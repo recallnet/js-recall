@@ -13,6 +13,7 @@ import { TradeSimulator } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserManager } from "@/services/user-manager.service.js";
 import { VoteManager } from "@/services/vote-manager.service.js";
+import { WatchlistService } from "@/services/watchlist.service.js";
 
 /**
  * Service Registry
@@ -37,6 +38,7 @@ class ServiceRegistry {
   private _emailService: EmailService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
+  private _watchlistService: WatchlistService;
 
   constructor() {
     // Initialize services in dependency order
@@ -64,8 +66,14 @@ class ServiceRegistry {
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
 
+    // Initialize watchlist service (no dependencies)
+    this._watchlistService = new WatchlistService();
+
     // Initialize user and agent managers (require email service)
-    this._userManager = new UserManager(this._emailService);
+    this._userManager = new UserManager(
+      this._emailService,
+      this._watchlistService,
+    );
     this._agentManager = new AgentManager(this._emailService);
     this._adminManager = new AdminManager();
 
@@ -157,6 +165,10 @@ class ServiceRegistry {
   get competitionRewardService(): CompetitionRewardService {
     return this._competitionRewardService;
   }
+
+  get watchlistService(): WatchlistService {
+    return this._watchlistService;
+  }
 }
 
 export {
@@ -176,6 +188,7 @@ export {
   TradingConstraintsService,
   UserManager,
   VoteManager,
+  WatchlistService,
 };
 
 export default ServiceRegistry;
