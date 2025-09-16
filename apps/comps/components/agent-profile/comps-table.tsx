@@ -36,18 +36,14 @@ export function CompetitionTable({
 }) {
   const router = useRouter();
   const hasMore = total > (competitions?.length || 0);
+  const gridColumns = canClaim ? "grid-cols-9" : "grid-cols-8";
 
   return (
     <>
       <div className="overflow-x-auto rounded border">
         <Table className="min-w-200">
           <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
-            <TableRow
-              className={cn(
-                "grid w-full",
-                canClaim ? "grid-cols-9" : "grid-cols-8",
-              )}
-            >
+            <TableRow className={cn("grid w-full", gridColumns)}>
               <SortableTableHeader
                 onToggleSort={() => handleSortChange("name")}
                 sortState={sortState["name"]}
@@ -118,10 +114,7 @@ export function CompetitionTable({
                   <TableRow
                     key={i}
                     onClick={() => router.push(`/competitions/${comp.id}`)}
-                    className={cn(
-                      "grid w-full cursor-pointer",
-                      canClaim ? "grid-cols-9" : "grid-cols-8",
-                    )}
+                    className={cn("grid w-full cursor-pointer", gridColumns)}
                   >
                     <TableCell className="flex flex-col justify-center">
                       <span className="text-secondary-foreground truncate text-sm font-semibold">
