@@ -209,78 +209,6 @@ async function getPerpsPositionsImpl(
   }
 }
 
-/**
- * Get positions for multiple agents in bulk (with optional status filter)
- * @param competitionId Competition ID
- * @param agentIds Array of agent IDs
- * @param status Optional status filter ("Open", "Closed", etc.)
- * @returns Map of agent ID to their positions
- */
-async function getBulkPerpsPositionsImpl(
-  competitionId: string,
-  agentIds: string[],
-  status?: string,
-): Promise<Map<string, SelectPerpetualPosition[]>> {
-  if (agentIds.length === 0) {
-    return new Map();
-  }
-
-  try {
-    const conditions = [
-      eq(perpetualPositions.competitionId, competitionId),
-      inArray(perpetualPositions.agentId, agentIds),
-    ];
-
-    if (status) {
-      conditions.push(eq(perpetualPositions.status, status));
-    }
-
-    const positions = await dbRead
-      .select()
-      .from(perpetualPositions)
-      .where(and(...conditions))
-      .orderBy(desc(perpetualPositions.createdAt));
-
-    // Group positions by agent ID
-    const positionMap = new Map<string, SelectPerpetualPosition[]>();
-    for (const position of positions) {
-      const agentPositions = positionMap.get(position.agentId) || [];
-      agentPositions.push(position);
-      positionMap.set(position.agentId, agentPositions);
-    }
-
-    // Ensure all requested agents have an entry (even if empty)
-    for (const agentId of agentIds) {
-      if (!positionMap.has(agentId)) {
-        positionMap.set(agentId, []);
-      }
-    }
-
-    repositoryLogger.debug(
-      `[PerpsRepository] Retrieved ${positions.length} positions for ${agentIds.length} agents`,
-    );
-
-    return positionMap;
-  } catch (error) {
-    repositoryLogger.error("Error in getBulkPerpsPositions:", error);
-    throw error;
-  }
-}
-
-/**
- * Get all open positions for multiple agents in bulk
- * This is a convenience wrapper around getBulkPerpsPositions with status="Open"
- * @param competitionId Competition ID
- * @param agentIds Array of agent IDs
- * @returns Map of agent ID to their open positions
- */
-async function getBulkOpenPositionsImpl(
-  competitionId: string,
-  agentIds: string[],
-): Promise<Map<string, SelectPerpetualPosition[]>> {
-  return getBulkPerpsPositionsImpl(competitionId, agentIds, "Open");
-}
-
 // =============================================================================
 // PERPS ACCOUNT SUMMARIES
 // =============================================================================
@@ -1101,18 +1029,6 @@ export const getPerpsPositions = createTimedRepositoryFunction(
   getPerpsPositionsImpl,
   "PerpsRepository",
   "getPerpsPositions",
-);
-
-export const getBulkPerpsPositions = createTimedRepositoryFunction(
-  getBulkPerpsPositionsImpl,
-  "PerpsRepository",
-  "getBulkPerpsPositions",
-);
-
-export const getBulkOpenPositions = createTimedRepositoryFunction(
-  getBulkOpenPositionsImpl,
-  "PerpsRepository",
-  "getBulkOpenPositions",
 );
 
 export const createPerpsAccountSummary = createTimedRepositoryFunction(
