@@ -65,7 +65,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
     productionKey,
     sandboxKey,
     isLoadingKeys,
-    isUnlocked,
+    isSandboxUnlocked,
   } = useUnlockKeys(agent.handle, agent.id);
   const { ready, backendUser } = useSession();
 
@@ -75,9 +75,9 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
     unlockKeys.mutate();
   };
 
-  // Show keys if they are unlocked and loaded
-  const hasKeys = productionKey || sandboxKey;
-  const showKeys = isUnlocked && hasKeys && !isLoadingKeys;
+  // Always show production key, but only show sandbox key if it's unlocked (agent joined competition)
+  const showProductionKey = productionKey && !isLoadingKeys;
+  const showSandboxKey = isSandboxUnlocked && sandboxKey && !isLoadingKeys;
 
   return (
     <div className="mb-20 flex flex-col">
@@ -98,53 +98,46 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
         environments using your unique API keys.
       </p>
 
-      {showKeys ? (
+      {showProductionKey && (
         // Show the actual API keys
         <div className="flex flex-col gap-6">
-          {productionKey && (
-            <ApiKeySection
-              title="Production API Key"
-              apiKey={productionKey}
-              description="Use this key to connect your agent to the production environment."
-            />
-          )}
-          {sandboxKey && (
+          <ApiKeySection
+            title="Production API Key"
+            apiKey={productionKey}
+            description="Use this key to connect your agent to the production environment."
+          />
+          {showSandboxKey ? (
             <ApiKeySection
               title="Sandbox API Key"
               apiKey={sandboxKey}
               description="Use this key to connect your agent to the sandbox environment for testing."
             />
+          ) : (
+            <Card
+              corner={["top-left", "top-right", "bottom-left", "bottom-right"]}
+              cropSize={[30, 30]}
+              className="text-secondary-foreground mt-4 flex flex-col gap-4 px-8 py-6"
+            >
+              <span className="text-primary-foreground text-lg font-bold">
+                Unlock Sandbox API Key
+              </span>
+              <span>Click to generate your Sandbox API key for testing.</span>
+              <div className="flex w-full justify-center">
+                <Button
+                  onClick={onUnlockKeys}
+                  disabled={unlockKeys.isPending}
+                  className="flex max-w-[250px] gap-3 bg-blue-600 px-12 py-7 text-xs"
+                >
+                  <KeyRound className="h-6 w-6" strokeWidth={1.3} />
+                  <span className="uppercase">
+                    {unlockKeys.isPending ? "Loading..." : "Generate key"}
+                  </span>
+                </Button>
+              </div>
+            </Card>
           )}
         </div>
-      ) : (
-        // Show the unlock keys step
-        <Card
-          corner={["top-left", "top-right", "bottom-left", "bottom-right"]}
-          cropSize={[30, 30]}
-          className="text-secondary-foreground flex flex-col gap-4 px-8 py-6"
-        >
-          <span className="text-primary-foreground text-lg font-bold">
-            Get your API Keys
-          </span>
-          <span>
-            Click below to generate your API Keys for connecting to our Sandbox
-            and Production environments.
-          </span>
-          <div className="flex w-full justify-center">
-            <Button
-              onClick={onUnlockKeys}
-              disabled={unlockKeys.isPending}
-              className="flex max-w-[250px] gap-3 bg-blue-600 px-12 py-7 text-xs"
-            >
-              <KeyRound className="h-6 w-6" strokeWidth={1.3} />
-              <span className="uppercase">
-                {unlockKeys.isPending ? "Loading..." : "Unlock keys"}
-              </span>
-            </Button>
-          </div>
-        </Card>
       )}
-
       <p className="text-secondary-foreground mt-4">
         Need help? Reach out on our{" "}
         <Link
@@ -158,7 +151,7 @@ export function AgentCreated({ agent }: AgentCreatedProps) {
       </p>
       <div className="xs:flex-row mt-8 flex flex-col justify-center gap-2">
         <Link
-          href="https://docs.recall.network/competitions/guides/verify-agent-wallet"
+          href="https://docs.recall.network/competitions/developer-guides"
           target="_blank"
         >
           <Button variant="outline" className="w-full px-10 uppercase">

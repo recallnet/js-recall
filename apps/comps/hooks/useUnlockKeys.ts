@@ -4,11 +4,12 @@ import { toast } from "@recallnet/ui2/components/toast";
 
 import { apiClient } from "@/lib/api-client";
 import { sandboxClient } from "@/lib/sandbox-client";
+import { AdminAgentKeyResponse } from "@/types/admin";
 
 export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
   const queryClient = useQueryClient();
 
-  // Query for production API key - fetch when agent exists
+  // Query for production agent API key
   const productionKeyQuery = useQuery({
     queryKey: ["agent-api-key", agentId],
     queryFn: async () => {
@@ -18,45 +19,39 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
     enabled: !!agentId,
   });
 
-  // Query for sandbox agent - fetch when agent exists
-  const sandboxAgentQuery = useQuery({
-    queryKey: ["sandbox-agent", agentHandle],
-    queryFn: async () => {
-      return await sandboxClient.getAgentApiKey(agentHandle);
-    },
-    enabled: !!agentHandle,
-  });
-
-  // Get sandbox agent id
-  const sandboxAgentId = sandboxAgentQuery.data?.agent?.id;
-
-  // Query for sandbox competitions - fetch when email verified and agent exists
-  const sandboxCompetitionsQuery = useQuery({
-    queryKey: ["sandbox-agent-competitions", sandboxAgentId],
-    queryFn: async () => {
-      if (!sandboxAgentId) throw new Error("Sandbox agent ID required");
-      return await sandboxClient.getAgentCompetitions(sandboxAgentId, {
-        status: "active",
-      });
-    },
-    enabled: !!sandboxAgentId,
-    staleTime: 0, // Always consider data stale
-    refetchOnMount: "always", // Always refetch when component mounts
-  });
-
-  // Query for sandbox API key - fetch when email verified and agent exists in sandbox
+  // Query for sandbox agent API key
   const sandboxKeyQuery = useQuery({
     queryKey: ["sandbox-agent-api-key", agentHandle],
     queryFn: async () => {
       try {
+        // Note: the sandbox-specific API client uses the `handle` since it does additional lookups
+        // to get the agent ID relative to the sandbox (the sandbox vs production agent IDs differ)
         return await sandboxClient.getAgentApiKey(agentHandle);
       } catch (error) {
-        // If agent doesn't exist in sandbox yet, return null instead of failing
+        // If sandbox agent doesn't exist, create it. Note: this is a proactive action in case the
+        // "sync" between the main API and sandbox somehow gets out of sync
         if (
           error instanceof Error &&
           error.message.includes("Agent not found")
         ) {
-          return null;
+          const createResult = await sandboxClient.createAgent({
+            handle: agentHandle,
+            // Note: the name is technically required by the backend API, but all we need is the
+            // agent handle since this is globally unique and used for querying the API key
+            name: agentHandle,
+          });
+          if (!createResult.success) {
+            throw new Error("Failed to create sandbox agent");
+          }
+          const { id, apiKey, name } = createResult.agent;
+          return {
+            success: true,
+            agent: {
+              id,
+              apiKey,
+              name,
+            },
+          } as AdminAgentKeyResponse;
         }
         throw error;
       }
@@ -72,39 +67,46 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
     },
   });
 
+  // Get sandbox agent id
+  const sandboxAgentId = sandboxKeyQuery.data?.agent?.id;
+
+  // Query for sandbox competitions - fetch when agent exists
+  const sandboxCompetitionsQuery = useQuery({
+    queryKey: ["sandbox-agent-competitions", sandboxAgentId],
+    queryFn: async () => {
+      if (!sandboxAgentId) throw new Error("Sandbox agent ID required");
+      return await sandboxClient.getAgentCompetitions(sandboxAgentId, {
+        status: "active",
+      });
+    },
+    enabled: !!sandboxAgentId,
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: "always", // Always refetch when component mounts
+  });
+
   // Determine if keys are actually unlocked based on server data
-  const hasProductionKey = !!productionKeyQuery.data?.apiKey;
   const hasSandboxKey = !!sandboxKeyQuery.data?.agent?.apiKey;
   const isInActiveSandboxCompetition =
     !!sandboxCompetitionsQuery.data?.competitions?.length;
-  // We unlock when all keys exists *and* the agent is in an active sandbox competition
-  const isUnlocked =
-    hasProductionKey && hasSandboxKey && isInActiveSandboxCompetition;
+  const isSandboxUnlocked = hasSandboxKey && isInActiveSandboxCompetition;
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!sandboxAgentId) {
-        throw new Error("Unable to find sandbox agent");
-      }
+      if (!sandboxAgentId) throw new Error("Unable to find sandbox agent");
+
       if (isInActiveSandboxCompetition) {
         return { alreadyJoined: true };
       }
 
       // Get active sandbox competitions
       const competitionsRes = await sandboxClient.getCompetitions();
-      if (
-        !competitionsRes.competitions ||
-        competitionsRes.competitions.length === 0
-      ) {
+      if (!competitionsRes.competitions[0]?.id) {
+        // Note: this should never happen; the sandbox always has an active competition
         throw new Error("No active sandbox competitions available");
       }
 
       // Join the first active competition
-      const competitionId = competitionsRes.competitions[0]?.id;
-      if (!competitionId) {
-        throw new Error("No valid competition found");
-      }
-
+      const competitionId = competitionsRes.competitions[0].id;
       try {
         await sandboxClient.joinCompetition(competitionId, sandboxAgentId);
         return { alreadyJoined: false };
@@ -120,15 +122,11 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
         throw joinError;
       }
     },
-    onSuccess: (result) => {
+    onSuccess: async () => {
       // Show success message
-      if (result?.alreadyJoined) {
-        toast.success("API Keys are now accessible");
-      } else {
-        toast.success("API Keys unlocked successfully");
-      }
+      toast.success("API key unlocked successfully");
 
-      // Invalidate and refetch queries
+      // Invalidate and refetch sandbox agent competitions (for future refetches)
       queryClient.invalidateQueries({
         queryKey: ["sandbox-agent-competitions"],
       });
@@ -167,6 +165,6 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
       productionKeyQuery.isLoading ||
       sandboxKeyQuery.isLoading ||
       sandboxCompetitionsQuery.isLoading,
-    isUnlocked,
+    isSandboxUnlocked,
   };
 };

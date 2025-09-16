@@ -85,8 +85,13 @@ export const Credentials = ({
   agent: Agent;
   className?: string;
 }) => {
-  const { productionKey, sandboxKey, isLoadingKeys, isUnlocked, mutation } =
-    useUnlockKeys(agent.handle, agent.id);
+  const {
+    productionKey,
+    sandboxKey,
+    isLoadingKeys,
+    isSandboxUnlocked,
+    mutation,
+  } = useUnlockKeys(agent.handle, agent.id);
 
   const unlockKeys = () => {
     mutation.mutate();
@@ -118,7 +123,7 @@ export const Credentials = ({
             tooltip="Sandbox Agent API Key"
             apiKey={sandboxKey}
             isLoading={isLoadingKeys}
-            isLocked={!isUnlocked}
+            isLocked={!isSandboxUnlocked}
             onUnlock={unlockKeys}
             isUnlocking={mutation.isPending}
           />
