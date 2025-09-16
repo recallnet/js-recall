@@ -1,4 +1,41 @@
 #!/usr/bin/env node
+/**
+ * ================================================================================
+ * PERPETUAL FUTURES COMPETITION SEED SCRIPT - FRONTEND TESTING ONLY
+ * ================================================================================
+ *
+ * PURPOSE:
+ * This script is designed EXCLUSIVELY for local frontend development and testing.
+ * It creates a complete test environment for perpetual futures (perps) trading
+ * competitions with realistic mock data.
+ * This script requires the API server to be running locally on http://localhost:3000.
+ *
+ * ⚠️ WARNING: THIS SCRIPT IS FOR LOCAL DEVELOPMENT ONLY ⚠️
+ * - DO NOT run this script in production environments
+ * - DO NOT use this for actual trading competitions
+ * - DO NOT run this against production databases
+ *
+ * WHAT THIS SCRIPT DOES:
+ * 1. Creates test users and agents with predefined wallet addresses
+ * 2. Sets up a perpetual futures competition via admin API
+ * 3. Seeds realistic perps positions with varied P&L scenarios
+ * 4. Generates historical portfolio snapshots for timeline visualization
+ *
+ * USE CASES:
+ * - Testing perps-specific UI components (PositionsTable, etc.)
+ * - Verifying conditional rendering logic (perps vs paper trading)
+ * - Testing portfolio timeline charts with historical data
+ * - Validating P&L display formatting (positive/negative values)
+ * - Testing competition statistics display (averageEquity, totalPositions)
+ *
+ * PREREQUISITES:
+ * 1. Local API server running on http://localhost:3000
+ * 2. Local database with proper schema
+ * 3. Valid admin API key (obtain from your local setup)
+ * 4. Frontend dev server for viewing results
+ *
+ * ================================================================================
+ */
 import axios from "axios";
 import { randomUUID } from "crypto";
 import * as dotenv from "dotenv";
@@ -28,8 +65,10 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 // ================================================================================
 // CONFIGURATION - FILL IN YOUR ADMIN API KEY HERE
 // ================================================================================
-const ADMIN_API_KEY = "0cd34bd3f22f96f5_a9791f92a67bfe15"; // <-- FILL IN YOUR ADMIN API KEY HERE
-const API_BASE_URL = "http://localhost:3000";
+// ⚠️ IMPORTANT: This key should be from your LOCAL development environment only!
+// Never commit a real API key to source control
+const ADMIN_API_KEY = ""; // <-- FILL IN YOUR LOCAL ADMIN API KEY HERE
+const API_BASE_URL = "http://localhost:3000"; // Local API only - DO NOT change to production URL
 
 // Colors for console output
 const colors = {
