@@ -26,10 +26,10 @@ import {
 } from "@/types/index.js";
 
 /**
- * Vote Manager Service
+ * Vote Service
  * Manages non-staking votes for competition agents with business logic validation
  */
-export class VoteManager {
+export class VoteService {
   /**
    * Cast a vote for an agent in a competition
    * @param userId The user casting the vote

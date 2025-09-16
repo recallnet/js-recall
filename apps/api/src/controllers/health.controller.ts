@@ -43,12 +43,12 @@ export function makeHealthController() {
           uptime: process.uptime(),
           version: process.env.npm_package_version || "1.0.0",
           services: {
-            priceTracker: "ok",
-            balanceManager: "ok",
-            tradeSimulator: "ok",
-            competitionManager: "ok",
-            userManager: "ok",
-            agentManager: "ok",
+            priceTrackerService: "ok",
+            balanceService: "ok",
+            tradeSimulatorService: "ok",
+            competitionService: "ok",
+            userService: "ok",
+            agentService: "ok",
           },
         });
       } catch (error) {

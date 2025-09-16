@@ -13,16 +13,16 @@ import {
 
 import { db } from "@/database/db.js";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";
-import type { AgentManager } from "@/services/agent-manager.service.js";
+import type { AgentService } from "@/services/agent-manager.service.js";
 import type { AgentRankService } from "@/services/agentrank.service.js";
-import type { BalanceManager } from "@/services/balance-manager.service.js";
-import { CompetitionManager } from "@/services/competition-manager.service.js";
+import type { BalanceService } from "@/services/balance-manager.service.js";
+import { CompetitionService } from "@/services/competition-manager.service.js";
 import type { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import type { ConfigurationService } from "@/services/configuration.service.js";
-import type { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
-import type { TradeSimulator } from "@/services/trade-simulator.service.js";
+import type { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
+import type { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import type { TradingConstraintsService } from "@/services/trading-constraints.service.js";
-import type { VoteManager } from "@/services/vote-manager.service.js";
+import type { VoteService } from "@/services/vote-manager.service.js";
 
 // Mock logger first to prevent db initialization
 vi.mock("@/lib/logger.js", () => ({
@@ -49,8 +49,8 @@ vi.mock("@/database/repositories/competition-repository.js");
 vi.mock("@/services/competition-reward.service.js");
 vi.mock("@/services/trading-constraints.service.js");
 
-describe("CompetitionManager", () => {
-  let competitionManager: CompetitionManager;
+describe("CompetitionService", () => {
+  let competitionService: CompetitionService;
   let mockCompetitionRewardService: {
     replaceRewards: Mock;
   };
@@ -129,13 +129,14 @@ describe("CompetitionManager", () => {
     };
 
     // Create mock services for all dependencies
-    const mockBalanceManager = {} as unknown as BalanceManager;
-    const mockTradeSimulator = {} as unknown as TradeSimulator;
-    const mockPortfolioSnapshotter = {} as unknown as PortfolioSnapshotter;
-    const mockAgentManager = {} as unknown as AgentManager;
+    const mockBalanceService = {} as unknown as BalanceService;
+    const mockTradeSimulatorService = {} as unknown as TradeSimulatorService;
+    const mockPortfolioSnapshotterService =
+      {} as unknown as PortfolioSnapshotterService;
+    const mockAgentService = {} as unknown as AgentService;
     const mockConfigurationService = {} as unknown as ConfigurationService;
     const mockAgentRankService = {} as unknown as AgentRankService;
-    const mockVoteManager = {} as unknown as VoteManager;
+    const mockVoteService = {} as unknown as VoteService;
 
     // Get the mocked db transaction
     mockDb = { transaction: vi.mocked(db.transaction) };
@@ -149,14 +150,14 @@ describe("CompetitionManager", () => {
     );
 
     // Create competition manager instance with all mocked dependencies
-    competitionManager = new CompetitionManager(
-      mockBalanceManager,
-      mockTradeSimulator,
-      mockPortfolioSnapshotter,
-      mockAgentManager,
+    competitionService = new CompetitionService(
+      mockBalanceService,
+      mockTradeSimulatorService,
+      mockPortfolioSnapshotterService,
+      mockAgentService,
       mockConfigurationService,
       mockAgentRankService,
-      mockVoteManager,
+      mockVoteService,
       mockTradingConstraintsService as unknown as TradingConstraintsService,
       mockCompetitionRewardService as unknown as CompetitionRewardService,
     );
@@ -188,7 +189,7 @@ describe("CompetitionManager", () => {
         return callback({ transaction: "mock-tx" });
       });
 
-      const result = await competitionManager.updateCompetition(
+      const result = await competitionService.updateCompetition(
         competitionId,
         updates,
         tradingConstraints,
@@ -234,7 +235,7 @@ describe("CompetitionManager", () => {
         return callback({ transaction: "mock-tx" });
       });
 
-      const result = await competitionManager.updateCompetition(
+      const result = await competitionService.updateCompetition(
         competitionId,
         updates,
       );
@@ -271,7 +272,7 @@ describe("CompetitionManager", () => {
         return callback({ transaction: "mock-tx" });
       });
 
-      const result = await competitionManager.updateCompetition(
+      const result = await competitionService.updateCompetition(
         competitionId,
         {},
         undefined,
@@ -315,7 +316,7 @@ describe("CompetitionManager", () => {
       });
 
       await expect(
-        competitionManager.updateCompetition(competitionId, updates),
+        competitionService.updateCompetition(competitionId, updates),
       ).rejects.toThrow("Database update failed");
 
       // Verify transaction was attempted
@@ -350,7 +351,7 @@ describe("CompetitionManager", () => {
       });
 
       await expect(
-        competitionManager.updateCompetition(
+        competitionService.updateCompetition(
           competitionId,
           updates,
           undefined,
@@ -391,7 +392,7 @@ describe("CompetitionManager", () => {
       });
 
       await expect(
-        competitionManager.updateCompetition(
+        competitionService.updateCompetition(
           competitionId,
           updates,
           tradingConstraints,
@@ -422,7 +423,7 @@ describe("CompetitionManager", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(undefined);
 
       await expect(
-        competitionManager.updateCompetition(competitionId, { name: "Test" }),
+        competitionService.updateCompetition(competitionId, { name: "Test" }),
       ).rejects.toThrow(`Competition not found: ${competitionId}`);
 
       // Transaction should not be started if competition doesn't exist
@@ -436,7 +437,7 @@ describe("CompetitionManager", () => {
         return callback({ transaction: "mock-tx" });
       });
 
-      const result = await competitionManager.updateCompetition(
+      const result = await competitionService.updateCompetition(
         competitionId,
         {}, // Empty updates
       );

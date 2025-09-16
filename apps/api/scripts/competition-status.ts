@@ -84,7 +84,7 @@ async function showCompetitionStatus() {
 
     // Check if a competition is active
     const competition =
-      await services.competitionManager.getActiveCompetition();
+      await services.competitionService.getActiveCompetition();
 
     if (!competition) {
       console.log(
@@ -141,7 +141,7 @@ async function showCompetitionStatus() {
       .filter((agent) => agent !== undefined);
 
     // Get the leaderboard
-    const leaderboard = await services.competitionManager.getLeaderboard(
+    const leaderboard = await services.competitionService.getLeaderboard(
       competition.id,
     );
 

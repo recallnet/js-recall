@@ -5,22 +5,22 @@ import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
 import { StakesRepository } from "@/indexing/stakes.repository.js";
 import { indexingLogger } from "@/lib/logger.js";
-import { AdminManager } from "@/services/admin-manager.service.js";
-import { AgentManager } from "@/services/agent-manager.service.js";
+import { AdminService } from "@/services/admin-manager.service.js";
+import { AgentService } from "@/services/agent-manager.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
-import { BalanceManager } from "@/services/balance-manager.service.js";
+import { BalanceService } from "@/services/balance-manager.service.js";
 import { BoostAwardService } from "@/services/boost-award.service.js";
-import { CompetitionManager } from "@/services/competition-manager.service.js";
+import { CompetitionService } from "@/services/competition-manager.service.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
-import { PortfolioSnapshotter } from "@/services/portfolio-snapshotter.service.js";
-import { PriceTracker } from "@/services/price-tracker.service.js";
-import { TradeSimulator } from "@/services/trade-simulator.service.js";
+import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
+import { PriceTrackerService } from "@/services/price-tracker.service.js";
+import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
-import { UserManager } from "@/services/user-manager.service.js";
-import { VoteManager } from "@/services/vote-manager.service.js";
+import { UserService } from "@/services/user-manager.service.js";
+import { VoteService } from "@/services/vote-manager.service.js";
 
 /**
  * Service Registry
@@ -30,17 +30,17 @@ class ServiceRegistry {
   private static instance: ServiceRegistry;
 
   // Services
-  private _balanceManager: BalanceManager;
-  private _priceTracker: PriceTracker;
-  private _tradeSimulator: TradeSimulator;
-  private _competitionManager: CompetitionManager;
-  private _userManager: UserManager;
-  private _agentManager: AgentManager;
-  private _adminManager: AdminManager;
+  private _balanceService: BalanceService;
+  private _priceTrackerService: PriceTrackerService;
+  private _tradeSimulatorService: TradeSimulatorService;
+  private _competitionService: CompetitionService;
+  private _userService: UserService;
+  private _agentService: AgentService;
+  private _adminService: AdminService;
   private _configurationService: ConfigurationService;
-  private _portfolioSnapshotter: PortfolioSnapshotter;
+  private _portfolioSnapshotterService: PortfolioSnapshotterService;
   private _leaderboardService: LeaderboardService;
-  private _voteManager: VoteManager;
+  private _voteService: VoteService;
   private _agentRankService: AgentRankService;
   private _emailService: EmailService;
   private _tradingConstraintsService: TradingConstraintsService;
@@ -54,16 +54,16 @@ class ServiceRegistry {
 
   constructor() {
     // Initialize services in dependency order
-    this._balanceManager = new BalanceManager();
-    this._priceTracker = new PriceTracker();
-    this._portfolioSnapshotter = new PortfolioSnapshotter(
-      this._balanceManager,
-      this._priceTracker,
+    this._balanceService = new BalanceService();
+    this._priceTrackerService = new PriceTrackerService();
+    this._portfolioSnapshotterService = new PortfolioSnapshotterService(
+      this._balanceService,
+      this._priceTrackerService,
     );
-    this._tradeSimulator = new TradeSimulator(
-      this._balanceManager,
-      this._priceTracker,
-      this._portfolioSnapshotter,
+    this._tradeSimulatorService = new TradeSimulatorService(
+      this._balanceService,
+      this._priceTrackerService,
+      this._portfolioSnapshotterService,
     );
 
     // Configuration service for dynamic settings
@@ -72,50 +72,50 @@ class ServiceRegistry {
     // Initialize agent rank service (no dependencies)
     this._agentRankService = new AgentRankService();
 
-    // Initialize vote manager (no dependencies)
-    this._voteManager = new VoteManager();
+    // Initialize vote service (no dependencies)
+    this._voteService = new VoteService();
 
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
 
-    // Initialize user and agent managers (require email service)
-    this._userManager = new UserManager(this._emailService);
-    this._agentManager = new AgentManager(this._emailService);
-    this._adminManager = new AdminManager();
+    // Initialize user and agent services (require email service)
+    this._userService = new UserService(this._emailService);
+    this._agentService = new AgentService(this._emailService);
+    this._adminService = new AdminService();
 
     // Initialize trading constraints service (no dependencies)
     this._tradingConstraintsService = new TradingConstraintsService();
     // Initialize core reward service (no dependencies)
     this._competitionRewardService = new CompetitionRewardService();
 
-    this._competitionManager = new CompetitionManager(
-      this._balanceManager,
-      this._tradeSimulator,
-      this._portfolioSnapshotter,
-      this._agentManager,
+    this._competitionService = new CompetitionService(
+      this._balanceService,
+      this._tradeSimulatorService,
+      this._portfolioSnapshotterService,
+      this._agentService,
       this._configurationService,
       this._agentRankService,
-      this._voteManager,
+      this._voteService,
       this._tradingConstraintsService,
       this._competitionRewardService,
     );
 
     // Initialize LeaderboardService with required dependencies
-    this._leaderboardService = new LeaderboardService(this._agentManager);
+    this._leaderboardService = new LeaderboardService(this._agentService);
 
     this._stakesRepository = new StakesRepository(db);
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
     this._boostAwardService = new BoostAwardService(
       this._boostRepository,
-      this._userManager,
+      this._userService,
     );
     this._eventProcessor = new EventProcessor(
       db,
       this._eventsRepository,
       this._stakesRepository,
       this._boostAwardService,
-      this._competitionManager,
+      this._competitionService,
       indexingLogger,
     );
     this._indexingService = new IndexingService(
@@ -132,48 +132,48 @@ class ServiceRegistry {
   }
 
   // Service getters
-  get balanceManager(): BalanceManager {
-    return this._balanceManager;
+  get balanceService(): BalanceService {
+    return this._balanceService;
   }
 
-  get priceTracker(): PriceTracker {
-    return this._priceTracker;
+  get priceTrackerService(): PriceTrackerService {
+    return this._priceTrackerService;
   }
 
-  get tradeSimulator(): TradeSimulator {
-    return this._tradeSimulator;
+  get tradeSimulatorService(): TradeSimulatorService {
+    return this._tradeSimulatorService;
   }
 
-  get competitionManager(): CompetitionManager {
-    return this._competitionManager;
+  get competitionService(): CompetitionService {
+    return this._competitionService;
   }
 
   get leaderboardService(): LeaderboardService {
     return this._leaderboardService;
   }
 
-  get portfolioSnapshotter(): PortfolioSnapshotter {
-    return this._portfolioSnapshotter;
+  get portfolioSnapshotterService(): PortfolioSnapshotterService {
+    return this._portfolioSnapshotterService;
   }
 
-  get userManager(): UserManager {
-    return this._userManager;
+  get userService(): UserService {
+    return this._userService;
   }
 
-  get agentManager(): AgentManager {
-    return this._agentManager;
+  get agentService(): AgentService {
+    return this._agentService;
   }
 
-  get adminManager(): AdminManager {
-    return this._adminManager;
+  get adminService(): AdminService {
+    return this._adminService;
   }
 
   get configurationService(): ConfigurationService {
     return this._configurationService;
   }
 
-  get voteManager(): VoteManager {
-    return this._voteManager;
+  get voteService(): VoteService {
+    return this._voteService;
   }
 
   get agentRankService(): AgentRankService {
@@ -214,22 +214,22 @@ class ServiceRegistry {
 }
 
 export {
-  AdminManager,
-  AgentManager,
+  AdminService,
+  AgentService,
   AgentRankService,
-  BalanceManager,
-  CompetitionManager,
+  BalanceService,
+  CompetitionService,
   CompetitionRewardService,
   ConfigurationService,
   EmailService,
   LeaderboardService,
-  PortfolioSnapshotter,
-  PriceTracker,
+  PortfolioSnapshotterService,
+  PriceTrackerService,
   ServiceRegistry,
-  TradeSimulator,
+  TradeSimulatorService,
   TradingConstraintsService,
-  UserManager,
-  VoteManager,
+  UserService,
+  VoteService,
 };
 
 export default ServiceRegistry;

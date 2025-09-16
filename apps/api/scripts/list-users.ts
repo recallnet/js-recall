@@ -34,7 +34,7 @@ async function listAllUsers() {
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
-    const users = await services.userManager.getAllUsers();
+    const users = await services.userService.getAllUsers();
 
     if (users.length === 0) {
       console.log(

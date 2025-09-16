@@ -3,13 +3,13 @@ import { NextFunction, Request, Response } from "express";
 import { middlewareLogger } from "@/lib/logger.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import { AdminManager } from "@/services/admin-manager.service.js";
+import { AdminService } from "@/services/admin-manager.service.js";
 
 /**
  * Admin Authentication Middleware
  * Specifically for admin-only endpoints that require admin API key authentication
  */
-export const adminAuthMiddleware = (adminManager: AdminManager) => {
+export const adminAuthMiddleware = (adminService: AdminService) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       middlewareLogger.debug(`========== ADMIN AUTH REQUEST ==========`);
@@ -36,7 +36,7 @@ export const adminAuthMiddleware = (adminManager: AdminManager) => {
       middlewareLogger.debug(
         `Validating admin API key: ${apiKey.substring(0, 8)}...`,
       );
-      const adminId = await adminManager.validateApiKey(apiKey);
+      const adminId = await adminService.validateApiKey(apiKey);
 
       middlewareLogger.debug(
         `Validation result: ${adminId ? `Valid, admin: ${adminId}` : "Invalid key"}`,
@@ -52,7 +52,7 @@ export const adminAuthMiddleware = (adminManager: AdminManager) => {
 
       // Get the admin details
       middlewareLogger.debug(`Getting admin details for ID: ${adminId}`);
-      const admin = await adminManager.getAdmin(adminId);
+      const admin = await adminService.getAdmin(adminId);
 
       middlewareLogger.debug(
         `Admin details: ${admin ? `Username: ${admin.username}, Status: ${admin.status}` : "Admin not found"}`,

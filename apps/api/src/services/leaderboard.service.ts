@@ -10,14 +10,14 @@ import {
   LeaderboardParams,
 } from "@/types/index.js";
 
-import { AgentManager } from "./agent-manager.service.js";
+import { AgentService } from "./agent-manager.service.js";
 
 /**
  * Leaderboard Service
  * Handles global leaderboard data with sorting and pagination across all competitions
  */
 export class LeaderboardService {
-  constructor(private agentManager: AgentManager) {}
+  constructor(private agentService: AgentService) {}
 
   /**
    * Get global leaderboard data with sorting and pagination

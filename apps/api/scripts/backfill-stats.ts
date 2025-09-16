@@ -73,7 +73,7 @@ async function calculateBulkAgentStats(
         `Processing agent ${agentId} in competition ${competitionId}`,
       );
 
-      const agent = await services.competitionManager.getAgentCompetitionRecord(
+      const agent = await services.competitionService.getAgentCompetitionRecord(
         competitionId,
         agentId,
       );
@@ -153,7 +153,7 @@ async function backfillCompetitionPnl() {
       `${colors.magenta}----------------------------------------${colors.reset}`,
     );
 
-    const competitions = await services.competitionManager.getAllCompetitions();
+    const competitions = await services.competitionService.getAllCompetitions();
     const endedCompetitions = competitions.filter((c) => c.status === "ended");
     console.log(
       `${colors.magenta}----------------------------------------${colors.reset}`,
@@ -164,7 +164,7 @@ async function backfillCompetitionPnl() {
     );
     for (const competition of endedCompetitions) {
       const agentIds =
-        await services.competitionManager.getAllCompetitionAgents(
+        await services.competitionService.getAllCompetitionAgents(
           competition.id,
         );
       console.log(

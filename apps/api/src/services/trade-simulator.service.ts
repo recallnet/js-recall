@@ -15,12 +15,12 @@ import { findByCompetitionId } from "@/database/repositories/trading-constraints
 import { serviceLogger } from "@/lib/logger.js";
 import { EXEMPT_TOKENS, calculateSlippage } from "@/lib/trade-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import { BalanceManager } from "@/services/balance-manager.service.js";
-import { PortfolioSnapshotter } from "@/services/index.js";
+import { BalanceService } from "@/services/balance-manager.service.js";
+import { PortfolioSnapshotterService } from "@/services/index.js";
 import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
 import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
 
-import { PriceTracker } from "./price-tracker.service.js";
+import { PriceTrackerService } from "./price-tracker.service.js";
 
 const MIN_TRADE_AMOUNT = 0.000001;
 
@@ -50,26 +50,26 @@ interface ChainOptions {
  * Trade Simulator Service
  * Executes simulated trades between tokens
  */
-export class TradeSimulator {
-  private balanceManager: BalanceManager;
-  private priceTracker: PriceTracker;
+export class TradeSimulatorService {
+  private balanceService: BalanceService;
+  private priceTrackerService: PriceTrackerService;
   // Cache of recent trades for performance (agentId -> trades)
   private tradeCache: Map<string, SelectTrade[]>;
   // Maximum trade percentage of portfolio value
   private maxTradePercentage: number;
-  private portfolioSnapshotter: PortfolioSnapshotter;
+  private portfolioSnapshotterService: PortfolioSnapshotterService;
   private dexScreenerProvider: DexScreenerProvider;
   // Cache of trading constraints per competition
   private constraintsCache: Map<string, TradingConstraints>;
 
   constructor(
-    balanceManager: BalanceManager,
-    priceTracker: PriceTracker,
-    portfolioSnapshotter: PortfolioSnapshotter,
+    balanceService: BalanceService,
+    priceTrackerService: PriceTrackerService,
+    portfolioSnapshotterService: PortfolioSnapshotterService,
   ) {
-    this.balanceManager = balanceManager;
-    this.priceTracker = priceTracker;
-    this.portfolioSnapshotter = portfolioSnapshotter;
+    this.balanceService = balanceService;
+    this.priceTrackerService = priceTrackerService;
+    this.portfolioSnapshotterService = portfolioSnapshotterService;
     this.dexScreenerProvider = new DexScreenerProvider();
     this.tradeCache = new Map();
     this.constraintsCache = new Map();
@@ -136,7 +136,7 @@ export class TradeSimulator {
       const fromValueUSD = fromAmount * fromPrice.price;
 
       // Get current balance for validation
-      const currentBalance = await this.balanceManager.getBalance(
+      const currentBalance = await this.balanceService.getBalance(
         agentId,
         fromToken,
       );
@@ -369,10 +369,12 @@ export class TradeSimulator {
    */
   async calculatePortfolioValue(agentId: string) {
     let totalValue = 0;
-    const balances = await this.balanceManager.getAllBalances(agentId);
+    const balances = await this.balanceService.getAllBalances(agentId);
 
     for (const balance of balances) {
-      const price = await this.priceTracker.getPrice(balance.tokenAddress);
+      const price = await this.priceTrackerService.getPrice(
+        balance.tokenAddress,
+      );
       if (price) {
         totalValue += balance.amount * price.price;
       }
@@ -401,7 +403,7 @@ export class TradeSimulator {
 
     try {
       // Step 1: Get all balances for all agents in one query
-      const allBalances = await this.balanceManager.getBulkBalances(agentIds);
+      const allBalances = await this.balanceService.getBulkBalances(agentIds);
 
       // Step 2: Get unique token addresses
       const uniqueTokens = [
@@ -409,7 +411,8 @@ export class TradeSimulator {
       ];
 
       // Step 3: Get all token prices USD in bulk
-      const priceMap = await this.priceTracker.getBulkPrices(uniqueTokens);
+      const priceMap =
+        await this.priceTrackerService.getBulkPrices(uniqueTokens);
 
       // Step 4: Initialize portfolio values for all agents
       agentIds.forEach((agentId) => {
@@ -757,7 +760,7 @@ export class TradeSimulator {
         `[TradeSimulator] Using provided chain for fromToken: ${fromChain}, specificChain: ${fromSpecificChain || "none"}`,
       );
     } else {
-      fromChain = this.priceTracker.determineChain(fromToken);
+      fromChain = this.priceTrackerService.determineChain(fromToken);
       serviceLogger.debug(
         `[TradeSimulator] Detected chain for fromToken: ${fromChain}`,
       );
@@ -779,7 +782,7 @@ export class TradeSimulator {
         `[TradeSimulator] Using provided chain for toToken: ${toChain}, specificChain: ${toSpecificChain || "none"}`,
       );
     } else {
-      toChain = this.priceTracker.determineChain(toToken);
+      toChain = this.priceTrackerService.determineChain(toToken);
       serviceLogger.debug(
         `[TradeSimulator] Detected chain for toToken: ${toChain}`,
       );
@@ -817,13 +820,13 @@ export class TradeSimulator {
     competitionId: string,
   ): Promise<{ fromPrice: PriceReport; toPrice: PriceReport }> {
     // Get prices with chain information for better performance
-    const fromPrice = await this.priceTracker.getPrice(
+    const fromPrice = await this.priceTrackerService.getPrice(
       fromToken,
       chainInfo.fromChain,
       chainInfo.fromSpecificChain,
     );
 
-    const toPrice = await this.priceTracker.getPrice(
+    const toPrice = await this.priceTrackerService.getPrice(
       toToken,
       chainInfo.toChain,
       chainInfo.toSpecificChain,
@@ -1040,13 +1043,13 @@ export class TradeSimulator {
     const result = await createTradeWithBalances(trade);
 
     // Update balance cache with absolute values from the database
-    this.balanceManager.setBalanceCache(
+    this.balanceService.setBalanceCache(
       agentId,
       fromToken,
       result.updatedBalances.fromTokenBalance,
     );
     if (result.updatedBalances.toTokenBalance !== undefined) {
-      this.balanceManager.setBalanceCache(
+      this.balanceService.setBalanceCache(
         agentId,
         toToken,
         result.updatedBalances.toTokenBalance,

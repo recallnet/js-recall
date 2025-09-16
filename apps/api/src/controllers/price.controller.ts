@@ -41,7 +41,7 @@ export function makePriceController(services: ServiceRegistry) {
         } else if (requestedChain === "svm") {
           blockchainType = BlockchainType.SVM;
         } else {
-          blockchainType = services.priceTracker.determineChain(token);
+          blockchainType = services.priceTrackerService.determineChain(token);
         }
 
         // Determine specific chain if provided
@@ -68,7 +68,7 @@ export function makePriceController(services: ServiceRegistry) {
 
         // Get the price from price tracker
         // Pass both blockchainType and specificChain to getPrice
-        const price = await services.priceTracker.getPrice(
+        const price = await services.priceTrackerService.getPrice(
           token,
           blockchainType,
           specificChain,

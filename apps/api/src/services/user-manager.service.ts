@@ -24,10 +24,10 @@ import { EmailService } from "@/services/email.service.js";
 import { UserMetadata, UserSearchParams } from "@/types/index.js";
 
 /**
- * User Manager Service
+ * User Service
  * Manages user registration and profile management
  */
-export class UserManager {
+export class UserService {
   // In-memory cache for user lookups by wallet address to avoid database lookups
   private userWalletCache: Map<string, string>; // walletAddress -> userId
   // Cache for user profiles by ID

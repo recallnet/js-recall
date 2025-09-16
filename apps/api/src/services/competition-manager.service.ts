@@ -42,14 +42,14 @@ import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import {
-  AgentManager,
   AgentRankService,
-  BalanceManager,
+  AgentService,
+  BalanceService,
   ConfigurationService,
-  PortfolioSnapshotter,
-  TradeSimulator,
+  PortfolioSnapshotterService,
+  TradeSimulatorService,
   TradingConstraintsService,
-  VoteManager,
+  VoteService,
 } from "@/services/index.js";
 import {
   COMPETITION_JOIN_ERROR_TYPES,
@@ -83,38 +83,38 @@ interface LeaderboardEntry {
 }
 
 /**
- * Competition Manager Service
+ * Competition Service
  * Manages trading competitions with agent-based participation
  */
-export class CompetitionManager {
-  private balanceManager: BalanceManager;
-  private tradeSimulator: TradeSimulator;
-  private portfolioSnapshotter: PortfolioSnapshotter;
-  private agentManager: AgentManager;
+export class CompetitionService {
+  private balanceService: BalanceService;
+  private tradeSimulatorService: TradeSimulatorService;
+  private portfolioSnapshotterService: PortfolioSnapshotterService;
+  private agentService: AgentService;
   private configurationService: ConfigurationService;
   private agentRankService: AgentRankService;
-  private voteManager: VoteManager;
+  private voteService: VoteService;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
 
   constructor(
-    balanceManager: BalanceManager,
-    tradeSimulator: TradeSimulator,
-    portfolioSnapshotter: PortfolioSnapshotter,
-    agentManager: AgentManager,
+    balanceService: BalanceService,
+    tradeSimulatorService: TradeSimulatorService,
+    portfolioSnapshotterService: PortfolioSnapshotterService,
+    agentService: AgentService,
     configurationService: ConfigurationService,
     agentRankService: AgentRankService,
-    voteManager: VoteManager,
+    voteService: VoteService,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
   ) {
-    this.balanceManager = balanceManager;
-    this.tradeSimulator = tradeSimulator;
-    this.portfolioSnapshotter = portfolioSnapshotter;
-    this.agentManager = agentManager;
+    this.balanceService = balanceService;
+    this.tradeSimulatorService = tradeSimulatorService;
+    this.portfolioSnapshotterService = portfolioSnapshotterService;
+    this.agentService = agentService;
     this.configurationService = configurationService;
     this.agentRankService = agentRankService;
-    this.voteManager = voteManager;
+    this.voteService = voteService;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
   }
@@ -307,7 +307,7 @@ export class CompetitionManager {
     // Process all agent additions and activations
     for (const agentId of agentIds) {
       // Reset balances
-      await this.balanceManager.resetAgentBalances(agentId);
+      await this.balanceService.resetAgentBalances(agentId);
 
       // Ensure agent is globally active (but don't force reactivation)
       const agent = await findAgentById(agentId);
@@ -371,7 +371,9 @@ export class CompetitionManager {
     serviceLogger.debug(
       `[CompetitionManager] Taking initial portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
     );
-    await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await this.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     serviceLogger.debug(
       `[CompetitionManager] Initial portfolio snapshots completed`,
     );
@@ -432,7 +434,7 @@ export class CompetitionManager {
       if (entry === undefined) continue;
 
       const { pnl, startingValue } =
-        await this.agentManager.getAgentPerformanceForComp(
+        await this.agentService.getAgentPerformanceForComp(
           entry.agentId,
           competitionId,
         );
@@ -488,7 +490,10 @@ export class CompetitionManager {
     // Take final portfolio snapshots (force=true to ensure we get final values even though comp
     // is ending). We do this outside the transaction since it is idempotent, to keep the amount
     // of work done in the transaction to a minimum.
-    await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId, true);
+    await this.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+      true,
+    );
 
     // Get agents in the competition (outside transaction - they won't change)
     const competitionAgents = await getCompetitionAgents(competitionId);
@@ -590,7 +595,7 @@ export class CompetitionManager {
 
     // Get vote counts for all agents in this competition
     const voteCountsMap =
-      await this.voteManager.getVoteCountsByCompetition(competitionId);
+      await this.voteService.getVoteCountsByCompetition(competitionId);
 
     // Build the response with agent details and competition data using bulk metrics
     const agentIds = agents.map((agent) => agent.id);
@@ -692,7 +697,7 @@ export class CompetitionManager {
 
     // Use bulk portfolio value calculation
     const portfolioValues =
-      await this.tradeSimulator.calculateBulkPortfolioValues(agents);
+      await this.tradeSimulatorService.calculateBulkPortfolioValues(agents);
 
     const leaderboard = agents.map((agentId: string) => ({
       agentId,

@@ -1353,7 +1353,9 @@ describe("User API", () => {
 
     // Trigger portfolio snapshots
     const services = new ServiceRegistry();
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competition.id);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competition.id,
+    );
 
     // Get agent competitions for each user
     const response1 =

@@ -11,7 +11,7 @@ import type { EventData } from "@/indexing/blockchain-types.js";
 import type { EventsRepository } from "@/indexing/events.repository.js";
 import type { StakesRepository } from "@/indexing/stakes.repository.js";
 import type { BoostAwardService } from "@/services/boost-award.service.js";
-import type { CompetitionManager } from "@/services/index.js";
+import type { CompetitionService } from "@/services/index.js";
 
 export { EventProcessor };
 
@@ -53,7 +53,7 @@ class EventProcessor {
   readonly #stakesRepository: StakesRepository;
   readonly #logger: Logger;
   readonly #boostAwardService: BoostAwardService;
-  readonly #competitionManager: CompetitionManager;
+  readonly #competitionService: CompetitionService;
   readonly #db: typeof db;
 
   constructor(
@@ -61,14 +61,14 @@ class EventProcessor {
     eventsRepository: EventsRepository,
     stakesRepository: StakesRepository,
     boostAwardService: BoostAwardService,
-    competitionManager: CompetitionManager,
+    competitionService: CompetitionService,
     logger: Logger,
   ) {
     this.#db = database;
     this.#eventsRepository = eventsRepository;
     this.#stakesRepository = stakesRepository;
     this.#boostAwardService = boostAwardService;
-    this.#competitionManager = competitionManager;
+    this.#competitionService = competitionService;
     this.#logger = logger;
   }
 
@@ -197,7 +197,7 @@ class EventProcessor {
       );
       if (stake) {
         const competition =
-          await this.#competitionManager.getActiveCompetition();
+          await this.#competitionService.getActiveCompetition();
         if (
           competition &&
           competition.votingStartDate &&
