@@ -122,7 +122,7 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
         throw joinError;
       }
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       // Show success message
       toast.success("API key unlocked successfully");
 
