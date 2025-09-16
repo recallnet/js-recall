@@ -131,7 +131,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     onError: (error) => {
       const message = `Login to backend failed: ${error}`;
       console.error(message);
-      Sentry.captureException(message);
+      Sentry.captureException(new Error(message));
     },
   });
 
