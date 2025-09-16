@@ -142,9 +142,6 @@ interface Snapshot24hResult {
 const snapshotCache = new Map<string, [number, Snapshot24hResult]>();
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
 
-// Type for database transaction
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
 /**
  * Find all competitions
  */
