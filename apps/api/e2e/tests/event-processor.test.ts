@@ -8,29 +8,24 @@ import { db } from "@/database/db.js";
 import { EventData } from "@/indexing/blockchain-types.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
-import { StakesRepository } from "@/indexing/stakes.repository.js";
-import { logger } from "@/lib/logger.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 describe("EventProcessor", () => {
   let eventProcessor: EventProcessor;
   let eventsRepository: EventsRepository;
-  let stakesRepository: StakesRepository;
   let testEvent: EventData;
   let rewardId: string;
   let competitionId: string;
   let rootHashId: string;
+  let services: ServiceRegistry;
 
   beforeEach(async () => {
-    // Initialize repositories
-    eventsRepository = new EventsRepository(db);
-    stakesRepository = new StakesRepository(db);
+    // Initialize services using ServiceRegistry
+    services = new ServiceRegistry();
 
-    // Initialize event processor
-    eventProcessor = new EventProcessor(
-      eventsRepository,
-      stakesRepository,
-      logger,
-    );
+    // Get the event processor from the service registry
+    eventProcessor = services.eventProcessor;
+    eventsRepository = services.eventsRepository;
 
     // Set up test data in the database
     competitionId = "a82d8ae0-6f5a-417c-a35e-e389b73f0b39";
