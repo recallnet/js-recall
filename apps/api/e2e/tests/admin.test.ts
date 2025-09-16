@@ -1844,4 +1844,130 @@ describe("Admin API", () => {
     expect(rewards[1]!.reward).toBe(2500);
     expect(rewards[2]!.reward).toBe(1000);
   });
+
+  test("should atomically rollback competition creation when rewards fail", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Try to create a competition with invalid rewards that will fail validation
+    try {
+      await axios.post(
+        `${getBaseUrl()}/api/admin/competition/create`,
+        {
+          name: "Should Not Be Created",
+          description: "This competition should be rolled back",
+          tradingType: "disallowAll",
+          sandboxMode: false,
+          type: "trading",
+          rewards: {
+            "-1": 1000, // Invalid rank (negative)
+            "0": 500, // Invalid rank (zero)
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+      expect.fail("Expected request to fail");
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      expect(axiosError.response?.status).toBe(400);
+    }
+
+    // Verify no competition was created
+    const allCompetitions = await db
+      .select()
+      .from(competitions)
+      .where(eq(competitions.name, "Should Not Be Created"));
+    expect(allCompetitions).toHaveLength(0);
+
+    // Verify no constraints were created
+    const allConstraints = await db.select().from(tradingConstraints);
+    const initialConstraintCount = allConstraints.length;
+
+    // Try another creation that should succeed to verify the count
+    const validResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Valid Competition After Rollback",
+        description: "This should succeed",
+        tradingType: "disallowAll",
+        sandboxMode: false,
+        type: "trading",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(validResponse.data.success).toBe(true);
+
+    const newConstraints = await db.select().from(tradingConstraints);
+    expect(newConstraints.length).toBe(initialConstraintCount + 1);
+  });
+
+  test("should atomically create competition with constraints and rewards", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Atomic Create Test",
+        description: "Testing atomic creation",
+        tradingType: "disallowAll",
+        sandboxMode: false,
+        type: "trading",
+        tradingConstraints: {
+          minimumPairAgeHours: 96,
+          minimum24hVolumeUsd: 75000,
+          minimumLiquidityUsd: 150000,
+          minimumFdvUsd: 500000,
+        },
+        rewards: {
+          1: 10000,
+          2: 5000,
+          3: 2000,
+          4: 1000,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.data.success).toBe(true);
+    const competitionId = createResponse.data.competition.id;
+
+    // Verify all data was created atomically in the database
+    const [competition] = await db
+      .select()
+      .from(competitions)
+      .where(eq(competitions.id, competitionId));
+    expect(competition).toBeDefined();
+    expect(competition!.name).toBe("Atomic Create Test");
+
+    const constraints = await db
+      .select()
+      .from(tradingConstraints)
+      .where(eq(tradingConstraints.competitionId, competitionId));
+    expect(constraints).toHaveLength(1);
+    expect(constraints[0]?.minimumPairAgeHours).toBe(96);
+    expect(constraints[0]?.minimum24hVolumeUsd).toBe(75000);
+
+    const rewards = await db
+      .select()
+      .from(competitionRewards)
+      .where(eq(competitionRewards.competitionId, competitionId))
+      .orderBy(competitionRewards.rank);
+    expect(rewards).toHaveLength(4);
+    expect(rewards[0]?.reward).toBe(10000);
+    expect(rewards[3]?.reward).toBe(1000);
+  });
 });

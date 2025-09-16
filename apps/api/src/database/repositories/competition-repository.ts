@@ -174,12 +174,15 @@ async function findByIdImpl(id: string) {
 /**
  * Create a new competition
  * @param competition Competition to create
+ * @param tx Optional database transaction
  */
 async function createImpl(
   competition: InsertCompetition &
     Omit<InsertTradingCompetition, "competitionId">,
+  tx?: DatabaseTransaction,
 ) {
-  const result = await db.transaction(async (tx) => {
+  const dbClient = tx || db;
+  const result = await dbClient.transaction(async (tx) => {
     const now = new Date();
     const [comp] = await tx
       .insert(competitions)

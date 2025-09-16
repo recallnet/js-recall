@@ -31,9 +31,13 @@ export interface TradingConstraintsInput {
 export class TradingConstraintsService {
   /**
    * Creates trading constraints for a competition
+   * @param input The trading constraints input
+   * @param tx Optional database transaction
+   * @returns The created trading constraints
    */
   async createConstraints(
     input: TradingConstraintsInput,
+    tx?: DatabaseTransaction,
   ): Promise<SelectTradingConstraints | undefined> {
     const constraintsData: InsertTradingConstraints = {
       competitionId: input.competitionId,
@@ -51,7 +55,7 @@ export class TradingConstraintsService {
       minTradesPerDay: input.minTradesPerDay ?? null,
     };
 
-    return await create(constraintsData);
+    return await create(constraintsData, tx);
   }
 
   /**

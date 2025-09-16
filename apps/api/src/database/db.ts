@@ -186,6 +186,8 @@ const dbLogger = {
         "COMMIT",
         "ROLLBACK",
         "START", // Transaction commands
+        "SAVEPOINT", // Nested transaction savepoint
+        "RELEASE", // Release savepoint
       ];
 
       if (knownOperations.includes(firstWord)) {
