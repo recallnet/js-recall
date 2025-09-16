@@ -1,9 +1,11 @@
 import { RequestHandler, Router } from "express";
 
+import { BoostController } from "@/controllers/boost.controller.js";
 import { CompetitionController } from "@/controllers/competition.controller.js";
 
 export function configureCompetitionsRoutes(
-  controller: CompetitionController,
+  competitionController: CompetitionController,
+  boostController: BoostController,
   optionalAuthMiddleware: RequestHandler,
   ...authMiddlewares: RequestHandler[]
 ) {
@@ -208,7 +210,11 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/", optionalAuthMiddleware, controller.getCompetitions);
+  router.get(
+    "/",
+    optionalAuthMiddleware,
+    competitionController.getCompetitions,
+  );
 
   /**
    * @openapi
@@ -350,7 +356,11 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/leaderboard", ...authMiddlewares, controller.getLeaderboard);
+  router.get(
+    "/leaderboard",
+    ...authMiddlewares,
+    competitionController.getLeaderboard,
+  );
 
   /**
    * @openapi
@@ -473,7 +483,7 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/status", ...authMiddlewares, controller.getStatus);
+  router.get("/status", ...authMiddlewares, competitionController.getStatus);
 
   /**
    * @openapi
@@ -552,7 +562,7 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/rules", ...authMiddlewares, controller.getRules);
+  router.get("/rules", ...authMiddlewares, competitionController.getRules);
 
   /**
    * @openapi
@@ -644,7 +654,7 @@ export function configureCompetitionsRoutes(
   router.get(
     "/:competitionId/rules",
     optionalAuthMiddleware,
-    controller.getCompetitionRules,
+    competitionController.getCompetitionRules,
   );
 
   /**
@@ -719,7 +729,7 @@ export function configureCompetitionsRoutes(
   router.get(
     "/upcoming",
     ...authMiddlewares,
-    controller.getUpcomingCompetitions,
+    competitionController.getUpcomingCompetitions,
   );
 
   /**
@@ -909,7 +919,19 @@ export function configureCompetitionsRoutes(
   router.get(
     "/:competitionId",
     optionalAuthMiddleware,
-    controller.getCompetitionById,
+    competitionController.getCompetitionById,
+  );
+
+  router.get(
+    "/:competitionId/boost",
+    ...authMiddlewares,
+    boostController.getBoostBalance,
+  );
+
+  router.get(
+    "/:competitionId/boosts",
+    ...authMiddlewares,
+    boostController.boostsForCompetition,
   );
 
   /**
@@ -1066,7 +1088,12 @@ export function configureCompetitionsRoutes(
    *       500:
    *         description: Server error
    */
-  router.get("/:competitionId/agents", controller.getCompetitionAgents);
+  router.get(
+    "/:competitionId/agents",
+    competitionController.getCompetitionAgents,
+  );
+
+  router.get("/:competitionId/agents/boosts", boostController.agentBoostTotals);
 
   /**
    * @openapi
@@ -1128,7 +1155,13 @@ export function configureCompetitionsRoutes(
   router.post(
     "/:competitionId/agents/:agentId",
     ...authMiddlewares,
-    controller.joinCompetition,
+    competitionController.joinCompetition,
+  );
+
+  router.post(
+    "/:competitionId/agents/:agentId/boost",
+    ...authMiddlewares,
+    boostController.boostAgent,
   );
 
   /**
@@ -1190,7 +1223,7 @@ export function configureCompetitionsRoutes(
   router.delete(
     "/:competitionId/agents/:agentId",
     ...authMiddlewares,
-    controller.leaveCompetition,
+    competitionController.leaveCompetition,
   );
 
   /**
@@ -1268,7 +1301,7 @@ export function configureCompetitionsRoutes(
   router.get(
     "/:competitionId/timeline",
     optionalAuthMiddleware,
-    controller.getCompetitionTimeline,
+    competitionController.getCompetitionTimeline,
   );
 
   /**
@@ -1333,7 +1366,7 @@ export function configureCompetitionsRoutes(
   router.get(
     "/:competitionId/trades",
     ...authMiddlewares,
-    controller.getCompetitionTrades,
+    competitionController.getCompetitionTrades,
   );
 
   /**
@@ -1404,7 +1437,7 @@ export function configureCompetitionsRoutes(
   router.get(
     "/:competitionId/agents/:agentId/trades",
     ...authMiddlewares,
-    controller.getAgentTradesInCompetition,
+    competitionController.getAgentTradesInCompetition,
   );
 
   return router;

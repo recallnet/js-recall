@@ -1,7 +1,15 @@
+import { db } from "@/database/db.js";
+import { BoostRepository } from "@/database/repositories/boost.repository.js";
+import { EventProcessor } from "@/indexing/event-processor.js";
+import { EventsRepository } from "@/indexing/events.repository.js";
+import { IndexingService } from "@/indexing/indexing.service.js";
+import { StakesRepository } from "@/indexing/stakes.repository.js";
+import { indexingLogger } from "@/lib/logger.js";
 import { AdminManager } from "@/services/admin-manager.service.js";
 import { AgentManager } from "@/services/agent-manager.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
 import { BalanceManager } from "@/services/balance-manager.service.js";
+import { BoostAwardService } from "@/services/boost-award.service.js";
 import { CompetitionManager } from "@/services/competition-manager.service.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
@@ -37,6 +45,12 @@ class ServiceRegistry {
   private _emailService: EmailService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
+  private readonly _boostRepository: BoostRepository;
+  private readonly _stakesRepository: StakesRepository;
+  private readonly _indexingService: IndexingService;
+  private readonly _eventsRepository: EventsRepository;
+  private readonly _eventProcessor: EventProcessor;
+  private readonly _boostAwardService: BoostAwardService;
 
   constructor() {
     // Initialize services in dependency order
@@ -88,6 +102,26 @@ class ServiceRegistry {
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentManager);
+
+    this._stakesRepository = new StakesRepository(db);
+    this._eventsRepository = new EventsRepository(db);
+    this._boostRepository = new BoostRepository(db);
+    this._boostAwardService = new BoostAwardService(
+      this._boostRepository,
+      this._userManager,
+    );
+    this._eventProcessor = new EventProcessor(
+      db,
+      this._eventsRepository,
+      this._stakesRepository,
+      this._boostAwardService,
+      this._competitionManager,
+      indexingLogger,
+    );
+    this._indexingService = new IndexingService(
+      indexingLogger,
+      this._eventProcessor,
+    );
   }
 
   public static getInstance(): ServiceRegistry {
@@ -156,6 +190,18 @@ class ServiceRegistry {
 
   get competitionRewardService(): CompetitionRewardService {
     return this._competitionRewardService;
+  }
+
+  get indexingService(): IndexingService {
+    return this._indexingService;
+  }
+
+  get stakesRepository(): StakesRepository {
+    return this._stakesRepository;
+  }
+
+  get boostAwardService(): BoostAwardService {
+    return this._boostAwardService;
   }
 }
 

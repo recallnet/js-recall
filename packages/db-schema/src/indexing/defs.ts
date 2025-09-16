@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
-  customType,
   index,
   integer,
   jsonb,
@@ -12,18 +11,9 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-export { indexingEvents, stakes, stakeChanges };
+import { bytea, tokenAmount } from "../util.js";
 
-const bytea = customType<{
-  data: Uint8Array | Buffer; // what your app uses
-  driverData: Buffer; // what node-postgres returns
-  notNull: false;
-  default: false;
-}>({
-  dataType: () => "bytea",
-  toDriver: (v) => (v instanceof Buffer ? v : Buffer.from(v)),
-  fromDriver: (v) => v, // Buffer
-});
+export { indexingEvents, stakes, stakeChanges };
 
 /**
  * Source-of-truth feed of *raw on-chain events* we indexed (stake/unstake/relock/withdraw).
@@ -129,7 +119,7 @@ const stakes = pgTable(
   {
     id: bigint("id", { mode: "bigint" }).primaryKey().notNull(), // on-chain receipt / NFT id
     wallet: bytea("wallet").notNull(), // canonicalized EVM addr
-    amount: bigint("amount", { mode: "bigint" }).notNull(),
+    amount: tokenAmount("amount").notNull(),
     // lifecycle
     stakedAt: timestamp("staked_at").notNull(),
     canUnstakeAfter: timestamp("can_unstake_after").notNull(),
@@ -177,7 +167,7 @@ const stakeChanges = pgTable(
       .references(() => stakes.id),
     wallet: bytea("wallet").notNull(),
     // delta — signed: +stake, 0 for relock, -move from staked to withdrawable, -withdraw, etc.
-    deltaAmount: bigint("delta_amount", { mode: "bigint" }).notNull(),
+    deltaAmount: tokenAmount("delta_amount").notNull(),
     kind: varchar("kind", { length: 24 }).notNull(), // See EventType for possible values
     // chain idempotency
     txHash: bytea("tx_hash").notNull(),

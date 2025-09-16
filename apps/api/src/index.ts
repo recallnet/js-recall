@@ -15,8 +15,7 @@ import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
 import { closeDb, migrateDb } from "@/database/db.js";
-import { IndexingService } from "@/indexing/indexing.service.js";
-import { apiLogger, indexingLogger } from "@/lib/logger.js";
+import { apiLogger } from "@/lib/logger.js";
 import { initSentry } from "@/lib/sentry.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
@@ -38,6 +37,7 @@ import { configureUserRoutes } from "@/routes/user.routes.js";
 import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
+import { makeBoostController } from "./controllers/boost.controller.js";
 import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
@@ -133,7 +133,7 @@ const authMiddlewareInstance = authMiddleware(
 // Apply agent API key authentication to agent routes
 app.use(agentApiKeyRoutes, authMiddlewareInstance);
 
-// Apply SIWE session authentication to user routes
+// Apply session authentication to user routes
 app.use(userSessionRoutes, authMiddlewareInstance);
 
 // Apply rate limiting middleware AFTER authentication
@@ -158,12 +158,14 @@ const userController = makeUserController(services);
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
 const voteController = makeVoteController(services);
+const boostController = makeBoostController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
 const authRoutes = configureAuthRoutes(authController, authMiddlewareInstance);
 const competitionsRoutes = configureCompetitionsRoutes(
   competitionController,
+  boostController,
   optionalAuth,
   authMiddlewareInstance,
 );
@@ -226,7 +228,7 @@ if (config.sentry?.enabled) {
 app.use(errorHandler);
 
 // Start blockchain indexing, if enabled
-const indexingService = new IndexingService(indexingLogger);
+const indexingService = services.indexingService;
 indexingService.start();
 
 // Start HTTP server

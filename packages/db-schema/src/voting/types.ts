@@ -11,3 +11,9 @@ export type InsertRewardsTree = typeof defs.rewardsTree.$inferInsert;
 
 export type SelectRewardsRoot = typeof defs.rewardsRoots.$inferSelect;
 export type InsertRewardsRoot = typeof defs.rewardsRoots.$inferInsert;
+
+export type SelectAgentBoostTotal = typeof defs.agentBoostTotals.$inferSelect;
+export type InsertAgentBoostTotal = typeof defs.agentBoostTotals.$inferInsert;
+
+export type SelectAgentBoost = typeof defs.agentBoosts.$inferSelect;
+export type InsertAgentBoost = typeof defs.agentBoosts.$inferInsert;
