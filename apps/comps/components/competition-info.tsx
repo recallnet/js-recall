@@ -130,10 +130,12 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               </div>
               <p className="mt-2 text-sm text-gray-400">
                 {competition.externalUrl &&
+                  // Note: `example.com` was used in legacy competitions and should be ignored
                   !competition.externalUrl.includes("example.com") && (
                     <Link
                       href={competition.externalUrl}
                       target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center whitespace-nowrap"
                     >
                       Read more about the official competition rules{" "}
