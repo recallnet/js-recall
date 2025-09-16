@@ -187,7 +187,10 @@ class BoostRepository {
    * - `amount` must be `>= 0n`. Zero-amount credits will only create a journal row
    *   on first application (useful for marking events without changing balance).
    */
-  increase(args: BoostDiffArgs, tx?: Transaction): Promise<BoostDiffResult> {
+  async increase(
+    args: BoostDiffArgs,
+    tx?: Transaction,
+  ): Promise<BoostDiffResult> {
     const userId = args.userId;
     const amount = args.amount;
     if (amount < 0n) {
@@ -239,7 +242,7 @@ class BoostRepository {
         if (!selected) {
           // Impossible situation if we prohibit deletion
           throw new Error(
-            "Can neither INSERT nor SELECT for for boost_balances table",
+            "Can neither INSERT nor SELECT for boost_balances table",
           );
         }
         balanceRow = selected;
@@ -355,6 +358,7 @@ class BoostRepository {
         .limit(1)
         .for("update"); // locks this row until tx ends
       if (!balanceRow) {
+        // A safety net for unexpected database behavior
         throw new Error(
           `Can not decrease balance of non-existent wallet ${wallet} and competition ${competitionId}`,
         );
