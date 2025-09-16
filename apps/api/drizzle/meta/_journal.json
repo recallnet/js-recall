@@ -288,6 +288,13 @@
       "when": 1757882757587,
       "tag": "0040_elite_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1758038160591,
+      "tag": "0041_flippant_jazinda",
+      "breakpoints": true
     }
   ]
 }

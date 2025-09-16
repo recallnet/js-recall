@@ -11,13 +11,12 @@ import {
   InsertAgentScoreHistory,
   SelectAgentScore,
 } from "@recallnet/db-schema/ranking/types";
+import type { Transaction as DatabaseTransaction } from "@recallnet/db-schema/types";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { AgentMetadata } from "@/types/index.js";
-
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Agent Rank Repository
@@ -97,16 +96,19 @@ async function getAllAgentRanksImpl(
 async function batchUpdateAgentRanksImpl(
   dataArray: Array<Omit<InsertAgentScore, "id" | "createdAt" | "updatedAt">>,
   competitionId: string,
+  tx?: DatabaseTransaction,
 ): Promise<InsertAgentScore[]> {
   if (dataArray.length === 0) {
     repositoryLogger.debug("No agent ranks to update in batch");
     return [];
   }
 
+  const executor = tx || db;
+
   try {
     repositoryLogger.debug(`Batch updating ${dataArray.length} agent ranks`);
 
-    return await db.transaction(async (tx) => {
+    return await executor.transaction(async (tx) => {
       // Prepare rank data with IDs
       const rankDataArray: InsertAgentScore[] = dataArray.map((data) => ({
         id: uuidv4(),
