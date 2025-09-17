@@ -1,11 +1,5 @@
 import { MerkleTree } from "merkletreejs";
-import {
-  Hex,
-  encodeAbiParameters,
-  encodePacked,
-  hexToBytes,
-  keccak256,
-} from "viem";
+import { Hex, encodeAbiParameters, keccak256 } from "viem";
 
 import { rewardsRoots, rewardsTree } from "@recallnet/db-schema/voting/defs";
 import { InsertReward } from "@recallnet/db-schema/voting/types";
