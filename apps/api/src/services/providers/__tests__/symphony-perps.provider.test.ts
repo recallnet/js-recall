@@ -28,6 +28,13 @@ vi.mock("@/lib/logger.js", () => ({
   },
 }));
 
+// Mock Sentry to avoid errors in tests
+vi.mock("@sentry/node", () => ({
+  addBreadcrumb: vi.fn(),
+  captureMessage: vi.fn(),
+  captureException: vi.fn(),
+}));
+
 // Type for mocking axios instance
 type MockAxiosInstance = {
   get: MockedFunction<AxiosInstance["get"]>;
@@ -125,6 +132,10 @@ describe("SymphonyPerpsProvider", () => {
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks();
+
+    // Mock Math.random to always trigger sampling in tests (returns 0, which is < 0.01)
+    // This ensures rawData is always populated in tests for consistency
+    vi.spyOn(Math, "random").mockReturnValue(0);
 
     // Mock axios.create to return a mock instance
     mockAxiosInstance = {
@@ -829,6 +840,56 @@ describe("SymphonyPerpsProvider", () => {
       expect(result.totalEquity).toBe(999999999999.99);
       expect(result.totalVolume).toBe(1e15);
       expect(result.totalTrades).toBe(Number.MAX_SAFE_INTEGER);
+    });
+  });
+
+  describe("sampling and raw data storage", () => {
+    it("should store raw data when sampling is triggered", async () => {
+      // Mock Math.random to return 0 (triggers sampling since 0 < 0.01)
+      vi.spyOn(Math, "random").mockReturnValue(0);
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: samplePositionResponse,
+      });
+
+      const result = await provider.getAccountSummary("0xtest123");
+
+      // Raw data should be populated when sampling is triggered
+      expect(result.rawData).toEqual(samplePositionResponse.data);
+    });
+
+    it("should not store raw data when sampling is not triggered", async () => {
+      // Mock Math.random to return 0.5 (doesn't trigger sampling since 0.5 > 0.01)
+      vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: samplePositionResponse,
+      });
+
+      const result = await provider.getAccountSummary("0xtest123");
+
+      // Raw data should be undefined when sampling is not triggered
+      expect(result.rawData).toBeUndefined();
+    });
+
+    it("should use 1% sampling rate", async () => {
+      // Test that values just below 0.01 trigger sampling
+      vi.spyOn(Math, "random").mockReturnValue(0.009);
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: samplePositionResponse,
+      });
+
+      const result1 = await provider.getAccountSummary("0xtest123");
+      expect(result1.rawData).toBeDefined();
+
+      // Test that values at or above 0.01 don't trigger sampling
+      vi.spyOn(Math, "random").mockReturnValue(0.01);
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: samplePositionResponse,
+      });
+
+      const result2 = await provider.getAccountSummary("0xtest456");
+      expect(result2.rawData).toBeUndefined();
     });
   });
 
