@@ -2,12 +2,11 @@
 
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ChevronRight, Plus, Zap } from "lucide-react";
+import { ChevronRight, Zap } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
-import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentsTable } from "@/components/agents-table";
@@ -108,7 +107,7 @@ export default function CompetitionPage({
     );
   }
 
-  const VotingBtn = ({
+  const BoostAgentsBtn = ({
     className,
     disabled,
   }: {
@@ -132,7 +131,7 @@ export default function CompetitionPage({
         }
       }}
     >
-      <span className="font-semibold">VOTE</span>{" "}
+      <span className="font-semibold">BOOST AGENTS</span>{" "}
       <ChevronRight className="ml-2" size={18} />
     </Button>
   );
@@ -168,7 +167,7 @@ export default function CompetitionPage({
               </span>{" "}
             </JoinCompetitionButton>
 
-            <VotingBtn className="w-full justify-between uppercase sm:w-1/2" />
+            <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2" />
 
             {/*<Button
               variant="outline"
