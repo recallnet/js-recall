@@ -80,7 +80,11 @@ class ServiceRegistry {
 
     // Initialize user and agent services (require email service)
     this._userService = new UserService(this._emailService);
-    this._agentService = new AgentService(this._emailService);
+    this._agentService = new AgentService(
+      this._emailService,
+      this._balanceService,
+      this._priceTrackerService,
+    );
     this._adminService = new AdminService();
 
     // Initialize trading constraints service (no dependencies)

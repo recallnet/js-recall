@@ -225,41 +225,9 @@ export function makeAgentController(services: ServiceRegistry) {
       try {
         const agentId = req.agentId as string;
 
-        // Get the balances, this could be hundreds
-        const balances = await services.balanceService.getAllBalances(agentId);
-
-        // Extract all unique token addresses
-        const tokenAddresses = balances.map((b) => b.tokenAddress);
-
-        // Get all prices in bulk
-        const priceMap =
-          await services.priceTrackerService.getBulkPrices(tokenAddresses);
-
-        // Enhance balances with the price data
-        const enhancedBalances = balances.map((balance) => {
-          const priceReport = priceMap.get(balance.tokenAddress);
-
-          if (priceReport) {
-            return {
-              ...balance,
-              chain: priceReport.chain,
-              price: priceReport.price,
-              value: balance.amount * priceReport.price,
-              specificChain: priceReport.specificChain || balance.specificChain,
-              symbol: priceReport.symbol || balance.symbol,
-            };
-          }
-
-          // Fallback for tokens without price data
-          // Determine chain from specificChain since balance doesn't have a chain property
-          const chain = balance.specificChain === "svm" ? "svm" : "evm";
-          return {
-            ...balance,
-            chain,
-            specificChain: balance.specificChain,
-            symbol: balance.symbol,
-          };
-        });
+        // Get enhanced balances from the service layer
+        const enhancedBalances =
+          await services.agentService.getEnhancedBalances(agentId);
 
         // Return the balances
         res.status(200).json({
@@ -286,17 +254,11 @@ export function makeAgentController(services: ServiceRegistry) {
         const trades =
           await services.tradeSimulatorService.getAgentTrades(agentId);
 
-        // Sort trades by timestamp (newest first)
-        const sortedTrades = [...trades].sort(
-          (a, b) =>
-            (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0),
-        );
-
         // Return the trades
         res.status(200).json({
           success: true,
           agentId,
-          trades: sortedTrades,
+          trades,
         });
       } catch (error) {
         next(error);
