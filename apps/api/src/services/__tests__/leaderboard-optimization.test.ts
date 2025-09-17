@@ -18,8 +18,8 @@ describe("LeaderboardService optimization", () => {
   });
   it("should pass sort and pagination params to repository", async () => {
     // Arrange
-    const mockAgentService = {} as any;
-    const service = new LeaderboardService(mockAgentService);
+    const mockAgentService = {};
+    const service = new LeaderboardService(mockAgentService as never);
 
     const params: LeaderboardParams = {
       type: "trading",
@@ -117,8 +117,8 @@ describe("LeaderboardService optimization", () => {
 
   it("should handle empty competition list", async () => {
     // Arrange
-    const mockAgentService = {} as any;
-    const service = new LeaderboardService(mockAgentService);
+    const mockAgentService = {};
+    const service = new LeaderboardService(mockAgentService as never);
 
     const params: LeaderboardParams = {
       type: "trading",
@@ -170,8 +170,8 @@ describe("LeaderboardService optimization", () => {
 
   it("should assign correct ranks for different sort fields", async () => {
     // Arrange
-    const mockAgentService = {} as any;
-    const service = new LeaderboardService(mockAgentService);
+    const mockAgentService = {};
+    const service = new LeaderboardService(mockAgentService as never);
 
     const params: LeaderboardParams = {
       type: "trading",
