@@ -380,6 +380,10 @@ async function getOptimizedGlobalAgentMetricsImpl(
     const isDescending = sortField.startsWith("-");
     const field = isDescending ? sortField.slice(1) : sortField;
 
+    // Validate sort field and fallback to default if invalid
+    const validSortFields = ["rank", "name", "score", "competitions", "votes"];
+    const actualField = validSortFields.includes(field) ? field : "rank";
+
     // Build the base query with all agents and scores
     let agentsQuery = dbRead
       .select({
@@ -396,17 +400,17 @@ async function getOptimizedGlobalAgentMetricsImpl(
       .$dynamic();
 
     // For rank sorting, use score (ordinal) field since rank is computed
-    if (field === "rank") {
+    if (actualField === "rank") {
       // For rank, we always sort by score descending (highest score = rank 1)
       // If user wants "-rank" (descending ranks), we sort by score ascending
       agentsQuery = agentsQuery.orderBy(
         isDescending ? agentScore.ordinal : desc(agentScore.ordinal),
       );
-    } else if (field === "name") {
+    } else if (actualField === "name") {
       agentsQuery = agentsQuery.orderBy(
         isDescending ? desc(agents.name) : agents.name,
       );
-    } else if (field === "score") {
+    } else if (actualField === "score") {
       agentsQuery = agentsQuery.orderBy(
         isDescending ? agentScore.ordinal : desc(agentScore.ordinal),
       );
@@ -415,7 +419,8 @@ async function getOptimizedGlobalAgentMetricsImpl(
     // We'll handle these sorting options after fetching the base data
 
     // Apply limit and offset if not sorting by computed fields
-    const needsPostQuerySort = field === "competitions" || field === "votes";
+    const needsPostQuerySort =
+      actualField === "competitions" || actualField === "votes";
 
     let agentsWithScores;
     if (!needsPostQuerySort && limit !== undefined && offset !== undefined) {
@@ -469,9 +474,9 @@ async function getOptimizedGlobalAgentMetricsImpl(
     if (needsPostQuerySort) {
       result = result.sort((a, b) => {
         let comparison = 0;
-        if (field === "competitions") {
+        if (actualField === "competitions") {
           comparison = a.numCompetitions - b.numCompetitions;
-        } else if (field === "votes") {
+        } else if (actualField === "votes") {
           comparison = a.voteCount - b.voteCount;
         }
         return isDescending ? -comparison : comparison;
