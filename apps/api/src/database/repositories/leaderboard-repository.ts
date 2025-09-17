@@ -322,12 +322,40 @@ async function getBulkAgentMetricsImpl(
 }
 
 /**
+ * Get total count of agents with scores
+ * @returns Total number of agents in the leaderboard
+ */
+async function getTotalAgentsWithScoresImpl(): Promise<number> {
+  repositoryLogger.debug("getTotalAgentsWithScores called");
+
+  try {
+    const result = await dbRead
+      .select({
+        count: drizzleCount(agentScore.agentId),
+      })
+      .from(agentScore);
+
+    return result[0]?.count ?? 0;
+  } catch (error) {
+    repositoryLogger.error("Error in getTotalAgentsWithScores:", error);
+    throw error;
+  }
+}
+
+/**
  * Get optimized global agent metrics using separate queries to avoid N+1 problem
  * This replaces the N+1 query problem in calculateGlobalMetrics
  * Uses separate aggregation queries to avoid Cartesian product issues
+ * @param sort Sort field with optional '-' prefix for descending
+ * @param limit Number of results to return
+ * @param offset Number of results to skip
  * @returns Array of agent metrics with all required data
  */
-async function getOptimizedGlobalAgentMetricsImpl(): Promise<
+async function getOptimizedGlobalAgentMetricsImpl(
+  sort?: string,
+  limit?: number,
+  offset?: number,
+): Promise<
   Array<{
     id: string;
     name: string;
@@ -340,11 +368,20 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
     voteCount: number;
   }>
 > {
-  repositoryLogger.debug("getOptimizedGlobalAgentMetrics called");
+  repositoryLogger.debug("getOptimizedGlobalAgentMetrics called", {
+    sort,
+    limit,
+    offset,
+  });
 
   try {
-    // Get all agents with their basic info and scores
-    const agentsWithScores = await dbRead
+    // Parse sort parameter
+    const sortField = sort || "rank";
+    const isDescending = sortField.startsWith("-");
+    const field = isDescending ? sortField.slice(1) : sortField;
+
+    // Build the base query with all agents and scores
+    let agentsQuery = dbRead
       .select({
         id: agents.id,
         name: agents.name,
@@ -355,7 +392,37 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
         score: agentScore.ordinal,
       })
       .from(agentScore)
-      .innerJoin(agents, eq(agentScore.agentId, agents.id));
+      .innerJoin(agents, eq(agentScore.agentId, agents.id))
+      .$dynamic();
+
+    // For rank sorting, use score (ordinal) field since rank is computed
+    if (field === "rank") {
+      // For rank, we always sort by score descending (highest score = rank 1)
+      // If user wants "-rank" (descending ranks), we sort by score ascending
+      agentsQuery = agentsQuery.orderBy(
+        isDescending ? agentScore.ordinal : desc(agentScore.ordinal),
+      );
+    } else if (field === "name") {
+      agentsQuery = agentsQuery.orderBy(
+        isDescending ? desc(agents.name) : agents.name,
+      );
+    } else if (field === "score") {
+      agentsQuery = agentsQuery.orderBy(
+        isDescending ? agentScore.ordinal : desc(agentScore.ordinal),
+      );
+    }
+    // Note: For "competitions" and "votes", we need to join with aggregated data
+    // We'll handle these sorting options after fetching the base data
+
+    // Apply limit and offset if not sorting by computed fields
+    const needsPostQuerySort = field === "competitions" || field === "votes";
+
+    let agentsWithScores;
+    if (!needsPostQuerySort && limit !== undefined && offset !== undefined) {
+      agentsWithScores = await agentsQuery.limit(limit).offset(offset);
+    } else {
+      agentsWithScores = await agentsQuery;
+    }
 
     if (agentsWithScores.length === 0) {
       return [];
@@ -392,11 +459,29 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
     );
 
     // Combine all data
-    const result = agentsWithScores.map((agent) => ({
+    let result = agentsWithScores.map((agent) => ({
       ...agent,
       numCompetitions: competitionCountMap.get(agent.id) ?? 0,
       voteCount: voteCountMap.get(agent.id) ?? 0,
     }));
+
+    // If we need to sort by competitions or votes, do it now
+    if (needsPostQuerySort) {
+      result = result.sort((a, b) => {
+        let comparison = 0;
+        if (field === "competitions") {
+          comparison = a.numCompetitions - b.numCompetitions;
+        } else if (field === "votes") {
+          comparison = a.voteCount - b.voteCount;
+        }
+        return isDescending ? -comparison : comparison;
+      });
+
+      // Apply pagination after sorting
+      if (limit !== undefined && offset !== undefined) {
+        result = result.slice(offset, offset + limit);
+      }
+    }
 
     repositoryLogger.debug(
       `Retrieved ${result.length} agent metrics with optimized query`,
@@ -434,4 +519,10 @@ export const getOptimizedGlobalAgentMetrics = createTimedRepositoryFunction(
   getOptimizedGlobalAgentMetricsImpl,
   "LeaderboardRepository",
   "getOptimizedGlobalAgentMetrics",
+);
+
+export const getTotalAgentsWithScores = createTimedRepositoryFunction(
+  getTotalAgentsWithScoresImpl,
+  "LeaderboardRepository",
+  "getTotalAgentsWithScores",
 );

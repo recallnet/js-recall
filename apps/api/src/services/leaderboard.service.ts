@@ -1,6 +1,7 @@
 import {
   getGlobalStats,
   getOptimizedGlobalAgentMetrics,
+  getTotalAgentsWithScores,
 } from "@/database/repositories/leaderboard-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import {
@@ -32,18 +33,18 @@ export class LeaderboardService {
         return this.emptyLeaderboardResponse(params);
       }
 
-      // Calculate global metrics for all agents across competitions using optimized query
-      const globalMetrics = await this.getOptimizedGlobalMetrics();
-
-      // Sort agents based on requested sort field
-      const sortedAgents = this.sortAgents(globalMetrics, params.sort);
-
-      // Apply pagination
-      const total = sortedAgents.length;
-      const paginatedAgents = sortedAgents.slice(
+      // Get agents with SQL-level sorting and pagination
+      const agents = await this.getOptimizedGlobalMetrics(
+        params.sort,
+        params.limit,
         params.offset,
-        params.offset + params.limit,
       );
+
+      // For total count, we need to get all agents count (for pagination metadata)
+      const totalCount = await this.getTotalAgentsCount();
+
+      // Assign ranks based on score ordering
+      const agentsWithRanks = this.assignRanks(agents, params.sort);
 
       return {
         stats: {
@@ -53,12 +54,12 @@ export class LeaderboardService {
           totalVolume: stats.totalVolume,
           totalVotes: stats.totalVotes,
         },
-        agents: paginatedAgents,
+        agents: agentsWithRanks,
         pagination: {
-          total,
+          total: totalCount,
           limit: params.limit,
           offset: params.offset,
-          hasMore: params.offset + params.limit < total,
+          hasMore: params.offset + params.limit < totalCount,
         },
       };
     } catch (error) {
@@ -73,14 +74,25 @@ export class LeaderboardService {
   }
 
   /**
-   * Get optimized global metrics for all agents using a single query
+   * Get optimized global metrics for agents with SQL-level sorting and pagination
+   * @param sort Sort field with optional '-' prefix for descending
+   * @param limit Number of results to return
+   * @param offset Number of results to skip
    * @returns Array of agent metrics with all required data
    */
-  private async getOptimizedGlobalMetrics(): Promise<LeaderboardAgent[]> {
-    const agentMetrics = await getOptimizedGlobalAgentMetrics();
+  private async getOptimizedGlobalMetrics(
+    sort?: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<LeaderboardAgent[]> {
+    const agentMetrics = await getOptimizedGlobalAgentMetrics(
+      sort,
+      limit,
+      offset,
+    );
 
     return agentMetrics.map((agent) => ({
-      rank: 0, // Will be set during sorting
+      rank: 0, // Will be set by assignRanks method
       id: agent.id,
       name: agent.name,
       handle: agent.handle,
@@ -94,91 +106,54 @@ export class LeaderboardService {
   }
 
   /**
-   * Sort agents based on the requested sort field
-   * @param agents Array of agents to sort
-   * @param sortField Sort field with optional '-' prefix for descending
-   * @returns Sorted array with updated ranks
+   * Get total count of agents with scores for pagination
+   * @returns Total number of agents in the leaderboard
    */
-  private sortAgents(
+  private async getTotalAgentsCount(): Promise<number> {
+    return await getTotalAgentsWithScores();
+  }
+
+  /**
+   * Assign ranks to agents based on their scores
+   * Rank 1 = highest score, rank 2 = second highest, etc.
+   * @param agents Array of agents to assign ranks to
+   * @param sortField Sort field to determine if we need special rank handling
+   * @returns Array of agents with proper ranks assigned
+   */
+  private assignRanks(
     agents: LeaderboardAgent[],
     sortField?: string,
   ): LeaderboardAgent[] {
-    // Validate and sanitize sort field
-    const VALID_SORT_FIELDS = [
-      "rank",
-      "score",
-      "name",
-      "competitions",
-      "votes",
-    ] as const;
-
-    const sort = sortField || "rank";
-    const isDescending = sort.startsWith("-");
-    const field = isDescending ? sort.slice(1) : sort;
-
-    // Critical: Validate against whitelist
-    if (
-      !VALID_SORT_FIELDS.includes(field as (typeof VALID_SORT_FIELDS)[number])
-    ) {
-      console.warn(
-        `[LeaderboardService] Invalid sort field '${field}', falling back to rank`,
-      );
-      return this.sortAgents(agents, "rank"); // Safe fallback
+    // When sorting by rank (default sort), agents come from DB already sorted by score
+    // For ascending rank: highest score gets rank 1
+    // For descending rank: lowest score gets rank 1 (reversed)
+    if (sortField === "rank") {
+      // Ascending rank order (1, 2, 3...) - highest score is rank 1
+      return agents.map((agent, index) => ({
+        ...agent,
+        rank: index + 1,
+      }));
+    } else if (sortField === "-rank") {
+      // Descending rank order - need to reverse the rank assignment
+      const totalAgents = agents.length;
+      return agents.map((agent, index) => ({
+        ...agent,
+        rank: totalAgents - index,
+      }));
     }
 
-    // For rank-based sorting, always assign ranks first based on score
-    let agentsWithRanks = [...agents];
-    if (field === "rank") {
-      // Sort by score descending to assign proper ranks
-      agentsWithRanks = [...agents]
-        .sort((a, b) => b.score - a.score)
-        .map((agent, index) => ({
-          ...agent,
-          rank: index + 1,
-        }));
+    // For non-rank sort fields, assign ranks based on score regardless of current order
+    // Create a map of agent IDs to their score-based ranks
+    const agentScores = agents.map((a) => ({ id: a.id, score: a.score }));
+    agentScores.sort((a, b) => b.score - a.score);
 
-      // If user wants descending rank order, reverse the array
-      if (isDescending) {
-        return agentsWithRanks.reverse();
-      }
-      return agentsWithRanks;
-    }
-
-    // For non-rank sorting, sort the agents normally
-    const sortedAgents = [...agentsWithRanks].sort((a, b) => {
-      let comparison = 0;
-
-      switch (field) {
-        case "name":
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case "score":
-          comparison = a.score - b.score;
-          break;
-        case "competitions":
-          comparison = a.numCompetitions - b.numCompetitions;
-          break;
-        case "votes":
-          comparison = a.voteCount - b.voteCount;
-          break;
-        default:
-          comparison = 0;
-      }
-
-      return isDescending ? -comparison : comparison;
+    const scoreRankMap = new Map<string, number>();
+    agentScores.forEach((agent, index) => {
+      scoreRankMap.set(agent.id, index + 1);
     });
 
-    // For non-rank sorting, assign ranks based on score after sorting
-    // First, get rank mapping based on scores
-    const scoreRankMap = new Map();
-    [...agents]
-      .sort((a, b) => b.score - a.score)
-      .forEach((agent, index) => {
-        scoreRankMap.set(agent.id, index + 1);
-      });
-
-    // Apply the rank mapping to sorted agents
-    return sortedAgents.map((agent) => ({
+    // Apply the rank mapping to maintain the requested sort order
+    return agents.map((agent) => ({
       ...agent,
       rank: scoreRankMap.get(agent.id) || 1,
     }));
