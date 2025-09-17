@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import { MerkleTree } from "merkletreejs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
-import { hexToBytes, keccak256 } from "viem";
+import { keccak256 } from "viem";
 
 import { competitions } from "@recallnet/db-schema/core/defs";
 import { rewards } from "@recallnet/db-schema/voting/defs";
