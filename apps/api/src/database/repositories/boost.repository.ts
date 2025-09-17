@@ -13,7 +13,13 @@ import { db } from "@/database/db.js";
 import { BlockchainAddressAsU8A } from "@/lib/coders.js";
 
 export { BoostRepository, BoostChangeMetaSchema };
-export type { BoostDiffArgs, BoostDiffResult, BoostChangeMeta };
+export type {
+  BoostDiffArgs,
+  BoostDiffResult,
+  BoostChangeMeta,
+  BoostAgentArgs,
+  BoostAgentResult,
+};
 
 /** Schema of an optional structured context to attach to each boost change. */
 const BoostChangeMetaSchema = z.object({
@@ -472,7 +478,7 @@ class BoostRepository {
       competitionId: string;
     },
     tx?: Transaction,
-  ) {
+  ): Promise<bigint> {
     const executor = tx || this.#db;
     const [res] = await executor
       .select()
@@ -490,7 +496,7 @@ class BoostRepository {
   async agentBoostTotals(
     { competitionId }: { competitionId: string },
     tx?: Transaction,
-  ) {
+  ): Promise<Record<string, bigint>> {
     const executor = tx || this.#db;
     const res = await executor
       .select()
@@ -536,7 +542,7 @@ class BoostRepository {
   async userBoosts(
     { userId, competitionId }: { userId: string; competitionId: string },
     tx?: Transaction,
-  ) {
+  ): Promise<Record<string, bigint>> {
     const executor = tx || this.#db;
     const res = await executor
       .select({
