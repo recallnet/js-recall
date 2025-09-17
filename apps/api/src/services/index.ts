@@ -94,6 +94,9 @@ class ServiceRegistry {
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentManager);
+
+    // Initialize PerpsDataProcessor (provider will be passed at runtime)
+    this._perpsDataProcessor = new PerpsDataProcessor();
   }
 
   public static getInstance(): ServiceRegistry {
