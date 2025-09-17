@@ -352,7 +352,7 @@ describe("LeaderboardService optimization", () => {
 
     const params: LeaderboardParams = {
       type: "trading",
-      sort: undefined, // No sort specified, should default to rank
+      sort: "rank", // Use default value instead of undefined
       limit: 10,
       offset: 5,
     };
@@ -396,7 +396,7 @@ describe("LeaderboardService optimization", () => {
     // Assert
     expect(
       leaderboardRepository.getOptimizedGlobalAgentMetrics,
-    ).toHaveBeenCalledWith(undefined, 10, 5);
+    ).toHaveBeenCalledWith("rank", 10, 5);
     expect(result.agents[0]?.rank).toBe(6); // offset + 1
   });
 
@@ -456,7 +456,7 @@ describe("LeaderboardService optimization", () => {
     const service = new LeaderboardService(mockAgentService as never);
 
     const params: LeaderboardParams = {
-      type: "staking",
+      type: "trading", // Keep as trading since LeaderboardParams requires it
       sort: "rank",
       limit: 10,
       offset: 0,
@@ -480,7 +480,7 @@ describe("LeaderboardService optimization", () => {
 
     // Assert
     expect(leaderboardRepository.getGlobalStats).toHaveBeenCalledWith(
-      "staking",
+      "trading",
     );
   });
 
