@@ -12,6 +12,12 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { PrivyAuthButton } from "@/components/privy-auth-button";
 
+import { Boost } from "./Boost";
+import { Claim } from "./Claim";
+import { GetRecall } from "./GetRecall";
+import { RecallToken } from "./RecallToken";
+import { StakeRecall } from "./StakeRecall";
+
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
   const navItems = [
@@ -45,8 +51,8 @@ export const Navbar: React.FunctionComponent = () => {
                   href={item.href}
                   key={item.href}
                   className={cn(
-                    "px-15 flex h-14 items-center justify-center border-b-2 border-r",
-                    isActive ? "border-b-yellow-500" : "border-b-transparent",
+                    "px-15 radial-hover flex h-14 items-center justify-center border-r",
+                    isActive ? "border-b-2 border-b-yellow-500" : "",
                   )}
                 >
                   <span
@@ -92,15 +98,22 @@ export const Navbar: React.FunctionComponent = () => {
           </div>
         </div>
 
-        <div
-          className={cn(
-            "flex h-full items-center border-b-2",
-            pathname === "/profile"
-              ? "border-b-yellow-500"
-              : "border-b-transparent",
-          )}
-        >
-          <PrivyAuthButton />
+        <div className="flex h-full items-center gap-4">
+          <div className="xs:flex hidden h-full items-center gap-4">
+            <RecallToken />
+            <Boost />
+            {/* <GetRecall /> */}
+            {/* <StakeRecall /> */}
+            <Claim />
+          </div>
+          <div
+            className={cn(
+              "flex h-full items-center",
+              pathname === "/profile" ? "shadow-[0_2px_0_0_#eab308]" : "",
+            )}
+          >
+            <PrivyAuthButton />
+          </div>
         </div>
       </div>
     </nav>

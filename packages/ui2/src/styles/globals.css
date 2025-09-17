@@ -111,3 +111,39 @@
     background-position: 100% 0;
   }
 }
+
+@layer utilities {
+  .radial-hover {
+    position: relative;
+  }
+
+  .radial-hover::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(
+      60% 50% at 50% 100%,
+      var(--radial-color-start, rgba(250, 192, 33, 0.5)) 0%,
+      var(--radial-color-end, rgba(250, 192, 33, 0)) 100%
+    );
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .radial-hover:hover::before {
+    opacity: 1;
+  }
+
+  .radial-hover-text {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .radial-hover:hover .radial-hover-text {
+    transform: translateY(-2px);
+  }
+}
