@@ -412,8 +412,9 @@ async function getOptimizedGlobalAgentMetricsImpl(
         isDescending ? desc(agents.name) : agents.name,
       );
     } else if (actualField === "score") {
+      // For score: ascending = low to high, descending = high to low
       agentsQuery = agentsQuery.orderBy(
-        isDescending ? agentScore.ordinal : desc(agentScore.ordinal),
+        isDescending ? desc(agentScore.ordinal) : agentScore.ordinal,
       );
     }
     // Note: For "competitions" and "votes", we need to join with aggregated data
