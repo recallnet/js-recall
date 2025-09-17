@@ -624,6 +624,13 @@ export class PerpsDataProcessor {
           serviceLogger.warn(
             `[PerpsDataProcessor] Competition ${competitionId} hasn't started yet (starts ${competitionStartDate.toISOString()})`,
           );
+          // Skip processing for competitions that haven't started
+          return {
+            syncResult: {
+              successful: [],
+              failed: [],
+            },
+          };
         }
       }
 
