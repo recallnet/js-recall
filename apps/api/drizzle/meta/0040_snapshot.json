@@ -1,5 +1,5 @@
 {
-  "id": "c37db0f6-f6d9-44ce-baa1-d5db4ae3dc86",
+  "id": "cc1fc1a1-9d4b-4d63-8216-f102aab97b72",
   "prevId": "112dcfc1-d1b6-4cd7-adfe-58a4b2a59982",
   "version": "7",
   "dialect": "postgresql",
@@ -2609,32 +2609,26 @@
           "primaryKey": false,
           "notNull": true
         },
-        "total_equity": {
-          "name": "total_equity",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": true
-        },
         "initial_capital": {
           "name": "initial_capital",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "total_volume": {
-          "name": "total_volume",
+        "total_equity": {
+          "name": "total_equity",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "available_balance": {
+          "name": "available_balance",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },
-        "total_unrealized_pnl": {
-          "name": "total_unrealized_pnl",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "total_realized_pnl": {
-          "name": "total_realized_pnl",
+        "margin_used": {
+          "name": "margin_used",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
@@ -2645,20 +2639,26 @@
           "primaryKey": false,
           "notNull": false
         },
+        "total_realized_pnl": {
+          "name": "total_realized_pnl",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_unrealized_pnl": {
+          "name": "total_unrealized_pnl",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_volume": {
+          "name": "total_volume",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
         "total_fees_paid": {
           "name": "total_fees_paid",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "available_balance": {
-          "name": "available_balance",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "margin_used": {
-          "name": "margin_used",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
@@ -2754,6 +2754,33 @@
               "expression": "timestamp",
               "isExpression": false,
               "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_perps_summaries_agent_comp_timestamp": {
+          "name": "idx_perps_summaries_agent_comp_timestamp",
+          "columns": [
+            {
+              "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": false,
               "nulls": "last"
             }
           ],
