@@ -881,6 +881,67 @@ export function makeCompetitionController(services: ServiceRegistry) {
     },
 
     /**
+     * Get waitlisted (registered) agents for a competition
+     * @param req AuthenticatedRequest object with authentication information
+     * @param res Express response object
+     * @param next Express next function
+     */
+    async getWaitlistedAgents(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Only allow admin access to view waitlisted agents
+        if (!checkIsAdmin(req)) {
+          throw new ApiError(
+            403,
+            "Admin access required to view waitlisted agents",
+          );
+        }
+
+        // Get competition ID from path parameter
+        const competitionId = ensureUuid(req.params.competitionId);
+
+        // Check if competition exists
+        const competition =
+          await services.competitionService.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Get waitlisted agents from repository
+        const { getWaitlistedAgents } = await import(
+          "@/database/repositories/competition-repository.js"
+        );
+        const waitlistedAgentIds = await getWaitlistedAgents(competitionId);
+
+        // Get full agent details for waitlisted agents
+        const waitlistedAgents = await Promise.all(
+          waitlistedAgentIds.map(async (agentId) => {
+            const agent = await services.agentService.getAgent(agentId);
+            return {
+              id: agentId,
+              name: agent?.name || "Unknown",
+              handle: agent?.handle || "",
+              imageUrl: agent?.imageUrl || null,
+              status: "registered" as const,
+            };
+          }),
+        );
+
+        res.status(200).json({
+          success: true,
+          competitionId,
+          waitlistedAgents,
+          totalWaitlisted: waitlistedAgents.length,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
      * Join an agent to a competition
      * @param req AuthenticatedRequest with competitionId and agentId params
      * @param res Express response object

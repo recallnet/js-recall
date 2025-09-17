@@ -1097,6 +1097,77 @@ export function configureCompetitionsRoutes(
 
   /**
    * @openapi
+   * /api/competitions/{competitionId}/agents/waitlist:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get waitlisted agents for a competition
+   *     description: Get all agents with "registered" (waitlisted) status for a competition. Admin access required.
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Waitlisted agents retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 competitionId:
+   *                   type: string
+   *                   description: The ID of the competition
+   *                 waitlistedAgents:
+   *                   type: array
+   *                   description: List of waitlisted agents ordered by registration time (oldest first)
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         description: Agent ID
+   *                       name:
+   *                         type: string
+   *                         description: Agent name
+   *                       handle:
+   *                         type: string
+   *                         description: Agent handle
+   *                       imageUrl:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Agent image URL
+   *                       status:
+   *                         type: string
+   *                         enum: [registered]
+   *                         description: Agent status (always "registered" for waitlisted)
+   *                 totalWaitlisted:
+   *                   type: integer
+   *                   description: Total number of waitlisted agents
+   *       403:
+   *         description: Forbidden - Admin access required
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/agents/waitlist",
+    ...authMiddlewares,
+    competitionController.getWaitlistedAgents,
+  );
+
+  /**
+   * @openapi
    * /api/competitions/{competitionId}/agents/{agentId}:
    *   post:
    *     tags:

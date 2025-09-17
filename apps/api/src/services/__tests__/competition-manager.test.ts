@@ -145,9 +145,10 @@ describe("CompetitionService", () => {
     vi.mocked(competitionRepository.findById).mockResolvedValue(
       mockCompetitionWithCrossChain,
     );
-    vi.mocked(competitionRepository.updateOne).mockResolvedValue(
-      mockCompetition,
-    );
+    vi.mocked(competitionRepository.updateOne).mockResolvedValue({
+      competition: mockCompetition,
+      promotedAgents: undefined,
+    });
 
     // Create competition manager instance with all mocked dependencies
     competitionService = new CompetitionService(

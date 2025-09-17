@@ -1,0 +1,1 @@
+ALTER TYPE "public"."competition_agent_status" ADD VALUE 'registered' BEFORE 'withdrawn';
