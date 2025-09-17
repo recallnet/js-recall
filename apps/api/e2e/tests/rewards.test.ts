@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { MerkleTree } from "merkletreejs";
-import { hexToBytes, keccak256 } from "viem";
+import { keccak256 } from "viem";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { competitions } from "@recallnet/db-schema/core/defs";
@@ -242,7 +242,7 @@ describe("Rewards Service", () => {
           competitionId: testCompetitionId,
           address,
           amount,
-          leafHash: hexToBytes(leafHashBuffer),
+          leafHash: new Uint8Array(leafHashBuffer),
           claimed: false,
         };
       },
@@ -326,7 +326,7 @@ describe("Rewards Service", () => {
         competitionId: testCompetitionId,
         address: existingAddress,
         amount: existingAmount,
-        leafHash: hexToBytes(leafHashBuffer),
+        leafHash: new Uint8Array(leafHashBuffer),
         claimed: false,
       },
     ]);
