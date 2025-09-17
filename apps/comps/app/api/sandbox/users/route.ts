@@ -29,16 +29,35 @@ async function handleCreateUser(request: NextRequest) {
     sessionCookie,
   );
   const { user } = profileData;
-  const { walletAddress, name, email, imageUrl, metadata } = user;
+  const {
+    walletAddress,
+    name,
+    email,
+    imageUrl,
+    metadata,
+    privyId,
+    embeddedWalletAddress,
+  } = user;
 
-  // Check if user already exists in sandbox
-  const searchData = await sandboxAdminRequest<AdminSearchResult>(
+  // Check if user already exists in sandbox with wallet address
+  const searchByWalletAddress = await sandboxAdminRequest<AdminSearchResult>(
     `/admin/search?user.walletAddress=${walletAddress}`,
   );
+  if (searchByWalletAddress.results.users.length > 0) {
+    const existingUser = searchByWalletAddress.results.users.at(0);
+    return createSuccessResponse({
+      success: true,
+      user: existingUser,
+      message: "User already exists in sandbox",
+    });
+  }
 
-  // If user already exists, return the existing user
-  if (searchData.results?.users && searchData.results.users.length > 0) {
-    const existingUser = searchData.results.users[0];
+  // Check if user already exists in sandbox with email
+  const searchByEmail = await sandboxAdminRequest<AdminSearchResult>(
+    `/admin/search?user.email=${encodeURIComponent(email)}`,
+  );
+  if (searchByEmail.results.users.length > 0) {
+    const existingUser = searchByEmail.results.users[0];
     return createSuccessResponse({
       success: true,
       user: existingUser,
@@ -49,10 +68,12 @@ async function handleCreateUser(request: NextRequest) {
   // Create user in sandbox
   const createUserPayload = {
     walletAddress,
-    name: name || undefined,
-    email: email || undefined,
+    name,
+    email,
     userImageUrl: imageUrl || undefined,
     userMetadata: metadata || undefined,
+    privyId,
+    embeddedWalletAddress,
   };
 
   const createData = await sandboxAdminRequest<AdminUserResponse>(
