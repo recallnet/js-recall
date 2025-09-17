@@ -496,10 +496,11 @@ describe("RewardsService", () => {
           ["rl", address, amount],
         );
         const expectedHash = keccak256(expectedEncoding);
+        const expectedBuffer = Buffer.from(expectedHash.slice(2), "hex");
 
         const actualHash = createLeafNode(address, amount);
 
-        expect(actualHash).toEqual(expectedHash);
+        expect(actualHash).toEqual(expectedBuffer);
       });
     });
   });
