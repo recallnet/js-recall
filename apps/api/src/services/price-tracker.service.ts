@@ -521,3 +521,5 @@ export class PriceTrackerService {
     return this.chainToTokenCache.get(tokenAddress.toLowerCase()) || null;
   }
 }
+
+export { PriceTrackerService as PriceTracker };

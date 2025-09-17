@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";
 import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
 
-import { BalanceManager } from "../balance-manager.service.js";
-import { PortfolioSnapshotter } from "../portfolio-snapshotter.service.js";
-import { PriceTracker } from "../price-tracker.service.js";
+import {
+  BalanceService,
+  PortfolioSnapshotterService,
+  PriceTrackerService,
+} from "../index.js";
 
 // Test Strategy:
 // Target: PortfolioSnapshotter service - critical financial calculations
@@ -31,9 +33,9 @@ vi.mock("@/database/repositories/competition-repository.js", () => ({
 }));
 
 describe("PortfolioSnapshotter", () => {
-  let portfolioSnapshotter: PortfolioSnapshotter;
-  let mockBalanceManager: BalanceManager;
-  let mockPriceTracker: PriceTracker;
+  let portfolioSnapshotter: PortfolioSnapshotterService;
+  let mockBalanceService: BalanceService;
+  let mockPriceTrackerService: PriceTrackerService;
 
   const mockCompetition = {
     id: "test-competition-id",
@@ -122,17 +124,17 @@ describe("PortfolioSnapshotter", () => {
 
   beforeEach(() => {
     // Create mock instances
-    mockBalanceManager = {
+    mockBalanceService = {
       getAllBalances: vi.fn(),
-    } as unknown as BalanceManager;
+    } as unknown as BalanceService;
 
-    mockPriceTracker = {
+    mockPriceTrackerService = {
       getBulkPrices: vi.fn(),
-    } as unknown as PriceTracker;
+    } as unknown as PriceTrackerService;
 
-    portfolioSnapshotter = new PortfolioSnapshotter(
-      mockBalanceManager,
-      mockPriceTracker,
+    portfolioSnapshotter = new PortfolioSnapshotterService(
+      mockBalanceService,
+      mockPriceTrackerService,
     );
 
     // Reset all mocks
@@ -155,10 +157,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mockBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         mockPriceReports,
       );
       vi.mocked(
@@ -185,10 +187,10 @@ describe("PortfolioSnapshotter", () => {
       );
 
       // Verify balance fetch
-      expect(mockBalanceManager.getAllBalances).toHaveBeenCalledWith(agentId);
+      expect(mockBalanceService.getAllBalances).toHaveBeenCalledWith(agentId);
 
       // Verify price fetch for non-zero balances only
-      expect(mockPriceTracker.getBulkPrices).toHaveBeenCalledWith([
+      expect(mockPriceTrackerService.getBulkPrices).toHaveBeenCalledWith([
         "0x1234567890123456789012345678901234567890", // USDC
         "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef", // ETH
         "0x9876543210987654321098765432109876543210", // BTC (even though zero, still requested)
@@ -216,8 +218,8 @@ describe("PortfolioSnapshotter", () => {
         ),
       ).rejects.toThrow("Competition with ID test-competition-id not found");
 
-      expect(mockBalanceManager.getAllBalances).not.toHaveBeenCalled();
-      expect(mockPriceTracker.getBulkPrices).not.toHaveBeenCalled();
+      expect(mockBalanceService.getAllBalances).not.toHaveBeenCalled();
+      expect(mockPriceTrackerService.getBulkPrices).not.toHaveBeenCalled();
     });
 
     it("should skip snapshot if competition has ended and force=false", async () => {
@@ -240,8 +242,8 @@ describe("PortfolioSnapshotter", () => {
         false, // force = false
       );
 
-      expect(mockBalanceManager.getAllBalances).not.toHaveBeenCalled();
-      expect(mockPriceTracker.getBulkPrices).not.toHaveBeenCalled();
+      expect(mockBalanceService.getAllBalances).not.toHaveBeenCalled();
+      expect(mockPriceTrackerService.getBulkPrices).not.toHaveBeenCalled();
       expect(
         competitionRepository.createPortfolioSnapshot,
       ).not.toHaveBeenCalled();
@@ -256,10 +258,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         endedCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mockBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         mockPriceReports,
       );
       vi.mocked(
@@ -282,8 +284,8 @@ describe("PortfolioSnapshotter", () => {
         true, // force = true
       );
 
-      expect(mockBalanceManager.getAllBalances).toHaveBeenCalledWith(agentId);
-      expect(mockPriceTracker.getBulkPrices).toHaveBeenCalled();
+      expect(mockBalanceService.getAllBalances).toHaveBeenCalledWith(agentId);
+      expect(mockPriceTrackerService.getBulkPrices).toHaveBeenCalled();
       expect(competitionRepository.createPortfolioSnapshot).toHaveBeenCalled();
     });
 
@@ -291,14 +293,14 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue([]); // Empty balances
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue([]); // Empty balances
 
       await portfolioSnapshotter.takePortfolioSnapshotForAgent(
         competitionId,
         agentId,
       );
 
-      expect(mockPriceTracker.getBulkPrices).not.toHaveBeenCalled();
+      expect(mockPriceTrackerService.getBulkPrices).not.toHaveBeenCalled();
       expect(
         competitionRepository.createPortfolioSnapshot,
       ).not.toHaveBeenCalled();
@@ -308,7 +310,7 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mockBalances,
       );
 
@@ -328,7 +330,7 @@ describe("PortfolioSnapshotter", () => {
         ], // ETH succeeded
       ]);
 
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         failedPriceReports,
       );
 
@@ -348,7 +350,7 @@ describe("PortfolioSnapshotter", () => {
       await snapshotPromise;
 
       // Should retry 3 times (initial + 2 retries)
-      expect(mockPriceTracker.getBulkPrices).toHaveBeenCalledTimes(3);
+      expect(mockPriceTrackerService.getBulkPrices).toHaveBeenCalledTimes(3);
 
       // Should not create snapshot due to missing price data
       expect(
@@ -360,7 +362,7 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mockBalances,
       );
 
@@ -371,7 +373,7 @@ describe("PortfolioSnapshotter", () => {
         ["0x9876543210987654321098765432109876543210", null],
       ]);
 
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         failedPriceReports,
       );
 
@@ -398,7 +400,7 @@ describe("PortfolioSnapshotter", () => {
       // Verify exponential backoff delays occurred
       expect(Date.now() - startTime).toBeGreaterThanOrEqual(3000);
 
-      expect(mockPriceTracker.getBulkPrices).toHaveBeenCalledTimes(3);
+      expect(mockPriceTrackerService.getBulkPrices).toHaveBeenCalledTimes(3);
     });
 
     it("should calculate portfolio value correctly with mixed token balances", async () => {
@@ -484,10 +486,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mixedBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         mixedPriceReports,
       );
       vi.mocked(
@@ -534,10 +536,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mockBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         mockPriceReports,
       );
       vi.mocked(
@@ -560,15 +562,15 @@ describe("PortfolioSnapshotter", () => {
 
       // Verify each agent was processed
       expect(competitionRepository.findById).toHaveBeenCalledTimes(3);
-      expect(mockBalanceManager.getAllBalances).toHaveBeenCalledTimes(3);
-      expect(mockPriceTracker.getBulkPrices).toHaveBeenCalledTimes(3);
+      expect(mockBalanceService.getAllBalances).toHaveBeenCalledTimes(3);
+      expect(mockPriceTrackerService.getBulkPrices).toHaveBeenCalledTimes(3);
       expect(
         competitionRepository.createPortfolioSnapshot,
       ).toHaveBeenCalledTimes(3);
 
       // Verify each agent ID was used
       agents.forEach((agentId) => {
-        expect(mockBalanceManager.getAllBalances).toHaveBeenCalledWith(agentId);
+        expect(mockBalanceService.getAllBalances).toHaveBeenCalledWith(agentId);
       });
 
       // Verify all snapshots have the same timestamp (sequential processing)
@@ -598,10 +600,10 @@ describe("PortfolioSnapshotter", () => {
         .mockRejectedValueOnce(new Error("Agent2 error")) // agent2 fails
         .mockResolvedValueOnce(mockCompetition); // agent3 succeeds
 
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mockBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         mockPriceReports,
       );
       vi.mocked(
@@ -633,10 +635,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mockBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         mockPriceReports,
       );
 
@@ -857,10 +859,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         precisionBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         precisionPriceReports,
       );
       vi.mocked(
@@ -968,10 +970,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mixedZeroBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         mixedZeroPrices,
       );
       vi.mocked(
@@ -1033,10 +1035,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         largeBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         largePriceReports,
       );
       vi.mocked(
@@ -1142,10 +1144,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         partialBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices)
+      vi.mocked(mockPriceTrackerService.getBulkPrices)
         .mockResolvedValueOnce(partialSuccess) // First attempt
         .mockResolvedValueOnce(completeSuccess); // Second attempt
 
@@ -1171,7 +1173,7 @@ describe("PortfolioSnapshotter", () => {
       await snapshotPromise;
 
       // Should succeed after 2 attempts
-      expect(mockPriceTracker.getBulkPrices).toHaveBeenCalledTimes(2);
+      expect(mockPriceTrackerService.getBulkPrices).toHaveBeenCalledTimes(2);
 
       // Should create snapshot with correct total: (100 * 2.0) + (50 * 3.0) = 350
       expect(
@@ -1191,10 +1193,10 @@ describe("PortfolioSnapshotter", () => {
       vi.mocked(competitionRepository.findById).mockResolvedValue(
         mockCompetition,
       );
-      vi.mocked(mockBalanceManager.getAllBalances).mockResolvedValue(
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
         mockBalances,
       );
-      vi.mocked(mockPriceTracker.getBulkPrices).mockResolvedValue(
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         mockPriceReports,
       );
 
@@ -1234,7 +1236,7 @@ describe("PortfolioSnapshotter", () => {
 
       // All operations should complete successfully
       expect(results).toHaveLength(3);
-      results.forEach((result) => expect(result).toBeUndefined());
+      results.forEach((result: unknown) => expect(result).toBeUndefined());
 
       // Each agent should have exactly one snapshot created
       expect(

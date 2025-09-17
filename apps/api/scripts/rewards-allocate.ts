@@ -1,9 +1,15 @@
 import * as dotenv from "dotenv";
-import { blue, cyan, green, red, yellow } from "kleur/colors";
 import * as path from "path";
 import { parse } from "ts-command-line-args";
 
 import { RewardsService } from "@/services/rewards.service.js";
+
+// Color functions for terminal output
+const blue = (str: string) => str;
+const cyan = (str: string) => str;
+const green = (str: string) => str;
+const red = (str: string) => str;
+const yellow = (str: string) => str;
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
