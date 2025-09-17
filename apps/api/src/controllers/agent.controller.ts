@@ -34,14 +34,14 @@ export function makeAgentController(services: ServiceRegistry) {
         const agentId = req.agentId as string;
 
         // Get the agent using the service
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
 
         if (!agent) {
           throw new ApiError(404, "Agent not found");
         }
 
         // Get the owner user information
-        const owner = await services.userManager.getUser(agent.ownerId);
+        const owner = await services.userService.getUser(agent.ownerId);
 
         if (!owner) {
           throw new ApiError(404, "Agent owner not found");
@@ -51,7 +51,7 @@ export function makeAgentController(services: ServiceRegistry) {
         // TODO: we can clean this up with better types that help omit the api key
         res.status(200).json({
           success: true,
-          agent: services.agentManager.sanitizeAgent(agent),
+          agent: services.agentService.sanitizeAgent(agent),
           owner: {
             id: owner.id,
             walletAddress: owner.walletAddress,
@@ -91,7 +91,7 @@ export function makeAgentController(services: ServiceRegistry) {
         } = data;
 
         // Get the current agent
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
         if (!agent) {
           throw new ApiError(404, "Agent not found");
         }
@@ -103,7 +103,7 @@ export function makeAgentController(services: ServiceRegistry) {
           imageUrl,
         };
 
-        const updatedAgent = await services.agentManager.updateAgent({
+        const updatedAgent = await services.agentService.updateAgent({
           ...agent,
           ...updateData,
         });
@@ -114,7 +114,7 @@ export function makeAgentController(services: ServiceRegistry) {
 
         res.status(200).json({
           success: true,
-          agent: services.agentManager.sanitizeAgent(updatedAgent),
+          agent: services.agentService.sanitizeAgent(updatedAgent),
         });
       } catch (error) {
         next(error);
@@ -137,11 +137,11 @@ export function makeAgentController(services: ServiceRegistry) {
         const filter = req.query.filter
           ? AgentFilterSchema.parse(req.query.filter)
           : undefined;
-        const agents = await services.agentManager.getAgents({
+        const agents = await services.agentService.getAgents({
           filter,
           pagingParams,
         });
-        const totalCount = await services.agentManager.countAgents(filter);
+        const totalCount = await services.agentService.countAgents(filter);
         const { limit, offset } = pagingParams;
 
         // Return the agents
@@ -154,7 +154,7 @@ export function makeAgentController(services: ServiceRegistry) {
             hasMore: limit + offset < totalCount,
           },
           agents: agents.map(
-            services.agentManager.sanitizeAgent.bind(services.agentManager),
+            services.agentService.sanitizeAgent.bind(services.agentService),
           ),
         });
       } catch (err) {
@@ -182,14 +182,14 @@ export function makeAgentController(services: ServiceRegistry) {
         }
 
         // Get the agent using the service
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
 
         if (!agent) {
           throw new ApiError(404, "Agent not found");
         }
 
         // Get the owner user information
-        const owner = await services.userManager.getUser(agent.ownerId);
+        const owner = await services.userService.getUser(agent.ownerId);
 
         // Prepare owner info for public display (null if user not found)
         const ownerInfo = owner
@@ -200,9 +200,9 @@ export function makeAgentController(services: ServiceRegistry) {
             }
           : null;
 
-        const sanitizedAgent = services.agentManager.sanitizeAgent(agent);
+        const sanitizedAgent = services.agentService.sanitizeAgent(agent);
         const computedAgent =
-          await services.agentManager.attachAgentMetrics(sanitizedAgent);
+          await services.agentService.attachAgentMetrics(sanitizedAgent);
 
         // Return the agent with owner information
         res.status(200).json({
@@ -226,14 +226,14 @@ export function makeAgentController(services: ServiceRegistry) {
         const agentId = req.agentId as string;
 
         // Get the balances, this could be hundreds
-        const balances = await services.balanceManager.getAllBalances(agentId);
+        const balances = await services.balanceService.getAllBalances(agentId);
 
         // Extract all unique token addresses
         const tokenAddresses = balances.map((b) => b.tokenAddress);
 
         // Get all prices in bulk
         const priceMap =
-          await services.priceTracker.getBulkPrices(tokenAddresses);
+          await services.priceTrackerService.getBulkPrices(tokenAddresses);
 
         // Enhance balances with the price data
         const enhancedBalances = balances.map((balance) => {
@@ -283,7 +283,8 @@ export function makeAgentController(services: ServiceRegistry) {
         const agentId = req.agentId as string;
 
         // Get the trades
-        const trades = await services.tradeSimulator.getAgentTrades(agentId);
+        const trades =
+          await services.tradeSimulatorService.getAgentTrades(agentId);
 
         // Sort trades by timestamp (newest first)
         const sortedTrades = [...trades].sort(
@@ -313,7 +314,7 @@ export function makeAgentController(services: ServiceRegistry) {
         const agentId = req.agentId as string;
 
         // Use the AgentManager service to reset the API key
-        const result = await services.agentManager.resetApiKey(agentId);
+        const result = await services.agentService.resetApiKey(agentId);
 
         // Return the new API key
         res.status(200).json({
@@ -338,7 +339,7 @@ export function makeAgentController(services: ServiceRegistry) {
         const paging = ensurePaging(req);
 
         // Fetch all competitions associated with the agent
-        const results = await services.agentManager.getCompetitionsForAgent(
+        const results = await services.agentService.getCompetitionsForAgent(
           agentId,
           filters,
           paging,

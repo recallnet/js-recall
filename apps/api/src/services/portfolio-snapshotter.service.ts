@@ -8,34 +8,48 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { BalanceManager, PriceTracker } from "@/services/index.js";
-import { SpecificChain } from "@/types/index.js";
+import { BalanceService, PriceTrackerService } from "@/services/index.js";
+import { PriceReport } from "@/types/index.js";
 
 /**
  * Portfolio Snapshotter Service
  * Manages creating portfolio snapshots
  */
-export class PortfolioSnapshotter {
-  private balanceManager: BalanceManager;
-  private priceTracker: PriceTracker;
+export class PortfolioSnapshotterService {
+  private balanceService: BalanceService;
+  private priceTrackerService: PriceTrackerService;
 
-  constructor(balanceManager: BalanceManager, priceTracker: PriceTracker) {
-    this.balanceManager = balanceManager;
-    this.priceTracker = priceTracker;
+  constructor(
+    balanceService: BalanceService,
+    priceTrackerService: PriceTrackerService,
+  ) {
+    this.balanceService = balanceService;
+    this.priceTrackerService = priceTrackerService;
   }
 
   /**
    * Take a portfolio snapshot for a specific agent in a competition
+   *
+   * Behavior on price fetch failures:
+   * - Retries with exponential backoff up to maxRetries times
+   * - If prices still cannot be fetched after all retries, the method logs a warning and returns silently
+   * - No snapshot is created when prices are missing (no snapshot is better than an inaccurate one)
+   * - This is NOT an exception - it's an expected condition during high load periods
+   * - The method returns normally to allow batch processing to continue for other agents
+   *
    * @param competitionId The competition ID
    * @param agentId The agent ID
    * @param timestamp Optional timestamp for the snapshot (defaults to current time)
    * @param force Optional flag to force snapshot even if competition has ended
+   * @param maxRetries Maximum number of retry attempts if price fetching fails (defaults to 3)
+   * @returns Promise<void> - Completes successfully even if snapshot creation is skipped
    */
   async takePortfolioSnapshotForAgent(
     competitionId: string,
     agentId: string,
     timestamp: Date = new Date(),
     force: boolean = false,
+    maxRetries: number = 3,
   ): Promise<void> {
     repositoryLogger.debug(
       `[PortfolioSnapshotter] Taking portfolio snapshot for agent ${agentId} in competition ${competitionId}`,
@@ -61,27 +75,41 @@ export class PortfolioSnapshotter {
       );
     }
 
-    const balances = await this.balanceManager.getAllBalances(agentId);
-    let totalValue = 0;
+    const balances = await this.balanceService.getAllBalances(agentId);
 
-    for (const balance of balances) {
-      const priceResult = await this.priceTracker.getPrice(
-        balance.tokenAddress,
-        undefined, // Let PriceTracker determine blockchain type
-        balance.specificChain as SpecificChain,
+    // Skip if no balances
+    if (balances.length === 0) {
+      repositoryLogger.debug(
+        `[PortfolioSnapshotter] No balances found for agent ${agentId}, skipping snapshot`,
       );
-
-      if (priceResult) {
-        const valueUsd = balance.amount * priceResult.price;
-        totalValue += valueUsd;
-      } else {
-        repositoryLogger.warn(
-          `[PortfolioSnapshotter] No price available for token ${balance.tokenAddress}, excluding from portfolio snapshot`,
-        );
-      }
+      return;
     }
 
-    // Create portfolio snapshot in database
+    // Fetch prices with retry logic
+    const priceMap = await this.fetchPricesWithRetries(
+      balances,
+      agentId,
+      maxRetries,
+    );
+
+    // Check if we have any price failures for non-zero balances and fail fast
+    const hasFailures = balances.some(
+      (balance) =>
+        balance.amount > 0 && priceMap.get(balance.tokenAddress) === null,
+    );
+    if (hasFailures) {
+      // We have incomplete price data - skip snapshot creation
+      // Detailed error logging already done in fetchPricesWithRetries
+      repositoryLogger.warn(
+        `[PortfolioSnapshotter] Skipping snapshot creation for agent ${agentId} due to incomplete price data.`,
+      );
+      return;
+    }
+
+    // Calculate total portfolio value (we know all prices are available now)
+    const totalValue = this.calculatePortfolioValue(balances, priceMap);
+
+    // All prices fetched successfully - create accurate snapshot
     await createPortfolioSnapshot({
       agentId,
       competitionId,
@@ -89,8 +117,12 @@ export class PortfolioSnapshotter {
       totalValue,
     });
 
+    // Count non-zero balances for logging
+    const nonZeroBalances = balances.filter((b) => b.amount > 0).length;
+
     repositoryLogger.debug(
-      `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} - Total value: $${totalValue.toFixed(2)}`,
+      `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} with calculated total value $${totalValue.toFixed(2)}. ` +
+        `All ${nonZeroBalances} token prices fetched successfully.`,
     );
   }
 
@@ -121,7 +153,7 @@ export class PortfolioSnapshotter {
     const duration = endTime - startTime;
 
     repositoryLogger.debug(
-      `[PortfolioSnapshotter] Completed portfolio snapshots for ${agents.length} agents in ${duration}ms`,
+      `[PortfolioSnapshotter] Completed portfolio snapshots for competition ${competitionId} in ${duration}ms (${Math.round(duration / 1000)}s)`,
     );
   }
 
@@ -169,5 +201,157 @@ export class PortfolioSnapshotter {
       serviceLogger.error("[PortfolioSnapshotter] Health check failed:", error);
       return false;
     }
+  }
+
+  /**
+   * Fetch prices for tokens with retry logic and exponential backoff
+   * @private
+   */
+  private async fetchPricesWithRetries(
+    balances: Array<{ tokenAddress: string; amount: number; symbol: string }>,
+    agentId: string,
+    maxRetries: number,
+  ): Promise<Map<string, PriceReport | null>> {
+    const priceMap: Map<string, PriceReport | null> = new Map();
+
+    // Loop will run maxRetries + 1 times (initial attempt + retries)
+    for (
+      let attemptNumber = 1;
+      attemptNumber <= maxRetries + 1;
+      attemptNumber++
+    ) {
+      // Add exponential backoff delay between retry attempts (except first attempt)
+      if (attemptNumber > 1) {
+        // Exponential backoff: attemptNumber - 2 is intentional to get 1s, 2s, 4s progression
+        // Attempt 2: 2^(2-2) = 2^0 = 1 second
+        // Attempt 3: 2^(3-2) = 2^1 = 2 seconds
+        // Attempt 4: 2^(4-2) = 2^2 = 4 seconds
+        const backoffDelay = Math.min(
+          1000 * Math.pow(2, attemptNumber - 2),
+          10000,
+        ); // Max 10 seconds
+        repositoryLogger.debug(
+          `[PortfolioSnapshotter] Retry attempt ${attemptNumber}/${maxRetries + 1} for agent ${agentId} after ${backoffDelay}ms delay`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+      }
+
+      // Step 1: Determine which tokens need prices
+      const tokensNeedingPrices: string[] = [];
+      if (attemptNumber === 1) {
+        // First attempt: fetch all tokens
+        tokensNeedingPrices.push(...balances.map((b) => b.tokenAddress));
+      } else {
+        // Subsequent attempts: only fetch tokens that don't have prices yet
+        for (const balance of balances) {
+          if (
+            balance.amount > 0 &&
+            priceMap.get(balance.tokenAddress) === null
+          ) {
+            tokensNeedingPrices.push(balance.tokenAddress);
+          }
+        }
+      }
+
+      // If we have all prices already, we're done
+      if (tokensNeedingPrices.length === 0) {
+        repositoryLogger.debug(
+          `[PortfolioSnapshotter] All prices already fetched for agent ${agentId}`,
+        );
+        break;
+      }
+
+      // Step 2: Try batch pricing for tokens that need prices
+      repositoryLogger.debug(
+        `[PortfolioSnapshotter] Fetching prices for ${tokensNeedingPrices.length} tokens (attempt ${attemptNumber}/${maxRetries + 1})`,
+      );
+      const newPrices =
+        await this.priceTrackerService.getBulkPrices(tokensNeedingPrices);
+
+      // Merge new prices into our map (preserving existing successful prices)
+      for (const [tokenAddress, priceReport] of newPrices) {
+        // Only update if we got a successful price (not null)
+        if (priceReport !== null) {
+          priceMap.set(tokenAddress, priceReport);
+        } else if (!priceMap.has(tokenAddress)) {
+          // Set to null if we don't have it yet (to track that we tried)
+          priceMap.set(tokenAddress, null);
+        }
+      }
+
+      // Step 3: Check if we have all prices we need
+      const allPricesFetched = !balances.some(
+        (balance) =>
+          balance.amount > 0 && priceMap.get(balance.tokenAddress) === null,
+      );
+
+      if (allPricesFetched) {
+        repositoryLogger.debug(
+          `[PortfolioSnapshotter] All prices fetched successfully for agent ${agentId} on attempt ${attemptNumber}`,
+        );
+        break;
+      }
+
+      // Log remaining failures for this attempt
+      if (attemptNumber === maxRetries + 1) {
+        // Build detailed list of missing tokens for final error
+        const missingTokenDetails: string[] = [];
+        let failedCount = 0;
+        for (const balance of balances) {
+          if (
+            priceMap.get(balance.tokenAddress) === null &&
+            balance.amount > 0
+          ) {
+            missingTokenDetails.push(
+              `${balance.tokenAddress} (${balance.symbol})`,
+            );
+            failedCount++;
+          }
+        }
+        repositoryLogger.error(
+          `[PortfolioSnapshotter] Failed to fetch prices for ${failedCount} tokens after ${maxRetries + 1} attempts for agent ${agentId}. ` +
+            `Missing prices for: ${missingTokenDetails.join(", ")}`,
+        );
+      } else {
+        // Count failures for debug message
+        const failedCount = balances.filter(
+          (balance) =>
+            balance.amount > 0 && priceMap.get(balance.tokenAddress) === null,
+        ).length;
+        repositoryLogger.debug(
+          `[PortfolioSnapshotter] ${failedCount} tokens still missing prices for agent ${agentId}, will retry entire batch`,
+        );
+      }
+    }
+
+    return priceMap;
+  }
+
+  /**
+   * Calculate the total portfolio value from balances and prices
+   * Assumes all prices are available (verified by caller)
+   * @private
+   */
+  private calculatePortfolioValue(
+    balances: Array<{ tokenAddress: string; amount: number; symbol: string }>,
+    priceMap: Map<string, PriceReport | null>,
+  ): number {
+    let totalValue = 0;
+
+    for (const balance of balances) {
+      // Skip zero balances
+      if (balance.amount === 0) {
+        continue;
+      }
+
+      const priceResult = priceMap.get(balance.tokenAddress);
+      // We know all prices are available since we checked before calling this
+      if (priceResult) {
+        const valueUsd = balance.amount * priceResult.price;
+        totalValue += valueUsd;
+      }
+    }
+
+    return totalValue;
   }
 }

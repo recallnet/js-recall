@@ -12,6 +12,7 @@ import {
   AuthenticatedRequest,
   CompetitionAllowedUpdateSchema,
   PagingParamsSchema,
+  PrivyIdentityTokenSchema,
   UuidSchema,
 } from "@/types/index.js";
 
@@ -37,6 +38,24 @@ export function ensureAgentId(req: Request) {
     throw new ApiError(401, "Invalid authentication: agent ID is required");
   }
   return ensureUuid(req.agentId);
+}
+
+/**
+ * Ensure the request has a Privy identity token
+ * @param req Express request
+ * @returns The Privy identity token
+ */
+export function ensurePrivyIdentityToken(req: Request) {
+  const { success, data, error } = PrivyIdentityTokenSchema.safeParse(
+    req.privyToken,
+  );
+  if (!success) {
+    throw new ApiError(
+      401,
+      `Invalid authentication: Privy identity token: ${error.message}`,
+    );
+  }
+  return data;
 }
 
 /**
@@ -165,6 +184,40 @@ export function parseAdminSearchQuery(
 }
 
 /**
+ * Check if the error is a unique constraint violation
+ * @param error The error to check
+ * @returns The constraint if it is a unique constraint violation, undefined otherwise
+ */
+export function checkUniqueConstraintViolation(error: unknown) {
+  const e = error as {
+    code?: string;
+    constraint?: string;
+    message?: string;
+  };
+  if (e?.code === "23505") {
+    return e.constraint;
+  }
+}
+
+/**
+ * Check if the error is a unique constraint violation for a user
+ * @param error The error to check
+ * @returns The constraint if it is a unique constraint violation, undefined otherwise
+ */
+export function checkUserUniqueConstraintViolation(error: unknown) {
+  const constraint = checkUniqueConstraintViolation(error);
+  if (constraint) {
+    return constraint.includes("wallet")
+      ? "walletAddress"
+      : constraint.includes("email")
+        ? "email"
+        : constraint.includes("privy")
+          ? "privyId"
+          : "unique value";
+  }
+}
+
+/**
  * Check if the request is an unauthenticated *or* user authenticated (frontend) request
  * @param req Express request
  * @returns True if the request is authenticated as an admin, false otherwise
@@ -200,7 +253,8 @@ export function checkShouldCacheResponse(req: Request) {
  *
  * @param req Express request
  * @param name The name of the cache
- * @param params (Optional) arbitrary parameters to include in the cache key as a JSON string
+ * @param params (Optional) arbitrary parameters to include in the cache key as a JSON string.
+ * Note: For user-specific data, include userId in the params object.
  * @returns The cache key
  */
 export function generateCacheKey(

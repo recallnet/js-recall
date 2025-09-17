@@ -1,0 +1,118 @@
+# Creates a release PR and versions packages for publishing to NPM
+# Copied from example: https://github.com/shadcn-ui/ui/blob/main/.github/workflows/release.yml
+name: Release Staging
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: fe319abf1a1b0d76b39894e5e17aff0c
+  NEXT_PUBLIC_CHAIN_NAME: testnet
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  publish:
+    if: ${{ github.repository_owner == 'recallnet' }}
+    name: Create PR for release workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+          git_committer_name: "textileio-machine"
+          git_committer_email: "40302381+textileio-machine@users.noreply.github.com"
+          trust_level: 5
+
+      - name: Check GPG key
+        run: gpg --list-secret-keys --keyid-format LONG
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3 # Note: matches exact version from root `package.json`
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      # See the automated release feature for more details: https://github.com/changesets/action#with-publishing
+      - name: Create version PR or publish to npm
+        id: changesets
+        uses: changesets/action@v1.4.9
+        with:
+          commit: "chore(release): version packages"
+          title: "chore(release): version packages"
+          version: node .github/changeset-version.js
+          publish: pnpm publish-packages
+          setupGitUser: false # Ensures GPG action handles git config
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-docker-image:
+    if: ${{ github.repository_owner == 'recallnet' }}
+    name: Build and publish docker image
+    runs-on: ubuntu-latest
+    steps:
+      # Setup SSH key for contracts submodule
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.STAKING_CONTRACTS_DEPLOY_KEY }}
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Build Image
+        id: build
+        run: |
+          set -eux
+
+          hash=$(git rev-parse --short=7 HEAD)
+          image=textile/js-recall:sha-$hash
+          image_latest=textile/js-recall:latest
+
+          docker build -t $image -f ./apps/api/trade-simulator-docker/Dockerfile .
+
+          docker tag $image $image_latest
+          docker push $image
+          docker push $image_latest
+
+          echo "image=$image" >> $GITHUB_OUTPUT
+
+      - uses: ./.github/actions/trigger-deployment
+        with:
+          app-id: ${{ secrets.RECALL_WORKFLOW_TRIGGER_APP_ID }}
+          app-private-key: ${{ secrets.RECALL_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          stage: staging
+          version: v0
+          image: ${{ steps.build.outputs.image }}

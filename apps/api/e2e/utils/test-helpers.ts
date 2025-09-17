@@ -5,7 +5,6 @@ import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { expect } from "vitest";
 
-import { ApiSDK } from "@recallnet/api-sdk";
 import { portfolioSnapshots } from "@recallnet/db-schema/trading/defs";
 
 import { db } from "@/database/db.js";
@@ -13,15 +12,18 @@ import { db } from "@/database/db.js";
 import { ApiClient } from "./api-client.js";
 import {
   CreateCompetitionResponse,
+  CrossChainTradingType,
+  ErrorResponse,
   StartCompetitionResponse,
   TradingConstraints,
+  UserProfileResponse,
 } from "./api-types.js";
-import { getBaseUrl } from "./server.js";
 import {
-  createSiweMessage,
-  createTestWallet,
-  signMessage,
-} from "./siwe-utils.js";
+  createMockPrivyToken,
+  createTestPrivyUser,
+  generateRandomPrivyId,
+} from "./privy.js";
+import { getBaseUrl } from "./server.js";
 
 // Configured test token address
 export const TEST_TOKEN_ADDRESS =
@@ -133,6 +135,8 @@ export function createTestClient(baseUrl?: string): ApiClient {
 export async function registerUserAndAgentAndGetClient({
   adminApiKey,
   walletAddress,
+  embeddedWalletAddress,
+  privyId,
   userName,
   userEmail,
   userImageUrl,
@@ -145,6 +149,8 @@ export async function registerUserAndAgentAndGetClient({
 }: {
   adminApiKey: string;
   walletAddress?: string;
+  embeddedWalletAddress?: string;
+  privyId?: string;
   userName?: string;
   userEmail?: string;
   userImageUrl?: string;
@@ -160,6 +166,8 @@ export async function registerUserAndAgentAndGetClient({
   // Register a new user with optional agent creation
   const result = await sdk.registerUser({
     walletAddress: walletAddress || generateRandomEthAddress(),
+    embeddedWalletAddress: embeddedWalletAddress || generateRandomEthAddress(),
+    privyId: privyId || generateRandomPrivyId(),
     name: userName || `User ${generateRandomString(8)}`,
     email: userEmail || `user-${generateRandomString(8)}@test.com`,
     userImageUrl,
@@ -189,6 +197,9 @@ export async function registerUserAndAgentAndGetClient({
     user: {
       id: result.user.id || "",
       walletAddress: result.user.walletAddress || "",
+      walletLastVerifiedAt: result.user.walletLastVerifiedAt || "",
+      embeddedWalletAddress: result.user.embeddedWalletAddress || "",
+      privyId: result.user.privyId || "",
       name: result.user.name || "",
       email: result.user.email || "",
       imageUrl: result.user.imageUrl || null,
@@ -196,6 +207,7 @@ export async function registerUserAndAgentAndGetClient({
       metadata: result.user.metadata || null,
       createdAt: result.user.createdAt || new Date().toISOString(),
       updatedAt: result.user.updatedAt || new Date().toISOString(),
+      lastLoginAt: result.user.lastLoginAt || new Date().toISOString(),
     },
     agent: {
       id: result.agent.id || "",
@@ -217,27 +229,33 @@ export async function registerUserAndAgentAndGetClient({
 /**
  * Start a competition with given agents
  */
-export async function startTestCompetition(
-  adminClient: ApiClient,
-  name: string,
-  agentIds: string[],
-  sandboxMode?: boolean,
-  externalUrl?: string,
-  imageUrl?: string,
-  tradingConstraints?: TradingConstraints,
-): Promise<StartCompetitionResponse> {
-  const result = await adminClient.startCompetition(
-    name,
-    `Test competition description for ${name}`,
-    agentIds,
-    undefined, // tradingType
+export async function startTestCompetition({
+  adminClient,
+  name,
+  agentIds,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  tradingConstraints,
+}: {
+  adminClient: ApiClient;
+  name?: string;
+  agentIds?: string[];
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  tradingConstraints?: TradingConstraints;
+}): Promise<StartCompetitionResponse> {
+  const competitionName = name || `Test competition ${Date.now()}`;
+  const result = await adminClient.startCompetition({
+    name: competitionName,
+    description: `Test competition description for ${competitionName}`,
+    agentIds: agentIds || [],
     sandboxMode,
     externalUrl,
     imageUrl,
-    undefined, // votingStartDate
-    undefined, // votingEndDate
     tradingConstraints,
-  );
+  });
 
   if (!result.success) {
     throw new Error("Failed to start competition");
@@ -249,37 +267,60 @@ export async function startTestCompetition(
 /**
  * Create a competition in PENDING state without starting it
  */
-export async function createTestCompetition(
-  adminClient: ApiClient,
-  name: string,
-  description?: string,
-  sandboxMode?: boolean,
-  externalUrl?: string,
-  imageUrl?: string,
-  type?: string,
-  votingStartDate?: string,
-  votingEndDate?: string,
-  joinStartDate?: string,
-  joinEndDate?: string,
-  maxParticipants?: number,
-  tradingConstraints?: TradingConstraints,
-): Promise<CreateCompetitionResponse> {
-  const result = await adminClient.createCompetition(
-    name,
-    description || `Test competition description for ${name}`,
-    undefined, // tradingType
+export async function createTestCompetition({
+  adminClient,
+  name,
+  description,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  type,
+  tradingType,
+  startDate,
+  endDate,
+  votingStartDate,
+  votingEndDate,
+  joinStartDate,
+  joinEndDate,
+  maxParticipants,
+  tradingConstraints,
+}: {
+  adminClient: ApiClient;
+  name?: string;
+  description?: string;
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  type?: string;
+  tradingType?: CrossChainTradingType;
+  startDate?: string;
+  endDate?: string;
+  votingStartDate?: string;
+  votingEndDate?: string;
+  joinStartDate?: string;
+  joinEndDate?: string;
+  maxParticipants?: number;
+  tradingConstraints?: TradingConstraints;
+}): Promise<CreateCompetitionResponse> {
+  const competitionName = name || `Test competition ${Date.now()}`;
+  const result = await adminClient.createCompetition({
+    name: competitionName,
+    description:
+      description || `Test competition description for ${competitionName}`,
+    tradingType,
     sandboxMode,
     externalUrl,
     imageUrl,
     type,
-    undefined, // endDate
+    startDate,
+    endDate,
     votingStartDate,
     votingEndDate,
     joinStartDate,
     joinEndDate,
     maxParticipants,
     tradingConstraints,
-  );
+  });
 
   if (!result.success) {
     throw new Error("Failed to create competition");
@@ -291,22 +332,28 @@ export async function createTestCompetition(
 /**
  * Start an existing competition with given agents
  */
-export async function startExistingTestCompetition(
-  adminClient: ApiClient,
-  competitionId: string,
-  agentIds: string[],
-  sandboxMode?: boolean,
-  externalUrl?: string,
-  imageUrl?: string,
-): Promise<StartCompetitionResponse> {
-  const result = await adminClient.startExistingCompetition(
+export async function startExistingTestCompetition({
+  adminClient,
+  competitionId,
+  agentIds,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+}: {
+  adminClient: ApiClient;
+  competitionId: string;
+  agentIds?: string[];
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+}): Promise<StartCompetitionResponse> {
+  const result = await adminClient.startExistingCompetition({
     competitionId,
-    agentIds,
-    undefined, // crossChainTradingType
+    agentIds: agentIds || [],
     sandboxMode,
     externalUrl,
     imageUrl,
-  );
+  });
 
   if (!result.success) {
     throw new Error("Failed to start existing competition");
@@ -347,81 +394,70 @@ export function generateRandomEthAddress(): string {
   }
 
   // Convert to proper EIP-55 checksum format using viem
-  return getAddress(result);
+  return getAddress(result).toLowerCase();
 }
 
 /**
- * Helper for getting an instance of the sdk for a given api key
+ * Create a Privy-authenticated client for testing user routes
+ * This generates a unique test user and returns a client with an active Privy session
  */
-export function getApiSdk(apiKey: string): InstanceType<typeof ApiSDK> {
-  return new ApiSDK({
-    bearerAuth: apiKey,
-    serverURL: getBaseUrl(),
-  });
-}
-
-/**
- * Create a SIWE-authenticated client for testing user routes
- * This generates a unique wallet for each test and returns a client with an active SIWE session
- */
-export async function createSiweAuthenticatedClient({
-  adminApiKey,
+export async function createPrivyAuthenticatedClient({
   userName,
   userEmail,
-  userImageUrl,
+  walletAddress,
+  embeddedWalletAddress,
+  privyId,
 }: {
-  adminApiKey: string;
   userName?: string;
   userEmail?: string;
-  userImageUrl?: string;
+  walletAddress?: string;
+  embeddedWalletAddress?: string;
+  privyId?: string;
 }) {
-  const sdk = getApiSdk(adminApiKey);
-
   // Generate a unique wallet for this test
-  const testWallet = createTestWallet();
+  const testEmbeddedWallet =
+    embeddedWalletAddress || generateRandomEthAddress();
 
   // Use unique names/emails for this test
   const timestamp = Date.now();
-  const uniqueUserName = userName || `SIWE User ${timestamp}`;
-  const uniqueUserEmail = userEmail || `siwe-user-${timestamp}@test.com`;
+  const uniqueUserEmail = userEmail || `privy-user-${timestamp}@test.com`;
 
-  // Register a new user with the unique wallet address
-  const result = await sdk.admin.postApiAdminUsers({
-    walletAddress: testWallet.address,
-    name: uniqueUserName,
-    email: uniqueUserEmail,
-    userImageUrl,
-    // Don't create an agent automatically - user can create one via SIWE session if needed
-  });
-
-  if (!result.success || !result.user) {
-    throw new Error("Failed to register user for SIWE authentication");
-  }
+  // Generate a unique privyId for the user
+  const uniquePrivyId = privyId || generateRandomPrivyId();
 
   // Create a session client (without API key)
+  const privyUser = createTestPrivyUser({
+    privyId: uniquePrivyId, // Use the actual privyId from the registered user
+    name: userName ?? undefined,
+    email: uniqueUserEmail,
+    walletAddress: walletAddress || testEmbeddedWallet,
+    provider: "email",
+  });
+  const privyToken = await createMockPrivyToken(privyUser);
   const sessionClient = new ApiClient(undefined, getBaseUrl());
+  sessionClient.setJwtToken(privyToken);
 
-  // Perform SIWE authentication
-  const domain = new URL(getBaseUrl()).hostname || "localhost";
-
-  // Get nonce
-  const nonceResponse = await sessionClient.getNonce();
-  if (!nonceResponse || "error" in nonceResponse) {
-    throw new Error("Failed to get nonce for SIWE authentication");
+  // Login will create (or backfill/update) a user with Privy-related information
+  const loginResponse = await sessionClient.login();
+  if (!loginResponse.success || !loginResponse.userId) {
+    throw new Error(
+      `Failed to login with Privy: ${(loginResponse as ErrorResponse).error}`,
+    );
   }
-
-  // Create and sign SIWE message using the unique wallet
-  const message = await createSiweMessage(
-    domain,
-    nonceResponse.nonce,
-    testWallet.address,
-  );
-  const signature = await signMessage(message, testWallet.account);
-
-  // Login with SIWE
-  const loginResponse = await sessionClient.login(message, signature);
-  if (!loginResponse || "error" in loginResponse) {
-    throw new Error("Failed to login with SIWE");
+  const userResponse = await sessionClient.getUserProfile();
+  if (!userResponse.success) {
+    throw new Error(
+      `Failed to get user profile: ${(userResponse as ErrorResponse).error}`,
+    );
+  }
+  let { user } = userResponse;
+  // For convenience, we auto-update the user name. A "first time" login is
+  // unaware of the user's name and infers it based on Google, email, etc.,
+  // but we simulate a manual update to help with testing
+  if (userName) {
+    ({ user } = (await sessionClient.updateUserProfile({
+      name: userName,
+    })) as UserProfileResponse);
   }
 
   // Add a small delay to ensure session is properly saved
@@ -430,17 +466,22 @@ export async function createSiweAuthenticatedClient({
   return {
     client: sessionClient,
     user: {
-      id: result.user.id || "",
-      walletAddress: result.user.walletAddress || testWallet.address,
-      name: result.user.name || uniqueUserName,
-      email: result.user.email || uniqueUserEmail,
-      imageUrl: result.user.imageUrl || null,
-      status: result.user.status || "active",
-      metadata: result.user.metadata || null,
-      createdAt: result.user.createdAt || new Date().toISOString(),
-      updatedAt: result.user.updatedAt || new Date().toISOString(),
+      id: user.id,
+      walletAddress: user.walletAddress || testEmbeddedWallet,
+      embeddedWalletAddress: user.embeddedWalletAddress || testEmbeddedWallet,
+      walletLastVerifiedAt: user.walletLastVerifiedAt || null,
+      privyId: user.privyId,
+      name: user.name || userName,
+      email: user.email || uniqueUserEmail,
+      imageUrl: user.imageUrl || null,
+      status: user.status || "active",
+      metadata: user.metadata || null,
+      createdAt: user.createdAt || new Date().toISOString(),
+      updatedAt: user.updatedAt || new Date().toISOString(),
+      lastLoginAt: user.lastLoginAt || new Date().toISOString(),
     },
-    wallet: testWallet, // Include wallet info for potential future use
+    // Include wallet info for potential future use
+    wallet: user.walletAddress || testEmbeddedWallet,
     loginData: loginResponse,
   };
 }
@@ -508,10 +549,10 @@ export async function generateTestCompetitions(adminApiKey: string) {
 
   const comps = [];
   for (let i = 0; i < 20; i++) {
-    const result = await createTestCompetition(
+    const result = await createTestCompetition({
       adminClient,
-      `Competition ${i} ${Date.now()}`,
-    );
+      name: `Competition ${i} ${Date.now()}`,
+    });
 
     comps.push(result);
 

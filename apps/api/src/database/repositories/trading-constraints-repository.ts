@@ -8,15 +8,24 @@ import {
 
 import { db } from "@/database/db.js";
 
+// Type for database transaction
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 /**
  * Creates trading constraints for a competition
  * @param data - The trading constraints data to insert
+ * @param tx - Optional database transaction
  * @returns The created trading constraints record
  */
 async function createImpl(
   data: InsertTradingConstraints,
+  tx?: DatabaseTransaction,
 ): Promise<SelectTradingConstraints | undefined> {
-  const [result] = await db.insert(tradingConstraints).values(data).returning();
+  const dbClient = tx || db;
+  const [result] = await dbClient
+    .insert(tradingConstraints)
+    .values(data)
+    .returning();
   return result;
 }
 
@@ -40,13 +49,16 @@ async function findByCompetitionIdImpl(
  * Updates trading constraints for a competition
  * @param competitionId - The competition ID to update constraints for
  * @param data - The updated trading constraints data
+ * @param tx - Optional database transaction
  * @returns The updated trading constraints record
  */
 async function updateImpl(
   competitionId: string,
   data: Partial<InsertTradingConstraints>,
+  tx?: DatabaseTransaction,
 ): Promise<SelectTradingConstraints | undefined> {
-  const [result] = await db
+  const dbClient = tx || db;
+  const [result] = await dbClient
     .update(tradingConstraints)
     .set({
       ...data,

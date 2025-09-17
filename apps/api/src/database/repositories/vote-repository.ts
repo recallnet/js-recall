@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { votes } from "@recallnet/db-schema/core/defs";
 import { InsertVote, SelectVote } from "@recallnet/db-schema/core/types";
+import { Transaction } from "@recallnet/db-schema/types";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
@@ -293,6 +294,31 @@ async function countImpl(): Promise<number> {
   }
 }
 
+/**
+ * Update the vote owner for all of their votes
+ * @param userId The userId of the existing owner
+ * @param newUserId The userId of the new owner
+ * @param tx An optional database transaction to run the operation in
+ * @returns The number of rows updated
+ */
+async function updateVotesOwnerImpl(
+  userId: string,
+  newUserId: string,
+  tx?: Transaction,
+) {
+  try {
+    const executor = tx || db;
+    const res = await executor
+      .update(votes)
+      .set({ userId: newUserId })
+      .where(eq(votes.userId, userId));
+    return res.rowCount || 0;
+  } catch (error) {
+    console.error("[VoteRepository] Error in updateVotesOwner:", error);
+    throw error;
+  }
+}
+
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -360,4 +386,10 @@ export const count = createTimedRepositoryFunction(
   countImpl,
   "VoteRepository",
   "count",
+);
+
+export const updateVotesOwner = createTimedRepositoryFunction(
+  updateVotesOwnerImpl,
+  "VoteRepository",
+  "updateVotesOwner",
 );

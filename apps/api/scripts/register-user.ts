@@ -174,12 +174,12 @@ async function registerAgent() {
     safeLog(`\n${colors.blue}Registering user and agent...${colors.reset}`);
 
     // Register the user and agent using the updated UserManager and AgentManager service methods
-    const user = await services.userManager.registerUser(
+    const user = await services.userService.registerUser(
       walletAddress,
       userName,
       userEmail,
     );
-    const agent = await services.agentManager.createAgent({
+    const agent = await services.agentService.createAgent({
       ownerId: user.id,
       name: agentName,
       handle: agentHandle,

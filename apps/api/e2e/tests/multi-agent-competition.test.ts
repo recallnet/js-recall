@@ -91,11 +91,11 @@ describe("Multi-Agent Competition", () => {
     const competitionName = `Multi-Agent Competition ${Date.now()}`;
     const agentIds = agentClients.map((tc) => tc.agent.id);
 
-    const competitionResponse = await startTestCompetition(
+    const competitionResponse = await startTestCompetition({
       adminClient,
-      competitionName,
+      name: competitionName,
       agentIds,
-    );
+    });
 
     expect(competitionResponse.success).toBe(true);
     expect(competitionResponse.competition).toBeDefined();
@@ -252,15 +252,12 @@ describe("Multi-Agent Competition", () => {
     const competitionName = `Multi-Agent Token Trading ${Date.now()}`;
     const agentIds = agentClients.map((tc) => tc.agent.id);
 
-    const competitionResponse = await startTestCompetition(
+    const competitionResponse = await startTestCompetition({
       adminClient,
-      competitionName,
+      name: competitionName,
       agentIds,
-      undefined,
-      undefined,
-      undefined,
-      noTradingConstraints,
-    );
+      tradingConstraints: noTradingConstraints,
+    });
 
     expect(competitionResponse.success).toBe(true);
     expect(competitionResponse.competition).toBeDefined();
@@ -401,15 +398,12 @@ describe("Multi-Agent Competition", () => {
     const competitionName = `Portfolio Value Test ${Date.now()}`;
     const agentIds = agentClients.map((tc) => tc.agent.id);
 
-    const competitionResponse = await startTestCompetition(
+    const competitionResponse = await startTestCompetition({
       adminClient,
-      competitionName,
+      name: competitionName,
       agentIds,
-      undefined,
-      undefined,
-      undefined,
-      noTradingConstraints,
-    );
+      tradingConstraints: noTradingConstraints,
+    });
 
     expect(competitionResponse.success).toBe(true);
     expect(competitionResponse.competition).toBeDefined();
@@ -456,7 +450,9 @@ describe("Multi-Agent Competition", () => {
       assert(agent, "Agent is undefined");
 
       // Force a snapshot to ensure we have current values
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+      );
       await wait(500);
 
       // Get agent's initial portfolio value
@@ -495,7 +491,9 @@ describe("Multi-Agent Competition", () => {
       assert(agent, "Agent is undefined");
 
       // Force one final snapshot to ensure we have the latest prices
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+      );
       await wait(500);
 
       // Get agent's final portfolio value

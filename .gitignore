@@ -23,6 +23,7 @@ node_modules
 
 # Testing
 coverage
+coverage-reports
 
 # Turbo
 .turbo
@@ -55,3 +56,4 @@ apps/api/baseline/*.sql
 # Misc
 .DS_Store
 *.pem
+coverage/

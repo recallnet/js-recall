@@ -2,3 +2,5 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 export const ENABLE_SANDBOX = !!process.env.NEXT_PUBLIC_SANDBOX_API_URL;
 export const DISABLE_LEADERBOARD =
   !!process.env.NEXT_PUBLIC_DISABLE_LEADERBOARD_TEMP;
+export const NEXT_PUBLIC_FRONTEND_URL =
+  process.env.NEXT_PUBLIC_FRONTEND_URL || "";

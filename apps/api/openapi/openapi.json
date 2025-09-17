@@ -37,6 +37,12 @@
         "type": "http",
         "scheme": "bearer",
         "description": "API key provided in the Authorization header using Bearer token authentication"
+      },
+      "PrivyCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "privy-id-token",
+        "description": "Privy ID token for authentication"
       }
     },
     "schemas": {
@@ -1714,6 +1720,20 @@
                             "type": "string",
                             "description": "User wallet address"
                           },
+                          "embeddedWalletAddress": {
+                            "type": "string",
+                            "description": "User embedded wallet address",
+                            "nullable": true
+                          },
+                          "privyId": {
+                            "type": "string",
+                            "description": "User Privy ID",
+                            "nullable": true
+                          },
+                          "isSubscribed": {
+                            "type": "boolean",
+                            "description": "User subscription status"
+                          },
                           "name": {
                             "type": "string",
                             "description": "User name",
@@ -1747,6 +1767,12 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "Account update timestamp"
+                          },
+                          "lastLoginAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "User last login timestamp",
+                            "nullable": true
                           }
                         }
                       }
@@ -1769,10 +1795,45 @@
       "get": {
         "tags": ["Admin"],
         "summary": "List all agents",
-        "description": "Get a list of all agents in the system",
+        "description": "Get a paginated list of all agents in the system",
         "security": [
           {
             "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 50
+            },
+            "required": false,
+            "description": "Number of agents to return (default 50, max 1000)"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "required": false,
+            "description": "Number of agents to skip for pagination"
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string",
+              "default": "-createdAt"
+            },
+            "required": false,
+            "description": "Sort order (e.g., '-createdAt' for desc, 'name' for asc)"
           }
         ],
         "responses": {
@@ -1842,6 +1903,28 @@
                             "format": "date-time",
                             "description": "Agent update timestamp"
                           }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "description": "Pagination metadata",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "description": "Number of items per page"
+                        },
+                        "offset": {
+                          "type": "integer",
+                          "description": "Number of items skipped"
+                        },
+                        "total": {
+                          "type": "integer",
+                          "description": "Total number of agents"
+                        },
+                        "hasMore": {
+                          "type": "boolean",
+                          "description": "Whether more agents are available"
                         }
                       }
                     }
@@ -4119,48 +4202,6 @@
         }
       }
     },
-    "/api/auth/nonce": {
-      "get": {
-        "summary": "Get a random nonce for SIWE authentication",
-        "description": "Generates a new nonce and stores it in the session for SIWE message verification",
-        "tags": ["Auth"],
-        "responses": {
-          "200": {
-            "description": "A new nonce generated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["nonce"],
-                  "properties": {
-                    "nonce": {
-                      "type": "string",
-                      "description": "The nonce to be used in the SIWE message",
-                      "example": "8J0eXAiOiJ..."
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/auth/agent/nonce": {
       "get": {
         "summary": "Get a random nonce for agent wallet verification",
@@ -4213,32 +4254,9 @@
     },
     "/api/auth/login": {
       "post": {
-        "summary": "Verify SIWE signature and create a session",
-        "description": "Verifies the SIWE message and signature, creates a session, and returns agent info",
+        "summary": "Log in with Privy JWT",
+        "description": "Verifies the SIWE message and signature, creates a session, and returns user info",
         "tags": ["Auth"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["message", "signature"],
-                "properties": {
-                  "message": {
-                    "type": "string",
-                    "description": "The SIWE message to be verified",
-                    "example": "service.example.com wants you to sign in with your Ethereum account:\n0x123...\n\nI accept the ServiceOrg Terms of Service: https://service.example.com/tos\n\nURI: https://service.example.com/login\nVersion: 1\nChain ID: 1\nNonce: 8J0eXAiOiJ...\nIssued At: 2023-01-01T00:00:00.000Z"
-                  },
-                  "signature": {
-                    "type": "string",
-                    "description": "The signature of the SIWE message",
-                    "example": "0x123abc..."
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Authentication successful, session created",
@@ -4246,17 +4264,21 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["agentId", "wallet"],
+                  "required": ["userId", "wallet"],
                   "properties": {
-                    "agentId": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "userId": {
                       "type": "string",
                       "nullable": true,
-                      "description": "The ID of the authenticated agent",
-                      "example": "agent_123abc"
+                      "description": "The ID of the authenticated user",
+                      "example": "user_123abc"
                     },
                     "wallet": {
                       "type": "string",
-                      "description": "The wallet address of the authenticated agent",
+                      "description": "The wallet address of the authenticated user",
                       "example": "0x123..."
                     }
                   }
@@ -4366,47 +4388,6 @@
           },
           "409": {
             "description": "Wallet address already in use"
-          }
-        }
-      }
-    },
-    "/api/auth/logout": {
-      "post": {
-        "summary": "Logout the current user by destroying the session",
-        "description": "Clears the session data and destroys the session cookie",
-        "tags": ["Auth"],
-        "responses": {
-          "200": {
-            "description": "Logout successful",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["message"],
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Logged out successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
           }
         }
       }
@@ -5085,15 +5066,6 @@
                         "slippageFormula": {
                           "type": "string",
                           "description": "Formula used for calculating slippage"
-                        },
-                        "portfolioSnapshots": {
-                          "type": "object",
-                          "properties": {
-                            "interval": {
-                              "type": "string",
-                              "description": "Interval between portfolio snapshots"
-                            }
-                          }
                         },
                         "tradingConstraints": {
                           "type": "object",
@@ -6242,60 +6214,6 @@
         }
       }
     },
-    "/api/verify-email": {
-      "get": {
-        "summary": "Verify an email verification token",
-        "description": "Verifies an email verification token sent to a user or agent's email address.\nThis endpoint is typically accessed via a link in the verification email.\n",
-        "tags": ["Email Verification"],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The verification token from the email"
-          }
-        ],
-        "responses": {
-          "302": {
-            "description": "Redirects to frontend user verify email page",
-            "headers": {
-              "Location": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "URL to the frontend verify email page with query parameters",
-                "example": "http://localhost:3001/verify-email?success=true&message=Email%20verified%20successfully%20for%20user"
-              }
-            },
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/health": {
       "get": {
         "tags": ["Health"],
@@ -7074,7 +6992,7 @@
         "tags": ["User"],
         "security": [
           {
-            "SIWESession": []
+            "PrivyCookie": []
           }
         ],
         "responses": {
@@ -7100,6 +7018,18 @@
                           "type": "string",
                           "example": "0x1234567890abcdef1234567890abcdef12345678"
                         },
+                        "walletLastVerifiedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "embeddedWalletAddress": {
+                          "type": "string",
+                          "example": "0x1234567890abcdef1234567890abcdef12345678"
+                        },
+                        "privyId": {
+                          "type": "string",
+                          "example": "1234567890abcdef1234567890abcdef12345678"
+                        },
                         "name": {
                           "type": "string",
                           "example": "John Doe"
@@ -7108,9 +7038,8 @@
                           "type": "string",
                           "example": "john@example.com"
                         },
-                        "isEmailVerified": {
+                        "isSubscribed": {
                           "type": "boolean",
-                          "description": "Whether the user's email address has been verified",
                           "example": true
                         },
                         "imageUrl": {
@@ -7132,6 +7061,10 @@
                           "format": "date-time"
                         },
                         "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "lastLoginAt": {
                           "type": "string",
                           "format": "date-time"
                         }
@@ -7159,7 +7092,7 @@
         "tags": ["User"],
         "security": [
           {
-            "SIWESession": []
+            "PrivyCookie": []
           }
         ],
         "requestBody": {
@@ -7178,11 +7111,6 @@
                     "type": "string",
                     "description": "URL to user's profile image",
                     "example": "https://example.com/avatar.jpg"
-                  },
-                  "email": {
-                    "type": "string",
-                    "description": "User's email",
-                    "example": "john@example.com"
                   },
                   "metadata": {
                     "type": "object",
@@ -7220,6 +7148,18 @@
                           "type": "string",
                           "nullable": true
                         },
+                        "walletLastVerifiedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "embeddedWalletAddress": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "privyId": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "name": {
                           "type": "string"
                         },
@@ -7227,9 +7167,9 @@
                           "type": "string",
                           "nullable": true
                         },
-                        "isEmailVerified": {
+                        "isSubscribed": {
                           "type": "boolean",
-                          "description": "Whether the user's email address has been verified"
+                          "example": true
                         },
                         "imageUrl": {
                           "type": "string",
@@ -7247,6 +7187,10 @@
                           "format": "date-time"
                         },
                         "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "lastLoginAt": {
                           "type": "string",
                           "format": "date-time"
                         }
@@ -7272,6 +7216,126 @@
         }
       }
     },
+    "/api/user/wallet/link": {
+      "post": {
+        "summary": "Link a wallet to the authenticated user",
+        "description": "Link a wallet to the authenticated user",
+        "tags": ["User"],
+        "security": [
+          {
+            "PrivyCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "walletAddress": {
+                    "type": "string",
+                    "description": "The wallet address to link to the user",
+                    "example": "0x1234567890abcdef1234567890abcdef12345678"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Wallet linked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "walletAddress": {
+                          "type": "string",
+                          "example": "0x1234567890abcdef1234567890abcdef12345678"
+                        },
+                        "walletLastVerifiedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "embeddedWalletAddress": {
+                          "type": "string",
+                          "example": "0x1234567890abcdef1234567890abcdef12345678"
+                        },
+                        "privyId": {
+                          "type": "string",
+                          "example": "1234567890abcdef1234567890abcdef12345678"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "John Doe"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "john@example.com"
+                        },
+                        "isSubscribed": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "example": "https://example.com/avatar.jpg"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["active", "inactive", "suspended", "deleted"]
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "example": {
+                            "foo": "bar"
+                          }
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "lastLoginAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/api/user/agents": {
       "post": {
         "summary": "Create a new agent",
@@ -7279,7 +7343,7 @@
         "tags": ["User"],
         "security": [
           {
-            "SIWESession": []
+            "PrivyCookie": []
           }
         ],
         "requestBody": {
@@ -7423,7 +7487,7 @@
         "tags": ["User"],
         "security": [
           {
-            "SIWESession": []
+            "PrivyCookie": []
           }
         ],
         "responses": {
@@ -7458,9 +7522,6 @@
                           "walletAddress": {
                             "type": "string",
                             "nullable": true
-                          },
-                          "isVerified": {
-                            "type": "boolean"
                           },
                           "name": {
                             "type": "string"
@@ -7608,7 +7669,7 @@
         "tags": ["User"],
         "security": [
           {
-            "SIWESession": []
+            "PrivyCookie": []
           }
         ],
         "parameters": [
@@ -7649,9 +7710,6 @@
                         "walletAddress": {
                           "type": "string",
                           "nullable": true
-                        },
-                        "isVerified": {
-                          "type": "boolean"
                         },
                         "name": {
                           "type": "string"
@@ -7805,7 +7863,7 @@
         "tags": ["User"],
         "security": [
           {
-            "SIWESession": []
+            "PrivyCookie": []
           }
         ],
         "parameters": [
@@ -7962,7 +8020,7 @@
         "tags": ["User"],
         "security": [
           {
-            "SIWESession": []
+            "PrivyCookie": []
           }
         ],
         "parameters": [
@@ -8109,69 +8167,6 @@
         }
       }
     },
-    "/api/user/verify-email": {
-      "post": {
-        "summary": "Initiate email verification for the authenticated user",
-        "description": "Creates a new email verification token and sends a verification email to the user's email address",
-        "tags": ["User"],
-        "security": [
-          {
-            "SIWESession": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Email verification initiated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Email verification initiated successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "User does not have an email address",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": false
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "User does not have an email address"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "User not authenticated"
-          },
-          "404": {
-            "description": "User not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        }
-      }
-    },
     "/api/user/competitions": {
       "get": {
         "summary": "Get competitions for user's agents",
@@ -8179,7 +8174,7 @@
         "tags": ["User"],
         "security": [
           {
-            "SIWESession": []
+            "PrivyCookie": []
           }
         ],
         "parameters": [
@@ -8385,6 +8380,106 @@
           },
           "500": {
             "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/subscribe": {
+      "post": {
+        "summary": "Subscribe to Loops mailing list",
+        "description": "Subscribe the authenticated user to the Loops mailing list",
+        "tags": ["User"],
+        "security": [
+          {
+            "PrivyCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User subscribed to Loops mailing list successfully, or already subscribed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "isSubscribed": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Failed to subscribe user to mailing list"
+          }
+        }
+      }
+    },
+    "/api/user/unsubscribe": {
+      "post": {
+        "summary": "Unsubscribe from Loops mailing list",
+        "description": "Unsubscribe the authenticated user from the Loops mailing list",
+        "tags": ["User"],
+        "security": [
+          {
+            "PrivyCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User unsubscribed from Loops mailing list successfully, or already unsubscribed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "isSubscribed": {
+                      "type": "boolean",
+                      "example": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Failed to unsubscribe user from mailing list"
           }
         }
       }

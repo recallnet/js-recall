@@ -1,6 +1,5 @@
 import {
   boolean,
-  char,
   foreignKey,
   index,
   integer,
@@ -34,6 +33,7 @@ export const actorStatus = pgEnum("actor_status", [
 export const competitionStatus = pgEnum("competition_status", [
   "pending",
   "active",
+  "ending",
   "ended",
 ]);
 
@@ -59,11 +59,31 @@ export const users = pgTable(
   {
     id: uuid().primaryKey().notNull(),
     walletAddress: varchar("wallet_address", { length: 42 }).unique().notNull(),
+    // Note: only tracked for the `walletAddress` column since embedded wallets are guaranteed
+    walletLastVerifiedAt: timestamp("wallet_last_verified_at", {
+      withTimezone: true,
+    }),
+    // TODO: Privy data (email, privy ID, & embedded wallet address) are nullable since legacy
+    // users are not guaranteed to have these. In the future, we can choose to remove users who
+    // are missing these or have no "last login" data.
+    //
+    // Legacy users always have custom (non-embedded) linked wallets (e.g., metamask), but new
+    // users might not link one and rely on embedded wallets. So, we maintain the "existing"
+    // `walletAddress` column to track whether the user has connected a custom wallet, and we
+    // also add a new `embeddedWalletAddress` column for the Privy-generated wallet.
+    //
+    // For any new user, we initially set these as the same value—optionally, letting a user
+    // link a custom wallet. For any legacy user, we keep their `walletAddress` and prompt them
+    // to link their custom wallet to Privy account (within UI flows).
+    embeddedWalletAddress: varchar("embedded_wallet_address", {
+      length: 42,
+    }).unique(),
+    privyId: text("privy_id").unique(),
     name: varchar({ length: 100 }),
     email: varchar({ length: 100 }).unique(),
+    isSubscribed: boolean("is_subscribed").notNull().default(false),
     imageUrl: text("image_url"),
     metadata: jsonb(),
-    isEmailVerified: boolean("is_email_verified").default(false),
     status: actorStatus("status").default("active").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -75,13 +95,55 @@ export const users = pgTable(
     })
       .defaultNow()
       .notNull(),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   },
   (table) => [
     index("idx_users_wallet_address").on(table.walletAddress),
+    index("idx_users_privy_id").on(table.privyId),
     index("idx_users_status").on(table.status),
     unique("users_wallet_address_key").on(table.walletAddress),
+    unique("users_privy_id_key").on(table.privyId),
   ],
 );
+
+/**
+ * User wallets are either embedded wallets via Privy or custom wallets linked by the user
+ *
+ * TODO: this table is not used yet, but will be used in the future to track user wallets.
+ * For example, we need a way to distinguish between a linked browser wallet since a user
+ * will likely want this as their "primary" and rewards-related address.
+ */
+// export const userWallets = pgTable(
+//   "user_wallets",
+//   {
+//     id: uuid().primaryKey().notNull(),
+//     userId: uuid("user_id").notNull(),
+//     address: varchar("address", { length: 42 }).notNull(),
+//     isPrimary: boolean("is_primary").notNull().default(false),
+//     isEmbeddedWallet: boolean("is_embedded_wallet").notNull().default(false),
+//     clientType: varchar("client_type", { length: 100 }), // Free form via Privy API (e.g. "privy", "metamask", etc.)
+//     lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
+//     createdAt: timestamp("created_at", { withTimezone: true })
+//       .defaultNow()
+//       .notNull(),
+//     updatedAt: timestamp("updated_at", { withTimezone: true })
+//       .defaultNow()
+//       .notNull(),
+//   },
+//   (table) => [
+//     // One primary wallet per user (optional; partial unique)
+//     unique("wallets_one_primary_per_user").on(table.userId, table.isPrimary),
+//     // Fast lookups
+//     index("wallets_user_id").on(table.userId),
+//     index("wallets_user_id_primary").on(table.userId, table.isPrimary),
+//     foreignKey({
+//       columns: [table.userId],
+//       foreignColumns: [users.id],
+//       name: "user_wallets_user_id_fkey",
+//     }).onDelete("cascade"),
+//     unique("user_wallets_address_key").on(table.address),
+//   ],
+// );
 
 /**
  * Agents are AI entities owned by users that participate in competitions
@@ -100,7 +162,6 @@ export const agents = pgTable(
     apiKey: varchar("api_key", { length: 400 }).notNull(),
     apiKeyHash: varchar("api_key_hash", { length: 64 }),
     metadata: jsonb(),
-    isEmailVerified: boolean("is_email_verified").default(false),
     status: actorStatus("status").default("active").notNull(),
     deactivationReason: text("deactivation_reason"),
     deactivationDate: timestamp("deactivation_date", {
@@ -124,6 +185,9 @@ export const agents = pgTable(
     index("idx_agents_handle").on(table.handle),
     index("idx_agents_api_key").on(table.apiKey),
     index("idx_agents_api_key_hash").on(table.apiKeyHash),
+    // NOTE: There is an extra index not listed here. There is a GIN index on the "name" that is
+    // created via custom migration (0038_left_ultragirl) due to Drizzle limitations. That index
+    // supports case-insensitive queries on agent names.
     foreignKey({
       columns: [table.ownerId],
       foreignColumns: [users.id],
@@ -209,6 +273,12 @@ export const competitions = pgTable(
       table.registeredParticipants,
       table.maxParticipants,
     ),
+    index("idx_competitions_status_type_id").on(
+      table.status,
+      table.type,
+      table.id,
+    ),
+    index("idx_competitions_status_end_date").on(table.status, table.endDate),
   ],
 );
 
@@ -256,6 +326,10 @@ export const competitionAgents = pgTable(
     index("idx_competition_agents_competition_id").on(table.competitionId),
     index("idx_competition_agents_agent_id").on(table.agentId),
     index("idx_competition_agents_deactivated_at").on(table.deactivatedAt),
+    index("idx_competition_agents_competition_status").on(
+      table.competitionId,
+      table.status,
+    ),
   ],
 );
 
@@ -320,7 +394,12 @@ export const votes = pgTable(
     // Indexes for performance
     index("idx_votes_competition_id").on(table.competitionId),
     index("idx_votes_agent_competition").on(table.agentId, table.competitionId),
-    index("idx_votes_user_competition").on(table.userId, table.competitionId),
+    index("idx_votes_user_created").on(table.userId, table.createdAt),
+    index("idx_votes_user_competition_created").on(
+      table.userId,
+      table.competitionId,
+      table.createdAt,
+    ),
     // Unique constraint to prevent duplicate votes
     unique("votes_user_agent_competition_key").on(
       table.userId,
@@ -359,6 +438,10 @@ export const competitionsLeaderboard = pgTable(
       table.agentId,
       table.competitionId,
     ),
+    index("idx_competitions_leaderboard_competition_rank").on(
+      table.competitionId,
+      table.rank,
+    ),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],
@@ -369,50 +452,6 @@ export const competitionsLeaderboard = pgTable(
       foreignColumns: [competitions.id],
       name: "competitions_leaderboard_competition_id_fkey",
     }).onDelete("cascade"),
-  ],
-);
-
-/**
- * Email verification tokens for users and agents
- */
-export const emailVerificationTokens = pgTable(
-  "email_verification_tokens",
-  {
-    id: uuid().primaryKey().notNull(),
-    userId: uuid("user_id"),
-    agentId: uuid("agent_id"),
-    token: char("token", { length: 36 }).notNull().unique(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    used: boolean("used").default(false),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    // Indexes for performance
-    index("idx_email_verification_tokens_user_id_token").on(
-      table.userId,
-      table.token,
-    ),
-    index("idx_email_verification_tokens_agent_id_token").on(
-      table.agentId,
-      table.token,
-    ),
-
-    // Foreign key constraints
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [users.id],
-      name: "email_verification_tokens_user_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.agentId],
-      foreignColumns: [agents.id],
-      name: "email_verification_tokens_agent_id_fkey",
-    }).onDelete("cascade"),
-
-    // Unique constraint on token
-    unique("email_verification_tokens_token_key").on(table.token),
   ],
 );
 

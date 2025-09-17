@@ -49,11 +49,11 @@ describe("get24hSnapshots Repository Function", () => {
 
     // Start a competition with multiple agents
     const competitionName = `Get24hSnapshots Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
+    const startResult = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id, agent2.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+    });
 
     const competitionId = startResult.competition.id;
 
@@ -61,9 +61,13 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(1000);
 
     // Manually trigger additional snapshots to have data at different times
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
 
     // Call the function under test
@@ -118,11 +122,11 @@ describe("get24hSnapshots Repository Function", () => {
 
     // Start a competition with single agent
     const competitionName = `Single Agent Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
+    const startResult = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     const competitionId = startResult.competition.id;
 
@@ -176,11 +180,11 @@ describe("get24hSnapshots Repository Function", () => {
 
     // Start a competition with the real agent
     const competitionName = `Non-existent Agent Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
+    const startResult = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     const competitionId = startResult.competition.id;
 
@@ -213,11 +217,11 @@ describe("get24hSnapshots Repository Function", () => {
 
     // Start a competition with the real agent
     const competitionName = `Mixed Agent Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
+    const startResult = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     const competitionId = startResult.competition.id;
 
@@ -269,11 +273,11 @@ describe("get24hSnapshots Repository Function", () => {
 
     // Start a competition
     const competitionName = `Consistency Test ${Date.now()}`;
-    const startResult = await startTestCompetition(
+    const startResult = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
 
     const competitionId = startResult.competition.id;
 
@@ -281,11 +285,17 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(1000);
 
     // Create multiple snapshots at different times
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
 
     // Call the function under test

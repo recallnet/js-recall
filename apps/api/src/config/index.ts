@@ -189,9 +189,15 @@ export const config = {
     sandboxUrl: "https://api.sandbox.competitions.recall.network",
   },
   email: {
-    autoVerifyUserEmail: process.env.ENABLE_AUTO_VERIFY_USER_EMAIL === "true",
     apiKey: process.env.LOOPS_API_KEY || "",
-    transactionalId: process.env.LOOPS_TRANSACTIONAL_ID || "",
+    mailingListId: process.env.LOOPS_MAILING_LIST_ID || "",
+    // Allow overriding Loops base URL for testing/mocking
+    baseUrl: process.env.LOOPS_BASE_URL || "https://app.loops.so/api/v1",
+  },
+  privy: {
+    appId: process.env.PRIVY_APP_ID || "",
+    appSecret: process.env.PRIVY_APP_SECRET || "",
+    jwksPublicKey: process.env.PRIVY_JWKS_PUBLIC_KEY || "",
   },
   // Frontend app configuration for interfacing with the server
   app: {
@@ -358,6 +364,40 @@ export const config = {
         ),
       },
     },
+  },
+  stakingIndex: {
+    isEnabled: process.env.INDEXING_ENABLED === "true",
+    stakingContract: process.env.INDEXING_STAKING_CONTRACT,
+    rewardsContract: process.env.REWARDS_CONTRACT_ADDRESS,
+    startBlock: process.env.INDEXING_START_BLOCK
+      ? parseInt(process.env.INDEXING_START_BLOCK, 10)
+      : 27459229,
+    hypersyncUrl: process.env.INDEXING_HYPERSYNC_URL,
+    hypersyncBearerToken: process.env.INDEXING_HYPERSYNC_BEARER_TOKEN,
+    delayMs: process.env.INDEXING_DELAY
+      ? parseInt(process.env.INDEXING_DELAY, 10)
+      : 3000,
+  },
+  // Sentry configuration
+  sentry: {
+    dsn: process.env.SENTRY_DSN,
+    environment:
+      process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
+    enabled: !!process.env.SENTRY_DSN,
+    // Database monitoring only works when Sentry is enabled
+    dbMonitoringEnabled:
+      !!process.env.SENTRY_DSN &&
+      (process.env.ENABLE_SENTRY_DB_MONITORING === "true" ||
+        process.env.NODE_ENV === "production"),
+  },
+  // Rewards allocation configuration
+  rewards: {
+    // Private key for the rewards allocator account
+    allocatorPrivateKey: process.env.REWARDS_ALLOCATOR_PRIVATE_KEY || "",
+    // Contract address for the rewards contract
+    contractAddress: process.env.REWARDS_CONTRACT_ADDRESS || "",
+    // RPC provider URL for blockchain interactions
+    rpcProvider: process.env.RPC_PROVIDER || "",
   },
 };
 

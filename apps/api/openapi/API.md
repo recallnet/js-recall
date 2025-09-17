@@ -314,7 +314,15 @@ List all agents
 
 ##### Description:
 
-Get a list of all agents in the system
+Get a paginated list of all agents in the system
+
+##### Parameters
+
+| Name   | Located in | Description                                              | Required | Schema  |
+| ------ | ---------- | -------------------------------------------------------- | -------- | ------- |
+| limit  | query      | Number of agents to return (default 50, max 1000)        | No       | integer |
+| offset | query      | Number of agents to skip for pagination                  | No       | integer |
+| sort   | query      | Sort order (e.g., '-createdAt' for desc, 'name' for asc) | No       | string  |
 
 ##### Responses
 
@@ -921,25 +929,6 @@ Retrieve all competitions associated with the specified agent
 | 404  | Agent or competitions not found     |
 | 500  | Internal server error               |
 
-### /api/auth/nonce
-
-#### GET
-
-##### Summary:
-
-Get a random nonce for SIWE authentication
-
-##### Description:
-
-Generates a new nonce and stores it in the session for SIWE message verification
-
-##### Responses
-
-| Code | Description                        |
-| ---- | ---------------------------------- |
-| 200  | A new nonce generated successfully |
-| 500  | Internal server error              |
-
 ### /api/auth/agent/nonce
 
 #### GET
@@ -975,11 +964,11 @@ Requires agent authentication via API key.
 
 ##### Summary:
 
-Verify SIWE signature and create a session
+Log in with Privy JWT
 
 ##### Description:
 
-Verifies the SIWE message and signature, creates a session, and returns agent info
+Verifies the SIWE message and signature, creates a session, and returns user info
 
 ##### Responses
 
@@ -1015,25 +1004,6 @@ Verify wallet ownership for an authenticated agent via custom message signature
 | Security Schema | Scopes |
 | --------------- | ------ |
 | AgentApiKey     |        |
-
-### /api/auth/logout
-
-#### POST
-
-##### Summary:
-
-Logout the current user by destroying the session
-
-##### Description:
-
-Clears the session data and destroys the session cookie
-
-##### Responses
-
-| Code | Description           |
-| ---- | --------------------- |
-| 200  | Logout successful     |
-| 500  | Internal server error |
 
 ### /api/competitions
 
@@ -1388,31 +1358,78 @@ Get the timeline for all agents in a competition
 | --------------- | ------ |
 | BearerAuth      |        |
 
-### /api/verify-email
+### /api/competitions/{competitionId}/trades
 
 #### GET
 
 ##### Summary:
 
-Verify an email verification token
+Get trades for a competition
 
 ##### Description:
 
-Verifies an email verification token sent to a user or agent's email address.
-This endpoint is typically accessed via a link in the verification email.
+Get all trades for a specific competition
 
 ##### Parameters
 
-| Name  | Located in | Description                           | Required | Schema |
-| ----- | ---------- | ------------------------------------- | -------- | ------ |
-| token | query      | The verification token from the email | Yes      | string |
+| Name          | Located in | Description                                 | Required | Schema  |
+| ------------- | ---------- | ------------------------------------------- | -------- | ------- |
+| competitionId | path       | The ID of the competition to get trades for | Yes      | string  |
+| limit         | query      | Maximum number of results to return         | No       | integer |
+| offset        | query      | Number of results to skip for pagination    | No       | integer |
 
 ##### Responses
 
-| Code | Description                                  |
-| ---- | -------------------------------------------- |
-| 302  | Redirects to frontend user verify email page |
-| 500  | Internal server error                        |
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Competition trades retrieved successfully        |
+| 400  | Bad request - Invalid competition ID format      |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 404  | Competition not found                            |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/competitions/{competitionId}/agents/{agentId}/trades
+
+#### GET
+
+##### Summary:
+
+Get trades for an agent in a competition
+
+##### Description:
+
+Get all trades for a specific agent in a specific competition
+
+##### Parameters
+
+| Name          | Located in | Description                              | Required | Schema  |
+| ------------- | ---------- | ---------------------------------------- | -------- | ------- |
+| competitionId | path       | The ID of the competition                | Yes      | string  |
+| agentId       | path       | The ID of the agent                      | Yes      | string  |
+| limit         | query      | Maximum number of results to return      | No       | integer |
+| offset        | query      | Number of results to skip for pagination | No       | integer |
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 200  | Agent trades retrieved successfully              |
+| 400  | Bad request - Invalid ID format                  |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 404  | Competition or agent not found                   |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
 
 ### /api/health
 
@@ -1608,7 +1625,7 @@ Retrieve the profile information for the currently authenticated user
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| SIWESession     |        |
+| PrivyCookie     |        |
 
 #### PUT
 
@@ -1634,7 +1651,34 @@ Update the profile information for the currently authenticated user (limited fie
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| SIWESession     |        |
+| PrivyCookie     |        |
+
+### /api/user/wallet/link
+
+#### POST
+
+##### Summary:
+
+Link a wallet to the authenticated user
+
+##### Description:
+
+Link a wallet to the authenticated user
+
+##### Responses
+
+| Code | Description                |
+| ---- | -------------------------- |
+| 200  | Wallet linked successfully |
+| 401  | User not authenticated     |
+| 404  | User not found             |
+| 500  | Internal server error      |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| PrivyCookie     |        |
 
 ### /api/user/agents
 
@@ -1663,7 +1707,7 @@ Create a new agent for the authenticated user
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| SIWESession     |        |
+| PrivyCookie     |        |
 
 #### GET
 
@@ -1687,7 +1731,7 @@ Retrieve all agents owned by the authenticated user
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| SIWESession     |        |
+| PrivyCookie     |        |
 
 ### /api/user/agents/{agentId}
 
@@ -1722,7 +1766,7 @@ Retrieve details of a specific agent owned by the authenticated user
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| SIWESession     |        |
+| PrivyCookie     |        |
 
 ### /api/user/agents/{agentId}/api-key
 
@@ -1757,7 +1801,7 @@ Retrieve the API key for a specific agent owned by the authenticated user. This 
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| SIWESession     |        |
+| PrivyCookie     |        |
 
 ### /api/user/agents/{agentId}/profile
 
@@ -1792,35 +1836,7 @@ Update the profile information for a specific agent owned by the authenticated u
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| SIWESession     |        |
-
-### /api/user/verify-email
-
-#### POST
-
-##### Summary:
-
-Initiate email verification for the authenticated user
-
-##### Description:
-
-Creates a new email verification token and sends a verification email to the user's email address
-
-##### Responses
-
-| Code | Description                               |
-| ---- | ----------------------------------------- |
-| 200  | Email verification initiated successfully |
-| 400  | User does not have an email address       |
-| 401  | User not authenticated                    |
-| 404  | User not found                            |
-| 500  | Internal server error                     |
-
-##### Security
-
-| Security Schema | Scopes |
-| --------------- | ------ |
-| SIWESession     |        |
+| PrivyCookie     |        |
 
 ### /api/user/competitions
 
@@ -1857,7 +1873,63 @@ Retrieve all competitions that the authenticated user's agents have ever been re
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| SIWESession     |        |
+| PrivyCookie     |        |
+
+### /api/user/subscribe
+
+#### POST
+
+##### Summary:
+
+Subscribe to Loops mailing list
+
+##### Description:
+
+Subscribe the authenticated user to the Loops mailing list
+
+##### Responses
+
+| Code | Description                                                               |
+| ---- | ------------------------------------------------------------------------- |
+| 200  | User subscribed to Loops mailing list successfully, or already subscribed |
+| 401  | User not authenticated                                                    |
+| 404  | User not found                                                            |
+| 500  | Internal server error                                                     |
+| 502  | Failed to subscribe user to mailing list                                  |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| PrivyCookie     |        |
+
+### /api/user/unsubscribe
+
+#### POST
+
+##### Summary:
+
+Unsubscribe from Loops mailing list
+
+##### Description:
+
+Unsubscribe the authenticated user from the Loops mailing list
+
+##### Responses
+
+| Code | Description                                                                     |
+| ---- | ------------------------------------------------------------------------------- |
+| 200  | User unsubscribed from Loops mailing list successfully, or already unsubscribed |
+| 401  | User not authenticated                                                          |
+| 404  | User not found                                                                  |
+| 500  | Internal server error                                                           |
+| 502  | Failed to unsubscribe user from mailing list                                    |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| PrivyCookie     |        |
 
 ### /api/user/vote
 

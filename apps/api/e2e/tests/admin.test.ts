@@ -1,9 +1,14 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import * as crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { admins } from "@recallnet/db-schema/core/defs";
+import {
+  admins,
+  competitionRewards,
+  competitions,
+} from "@recallnet/db-schema/core/defs";
+import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
 
 import { db } from "@/database/db.js";
 import {
@@ -19,6 +24,7 @@ import {
   LeaderboardResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
+import { generateRandomPrivyId } from "@/e2e/utils/privy.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
@@ -154,6 +160,7 @@ describe("Admin API", () => {
     const userResult = (await adminClient.registerUser({
       walletAddress: userWalletAddress,
       name: userName,
+      email: `${userName.toLowerCase().replace(/\s+/g, "-")}@test.com`,
     })) as UserRegistrationResponse;
     expect(userResult.success).toBe(true);
     expect(userResult.user).toBeDefined();
@@ -230,6 +237,7 @@ describe("Admin API", () => {
     const userResult = (await adminClient.registerUser({
       walletAddress: userWalletAddress,
       name: userName,
+      email: `${userName.toLowerCase().replace(/\s+/g, "-")}@test.com`,
     })) as UserRegistrationResponse;
     expect(userResult.success).toBe(true);
     expect(userResult.user).toBeDefined();
@@ -300,34 +308,112 @@ describe("Admin API", () => {
     expect(result.success).toBe(false);
   });
 
-  test("should not allow registration of users with duplicate email", async () => {
+  test("should update existing user on duplicate email", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register first user
-    const userEmail = `same-email-${Date.now()}@test.com`;
-    const firstResult = await adminClient.registerUser({
-      walletAddress: generateRandomEthAddress(),
-      name: `First User ${Date.now()}`,
-      email: userEmail,
+    const email = `same-email-${Date.now()}@test.com`;
+    const originalUserName = `First User ${Date.now()}`;
+    const originalWalletAddress = generateRandomEthAddress();
+    const firstResult = (await adminClient.registerUser({
+      walletAddress: originalWalletAddress,
+      name: originalUserName,
+      email,
       agentName: `First Agent ${Date.now()}`,
-    });
+    })) as UserRegistrationResponse;
 
     // Assert first registration success
     expect(firstResult.success).toBe(true);
+    const originalUser = firstResult.user!;
 
     // Try to register second user with the same email
+    const newName = `Second User ${Date.now()}`;
     const secondResult = (await adminClient.registerUser({
-      walletAddress: generateRandomEthAddress(),
-      name: `Second User ${Date.now()}`,
-      email: userEmail,
+      walletAddress: originalWalletAddress,
+      name: newName,
+      email,
       agentName: `Second Agent ${Date.now()}`,
-    })) as ErrorResponse;
+    })) as UserRegistrationResponse;
 
-    // Assert second registration failure due to duplicate email
-    expect(secondResult.success).toBe(false);
-    expect(secondResult.error).toContain("email");
+    // Assert second registration success (note: certain fields might prefer "original" user on conflict)
+    expect(secondResult.success).toBe(true);
+    expect(secondResult.user).toBeDefined();
+    expect(secondResult.user.email).toBe(email);
+    expect(secondResult.user.name).not.toBe(newName); // Original name should be preserved
+    expect(secondResult.user.walletAddress).toBe(originalUser.walletAddress);
+    expect(secondResult.user.walletLastVerifiedAt).toBe(
+      originalUser.walletLastVerifiedAt,
+    );
+    expect(secondResult.user.embeddedWalletAddress).toBe(
+      originalUser.embeddedWalletAddress,
+    );
+    expect(secondResult.user.privyId).toBe(originalUser.privyId);
+    expect(secondResult.user.status).toBe(originalUser.status);
+    expect(secondResult.user.metadata).toBe(originalUser.metadata);
+    expect(secondResult.user.createdAt).toBe(originalUser.createdAt);
+    expect(secondResult.user.updatedAt).not.toBe(originalUser.updatedAt);
+    expect(secondResult.user.lastLoginAt).not.toBe(originalUser.lastLoginAt);
+  });
+
+  test("should not allow user registration with duplicate wallet address", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a Privy-authenticated client
+    const originalWalletAddress = generateRandomEthAddress();
+    const user1Email = `user1@example.com`;
+    const { user: originalUser } = (await adminClient.registerUser({
+      walletAddress: originalWalletAddress,
+      name: "First User",
+      email: user1Email,
+    })) as UserRegistrationResponse;
+    expect(originalUser).toBeDefined();
+
+    // Try to create a user with the same wallet address - should fail
+    const user2Email = `user2@example.com`;
+    const user2Result = (await adminClient.registerUser({
+      walletAddress: originalWalletAddress,
+      name: "Second User",
+      email: user2Email,
+    })) as ErrorResponse;
+    expect(user2Result.success).toBe(false);
+    expect(user2Result.error).toContain(
+      "A user with this walletAddress already exists",
+    );
+  });
+
+  test("should not allow user registration with duplicate privyId", async () => {
+    // Setup admin client with the API key
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a Privy-authenticated client
+    const originalPrivyId = generateRandomPrivyId();
+    const originalWalletAddress = generateRandomEthAddress();
+    const originalUserEmail = `user1@example.com`;
+    const { user: originalUser } = (await adminClient.registerUser({
+      walletAddress: originalWalletAddress,
+      privyId: originalPrivyId,
+      name: "First User",
+      email: originalUserEmail,
+    })) as UserRegistrationResponse;
+    expect(originalUser).toBeDefined();
+
+    // Try to create a user with the same privyId - should fail
+    const user2Email = `user2@example.com`;
+    const user2Result = (await adminClient.registerUser({
+      walletAddress: generateRandomEthAddress(),
+      privyId: originalPrivyId,
+      name: "Second User",
+      email: user2Email, // Use a different email else it'll update on conflict
+    })) as ErrorResponse;
+    expect(user2Result.success).toBe(false);
+    expect(user2Result.error).toContain(
+      "A user with this privyId already exists",
+    );
   });
 
   test("should list agents and users as admin", async () => {
@@ -686,7 +772,7 @@ describe("Admin API", () => {
     expect(walletAddress).toBeTruthy();
 
     // Search using a portion of the wallet address (e.g., first 10 characters after 0x)
-    const partialWalletAddress = walletAddress.substring(0, 12); // 0x + first 10 chars
+    const partialWalletAddress = walletAddress!.substring(0, 12); // 0x + first 10 chars
 
     const walletSearchResult = (await adminClient.searchUsersAndAgents({
       user: {
@@ -723,7 +809,7 @@ describe("Admin API", () => {
     // Perform the join query - search for agents with "Search Agent" in name owned by user1
     const joinQueryResult = (await adminClient.searchUsersAndAgents({
       user: {
-        walletAddress: user1WalletAddress.substring(0, 12), // Use partial wallet address
+        walletAddress: user1WalletAddress!.substring(0, 12), // Use partial wallet address
       },
       agent: {
         name: "Search Agent",
@@ -760,13 +846,13 @@ describe("Admin API", () => {
         name: "Search User",
         email: "search-alpha-${timestamp}@test.com",
         status: "active",
-        walletAddress: user1Result.user.walletAddress,
+        walletAddress: user1Result.user.walletAddress || undefined,
       },
       agent: {
         name: "Search Agent",
         ownerId: user1Result.user.id,
         status: "active",
-        walletAddress: user1Result.user.walletAddress,
+        walletAddress: user1Result.user.walletAddress || undefined,
       },
       join: false,
     })) as AdminSearchUsersAndAgentsResponse;
@@ -793,6 +879,7 @@ describe("Admin API", () => {
     const userResult = (await adminClient.registerUser({
       walletAddress: walletAddress,
       agentName: agentName,
+      email: `user-${Date.now()}@test.com`,
     })) as UserRegistrationResponse;
     expect(userResult.success).toBe(true);
 
@@ -802,6 +889,7 @@ describe("Admin API", () => {
     const randomUserResult = (await adminClient.registerUser({
       walletAddress: randomUserWalletAddress,
       agentName: randomAgentName,
+      email: `random-user-${Date.now()}@test.com`,
     })) as UserRegistrationResponse;
     expect(randomUserResult.success).toBe(true);
 
@@ -1163,11 +1251,11 @@ describe("Admin API", () => {
 
     // Start competition with both agents
     const competitionName = `Per-Competition Remove Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id, agent2.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+    });
     const competition = startResponse.competition;
 
     // Verify both agents are initially in the competition
@@ -1229,11 +1317,11 @@ describe("Admin API", () => {
 
     // Start competition with the agent
     const competitionName = `Per-Competition Reactivate Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
     const competition = startResponse.competition;
 
     // Remove agent from the competition first
@@ -1316,11 +1404,11 @@ describe("Admin API", () => {
     });
 
     const competitionName = `Valid Competition Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
     const competition = startResponse.competition;
 
     // Try to remove non-existent agent
@@ -1353,11 +1441,11 @@ describe("Admin API", () => {
 
     // Start competition with only agent1
     const competitionName = `Single Agent Competition Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id],
+    });
     const competition = startResponse.competition;
 
     // Try to remove agent2 (who is not in the competition)
@@ -1391,11 +1479,11 @@ describe("Admin API", () => {
 
     // Start competition with only agent1
     const competitionName = `Reactivate Not In Competition Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent1.id],
-    );
+      name: competitionName,
+      agentIds: [agent1.id],
+    });
     const competition = startResponse.competition;
 
     // Try to reactivate agent2 (who is not in the competition)
@@ -1422,11 +1510,11 @@ describe("Admin API", () => {
       });
 
     const competitionName = `Auth Test Competition ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
     const competition = startResponse.competition;
 
     // Try per-competition operations with non-admin client
@@ -1463,11 +1551,11 @@ describe("Admin API", () => {
 
     // Start competition with the agent
     const competitionName = `Status Independence Test ${Date.now()}`;
-    const startResponse = await startTestCompetition(
+    const startResponse = await startTestCompetition({
       adminClient,
-      competitionName,
-      [agent.id],
-    );
+      name: competitionName,
+      agentIds: [agent.id],
+    });
     const competition = startResponse.competition;
 
     // Verify agent can access API initially
@@ -1594,5 +1682,292 @@ describe("Admin API", () => {
       rank: 3,
       reward: 250,
     });
+  });
+
+  test("should atomically rollback competition update when rewards fail", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // First create a competition with initial rewards
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Atomic Test Competition",
+        description: "Testing atomic updates",
+        type: "trading",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.status).toBe(201);
+    const competitionId = createResponse.data.competition.id;
+
+    // Add initial rewards
+    await axios.put(
+      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+      {
+        rewards: {
+          1: 100,
+          2: 50,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    // Get initial state
+    const [initialCompetition] = await db
+      .select()
+      .from(competitions)
+      .where(eq(competitions.id, competitionId));
+    expect(initialCompetition).toBeDefined();
+    const initialName = initialCompetition!.name;
+
+    // Try to update with invalid rewards structure that will fail validation
+    try {
+      await axios.put(
+        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        {
+          name: "This Should Not Be Saved",
+          description: "This update should be rolled back",
+          rewards: {
+            "-1": 1000, // Invalid rank (negative)
+            "0": 500, // Invalid rank (zero)
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+      expect.fail("Expected request to fail");
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      expect(axiosError.response?.status).toBe(400);
+    }
+
+    // Verify the competition was not updated (transaction rolled back)
+    const [finalCompetition] = await db
+      .select()
+      .from(competitions)
+      .where(eq(competitions.id, competitionId));
+
+    expect(finalCompetition).toBeDefined();
+    expect(finalCompetition!.name).toBe(initialName);
+    expect(finalCompetition!.description).toBe("Testing atomic updates");
+  });
+
+  test("should atomically update competition with trading constraints", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create a competition
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Trading Constraints Test",
+        description: "Testing constraints update",
+        type: "trading",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    const competitionId = createResponse.data.competition.id;
+
+    // Update with all components atomically
+    const updateResponse = await axios.put(
+      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+      {
+        name: "Updated with Constraints",
+        rewards: {
+          1: 5000,
+          2: 2500,
+          3: 1000,
+        },
+        tradingConstraints: {
+          minimumPairAgeHours: 72,
+          minimum24hVolumeUsd: 50000,
+          minimumLiquidityUsd: 100000,
+          minimumFdvUsd: 500000,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.data.competition.name).toBe(
+      "Updated with Constraints",
+    );
+    expect(updateResponse.data.competition.rewards).toHaveLength(3);
+
+    // Verify all data was saved in the database
+    const [competition] = await db
+      .select()
+      .from(competitions)
+      .where(eq(competitions.id, competitionId));
+    expect(competition).toBeDefined();
+    expect(competition!.name).toBe("Updated with Constraints");
+
+    const constraints = await db
+      .select()
+      .from(tradingConstraints)
+      .where(eq(tradingConstraints.competitionId, competitionId));
+    expect(constraints).toHaveLength(1);
+    expect(constraints[0]).toBeDefined();
+    expect(constraints[0]!.minimumPairAgeHours).toBe(72);
+    expect(constraints[0]!.minimum24hVolumeUsd).toBe(50000);
+
+    const rewards = await db
+      .select()
+      .from(competitionRewards)
+      .where(eq(competitionRewards.competitionId, competitionId))
+      .orderBy(competitionRewards.rank);
+    expect(rewards).toHaveLength(3);
+    expect(rewards[0]).toBeDefined();
+    expect(rewards[0]!.reward).toBe(5000);
+    expect(rewards[1]!.reward).toBe(2500);
+    expect(rewards[2]!.reward).toBe(1000);
+  });
+
+  test("should atomically rollback competition creation when rewards fail", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Try to create a competition with invalid rewards that will fail validation
+    try {
+      await axios.post(
+        `${getBaseUrl()}/api/admin/competition/create`,
+        {
+          name: "Should Not Be Created",
+          description: "This competition should be rolled back",
+          tradingType: "disallowAll",
+          sandboxMode: false,
+          type: "trading",
+          rewards: {
+            "-1": 1000, // Invalid rank (negative)
+            "0": 500, // Invalid rank (zero)
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+      expect.fail("Expected request to fail");
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      expect(axiosError.response?.status).toBe(400);
+    }
+
+    // Verify no competition was created
+    const allCompetitions = await db
+      .select()
+      .from(competitions)
+      .where(eq(competitions.name, "Should Not Be Created"));
+    expect(allCompetitions).toHaveLength(0);
+
+    // Verify no constraints were created
+    const allConstraints = await db.select().from(tradingConstraints);
+    const initialConstraintCount = allConstraints.length;
+
+    // Try another creation that should succeed to verify the count
+    const validResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Valid Competition After Rollback",
+        description: "This should succeed",
+        tradingType: "disallowAll",
+        sandboxMode: false,
+        type: "trading",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(validResponse.data.success).toBe(true);
+
+    const newConstraints = await db.select().from(tradingConstraints);
+    expect(newConstraints.length).toBe(initialConstraintCount + 1);
+  });
+
+  test("should atomically create competition with constraints and rewards", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Atomic Create Test",
+        description: "Testing atomic creation",
+        tradingType: "disallowAll",
+        sandboxMode: false,
+        type: "trading",
+        tradingConstraints: {
+          minimumPairAgeHours: 96,
+          minimum24hVolumeUsd: 75000,
+          minimumLiquidityUsd: 150000,
+          minimumFdvUsd: 500000,
+        },
+        rewards: {
+          1: 10000,
+          2: 5000,
+          3: 2000,
+          4: 1000,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.data.success).toBe(true);
+    const competitionId = createResponse.data.competition.id;
+
+    // Verify all data was created atomically in the database
+    const [competition] = await db
+      .select()
+      .from(competitions)
+      .where(eq(competitions.id, competitionId));
+    expect(competition).toBeDefined();
+    expect(competition!.name).toBe("Atomic Create Test");
+
+    const constraints = await db
+      .select()
+      .from(tradingConstraints)
+      .where(eq(tradingConstraints.competitionId, competitionId));
+    expect(constraints).toHaveLength(1);
+    expect(constraints[0]?.minimumPairAgeHours).toBe(96);
+    expect(constraints[0]?.minimum24hVolumeUsd).toBe(75000);
+
+    const rewards = await db
+      .select()
+      .from(competitionRewards)
+      .where(eq(competitionRewards.competitionId, competitionId))
+      .orderBy(competitionRewards.rank);
+    expect(rewards).toHaveLength(4);
+    expect(rewards[0]?.reward).toBe(10000);
+    expect(rewards[3]?.reward).toBe(1000);
   });
 });

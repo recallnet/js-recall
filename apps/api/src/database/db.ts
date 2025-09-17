@@ -12,11 +12,23 @@ import { fileURLToPath } from "url";
 import schema from "@recallnet/db-schema";
 
 import { config } from "@/config/index.js";
+import { wrapDatabaseWithSentry } from "@/database/sentry-wrapper.js";
 import { dbLogger as pinoDbLogger } from "@/lib/logger.js";
 import { getTraceId } from "@/lib/trace-context.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Drizzle `db` or transaction type.
+ */
+export type DbTransaction = typeof db.transaction extends (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this is fine, we don't care about that type
+  callback: (tx: infer T) => any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this is fine, we don't care about that type
+) => any
+  ? T
+  : never;
 
 // Prometheus metrics for database operations - check if already registered
 const getOrCreateDbMetrics = () => {
@@ -174,6 +186,8 @@ const dbLogger = {
         "COMMIT",
         "ROLLBACK",
         "START", // Transaction commands
+        "SAVEPOINT", // Nested transaction savepoint
+        "RELEASE", // Release savepoint
       ];
 
       if (knownOperations.includes(firstWord)) {
@@ -220,19 +234,22 @@ const dbLogger = {
   },
 };
 
-// Create and export the database instance with transparent logging
-export const db = drizzle({
+// Create database instances with transparent logging
+const baseDb = drizzle({
   client: pool,
   schema,
   logger: dbLogger,
 });
 
-// Create and export the read replica database instance
-export const dbRead = drizzle({
+const baseDbRead = drizzle({
   client: readReplicaPool,
   schema,
   logger: dbLogger,
 });
+
+// Wrap with Sentry monitoring if enabled
+export const db = wrapDatabaseWithSentry(baseDb);
+export const dbRead = wrapDatabaseWithSentry(baseDbRead);
 
 // NOTE: logDbOperation export removed - all queries now automatically logged
 
@@ -246,12 +263,13 @@ pinoDbLogger.info(
   }`,
 );
 
-db.$client.on("error", (err: Error) => {
+// Access the underlying client through the base instance
+baseDb.$client.on("error", (err: Error) => {
   pinoDbLogger.error("Unexpected error on idle client", err);
   process.exit(-1);
 });
 
-dbRead.$client.on("error", (err: Error) => {
+baseDbRead.$client.on("error", (err: Error) => {
   console.error("Unexpected error on read replica client", err);
   process.exit(-1);
 });

@@ -86,7 +86,7 @@ async function listAllAgents() {
 async function deleteAgent(agentId: string) {
   try {
     // Get agent details first to confirm
-    const agent = await services.agentManager.getAgent(agentId);
+    const agent = await services.agentService.getAgent(agentId);
 
     if (!agent) {
       console.log(
@@ -113,7 +113,7 @@ ${colors.red}Type the agent name (${agent.name}) to confirm deletion:${colors.re
     console.log(`\n${colors.blue}Deleting agent...${colors.reset}`);
 
     // Delete the agent
-    const result = await services.agentManager.deleteAgent(agentId);
+    const result = await services.agentService.deleteAgent(agentId);
 
     if (result) {
       console.log(

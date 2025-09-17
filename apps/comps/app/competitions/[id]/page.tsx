@@ -27,7 +27,7 @@ import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
-import { useUser } from "@/state/atoms";
+import { useSession } from "@/hooks/useSession";
 
 const LIMIT_AGENTS_PER_PAGE = 10;
 const LIMIT_TRADES_PER_PAGE = 10;
@@ -38,7 +38,7 @@ export default function CompetitionPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = useUser();
+  const { isAuthenticated } = useSession();
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
@@ -229,6 +229,20 @@ export default function CompetitionPage({
         />
       ) : null}
 
+      <TradesTable
+        trades={tradesData?.trades || []}
+        pagination={
+          tradesData?.pagination || {
+            total: 0,
+            limit: LIMIT_TRADES_PER_PAGE,
+            offset: tradesOffset,
+            hasMore: false,
+          }
+        }
+        onPageChange={handleTradesPageChange}
+        showSignInMessage={!isAuthenticated}
+      />
+
       {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
           <h2 className="text-xl font-semibold text-red-500">
@@ -267,20 +281,6 @@ export default function CompetitionPage({
           />
         </>
       )}
-
-      <TradesTable
-        trades={tradesData?.trades || []}
-        pagination={
-          tradesData?.pagination || {
-            total: 0,
-            limit: LIMIT_TRADES_PER_PAGE,
-            offset: tradesOffset,
-            hasMore: false,
-          }
-        }
-        onPageChange={handleTradesPageChange}
-        showSignInMessage={user.status !== "authenticated"}
-      />
 
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />

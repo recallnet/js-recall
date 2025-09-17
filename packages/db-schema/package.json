@@ -22,6 +22,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./types": {
+      "import": {
+        "types": "./dist/types.d.ts",
+        "default": "./dist/types.js"
+      },
+      "require": {
+        "types": "./dist/types.d.cts",
+        "default": "./dist/types.cjs"
+      }
+    },
     "./core/defs": {
       "import": {
         "types": "./dist/core/defs.d.ts",
@@ -50,6 +60,26 @@
       "require": {
         "types": "./dist/core/types.d.cts",
         "default": "./dist/core/types.cjs"
+      }
+    },
+    "./indexing/defs": {
+      "import": {
+        "types": "./dist/indexing/defs.d.ts",
+        "default": "./dist/indexing/defs.js"
+      },
+      "require": {
+        "types": "./dist/indexing/defs.d.cts",
+        "default": "./dist/indexing/defs.cjs"
+      }
+    },
+    "./indexing/types": {
+      "import": {
+        "types": "./dist/indexing/types.d.ts",
+        "default": "./dist/indexing/types.js"
+      },
+      "require": {
+        "types": "./dist/indexing/types.d.cts",
+        "default": "./dist/indexing/types.cjs"
       }
     },
     "./ranking/defs": {
@@ -166,6 +196,7 @@
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",

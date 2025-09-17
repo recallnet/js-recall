@@ -1,11 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { CreateAgentRequest } from "@/types";
 
 import { useAnalytics } from "./usePostHog";
-
-const apiClient = new ApiClient();
 
 /**
  * Hook to create a new agent

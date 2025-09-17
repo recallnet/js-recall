@@ -12,7 +12,7 @@ import { PaginationResponse, UserCompetition } from "@/types";
 import { CompetitionsTable } from "./competitions-table";
 
 export default function UserCompetitionsSection() {
-  const [sort, setSort] = useState("");
+  const [sort, setSort] = useState("-startDate");
   const [offset, setOffset] = useState(0);
   const limit = 10;
   const { data, isLoading, isFetching } = useUserCompetitions({

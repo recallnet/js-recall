@@ -13,7 +13,11 @@ import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
-import { DISABLE_LEADERBOARD, ENABLE_SANDBOX } from "@/config";
+import {
+  DISABLE_LEADERBOARD,
+  ENABLE_SANDBOX,
+  NEXT_PUBLIC_FRONTEND_URL,
+} from "@/config";
 import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
 import {
@@ -73,7 +77,7 @@ export default function AgentProfile({
 
   // Sandbox hooks for syncing agent updates
   const { data: sandboxAgentData } = useSandboxAgentApiKey(
-    isUserAgent && ENABLE_SANDBOX ? agent?.name || null : null,
+    isUserAgent && ENABLE_SANDBOX ? agent?.handle || null : null,
   );
   const updateSandboxAgent = useUpdateSandboxAgent();
 
@@ -177,7 +181,7 @@ export default function AgentProfile({
       <BreadcrumbNav
         items={[
           { label: "RECALL", href: "/" },
-          { label: "AGENTS", href: "/" },
+          { label: "AGENTS", href: isUserAgent ? "/profile" : "/" },
           { label: agent.name },
         ]}
         className="mb-10"
@@ -191,7 +195,7 @@ export default function AgentProfile({
         >
           <div className="absolute right-10 top-10 z-20 flex w-full justify-end">
             <ShareModal
-              url={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/agents/${agent.id}`}
+              url={`${NEXT_PUBLIC_FRONTEND_URL}/agents/${agent.id}`}
               title="Share Agent"
               subtitle={
                 <p className="text-muted-foreground text-sm">
@@ -228,8 +232,8 @@ export default function AgentProfile({
           {agent.walletAddress && (
             <div className="px-15 xs:px-10 absolute bottom-0 right-[50%] z-20 w-full translate-x-[50%] border bg-black py-3 md:px-20">
               <Clipboard
-                text={agent.walletAddress || ""}
-                className="text-secondary-foreground w-full rounded-[10px] border-gray-700 px-3 py-2 text-lg hover:text-gray-300"
+                text={agent.walletAddress}
+                className="text-secondary-foreground w-full rounded-[10px] px-3 py-2 text-lg"
               />
             </div>
           )}

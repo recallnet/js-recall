@@ -19,10 +19,10 @@ The competitions app is part of the `js-recall` monorepo. To install dependencie
 pnpm install
 ```
 
-There are environment variables in `apps/portal` that are required for monorepo to build; just copy the `env.example` files to the actual files. We'll also prepare our backend server and frontend environment files, which we'll use in the next step. From the root directory, run the following:
+There are environment variables that are required for monorepo to build; just copy the `env.example` files to the actual files. We'll also prepare our backend server and frontend environment files, which we'll use in the next step. From the root directory, run the following:
 
 ```bash
-cp apps/api/.env.example apps/api/.env && cp apps/comps/.env.example apps/comps/.env && cp apps/portal/.env.example apps/portal/.env
+cp apps/api/.env.example apps/api/.env && cp apps/comps/.env.example apps/comps/.env
 ```
 
 Build the repo so that all of the intra-repo packages are compiled:
@@ -97,6 +97,27 @@ To start the development server, run the following. It should run on port `3001`
 ```bash
 PORT=3001 pnpm dev
 ```
+
+## Sandbox Proxy Routes
+
+⚠️ **IMPORTANT**: These are Next.js API routes that act as a PROXY to the sandbox server.
+
+### How it works:
+
+1. Frontend calls `/api/sandbox/competitions/{id}/agents/{id}` (this Next.js route)
+2. This route adds admin authentication
+3. Forwards to `https://api.sandbox.competitions.recall.network/admin/competitions/{id}/agents/{id}`
+
+### Why this exists:
+
+- Hides admin API keys from the browser
+- Allows users to join sandbox competitions without direct admin access
+- Enables balance reset on join (via admin endpoint)
+
+### Key difference from regular API:
+
+- Regular: `/competitions/{id}/agents/{id}` - NO balance reset
+- Admin proxy: `/admin/competitions/{id}/agents/{id}` - RESETS balances
 
 ## Contributing
 

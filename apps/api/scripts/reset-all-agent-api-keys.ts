@@ -293,7 +293,7 @@ async function resetAllAgentApiKeys(): Promise<void> {
       displayProgress(i + 1, agents.length, agent.name);
 
       try {
-        const resetResult = await services.agentManager.resetApiKey(agent.id);
+        const resetResult = await services.agentService.resetApiKey(agent.id);
 
         if (resetResult?.apiKey) {
           console.log(`${colors.green}✓ Success${colors.reset}`);

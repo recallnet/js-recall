@@ -1,14 +1,13 @@
 import { and, count as drizzleCount, eq, inArray, sql } from "drizzle-orm";
 
 import { balances } from "@recallnet/db-schema/trading/defs";
+import type { Transaction as DatabaseTransaction } from "@recallnet/db-schema/types";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 import { SpecificChain } from "@/types/index.js";
-
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Balance Repository
@@ -82,53 +81,6 @@ export async function getAgentsBulkBalances(agentIds: string[]) {
       .where(inArray(balances.agentId, agentIds));
   } catch (error) {
     repositoryLogger.error("Error in getAgentsBulkBalances:", error);
-    throw error;
-  }
-}
-
-/**
- * Initialize default balances for an agent
- * @param agentId Agent ID
- * @param initialBalances Map of token addresses to amounts and symbols
- */
-async function initializeAgentBalancesImpl(
-  agentId: string,
-  initialBalances: Map<string, { amount: number; symbol: string }>,
-) {
-  try {
-    const now = new Date();
-    await db.transaction(async (tx) => {
-      for (const [
-        tokenAddress,
-        { amount, symbol },
-      ] of initialBalances.entries()) {
-        const specificChain = getTokenSpecificChain(
-          tokenAddress,
-        ) as SpecificChain;
-        await tx
-          .insert(balances)
-          .values({
-            agentId,
-            tokenAddress,
-            amount,
-            specificChain,
-            symbol,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .onConflictDoUpdate({
-            target: [balances.agentId, balances.tokenAddress],
-            set: {
-              amount,
-              specificChain,
-              symbol,
-              updatedAt: now,
-            },
-          });
-      }
-    });
-  } catch (error) {
-    repositoryLogger.error("Error in initializeAgentBalances:", error);
     throw error;
   }
 }
@@ -354,12 +306,6 @@ export const getAgentBalances = createTimedRepositoryFunction(
   getAgentBalancesImpl,
   "BalanceRepository",
   "getAgentBalances",
-);
-
-export const initializeAgentBalances = createTimedRepositoryFunction(
-  initializeAgentBalancesImpl,
-  "BalanceRepository",
-  "initializeAgentBalances",
 );
 
 export const resetAgentBalances = createTimedRepositoryFunction(

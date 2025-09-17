@@ -3,9 +3,12 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   entry: [
     "src/index.ts",
+    "src/types.ts",
     "src/core/defs.ts",
     "src/core/relatons.ts",
     "src/core/types.ts",
+    "src/indexing/defs.ts",
+    "src/indexing/types.ts",
     "src/ranking/defs.ts",
     "src/ranking/relatons.ts",
     "src/ranking/types.ts",

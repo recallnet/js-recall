@@ -3,19 +3,21 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import {
-  SelectCompetitionReward,
-  UpdateCompetition,
-} from "@recallnet/db-schema/core/types";
+import { UpdateCompetition } from "@recallnet/db-schema/core/types";
 
-import { config, reloadSecurityConfig } from "@/config/index.js";
+import { reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { ActorStatus, AdminCreateAgentSchema } from "@/types/index.js";
+import {
+  ActorStatus,
+  AdminCreateAgentSchema,
+  User,
+  UserMetadata,
+} from "@/types/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
@@ -42,7 +44,10 @@ import {
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
 } from "./admin.schema.js";
-import { parseAdminSearchQuery } from "./request-helpers.js";
+import {
+  checkUserUniqueConstraintViolation,
+  parseAdminSearchQuery,
+} from "./request-helpers.js";
 
 // TODO: need user deactivation logic
 
@@ -59,18 +64,6 @@ interface Agent {
   apiKey: string;
   metadata: unknown;
   email: string | null;
-  status: ActorStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface User {
-  id: string;
-  walletAddress: string;
-  name: string | null;
-  email: string | null;
-  imageUrl: string | null;
-  metadata: unknown;
   status: ActorStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -116,7 +109,7 @@ export function makeAdminController(services: ServiceRegistry) {
     async setupAdmin(req: Request, res: Response, next: NextFunction) {
       try {
         // Check if any admin already exists
-        const admins = await services.adminManager.getAllAdmins();
+        const admins = await services.adminService.getAllAdmins();
         const adminExists = admins.length > 0;
 
         if (adminExists) {
@@ -212,7 +205,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Setup the initial admin using AdminManager
-        const adminResult = await services.adminManager.setupInitialAdmin(
+        const adminResult = await services.adminService.setupInitialAdmin(
           username,
           password,
           email,
@@ -254,6 +247,8 @@ export function makeAdminController(services: ServiceRegistry) {
 
         const {
           walletAddress,
+          embeddedWalletAddress,
+          privyId,
           name,
           email,
           userImageUrl,
@@ -266,27 +261,16 @@ export function makeAdminController(services: ServiceRegistry) {
           agentWalletAddress,
         } = result.data;
 
-        // Check if a user with this wallet address already exists
-        const existingUser =
-          await services.userManager.getUserByWalletAddress(walletAddress);
-
-        if (existingUser) {
-          const errorMessage = `A user with wallet address ${walletAddress} already exists`;
-          adminLogger.warn("Duplicate wallet address error:", errorMessage);
-          return res.status(409).json({
-            success: false,
-            error: errorMessage,
-          });
-        }
-
         try {
           // Create the user
-          const user = await services.userManager.registerUser(
+          const user = await services.userService.registerUser(
             walletAddress,
             name,
             email,
             userImageUrl,
             userMetadata,
+            privyId,
+            embeddedWalletAddress,
           );
 
           let agent = null;
@@ -294,7 +278,7 @@ export function makeAdminController(services: ServiceRegistry) {
           // If agent details are provided, create an agent for this user
           if (agentName) {
             try {
-              agent = await services.agentManager.createAgent({
+              agent = await services.agentService.createAgent({
                 ownerId: user.id,
                 name: agentName,
                 handle: agentHandle ?? generateHandleFromName(agentName), // Auto-generate from name
@@ -311,13 +295,18 @@ export function makeAdminController(services: ServiceRegistry) {
                 user: {
                   id: user.id,
                   walletAddress: user.walletAddress,
+                  walletLastVerifiedAt: user.walletLastVerifiedAt,
+                  embeddedWalletAddress: user.embeddedWalletAddress,
                   name: user.name,
                   email: user.email,
+                  isSubscribed: user.isSubscribed,
+                  privyId: user.privyId,
                   imageUrl: user.imageUrl,
                   metadata: user.metadata,
                   status: user.status,
                   createdAt: user.createdAt,
                   updatedAt: user.updatedAt,
+                  lastLoginAt: user.lastLoginAt,
                 },
                 agentError:
                   agentError instanceof Error
@@ -332,14 +321,21 @@ export function makeAdminController(services: ServiceRegistry) {
             success: true,
             user: {
               id: user.id,
+              name: user.name ?? undefined,
+              email: user.email ?? undefined,
+              isSubscribed: user.isSubscribed,
+              privyId: user.privyId ?? undefined,
               walletAddress: user.walletAddress,
-              name: user.name,
-              email: user.email,
-              imageUrl: user.imageUrl,
-              metadata: user.metadata,
+              embeddedWalletAddress: user.embeddedWalletAddress ?? "",
+              walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
+              imageUrl: user.imageUrl ?? undefined,
+              metadata: user.metadata
+                ? (user.metadata as UserMetadata)
+                : undefined,
               status: user.status as ActorStatus,
               createdAt: user.createdAt,
               updatedAt: user.updatedAt,
+              lastLoginAt: user.lastLoginAt ?? undefined,
             },
           };
 
@@ -365,17 +361,6 @@ export function makeAdminController(services: ServiceRegistry) {
         } catch (error) {
           adminLogger.error("Error registering user:", error);
 
-          // Check if this is a duplicate wallet address error that somehow got here
-          if (
-            error instanceof Error &&
-            error.message.includes("already exists")
-          ) {
-            return res.status(409).json({
-              success: false,
-              error: error.message,
-            });
-          }
-
           // Check if this is an invalid wallet address error
           if (
             error instanceof Error &&
@@ -385,6 +370,15 @@ export function makeAdminController(services: ServiceRegistry) {
             return res.status(400).json({
               success: false,
               error: error.message,
+            });
+          }
+
+          // Unique constraint violations → 409 Conflict with friendly message
+          const violatedField = checkUserUniqueConstraintViolation(error);
+          if (violatedField) {
+            return res.status(409).json({
+              success: false,
+              error: `A user with this ${violatedField} already exists`,
             });
           }
 
@@ -429,9 +423,9 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Check if a user with this wallet address already exists
         const existingUser = userWalletAddress
-          ? await services.userManager.getUserByWalletAddress(userWalletAddress)
+          ? await services.userService.getUserByWalletAddress(userWalletAddress)
           : userId
-            ? await services.userManager.getUser(userId)
+            ? await services.userService.getUser(userId)
             : undefined;
 
         if (!existingUser) {
@@ -445,7 +439,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         try {
           // Create the agent
-          const agent = await services.agentManager.createAgent({
+          const agent = await services.agentService.createAgent({
             ownerId: existingUser.id,
             name,
             handle: handle ?? generateHandleFromName(name),
@@ -539,7 +533,7 @@ export function makeAdminController(services: ServiceRegistry) {
         } = result.data;
 
         // Create a new competition
-        const competition = await services.competitionManager.createCompetition(
+        const competition = await services.competitionService.createCompetition(
           {
             name,
             description,
@@ -610,7 +604,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const validAgentIds: string[] = [];
 
         for (const agentId of agentIds) {
-          const agent = await services.agentManager.getAgent(agentId);
+          const agent = await services.agentService.getAgent(agentId);
 
           if (!agent) {
             invalidAgentIds.push(agentId);
@@ -638,14 +632,11 @@ export function makeAdminController(services: ServiceRegistry) {
         // Get pre-registered agents from the database if we have a competitionId
         if (competitionId) {
           const competitionAgents =
-            await services.competitionManager.getCompetitionAgentsWithMetrics(
-              competitionId,
-              {
-                sort: "",
-                limit: 1000,
-                offset: 0,
-              },
-            );
+            await services.agentService.getAgentsForCompetition(competitionId, {
+              sort: "",
+              limit: 1000,
+              offset: 0,
+            });
           const registeredAgents = competitionAgents.agents.map(
             (agent) => agent.id,
           );
@@ -670,7 +661,7 @@ export function makeAdminController(services: ServiceRegistry) {
         if (competitionId) {
           // Get the existing competition
           competition =
-            await services.competitionManager.getCompetition(competitionId);
+            await services.competitionService.getCompetition(competitionId);
 
           if (!competition) {
             throw new ApiError(404, "Competition not found");
@@ -688,7 +679,7 @@ export function makeAdminController(services: ServiceRegistry) {
           // Schema validation ensures either competitionId or name is provided
 
           // Create a new competition
-          competition = await services.competitionManager.createCompetition({
+          competition = await services.competitionService.createCompetition({
             name: name!,
             description,
             tradingType,
@@ -713,7 +704,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Start the competition
         const startedCompetition =
-          await services.competitionManager.startCompetition(
+          await services.competitionService.startCompetition(
             competition.id,
             finalAgentIds,
             tradingConstraints,
@@ -749,11 +740,11 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // End the competition
         const endedCompetition =
-          await services.competitionManager.endCompetition(competitionId);
+          await services.competitionService.endCompetition(competitionId);
 
         // Get final leaderboard
         const leaderboard =
-          await services.competitionManager.getLeaderboard(competitionId);
+          await services.competitionService.getLeaderboard(competitionId);
 
         // Assign winners to the rewards
         await services.competitionRewardService.assignWinnersToRewards(
@@ -815,30 +806,14 @@ export function makeAdminController(services: ServiceRegistry) {
           throw new ApiError(400, "No valid fields provided for update");
         }
 
-        // Update the competition
-        const updatedCompetition =
-          await services.competitionManager.updateCompetition(
+        // Update the competition atomically
+        const { competition: updatedCompetition, updatedRewards } =
+          await services.competitionService.updateCompetition(
             competitionId,
             updates,
-          );
-
-        // Update the trading constraints
-        if (tradingConstraints) {
-          await services.tradingConstraintsService.updateConstraints(
-            competitionId,
             tradingConstraints,
+            rewards,
           );
-        }
-
-        // Update the rewards
-        let updatedRewards: SelectCompetitionReward[] = [];
-        if (rewards) {
-          updatedRewards =
-            await services.competitionRewardService.replaceRewards(
-              competitionId,
-              rewards,
-            );
-        }
 
         // Return the updated competition
         res.status(200).json({
@@ -882,17 +857,17 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Get the competition
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
 
         // Get leaderboard
         const leaderboard =
-          await services.competitionManager.getLeaderboard(competitionId);
+          await services.competitionService.getLeaderboard(competitionId);
 
         // Get all users for agent owner names
-        const users = await services.userManager.getAllUsers();
+        const users = await services.userService.getAllUsers();
 
         // Map agent IDs to owner names
         const userMap = new Map(
@@ -901,7 +876,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Get only agents in this competition to map agent IDs to agent names and owners
         const agentIds = leaderboard.map((entry) => entry.agentId);
-        const agents = await services.agentManager.getAgentsByIds(agentIds);
+        const agents = await services.agentService.getAgentsByIds(agentIds);
         const agentMap = new Map(
           agents.map((agent) => [
             agent.id,
@@ -943,19 +918,24 @@ export function makeAdminController(services: ServiceRegistry) {
     async listAllUsers(req: Request, res: Response, next: NextFunction) {
       try {
         // Get all users (non-admin users only)
-        const users = await services.userManager.getAllUsers();
+        const users = await services.userService.getAllUsers();
 
         // Format the response to match the expected structure
         const formattedUsers = users.map((user) => ({
           id: user.id,
           walletAddress: user.walletAddress,
+          walletLastVerifiedAt: user.walletLastVerifiedAt,
+          embeddedWalletAddress: user.embeddedWalletAddress,
           name: user.name,
           email: user.email,
+          isSubscribed: user.isSubscribed,
+          privyId: user.privyId,
           status: user.status,
           imageUrl: user.imageUrl,
           metadata: user.metadata,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          lastLoginAt: user.lastLoginAt,
         }));
 
         // Return the users
@@ -1004,7 +984,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Check if the competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
@@ -1013,14 +993,14 @@ export function makeAdminController(services: ServiceRegistry) {
         let snapshots;
         if (agentId) {
           // Check if the agent exists
-          const agent = await services.agentManager.getAgent(agentId);
+          const agent = await services.agentService.getAgent(agentId);
           if (!agent) {
             throw new ApiError(404, "Agent not found");
           }
 
           // Check if the agent is in the competition
           const agentInCompetition =
-            await services.competitionManager.isAgentInCompetition(
+            await services.competitionService.isAgentInCompetition(
               competitionId,
               agentId,
             );
@@ -1034,21 +1014,21 @@ export function makeAdminController(services: ServiceRegistry) {
 
           // Get snapshots for the specific agent
           snapshots =
-            await services.portfolioSnapshotter.getAgentPortfolioSnapshots(
+            await services.portfolioSnapshotterService.getAgentPortfolioSnapshots(
               competitionId,
               agentId,
             );
         } else {
           // Get snapshots for all agents in the competition (including inactive ones)
           const agents =
-            await services.competitionManager.getAllCompetitionAgents(
+            await services.competitionService.getAllCompetitionAgents(
               competitionId,
             );
           snapshots = [];
 
           for (const agentId of agents) {
             const agentSnapshots =
-              await services.portfolioSnapshotter.getAgentPortfolioSnapshots(
+              await services.portfolioSnapshotterService.getAgentPortfolioSnapshots(
                 competitionId,
                 agentId,
               );
@@ -1087,24 +1067,31 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Search users if requested
         if (user) {
-          const users = await services.userManager.searchUsers(user);
+          const users = await services.userService.searchUsers(user);
 
           results.users = users.map((user) => ({
             id: user.id,
             walletAddress: user.walletAddress,
-            name: user.name,
-            email: user.email,
+            walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
+            name: user.name ?? undefined,
+            email: user.email ?? undefined,
+            isSubscribed: user.isSubscribed,
+            privyId: user.privyId ?? undefined,
+            embeddedWalletAddress: user.embeddedWalletAddress ?? undefined,
             status: user.status,
-            imageUrl: user.imageUrl,
-            metadata: user.metadata,
+            imageUrl: user.imageUrl ?? undefined,
+            metadata: user.metadata
+              ? (user.metadata as UserMetadata)
+              : undefined,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+            lastLoginAt: user.lastLoginAt ?? undefined,
           }));
         }
 
         // Search agents if requested
         if (agent) {
-          const agents = await services.agentManager.searchAgents(agent);
+          const agents = await services.agentService.searchAgents(agent);
 
           results.agents = agents.map((agent) => ({
             id: agent.id,
@@ -1170,12 +1157,12 @@ export function makeAdminController(services: ServiceRegistry) {
         } = queryResult.data;
 
         // Get agents from the database with pagination
-        const agents = await services.agentManager.getAgents({
+        const agents = await services.agentService.getAgents({
           pagingParams: { limit, offset, sort },
         });
 
         // Get total count for pagination metadata
-        const totalCount = await services.agentManager.countAgents();
+        const totalCount = await services.agentService.countAgents();
 
         // Format the agents for the response
         const formattedAgents = agents.map((agent) => ({
@@ -1232,7 +1219,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const { agentId } = paramsResult.data;
 
         // Get the agent first to check if it exists
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
 
         if (!agent) {
           return res.status(404).json({
@@ -1242,7 +1229,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Delete the agent
-        const deleted = await services.agentManager.deleteAgent(agentId);
+        const deleted = await services.agentService.deleteAgent(agentId);
 
         if (deleted) {
           return res.status(200).json({
@@ -1294,7 +1281,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const { reason } = bodyResult.data;
 
         // Get the agent first to check if it exists
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
 
         if (!agent) {
           return res.status(404).json({
@@ -1318,7 +1305,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Deactivate the agent
-        const deactivatedAgent = await services.agentManager.deactivateAgent(
+        const deactivatedAgent = await services.agentService.deactivateAgent(
           agentId,
           reason,
         );
@@ -1369,7 +1356,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const { agentId } = paramsResult.data;
 
         // Get the agent first to check if it exists and is actually inactive
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
 
         if (!agent) {
           return res.status(404).json({
@@ -1394,7 +1381,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Reactivate the agent
         const reactivatedAgent =
-          await services.agentManager.reactivateAgent(agentId);
+          await services.agentService.reactivateAgent(agentId);
 
         if (!reactivatedAgent) {
           return res.status(500).json({
@@ -1437,7 +1424,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const { agentId } = paramsResult.data;
 
         // Get the agent
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
 
         if (!agent) {
           return res.status(404).json({
@@ -1506,7 +1493,7 @@ export function makeAdminController(services: ServiceRegistry) {
           bodyResult.data;
 
         // Get the current agent
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
         if (!agent) {
           return res.status(404).json({
             success: false,
@@ -1525,7 +1512,7 @@ export function makeAdminController(services: ServiceRegistry) {
           metadata: metadata ?? agent.metadata,
         };
 
-        const updatedAgent = await services.agentManager.updateAgent({
+        const updatedAgent = await services.agentService.updateAgent({
           ...agent,
           ...updateData,
         });
@@ -1602,7 +1589,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Check if competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           return res.status(404).json({
             success: false,
@@ -1611,7 +1598,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if agent exists
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
         if (!agent) {
           return res.status(404).json({
             success: false,
@@ -1621,7 +1608,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Check if agent is in the competition
         const isInCompetition =
-          await services.competitionManager.isAgentInCompetition(
+          await services.competitionService.isAgentInCompetition(
             competitionId,
             agentId,
           );
@@ -1633,7 +1620,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Remove agent from competition using service method
-        await services.competitionManager.removeAgentFromCompetition(
+        await services.competitionService.removeAgentFromCompetition(
           competitionId,
           agentId,
           `Admin removal: ${reason}`,
@@ -1687,7 +1674,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Check if competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           return res.status(404).json({
             success: false,
@@ -1696,7 +1683,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if agent exists
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
         if (!agent) {
           return res.status(404).json({
             success: false,
@@ -1714,7 +1701,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Check if agent is in the competition
         const isInCompetition =
-          await services.competitionManager.isAgentInCompetition(
+          await services.competitionService.isAgentInCompetition(
             competitionId,
             agentId,
           );
@@ -1726,7 +1713,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Reactivate agent in competition using service method
-        await services.competitionManager.reactivateAgentInCompetition(
+        await services.competitionService.reactivateAgentInCompetition(
           competitionId,
           agentId,
         );
@@ -1778,7 +1765,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Check if competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           return res.status(404).json({
             success: false,
@@ -1787,7 +1774,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if agent exists
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
         if (!agent) {
           return res.status(404).json({
             success: false,
@@ -1796,7 +1783,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if agent owner's email is verified (security layer)
-        const owner = await services.userManager.getUser(agent.ownerId);
+        const owner = await services.userService.getUser(agent.ownerId);
         if (!owner) {
           return res.status(404).json({
             success: false,
@@ -1804,26 +1791,9 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Auto-verify email (e.g. for development, test, or sandbox modes)
-        if (!owner.isEmailVerified) {
-          if (config.email.autoVerifyUserEmail) {
-            adminLogger.info(
-              `[DEV/TEST] Auto-verifying email for user ${agent.ownerId} in ${process.env.NODE_ENV} mode`,
-            );
-            await services.userManager.markEmailAsVerified(agent.ownerId);
-            // Continue with adding agent to competition since we just verified the email
-          } else {
-            return res.status(403).json({
-              success: false,
-              error:
-                "Agent owner's email must be verified before adding to competition",
-            });
-          }
-        }
-
         // Check if agent is already in the competition
         const isInCompetition =
-          await services.competitionManager.isAgentInCompetition(
+          await services.competitionService.isAgentInCompetition(
             competitionId,
             agentId,
           );
@@ -1851,23 +1821,39 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Apply sandbox mode logic if the competition is in sandbox mode
+        // In sandbox mode, we need to reset the agent's balances to starting values when the agent
+        // joins the always on competition, since we can't rely on 'startCompetition' to do so.
+        // For non-sandbox mode, we must *not* do this, since agents can join competitions before
+        // they've started, when they might be in another ongoing competition as well, and we don't
+        // want to reset their balances in the middle of the ongoing competition. So in that case
+        // wait for the new competition to start and let 'startCompetition' do the reset.
         if (competition.sandboxMode) {
           adminLogger.info(
-            `Applying sandbox mode logic for agent ${agentId} in competition ${competitionId}`,
+            `Resetting agent balance as part of applying sandbox mode logic for admin adding agent ${agentId} to competition ${competitionId}`,
           );
 
-          // Reset the agent's balances to starting values (consistent with startCompetition order)
-          await services.balanceManager.resetAgentBalances(agentId);
+          await services.balanceService.resetAgentBalances(agentId);
         }
 
         // Add agent to competition using repository method
-        await addAgentToCompetition(competitionId, agentId);
+        try {
+          await addAgentToCompetition(competitionId, agentId);
+        } catch (error) {
+          // Handle specific error for participant limit
+          if (
+            error instanceof Error &&
+            error.message.includes("maximum participant limit")
+          ) {
+            throw new ApiError(409, error.message);
+          }
+          // Re-throw other errors
+          throw error;
+        }
 
-        // Complete sandbox mode logic if enabled
+        // In sandbox mode, we need to take the initial portfolio snapshot when the agent joins
+        // the always on competition, since we can't rely on 'startCompetition' to do so.
         if (competition.sandboxMode) {
-          // Take a portfolio snapshot for the newly joined agent
-          await services.portfolioSnapshotter.takePortfolioSnapshotForAgent(
+          await services.portfolioSnapshotterService.takePortfolioSnapshotForAgent(
             competitionId,
             agentId,
           );
@@ -1917,7 +1903,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Get the decrypted API key using the agent manager
         const result =
-          await services.agentManager.getDecryptedApiKeyById(agentId);
+          await services.agentService.getDecryptedApiKeyById(agentId);
 
         if (!result.success) {
           // If there was an error, use the error code and message from the service

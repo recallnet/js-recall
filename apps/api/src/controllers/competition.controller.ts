@@ -94,7 +94,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Get active competition or use competitionId from query
         const competitionId =
           (req.query.competitionId as string) ||
-          (await services.competitionManager.getActiveCompetition())?.id;
+          (await services.competitionService.getActiveCompetition())?.id;
 
         if (!competitionId) {
           throw new ApiError(
@@ -105,7 +105,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check if competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
@@ -130,7 +130,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
           // AgentId is present, verify active participation
           const isAgentActiveInCompetitionResult =
-            await services.competitionManager.isAgentActiveInCompetition(
+            await services.competitionService.isAgentActiveInCompetition(
               competitionId,
               agentId,
             );
@@ -144,7 +144,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get leaderboard data (active and inactive agents)
         const leaderboardData =
-          await services.competitionManager.getLeaderboardWithInactiveAgents(
+          await services.competitionService.getLeaderboardWithInactiveAgents(
             competitionId,
           );
 
@@ -154,7 +154,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           ...leaderboardData.inactiveAgents.map((entry) => entry.agentId),
         ];
         const agents =
-          await services.agentManager.getAgentsByIds(competitionAgentIds);
+          await services.agentService.getAgentsByIds(competitionAgentIds);
         const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
 
         // Build active leaderboard with ranks
@@ -212,7 +212,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
       try {
         // Get active competition
         const activeCompetition =
-          await services.competitionManager.getActiveCompetition();
+          await services.competitionService.getActiveCompetition();
 
         // If no active competition, return null status
         if (!activeCompetition) {
@@ -265,7 +265,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check if the agent is actively participating in the competition
         const isAgentActiveInCompetitionResult =
-          await services.competitionManager.isAgentActiveInCompetition(
+          await services.competitionService.isAgentActiveInCompetition(
             activeCompetition.id,
             agentId,
           );
@@ -323,7 +323,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get active competition first, as rules are always for the active one
         const activeCompetition =
-          await services.competitionManager.getActiveCompetition();
+          await services.competitionService.getActiveCompetition();
 
         if (!activeCompetition) {
           throw new ApiError(
@@ -356,7 +356,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             );
           }
           const isAgentActiveInCompetitionResult =
-            await services.competitionManager.isAgentActiveInCompetition(
+            await services.competitionService.isAgentActiveInCompetition(
               activeCompetition.id,
               agentId,
             );
@@ -491,7 +491,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
         // Get upcoming competitions
         const upcomingCompetitions =
-          await services.competitionManager.getUpcomingCompetitions();
+          await services.competitionService.getUpcomingCompetitions();
 
         res.status(200).json({
           success: true,
@@ -541,6 +541,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const cacheKey = generateCacheKey(req, "competitions", {
           status,
           ...pagingParams,
+          // Include userId in cache key since response includes user-specific voting data
+          ...(userId && { userId }),
         });
         if (shouldCacheResponse) {
           const cached = caches.list.get(cacheKey);
@@ -550,7 +552,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         const { competitions, total } =
-          await services.competitionManager.getCompetitions(
+          await services.competitionService.getCompetitions(
             status,
             // Default limit 10, max 100. It's important we don't call this without a limit
             pagingParams,
@@ -580,7 +582,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
             const hasVoted = !!enrichment.userVoteAgentId;
             const compVotingStatus =
-              services.voteManager.checkCompetitionVotingEligibility(
+              services.voteService.checkCompetitionVotingEligibility(
                 competition,
               );
 
@@ -683,6 +685,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const shouldCacheResponse = checkShouldCacheResponse(req);
         const cacheKey = generateCacheKey(req, "competitionById", {
           competitionId,
+          // Include userId in cache key since response includes user-specific voting data
+          ...(userId && { userId }),
         });
         if (shouldCacheResponse) {
           const cached = caches.byId.get(cacheKey);
@@ -693,20 +697,20 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get competition details
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
 
         // Get trade metrics for this competition
         const { totalTrades, totalVolume, uniqueTokens } =
-          await services.tradeSimulator.getCompetitionTradeMetrics(
+          await services.tradeSimulatorService.getCompetitionTradeMetrics(
             competitionId,
           );
 
         // Get vote counts for this competition
         const voteCountsMap =
-          await services.voteManager.getVoteCountsByCompetition(competitionId);
+          await services.voteService.getVoteCountsByCompetition(competitionId);
         const totalVotes = Array.from(voteCountsMap.values()).reduce(
           (sum, count) => sum + count,
           0,
@@ -732,7 +736,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         if (userId) {
           try {
             const votingState =
-              await services.voteManager.getCompetitionVotingState(
+              await services.voteService.getCompetitionVotingState(
                 userId,
                 competitionId,
               );
@@ -827,7 +831,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check if competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
@@ -847,7 +851,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get agents for the competition with pagination
         const { agents, total } =
-          await services.competitionManager.getCompetitionAgentsWithMetrics(
+          await services.competitionService.getCompetitionAgentsWithMetrics(
             competitionId,
             queryParams,
           );
@@ -907,7 +911,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
 
           // Get agent to find the owner
-          const agent = await services.agentManager.getAgent(agentId);
+          const agent = await services.agentService.getAgent(agentId);
           if (!agent) {
             throw new ApiError(404, "Agent not found");
           }
@@ -915,7 +919,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           validatedUserId = agent.ownerId;
         } else if (req.userId) {
           // User session authentication - need to verify agent ownership
-          const agent = await services.agentManager.getAgent(agentId);
+          const agent = await services.agentService.getAgent(agentId);
           if (!agent) {
             throw new ApiError(404, "Agent not found");
           }
@@ -929,7 +933,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Call the service layer
-        await services.competitionManager.joinCompetition(
+        await services.competitionService.joinCompetition(
           competitionId,
           agentId,
           validatedUserId,
@@ -1031,7 +1035,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
 
           // Get agent to find the owner
-          const agent = await services.agentManager.getAgent(agentId);
+          const agent = await services.agentService.getAgent(agentId);
           if (!agent) {
             throw new ApiError(404, "Agent not found");
           }
@@ -1039,7 +1043,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           validatedUserId = agent.ownerId;
         } else if (req.userId) {
           // User session authentication - need to verify agent ownership
-          const agent = await services.agentManager.getAgent(agentId);
+          const agent = await services.agentService.getAgent(agentId);
           if (!agent) {
             throw new ApiError(404, "Agent not found");
           }
@@ -1053,7 +1057,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Call the service layer
-        await services.competitionManager.leaveCompetition(
+        await services.competitionService.leaveCompetition(
           competitionId,
           agentId,
           validatedUserId,
@@ -1113,7 +1117,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check if competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
@@ -1133,7 +1137,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get timeline data
         const rawData =
-          await services.portfolioSnapshotter.getAgentPortfolioTimeline(
+          await services.portfolioSnapshotterService.getAgentPortfolioTimeline(
             competitionId,
             bucket,
           );
@@ -1212,7 +1216,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get competition details
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
@@ -1337,7 +1341,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check if competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
@@ -1357,7 +1361,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get trades
         const { trades, total } =
-          await services.tradeSimulator.getCompetitionTrades(
+          await services.tradeSimulatorService.getCompetitionTrades(
             competitionId,
             pagingParams.limit,
             pagingParams.offset,
@@ -1403,13 +1407,13 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check if competition exists
         const competition =
-          await services.competitionManager.getCompetition(competitionId);
+          await services.competitionService.getCompetition(competitionId);
         if (!competition) {
           throw new ApiError(404, "Competition not found");
         }
 
         // Check if agent exists
-        const agent = await services.agentManager.getAgent(agentId);
+        const agent = await services.agentService.getAgent(agentId);
         if (!agent) {
           throw new ApiError(404, "Agent not found");
         }
@@ -1430,7 +1434,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Get trades
         const { trades, total } =
-          await services.tradeSimulator.getAgentTradesInCompetition(
+          await services.tradeSimulatorService.getAgentTradesInCompetition(
             competitionId,
             agentId,
             pagingParams.limit,

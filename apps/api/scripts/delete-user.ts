@@ -39,7 +39,7 @@ const colors = {
  */
 async function listAllUsers() {
   try {
-    const users = await services.userManager.getAllUsers();
+    const users = await services.userService.getAllUsers();
 
     if (users.length === 0) {
       console.log(
@@ -81,7 +81,7 @@ async function listAllUsers() {
 async function deleteUser(userId: string) {
   try {
     // Get agent details first to confirm
-    const user = await services.userManager.getUser(userId);
+    const user = await services.userService.getUser(userId);
 
     if (!user) {
       console.log(
@@ -109,7 +109,7 @@ ${colors.red}Type the user name (${user.name}) to confirm deletion:${colors.rese
     console.log(`\n${colors.blue}Deleting agent...${colors.reset}`);
 
     // Delete the agent
-    const result = await services.userManager.deleteUser(userId);
+    const result = await services.userService.deleteUser(userId);
 
     if (result) {
       console.log(

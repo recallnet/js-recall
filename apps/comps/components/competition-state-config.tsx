@@ -8,6 +8,12 @@ type VotingStatusConfig = {
   phase: string | null;
 };
 
+/**
+ * Determines the configuration for the competition state banner.
+ * This function handles various states including registration capacity limits.
+ * When a competition reaches its maxParticipants limit, it will show
+ * "Registration is full" regardless of the time window remaining.
+ */
 export function getCompetitionStateConfig(
   competition: Competition,
   hasVoted: boolean,
@@ -106,6 +112,21 @@ export function getCompetitionStateConfig(
 
   // Flow #3
   if (joinStart && joinEnd === null && now >= joinStart) {
+    // Check if registration is at capacity
+    const isRegistrationFull =
+      competition.maxParticipants !== null &&
+      competition.registeredParticipants >= competition.maxParticipants;
+
+    if (isRegistrationFull) {
+      return {
+        subTitle: "Registration is full",
+        description: `Maximum capacity reached (${competition.maxParticipants} participants)`,
+        variant: "gray",
+        untilTime: null,
+        phase: null,
+      };
+    }
+
     return {
       subTitle: "Registration is open!",
       description: "",
@@ -117,6 +138,21 @@ export function getCompetitionStateConfig(
 
   // Flow #4
   if (joinEnd && now < joinEnd) {
+    // Check if registration is at capacity
+    const isRegistrationFull =
+      competition.maxParticipants !== null &&
+      competition.registeredParticipants >= competition.maxParticipants;
+
+    if (isRegistrationFull) {
+      return {
+        subTitle: "Registration is full",
+        description: `Maximum capacity reached (${competition.maxParticipants} participants)`,
+        variant: "gray",
+        untilTime: null,
+        phase: null,
+      };
+    }
+
     return {
       subTitle: "Join now!",
       description: "Registration closes in...",

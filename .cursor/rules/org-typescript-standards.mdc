@@ -52,6 +52,39 @@ alwaysApply: true
 - **Caching:** Implement appropriate caching strategies (client-side and server-side).
 - **Asset Optimization:** Optimize images, fonts, and other static assets.
 
+## Code Efficiency Patterns
+- **Array Method Selection:**
+  - Use `.some()` to check if ANY element matches (stops on first match)
+  - Use `.every()` to check if ALL elements match (stops on first non-match)  
+  - Use `.find()` to get the first matching element (stops on first match)
+  - Avoid `.filter().length === 0` or `.filter().length > 0` when `.some()` or `.every()` would suffice
+  - Don't build arrays just to check emptiness or count - use boolean checks where possible
+
+- **Type Narrowing with Early Returns:**
+  - Use early returns to narrow types and reduce nesting
+  - After null/undefined checks with early returns, TypeScript knows the value is defined
+  - Prefer guard clauses at the start of functions over deeply nested if-else blocks
+  - Example:
+    ```typescript
+    // Good: Fail fast with type narrowing
+    if (!data) {
+      logger.error('No data provided');
+      return;
+    }
+    // TypeScript now knows data is defined for rest of function
+    
+    // Avoid: Carrying uncertainty through the function
+    if (data) {
+      // entire function body nested here
+    }
+    ```
+
+- **Helper Function Extraction:**
+  - Extract complex type transformations into well-typed helper functions
+  - Use generics in helpers to maintain type safety across different use cases
+  - Return discriminated unions or Result types from helpers to make error handling explicit
+  - Keep helper functions pure when possible (no side effects, deterministic output)
+
 ## Documentation Standards
 - **API Changes:** Document changes to public APIs clearly (e.g., in changelogs or PR descriptions).
 - **Usage Examples:** Update usage examples when APIs change or new features are added.

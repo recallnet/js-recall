@@ -16,6 +16,7 @@ import {
   competitionsLeaderboard,
 } from "@recallnet/db-schema/core/defs";
 import { InsertAgent, SelectAgent } from "@recallnet/db-schema/core/types";
+import { Transaction } from "@recallnet/db-schema/types";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
@@ -347,26 +348,6 @@ async function findByOwnerIdImpl(
 }
 
 /**
- * Find an agent by API key
- * @param apiKey The API key to search for
- */
-async function findByApiKeyImpl(
-  apiKey: string,
-): Promise<SelectAgent | undefined> {
-  try {
-    const [result] = await db
-      .select()
-      .from(agents)
-      .where(eq(agents.apiKey, apiKey));
-
-    return result;
-  } catch (error) {
-    console.error("[AgentRepository] Error in findByApiKey:", error);
-    throw error;
-  }
-}
-
-/**
  * Find an agent by API key hash
  * @param apiKeyHash The API key hash to search for
  */
@@ -688,18 +669,6 @@ async function countByNameImpl(name: string): Promise<number> {
 }
 
 /**
- * Find all inactive agents
- */
-async function findInactiveAgentsImpl(): Promise<SelectAgent[]> {
-  try {
-    return await db.select().from(agents).where(eq(agents.status, "suspended"));
-  } catch (error) {
-    repositoryLogger.error("Error in findInactiveAgents:", error);
-    throw error;
-  }
-}
-
-/**
  * Find competitions for multiple agents (user's agents) with all sorting handled at database level
  * This replaces the inefficient approach of loading all data into memory for computed sorting
  * @param agentIds Array of agent IDs to find competitions for
@@ -976,6 +945,31 @@ async function getBulkAgentTrophiesImpl(agentIds: string[]): Promise<
   }
 }
 
+/**
+ * Update the agent owner for all of their agents
+ * @param userId The userId of the existing owner
+ * @param newUserId The userId of the new owner
+ * @param tx An optional database transaction to run the operation in
+ * @returns The number of rows updated
+ */
+async function updateAgentsOwnerImpl(
+  userId: string,
+  newUserId: string,
+  tx?: Transaction,
+) {
+  try {
+    const executor = tx || db;
+    const res = await executor
+      .update(agents)
+      .set({ ownerId: newUserId })
+      .where(eq(agents.ownerId, userId));
+    return res.rowCount || 0;
+  } catch (error) {
+    console.error("[AgentRepository] Error in updateAgentsOwner:", error);
+    throw error;
+  }
+}
+
 // =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // =============================================================================
@@ -1025,12 +1019,6 @@ export const findByOwnerId = createTimedRepositoryFunction(
   findByOwnerIdImpl,
   "AgentRepository",
   "findByOwnerId",
-);
-
-export const findByApiKey = createTimedRepositoryFunction(
-  findByApiKeyImpl,
-  "AgentRepository",
-  "findByApiKey",
 );
 
 export const findByApiKeyHash = createTimedRepositoryFunction(
@@ -1105,12 +1093,6 @@ export const countByName = createTimedRepositoryFunction(
   "countByName",
 );
 
-export const findInactiveAgents = createTimedRepositoryFunction(
-  findInactiveAgentsImpl,
-  "AgentRepository",
-  "findInactiveAgents",
-);
-
 export const findUserAgentCompetitions = createTimedRepositoryFunction(
   findUserAgentCompetitionsImpl,
   "AgentRepository",
@@ -1121,4 +1103,10 @@ export const getBulkAgentTrophies = createTimedRepositoryFunction(
   getBulkAgentTrophiesImpl,
   "AgentRepository",
   "getBulkAgentTrophies",
+);
+
+export const updateAgentsOwner = createTimedRepositoryFunction(
+  updateAgentsOwnerImpl,
+  "AgentRepository",
+  "updateAgentsOwner",
 );
