@@ -13,6 +13,26 @@ import { CopyButton } from "../copy-button";
 import { VisibilityToggle } from "../visibility-toggle";
 
 /**
+ * Props for the ApiKeyRow component
+ */
+interface ApiKeyRowProps {
+  /** Label text to display for the API key */
+  label: string;
+  /** Tooltip text to show on hover */
+  tooltip: string;
+  /** The API key value to display */
+  apiKey?: string;
+  /** Whether the component is in a loading state */
+  isLoading: boolean;
+  /** Whether the API key is locked and needs to be unlocked */
+  isLocked?: boolean;
+  /** Callback function to unlock the API key */
+  onUnlock?: () => void;
+  /** Whether the unlock operation is in progress */
+  isUnlocking?: boolean;
+}
+
+/**
  * Component for displaying an API key row with visibility toggle and copy functionality
  */
 const ApiKeyRow = ({
@@ -23,15 +43,7 @@ const ApiKeyRow = ({
   isLocked,
   onUnlock,
   isUnlocking,
-}: {
-  label: string;
-  tooltip: string;
-  apiKey?: string;
-  isLoading: boolean;
-  isLocked?: boolean;
-  onUnlock?: () => void;
-  isUnlocking?: boolean;
-}) => {
+}: ApiKeyRowProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   return (

@@ -44,7 +44,7 @@ async function handleCreateUser(request: NextRequest) {
     `/admin/search?user.walletAddress=${walletAddress}`,
   );
   if (searchByWalletAddress.results.users.length > 0) {
-    const existingUser = searchByWalletAddress.results.users[0];
+    const existingUser = searchByWalletAddress.results.users.at(0);
     return createSuccessResponse({
       success: true,
       user: existingUser,
