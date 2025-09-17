@@ -403,6 +403,7 @@ async function getOptimizedGlobalAgentMetricsImpl(
     if (actualField === "rank") {
       // For rank, we always sort by score descending (highest score = rank 1)
       // If user wants "-rank" (descending ranks), we sort by score ascending
+      // so that lowest score (highest rank number) comes first
       agentsQuery = agentsQuery.orderBy(
         isDescending ? agentScore.ordinal : desc(agentScore.ordinal),
       );

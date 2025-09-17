@@ -44,7 +44,7 @@ export class LeaderboardService {
       const totalCount = await this.getTotalAgentsCount();
 
       // Assign ranks based on score ordering with offset consideration
-      const agentsWithRanks = this.assignRanks(
+      const agentsWithRanks = await this.assignRanks(
         agents,
         params.sort,
         params.offset,
@@ -125,44 +125,42 @@ export class LeaderboardService {
    * @param offset Pagination offset to calculate correct global ranks
    * @returns Array of agents with proper ranks assigned
    */
-  private assignRanks(
+  private async assignRanks(
     agents: LeaderboardAgent[],
     sortField?: string,
     offset: number = 0,
-  ): LeaderboardAgent[] {
-    // When sorting by rank (default sort), agents come from DB already sorted by score
-    // For ascending rank: highest score gets rank 1
-    // For descending rank: lowest score gets rank 1 (reversed)
+  ): Promise<LeaderboardAgent[]> {
+    // For "-rank" sorting, the database returns agents in ascending score order
+    // (lowest score first), and we need to assign descending ranks
+    if (sortField === "-rank") {
+      const totalCount = await this.getTotalAgentsCount();
+      // When sorted by -rank, lowest score agent gets highest rank number
+      // With offset, we continue from where we left off
+      return agents.map((agent, index) => ({
+        ...agent,
+        rank: totalCount - offset - index,
+      }));
+    }
+
+    // For regular rank sorting or any other sort, ranks are based on score
+    // The agents come pre-sorted from the DB
     if (sortField === "rank" || sortField === undefined || sortField === "") {
-      // Ascending rank order (1, 2, 3...) - highest score is rank 1
-      // Include offset to maintain global rank positions
+      // Agents are already sorted by score desc, just assign sequential ranks
       return agents.map((agent, index) => ({
         ...agent,
         rank: offset + index + 1,
       }));
-    } else if (sortField === "-rank") {
-      // For descending rank, we need to know the total count
-      // This is a special case that requires different handling
-      // For now, we'll assign sequential ranks and the sorting will be handled by the DB
-      return agents.map((agent, index) => ({
-        ...agent,
-        rank: offset + index + 1, // Still use global positioning
-      }));
     }
 
-    // For non-rank sort fields, assign ranks based on score regardless of current order
-    // We need to get all agents to determine true ranks
-    // This is a limitation of the current approach - for non-rank sorts,
-    // we calculate ranks within the current page
-    const agentScores = agents.map((a) => ({ id: a.id, score: a.score }));
-    agentScores.sort((a, b) => b.score - a.score);
-
+    // For non-rank sort fields, we need to calculate ranks based on score
+    // within the current page of results
+    const agentScores = [...agents].sort((a, b) => b.score - a.score);
     const scoreRankMap = new Map<string, number>();
     agentScores.forEach((agent, index) => {
-      scoreRankMap.set(agent.id, index + 1 + offset);
+      scoreRankMap.set(agent.id, offset + index + 1);
     });
 
-    // Apply the rank mapping to maintain the requested sort order
+    // Apply the rank mapping while maintaining the query order
     return agents.map((agent) => ({
       ...agent,
       rank: scoreRankMap.get(agent.id) || 1,
