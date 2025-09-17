@@ -15,6 +15,48 @@ alwaysApply: false
 - Use the established repository pattern with dependency injection into manager services
 - Include proper indexes for foreign keys and frequently queried columns
 
+### Database Computation Patterns
+- **SQL-First Philosophy**: Always prefer database aggregations over in-memory processing
+  - Use SQL `SUM()`, `AVG()`, `COUNT()` instead of fetching all rows and calculating in JavaScript
+  - Use `DISTINCT ON` with proper indexes for latest-record queries
+  - Use database-level `GROUP BY` for grouping operations
+  - Use CTEs (Common Table Expressions) for complex multi-step queries
+  - Example: Getting latest summaries should use `DISTINCT ON (agent_id)` not fetch all and filter in memory
+- **Composite Indexes**: Always add indexes for:
+  - Foreign key relationships
+  - Columns used in `WHERE` clauses
+  - Columns used in `ORDER BY` with `DISTINCT ON`
+  - Multi-column patterns that match query patterns (e.g., `(agent_id, competition_id, timestamp DESC)`)
+- **Query Optimization Principles**:
+  - Avoid N+1 queries - use joins or batch fetching
+  - Use database cursors for large result sets
+  - Leverage database window functions for ranking and analytics
+  - Use `EXPLAIN ANALYZE` to verify query performance
+
+### Migration Best Practices
+- **Migration Generation**: Always use `pnpm --filter api db:generate` after schema changes
+- **Migration Naming**: Let Drizzle auto-generate names (e.g., `0041_mighty_wolverine.sql`)
+- **Migration Review**: Always review generated SQL before committing
+- **Backward Compatibility**: Migrations must be backward compatible for zero-downtime deployments
+- **Data Migrations**: Use separate scripts in `apps/api/scripts/` for data migrations, never mix schema and data migrations
+- **Rollback Strategy**: Document rollback SQL for destructive changes in PR description
+- **Testing Migrations**: Test migrations on a copy of production data when possible
+- **Index Creation**: Create indexes `CONCURRENTLY` in production to avoid table locks
+
+### Database Type Safety
+- **JSON Fields**: Never use `any` for jsonb columns
+  - Create type guard functions for runtime validation
+  - Use Zod schemas for complex JSON structures
+  - Example: `isValidPerpsConfig(data): data is PerpsConfig`
+- **Numeric Types**: Always parse database numerics to numbers
+  - Use `Number()` or `parseFloat()` for numeric columns
+  - Never pass numeric strings to frontend
+  - Be explicit about precision requirements
+- **Enum Safety**: Use TypeScript enums or literal unions for database enums
+- **Null Handling**: Explicitly handle nullable columns with proper types
+  - Use `| null` not `| undefined` for nullable database fields
+  - Consider using Result types for operations that may fail
+
 ## Authentication & Security
 
 ### Authentication Patterns
@@ -47,6 +89,38 @@ alwaysApply: false
 - Authentication flows must be thoroughly tested
 - Performance-critical changes require load testing validation
 
+### Test Coverage Standards
+- **Current Global Thresholds** (from `coverage.config.json`):
+  - Lines: 4%
+  - Statements: 4%
+  - Functions: 46%
+  - Branches: 46%
+  - Note: Coverage is calculated across all packages in aggregate
+- **Package-Specific Thresholds**:
+  - `apps/api`: 0% all metrics (testing infrastructure in development)
+  - `apps/comps`: 0% all metrics (frontend testing not yet implemented)
+  - `packages/rewards`: 100% all metrics (strictly enforced)
+  - `packages/staking-contracts`: 100% all metrics (strictly enforced)
+- **Coverage Migration Strategy**:
+  - New packages must start with 100% coverage requirements
+  - Existing apps (api, comps) will gradually increase thresholds
+  - Any new critical path code must have tests regardless of package thresholds
+- **Critical Path Coverage**: 100% coverage required for:
+  - Authentication flows
+  - Payment/trading operations
+  - Wallet verification
+  - Competition scoring logic
+  - Financial calculations (PnL, portfolio values)
+- **Coverage Reporting**: All PRs must include coverage report via GitHub Actions
+- **Test Data Management**: 
+  - Never use production data in tests
+  - Use factories or builders for test data generation
+  - Maintain test data consistency across test suites
+- **Test Quality Metrics**:
+  - Tests should be deterministic (no flaky tests)
+  - Tests should run in isolation
+  - Tests should complete within reasonable time (< 30s for unit, < 2min for E2E)
+
 ### Running Tests
 - To run tests using the e2e testing suite, you can use a format such as `cd apps/api && pnpm test:e2e name-of-test.test.ts`
 
@@ -57,6 +131,30 @@ alwaysApply: false
 - Error responses must include `error: string` and `status: number` fields
 - Use consistent HTTP status codes (400 for validation, 401 for auth, 409 for conflicts)
 - Success responses should include relevant data fields and descriptive `message` when appropriate
+- **Error Response Format**:
+  ```typescript
+  {
+    success: false,
+    error: string,
+    status: number,
+    details?: object, // Only in development
+    requestId?: string
+  }
+  ```
+- **Success Response Format**:
+  ```typescript
+  {
+    success: true,
+    data: T,
+    message?: string,
+    pagination?: {
+      total: number,
+      limit: number,
+      offset: number,
+      hasMore: boolean
+    }
+  }
+  ```
 
 ### Route Organization
 - Group routes by feature in `apps/api/src/routes/` (e.g., `agent.routes.ts`, `auth.routes.ts`)
@@ -123,11 +221,56 @@ alwaysApply: false
 - Caching strategy required for frequently accessed data (user sessions, price data)
 - Retry logic with exponential backoff for transient failures
 - Capacity planning and scaling thresholds must be documented
+- **Query Optimization**:
+  - Use `LIMIT` and `OFFSET` for all list endpoints
+  - Default page size: 10-50 items (never unlimited)
+  - Use database cursors for large result sets
+  - Avoid N+1 queries - use joins or batch fetching
+  - Maximum query time: 1000ms before timeout
+- **Caching Strategy**:
+  - LRU cache for frequently accessed data
+  - Cache TTL: 60s for prices, 300s for competition data
+  - Cache invalidation on mutations
+  - Use Redis for distributed caching
+  - Cache warming for critical data on startup
+- **Response Time SLAs**:
+  - P95 < 200ms for reads
+  - P95 < 500ms for writes
+  - P95 < 1000ms for complex aggregations
+  - P99 < 2000ms for all endpoints
+- **Rate Limiting**:
+  - Default: 100 requests per minute per API key
+  - Burst: Allow 20% over limit for 10 seconds
+  - Return `429 Too Many Requests` with `Retry-After` header
 
 ### Monitoring & Observability
 - All API endpoints must include structured logging with request IDs
 - Health check endpoints must validate all dependencies (DB, external APIs)
 - Business metric tracking and performance SLIs/SLOs required
+- **Metrics Collection**:
+  - Response times per endpoint
+  - Database query performance
+  - Cache hit rates
+  - Business metrics (trades/hour, active agents, competition participation)
+  - Error rates by type and endpoint
+- **Logging Standards**:
+  - Structured JSON logging
+  - Request ID propagation through all layers
+  - Log levels: ERROR, WARN, INFO, DEBUG
+  - Separate application and error logs
+  - Never log sensitive data (passwords, API keys, PII)
+- **Health Checks**:
+  - `/health` - Basic liveness check
+  - `/health/ready` - Readiness check including:
+    - Database connectivity
+    - Redis connectivity
+    - External service availability
+    - Disk space and memory usage
+- **Alert Thresholds**:
+  - Error rate > 1% for 5 minutes
+  - P95 response time > 500ms for 10 minutes
+  - Database connection pool > 80% utilized
+  - Memory usage > 85%
 
 ## Code Quality & Documentation
 

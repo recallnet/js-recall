@@ -44,6 +44,48 @@ alwaysApply: true
 - Be mindful of security best practices, especially when handling user input, authentication, authorization, or interacting with external services.
 - Avoid common vulnerabilities (e.g., XSS, CSRF, insecure direct object references).
 
+## Dead Code Prevention
+- **Dead Code Detection**:
+  - Remove unused functions immediately upon discovery
+  - Use `grep` or semantic search to verify function usage before creating new ones
+  - Prefer extending existing functions over creating similar ones
+  - Remove commented-out code blocks (use version control for history)
+- **Function Reuse Audit**:
+  - Before implementing: Search for similar functionality using semantic search
+  - Document why existing solutions don't work if creating new functions
+  - Mark deprecated functions with `@deprecated` TSDoc tag
+  - Include migration path in deprecation notice
+- **Regular Cleanup**:
+  - Quarterly dead code audits
+  - Remove feature flags after full rollout
+  - Clean up experimental code that wasn't adopted
+
+## Pull Request Standards
+- **PR Documentation**: Create `.agent/pr-description-[feature].md` for all features
+- **Required Sections**:
+  - Summary of changes (what and why)
+  - API changes (with request/response examples)
+  - Database changes (with migration details)
+  - Frontend changes (with screenshots if UI)
+  - Testing approach
+  - Performance impact analysis
+  - Breaking changes (if any)
+  - Deployment notes (if special steps required)
+- **Review Checklist**:
+  - [ ] Linter passes (`pnpm lint`)
+  - [ ] Tests pass (`pnpm test`) - Note: Coverage thresholds vary by package
+  - [ ] Documentation updated
+  - [ ] No `any` types introduced
+  - [ ] Database queries optimized
+  - [ ] Migration tested (if applicable)
+  - [ ] Performance impact assessed
+  - [ ] New critical code has tests (even if package has 0% threshold)
+- **PR Size Guidelines**:
+  - Ideal: < 400 lines changed
+  - Maximum: < 1000 lines changed
+  - Split larger changes into multiple PRs
+  - Use feature flags for gradual rollout
+
 # Agent Collaboration & Workflow (.agent/ Directory)
 
 The `.agent/` directory is used for maintaining development context and task tracking:
