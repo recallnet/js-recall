@@ -173,7 +173,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       // Since Symphony only provides data for registered addresses,
       // we check API availability by testing the endpoint exists
       // A 404 for an unknown address still indicates the API is healthy
-      const response = await this.axiosInstance.get("/agent/all-positions", {
+      const response = await this.axiosInstance.get("/agent/user-performance", {
         params: { userAddress: "0x0000000000000000000000000000000000000001" },
         timeout: 5000,
         validateStatus: (status) => {
@@ -498,7 +498,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     walletAddress: string,
   ): Promise<SymphonyPositionResponse["data"]> {
     const response = await this.makeRequest<SymphonyPositionResponse>(
-      "/agent/all-positions",
+      "/agent/user-performance",
       { userAddress: walletAddress },
     );
 

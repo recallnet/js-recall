@@ -194,7 +194,7 @@ describe("SymphonyPerpsProvider", () => {
 
       expect(result).toBe(true);
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        "/agent/all-positions",
+        "/agent/user-performance",
         {
           params: { userAddress: "0x0000000000000000000000000000000000000001" },
           timeout: 5000,
@@ -264,7 +264,7 @@ describe("SymphonyPerpsProvider", () => {
       });
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        "/agent/all-positions",
+        "/agent/user-performance",
         {
           params: { userAddress: "0xtest123" },
         },
