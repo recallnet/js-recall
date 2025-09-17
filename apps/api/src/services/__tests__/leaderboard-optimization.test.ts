@@ -256,4 +256,316 @@ describe("LeaderboardService optimization", () => {
       rank: 2, // Has middle score, so rank 2
     });
   });
+
+  it("should handle descending rank sort correctly", async () => {
+    // Arrange
+    const mockAgentService = {};
+    const service = new LeaderboardService(mockAgentService as never);
+
+    const params: LeaderboardParams = {
+      type: "trading",
+      sort: "-rank", // Descending rank order
+      limit: 3,
+      offset: 0,
+    };
+
+    const mockStats = {
+      activeAgents: 3,
+      totalCompetitions: 1,
+      totalTrades: 100,
+      totalVolume: 5000,
+      totalVotes: 50,
+      competitionIds: ["comp1"],
+    };
+
+    // Agents come from DB sorted by score ascending for -rank
+    const mockAgents = [
+      {
+        id: "agent3",
+        name: "Low Score Agent",
+        handle: "low",
+        description: null,
+        imageUrl: null,
+        metadata: {},
+        score: 25,
+        numCompetitions: 1,
+        voteCount: 2,
+      },
+      {
+        id: "agent2",
+        name: "Mid Score Agent",
+        handle: "mid",
+        description: null,
+        imageUrl: null,
+        metadata: {},
+        score: 50,
+        numCompetitions: 1,
+        voteCount: 5,
+      },
+      {
+        id: "agent1",
+        name: "High Score Agent",
+        handle: "high",
+        description: null,
+        imageUrl: null,
+        metadata: {},
+        score: 100,
+        numCompetitions: 1,
+        voteCount: 10,
+      },
+    ];
+
+    vi.mocked(leaderboardRepository.getGlobalStats).mockResolvedValue(
+      mockStats,
+    );
+    vi.mocked(
+      leaderboardRepository.getOptimizedGlobalAgentMetrics,
+    ).mockResolvedValue(mockAgents);
+    vi.mocked(leaderboardRepository.getTotalAgentsWithScores).mockResolvedValue(
+      3,
+    );
+
+    // Act
+    const result = await service.getGlobalLeaderboardWithSorting(params);
+
+    // Assert
+    expect(result.agents).toHaveLength(3);
+    // For -rank sort, lowest score gets highest rank number
+    expect(result.agents[0]).toMatchObject({
+      name: "Low Score Agent",
+      rank: 3, // Lowest score, highest rank number
+    });
+    expect(result.agents[1]).toMatchObject({
+      name: "Mid Score Agent",
+      rank: 2,
+    });
+    expect(result.agents[2]).toMatchObject({
+      name: "High Score Agent",
+      rank: 1, // Highest score, lowest rank number
+    });
+  });
+
+  it("should handle default sort when sort field is undefined", async () => {
+    // Arrange
+    const mockAgentService = {};
+    const service = new LeaderboardService(mockAgentService as never);
+
+    const params: LeaderboardParams = {
+      type: "trading",
+      sort: undefined, // No sort specified, should default to rank
+      limit: 10,
+      offset: 5,
+    };
+
+    const mockStats = {
+      activeAgents: 10,
+      totalCompetitions: 2,
+      totalTrades: 200,
+      totalVolume: 10000,
+      totalVotes: 100,
+      competitionIds: ["comp1", "comp2"],
+    };
+
+    const mockAgents = [
+      {
+        id: "agent1",
+        name: "Agent One",
+        handle: "agent_one",
+        description: null,
+        imageUrl: null,
+        metadata: {},
+        score: 95,
+        numCompetitions: 2,
+        voteCount: 15,
+      },
+    ];
+
+    vi.mocked(leaderboardRepository.getGlobalStats).mockResolvedValue(
+      mockStats,
+    );
+    vi.mocked(
+      leaderboardRepository.getOptimizedGlobalAgentMetrics,
+    ).mockResolvedValue(mockAgents);
+    vi.mocked(leaderboardRepository.getTotalAgentsWithScores).mockResolvedValue(
+      10,
+    );
+
+    // Act
+    const result = await service.getGlobalLeaderboardWithSorting(params);
+
+    // Assert
+    expect(
+      leaderboardRepository.getOptimizedGlobalAgentMetrics,
+    ).toHaveBeenCalledWith(undefined, 10, 5);
+    expect(result.agents[0]?.rank).toBe(6); // offset + 1
+  });
+
+  it("should handle error in repository call gracefully", async () => {
+    // Arrange
+    const mockAgentService = {};
+    const service = new LeaderboardService(mockAgentService as never);
+
+    const params: LeaderboardParams = {
+      type: "trading",
+      sort: "rank",
+      limit: 10,
+      offset: 0,
+    };
+
+    const mockStats = {
+      activeAgents: 5,
+      totalCompetitions: 1,
+      totalTrades: 50,
+      totalVolume: 2500,
+      totalVotes: 25,
+      competitionIds: ["comp1"],
+    };
+
+    vi.mocked(leaderboardRepository.getGlobalStats).mockResolvedValue(
+      mockStats,
+    );
+    vi.mocked(
+      leaderboardRepository.getOptimizedGlobalAgentMetrics,
+    ).mockRejectedValue(new Error("Database error"));
+
+    // Act
+    const result = await service.getGlobalLeaderboardWithSorting(params);
+
+    // Assert - should return empty response on error
+    expect(result).toEqual({
+      stats: {
+        activeAgents: 0,
+        totalCompetitions: 0,
+        totalTrades: 0,
+        totalVolume: 0,
+        totalVotes: 0,
+      },
+      agents: [],
+      pagination: {
+        total: 0,
+        limit: 10,
+        offset: 0,
+        hasMore: false,
+      },
+    });
+  });
+
+  it("should call getGlobalStats with correct competition type", async () => {
+    // Arrange
+    const mockAgentService = {};
+    const service = new LeaderboardService(mockAgentService as never);
+
+    const params: LeaderboardParams = {
+      type: "staking",
+      sort: "rank",
+      limit: 10,
+      offset: 0,
+    };
+
+    const mockStats = {
+      activeAgents: 0,
+      totalCompetitions: 0,
+      totalTrades: 0,
+      totalVolume: 0,
+      totalVotes: 0,
+      competitionIds: [],
+    };
+
+    vi.mocked(leaderboardRepository.getGlobalStats).mockResolvedValue(
+      mockStats,
+    );
+
+    // Act
+    await service.getGlobalLeaderboardWithSorting(params);
+
+    // Assert
+    expect(leaderboardRepository.getGlobalStats).toHaveBeenCalledWith(
+      "staking",
+    );
+  });
+
+  it("should correctly determine hasMore in pagination", async () => {
+    // Arrange
+    const mockAgentService = {};
+    const service = new LeaderboardService(mockAgentService as never);
+
+    const params: LeaderboardParams = {
+      type: "trading",
+      sort: "rank",
+      limit: 10,
+      offset: 95,
+    };
+
+    const mockStats = {
+      activeAgents: 100,
+      totalCompetitions: 5,
+      totalTrades: 1000,
+      totalVolume: 50000,
+      totalVotes: 500,
+      competitionIds: ["comp1"],
+    };
+
+    const mockAgents = Array(5)
+      .fill(null)
+      .map((_, i) => ({
+        id: `agent${i + 96}`,
+        name: `Agent ${i + 96}`,
+        handle: `agent_${i + 96}`,
+        description: null,
+        imageUrl: null,
+        metadata: {},
+        score: 100 - i,
+        numCompetitions: 1,
+        voteCount: 10 - i,
+      }));
+
+    vi.mocked(leaderboardRepository.getGlobalStats).mockResolvedValue(
+      mockStats,
+    );
+    vi.mocked(
+      leaderboardRepository.getOptimizedGlobalAgentMetrics,
+    ).mockResolvedValue(mockAgents);
+    vi.mocked(leaderboardRepository.getTotalAgentsWithScores).mockResolvedValue(
+      100,
+    );
+
+    // Act
+    const result = await service.getGlobalLeaderboardWithSorting(params);
+
+    // Assert
+    expect(result.pagination).toEqual({
+      total: 100,
+      limit: 10,
+      offset: 95,
+      hasMore: false, // 95 + 10 = 105, which is > 100
+    });
+  });
+
+  it("should test getGlobalStats legacy method", async () => {
+    // Arrange
+    const mockAgentService = {};
+    const service = new LeaderboardService(mockAgentService as never);
+
+    const mockStats = {
+      activeAgents: 50,
+      totalCompetitions: 3,
+      totalTrades: 500,
+      totalVolume: 25000,
+      totalVotes: 250,
+      competitionIds: ["comp1", "comp2", "comp3"],
+    };
+
+    vi.mocked(leaderboardRepository.getGlobalStats).mockResolvedValue(
+      mockStats,
+    );
+
+    // Act
+    const result = await service.getGlobalStats("trading");
+
+    // Assert
+    expect(leaderboardRepository.getGlobalStats).toHaveBeenCalledWith(
+      "trading",
+    );
+    expect(result).toEqual(mockStats);
+  });
 });
