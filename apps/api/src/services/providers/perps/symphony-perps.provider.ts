@@ -138,6 +138,18 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   }
 
   /**
+   * Mask wallet address for privacy in logs
+   * Shows first 6 and last 4 characters: 0x1234...abcd
+   * Keeps full address for debugging/traceability when needed
+   */
+  private maskWalletAddress(address: string): string {
+    if (!address || address.length < 10) {
+      return address; // Return as-is if invalid
+    }
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  /**
    * Get provider name for logging
    */
   getName(): string {
@@ -217,7 +229,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       await this.enforceRateLimit();
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetching account summary for ${walletAddress}`,
+        `[SymphonyProvider] Fetching account summary for ${this.maskWalletAddress(walletAddress)}`,
       );
 
       const data = await this.fetchPositionData(walletAddress);
@@ -245,7 +257,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       if (missingFields.length > 0) {
         serviceLogger.warn(
-          `[SymphonyProvider] Missing critical fields for ${walletAddress}: ${missingFields.join(", ")}. Using 0 as default.`,
+          `[SymphonyProvider] Missing critical fields for ${this.maskWalletAddress(walletAddress)}: ${missingFields.join(", ")}. Using 0 as default.`,
         );
       }
 
@@ -284,13 +296,13 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       };
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetched account summary for ${walletAddress} in ${Date.now() - startTime}ms`,
+        `[SymphonyProvider] Fetched account summary for ${this.maskWalletAddress(walletAddress)} in ${Date.now() - startTime}ms`,
       );
 
       return summary;
     } catch (error) {
       serviceLogger.error(
-        `[SymphonyProvider] Error fetching account summary for ${walletAddress}:`,
+        `[SymphonyProvider] Error fetching account summary for ${this.maskWalletAddress(walletAddress)}:`,
         error,
       );
       throw error;
@@ -307,7 +319,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       await this.enforceRateLimit();
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetching positions for ${walletAddress}`,
+        `[SymphonyProvider] Fetching positions for ${this.maskWalletAddress(walletAddress)}`,
       );
 
       const data = await this.fetchPositionData(walletAddress);
@@ -317,13 +329,13 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       const positions = this.transformPositions(data.openPositions, "Open");
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetched ${positions.length} open positions for ${walletAddress} in ${Date.now() - startTime}ms`,
+        `[SymphonyProvider] Fetched ${positions.length} open positions for ${this.maskWalletAddress(walletAddress)} in ${Date.now() - startTime}ms`,
       );
 
       return positions;
     } catch (error) {
       serviceLogger.error(
-        `[SymphonyProvider] Error fetching positions for ${walletAddress}:`,
+        `[SymphonyProvider] Error fetching positions for ${this.maskWalletAddress(walletAddress)}:`,
         error,
       );
       throw error;
@@ -343,7 +355,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       await this.enforceRateLimit();
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetching transfers for ${walletAddress} since ${since.toISOString()}`,
+        `[SymphonyProvider] Fetching transfers for ${this.maskWalletAddress(walletAddress)} since ${since.toISOString()}`,
       );
 
       const response = await this.makeRequest<SymphonyTransferResponse>(
@@ -356,7 +368,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       if (!response.success) {
         serviceLogger.warn(
-          `[SymphonyProvider] Transfer fetch unsuccessful for ${walletAddress}`,
+          `[SymphonyProvider] Transfer fetch unsuccessful for ${this.maskWalletAddress(walletAddress)}`,
         );
         return [];
       }
@@ -374,13 +386,13 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       }));
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetched ${transfers.length} transfers for ${walletAddress} in ${Date.now() - startTime}ms`,
+        `[SymphonyProvider] Fetched ${transfers.length} transfers for ${this.maskWalletAddress(walletAddress)} in ${Date.now() - startTime}ms`,
       );
 
       return transfers;
     } catch (error) {
       serviceLogger.error(
-        `[SymphonyProvider] Error fetching transfers for ${walletAddress}:`,
+        `[SymphonyProvider] Error fetching transfers for ${this.maskWalletAddress(walletAddress)}:`,
         error,
       );
       // Don't throw - transfer history is optional for self-funding detection
@@ -401,7 +413,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
     if (!response.success) {
       throw new Error(
-        `Symphony API returned unsuccessful response for ${walletAddress}`,
+        `Symphony API returned unsuccessful response for ${this.maskWalletAddress(walletAddress)}`,
       );
     }
 
