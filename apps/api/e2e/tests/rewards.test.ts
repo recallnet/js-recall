@@ -84,7 +84,7 @@ describe("Rewards Service", () => {
         competitionId: testCompetitionId,
         address,
         amount,
-        leafHash: hexToBytes(leafHashBuffer), // Convert Buffer to Uint8Array
+        leafHash: new Uint8Array(leafHashBuffer), // Convert Buffer to Uint8Array
         claimed: false,
       });
     }
@@ -182,7 +182,7 @@ describe("Rewards Service", () => {
         competitionId: testCompetitionId,
         address,
         amount,
-        leafHash: hexToBytes(leafHashBuffer), // Convert Buffer to Uint8Array
+        leafHash: new Uint8Array(leafHashBuffer), // Convert Buffer to Uint8Array
         claimed: false,
       },
     ];

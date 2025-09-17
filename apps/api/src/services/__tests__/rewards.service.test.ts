@@ -394,8 +394,13 @@ describe("RewardsService", () => {
           competitionId,
           level: 1,
           idx: 0,
-          hash: keccak256(
-            Buffer.concat([siblingHash, leafHash].sort(Buffer.compare)),
+          hash: new Uint8Array(
+            Buffer.from(
+              keccak256(
+                Buffer.concat([siblingHash, leafHash].sort(Buffer.compare)),
+              ).slice(2),
+              "hex",
+            ),
           ),
           createdAt: new Date(),
         },
@@ -413,8 +418,13 @@ describe("RewardsService", () => {
       expect(proof[0]).toEqual(siblingHash); // Should contain the sibling hash
 
       // Verify proof can reconstruct to the parent node
-      const reconstructedParent = keccak256(
-        Buffer.concat([siblingHash, leafHash].sort(Buffer.compare)),
+      const reconstructedParent = new Uint8Array(
+        Buffer.from(
+          keccak256(
+            Buffer.concat([siblingHash, leafHash].sort(Buffer.compare)),
+          ).slice(2),
+          "hex",
+        ),
       );
       expect(reconstructedParent).toEqual(mockTree[2]?.hash);
     });

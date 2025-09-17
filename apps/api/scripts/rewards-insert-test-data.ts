@@ -115,7 +115,7 @@ async function insertCompetitionAndRewards() {
         competitionId: competitionId,
         address: reward.address,
         amount: reward.amount,
-        leafHash: hexToBytes(leafHash),
+        leafHash: new Uint8Array(leafHash),
         claimed: false,
       });
 
