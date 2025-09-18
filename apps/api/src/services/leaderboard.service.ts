@@ -1,3 +1,6 @@
+import { LRUCache } from "lru-cache";
+
+import { config } from "@/config/index.js";
 import {
   getGlobalStats,
   getOptimizedGlobalAgentMetrics,
@@ -11,12 +14,44 @@ import {
 } from "@/types/index.js";
 
 import { AgentService } from "./agent.service.js";
+import {
+  generateCacheKey,
+  shouldCacheForEnvironment,
+} from "./caching-helpers.js";
+
+/**
+ * Global leaderboard data response
+ */
+type GlobalLeaderboardData = {
+  success: true;
+  stats: {
+    activeAgents: number;
+    totalCompetitions: number;
+    totalTrades: number;
+    totalVolume: number;
+    totalVotes: number;
+  };
+  agents: LeaderboardAgent[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+};
 
 /**
  * Leaderboard Service
  * Handles global leaderboard data with sorting and pagination across all competitions
  */
 export class LeaderboardService {
+  /**
+   * Cache instance for global leaderboard
+   */
+  private cache = new LRUCache<string, GlobalLeaderboardData>({
+    max: config.cache.api.leaderboard.maxCacheSize,
+    ttl: config.cache.api.leaderboard.ttlMs,
+  });
   constructor(private agentService: AgentService) {}
 
   /**
@@ -24,8 +59,21 @@ export class LeaderboardService {
    * @param params Query parameters including sort, limit, offset
    * @returns Complete leaderboard response with sorted agents and metadata
    */
-  async getGlobalLeaderboardWithSorting(params: LeaderboardParams) {
+  async getGlobalLeaderboardWithSorting(
+    params: LeaderboardParams,
+  ): Promise<GlobalLeaderboardData> {
     try {
+      // Check cache if caching is enabled (leaderboard is always public)
+      const shouldCache = shouldCacheForEnvironment(config.server.nodeEnv);
+      const cacheKey = generateCacheKey("globalLeaderboard", "anon", params);
+
+      if (shouldCache) {
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+          return cached;
+        }
+      }
+
       // Get global stats (existing functionality)
       const stats = await getGlobalStats(params.type);
       if (stats.competitionIds.length === 0) {
@@ -45,7 +93,8 @@ export class LeaderboardService {
         params.offset + params.limit,
       );
 
-      return {
+      const response: GlobalLeaderboardData = {
+        success: true,
         stats: {
           activeAgents: stats.activeAgents,
           totalCompetitions: stats.totalCompetitions,
@@ -61,6 +110,13 @@ export class LeaderboardService {
           hasMore: params.offset + params.limit < total,
         },
       };
+
+      // Cache the result
+      if (shouldCache) {
+        this.cache.set(cacheKey, response);
+      }
+
+      return response;
     } catch (error) {
       serviceLogger.error(
         "[LeaderboardService] Failed to get global leaderboard:",
@@ -189,8 +245,11 @@ export class LeaderboardService {
    * @param params Original request parameters
    * @returns Safe empty response
    */
-  private emptyLeaderboardResponse(params: LeaderboardParams) {
+  private emptyLeaderboardResponse(
+    params: LeaderboardParams,
+  ): GlobalLeaderboardData {
     return {
+      success: true,
       stats: {
         activeAgents: 0,
         totalCompetitions: 0,
