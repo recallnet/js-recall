@@ -3,13 +3,11 @@ import qs from "qs";
 
 import { UpdateCompetitionSchema } from "@recallnet/db-schema/core/types";
 
-import { config } from "@/config/index.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AdminSearchUsersAndAgentsQuery,
   AdminSearchUsersAndAgentsQuerySchema,
   AgentCompetitionsParamsSchema,
-  AuthenticatedRequest,
   CompetitionAllowedUpdateSchema,
   PagingParamsSchema,
   PrivyIdentityTokenSchema,
@@ -215,55 +213,4 @@ export function checkUserUniqueConstraintViolation(error: unknown) {
           ? "privyId"
           : "unique value";
   }
-}
-
-/**
- * Check if the request is an unauthenticated *or* user authenticated (frontend) request
- * @param req Express request
- * @returns True if the request is authenticated as an admin, false otherwise
- */
-export function checkIsPublicOrUserRequest(req: Request) {
-  return !req.agentId && !checkIsAdmin(req);
-}
-
-/**
- * Check if the cache is enabled
- * @returns True if the cache is enabled, false otherwise
- */
-export function checkIsCacheEnabled() {
-  return !config.cache.api.disableCaching;
-}
-
-/**
- * Check if the cache should be created for the request
- * @param req Express request
- * @returns True if the cache should be created, false otherwise
- */
-export function checkShouldCacheResponse(req: Request) {
-  return checkIsCacheEnabled() && checkIsPublicOrUserRequest(req);
-}
-
-/**
- * Generate a cache key for the request in the format:
- * `<name>:<visibility>:<params>`
- *
- * - `<name>`: The name of the cache
- * - `<visibility>`: The visibility of the cache (either "user" or "anon")
- * - `<params>`: The parameters to include in the cache key (note: will be JSON stringified)
- *
- * @param req Express request
- * @param name The name of the cache
- * @param params (Optional) arbitrary parameters to include in the cache key as a JSON string.
- * Note: For user-specific data, include userId in the params object.
- * @returns The cache key
- */
-export function generateCacheKey(
-  req: AuthenticatedRequest,
-  name: string,
-  params?: Record<string, unknown>,
-) {
-  const visibility = req.userId ? "user" : "anon";
-  return params
-    ? `${name}:${visibility}:${JSON.stringify(params)}`
-    : `${name}:${visibility}`;
 }
