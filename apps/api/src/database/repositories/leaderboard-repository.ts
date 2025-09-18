@@ -187,19 +187,32 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
           .where(inArray(perpetualPositions.competitionId, perpsIds))
       : Promise.resolve([{ totalPositions: 0 }]),
 
-    // 3. Get volume stats for perps competitions
+    // 3. Get aggregated volume stats for perps competitions
+    // Using a subquery to get latest summary per agent, then sum in DB
     perpsIds.length > 0
-      ? dbRead
-          .selectDistinctOn([perpsAccountSummaries.agentId], {
-            totalVolume: perpsAccountSummaries.totalVolume,
-          })
-          .from(perpsAccountSummaries)
-          .where(inArray(perpsAccountSummaries.competitionId, perpsIds))
-          .orderBy(
-            perpsAccountSummaries.agentId,
-            desc(perpsAccountSummaries.timestamp),
-          )
-      : Promise.resolve([]),
+      ? (() => {
+          // Create subquery for latest summaries per agent
+          const latestSummaries = dbRead
+            .selectDistinctOn([perpsAccountSummaries.agentId], {
+              agentId: perpsAccountSummaries.agentId,
+              totalVolume: perpsAccountSummaries.totalVolume,
+            })
+            .from(perpsAccountSummaries)
+            .where(inArray(perpsAccountSummaries.competitionId, perpsIds))
+            .orderBy(
+              perpsAccountSummaries.agentId,
+              desc(perpsAccountSummaries.timestamp),
+            )
+            .as("latest");
+
+          // Aggregate the volumes from the subquery
+          return dbRead
+            .select({
+              totalVolume: sum(latestSummaries.totalVolume).mapWith(Number),
+            })
+            .from(latestSummaries);
+        })()
+      : Promise.resolve([{ totalVolume: 0 }]),
 
     // 4. Get vote stats for all competitions
     dbRead
@@ -223,11 +236,8 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
       ),
   ]);
 
-  // Calculate total perps volume from the latest account summaries
-  const perpsVolume = perpsVolumeStats.reduce((total, summary) => {
-    const volume = Number(summary.totalVolume) || 0;
-    return total + volume;
-  }, 0);
+  // Get the aggregated perps volume (already summed in the database)
+  const perpsVolume = perpsVolumeStats[0]?.totalVolume ?? 0;
 
   // Combine volumes from both competition types
   const totalVolume = (tradeStats[0]?.totalVolume ?? 0) + perpsVolume;
