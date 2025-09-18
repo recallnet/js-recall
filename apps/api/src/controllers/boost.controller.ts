@@ -1,9 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
-import { db } from "@/database/db.js";
-import { BoostRepository } from "@/database/repositories/boost.repository.js";
-import { ApiError } from "@/middleware/errorHandler.js";
 import ServiceRegistry from "@/services/index.js";
 
 import { ensureUuid } from "./request-helpers.js";
@@ -29,24 +26,16 @@ const BoostAgentSchema = z.object({
 });
 
 export function makeBoostController(services: ServiceRegistry) {
-  const boostRepository = new BoostRepository(db);
   return {
     async getBoostBalance(req: Request, res: Response, next: NextFunction) {
       try {
         const userId = ensureUuid(req.userId);
         const competitionId = ensureUuid(req.params.competitionId);
 
-        // Get the user using the service
-        const user = await services.userService.getUser(userId);
-
-        if (!user) {
-          throw new ApiError(404, "User not found");
-        }
-
-        const balance = await boostRepository.userBoostBalance({
-          userId: user.id,
+        const balance = await services.boostService.getUserBoostBalance(
+          userId,
           competitionId,
-        });
+        );
 
         res.status(200).json({
           success: true,
@@ -61,9 +50,8 @@ export function makeBoostController(services: ServiceRegistry) {
       try {
         const competitionId = ensureUuid(req.params.competitionId);
 
-        const boosts = await boostRepository.agentBoostTotals({
-          competitionId,
-        });
+        const boosts =
+          await services.boostService.getAgentBoostTotals(competitionId);
 
         res.status(200).json({
           success: true,
@@ -88,10 +76,10 @@ export function makeBoostController(services: ServiceRegistry) {
         const userId = ensureUuid(req.userId);
         const competitionId = ensureUuid(req.params.competitionId);
 
-        const boosts = await boostRepository.userBoosts({
+        const boosts = await services.boostService.getUserBoosts(
           userId,
           competitionId,
-        });
+        );
 
         res.status(200).json({
           success: true,
@@ -111,51 +99,13 @@ export function makeBoostController(services: ServiceRegistry) {
       try {
         const userId = ensureUuid(req.userId);
         const competitionId = ensureUuid(req.params.competitionId);
-
-        const user = await services.userService.getUser(userId);
-
-        if (!user) {
-          throw new ApiError(404, "User not found");
-        }
-
         const agentId = ensureUuid(req.params.agentId);
-
         const { amount, idemKey } = BoostAgentSchema.parse(req.body);
 
-        const competition =
-          await services.competitionService.getCompetition(competitionId);
-
-        if (!competition) {
-          throw new ApiError(404, "No competition found.");
-        }
-
-        if (
-          competition.votingStartDate == null ||
-          competition.votingEndDate == null
-        ) {
-          throw new ApiError(
-            500,
-            "Can't boost in a competition with no defined boost start date or end date.",
-          );
-        }
-
-        const now = new Date();
-        if (
-          !(
-            competition.votingStartDate < now && now < competition.votingEndDate
-          )
-        ) {
-          throw new ApiError(
-            400,
-            "Can't boost in a competition outside of the boost time window.",
-          );
-        }
-
-        const result = await boostRepository.boostAgent({
+        const result = await services.boostService.boostAgent({
           userId,
-          wallet: user.walletAddress,
-          agentId,
           competitionId,
+          agentId,
           amount,
           idemKey,
         });
