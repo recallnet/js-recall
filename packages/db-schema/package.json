@@ -12,6 +12,8 @@
   "homepage": "https://github.com/recallnet/js-recall#readme",
   "type": "module",
   "exports": {
+    ".": "./src/index.ts",
+    "./coders": "./src/coders/index.ts",
     "./errors": "./src/errors.ts",
     "./repositories/admin": "./src/repositories/admin.ts",
     "./repositories/agent-nonce": "./src/repositories/agent-nonce.ts",
@@ -28,7 +30,6 @@
     "./repositories/user": "./src/repositories/user.ts",
     "./repositories/vote": "./src/repositories/vote.ts",
     "./types": "./src/types.ts",
-    ".": "./src/index.ts",
     "./core/defs": "./src/core/defs.ts",
     "./core/relations": "./src/core/relations.ts",
     "./core/types": "./src/core/types.ts",
@@ -56,7 +57,6 @@
     "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
-    "@recallnet/coders": "workspace:*",
     "drizzle-orm": "^0.43.1",
     "drizzle-zod": "^0.8.2",
     "pino": "^9.7.0",

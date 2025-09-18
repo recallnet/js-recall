@@ -4,7 +4,7 @@ import {
   BlockHashCoder,
   BlockchainAddressAsU8A,
   TxHashCoder,
-} from "@recallnet/coders";
+} from "@recallnet/db-schema/coders";
 import * as schema from "@recallnet/db-schema/indexing/defs";
 import type { StakeRow } from "@recallnet/db-schema/indexing/types";
 import { Transaction } from "@recallnet/db-schema/types";
