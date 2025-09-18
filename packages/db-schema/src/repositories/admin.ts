@@ -1,9 +1,8 @@
 import { and, count as drizzleCount, eq, ilike } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { InsertAdmin, SelectAdmin } from "@recallnet/db-schema/core/types";
-
 import { admins } from "../core/defs.js";
+import { InsertAdmin, SelectAdmin } from "../core/types.js";
 import { Database } from "../types.js";
 import { SearchAdminsParams } from "./types/index.js";
 import { PartialExcept } from "./util/types.js";
