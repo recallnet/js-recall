@@ -1085,7 +1085,18 @@ export class CompetitionService {
     // Execute all updates in a single transaction
     const result = await db.transaction(async (tx) => {
       // Update the competition
-      const updatedCompetition = await updateOne(competitionId, updates, tx);
+      const updateResult = await updateOne(competitionId, updates, tx);
+      const updatedCompetition = updateResult.competition;
+
+      // Log promoted agents if any were promoted due to maxParticipants increase
+      if (
+        updateResult.promotedAgents &&
+        updateResult.promotedAgents.length > 0
+      ) {
+        serviceLogger.info(
+          `[CompetitionManager] Promoted ${updateResult.promotedAgents.length} waitlisted agents to active status after limit increase for competition ${competitionId}`,
+        );
+      }
 
       // Update trading constraints if provided
       if (tradingConstraints) {
@@ -1195,28 +1206,18 @@ export class CompetitionService {
 
     // 8. Atomically add agent to competition with participant limit check
     // This prevents race conditions when multiple agents try to join simultaneously
-    try {
-      await addAgentToCompetition(competitionId, agentId);
-    } catch (error) {
-      // Convert repository error to appropriate API error
-      if (
-        error instanceof Error &&
-        error.message.includes("maximum participant limit")
-      ) {
-        const competitionError = new Error(
-          error.message,
-        ) as CompetitionJoinError;
-        competitionError.type =
-          COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED;
-        competitionError.code = 403;
-        throw competitionError;
-      }
-      throw error;
-    }
+    // The agent will be added as "active" if under capacity, or "registered" (waitlisted) if at capacity
+    const agentStatus = await addAgentToCompetition(competitionId, agentId);
 
-    serviceLogger.debug(
-      `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId}`,
-    );
+    if (agentStatus === "registered") {
+      serviceLogger.debug(
+        `[CompetitionManager] Agent ${agentId} added to waitlist for competition ${competitionId} (at capacity)`,
+      );
+    } else {
+      serviceLogger.debug(
+        `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId} as active participant`,
+      );
+    }
   }
 
   /**

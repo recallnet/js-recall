@@ -268,32 +268,94 @@ async function updateImpl(
 
 /**
  * Update a single competition by ID
+ * If maxParticipants is increased, automatically promotes waitlisted agents
  * @param competitionId Competition ID
  * @param updateData Update data for the competition
  * @param tx Optional database transaction
- * @returns Updated competition record
+ * @returns Updated competition record and list of promoted agent IDs
  */
 async function updateOneImpl(
   competitionId: string,
   updateData: UpdateCompetition,
   tx?: DatabaseTransaction,
-): Promise<SelectCompetition> {
+): Promise<{
+  competition: SelectCompetition;
+  promotedAgents?: string[];
+}> {
   try {
     const dbClient = tx || db;
-    const [result] = await dbClient
-      .update(competitions)
-      .set({
-        ...updateData,
-        updatedAt: updateData.updatedAt || new Date(),
-      })
-      .where(eq(competitions.id, competitionId))
-      .returning();
 
-    if (!result) {
-      throw new Error(`Competition with ID ${competitionId} not found`);
-    }
+    return await dbClient.transaction(async (innerTx) => {
+      // Get current competition details
+      const [currentCompetition] = await innerTx
+        .select({
+          maxParticipants: competitions.maxParticipants,
+        })
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .for("update");
 
-    return result;
+      if (!currentCompetition) {
+        throw new Error(`Competition with ID ${competitionId} not found`);
+      }
+
+      // Update the competition
+      const [updatedCompetition] = await innerTx
+        .update(competitions)
+        .set({
+          ...updateData,
+          updatedAt: updateData.updatedAt || new Date(),
+        })
+        .where(eq(competitions.id, competitionId))
+        .returning();
+
+      if (!updatedCompetition) {
+        throw new Error(`Failed to update competition ${competitionId}`);
+      }
+
+      let promotedAgents: string[] = [];
+
+      // Check if maxParticipants was increased
+      if (
+        updateData.maxParticipants !== undefined &&
+        updateData.maxParticipants !== null &&
+        currentCompetition.maxParticipants !== null &&
+        updateData.maxParticipants > currentCompetition.maxParticipants
+      ) {
+        // Calculate how many slots are now available
+        const activeAgentsResult = await innerTx
+          .select({ count: drizzleCount() })
+          .from(competitionAgents)
+          .where(
+            and(
+              eq(competitionAgents.competitionId, competitionId),
+              eq(competitionAgents.status, "active"),
+            ),
+          );
+        const activeCount = activeAgentsResult[0]?.count ?? 0;
+        const availableSlots = updateData.maxParticipants - activeCount;
+
+        if (availableSlots > 0) {
+          // Promote waitlisted agents
+          promotedAgents = await promoteWaitlistedAgentsImpl(
+            competitionId,
+            availableSlots,
+            innerTx,
+          );
+
+          if (promotedAgents.length > 0) {
+            repositoryLogger.debug(
+              `Promoted ${promotedAgents.length} waitlisted agents after increasing competition limit from ${currentCompetition.maxParticipants} to ${updateData.maxParticipants}`,
+            );
+          }
+        }
+      }
+
+      return {
+        competition: updatedCompetition,
+        promotedAgents: promotedAgents.length > 0 ? promotedAgents : undefined,
+      };
+    });
   } catch (error) {
     repositoryLogger.error("Error in updateOne:", error);
     throw error;
@@ -372,17 +434,20 @@ async function markCompetitionAsEndedImpl(
  * This function checks the participant limit and adds the agent in a single transaction
  * to prevent race conditions when multiple agents try to join simultaneously.
  *
+ * If the competition is at capacity, the agent is added with "registered" status (waitlisted).
+ * Otherwise, the agent is added with "active" status.
+ *
  * @param competitionId Competition ID
  * @param agentId Agent ID to add
- * @throws Error if participant limit would be exceeded
+ * @returns Status assigned to the agent ("active" or "registered")
  */
 async function addAgentToCompetitionImpl(
   competitionId: string,
   agentId: string,
-): Promise<void> {
+): Promise<"active" | "registered"> {
   try {
-    await db.transaction(async (tx) => {
-      // Get competition details including maxParticipants and current registeredParticipants
+    return await db.transaction(async (tx) => {
+      // Get competition details including maxParticipants and count of active participants
       const [competition] = await tx
         .select({
           maxParticipants: competitions.maxParticipants,
@@ -396,32 +461,49 @@ async function addAgentToCompetitionImpl(
         throw new Error(`Competition ${competitionId} not found`);
       }
 
+      // Count the current number of active agents
+      const activeAgentsResult = await tx
+        .select({ count: drizzleCount() })
+        .from(competitionAgents)
+        .where(
+          and(
+            eq(competitionAgents.competitionId, competitionId),
+            eq(competitionAgents.status, "active"),
+          ),
+        );
+      const activeAgentsCount = activeAgentsResult[0]?.count ?? 0;
+
+      // Determine status based on participant limit
+      let agentStatus: "active" | "registered" = "active";
+      if (
+        competition.maxParticipants &&
+        activeAgentsCount >= competition.maxParticipants
+      ) {
+        // Competition is at capacity, add as waitlisted
+        agentStatus = "registered";
+        repositoryLogger.debug(
+          `Competition ${competitionId} at capacity (${activeAgentsCount}/${competition.maxParticipants}). Adding agent ${agentId} as waitlisted.`,
+        );
+      }
+
       // Attempt to add the agent to the competition
       const insertResult = await tx
         .insert(competitionAgents)
         .values({
           competitionId,
           agentId,
-          status: "active",
+          status: agentStatus,
           createdAt: new Date(),
           updatedAt: new Date(),
         })
         .onConflictDoNothing()
-        .returning({ insertedId: competitionAgents.agentId });
+        .returning({
+          insertedId: competitionAgents.agentId,
+          status: competitionAgents.status,
+        });
 
       // Only process if the agent was actually inserted (not a duplicate)
       if (insertResult.length > 0) {
-        // Check participant limit AFTER confirming this is a new registration
-        if (
-          competition.maxParticipants &&
-          competition.registeredParticipants + 1 > competition.maxParticipants
-        ) {
-          // Transaction will rollback, keeping registeredParticipants accurate
-          throw new Error(
-            `Competition has reached maximum participant limit (${competition.maxParticipants})`,
-          );
-        }
-
         // Increment the participant counter
         await tx
           .update(competitions)
@@ -430,6 +512,21 @@ async function addAgentToCompetitionImpl(
             updatedAt: new Date(),
           })
           .where(eq(competitions.id, competitionId));
+
+        return insertResult[0]!.status as "active" | "registered";
+      } else {
+        // Agent was already in the competition (onConflictDoNothing)
+        const existingAgent = await tx
+          .select({ status: competitionAgents.status })
+          .from(competitionAgents)
+          .where(
+            and(
+              eq(competitionAgents.competitionId, competitionId),
+              eq(competitionAgents.agentId, agentId),
+            ),
+          )
+          .limit(1);
+        return existingAgent[0]?.status as "active" | "registered";
       }
     });
   } catch (error) {
@@ -778,6 +875,112 @@ export async function getBulkAgentCompetitionRecords(
     return result;
   } catch (error) {
     repositoryLogger.error("Error in getBulkAgentCompetitionRecords:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get waitlisted (registered) agents for a competition, ordered by createdAt
+ * @param competitionId Competition ID
+ * @returns Array of waitlisted agent IDs ordered by registration time (oldest first)
+ */
+async function getWaitlistedAgentsImpl(
+  competitionId: string,
+): Promise<string[]> {
+  try {
+    const result = await db
+      .select({
+        agentId: competitionAgents.agentId,
+        createdAt: competitionAgents.createdAt,
+      })
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.status, "registered"),
+        ),
+      )
+      .orderBy(asc(competitionAgents.createdAt));
+
+    return result.map((row) => row.agentId);
+  } catch (error) {
+    repositoryLogger.error("Error in getWaitlistedAgents:", error);
+    throw error;
+  }
+}
+
+/**
+ * Promote waitlisted agents to active status when capacity increases
+ * This function is called when the competition limit is increased
+ * @param competitionId Competition ID
+ * @param availableSlots Number of slots available for promotion
+ * @param tx Optional database transaction
+ * @returns Array of promoted agent IDs
+ */
+async function promoteWaitlistedAgentsImpl(
+  competitionId: string,
+  availableSlots: number,
+  tx?: DatabaseTransaction,
+): Promise<string[]> {
+  if (availableSlots <= 0) {
+    return [];
+  }
+
+  try {
+    const executePromotion = async (
+      executor: DatabaseTransaction | typeof db,
+    ) => {
+      // Get waitlisted agents ordered by registration time (oldest first)
+      const waitlisted = await executor
+        .select({
+          agentId: competitionAgents.agentId,
+          createdAt: competitionAgents.createdAt,
+        })
+        .from(competitionAgents)
+        .where(
+          and(
+            eq(competitionAgents.competitionId, competitionId),
+            eq(competitionAgents.status, "registered"),
+          ),
+        )
+        .orderBy(asc(competitionAgents.createdAt))
+        .limit(availableSlots);
+
+      if (waitlisted.length === 0) {
+        return [];
+      }
+
+      const agentIdsToPromote = waitlisted.map((row) => row.agentId);
+
+      // Update status for the selected agents
+      await executor
+        .update(competitionAgents)
+        .set({
+          status: "active",
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(competitionAgents.competitionId, competitionId),
+            inArray(competitionAgents.agentId, agentIdsToPromote),
+          ),
+        );
+
+      repositoryLogger.debug(
+        `Promoted ${agentIdsToPromote.length} waitlisted agents to active status for competition ${competitionId}`,
+      );
+
+      return agentIdsToPromote;
+    };
+
+    // Execute with or without transaction
+    if (tx) {
+      return await executePromotion(tx);
+    } else {
+      return await db.transaction(executePromotion);
+    }
+  } catch (error) {
+    repositoryLogger.error("Error in promoteWaitlistedAgents:", error);
     throw error;
   }
 }
@@ -2112,6 +2315,18 @@ export const updateAgentCompetitionStatus = createTimedRepositoryFunction(
   updateAgentCompetitionStatusImpl,
   "CompetitionRepository",
   "updateAgentCompetitionStatus",
+);
+
+export const getWaitlistedAgents = createTimedRepositoryFunction(
+  getWaitlistedAgentsImpl,
+  "CompetitionRepository",
+  "getWaitlistedAgents",
+);
+
+export const promoteWaitlistedAgents = createTimedRepositoryFunction(
+  promoteWaitlistedAgentsImpl,
+  "CompetitionRepository",
+  "promoteWaitlistedAgents",
 );
 
 export const markAgentAsWithdrawn = createTimedRepositoryFunction(

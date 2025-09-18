@@ -491,6 +491,45 @@ export class ApiClient {
   }
 
   /**
+   * Update a competition
+   */
+  async updateCompetition(
+    competitionId: string,
+    updates: {
+      name?: string;
+      description?: string;
+      startDate?: string;
+      endDate?: string;
+      votingStartDate?: string;
+      votingEndDate?: string;
+      joinStartDate?: string;
+      joinEndDate?: string;
+      maxParticipants?: number;
+      tradingConstraints?: {
+        minimumPairAgeHours?: number;
+        minimum24hVolumeUsd?: number;
+        minimumLiquidityUsd?: number;
+        minimumFdvUsd?: number;
+        minTradesPerDay?: number | null;
+      };
+      rewards?: Record<number, number>;
+    },
+  ): Promise<{ success: boolean; competition?: unknown; error?: string }> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competition/${competitionId}`,
+        updates,
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return error.response?.data || { success: false, error: error.message };
+      }
+      return { success: false, error: "Unknown error" };
+    }
+  }
+
+  /**
    * Create a competition in PENDING state
    */
   async createCompetition({

@@ -47,6 +47,7 @@ export const competitionType = pgEnum("competition_type", ["trading"]);
  */
 export const competitionAgentStatus = pgEnum("competition_agent_status", [
   "active",
+  "registered", // waitlisted, not yet active due to capacity constraints
   "withdrawn",
   "disqualified",
 ]);
