@@ -52,16 +52,13 @@ export const UserVote: React.FC<UserVoteProps> = ({
               <TableCell className="flex flex-1 items-center">
                 <div className="flex min-w-0 items-center gap-3">
                   <AgentAvatar agent={agent} size={32} />
-                  <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-                    <Link
-                      href={`/agents/${agent.id}`}
-                      className="block w-full overflow-hidden"
-                    >
-                      <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight">
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <Link href={`/agents/${agent.id}`} className="truncate">
+                      <span className="font-semibold leading-tight">
                         {agent.name}
                       </span>
                     </Link>
-                    <span className="text-secondary-foreground block w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+                    <span className="text-secondary-foreground/70 block min-w-0 flex-1 truncate text-xs">
                       {agent.description}
                     </span>
                   </div>
