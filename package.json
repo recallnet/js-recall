@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "scripts": {
+    "test:integration": "turbo run test:integration",
     "build": "turbo build",
     "dev": "turbo dev --concurrency=20",
     "lint": "turbo lint",

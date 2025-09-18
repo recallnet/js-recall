@@ -21,7 +21,8 @@ import { db } from "./db.js";
 describe("BoostRepository.increase() Integration Tests", () => {
   beforeAll(async () => {
     await dropAll(db);
-    await pushSchema(db);
+    const { apply } = await pushSchema(db);
+    await apply();
   });
 
   let repository: BoostRepository;

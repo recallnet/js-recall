@@ -44,6 +44,7 @@
     "./voting/types": "./src/voting/types.ts"
   },
   "scripts": {
+    "test:integration": "vitest run --project integration",
     "clean": "rm -rf .turbo node_modules",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write . --ignore-path=../../.prettierignore",
