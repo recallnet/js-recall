@@ -1595,46 +1595,74 @@ export class CompetitionService {
    * Remove an agent from a competition
    * @param competitionId Competition ID
    * @param agentId Agent ID
-   * @param userId User ID (for ownership validation)
+   * @param userId Optional user ID from session authentication
+   * @param authenticatedAgentId Optional agent ID from API key authentication
    */
   async leaveCompetition(
     competitionId: string,
     agentId: string,
-    userId: string,
+    userId?: string,
+    authenticatedAgentId?: string,
   ): Promise<void> {
     serviceLogger.debug(
-      `[CompetitionManager] Leave competition request: agent ${agentId} from competition ${competitionId} by user ${userId}`,
+      `[CompetitionManager] Leave competition request: agent ${agentId} from competition ${competitionId}`,
     );
 
-    // 1. Check if competition exists
+    // Validate authentication
+    if (!authenticatedAgentId && !userId) {
+      throw new ApiError(401, "Authentication required");
+    }
+
+    if (authenticatedAgentId) {
+      // Agent API key authentication
+      if (authenticatedAgentId !== agentId) {
+        throw new ApiError(403, "Agent API key does not match agent ID in URL");
+      }
+    }
+
+    // Check if agent exists and validate ownership
+    const agent = await this.agentService.getAgent(agentId);
+    if (!agent) {
+      throw new ApiError(404, `Agent not found: ${agentId}`);
+    }
+
+    // Complete authentication validation and get validated user ID
+    let validatedUserId: string;
+    if (authenticatedAgentId) {
+      // For agent API key auth, set the validated user ID from the agent
+      validatedUserId = agent.ownerId;
+    } else if (userId) {
+      // For user session auth, verify ownership
+      if (agent.ownerId !== userId) {
+        throw new ApiError(403, "Access denied: You do not own this agent");
+      }
+      validatedUserId = userId;
+    } else {
+      // This shouldn't happen due to earlier check, but TypeScript needs this
+      throw new ApiError(401, "Authentication required");
+    }
+
+    // Check if competition exists
     const competition = await findById(competitionId);
     if (!competition) {
-      throw new Error(`Competition not found: ${competitionId}`);
+      throw new ApiError(404, `Competition not found: ${competitionId}`);
     }
 
-    // 2. Check if agent exists
-    const agent = await findAgentById(agentId);
-    if (!agent) {
-      throw new Error(`Agent not found: ${agentId}`);
-    }
-
-    // 3. Check if agent belongs to user
-    if (agent.ownerId !== userId) {
-      throw new Error("Agent does not belong to requesting user");
-    }
-
-    // 4. Check if agent is in the competition (any status)
+    // Check if agent is in the competition (any status)
     const isInCompetition = await this.isAgentInCompetition(
       competitionId,
       agentId,
     );
     if (!isInCompetition) {
-      throw new Error("Agent is not in this competition");
+      throw new ApiError(403, "Agent is not in this competition");
     }
 
-    // 5. Handle based on competition status
+    // Handle based on competition status
     if (competition.status === "ended") {
-      throw new Error("Cannot leave competition that has already ended");
+      throw new ApiError(
+        403,
+        "Cannot leave competition that has already ended",
+      );
     } else if (competition.status === "active") {
       // During active competition: mark agent as withdrawn from this competition
       await updateAgentCompetitionStatus(
@@ -1663,7 +1691,7 @@ export class CompetitionService {
     this.caches.agents.clear();
 
     serviceLogger.debug(
-      `[CompetitionManager] Successfully processed leave request for agent ${agentId} from competition ${competitionId}`,
+      `[CompetitionManager] Successfully processed leave request for agent ${agentId} from competition ${competitionId} for user ${validatedUserId}`,
     );
   }
 

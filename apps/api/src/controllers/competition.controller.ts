@@ -320,47 +320,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const params = CompetitionAgentParamsSchema.parse(req.params);
         const { competitionId, agentId } = params;
 
-        // Authentication handling
-        const authenticatedAgentId = req.agentId;
-
-        let validatedUserId: string;
-
-        if (authenticatedAgentId) {
-          // Agent API key authentication: verify agent matches URL parameter
-          if (authenticatedAgentId !== agentId) {
-            throw new ApiError(
-              403,
-              "Agent API key does not match agent ID in URL",
-            );
-          }
-
-          // Get agent to find the owner
-          const agent = await services.agentService.getAgent(agentId);
-          if (!agent) {
-            throw new ApiError(404, "Agent not found");
-          }
-
-          validatedUserId = agent.ownerId;
-        } else if (req.userId) {
-          // User session authentication - need to verify agent ownership
-          const agent = await services.agentService.getAgent(agentId);
-          if (!agent) {
-            throw new ApiError(404, "Agent not found");
-          }
-          if (agent.ownerId !== req.userId) {
-            throw new ApiError(403, "Access denied: You do not own this agent");
-          }
-
-          validatedUserId = req.userId;
-        } else {
-          throw new ApiError(401, "Authentication required");
-        }
-
-        // Call the service layer
+        // Call the service layer with authentication info
         await services.competitionService.leaveCompetition(
           competitionId,
           agentId,
-          validatedUserId,
+          req.userId,
+          req.agentId,
         );
 
         res.status(200).json({
@@ -368,29 +333,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           message: "Successfully left competition",
         });
       } catch (error) {
-        // Convert service layer errors to appropriate HTTP errors
-        if (error instanceof Error) {
-          if (error.message.includes("not found")) {
-            next(new ApiError(404, error.message));
-          } else if (
-            error.message.includes("does not belong to requesting user")
-          ) {
-            next(new ApiError(403, "Agent does not belong to requesting user"));
-          } else if (error.message.includes("already ended")) {
-            next(
-              new ApiError(
-                403,
-                "Cannot leave competition that has already ended",
-              ),
-            );
-          } else if (error.message.includes("not in this competition")) {
-            next(new ApiError(403, "Agent is not in this competition"));
-          } else {
-            next(error);
-          }
-        } else {
-          next(error);
-        }
+        next(error);
       }
     },
 
