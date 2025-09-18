@@ -227,7 +227,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </div>
           );
         },
-        enableSorting: true,
+        enableSorting: false,
         size: 100,
         meta: {
           className: "flex justify-end",
