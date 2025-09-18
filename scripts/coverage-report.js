@@ -219,13 +219,13 @@ function main() {
       );
     });
 
-    saveCoverageReport(currentCoverage, warnings, thresholdFailures);
+    saveCoverageReport(coverageWithDiff, warnings, thresholdFailures);
     process.exit(1);
   } else {
     console.log("\n✅ All coverage thresholds met!");
   }
 
-  saveCoverageReport(currentCoverage, warnings, []);
+  saveCoverageReport(coverageWithDiff, warnings, []);
 }
 
 // Run if called directly
