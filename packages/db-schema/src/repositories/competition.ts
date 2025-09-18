@@ -1584,7 +1584,7 @@ export class CompetitionRepository {
 
       return result?.count ?? 0;
     } catch (error) {
-      console.error("[CompetitionRepository] Error in count:", error);
+      this.#logger.error("[CompetitionRepository] Error in count:", error);
       throw error;
     }
   }
@@ -1612,7 +1612,7 @@ export class CompetitionRepository {
 
       return result?.count ?? 0;
     } catch (error) {
-      console.error(
+      this.#logger.error(
         `[CompetitionRepository] Error counting competitions for agent ${agentId}:`,
         error,
       );
@@ -1675,7 +1675,10 @@ export class CompetitionRepository {
 
       return { competitions: competitionResults, total };
     } catch (error) {
-      console.error("[CompetitionRepository] Error in findByStatus:", error);
+      this.#logger.error(
+        "[CompetitionRepository] Error in findByStatus:",
+        error,
+      );
       throw error;
     }
   }
@@ -1726,7 +1729,7 @@ export class CompetitionRepository {
         totalAgents: agents[0]?.count ?? 0,
       };
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[CompetitionRepository] Error in findAgentBestCompetitionRank:",
         error,
       );
@@ -1789,7 +1792,7 @@ export class CompetitionRepository {
 
       return results;
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[CompetitionRepository] Error batch inserting leaderboard entries:",
         error,
       );
@@ -1816,7 +1819,7 @@ export class CompetitionRepository {
         .where(eq(competitionsLeaderboard.competitionId, competitionId))
         .orderBy(competitionsLeaderboard.rank);
     } catch (error) {
-      console.error(
+      this.#logger.error(
         `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
         error,
       );
@@ -1848,7 +1851,7 @@ export class CompetitionRepository {
         .where(eq(competitionsLeaderboard.competitionId, competitionId))
         .orderBy(competitionsLeaderboard.rank);
     } catch (error) {
-      console.error(
+      this.#logger.error(
         `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
         error,
       );
@@ -1873,7 +1876,7 @@ export class CompetitionRepository {
 
       return await query;
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[CompetitionRepository] Error in getAllCompetitionsLeaderboard:",
         error,
       );
@@ -1896,7 +1899,7 @@ export class CompetitionRepository {
 
       return result.map((row) => row.agentId);
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[CompetitionRepository] Error in getAllCompetitionAgents:",
         error,
       );
@@ -1963,7 +1966,7 @@ export class CompetitionRepository {
 
       return rankingsMap;
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[CompetitionRepository] Error in getBulkAgentCompetitionRankings:",
         error,
       );
@@ -2004,7 +2007,7 @@ export class CompetitionRepository {
         );
       return result;
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[CompetitionRepository] Error in findCompetitionsNeedingEnding:",
         error,
       );

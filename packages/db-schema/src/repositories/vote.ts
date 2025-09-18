@@ -48,7 +48,7 @@ export class VoteRepository {
       );
       return result;
     } catch (error) {
-      console.error("[VoteRepository] Error in createVote:", error);
+      this.#logger.error("[VoteRepository] Error in createVote:", error);
       throw error;
     }
   }
@@ -80,7 +80,7 @@ export class VoteRepository {
 
       return result;
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[VoteRepository] Error in findVoteByUserAgentCompetition:",
         error,
       );
@@ -113,7 +113,7 @@ export class VoteRepository {
 
       return result;
     } catch (error) {
-      console.error("[VoteRepository] Error in findVotesByUser:", error);
+      this.#logger.error("[VoteRepository] Error in findVotesByUser:", error);
       throw error;
     }
   }
@@ -133,7 +133,10 @@ export class VoteRepository {
 
       return result;
     } catch (error) {
-      console.error("[VoteRepository] Error in findVotesByCompetition:", error);
+      this.#logger.error(
+        "[VoteRepository] Error in findVotesByCompetition:",
+        error,
+      );
       throw error;
     }
   }
@@ -161,7 +164,7 @@ export class VoteRepository {
 
       return result?.count || 0;
     } catch (error) {
-      console.error("[VoteRepository] Error in countVotesByAgent:", error);
+      this.#logger.error("[VoteRepository] Error in countVotesByAgent:", error);
       throw error;
     }
   }
@@ -190,7 +193,7 @@ export class VoteRepository {
         voteCount: row.voteCount,
       }));
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[VoteRepository] Error in getVoteCountsByCompetition:",
         error,
       );
@@ -221,7 +224,7 @@ export class VoteRepository {
 
       return result;
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[VoteRepository] Error in getUserVotesForCompetition:",
         error,
       );
@@ -249,7 +252,7 @@ export class VoteRepository {
 
       return (result?.count || 0) > 0;
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[VoteRepository] Error in hasUserVotedInCompetition:",
         error,
       );
@@ -278,7 +281,7 @@ export class VoteRepository {
 
       return result;
     } catch (error) {
-      console.error(
+      this.#logger.error(
         "[VoteRepository] Error in getUserVoteForCompetition:",
         error,
       );
@@ -297,7 +300,7 @@ export class VoteRepository {
         .from(votes);
       return result?.count || 0;
     } catch (error) {
-      console.error("[VoteRepository] Error in count:", error);
+      this.#logger.error("[VoteRepository] Error in count:", error);
       throw error;
     }
   }
@@ -318,7 +321,7 @@ export class VoteRepository {
         .where(eq(votes.userId, userId));
       return res.rowCount || 0;
     } catch (error) {
-      console.error("[VoteRepository] Error in updateVotesOwner:", error);
+      this.#logger.error("[VoteRepository] Error in updateVotesOwner:", error);
       throw error;
     }
   }
