@@ -11,6 +11,9 @@
     "NODE_ENV"
   ],
   "tasks": {
+    "test:integration": {
+      "cache": false
+    },
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
