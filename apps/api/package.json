@@ -62,8 +62,10 @@
     "allocate-rewards": "tsx scripts/allocate-rewards.ts",
     "cron:portfolio-snapshot": "tsx scripts/take-portfolio-snapshots.ts",
     "cron:auto-end-competitions": "tsx scripts/auto-end-competitions.ts",
+    "cron:auto-start-competitions": "tsx scripts/auto-start-competitions.ts",
     "cron:portfolio-snapshot:run-once": "tsx scripts/take-portfolio-snapshots.ts --run-once",
-    "cron:auto-end-competitions:run-once": "tsx scripts/auto-end-competitions.ts --run-once"
+    "cron:auto-end-competitions:run-once": "tsx scripts/auto-end-competitions.ts --run-once",
+    "cron:auto-start-competitions:run-once": "tsx scripts/auto-start-competitions.ts --run-once"
   },
   "keywords": [
     "solana",
@@ -130,6 +132,7 @@
     "drizzle-kit": "^0.31.1",
     "drizzle-seed": "^0.3.1",
     "jsdom": "^26.1.0",
+    "keccak256": "^1.0.6",
     "kleur": "^4.1.5",
     "openapi-markdown": "^1.2.3",
     "siwe": "^3.0.0",

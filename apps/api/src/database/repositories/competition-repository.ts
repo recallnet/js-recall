@@ -2009,6 +2009,45 @@ async function findCompetitionsNeedingEndingImpl() {
   }
 }
 
+/**
+ * Find competitions that need starting (pending and start_date reached)
+ * Excludes sandbox mode competitions. Results are ordered by earliest start_date first.
+ * @returns Array of competitions that should be started
+ */
+async function findCompetitionsNeedingStartingImpl() {
+  try {
+    const now = new Date();
+
+    const result = await db
+      .select({
+        crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
+      })
+      .from(tradingCompetitions)
+      .innerJoin(
+        competitions,
+        eq(tradingCompetitions.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          eq(competitions.status, "pending"),
+          eq(competitions.sandboxMode, false),
+          isNotNull(competitions.startDate),
+          lte(competitions.startDate, now),
+        ),
+      )
+      .orderBy(asc(competitions.startDate));
+
+    return result;
+  } catch (error) {
+    console.error(
+      "[CompetitionRepository] Error in findCompetitionsNeedingStartingImpl:",
+      error,
+    );
+    throw error;
+  }
+}
+
 // ----------------------------------------------------------------------------
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
 // ----------------------------------------------------------------------------
@@ -2238,6 +2277,12 @@ export const findCompetitionsNeedingEnding = createTimedRepositoryFunction(
   findCompetitionsNeedingEndingImpl,
   "CompetitionRepository",
   "findCompetitionsNeedingEnding",
+);
+
+export const findCompetitionsNeedingStarting = createTimedRepositoryFunction(
+  findCompetitionsNeedingStartingImpl,
+  "CompetitionRepository",
+  "findCompetitionsNeedingStarting",
 );
 
 /**
