@@ -260,7 +260,6 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
 
 /**
  * Get bulk agent metrics for multiple agents using optimized queries
- * This replaces N+1 query patterns in attachAgentMetrics
  * Returns raw query results for processing in the service layer
  *
  * @param agentIds Array of agent IDs to get metrics for
@@ -485,9 +484,7 @@ async function getBulkAgentMetricsImpl(
 }
 
 /**
- * Get optimized global agent metrics using separate queries to avoid N+1 problem
- * This replaces the N+1 query problem in calculateGlobalMetrics
- * Uses separate aggregation queries to avoid Cartesian product issues
+ * Get optimized global agent metrics using separate queries
  * @returns Array of agent metrics with all required data
  */
 async function getOptimizedGlobalAgentMetricsImpl(): Promise<

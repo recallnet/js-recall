@@ -475,7 +475,7 @@ async function getAgentSelfFundingAlertsImpl(
 }
 
 /**
- * Batch get self-funding alerts for multiple agents (fixes N+1 query problem)
+ * Batch get self-funding alerts for multiple agents
  * @param agentIds Array of agent IDs
  * @param competitionId Competition ID
  * @returns Map of agent ID to their alerts
@@ -689,7 +689,6 @@ async function batchSyncAgentsPerpsDataImpl(
 
 /**
  * Get latest account summaries for all agents in a competition, sorted for leaderboard
- * Efficient single-query solution that avoids N+1 issues
  * @param competitionId Competition ID
  * @returns Array of latest account summaries sorted by totalEquity DESC
  */
@@ -798,7 +797,6 @@ async function getPerpsCompetitionStatsImpl(
 
 /**
  * Count positions for an agent across multiple competitions in bulk
- * Optimized single query with GROUP BY to avoid N+1 queries
  * @param agentId Agent ID
  * @param competitionIds Array of competition IDs
  * @returns Map of competition ID to position count

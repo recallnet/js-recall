@@ -983,7 +983,6 @@ export class CompetitionManager {
 
   /**
    * Calculate PnL and 24h change metrics for multiple agents in a competition efficiently
-   * This replaces the N+1 query pattern of calling calculateAgentMetrics in a loop
    *
    * @param competitionId The competition ID
    * @param agentIds Array of agent IDs to calculate metrics for

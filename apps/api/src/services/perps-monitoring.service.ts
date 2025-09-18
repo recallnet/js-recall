@@ -118,7 +118,7 @@ export class PerpsMonitoringService {
       `[PerpsMonitoringService] Starting monitoring for ${agents.length} agents in competition ${competitionId}`,
     );
 
-    // Batch fetch existing alerts for all agents to avoid N+1 queries
+    // Batch fetch existing alerts for all agents
     const existingAlerts = await this.batchGetExistingAlerts(
       agents.map((a) => a.agentId),
       competitionId,
@@ -200,8 +200,7 @@ export class PerpsMonitoringService {
   }
 
   /**
-   * Batch fetch existing alerts to avoid N+1 queries
-   * Now uses efficient batch method that fetches all alerts in 1-2 DB queries
+   * Batch fetch existing alerts
    */
   private async batchGetExistingAlerts(
     agentIds: string[],
