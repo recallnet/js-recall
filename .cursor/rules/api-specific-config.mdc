@@ -53,6 +53,12 @@ alwaysApply: false
 - **Index Creation**: Create indexes `CONCURRENTLY` in production to avoid table locks
 
 ### Database Type Safety
+- **Function Return Types**: All functions must have explicit return types
+  - Never rely on TypeScript inference for return types
+  - Be especially explicit for async functions (e.g., `Promise<User[]>`)
+- **Named Types**: Prefer named types/interfaces over inline definitions
+  - Extract complex return types into named interfaces
+  - Reuse types when the same shape appears multiple times
 - **JSON Fields**: Never use `any` for jsonb columns
   - Create type guard functions for runtime validation
   - Use Zod schemas for complex JSON structures

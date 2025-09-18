@@ -21,6 +21,8 @@ We believe in leveraging PostgreSQL's power rather than reimplementing logic in 
 ### Type Safety Without Compromise
 
 - **Zero tolerance for `any` types** in production code
+- All functions must have explicit return types (never rely on inference)
+- Prefer named types/interfaces over inline type definitions
 - All external data must be validated at runtime using type guards or Zod schemas
 - Database types must be properly typed in TypeScript
 - Prefer compile-time safety over runtime assertions when possible
@@ -124,6 +126,8 @@ Always describe WHAT the code does, never HOW it compares to other code or WHY i
 ### Always Do These
 
 - ✅ Use TypeScript strict mode
+- ✅ Specify explicit return types for all functions
+- ✅ Create named types/interfaces instead of inline type definitions
 - ✅ Add indexes for foreign keys and WHERE clause columns
 - ✅ Validate environment variables on startup
 - ✅ Use structured JSON logging with request IDs
