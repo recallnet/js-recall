@@ -355,3 +355,5 @@ export class PortfolioSnapshotterService {
     return totalValue;
   }
 }
+
+export { PortfolioSnapshotterService as PortfolioSnapshotter };

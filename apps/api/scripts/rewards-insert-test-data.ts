@@ -3,7 +3,7 @@ import { blue, cyan, green, magenta, red, yellow } from "kleur/colors";
 import { MerkleTree } from "merkletreejs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
-import { hexToBytes, keccak256 } from "viem";
+import { keccak256 } from "viem";
 
 import { competitions } from "@recallnet/db-schema/core/defs";
 import { rewards } from "@recallnet/db-schema/voting/defs";
@@ -108,7 +108,7 @@ async function insertCompetitionAndRewards() {
         competitionId: competitionId,
         address: reward.address,
         amount: reward.amount,
-        leafHash: hexToBytes(leafHash),
+        leafHash: new Uint8Array(leafHash),
         claimed: false,
       });
 

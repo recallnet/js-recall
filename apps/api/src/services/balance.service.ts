@@ -278,3 +278,5 @@ export class BalanceService {
     }
   }
 }
+
+export { BalanceService as BalanceManager };
