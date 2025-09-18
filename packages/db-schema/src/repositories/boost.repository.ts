@@ -2,8 +2,7 @@ import { and, eq, sql, sum } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
-import { BlockchainAddressAsU8A } from "@recallnet/coders";
-
+import { BlockchainAddressAsU8A } from "../coders/index.js";
 import type { Transaction } from "../types.js";
 import { Database } from "../types.js";
 import * as schema from "../voting/defs.js";

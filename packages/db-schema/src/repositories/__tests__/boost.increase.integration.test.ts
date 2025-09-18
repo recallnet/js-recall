@@ -9,8 +9,7 @@ import {
   test,
 } from "vitest";
 
-import { BlockchainAddressAsU8A } from "@recallnet/coders";
-
+import { BlockchainAddressAsU8A } from "../../coders/index.js";
 import * as coreSchema from "../../core/defs.js";
 import { dropAll } from "../../utils/drop-all.js";
 import { pushSchema } from "../../utils/push-schema.js";

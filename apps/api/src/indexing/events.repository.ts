@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 
-import { BlockHashCoder, TxHashCoder } from "@recallnet/coders";
+import { BlockHashCoder, TxHashCoder } from "@recallnet/db-schema/coders";
 import { indexingEvents } from "@recallnet/db-schema/indexing/defs";
 
 import config from "@/config/index.js";
