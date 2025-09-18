@@ -1,7 +1,14 @@
 import { NextFunction, Response } from "express";
+import { LRUCache } from "lru-cache";
 
+import { config } from "@/config/index.js";
 import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import {
+  checkShouldCacheResponse,
+  generateCacheKey,
+  getCacheVisibility,
+} from "@/services/caching-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
@@ -19,6 +26,41 @@ export function makeCompetitionController(services: ServiceRegistry) {
    * Competition Controller
    * Handles competition-related operations
    */
+
+  const caches = {
+    list: new LRUCache<string, object>({
+      max: config.cache.api.competitions.maxCacheSize,
+      ttl: config.cache.api.competitions.ttlMs,
+    }),
+    rules: new LRUCache<string, object>({
+      max: config.cache.api.competitions.maxCacheSize,
+      ttl: config.cache.api.competitions.ttlMs,
+    }),
+    byId: new LRUCache<string, object>({
+      max: config.cache.api.competitions.maxCacheSize,
+      ttl: config.cache.api.competitions.ttlMs,
+    }),
+    agents: new LRUCache<string, object>({
+      max: config.cache.api.competitions.maxCacheSize,
+      ttl: config.cache.api.competitions.ttlMs,
+    }),
+    timeline: new LRUCache<string, object>({
+      max: config.cache.api.competitions.maxCacheSize,
+      ttl: config.cache.api.competitions.ttlMs,
+    }),
+    trades: new LRUCache<string, object>({
+      max: config.cache.api.competitions.maxCacheSize,
+      ttl: config.cache.api.competitions.ttlMs,
+    }),
+    agentTrades: new LRUCache<string, object>({
+      max: config.cache.api.competitions.maxCacheSize,
+      ttl: config.cache.api.competitions.ttlMs,
+    }),
+    leaderboard: new LRUCache<string, object>({
+      max: config.cache.api.competitions.maxCacheSize,
+      ttl: config.cache.api.competitions.ttlMs,
+    }),
+  };
 
   return {
     /**
@@ -38,12 +80,36 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const agentId = req.agentId;
         const isAdmin = req.isAdmin === true;
 
+        // Check cache
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const visibility = getCacheVisibility(
+          req.userId,
+          req.agentId,
+          req.isAdmin,
+        );
+        const cacheKey = generateCacheKey("leaderboard", visibility, {
+          competitionId: competitionId || "active",
+        });
+
+        if (shouldCacheResponse) {
+          const cached = caches.leaderboard.get(cacheKey);
+          if (cached) {
+            res.status(200).json(cached);
+            return;
+          }
+        }
+
         const result =
           await services.competitionService.getLeaderboardWithAuthorization({
             competitionId,
             agentId,
             isAdmin,
           });
+
+        // Cache the result
+        if (shouldCacheResponse) {
+          caches.leaderboard.set(cacheKey, result);
+        }
 
         res.status(200).json(result);
       } catch (error) {
@@ -92,10 +158,32 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const agentId = req.agentId;
         const isAdmin = req.isAdmin === true;
 
+        // Check cache
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const visibility = getCacheVisibility(
+          req.userId,
+          req.agentId,
+          req.isAdmin,
+        );
+        const cacheKey = generateCacheKey("rules", visibility, {});
+
+        if (shouldCacheResponse) {
+          const cached = caches.rules.get(cacheKey);
+          if (cached) {
+            res.status(200).json(cached);
+            return;
+          }
+        }
+
         const result = await services.competitionService.getCompetitionRules({
           agentId,
           isAdmin,
         });
+
+        // Cache the result
+        if (shouldCacheResponse) {
+          caches.rules.set(cacheKey, result);
+        }
 
         res.status(200).json(result);
       } catch (error) {
@@ -152,13 +240,37 @@ export function makeCompetitionController(services: ServiceRegistry) {
           : undefined;
         const pagingParams = PagingParamsSchema.parse(req.query);
 
-        // Use the service method which handles caching
+        // Check cache
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const visibility = getCacheVisibility(
+          req.userId,
+          req.agentId,
+          req.isAdmin,
+        );
+        const cacheKey = generateCacheKey("list", visibility, {
+          status,
+          ...pagingParams,
+        });
+
+        if (shouldCacheResponse) {
+          const cached = caches.list.get(cacheKey);
+          if (cached) {
+            res.status(200).json(cached);
+            return;
+          }
+        }
+
         const result =
           await services.competitionService.getEnrichedCompetitions({
             status,
             pagingParams,
             userId,
           });
+
+        // Cache the result
+        if (shouldCacheResponse) {
+          caches.list.set(cacheKey, result);
+        }
 
         res.status(200).json(result);
       } catch (error) {
@@ -204,13 +316,36 @@ export function makeCompetitionController(services: ServiceRegistry) {
           );
         }
 
-        // Note: The service method handles caching and all business logic
+        // Check cache
+        const shouldCacheResponse = checkShouldCacheResponse(req);
+        const visibility = getCacheVisibility(
+          req.userId,
+          req.agentId,
+          req.isAdmin,
+        );
+        const cacheKey = generateCacheKey("byId", visibility, {
+          competitionId,
+        });
+
+        if (shouldCacheResponse) {
+          const cached = caches.byId.get(cacheKey);
+          if (cached) {
+            res.status(200).json(cached);
+            return;
+          }
+        }
+
         const result = await services.competitionService.getCompetitionById({
           competitionId,
           userId,
           agentId,
           isAdmin,
         });
+
+        // Cache the result
+        if (shouldCacheResponse) {
+          caches.byId.set(cacheKey, result);
+        }
 
         res.status(200).json(result);
       } catch (error) {
@@ -295,6 +430,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
           req.agentId,
         );
 
+        // Clear the agents cache since the participant list has changed
+        caches.agents.clear();
+
         res.status(200).json({
           success: true,
           message: "Successfully joined competition",
@@ -327,6 +465,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
           req.userId,
           req.agentId,
         );
+
+        // Clear the agents cache since the participant list has changed
+        caches.agents.clear();
 
         res.status(200).json({
           success: true,

@@ -1,4 +1,3 @@
-import { LRUCache } from "lru-cache";
 import { v4 as uuidv4 } from "uuid";
 
 import {
@@ -46,11 +45,6 @@ import {
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import {
-  generateCacheKey,
-  getCacheVisibility,
-  shouldCacheServiceResponse,
-} from "@/services/caching-helpers.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import {
   AgentRankService,
@@ -315,29 +309,6 @@ type AgentCompetitionTradesData = {
 };
 
 /**
- * Competition rules with auth data structure
- */
-type CompetitionRulesWithAuthData = {
-  success: boolean;
-  competition: SelectCompetition;
-  rules: {
-    tradingRules: string[];
-    votingRules: string[];
-    rewardRules: string[];
-    participationRules: string[];
-    technicalRules: string[];
-    apiUsage: {
-      endpoints: {
-        trading: string[];
-        portfolio: string[];
-        voting: string[];
-      };
-      rateLimits: string[];
-    };
-  };
-};
-
-/**
  * Basic competition info for unauthenticated users
  */
 type BasicCompetitionInfo = {
@@ -364,57 +335,6 @@ export class CompetitionService {
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
 
-  /**
-   * Cache instances for various competition endpoints
-   */
-  private caches = {
-    // Used for: competition lists
-    list: new LRUCache<string, EnrichedCompetitionsData>({
-      max: config.cache.api.competitions.maxCacheSize,
-      ttl: config.cache.api.competitions.ttlMs,
-    }),
-    // Used for: competition agents
-    agents: new LRUCache<string, CompetitionAgentsData>({
-      max: config.cache.api.competitions.maxCacheSize,
-      ttl: config.cache.api.competitions.ttlMs,
-    }),
-    // Used for: agent trades in competitions
-    agentTrades: new LRUCache<string, AgentCompetitionTradesData>({
-      max: config.cache.api.competitions.maxCacheSize,
-      ttl: config.cache.api.competitions.ttlMs,
-    }),
-    // Used for: competition by ID
-    byId: new LRUCache<string, CompetitionDetailsData>({
-      max: config.cache.api.competitions.maxCacheSize,
-      ttl: config.cache.api.competitions.ttlMs,
-    }),
-    // Used for: competition rules (basic)
-    rules: new LRUCache<string, CompetitionRulesData>({
-      max: config.cache.api.competitions.maxCacheSize,
-      ttl: config.cache.api.competitions.ttlMs,
-    }),
-    // Used for: competition rules with auth
-    rulesWithAuth: new LRUCache<string, CompetitionRulesWithAuthData>({
-      max: config.cache.api.competitions.maxCacheSize,
-      ttl: config.cache.api.competitions.ttlMs,
-    }),
-    // Used for: competition timeline
-    timeline: new LRUCache<string, CompetitionTimelineData>({
-      max: config.cache.api.competitions.maxCacheSize,
-      ttl: config.cache.api.competitions.ttlMs,
-    }),
-    // Used for: competition trades
-    trades: new LRUCache<string, CompetitionTradesData>({
-      max: config.cache.api.competitions.maxCacheSize,
-      ttl: config.cache.api.competitions.ttlMs,
-    }),
-    // Used for: competition leaderboard
-    leaderboard: new LRUCache<string, LeaderboardData>({
-      max: config.cache.api.competitions.maxCacheSize,
-      ttl: config.cache.api.competitions.ttlMs,
-    }),
-  } as const;
-
   constructor(
     balanceService: BalanceService,
     tradeSimulatorService: TradeSimulatorService,
@@ -435,37 +355,6 @@ export class CompetitionService {
     this.voteService = voteService;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
-  }
-
-  /**
-   * Generate cache configuration for service methods
-   * @param cacheName The name for the cache key
-   * @param params The parameters for cache key generation
-   * @param userId User ID if present
-   * @param agentId Agent ID if present
-   * @param isAdmin Whether user is admin
-   * @returns Object with shouldCache flag and cacheKey
-   */
-  private getCacheConfig(
-    cacheName: string,
-    params: Record<string, unknown>,
-    userId?: string,
-    agentId?: string,
-    isAdmin?: boolean,
-  ) {
-    const shouldCache = shouldCacheServiceResponse(
-      config.server.nodeEnv,
-      userId,
-      agentId,
-      isAdmin,
-    );
-    const visibility = getCacheVisibility(userId, agentId, isAdmin);
-    const cacheKey = generateCacheKey(cacheName, visibility, params);
-
-    return {
-      shouldCache,
-      cacheKey,
-    };
   }
 
   /**
@@ -1583,9 +1472,6 @@ export class CompetitionService {
       throw error;
     }
 
-    // Invalidate agents cache to ensure fresh data on subsequent requests
-    this.caches.agents.clear();
-
     serviceLogger.debug(
       `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId} for user ${validatedUserId}`,
     );
@@ -1686,9 +1572,6 @@ export class CompetitionService {
         `[CompetitionManager] Marked agent ${agentId} as left from pending competition ${competitionId}`,
       );
     }
-
-    // Invalidate agents cache to ensure fresh data on subsequent requests
-    this.caches.agents.clear();
 
     serviceLogger.debug(
       `[CompetitionManager] Successfully processed leave request for agent ${agentId} from competition ${competitionId} for user ${validatedUserId}`,
@@ -1894,26 +1777,6 @@ export class CompetitionService {
         );
       }
 
-      // Check cache if caching is enabled
-      const { shouldCache, cacheKey } = this.getCacheConfig(
-        "leaderboard",
-        {
-          competitionId,
-          agentId: params.agentId,
-          isAdmin: params.isAdmin,
-        },
-        undefined, // No userId for leaderboard
-        params.agentId,
-        params.isAdmin,
-      );
-
-      if (shouldCache) {
-        const cached = this.caches.leaderboard.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
       // Check if competition exists
       const competition = await this.getCompetition(competitionId);
       if (!competition) {
@@ -1996,11 +1859,6 @@ export class CompetitionService {
         inactiveAgents: inactiveAgents,
         hasInactiveAgents: inactiveAgents.length > 0,
       };
-
-      // Cache the result
-      if (shouldCache) {
-        this.caches.leaderboard.set(cacheKey, result);
-      }
 
       return result;
     } catch (error) {
@@ -2143,24 +2001,6 @@ export class CompetitionService {
         );
       }
 
-      // Check cache if caching is enabled
-      const { shouldCache: shouldUseCache, cacheKey } = this.getCacheConfig(
-        "rules",
-        {
-          competitionId: activeCompetition.id,
-        },
-        undefined, // No userId for rules
-        params.agentId,
-        params.isAdmin,
-      );
-
-      if (shouldUseCache) {
-        const cached = this.caches.rules.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
       // Authentication and Authorization
       if (params.isAdmin) {
         // Admin access: Log and proceed
@@ -2286,11 +2126,6 @@ export class CompetitionService {
         rules: allRules,
       };
 
-      // Cache the result
-      if (shouldUseCache) {
-        this.caches.rules.set(cacheKey, result);
-      }
-
       return result;
     } catch (error) {
       serviceLogger.error(
@@ -2353,26 +2188,6 @@ export class CompetitionService {
     isAdmin?: boolean;
   }): Promise<EnrichedCompetitionsData> {
     try {
-      // Check cache if caching is enabled
-      const { shouldCache: shouldUseCache, cacheKey } = this.getCacheConfig(
-        "competitions",
-        {
-          status: params.status,
-          ...params.pagingParams,
-          userId: params.userId,
-        },
-        params.userId,
-        params.agentId,
-        params.isAdmin,
-      );
-
-      if (shouldUseCache) {
-        const cached = this.caches.list.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
       // Get competitions
       const { competitions, total } = await this.getCompetitions(
         params.status,
@@ -2450,11 +2265,6 @@ export class CompetitionService {
         },
       };
 
-      // Cache the result
-      if (shouldUseCache) {
-        this.caches.list.set(cacheKey, result);
-      }
-
       return result;
     } catch (error) {
       serviceLogger.error(
@@ -2477,27 +2287,6 @@ export class CompetitionService {
     isAdmin?: boolean;
   }): Promise<CompetitionDetailsData> {
     try {
-      // Check cache if caching is enabled
-      const { shouldCache: shouldUseCache, cacheKey } = this.getCacheConfig(
-        "competition-by-id",
-        {
-          competitionId: params.competitionId,
-          userId: params.userId,
-          agentId: params.agentId,
-          isAdmin: params.isAdmin,
-        },
-        params.userId,
-        params.agentId,
-        params.isAdmin,
-      );
-
-      if (shouldUseCache) {
-        const cached = this.caches.byId.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
       // Fetch all data pieces first
       const [
         competition,
@@ -2573,11 +2362,6 @@ export class CompetitionService {
         },
       };
 
-      // Cache the result
-      if (shouldUseCache) {
-        this.caches.byId.set(cacheKey, result);
-      }
-
       return result;
     } catch (error) {
       serviceLogger.error(
@@ -2603,22 +2387,6 @@ export class CompetitionService {
     };
   }): Promise<CompetitionAgentsData> {
     try {
-      // Check cache if caching is enabled
-      const { shouldCache: shouldUseCache, cacheKey } = this.getCacheConfig(
-        "competition-agents",
-        {
-          competitionId: params.competitionId,
-          ...params.queryParams,
-        },
-      );
-
-      if (shouldUseCache) {
-        const cached = this.caches.agents.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
       // Get competition
       const competition = await this.getCompetition(params.competitionId);
       if (!competition) {
@@ -2644,11 +2412,6 @@ export class CompetitionService {
         ),
       };
 
-      // Cache the result
-      if (shouldUseCache) {
-        this.caches.agents.set(cacheKey, result);
-      }
-
       return result;
     } catch (error) {
       serviceLogger.error(
@@ -2670,22 +2433,6 @@ export class CompetitionService {
     bucket: number,
   ): Promise<CompetitionTimelineData> {
     try {
-      // Check cache if caching is enabled
-      const { shouldCache: shouldUseCache, cacheKey } = this.getCacheConfig(
-        "competition-timeline",
-        {
-          competitionId,
-          bucket,
-        },
-      );
-
-      if (shouldUseCache) {
-        const cached = this.caches.timeline.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
       // Get competition
       const competition = await this.getCompetition(competitionId);
       if (!competition) {
@@ -2730,11 +2477,6 @@ export class CompetitionService {
         timeline: Array.from(agentsMap.values()),
       };
 
-      // Cache the result
-      if (shouldUseCache) {
-        this.caches.timeline.set(cacheKey, result);
-      }
-
       return result;
     } catch (error) {
       serviceLogger.error(
@@ -2754,21 +2496,6 @@ export class CompetitionService {
     competitionId: string,
   ): Promise<CompetitionRulesData> {
     try {
-      // Check cache if caching is enabled
-      const { shouldCache: shouldUseCache, cacheKey } = this.getCacheConfig(
-        "competition-rules-with-auth",
-        {
-          competitionId,
-        },
-      );
-
-      if (shouldUseCache) {
-        const cached = this.caches.rules.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
       // Get competition
       const competition = await this.getCompetition(competitionId);
       if (!competition) {
@@ -2867,11 +2594,6 @@ export class CompetitionService {
         rules,
       };
 
-      // Cache the result
-      if (shouldUseCache) {
-        this.caches.rules.set(cacheKey, result);
-      }
-
       return result;
     } catch (error) {
       serviceLogger.error(
@@ -2892,22 +2614,6 @@ export class CompetitionService {
     pagingParams: PagingParams;
   }): Promise<CompetitionTradesData> {
     try {
-      // Check cache if caching is enabled
-      const { shouldCache: shouldUseCache, cacheKey } = this.getCacheConfig(
-        "competition-trades",
-        {
-          competitionId: params.competitionId,
-          ...params.pagingParams,
-        },
-      );
-
-      if (shouldUseCache) {
-        const cached = this.caches.trades.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
       // Get competition
       const competition = await this.getCompetition(params.competitionId);
       if (!competition) {
@@ -2933,11 +2639,6 @@ export class CompetitionService {
         ),
       };
 
-      // Cache the result
-      if (shouldUseCache) {
-        this.caches.trades.set(cacheKey, result);
-      }
-
       return result;
     } catch (error) {
       serviceLogger.error(
@@ -2959,23 +2660,6 @@ export class CompetitionService {
     pagingParams: PagingParams;
   }): Promise<AgentCompetitionTradesData> {
     try {
-      // Check cache if caching is enabled
-      const { shouldCache: shouldUseCache, cacheKey } = this.getCacheConfig(
-        "agent-competition-trades",
-        {
-          competitionId: params.competitionId,
-          agentId: params.agentId,
-          ...params.pagingParams,
-        },
-      );
-
-      if (shouldUseCache) {
-        const cached = this.caches.agentTrades.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
       // Get competition
       const competition = await this.getCompetition(params.competitionId);
       if (!competition) {
@@ -3006,11 +2690,6 @@ export class CompetitionService {
           params.pagingParams.offset,
         ),
       };
-
-      // Cache the result
-      if (shouldUseCache) {
-        this.caches.agentTrades.set(cacheKey, result);
-      }
 
       return result;
     } catch (error) {
