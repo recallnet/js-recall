@@ -353,11 +353,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Parse and validate bucket parameter (convert string to number)
         const bucket = BucketParamSchema.parse(req.query.bucket);
 
-        const result =
-          await services.competitionService.getCompetitionTimelineWithAuth(
-            competitionId,
-            bucket,
-          );
+        const result = await services.competitionService.getCompetitionTimeline(
+          competitionId,
+          bucket,
+        );
 
         res.status(200).json(result);
       } catch (error) {
@@ -384,7 +383,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         const result =
-          await services.competitionService.getCompetitionRulesWithAuth(
+          await services.competitionService.getRulesForSpecificCompetition(
             competitionId,
           );
 
@@ -409,11 +408,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const competitionId = ensureUuid(req.params.competitionId);
         const pagingParams = PagingParamsSchema.parse(req.query);
 
-        const result =
-          await services.competitionService.getCompetitionTradesWithAuth({
-            competitionId,
-            pagingParams,
-          });
+        const result = await services.competitionService.getCompetitionTrades({
+          competitionId,
+          pagingParams,
+        });
 
         res.status(200).json(result);
       } catch (error) {
@@ -439,7 +437,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const pagingParams = PagingParamsSchema.parse(req.query);
 
         const result =
-          await services.competitionService.getAgentCompetitionTradesWithAuth({
+          await services.competitionService.getAgentTradesInCompetition({
             competitionId,
             agentId,
             pagingParams,
@@ -456,10 +454,3 @@ export function makeCompetitionController(services: ServiceRegistry) {
 export type CompetitionController = ReturnType<
   typeof makeCompetitionController
 >;
-
-/**
- * Clear all competition APIs caches
- */
-export function clearCompetitionsApiCaches() {
-  for (const cache of Object.values(caches)) cache.clear();
-}

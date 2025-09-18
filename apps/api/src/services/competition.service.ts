@@ -2124,7 +2124,7 @@ export class CompetitionService {
   }
 
   /**
-   * Get formatted competition rules
+   * Get competition rules for the active competition as a participant
    * @param params Parameters for rules request
    * @returns Formatted competition rules
    */
@@ -2665,7 +2665,7 @@ export class CompetitionService {
    * @param bucket Time bucket interval in minutes
    * @returns Competition timeline data
    */
-  async getCompetitionTimelineWithAuth(
+  async getCompetitionTimeline(
     competitionId: string,
     bucket: number,
   ): Promise<CompetitionTimelineData> {
@@ -2677,9 +2677,6 @@ export class CompetitionService {
           competitionId,
           bucket,
         },
-        undefined, // No userId for timeline
-        undefined, // No agentId for this endpoint
-        undefined, // No isAdmin for this endpoint
       );
 
       if (shouldUseCache) {
@@ -2749,11 +2746,11 @@ export class CompetitionService {
   }
 
   /**
-   * Get competition rules with caching
+   * Get rules for a specific competition by competition ID.
    * @param competitionId The competition ID
    * @returns Competition rules
    */
-  async getCompetitionRulesWithAuth(
+  async getRulesForSpecificCompetition(
     competitionId: string,
   ): Promise<CompetitionRulesData> {
     try {
@@ -2763,9 +2760,6 @@ export class CompetitionService {
         {
           competitionId,
         },
-        undefined, // No userId for rules
-        undefined, // No agentId for this endpoint
-        undefined, // No isAdmin for this endpoint
       );
 
       if (shouldUseCache) {
@@ -2893,7 +2887,7 @@ export class CompetitionService {
    * @param params Parameters for trades request
    * @returns Competition trades with pagination
    */
-  async getCompetitionTradesWithAuth(params: {
+  async getCompetitionTrades(params: {
     competitionId: string;
     pagingParams: PagingParams;
   }): Promise<CompetitionTradesData> {
@@ -2905,9 +2899,6 @@ export class CompetitionService {
           competitionId: params.competitionId,
           ...params.pagingParams,
         },
-        undefined, // No userId for trades
-        undefined, // No agentId for this endpoint
-        undefined, // No isAdmin for this endpoint
       );
 
       if (shouldUseCache) {
@@ -2962,7 +2953,7 @@ export class CompetitionService {
    * @param params Parameters for agent trades request
    * @returns Agent trades in competition with pagination
    */
-  async getAgentCompetitionTradesWithAuth(params: {
+  async getAgentTradesInCompetition(params: {
     competitionId: string;
     agentId: string;
     pagingParams: PagingParams;
@@ -2976,9 +2967,6 @@ export class CompetitionService {
           agentId: params.agentId,
           ...params.pagingParams,
         },
-        undefined, // No userId for agent trades
-        undefined, // No agentId for this endpoint
-        undefined, // No isAdmin for this endpoint
       );
 
       if (shouldUseCache) {
