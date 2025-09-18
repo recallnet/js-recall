@@ -11,9 +11,12 @@ For complete development guidance including commands, architecture, and patterns
 We believe in leveraging PostgreSQL's power rather than reimplementing logic in application code. This means:
 
 - Complex calculations happen in SQL, not JavaScript
-- Aggregations use database functions, not array methods
+- Aggregations use database functions (`SUM()`, `AVG()`, `COUNT()`), not array methods
+- Sorting happens in SQL (`ORDER BY`), not JavaScript `.sort()`
+- Use `DISTINCT ON` with proper indexes for latest-record queries
 - Data consistency is enforced by database constraints, not application validation alone
 - Performance optimization starts with proper indexes and query design
+- Never fetch all records to filter/aggregate in memory - use SQL WHERE/GROUP BY/HAVING clauses
 
 ### Type Safety Without Compromise
 
@@ -25,9 +28,9 @@ We believe in leveraging PostgreSQL's power rather than reimplementing logic in 
 ### Performance Through Design
 
 - Every list endpoint must support pagination (no unlimited queries)
-- Every expensive operation must be cached appropriately
+- Caching decisions require human review (consider platform caching like Vercel first)
 - Every query must have appropriate indexes
-- N+1 queries are considered bugs, not performance issues
+- N+1 queries (fetching a list then making separate queries per item) must be avoided - use joins or batch fetching instead
 
 ### Testing as Documentation
 
@@ -35,9 +38,9 @@ We believe in leveraging PostgreSQL's power rather than reimplementing logic in 
 - Tests cover edge cases explicitly, not just happy paths
 - Tests use realistic data scenarios, not contrived examples
 - Test names clearly describe what is being tested and why
-- **Current Reality**: Test coverage varies significantly by package:
-  - New packages (`rewards`, `staking-contracts`): 100% required
-  - Legacy apps (`api`, `comps`): Currently minimal coverage, gradually improving
+- **Test Coverage**: See `coverage.config.json` for current thresholds
+  - Coverage requirements vary by package
+  - New packages start with higher coverage requirements
   - All new critical path code needs tests regardless of package thresholds
 
 ### Clean Architecture Principles
@@ -51,10 +54,24 @@ We believe in leveraging PostgreSQL's power rather than reimplementing logic in 
 
 - Search for existing functionality before implementing new features
 - Document why existing solutions don't work when creating alternatives
+- **When implementing a replacement**: Remove the old implementation in the same PR
 - Remove dead code immediately upon discovery
 - Deprecate properly with migration paths
 
 ## Working with Claude
+
+### Critical Documentation Rule
+
+**NEVER use temporal or comparative language in code comments or TSDoc**. This is crucial because:
+
+- Comments like "new optimized method" or "replaces old implementation" become misleading over time
+- Future AI reviewers lack the historical context to understand what "new" or "old" means
+- Implementation details like "avoids N+1" or "atomic operation" belong in commit messages, not code
+
+**Instead of:** "Optimized method that efficiently fetches users avoiding N+1 queries"  
+**Write:** "Fetches users with their associated posts in a single query"
+
+Always describe WHAT the code does, never HOW it compares to other code or WHY it's better.
 
 ### Key Principles When Using Claude
 
@@ -100,6 +117,9 @@ We believe in leveraging PostgreSQL's power rather than reimplementing logic in 
 - ❌ Mix authentication patterns (stick to one per endpoint)
 - ❌ Log sensitive data (passwords, API keys, PII)
 - ❌ Skip tests for critical paths (auth, payments, trading)
+- ❌ Implement caching without human review (always discuss caching strategy first)
+- ❌ Leave both old and new implementations when refactoring (remove replaced code immediately)
+- ❌ Use temporal/comparative words in comments ("new", "optimized", "replaces", "efficient")
 
 ### Always Do These
 
@@ -109,6 +129,11 @@ We believe in leveraging PostgreSQL's power rather than reimplementing logic in 
 - ✅ Use structured JSON logging with request IDs
 - ✅ Document breaking changes in PR descriptions
 - ✅ Run linter and tests before marking tasks complete
+- ✅ Push computation to the database (aggregations, sorting, filtering)
+- ✅ Use atomic operations to prevent race conditions
+- ✅ Sample high-volume logging and monitoring events (e.g., 1-10%)
+- ✅ Mask sensitive data in logs (wallet addresses, API keys)
+- ✅ Write comments that describe WHAT code does, not HOW it's better than before
 
 ## Quick Reference
 
@@ -144,6 +169,8 @@ This project is optimized for AI development assistance. All standard developmen
 When working with Claude Code:
 
 1. The project uses pnpm workspaces - be aware of package boundaries
-2. Database changes require migration generation
-3. All code must pass TSDoc coverage requirements (99% threshold)
+2. Database changes require migration generation (`pnpm --filter api db:gen-migrations`)
+3. TSDoc coverage requirements vary by package (see `coverage.config.json`)
 4. E2E tests run against a real database - ensure proper cleanup
+5. Metrics are exposed via Prometheus on port 3003 - alerting is handled externally
+6. Sentry is configured for error tracking with 10% sampling in production

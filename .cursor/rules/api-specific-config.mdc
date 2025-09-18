@@ -21,17 +21,26 @@ alwaysApply: false
   - Use `DISTINCT ON` with proper indexes for latest-record queries
   - Use database-level `GROUP BY` for grouping operations
   - Use CTEs (Common Table Expressions) for complex multi-step queries
+  - Use `ORDER BY` in SQL instead of JavaScript `.sort()`
+  - For complex sorts (like `DISTINCT ON` + different `ORDER BY`), use subqueries with `.as()` in Drizzle
   - Example: Getting latest summaries should use `DISTINCT ON (agent_id)` not fetch all and filter in memory
+- **Response Size Management**:
+  - Never return unbounded result sets for in-memory processing
+  - Always aggregate at database level when only totals are needed
+  - Example: Use `SUM(total_volume)` in SQL vs fetching 1000+ records to sum in JavaScript
+  - Set reasonable LIMIT clauses for safety even on internal queries
+  - Monitor query response sizes in production
 - **Composite Indexes**: Always add indexes for:
   - Foreign key relationships
   - Columns used in `WHERE` clauses
   - Columns used in `ORDER BY` with `DISTINCT ON`
   - Multi-column patterns that match query patterns (e.g., `(agent_id, competition_id, timestamp DESC)`)
 - **Query Optimization Principles**:
-  - Avoid N+1 queries - use joins or batch fetching
+  - Prevent the N+1 query problem: Instead of fetching a list then making separate queries per item, use joins or batch fetching
   - Use database cursors for large result sets
   - Leverage database window functions for ranking and analytics
   - Use `EXPLAIN ANALYZE` to verify query performance
+  - Batch operations should process in chunks (e.g., 100 records at a time)
 
 ### Migration Best Practices
 - **Migration Generation**: Always use `pnpm --filter api db:gen-migrations` after schema changes
@@ -56,6 +65,32 @@ alwaysApply: false
 - **Null Handling**: Explicitly handle nullable columns with proper types
   - Use `| null` not `| undefined` for nullable database fields
   - Consider using Result types for operations that may fail
+
+## Atomic Operations & Race Condition Prevention
+
+### Service Layer Atomicity
+- **TOCTOU Prevention**: Avoid Time-Of-Check-Time-Of-Use patterns
+  - ❌ Bad: `const comp = await getCompetition(); if (comp.type === 'perps') {...}`
+  - ✅ Good: `const isPerps = await isCompetitionType(id, 'perps'); if (isPerps) {...}`
+- **Atomic Check Methods**: Create single-purpose methods that combine fetch and validation
+  - Example: `isActiveCompetitionType()` instead of `getActiveCompetition()?.type === ...`
+  - Example: `checkCompetitionType()` returns `{ exists: boolean, isType: boolean }`
+- **State Validation**: For operations that depend on current state:
+  - Validate state as close to the action as possible
+  - Consider using database row locks for critical sections
+  - Use optimistic locking patterns where appropriate
+
+### Repository Layer Atomicity
+- **Transaction Boundaries**: Use database transactions for multi-step operations
+  - Wrap related database operations in `db.transaction()`
+  - Ensure all-or-nothing semantics for data consistency
+  - Example: Balance updates + trade creation must be atomic
+- **Bulk Operations**: Process in transactions with appropriate batch sizes
+  - Use `FOR UPDATE` locks when reading data that will be modified
+  - Consider using `SELECT ... FOR NO KEY UPDATE` for better concurrency
+- **Idempotency**: Design operations to be safely retryable
+  - Use unique constraints and `ON CONFLICT` clauses
+  - Store idempotency keys for critical operations
 
 ## Authentication & Security
 
@@ -90,17 +125,10 @@ alwaysApply: false
 - Performance-critical changes require load testing validation
 
 ### Test Coverage Standards
-- **Current Global Thresholds** (from `coverage.config.json`):
-  - Lines: 4%
-  - Statements: 4%
-  - Functions: 46%
-  - Branches: 46%
-  - Note: Coverage is calculated across all packages in aggregate
-- **Package-Specific Thresholds**:
-  - `apps/api`: 0% all metrics (testing infrastructure in development)
-  - `apps/comps`: 0% all metrics (frontend testing not yet implemented)
-  - `packages/rewards`: 100% all metrics (strictly enforced)
-  - `packages/staking-contracts`: 100% all metrics (strictly enforced)
+- **Current Thresholds**: See `coverage.config.json` for current values
+  - Global thresholds and package-specific overrides are defined there
+  - Coverage is calculated across all packages in aggregate
+  - The config file is the single source of truth for coverage requirements
 - **Coverage Migration Strategy**:
   - New packages must start with 100% coverage requirements
   - Existing apps (api, comps) will gradually increase thresholds
@@ -193,6 +221,13 @@ alwaysApply: false
   - Validate inputs and check preconditions at the start of public methods
   - Return early on invalid conditions rather than nesting the entire method body
   - Let helper methods assume valid inputs (since the public method already validated)
+- **Unknown State Handling**:
+  - Throw explicit errors for unexpected states (e.g., unknown enum values)
+  - ❌ Bad: `default: logger.warn('Unknown type'); return;`
+  - ✅ Good: `default: throw new Error(\`Unknown type: ${type}\`);`
+  - Never silently log and continue when encountering invalid states
+  - Makes bugs immediately visible in development/staging
+  - Use exhaustive type checking with TypeScript's `never` type for enums
 
 ### Code Reuse & Method Implementation
 - **Before implementing any new method**: Always search the codebase for similar existing functionality using semantic search or grep
@@ -225,14 +260,22 @@ alwaysApply: false
   - Use `LIMIT` and `OFFSET` for all list endpoints
   - Default page size: 10-50 items (never unlimited)
   - Use database cursors for large result sets
-  - Avoid N+1 queries - use joins or batch fetching
-  - Maximum query time: 1000ms before timeout
-- **Caching Strategy**:
-  - LRU cache for frequently accessed data
-  - Cache TTL: 60s for prices, 300s for competition data
-  - Cache invalidation on mutations
-  - Use Redis for distributed caching
-  - Cache warming for critical data on startup
+  - Maximum query time: 5000ms before timeout (enforced at both database and application level)
+  - Set statement_timeout in PostgreSQL for query-level enforcement
+  - Use request timeout middleware for HTTP-level enforcement
+- **Caching Considerations**:
+  - **IMPORTANT FOR AI AGENTS**: Always ask the human before implementing caching:
+    - "Should we add caching here? What TTL would be appropriate?"
+    - "Is platform caching (e.g., Vercel) already handling this?"
+    - "What are the staleness tolerance requirements?"
+  - Consider platform-provided caching (e.g., Vercel's automatic caching)
+  - Evaluate need for application-level caching on case-by-case basis
+  - When implementing caching, consider:
+    - Data volatility and staleness tolerance
+    - Cache invalidation complexity
+    - Memory/storage costs vs performance gains
+  - Document caching decisions and TTLs in code comments
+  - AI should NEVER implement caching without explicit human approval
 - **Response Time SLAs**:
   - P95 < 200ms for reads
   - P95 < 500ms for writes
@@ -247,18 +290,52 @@ alwaysApply: false
 - All API endpoints must include structured logging with request IDs
 - Health check endpoints must validate all dependencies (DB, external APIs)
 - Business metric tracking and performance SLIs/SLOs required
-- **Metrics Collection**:
-  - Response times per endpoint
-  - Database query performance
-  - Cache hit rates
-  - Business metrics (trades/hour, active agents, competition participation)
-  - Error rates by type and endpoint
+- **Metrics Collection (Implemented via Prometheus)**:
+  - **Currently Collected**:
+    - HTTP request duration (histogram with buckets: 25, 50, 100, 200, 500, 1000, 2000, 5000ms)
+    - HTTP request counts by method, route, status code
+    - Database query duration and counts by operation, repository, method
+    - Error tracking via Sentry integration
+  - **Metrics Server**: Separate server on port 3003 (configurable via METRICS_PORT)
+  - **Endpoint**: `/metrics` exposed without auth for internal monitoring
+  - **Note**: Alert thresholds and alerting rules should be configured in external monitoring systems (e.g., Datadog, PagerDuty) that consume these metrics - not implemented in application code
+  - **TODO/Aspirational** (not yet implemented):
+    - Cache hit rates
+    - Business metrics (trades/hour, active agents, competition participation)
+- **Error Tracking & APM (Sentry)**:
+  - **Configuration**:
+    - Production sampling: 10% (traces and profiles)
+    - Development sampling: 100%
+    - Automatic sensitive data scrubbing (auth headers, cookies)
+    - Database query monitoring via wrapped Drizzle operations
+  - **IMPORTANT FOR AI AGENTS**: When integrating with external APIs:
+    - Use `Sentry.addBreadcrumb()` for tracking API interactions
+    - Use `Sentry.captureMessage()` with sampling for successful responses (1% sample rate)
+    - Use `Sentry.captureException()` for all errors with context
+    - Example pattern:
+      ```typescript
+      // Sample 1% of successful responses for monitoring
+      const SAMPLING_RATE = 0.01;
+      if (Math.random() < SAMPLING_RATE) {
+        Sentry.captureMessage("External API Success", {
+          level: "info",
+          extra: { responseTime, endpoint, sampleData }
+        });
+      }
+      ```
+    - Mask sensitive data (e.g., wallet addresses, API keys) before logging
+    - Never log full request/response bodies without sampling
 - **Logging Standards**:
-  - Structured JSON logging
+  - Structured JSON logging with trace ID correlation
   - Request ID propagation through all layers
   - Log levels: ERROR, WARN, INFO, DEBUG
   - Separate application and error logs
   - Never log sensitive data (passwords, API keys, PII)
+  - **Sampling Rates** (for high-volume logging):
+    - HTTP requests: 10% by default (configurable via HTTP_LOG_SAMPLE_RATE)
+    - Repository operations: 10% by default (configurable via REPOSITORY_LOG_SAMPLE_RATE)
+    - Use `Math.random() < sampleRate` pattern for custom sampling
+    - Always log errors regardless of sampling
 - **Health Checks**:
   - `/health` - Basic liveness check
   - `/health/ready` - Readiness check including:
@@ -266,11 +343,6 @@ alwaysApply: false
     - Redis connectivity
     - External service availability
     - Disk space and memory usage
-- **Alert Thresholds**:
-  - Error rate > 1% for 5 minutes
-  - P95 response time > 500ms for 10 minutes
-  - Database connection pool > 80% utilized
-  - Memory usage > 85%
 
 ## Code Quality & Documentation
 
@@ -279,5 +351,9 @@ alwaysApply: false
 - Include `@param` and `@returns` documentation
 - Document error conditions and side effects
 - Repository methods should document database operations and constraints
+- **Never use temporal/comparative language in comments**:
+  - Avoid: "new", "optimized", "replaces", "improved", "efficient", "atomic", "better"
+  - Describe what the method DOES, not how it compares to other implementations
+  - Focus on behavior and contract, not implementation quality
 - At the end of implementing a new feature, always check to see if this invalidates content in `apps/api/README.md` that must be updated
 - For any new environment variables, ensure that `apps/api/.env.example`, `apps/api/.env.test`, and `.github/workflows/api-ci.yml` has been updated to include it
