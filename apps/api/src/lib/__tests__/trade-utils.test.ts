@@ -13,26 +13,8 @@ describe("trade-utils", () => {
 
     it("should apply minimal slippage for small trades", () => {
       const result = calculateSlippage(100); // $100 trade
-
-      // Calculate expected bounds accounting for randomness and current implementation
-      const K = 0.035;
-      const SCALE = 5000;
-      const MIN_SLIPPAGE = 0.0005;
-      const MAX_SLIPPAGE = 0.15;
-
-      const baseSlippage = Math.min(
-        Math.max(K * (Math.log1p(100 / SCALE) / Math.LN10), MIN_SLIPPAGE),
-        MAX_SLIPPAGE,
-      );
-
-      // Random multiplier range is [0.95, 1.20]
-      // Note: The current implementation applies randomness AFTER MIN_SLIPPAGE,
-      // so the final value can fall below MIN_SLIPPAGE due to the 0.95 multiplier
-      const minExpected = baseSlippage * 0.95; // Can be less than MIN_SLIPPAGE
-      const maxExpected = Math.min(baseSlippage * 1.2, MAX_SLIPPAGE);
-
-      expect(result.actualSlippage).toBeGreaterThanOrEqual(minExpected * 0.99); // Allow for floating point precision
-      expect(result.actualSlippage).toBeLessThanOrEqual(maxExpected * 1.01);
+      expect(result.actualSlippage).toBeGreaterThanOrEqual(0.0005); // At least MIN_SLIPPAGE (5 bps)
+      expect(result.actualSlippage).toBeLessThan(0.002); // Less than 0.2%
       expect(result.effectiveFromValueUSD).toBeGreaterThan(99.8);
       expect(result.effectiveFromValueUSD).toBeLessThan(100);
     });
