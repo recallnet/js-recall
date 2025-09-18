@@ -102,10 +102,7 @@ function checkThresholds(coverage) {
   Object.entries(coverage).forEach(([packageName, packageMetrics]) => {
     const packageConfig = coverageConfig.packages[packageName];
 
-    let thresholds;
-    if (packageConfig?.thresholds) {
-      thresholds = packageConfig.thresholds;
-    } else if (!packageConfig) {
+    if (!packageConfig) {
       failures.push({
         package: packageName,
         metric: "config",
@@ -113,9 +110,13 @@ function checkThresholds(coverage) {
         actual: "missing",
       });
       return;
-    } else {
+    }
+
+    if (!packageConfig.thresholds) {
       return;
     }
+
+    const thresholds = packageConfig.thresholds;
 
     Object.entries(thresholds).forEach(([metricName, threshold]) => {
       const actualCoverage = packageMetrics[metricName].pct;
@@ -214,8 +215,10 @@ function main() {
     thresholdFailures.forEach(({ package: pkg, metric, threshold, actual }) => {
       const displayValue =
         typeof actual === "number" ? `${actual.toFixed(2)}%` : actual;
+      const displayThreshold =
+        typeof threshold === "number" ? `${threshold}%` : threshold;
       console.error(
-        `   ${pkg} - ${metric}: ${displayValue} (required: ${threshold})`,
+        `   ${pkg} - ${metric}: ${displayValue} (required: ${displayThreshold})`,
       );
     });
 

@@ -107,7 +107,8 @@ jobs:
               comment += '\n## ❌ Coverage Thresholds Not Met\n';
               violations.forEach(violation => {
                 const displayValue = typeof violation.actual === 'number' ? `${violation.actual.toFixed(2)}%` : violation.actual;
-                comment += `- ${violation.package} - ${violation.metric}: ${displayValue} (required: ${violation.threshold})\n`;
+                const displayThreshold = typeof violation.threshold === 'number' ? `${violation.threshold}%` : violation.threshold;
+                comment += `- ${violation.package} - ${violation.metric}: ${displayValue} (required: ${displayThreshold})\n`;
               });
             }
 
