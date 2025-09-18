@@ -150,8 +150,12 @@ export default function CompetitionPage({
     if (!competition.votingEnabled) return false;
 
     const now = new Date();
-    const votingStart = competition.votingStartDate ? new Date(competition.votingStartDate) : null;
-    const votingEnd = competition.votingEndDate ? new Date(competition.votingEndDate) : null;
+    const votingStart = competition.votingStartDate
+      ? new Date(competition.votingStartDate)
+      : null;
+    const votingEnd = competition.votingEndDate
+      ? new Date(competition.votingEndDate)
+      : null;
 
     // If voting start date is set and we haven't reached it yet
     if (votingStart && now < votingStart) return false;
