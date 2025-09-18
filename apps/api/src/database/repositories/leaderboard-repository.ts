@@ -149,7 +149,7 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
     };
   }
 
-  // Separate competition IDs by type for efficient querying
+  // Separate competition IDs by type
   const paperTradingIds = allEndedCompetitions
     .filter((c) => c.type === "trading")
     .map((c) => c.id);
@@ -158,7 +158,7 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
     .map((c) => c.id);
   const allCompetitionIds = allEndedCompetitions.map((c) => c.id);
 
-  // Run all queries in parallel for maximum efficiency
+  // Run all queries in parallel
   const [
     tradeStats,
     positionStats,
@@ -259,7 +259,7 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
 }
 
 /**
- * Get bulk agent metrics for multiple agents using optimized queries
+ * Get bulk agent metrics for multiple agents
  * Returns raw query results for processing in the service layer
  *
  * @param agentIds Array of agent IDs to get metrics for
@@ -484,7 +484,7 @@ async function getBulkAgentMetricsImpl(
 }
 
 /**
- * Get optimized global agent metrics using separate queries
+ * Get global agent metrics using separate queries
  * @returns Array of agent metrics with all required data
  */
 async function getOptimizedGlobalAgentMetricsImpl(): Promise<
@@ -543,7 +543,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
       .where(inArray(votes.agentId, agentIds))
       .groupBy(votes.agentId);
 
-    // Create lookup maps for efficient merging
+    // Create lookup maps
     const competitionCountMap = new Map(
       competitionCounts.map((c) => [c.agentId, c.numCompetitions]),
     );
