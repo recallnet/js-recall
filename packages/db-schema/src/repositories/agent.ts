@@ -184,7 +184,7 @@ export class AgentRepository {
 
       if (claimed) {
         this.#logger.warn(
-          "attempting to filter by claimed rewards, but NOT EMENTED",
+          "attempting to filter by claimed rewards, but NOT IMPLEMENTED",
         );
       }
 
@@ -730,7 +730,7 @@ export class AgentRepository {
 
       if (claimed) {
         this.#logger.warn(
-          "attempting to filter by claimed rewards, but NOT EMENTED",
+          "attempting to filter by claimed rewards, but NOT IMPLEMENTED",
         );
       }
 

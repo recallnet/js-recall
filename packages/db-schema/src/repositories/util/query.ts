@@ -17,11 +17,10 @@ export function getSort<T extends PgSelect>(
   sortString: string,
   orderByOptions: Record<string, AnyColumn>,
 ) {
-  const parts = sortString.split(",");
-
-  if (parts.length < 1) {
-    throw new Error("cannot sort by undefined");
+  if (!sortString || sortString.trim() === "") {
+    throw new ParsingError("cannot sort by undefined");
   }
+  const parts = sortString.split(",");
   if (parts.length > 3) {
     throw new ParsingError(
       "compound sorting with more than 3 fields not allowed",
