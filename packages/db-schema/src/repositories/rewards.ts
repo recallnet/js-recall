@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { Database } from "../types.js";
@@ -126,6 +126,63 @@ export class RewardsRepository {
         .where(eq(rewardsTree.competitionId, competitionId));
     } catch (error) {
       this.#logger.error("Error in getRewardsTreeByCompetition:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find a competition ID by root hash
+   * @param rootHash The root hash to search for
+   * @returns The competition ID if found, undefined otherwise
+   */
+  async findCompetitionByRootHash(
+    rootHash: Uint8Array,
+  ): Promise<string | undefined> {
+    try {
+      const [result] = await this.#db
+        .select({ competitionId: rewardsRoots.competitionId })
+        .from(rewardsRoots)
+        .where(eq(rewardsRoots.rootHash, rootHash))
+        .limit(1);
+
+      return result?.competitionId;
+    } catch (error) {
+      this.#logger.error("Error in findCompetitionByRootHash:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark a reward as claimed by updating the claimed column to true
+   * @param competitionId The competition ID (UUID)
+   * @param address The user's blockchain address
+   * @param amount The reward amount that was claimed
+   * @returns The updated reward record if found, undefined otherwise
+   */
+  async markRewardAsClaimed(
+    competitionId: string,
+    address: string,
+    amount: bigint,
+  ): Promise<SelectReward | undefined> {
+    try {
+      const [updated] = await this.#db
+        .update(rewards)
+        .set({
+          claimed: true,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(rewards.competitionId, competitionId),
+            eq(rewards.address, address),
+            eq(rewards.amount, amount),
+          ),
+        )
+        .returning();
+
+      return updated;
+    } catch (error) {
+      this.#logger.error("Error in markRewardAsClaimed:", error);
       throw error;
     }
   }

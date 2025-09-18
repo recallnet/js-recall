@@ -2,6 +2,7 @@ import { and, count as drizzleCount, eq, inArray, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { balances } from "../trading/defs.js";
+import type { SelectBalance } from "../trading/types.js";
 import type { Database, Transaction } from "../types.js";
 import { SpecificChain } from "./types/index.js";
 
@@ -23,6 +24,11 @@ export class BalanceRepository {
     this.#logger = logger;
     this.#specificChainTokens = specificChainTokens;
   }
+
+  /**
+   * Balance Repository
+   * Handles database operations for balances
+   */
 
   /**
    * Count all balances
@@ -63,7 +69,7 @@ export class BalanceRepository {
    * Get all balances for an agent
    * @param agentId Agent ID
    */
-  async getAgentBalances(agentId: string) {
+  async getAgentBalances(agentId: string): Promise<SelectBalance[]> {
     try {
       return await this.#db
         .select()
@@ -79,7 +85,7 @@ export class BalanceRepository {
    * Get all balances for multiple agents in bulk
    * @param agentIds Array of agent IDs
    */
-  async getAgentsBulkBalances(agentIds: string[]) {
+  async getAgentsBulkBalances(agentIds: string[]): Promise<SelectBalance[]> {
     try {
       if (agentIds.length === 0) {
         return [];
