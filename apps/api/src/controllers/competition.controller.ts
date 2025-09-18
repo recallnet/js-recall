@@ -1381,15 +1381,19 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const competitionId = ensureUuid(req.params.competitionId);
         const pagingParams = PagingParamsSchema.parse(req.query);
 
-        // Check if competition exists
-        const competition =
-          await services.competitionManager.getCompetition(competitionId);
-        if (!competition) {
+        // Check if competition exists and its type
+        const { exists, isType: isPerpsCompetition } =
+          await services.competitionManager.checkCompetitionType(
+            competitionId,
+            "perpetual_futures",
+          );
+
+        if (!exists) {
           throw new ApiError(404, "Competition not found");
         }
 
         // Check if this is a perps competition
-        if (competition.type === "perpetual_futures") {
+        if (isPerpsCompetition) {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
@@ -1456,10 +1460,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
         );
         const pagingParams = PagingParamsSchema.parse(req.query);
 
-        // Check if competition exists
-        const competition =
-          await services.competitionManager.getCompetition(competitionId);
-        if (!competition) {
+        // Check if competition exists and its type
+        const { exists, isType: isPerpsCompetition } =
+          await services.competitionManager.checkCompetitionType(
+            competitionId,
+            "perpetual_futures",
+          );
+
+        if (!exists) {
           throw new ApiError(404, "Competition not found");
         }
 
@@ -1470,7 +1478,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Check if this is a perps competition
-        if (competition.type === "perpetual_futures") {
+        if (isPerpsCompetition) {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +

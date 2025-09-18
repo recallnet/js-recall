@@ -225,10 +225,12 @@ export function makeAgentController(services: ServiceRegistry) {
       try {
         const agentId = req.agentId as string;
 
-        // Check if there's an active competition and if it's a perps competition
-        const activeCompetition =
-          await services.competitionManager.getActiveCompetition();
-        if (activeCompetition?.type === "perpetual_futures") {
+        // Check if there's an active perps competition
+        const isPerpsCompetition =
+          await services.competitionManager.isActiveCompetitionType(
+            "perpetual_futures",
+          );
+        if (isPerpsCompetition) {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
@@ -293,10 +295,12 @@ export function makeAgentController(services: ServiceRegistry) {
       try {
         const agentId = req.agentId as string;
 
-        // Check if there's an active competition and if it's a perps competition
-        const activeCompetition =
-          await services.competitionManager.getActiveCompetition();
-        if (activeCompetition?.type === "perpetual_futures") {
+        // Check if there's an active perps competition
+        const isPerpsCompetition =
+          await services.competitionManager.isActiveCompetitionType(
+            "perpetual_futures",
+          );
+        if (isPerpsCompetition) {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +

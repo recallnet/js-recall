@@ -615,6 +615,35 @@ export class CompetitionManager {
   }
 
   /**
+   * Check if the active competition is of a specific type (atomic operation)
+   * @param type The competition type to check
+   * @returns true if active competition matches the type, false otherwise
+   */
+  async isActiveCompetitionType(
+    type: "trading" | "perpetual_futures",
+  ): Promise<boolean> {
+    const activeCompetition = await findActive();
+    return activeCompetition?.type === type;
+  }
+
+  /**
+   * Check if a specific competition is of a given type (atomic operation)
+   * @param competitionId The competition ID to check
+   * @param type The competition type to check
+   * @returns Object with exists (if competition exists) and isType (if it matches the type)
+   */
+  async checkCompetitionType(
+    competitionId: string,
+    type: "trading" | "perpetual_futures",
+  ): Promise<{ exists: boolean; isType: boolean }> {
+    const competition = await findById(competitionId);
+    return {
+      exists: !!competition,
+      isType: competition?.type === type,
+    };
+  }
+
+  /**
    * Get the agents in a competition and attach relevant metrics
    * @param competitionId The competition ID
    * @returns Array of agent IDs
