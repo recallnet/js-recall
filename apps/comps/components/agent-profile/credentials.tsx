@@ -13,6 +13,26 @@ import { CopyButton } from "../copy-button";
 import { VisibilityToggle } from "../visibility-toggle";
 
 /**
+ * Props for the ApiKeyRow component
+ */
+interface ApiKeyRowProps {
+  /** Label text to display for the API key */
+  label: string;
+  /** Tooltip text to show on hover */
+  tooltip: string;
+  /** The API key value to display */
+  apiKey?: string;
+  /** Whether the component is in a loading state */
+  isLoading: boolean;
+  /** Whether the API key is locked and needs to be unlocked */
+  isLocked?: boolean;
+  /** Callback function to unlock the API key */
+  onUnlock?: () => void;
+  /** Whether the unlock operation is in progress */
+  isUnlocking?: boolean;
+}
+
+/**
  * Component for displaying an API key row with visibility toggle and copy functionality
  */
 const ApiKeyRow = ({
@@ -20,12 +40,10 @@ const ApiKeyRow = ({
   tooltip,
   apiKey,
   isLoading,
-}: {
-  label: string;
-  tooltip: string;
-  apiKey?: string;
-  isLoading: boolean;
-}) => {
+  isLocked,
+  onUnlock,
+  isUnlocking,
+}: ApiKeyRowProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   return (
@@ -36,64 +54,38 @@ const ApiKeyRow = ({
         </Tooltip>
         <span className="text-sm">{label}</span>
       </div>
-      {isVisible || isLoading ? (
-        <span className="text-primary-foreground flex-grow truncate">
-          {apiKey}
-        </span>
+      {isLocked && onUnlock ? (
+        <div className="flex flex-grow items-center gap-4">
+          <span className="text-secondary-foreground text-sm">
+            Click to unlock your API key
+          </span>
+          <Button
+            onClick={onUnlock}
+            disabled={isUnlocking}
+            className="ml-auto flex gap-2 bg-blue-600 px-6 py-2 text-xs"
+          >
+            <KeyRound className="h-4 w-4" strokeWidth={1.3} />
+            <span>{isUnlocking ? "Loading..." : "Unlock"}</span>
+          </Button>
+        </div>
       ) : (
-        <span className="text-primary-foreground flex-grow truncate">
-          ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-        </span>
+        <>
+          {isVisible || isLoading ? (
+            <span className="text-primary-foreground flex-grow truncate">
+              {apiKey}
+            </span>
+          ) : (
+            <span className="text-primary-foreground flex-grow truncate">
+              ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+            </span>
+          )}
+          <VisibilityToggle
+            isVisible={isVisible}
+            onToggle={() => setIsVisible(!isVisible)}
+          />
+          <CopyButton textToCopy={apiKey || ""} />
+        </>
       )}
-      <VisibilityToggle
-        isVisible={isVisible}
-        onToggle={() => setIsVisible(!isVisible)}
-      />
-      <CopyButton textToCopy={apiKey || ""} />
-    </div>
-  );
-};
-
-const ApiKeyLocked = ({
-  unlockKeysMutation,
-}: {
-  unlockKeysMutation: ReturnType<typeof useUnlockKeys>["mutation"];
-}) => {
-  const unlockKeys = async () => {
-    unlockKeysMutation.mutate();
-  };
-
-  const button = (
-    <Button
-      onClick={unlockKeys}
-      disabled={unlockKeysMutation.isPending}
-      className="flex gap-3 bg-blue-600 px-12 py-7 text-xs"
-    >
-      <KeyRound className="h-6 w-6 uppercase" strokeWidth={1.3} />
-      <span>{unlockKeysMutation.isPending ? "Loading..." : "Unlock keys"}</span>
-    </Button>
-  );
-
-  return (
-    <div className="grid w-full grid-cols-1 items-center gap-4 sm:grid-cols-[30px_200px_1fr_300px]">
-      <div className="mx-auto flex w-8 items-center justify-center md:mx-0">
-        <KeyRound className="h-7 w-7 text-gray-500" strokeWidth={1.3} />
-      </div>
-
-      <div className="text-center sm:text-left">
-        <span className="text-secondary-foreground block text-sm font-bold">
-          Your API keys are
-          <span className="ml-1 text-red-500">locked</span>.
-        </span>
-      </div>
-
-      <div className="text-center sm:text-left">
-        <span className="text-secondary-foreground text-sm">
-          Click below to unlock your Production and Sandbox API keys.
-        </span>
-      </div>
-
-      <div className="flex justify-center sm:justify-end">{button}</div>
     </div>
   );
 };
@@ -105,8 +97,17 @@ export const Credentials = ({
   agent: Agent;
   className?: string;
 }) => {
-  const { productionKey, sandboxKey, isLoadingKeys, isUnlocked, mutation } =
-    useUnlockKeys(agent.handle, agent.id);
+  const {
+    productionKey,
+    sandboxKey,
+    isLoadingKeys,
+    isSandboxUnlocked,
+    mutation,
+  } = useUnlockKeys(agent.handle, agent.id);
+
+  const unlockKeys = () => {
+    mutation.mutate();
+  };
 
   return (
     <div
@@ -121,7 +122,7 @@ export const Credentials = ({
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
         </div>
-      ) : isUnlocked ? (
+      ) : (
         <>
           <ApiKeyRow
             label="Production API Key"
@@ -129,17 +130,16 @@ export const Credentials = ({
             apiKey={productionKey}
             isLoading={isLoadingKeys}
           />
-          {sandboxKey && (
-            <ApiKeyRow
-              label="Sandbox API Key"
-              tooltip="Sandbox Agent API Key"
-              apiKey={sandboxKey}
-              isLoading={isLoadingKeys}
-            />
-          )}
+          <ApiKeyRow
+            label="Sandbox API Key"
+            tooltip="Sandbox Agent API Key"
+            apiKey={sandboxKey}
+            isLoading={isLoadingKeys}
+            isLocked={!isSandboxUnlocked}
+            onUnlock={unlockKeys}
+            isUnlocking={mutation.isPending}
+          />
         </>
-      ) : (
-        <ApiKeyLocked unlockKeysMutation={mutation} />
       )}
     </div>
   );

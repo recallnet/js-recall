@@ -1,0 +1,108 @@
+name: Create Release Tag
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., 0.1.1)"
+        required: true
+        type: string
+      target:
+        description: 'Target ref (commit SHA or "main")'
+        required: true
+        # Note: if desired, we can default to "main" w/o requiring explicit input
+        # default: "main"
+        type: string
+      require_on_main:
+        description: "Require the commit to be reachable from origin/main"
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+
+jobs:
+  create-release-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version input
+        id: ver
+        run: |
+          set -euo pipefail
+          RAW="${{ inputs.version }}"
+          # Strip optional leading v
+          VER="${RAW#v}"
+          # Basic semver (allows pre-release/build metadata)
+          if ! echo "$VER" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+(\.[A-Za-z0-9]+)*)?(\+[A-Za-z0-9]+(\.[A-Za-z0-9]+)*)?$'; then
+            echo "Invalid version: $RAW"
+            exit 1
+          fi
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve target commit
+        id: target
+        run: |
+          set -euo pipefail
+          git fetch origin --tags
+          TARGET="${{ inputs.target }}"
+          if [ "$TARGET" = "main" ]; then
+            git fetch origin main
+            COMMIT_SHA="$(git rev-parse origin/main)"
+          else
+            # Ensure it's a commit
+            git cat-file -e "$TARGET^{commit}" || { echo "Unknown commit: $TARGET"; exit 1; }
+            COMMIT_SHA="$TARGET"
+          fi
+          echo "commit=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: (Optional) Ensure commit is on main
+        if: ${{ inputs.require_on_main == 'true' }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          COMMIT="${{ steps.target.outputs.commit }}"
+          if git merge-base --is-ancestor "$COMMIT" origin/main; then
+            echo "Commit is reachable from origin/main ✅"
+          else
+            echo "❌ Commit $COMMIT is not on origin/main"
+            exit 1
+          fi
+
+      - name: Ensure tag does not already exist (local/remote)
+        run: |
+          set -euo pipefail
+          TAG="release-v${{ steps.ver.outputs.ver }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists locally: $TAG"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists on origin: $TAG"
+            exit 1
+          fi
+
+      - name: Create and push tag
+        run: |
+          set -euo pipefail
+          TAG="release-v${{ steps.ver.outputs.ver }}"
+          COMMIT="${{ steps.target.outputs.commit }}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$TAG" "$COMMIT" -m "Release v${{ steps.ver.outputs.ver }}"
+          git push origin "$TAG"
+
+      - name: Summary
+        run: |
+          echo "## Release Tag Created 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag: \`release-v${{ steps.ver.outputs.ver }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Target commit: \`${{ steps.target.outputs.commit }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- require_on_main: \`${{ inputs.require_on_main }}\`" >> $GITHUB_STEP_SUMMARY
