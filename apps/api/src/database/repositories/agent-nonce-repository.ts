@@ -1,5 +1,3 @@
-import { eq, lt } from "drizzle-orm";
-
 import { AgentNonceRepository } from "@recallnet/db-schema/repositories/agent-nonce";
 
 import { db } from "@/database/db.js";
