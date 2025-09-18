@@ -2,31 +2,19 @@ import { and, eq, sql, sum } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
-import type { Transaction } from "@recallnet/db-schema/types";
-import * as schema from "@recallnet/db-schema/voting/defs";
-import {
-  SelectAgentBoost,
-  SelectAgentBoostTotal,
-} from "@recallnet/db-schema/voting/types";
+import { BlockchainAddressAsU8A } from "@recallnet/coders";
 
-import { db } from "@/database/db.js";
-import { BlockchainAddressAsU8A } from "@/lib/coders.js";
-
-export { BoostRepository, BoostChangeMetaSchema };
-export type {
-  BoostDiffArgs,
-  BoostDiffResult,
-  BoostChangeMeta,
-  BoostAgentArgs,
-  BoostAgentResult,
-};
+import type { Transaction } from "../types.js";
+import { Database } from "../types.js";
+import * as schema from "../voting/defs.js";
+import { SelectAgentBoost, SelectAgentBoostTotal } from "../voting/types.js";
 
 /** Schema of an optional structured context to attach to each boost change. */
-const BoostChangeMetaSchema = z.object({
+export const BoostChangeMetaSchema = z.object({
   description: z.string().optional(),
 });
 /** Optional structured context to attach to each boost change. */
-type BoostChangeMeta = z.infer<typeof BoostChangeMetaSchema>;
+export type BoostChangeMeta = z.infer<typeof BoostChangeMetaSchema>;
 const DEFAULT_META: BoostChangeMeta = {};
 
 /**
@@ -36,7 +24,7 @@ const DEFAULT_META: BoostChangeMeta = {};
  * - Provide a stable `idemKey` to make the operation retry-safe.
  *   If omitted, a random UUID is generated (non-idempotent across retries).
  */
-type BoostDiffArgs = {
+export type BoostDiffArgs = {
   /** User ID */
   userId: string;
   /** EVM address; will be lowercased before persisting. */
@@ -65,7 +53,7 @@ type BoostDiffArgs = {
  * - Applied: returns new balance and the created change id.
  * - Idempotent no-op: returns existing balance when the same idemKey was seen.
  */
-type BoostDiffResult =
+export type BoostDiffResult =
   | {
       type: "applied";
       changeId: string;
@@ -74,7 +62,7 @@ type BoostDiffResult =
     } // change applied
   | { type: "noop"; balance: bigint; idemKey: Uint8Array }; // noop (already applied)
 
-type BoostAgentArgs = {
+export type BoostAgentArgs = {
   userId: string;
   /** EVM address; will be lowercased before persisting. */
   wallet: string;
@@ -92,7 +80,7 @@ type BoostAgentArgs = {
   idemKey?: Uint8Array;
 };
 
-type BoostAgentResult =
+export type BoostAgentResult =
   | {
       type: "applied";
       agentBoost: SelectAgentBoost;
@@ -165,11 +153,11 @@ type BoostAgentResult =
  *     Use separate keys; if you must reverse, create a **new** key with a negative/positive
  *     delta as appropriate.
  */
-class BoostRepository {
-  readonly #db: typeof db;
+export class BoostRepository {
+  readonly #db: Database;
 
-  constructor(database: typeof db = db) {
-    this.#db = database;
+  constructor(db: Database) {
+    this.#db = db;
   }
 
   /**
@@ -478,7 +466,7 @@ class BoostRepository {
       competitionId: string;
     },
     tx?: Transaction,
-  ): Promise<bigint> {
+  ) {
     const executor = tx || this.#db;
     const [res] = await executor
       .select()
@@ -496,7 +484,7 @@ class BoostRepository {
   async agentBoostTotals(
     { competitionId }: { competitionId: string },
     tx?: Transaction,
-  ): Promise<Record<string, bigint>> {
+  ) {
     const executor = tx || this.#db;
     const res = await executor
       .select()
@@ -542,7 +530,7 @@ class BoostRepository {
   async userBoosts(
     { userId, competitionId }: { userId: string; competitionId: string },
     tx?: Transaction,
-  ): Promise<Record<string, bigint>> {
+  ) {
     const executor = tx || this.#db;
     const res = await executor
       .select({

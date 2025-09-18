@@ -9,18 +9,19 @@ import {
   test,
 } from "vitest";
 
-import * as coreSchema from "@recallnet/db-schema/core/defs";
-import * as schema from "@recallnet/db-schema/voting/defs";
+import { BlockchainAddressAsU8A } from "@recallnet/coders";
 
-import { db, dropAll, migrateDb } from "@/database/db.js";
-import { BlockchainAddressAsU8A } from "@/lib/coders.js";
-
-import { BoostRepository } from "../boost.repository.js";
+import * as coreSchema from "../../core/defs.js";
+import { dropAll } from "../../utils/drop-all.js";
+import { pushSchema } from "../../utils/push-schema.js";
+import * as schema from "../../voting/defs.js";
+import { BoostRepository } from "../boost.js";
+import { db } from "./db.js";
 
 describe("BoostRepository.decrease() Integration Tests", () => {
   beforeAll(async () => {
-    await dropAll();
-    await migrateDb();
+    await dropAll(db);
+    await pushSchema(db);
   });
 
   let repository: BoostRepository;

@@ -1,5 +1,3 @@
-import type { Transaction } from "@recallnet/db-schema/types";
-
 import type {
   BoostDiffResult,
   BoostRepository,
