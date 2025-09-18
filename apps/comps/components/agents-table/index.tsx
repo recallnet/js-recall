@@ -70,7 +70,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    yourShare: session.isInitialized && session.isAuthenticated,
+    yourShare: session.ready && session.isAuthenticated,
   });
   const [selectedAgent, setSelectedAgent] = useState<AgentCompetition | null>(
     null,
@@ -96,7 +96,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   useEffect(() => {
     setColumnVisibility({
-      yourShare: session.isInitialized && session.isAuthenticated,
+      yourShare: session.ready && session.isAuthenticated,
     });
   }, [session]);
 

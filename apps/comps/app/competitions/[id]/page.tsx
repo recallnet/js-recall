@@ -278,7 +278,7 @@ export default function CompetitionPage({
           }
         }
         onPageChange={handleTradesPageChange}
-        showSignInMessage={user.status !== "authenticated"}
+        showSignInMessage={!isAuthenticated}
       />
 
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
