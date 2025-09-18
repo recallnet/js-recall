@@ -66,10 +66,10 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setStep("choose");
-      setBoostAmount(availableBoost);
+      setBoostAmount(0n);
       setError(null);
     }
-  }, [isOpen, availableBoost]);
+  }, [isOpen]);
 
   // Calculate slider percentage
   const sliderPercentage =
