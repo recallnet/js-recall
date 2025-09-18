@@ -4,11 +4,6 @@ import { LRUCache } from "lru-cache";
 import { config } from "@/config/index.js";
 import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import {
-  checkShouldCacheResponse,
-  generateCacheKey,
-  getCacheVisibility,
-} from "@/services/caching-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
@@ -19,6 +14,10 @@ import {
 } from "@/types/index.js";
 import { AgentQuerySchema } from "@/types/sort/agent.js";
 
+import {
+  checkShouldCacheResponse,
+  generateCacheKey,
+} from "./request-helpers.js";
 import { checkIsAdmin, ensureUuid } from "./request-helpers.js";
 
 export function makeCompetitionController(services: ServiceRegistry) {
@@ -82,12 +81,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check cache
         const shouldCacheResponse = checkShouldCacheResponse(req);
-        const visibility = getCacheVisibility(
-          req.userId,
-          req.agentId,
-          req.isAdmin,
-        );
-        const cacheKey = generateCacheKey("leaderboard", visibility, {
+        const cacheKey = generateCacheKey(req, "leaderboard", {
           competitionId: competitionId || "active",
         });
 
@@ -160,12 +154,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check cache
         const shouldCacheResponse = checkShouldCacheResponse(req);
-        const visibility = getCacheVisibility(
-          req.userId,
-          req.agentId,
-          req.isAdmin,
-        );
-        const cacheKey = generateCacheKey("rules", visibility, {});
+        const cacheKey = generateCacheKey(req, "rules", {});
 
         if (shouldCacheResponse) {
           const cached = caches.rules.get(cacheKey);
@@ -242,12 +231,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check cache
         const shouldCacheResponse = checkShouldCacheResponse(req);
-        const visibility = getCacheVisibility(
-          req.userId,
-          req.agentId,
-          req.isAdmin,
-        );
-        const cacheKey = generateCacheKey("list", visibility, {
+        const cacheKey = generateCacheKey(req, "list", {
           status,
           ...pagingParams,
         });
@@ -318,12 +302,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check cache
         const shouldCacheResponse = checkShouldCacheResponse(req);
-        const visibility = getCacheVisibility(
-          req.userId,
-          req.agentId,
-          req.isAdmin,
-        );
-        const cacheKey = generateCacheKey("byId", visibility, {
+        const cacheKey = generateCacheKey(req, "byId", {
           competitionId,
         });
 

@@ -3,13 +3,13 @@ import { LRUCache } from "lru-cache";
 
 import { config } from "@/config/index.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import { ServiceRegistry } from "@/services/index.js";
+import { LeaderboardParamsSchema } from "@/types/index.js";
+
 import {
   checkShouldCacheResponse,
   generateCacheKey,
-  getCacheVisibility,
-} from "@/services/caching-helpers.js";
-import { ServiceRegistry } from "@/services/index.js";
-import { LeaderboardParamsSchema } from "@/types/index.js";
+} from "./request-helpers.js";
 
 /**
  * Cache for the `/leaderboard` endpoint (unauthenticated or authenticated user requests)
@@ -52,12 +52,7 @@ export function makeLeaderboardController(services: ServiceRegistry) {
 
         // Cache only public (unauthenticated or authenticated user) requests
         const shouldCacheResponse = checkShouldCacheResponse(req);
-        const visibility = getCacheVisibility(
-          req.userId,
-          req.agentId,
-          req.isAdmin,
-        );
-        const cacheKey = generateCacheKey("globalLeaderboard", visibility, {
+        const cacheKey = generateCacheKey(req, "globalLeaderboard", {
           ...data,
         });
         if (shouldCacheResponse) {

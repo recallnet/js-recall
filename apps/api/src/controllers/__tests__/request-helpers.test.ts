@@ -3,16 +3,15 @@ import { v4 as uuidv4 } from "uuid";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { config } from "@/config/index.js";
+import { AuthenticatedRequest } from "@/types/index.js";
+
 import {
   checkIsAdmin,
   checkIsCacheEnabled,
   checkIsPublicOrUserRequest,
   checkShouldCacheResponse,
   generateCacheKey,
-  getCacheVisibility,
-} from "@/services/caching-helpers.js";
-import { AuthenticatedRequest } from "@/types/index.js";
-
+} from "../request-helpers.js";
 import {
   buildPaginationResponse,
   checkUniqueConstraintViolation,
@@ -418,34 +417,19 @@ describe("Request Helpers", () => {
   describe("generateCacheKey", () => {
     it("should generate anon cache key for unauthenticated requests", () => {
       const req = {} as AuthenticatedRequest;
-      const visibility = getCacheVisibility(
-        req.userId,
-        req.agentId,
-        req.isAdmin,
-      );
-      expect(generateCacheKey("testCache", visibility)).toBe("testCache:anon");
+      expect(generateCacheKey(req, "testCache")).toBe("testCache:anon");
     });
 
     it("should generate user cache key for authenticated users", () => {
       const userId = uuidv4();
       const req = { userId } as AuthenticatedRequest;
-      const visibility = getCacheVisibility(
-        req.userId,
-        req.agentId,
-        req.isAdmin,
-      );
-      expect(generateCacheKey("testCache", visibility)).toBe("testCache:user");
+      expect(generateCacheKey(req, "testCache")).toBe("testCache:user");
     });
 
     it("should include params in cache key for anon users", () => {
       const req = {} as AuthenticatedRequest;
       const params = { competitionId: "123", status: "active" };
-      const visibility = getCacheVisibility(
-        req.userId,
-        req.agentId,
-        req.isAdmin,
-      );
-      expect(generateCacheKey("testCache", visibility, params)).toBe(
+      expect(generateCacheKey(req, "testCache", params)).toBe(
         `testCache:anon:${JSON.stringify(params)}`,
       );
     });
@@ -454,12 +438,7 @@ describe("Request Helpers", () => {
       const userId = uuidv4();
       const req = { userId } as AuthenticatedRequest;
       const params = { competitionId: "123", status: "active" };
-      const visibility = getCacheVisibility(
-        req.userId,
-        req.agentId,
-        req.isAdmin,
-      );
-      expect(generateCacheKey("testCache", visibility, params)).toBe(
+      expect(generateCacheKey(req, "testCache", params)).toBe(
         `testCache:user:${JSON.stringify(params)}`,
       );
     });
@@ -472,18 +451,8 @@ describe("Request Helpers", () => {
       const params1 = { competitionId: "123", userId: userId1 };
       const params2 = { competitionId: "123", userId: userId2 };
 
-      const visibility1 = getCacheVisibility(
-        req1.userId,
-        req1.agentId,
-        req1.isAdmin,
-      );
-      const visibility2 = getCacheVisibility(
-        req2.userId,
-        req2.agentId,
-        req2.isAdmin,
-      );
-      const key1 = generateCacheKey("testCache", visibility1, params1);
-      const key2 = generateCacheKey("testCache", visibility2, params2);
+      const key1 = generateCacheKey(req1, "testCache", params1);
+      const key2 = generateCacheKey(req2, "testCache", params2);
 
       expect(key1).not.toBe(key2);
       expect(key1).toBe(`testCache:user:${JSON.stringify(params1)}`);
@@ -497,18 +466,8 @@ describe("Request Helpers", () => {
       const req2 = { userId: userId2 } as AuthenticatedRequest;
       const params = { competitionId: "123" };
 
-      const visibility1 = getCacheVisibility(
-        req1.userId,
-        req1.agentId,
-        req1.isAdmin,
-      );
-      const visibility2 = getCacheVisibility(
-        req2.userId,
-        req2.agentId,
-        req2.isAdmin,
-      );
-      const key1 = generateCacheKey("testCache", visibility1, params);
-      const key2 = generateCacheKey("testCache", visibility2, params);
+      const key1 = generateCacheKey(req1, "testCache", params);
+      const key2 = generateCacheKey(req2, "testCache", params);
 
       expect(key1).toBe(key2);
       expect(key1).toBe(`testCache:user:${JSON.stringify(params)}`);
