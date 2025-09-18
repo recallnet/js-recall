@@ -21,6 +21,7 @@ import {
 import { updateVotesOwner } from "@/database/repositories/vote-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { EmailService } from "@/services/email.service.js";
+import { WatchlistService } from "@/services/watchlist.service.js";
 import { UserMetadata, UserSearchParams } from "@/types/index.js";
 
 /**
@@ -34,11 +35,14 @@ export class UserService {
   private userProfileCache: Map<string, SelectUser>; // userId -> user profile
   // Email service for sending verification emails
   private emailService: EmailService;
+  // Watchlist service for sanctions wallet address checking
+  private watchlistService: WatchlistService;
 
-  constructor(emailService: EmailService) {
+  constructor(emailService: EmailService, watchlistService: WatchlistService) {
     this.userWalletCache = new Map();
     this.userProfileCache = new Map();
     this.emailService = emailService;
+    this.watchlistService = watchlistService;
   }
 
   /**
@@ -89,6 +93,21 @@ export class UserService {
       const normalizedWalletAddress = walletAddress.toLowerCase();
       const normalizedEmbeddedWalletAddress =
         embeddedWalletAddress?.toLowerCase();
+
+      // Check wallet addresses against sanctions list
+      // Note: user registration always uses the wallet address and embedded wallet as the same
+      // value, and then users can update it later. This is more of a safeguard.
+      const isWalletSanctioned =
+        normalizedEmbeddedWalletAddress &&
+        normalizedWalletAddress !== normalizedEmbeddedWalletAddress &&
+        (await this.watchlistService.isAddressSanctioned(
+          normalizedWalletAddress,
+        ));
+      if (isWalletSanctioned) {
+        throw new Error(
+          "This wallet address is not permitted for use on this platform",
+        );
+      }
 
       // Create user record with subscription status
       // Note: the `newUserId` could be different than the `savedUserId` because registering a new
@@ -233,6 +252,22 @@ export class UserService {
       const currentUser = await this.getUser(user.id);
       if (!currentUser) {
         throw new Error(`User with ID ${user.id} not found`);
+      }
+
+      // Check wallet address against sanctions list if being updated
+      if (
+        user.walletAddress &&
+        user.walletAddress !== currentUser.walletAddress
+      ) {
+        // Note: this could happen if, e.g., a user tries to link a custom wallet to their account
+        const isSanctioned = await this.watchlistService.isAddressSanctioned(
+          user.walletAddress,
+        );
+        if (isSanctioned) {
+          throw new Error(
+            "This wallet address is not permitted for use on this platform",
+          );
+        }
       }
 
       // Check if another account exists with this wallet address
