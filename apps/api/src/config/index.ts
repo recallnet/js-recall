@@ -399,6 +399,10 @@ export const config = {
     // RPC provider URL for blockchain interactions
     rpcProvider: process.env.RPC_PROVIDER || "",
   },
+  // Chainalysis API key
+  watchlist: {
+    chainalysisApiKey: process.env.CHAINALYSIS_API_KEY || "",
+  },
 };
 
 /**

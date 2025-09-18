@@ -86,7 +86,8 @@
         "ENABLE_SENTRY_DB_MONITORING",
         "REWARDS_ALLOCATOR_PRIVATE_KEY",
         "REWARDS_CONTRACT_ADDRESS",
-        "RPC_PROVIDER"
+        "RPC_PROVIDER",
+        "CHAINALYSIS_API_KEY"
       ]
     }
   }

@@ -104,6 +104,7 @@ export function configureHealthRoutes(
    *                     agentService:
    *                       type: string
    *                       description: Status of the agent manager service
+   *                       example: ok
    *       500:
    *         description: Server error
    */
