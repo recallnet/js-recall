@@ -640,6 +640,7 @@ export async function createPerpsTestCompetition({
   maxParticipants,
   tradingConstraints,
   rewards,
+  perpsProvider,
 }: {
   adminClient: ApiClient;
   name?: string;
@@ -656,12 +657,18 @@ export async function createPerpsTestCompetition({
   maxParticipants?: number;
   tradingConstraints?: TradingConstraints;
   rewards?: Record<number, number>;
+  perpsProvider?: {
+    provider: "symphony" | "hyperliquid";
+    initialCapital: number;
+    selfFundingThreshold: number;
+    apiUrl?: string;
+  };
 }): Promise<CreateCompetitionResponse> {
   const competitionName = name || `Perps Test Competition ${Date.now()}`;
   const result = await adminClient.createCompetition({
     name: competitionName,
     description: description || `Perpetual futures test competition`,
-    type: "perpetual_futures", // Key difference - explicitly set type
+    type: "perpetual_futures",
     sandboxMode,
     externalUrl,
     imageUrl,
@@ -674,6 +681,12 @@ export async function createPerpsTestCompetition({
     maxParticipants,
     tradingConstraints,
     rewards,
+    perpsProvider: perpsProvider || {
+      provider: "symphony",
+      initialCapital: 500,
+      selfFundingThreshold: 0,
+      apiUrl: "http://localhost:4567", // Default to mock server
+    },
   });
 
   if (!result.success) {
