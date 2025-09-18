@@ -13,7 +13,8 @@ describe("trade-utils", () => {
 
     it("should apply minimal slippage for small trades", () => {
       const result = calculateSlippage(100); // $100 trade
-      expect(result.actualSlippage).toBeGreaterThanOrEqual(0.0005); // At least MIN_SLIPPAGE (5 bps)
+      // With randomness, slippage can be MIN_SLIPPAGE * 0.95, so allow for that
+      expect(result.actualSlippage).toBeGreaterThanOrEqual(0.0005 * 0.95); // Allow for random multiplier minimum
       expect(result.actualSlippage).toBeLessThan(0.002); // Less than 0.2%
       expect(result.effectiveFromValueUSD).toBeGreaterThan(99.8);
       expect(result.effectiveFromValueUSD).toBeLessThan(100);
@@ -77,6 +78,57 @@ describe("trade-utils", () => {
 
       expect(minSlippage).toBeGreaterThanOrEqual(expectedMin * 0.99); // Allow for small floating point differences
       expect(maxSlippage).toBeLessThanOrEqual(expectedMax * 1.01);
+    });
+
+    it("should handle market microstructure edge cases", () => {
+      // Test values that could trigger floating point precision issues
+      const precisionTestValues = [
+        0.01, // Minimum trade
+        0.001, // Sub-penny trade
+        999999.99, // Just under $1M
+        1000000.01, // Just over $1M
+        0.000001, // Extremely small trade
+      ];
+
+      for (const value of precisionTestValues) {
+        const result = calculateSlippage(value);
+
+        // All results must be financially sensible
+        expect(result.actualSlippage).toBeGreaterThanOrEqual(0);
+        expect(result.actualSlippage).toBeLessThanOrEqual(0.15);
+        expect(result.effectiveFromValueUSD).toBeGreaterThan(0);
+        expect(result.effectiveFromValueUSD).toBeLessThanOrEqual(value);
+        expect(result.slippagePercentage).toBe(result.actualSlippage * 100);
+
+        // Effective value must be mathematically correct
+        expect(result.effectiveFromValueUSD).toBeCloseTo(
+          value * (1 - result.actualSlippage),
+          8,
+        );
+      }
+    });
+
+    it("should behave correctly under high frequency trading scenarios", () => {
+      const tradeValue = 10000;
+      const results = [];
+
+      // Simulate rapid successive trades
+      const startTime = Date.now();
+      for (let i = 0; i < 1000; i++) {
+        results.push(calculateSlippage(tradeValue));
+      }
+      const endTime = Date.now();
+
+      // Performance constraint: should handle 1000 calculations quickly
+      expect(endTime - startTime).toBeLessThan(1000); // Less than 1 second
+
+      // All results should be valid
+      results.forEach((result) => {
+        expect(result.actualSlippage).toBeGreaterThanOrEqual(0);
+        expect(result.actualSlippage).toBeLessThanOrEqual(0.15);
+        expect(result.effectiveFromValueUSD).toBeGreaterThan(0);
+        expect(result.effectiveFromValueUSD).toBeLessThanOrEqual(tradeValue);
+      });
     });
 
     it("should handle edge case of exactly $181,818 (old breaking point)", () => {
