@@ -523,6 +523,7 @@ export class ApiClient {
     maxParticipants,
     tradingConstraints,
     rewards,
+    perpsProvider,
   }: {
     name?: string;
     description?: string;
@@ -540,6 +541,12 @@ export class ApiClient {
     maxParticipants?: number;
     tradingConstraints?: TradingConstraints;
     rewards?: Record<number, number>;
+    perpsProvider?: {
+      provider: "symphony" | "hyperliquid";
+      initialCapital: number;
+      selfFundingThreshold: number;
+      apiUrl?: string;
+    };
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
     try {
@@ -562,6 +569,7 @@ export class ApiClient {
           maxParticipants,
           tradingConstraints,
           rewards,
+          perpsProvider,
         },
       );
 

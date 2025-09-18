@@ -23,6 +23,7 @@ import { generateRandomPrivyId } from "@/e2e/utils/privy.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   ADMIN_EMAIL,
+  createPerpsTestCompetition,
   createTestClient,
   generateRandomEthAddress,
   generateTestHandle,
@@ -1684,33 +1685,23 @@ describe("Admin API", () => {
     const client = createTestClient(getBaseUrl());
     await client.loginAsAdmin(adminApiKey);
 
-    // Create a perps competition with required provider configuration
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Test Perps Competition",
-        description: "A test perpetual futures competition",
-        type: "perpetual_futures",
-        perpsProvider: {
-          provider: "symphony",
-          initialCapital: 500,
-          selfFundingThreshold: 0,
-          apiUrl: "http://localhost:4567", // Mock server URL
-        },
+    // Create a perps competition with required provider configuration using helper
+    const response = await createPerpsTestCompetition({
+      adminClient: client,
+      name: "Test Perps Competition",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 500,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567", // Mock server URL
       },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    });
 
-    expect(createResponse.status).toBe(201);
-    expect(createResponse.data.success).toBe(true);
-    expect(createResponse.data.competition).toBeDefined();
-    expect(createResponse.data.competition.name).toBe("Test Perps Competition");
-    expect(createResponse.data.competition.type).toBe("perpetual_futures");
-    expect(createResponse.data.competition.status).toBe("pending");
+    expect(response.success).toBe(true);
+    expect(response.competition).toBeDefined();
+    expect(response.competition.name).toBe("Test Perps Competition");
+    expect(response.competition.type).toBe("perpetual_futures");
+    expect(response.competition.status).toBe("pending");
   });
 
   test("should start a perps competition with agents", async () => {
