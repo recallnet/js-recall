@@ -1,6 +1,8 @@
 import { NextFunction, Response } from "express";
 import { LRUCache } from "lru-cache";
 
+import { ParsingError } from "@recallnet/db-schema/errors";
+
 import { config } from "@/config/index.js";
 import { competitionLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -258,7 +260,11 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         res.status(200).json(result);
       } catch (error) {
-        next(error);
+        next(
+          error instanceof ParsingError
+            ? new ApiError(400, error.message)
+            : error,
+        );
       }
     },
 
