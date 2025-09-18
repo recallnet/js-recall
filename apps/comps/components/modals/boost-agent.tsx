@@ -94,13 +94,13 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
   };
 
   const handleIncrement = () => {
-    const increment = availableBoost / 10n; // 10% of available boost
+    const increment = 1n; // Change by 1
     const newAmount = boostAmount + increment;
     handleAmountChange(newAmount > availableBoost ? availableBoost : newAmount);
   };
 
   const handleDecrement = () => {
-    const decrement = availableBoost / 10n; // 10% of available boost
+    const decrement = 1n; // Change by 1
     const newAmount = boostAmount - decrement;
     handleAmountChange(newAmount < 0n ? 0n : newAmount);
   };
@@ -201,22 +201,19 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                 {/* Slider */}
                 <div className="space-y-2">
                   <Slider
-                    value={[sliderPercentage]}
+                    value={[Number(boostAmount)]}
                     onValueChange={([value]) => {
                       if (value !== undefined) {
-                        const newAmount =
-                          (availableBoost * BigInt(value)) / 100n;
+                        const newAmount = BigInt(value);
                         handleAmountChange(newAmount);
                       }
                     }}
-                    max={100}
+                    max={Number(availableBoost)}
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-gray-400">
-                    <span>0%</span>
+                  <div className="text-secondary-foreground flex justify-end text-xs font-bold">
                     <span>{sliderPercentage}%</span>
-                    <span>100%</span>
                   </div>
                 </div>
               </div>
