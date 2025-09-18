@@ -6,9 +6,7 @@ import { ServiceRegistry } from "@/services/index.js";
 import {
   AuthenticatedRequest,
   BucketParamSchema,
-  COMPETITION_JOIN_ERROR_TYPES,
   CompetitionAgentParamsSchema,
-  CompetitionJoinError,
   CompetitionStatusSchema,
   PagingParamsSchema,
 } from "@/types/index.js";
@@ -262,11 +260,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
           );
         }
 
-        const result =
-          await services.competitionService.getCompetitionAgentsWithAuth({
-            competitionId,
-            queryParams,
-          });
+        const result = await services.competitionService.getCompetitionAgents({
+          competitionId,
+          queryParams,
+        });
 
         res.status(200).json(result);
       } catch (error) {
@@ -290,47 +287,12 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const params = CompetitionAgentParamsSchema.parse(req.params);
         const { competitionId, agentId } = params;
 
-        // Authentication handling
-        const authenticatedAgentId = req.agentId;
-
-        let validatedUserId: string;
-
-        if (authenticatedAgentId) {
-          // Agent API key authentication: verify agent matches URL parameter
-          if (authenticatedAgentId !== agentId) {
-            throw new ApiError(
-              403,
-              "Agent API key does not match agent ID in URL",
-            );
-          }
-
-          // Get agent to find the owner
-          const agent = await services.agentService.getAgent(agentId);
-          if (!agent) {
-            throw new ApiError(404, "Agent not found");
-          }
-
-          validatedUserId = agent.ownerId;
-        } else if (req.userId) {
-          // User session authentication - need to verify agent ownership
-          const agent = await services.agentService.getAgent(agentId);
-          if (!agent) {
-            throw new ApiError(404, "Agent not found");
-          }
-          if (agent.ownerId !== req.userId) {
-            throw new ApiError(403, "Access denied: You do not own this agent");
-          }
-
-          validatedUserId = req.userId;
-        } else {
-          throw new ApiError(401, "Authentication required");
-        }
-
-        // Call the service layer
+        // Call the service layer with authentication info
         await services.competitionService.joinCompetition(
           competitionId,
           agentId,
-          validatedUserId,
+          req.userId,
+          req.agentId,
         );
 
         res.status(200).json({
@@ -338,60 +300,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           message: "Successfully joined competition",
         });
       } catch (error) {
-        // Handle typed competition join errors
-        if (error && typeof error === "object" && "type" in error) {
-          const joinError = error as CompetitionJoinError;
-          switch (joinError.type) {
-            case COMPETITION_JOIN_ERROR_TYPES.COMPETITION_NOT_FOUND:
-            case COMPETITION_JOIN_ERROR_TYPES.AGENT_NOT_FOUND:
-              next(new ApiError(404, joinError.message));
-              break;
-            case COMPETITION_JOIN_ERROR_TYPES.COMPETITION_ALREADY_STARTED:
-            case COMPETITION_JOIN_ERROR_TYPES.AGENT_ALREADY_REGISTERED:
-            case COMPETITION_JOIN_ERROR_TYPES.AGENT_NOT_ELIGIBLE:
-            case COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN:
-            case COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED:
-            case COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED:
-              next(new ApiError(403, joinError.message));
-              break;
-            default:
-              next(new ApiError(500, "Failed to join competition"));
-          }
-          return;
-        }
-
-        // Handle legacy string-based errors (fallback for existing code)
-        if (error instanceof Error) {
-          if (error.message.includes("not found")) {
-            next(new ApiError(404, error.message));
-          } else if (
-            error.message.includes("does not belong to requesting user")
-          ) {
-            next(new ApiError(403, "Agent does not belong to requesting user"));
-          } else if (error.message.includes("already started/ended")) {
-            next(
-              new ApiError(
-                403,
-                "Cannot join competition that has already started/ended",
-              ),
-            );
-          } else if (error.message.includes("already actively registered")) {
-            next(
-              new ApiError(
-                403,
-                "Agent is already actively registered for this competition",
-              ),
-            );
-          } else if (error.message.includes("not eligible")) {
-            next(
-              new ApiError(403, "Agent is not eligible to join competitions"),
-            );
-          } else {
-            next(error);
-          }
-        } else {
-          next(error);
-        }
+        next(error);
       }
     },
 

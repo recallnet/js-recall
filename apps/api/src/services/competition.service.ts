@@ -63,9 +63,7 @@ import {
   VoteService,
 } from "@/services/index.js";
 import {
-  COMPETITION_JOIN_ERROR_TYPES,
   CompetitionAgentStatus,
-  CompetitionJoinError,
   CompetitionStatus,
   CompetitionType,
   CrossChainTradingType,
@@ -1475,77 +1473,102 @@ export class CompetitionService {
    * balances, taking initial snapshot, etc.)
    * @param competitionId Competition ID
    * @param agentId Agent ID
-   * @param userId User ID (for ownership validation)
+   * @param userId Optional user ID from session authentication
+   * @param authenticatedAgentId Optional agent ID from API key authentication
    */
   async joinCompetition(
     competitionId: string,
     agentId: string,
-    userId: string,
+    userId?: string,
+    authenticatedAgentId?: string,
   ): Promise<void> {
     serviceLogger.debug(
-      `[CompetitionManager] Join competition request: agent ${agentId} to competition ${competitionId} by user ${userId}`,
+      `[CompetitionManager] Join competition request: agent ${agentId} to competition ${competitionId}`,
     );
 
-    // 1. Check if competition exists
+    // Validate authentication
+    if (!authenticatedAgentId && !userId) {
+      throw new ApiError(401, "Authentication required");
+    }
+
+    if (authenticatedAgentId) {
+      // Agent API key authentication
+      if (authenticatedAgentId !== agentId) {
+        throw new ApiError(403, "Agent API key does not match agent ID in URL");
+      }
+    }
+
+    // Check if agent exists and validate ownership
+    const agent = await this.agentService.getAgent(agentId);
+    if (!agent) {
+      throw new ApiError(404, `Agent not found: ${agentId}`);
+    }
+
+    // Complete authentication validation and get validated user ID
+    let validatedUserId: string;
+    if (authenticatedAgentId) {
+      // For agent API key auth, set the validated user ID from the agent
+      validatedUserId = agent.ownerId;
+    } else if (userId) {
+      // For user session auth, verify ownership
+      if (agent.ownerId !== userId) {
+        throw new ApiError(403, "Access denied: You do not own this agent");
+      }
+      validatedUserId = userId;
+    } else {
+      // This shouldn't happen due to earlier check, but TypeScript needs this
+      throw new ApiError(401, "Authentication required");
+    }
+
+    // Check if competition exists
     const competition = await findById(competitionId);
     if (!competition) {
-      throw new Error(`Competition not found: ${competitionId}`);
+      throw new ApiError(404, `Competition not found: ${competitionId}`);
     }
 
-    // 2. Check if agent exists
-    const agent = await findAgentById(agentId);
-    if (!agent) {
-      throw new Error(`Agent not found: ${agentId}`);
-    }
-
-    // 3. Check if agent belongs to user
-    if (agent.ownerId !== userId) {
-      throw new Error("Agent does not belong to requesting user");
-    }
-
-    // 4. Check join date constraints FIRST (must take precedence over other errors)
+    // Check join date constraints FIRST (must take precedence over other errors)
     const now = new Date();
 
     if (competition.joinStartDate && now < competition.joinStartDate) {
-      const error = new Error(
+      throw new ApiError(
+        403,
         `Competition joining opens at ${competition.joinStartDate.toISOString()}`,
-      ) as CompetitionJoinError;
-      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN;
-      error.code = 403;
-      throw error;
+      );
     }
 
     if (competition.joinEndDate && now > competition.joinEndDate) {
-      const error = new Error(
+      throw new ApiError(
+        403,
         `Competition joining closed at ${competition.joinEndDate.toISOString()}`,
-      ) as CompetitionJoinError;
-      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED;
-      error.code = 403;
-      throw error;
+      );
     }
 
-    // 5. Check agent status is eligible
+    // Check agent status is eligible
     if (agent.status === "deleted" || agent.status === "suspended") {
-      throw new Error("Agent is not eligible to join competitions");
+      throw new ApiError(403, "Agent is not eligible to join competitions");
     }
 
-    // 6. Check if competition status is pending
+    // Check if competition status is pending
     if (competition.status !== "pending") {
-      throw new Error("Cannot join competition that has already started/ended");
+      throw new ApiError(
+        403,
+        "Cannot join competition that has already started/ended",
+      );
     }
 
-    // 7. Check if agent is already actively registered
+    // Check if agent is already actively registered
     const isAlreadyActive = await isAgentActiveInCompetition(
       competitionId,
       agentId,
     );
     if (isAlreadyActive) {
-      throw new Error(
+      throw new ApiError(
+        403,
         "Agent is already actively registered for this competition",
       );
     }
 
-    // 8. Atomically add agent to competition with participant limit check
+    // Atomically add agent to competition with participant limit check
     // This prevents race conditions when multiple agents try to join simultaneously
     try {
       await addAgentToCompetition(competitionId, agentId);
@@ -1555,13 +1578,7 @@ export class CompetitionService {
         error instanceof Error &&
         error.message.includes("maximum participant limit")
       ) {
-        const competitionError = new Error(
-          error.message,
-        ) as CompetitionJoinError;
-        competitionError.type =
-          COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED;
-        competitionError.code = 403;
-        throw competitionError;
+        throw new ApiError(403, error.message);
       }
       throw error;
     }
@@ -1570,7 +1587,7 @@ export class CompetitionService {
     this.caches.agents.clear();
 
     serviceLogger.debug(
-      `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId}`,
+      `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId} for user ${validatedUserId}`,
     );
   }
 
@@ -2548,7 +2565,7 @@ export class CompetitionService {
    * @param params Parameters for agents request
    * @returns Competition agents with pagination
    */
-  async getCompetitionAgentsWithAuth(params: {
+  async getCompetitionAgents(params: {
     competitionId: string;
     queryParams: {
       limit: number;
@@ -2565,9 +2582,6 @@ export class CompetitionService {
           competitionId: params.competitionId,
           ...params.queryParams,
         },
-        undefined, // No userId for agents
-        undefined, // No agentId for this endpoint
-        undefined, // No isAdmin for this endpoint
       );
 
       if (shouldUseCache) {
