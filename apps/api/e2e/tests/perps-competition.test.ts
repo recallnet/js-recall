@@ -659,8 +659,7 @@ describe("Perps Competition", () => {
       expect(position?.agentId).toBe(agent.id);
       expect(position?.competitionId).toBe(competition.id);
       expect(position?.marketSymbol).toBeDefined();
-      // TODO: Re-enable when API returns isLong instead of side
-      // expect(position?.isLong).toBeDefined();
+      expect(position?.isLong).toBeDefined();
       expect(position?.size).toBeDefined();
       expect(position?.averagePrice).toBeDefined();
     }
@@ -874,10 +873,8 @@ describe("Perps Competition", () => {
       (p) => p.marketSymbol === "ETH",
     );
     expect(ethPosition).toBeDefined();
-    // TODO: Re-enable when API returns isLong instead of side
-    // expect(ethPosition?.isLong).toBe(false);
-    // TODO: Change back to number when API is fixed (from mzk/perps-live-trading-frontend)
-    expect(ethPosition?.size).toBe("2");
+    expect(ethPosition?.isLong).toBe(false);
+    expect(ethPosition?.size).toBe(2);
 
     // Verify agent1's account summary
     const agent1Account = await agent1Client.getPerpsAccount();
