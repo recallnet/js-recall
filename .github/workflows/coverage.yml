@@ -40,10 +40,12 @@ jobs:
         run: pnpm turbo test:coverage
 
       - name: Download previous coverage report
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
           name: coverage-report
           path: coverage-reports
+          workflow: coverage.yml
+          branch: main
         continue-on-error: true
 
       - name: Generate coverage report
