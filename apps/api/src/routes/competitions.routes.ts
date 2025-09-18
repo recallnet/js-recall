@@ -795,22 +795,30 @@ export function configureCompetitionsRoutes(
    *                       description: Competition end date (null for pending/active competitions)
    *                     stats:
    *                       type: object
+   *                       description: Competition statistics (fields vary by competition type)
    *                       properties:
+   *                         competitionType:
+   *                           type: string
+   *                           enum: ["trading", "perpetual_futures"]
+   *                           description: Type of competition determining which metrics are available
    *                         totalTrades:
    *                           type: number
-   *                           description: Total number of trades
+   *                           description: Total number of trades (only for paper trading competitions)
+   *                         totalPositions:
+   *                           type: number
+   *                           description: Total number of positions (only for perpetual futures competitions)
    *                         totalAgents:
    *                           type: number
    *                           description: Total number of agents
    *                         totalVolume:
    *                           type: number
-   *                           description: Total volume of trades in USD
+   *                           description: Total volume in USD
    *                         totalVotes:
    *                           type: integer
    *                           description: Total number of votes cast in this competition
    *                         uniqueTokens:
    *                           type: number
-   *                           description: Total number of unique tokens traded
+   *                           description: Total number of unique tokens traded (only for paper trading competitions)
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -1277,8 +1285,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for a competition
-   *     description: Get all trades for a specific competition
+   *     summary: Get trades for a competition (Paper Trading Only)
+   *     description: Get all trades for a specific competition. Only available for paper trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -1322,7 +1330,18 @@ export function configureCompetitionsRoutes(
    *                   items:
    *                     type: object
    *       400:
-   *         description: Bad request - Invalid competition ID format
+   *         description: Bad request - Invalid competition ID format or endpoint not available for perpetual futures competitions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is not available for perpetual futures competitions. Use GET /api/competitions/{id}/perps/all-positions for perps positions."
    *       404:
    *         description: Competition not found
    *       401:
@@ -1342,8 +1361,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for an agent in a competition
-   *     description: Get all trades for a specific agent in a specific competition
+   *     summary: Get trades for an agent in a competition (Paper Trading Only)
+   *     description: Get all trades for a specific agent in a specific competition. Only available for paper trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -1393,7 +1412,18 @@ export function configureCompetitionsRoutes(
    *                   items:
    *                     type: object
    *       400:
-   *         description: Bad request - Invalid ID format
+   *         description: Bad request - Invalid ID format or endpoint not available for perpetual futures competitions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is not available for perpetual futures competitions. Use GET /api/competitions/{id}/agents/{agentId}/perps/positions for agent positions."
    *       404:
    *         description: Competition or agent not found
    *       401:
@@ -1405,6 +1435,442 @@ export function configureCompetitionsRoutes(
     "/:competitionId/agents/:agentId/trades",
     ...authMiddlewares,
     controller.getAgentTradesInCompetition,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/agents/{agentId}/perps/positions:
+   *   get:
+   *     tags:
+   *       - Competitions
+   *     summary: Get perps positions for an agent in a competition
+   *     description: |
+   *       Returns the current perpetual futures positions for a specific agent in a specific competition.
+   *       This endpoint is only available for perpetual futures competitions.
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: agentId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Agent ID
+   *     responses:
+   *       200:
+   *         description: Successfully retrieved perps positions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 competitionId:
+   *                   type: string
+   *                   format: uuid
+   *                 agentId:
+   *                   type: string
+   *                   format: uuid
+   *                 positions:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       agentId:
+   *                         type: string
+   *                         format: uuid
+   *                       competitionId:
+   *                         type: string
+   *                         format: uuid
+   *                       positionId:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Provider-specific position ID
+   *                       marketId:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Market identifier
+   *                       marketSymbol:
+   *                         type: string
+   *                         nullable: true
+   *                         example: "BTC-USD"
+   *                       side:
+   *                         type: string
+   *                         enum: ["long", "short"]
+   *                       size:
+   *                         type: string
+   *                         description: Position size as string
+   *                         example: "0.5"
+   *                       averagePrice:
+   *                         type: string
+   *                         description: Average entry price as string
+   *                         example: "45000.00"
+   *                       markPrice:
+   *                         type: string
+   *                         description: Current mark price as string
+   *                         example: "46000.00"
+   *                       liquidationPrice:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Liquidation price as string
+   *                         example: "40000.00"
+   *                       unrealizedPnl:
+   *                         type: string
+   *                         description: Unrealized PnL as string
+   *                         example: "500.00"
+   *                       realizedPnl:
+   *                         type: string
+   *                         description: Realized PnL as string
+   *                         example: "100.00"
+   *                       margin:
+   *                         type: string
+   *                         description: Margin/collateral amount as string
+   *                         example: "2250.00"
+   *                       leverage:
+   *                         type: string
+   *                         description: Leverage as string
+   *                         example: "10"
+   *                       status:
+   *                         type: string
+   *                         description: Position status
+   *                         example: "Open"
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *       400:
+   *         description: Bad request - Not a perpetual futures competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is only available for perpetual futures competitions. Use GET /api/competitions/{id}/agents/{agentId}/trades for paper trading competitions."
+   *       404:
+   *         description: Competition, agent, or participation not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Competition not found"
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/agents/:agentId/perps/positions",
+    ...authMiddlewares,
+    controller.getAgentPerpsPositionsInCompetition,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/perps/summary:
+   *   get:
+   *     tags:
+   *       - Competitions
+   *     summary: Get perps competition summary statistics
+   *     description: |
+   *       Returns aggregate statistics for a perpetual futures competition including
+   *       total agents, positions, volume, and average equity.
+   *       This endpoint is only available for perpetual futures competitions.
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: The competition ID
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Competition summary statistics
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 competitionId:
+   *                   type: string
+   *                   format: uuid
+   *                 summary:
+   *                   type: object
+   *                   properties:
+   *                     totalAgents:
+   *                       type: number
+   *                       example: 50
+   *                     totalPositions:
+   *                       type: number
+   *                       example: 250
+   *                     totalVolume:
+   *                       type: number
+   *                       example: 5000000
+   *                     averageEquity:
+   *                       type: number
+   *                       example: 10000
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       400:
+   *         description: Competition is not a perpetual futures competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is only available for perpetual futures competitions."
+   *       404:
+   *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Competition not found"
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/perps/summary",
+    ...authMiddlewares,
+    controller.getPerpsCompetitionSummary,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/perps/all-positions:
+   *   get:
+   *     tags:
+   *       - Competitions
+   *     summary: Get all perps positions for a competition
+   *     description: |
+   *       Returns all perpetual futures positions for a competition with pagination support.
+   *       Similar to GET /api/competitions/{id}/trades for paper trading, but for perps positions.
+   *       By default returns only open positions. Use status query param to filter.
+   *       Includes embedded agent information for each position.
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: The competition ID
+   *       - in: query
+   *         name: status
+   *         required: false
+   *         schema:
+   *           type: string
+   *           enum: [Open, Closed, Liquidated, all]
+   *           default: Open
+   *         description: Filter positions by status. Use "all" to get all positions regardless of status
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 10
+   *         description: Number of positions to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         description: Number of positions to skip
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           default: ""
+   *         description: Sort order (currently unused but included for consistency)
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of positions with pagination info
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 positions:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       competitionId:
+   *                         type: string
+   *                         format: uuid
+   *                       agentId:
+   *                         type: string
+   *                         format: uuid
+   *                       agent:
+   *                         type: object
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                             format: uuid
+   *                           name:
+   *                             type: string
+   *                           imageUrl:
+   *                             type: string
+   *                             nullable: true
+   *                           description:
+   *                             type: string
+   *                             nullable: true
+   *                       positionId:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Provider-specific position ID
+   *                       marketId:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Market identifier (currently same as asset)
+   *                       marketSymbol:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Market symbol (currently same as asset)
+   *                       asset:
+   *                         type: string
+   *                         example: "BTC"
+   *                       isLong:
+   *                         type: boolean
+   *                       leverage:
+   *                         type: number
+   *                         example: 10
+   *                       size:
+   *                         type: number
+   *                         example: 0.5
+   *                       collateral:
+   *                         type: number
+   *                         example: 1000
+   *                       averagePrice:
+   *                         type: number
+   *                         example: 50000
+   *                       markPrice:
+   *                         type: number
+   *                         example: 51000
+   *                       liquidationPrice:
+   *                         type: number
+   *                         nullable: true
+   *                         example: 45000
+   *                       unrealizedPnl:
+   *                         type: number
+   *                         example: 500
+   *                       realizedPnl:
+   *                         type: number
+   *                         example: 0
+   *                       status:
+   *                         type: string
+   *                         example: "Open"
+   *                       openedAt:
+   *                         type: string
+   *                         format: date-time
+   *                       closedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         nullable: true
+   *                       timestamp:
+   *                         type: string
+   *                         format: date-time
+   *                 pagination:
+   *                   type: object
+   *                   properties:
+   *                     total:
+   *                       type: integer
+   *                       example: 250
+   *                     limit:
+   *                       type: integer
+   *                       example: 10
+   *                     offset:
+   *                       type: integer
+   *                       example: 0
+   *                     hasMore:
+   *                       type: boolean
+   *                       example: true
+   *       400:
+   *         description: Competition is not a perpetual futures competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is only available for perpetual futures competitions. Use GET /api/competitions/{id}/trades for paper trading competitions."
+   *       404:
+   *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Competition not found"
+   *       401:
+   *         description: Unauthorized - Missing or invalid authentication
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/perps/all-positions",
+    ...authMiddlewares,
+    controller.getCompetitionPerpsPositions,
   );
 
   return router;

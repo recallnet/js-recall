@@ -18,6 +18,7 @@ import {
   AgentCompetitionsResponse,
   AgentMetadata,
   AgentNonceResponse,
+  AgentPerpsPositionsResponse,
   AgentProfileResponse,
   AgentWalletVerificationResponse,
   AgentsGetResponse,
@@ -25,9 +26,12 @@ import {
   BalancesResponse,
   BlockchainType,
   CompetitionAgentsResponse,
+  CompetitionAllPerpsPositionsResponse,
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
+  CompetitionPerpsPositionsResponse,
+  CompetitionPerpsSummaryResponse,
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CompetitionTimelineResponse,
@@ -41,6 +45,8 @@ import {
   LeaderboardResponse,
   LinkUserWalletResponse,
   LoginResponse,
+  PerpsAccountResponse,
+  PerpsPositionsResponse,
   PriceResponse,
   PublicAgentResponse,
   QuoteResponse,
@@ -434,6 +440,7 @@ export class ApiClient {
           competitionId?: string;
           description?: string;
           agentIds?: string[];
+          type?: string;
           tradingType?: CrossChainTradingType;
           sandboxMode?: boolean;
           externalUrl?: string;
@@ -441,6 +448,13 @@ export class ApiClient {
           votingStartDate?: string;
           votingEndDate?: string;
           tradingConstraints?: TradingConstraints;
+          rewards?: Record<number, number>;
+          perpsProvider?: {
+            provider: string;
+            initialCapital?: number;
+            selfFundingThreshold?: number;
+            apiUrl?: string;
+          };
         }
       | string,
     description?: string,
@@ -509,6 +523,7 @@ export class ApiClient {
     maxParticipants,
     tradingConstraints,
     rewards,
+    perpsProvider,
   }: {
     name?: string;
     description?: string;
@@ -526,6 +541,12 @@ export class ApiClient {
     maxParticipants?: number;
     tradingConstraints?: TradingConstraints;
     rewards?: Record<number, number>;
+    perpsProvider?: {
+      provider: "symphony" | "hyperliquid";
+      initialCapital: number;
+      selfFundingThreshold: number;
+      apiUrl?: string;
+    };
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
     try {
@@ -548,6 +569,7 @@ export class ApiClient {
           maxParticipants,
           tradingConstraints,
           rewards,
+          perpsProvider,
         },
       );
 
@@ -1241,6 +1263,79 @@ export class ApiClient {
   }
 
   /**
+   * Get perps positions for an agent in a competition (public endpoint)
+   * @param competitionId The competition ID
+   * @param agentId The agent ID
+   * @returns Perps positions response or error
+   */
+  async getAgentPerpsPositionsInCompetition(
+    competitionId: string,
+    agentId: string,
+  ): Promise<AgentPerpsPositionsResponse | ErrorResponse> {
+    try {
+      const url = `/api/competitions/${competitionId}/agents/${agentId}/perps/positions`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as AgentPerpsPositionsResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get agent perps positions in competition: competitionId=${competitionId}, agentId=${agentId}`,
+      );
+    }
+  }
+
+  /**
+   * Get perps competition summary statistics
+   * @param competitionId Competition ID
+   * @returns A promise that resolves to the competition perps summary response
+   */
+  async getCompetitionPerpsSummary(
+    competitionId: string,
+  ): Promise<CompetitionPerpsSummaryResponse | ErrorResponse> {
+    try {
+      const url = `/api/competitions/${competitionId}/perps/summary`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as CompetitionPerpsSummaryResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get competition perps summary: competitionId=${competitionId}`,
+      );
+    }
+  }
+
+  /**
+   * Get all perps positions for a competition with pagination
+   * @param competitionId Competition ID
+   * @param limit Optional number of positions to return
+   * @param offset Optional offset for pagination
+   * @param status Optional status filter (Open, Closed, Liquidated, all)
+   * @returns Array of perps positions with embedded agent info
+   */
+  async getCompetitionAllPerpsPositions(
+    competitionId: string,
+    limit?: number,
+    offset?: number,
+    status?: string,
+  ): Promise<CompetitionAllPerpsPositionsResponse | ErrorResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
+      if (status !== undefined) params.append("status", status);
+
+      const url = `/api/competitions/${competitionId}/perps/all-positions?${params.toString()}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as CompetitionAllPerpsPositionsResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get competition all perps positions: competitionId=${competitionId}`,
+      );
+    }
+  }
+
+  /**
    * Get timeline for a competition
    * @param competitionId Competition ID
    * @param bucket Time bucket interval in minutes (default: 30)
@@ -1755,6 +1850,91 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "link user wallet");
+    }
+  }
+
+  /**
+   * Get perps positions for the authenticated agent
+   * @returns A promise that resolves to the perps positions response
+   */
+  async getPerpsPositions(): Promise<PerpsPositionsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/agent/perps/positions`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get perps positions");
+    }
+  }
+
+  /**
+   * Get perps account summary for the authenticated agent
+   * @returns A promise that resolves to the perps account response
+   */
+  async getPerpsAccount(): Promise<PerpsAccountResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(`/api/agent/perps/account`);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get perps account");
+    }
+  }
+
+  /**
+   * Get agent perps positions
+   * @param agentId The agent ID
+   * @returns A promise that resolves to the perps positions response
+   */
+  async getAgentPerpsPositions(
+    agentId: string,
+  ): Promise<PerpsPositionsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/agents/${agentId}/perps/positions`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent perps positions");
+    }
+  }
+
+  /**
+   * Get agent perps account summary
+   * @param agentId The agent ID
+   * @returns A promise that resolves to the perps account response
+   */
+  async getAgentPerpsAccount(
+    agentId: string,
+  ): Promise<PerpsAccountResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/agents/${agentId}/perps/account`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get agent perps account");
+    }
+  }
+
+  /**
+   * Get competition perps positions
+   * @param competitionId The competition ID
+   * @param params Pagination parameters
+   * @returns A promise that resolves to the competition perps positions response
+   */
+  async getCompetitionPerpsPositions(
+    competitionId: string,
+    params?: PagingParams,
+  ): Promise<CompetitionPerpsPositionsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/competitions/${competitionId}/perps/positions`,
+        { params },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get competition perps positions");
     }
   }
 }

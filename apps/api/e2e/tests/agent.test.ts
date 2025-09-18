@@ -2272,12 +2272,20 @@ Purpose: WALLET_VERIFICATION`;
       // Verify sorting: competition with more trades should come first
       const firstComp = testComps[0];
       const secondComp = testComps[1];
-      // TODO: this should assert existence, not use conditional
-      if (firstComp && secondComp) {
-        expect(firstComp.totalTrades).toBeGreaterThanOrEqual(
-          secondComp.totalTrades,
-        );
-      }
+
+      // Assert that both competitions exist
+      expect(firstComp).toBeDefined();
+      expect(secondComp).toBeDefined();
+
+      // For trading competitions, totalTrades should always be defined
+      // We explicitly executed trades in both competitions above
+      expect(firstComp?.totalTrades).toBeDefined();
+      expect(secondComp?.totalTrades).toBeDefined();
+
+      // Use type assertion after verifying they're defined
+      expect(firstComp?.totalTrades as number).toBeGreaterThanOrEqual(
+        secondComp?.totalTrades as number,
+      );
 
       // Test sorting by portfolioValue ascending
       const sortedByPortfolio = await agentClient.getAgentCompetitions(

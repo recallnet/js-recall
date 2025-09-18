@@ -10,6 +10,7 @@ import {
   findByCompetition,
 } from "@/database/repositories/agent-repository.js";
 import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
+import { resetAgentBalances } from "@/database/repositories/balance-repository.js";
 import {
   addAgentToCompetition,
   batchInsertLeaderboard,
@@ -32,6 +33,10 @@ import {
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
+import {
+  createPerpsCompetitionConfig,
+  getCompetitionLeaderboardSummaries,
+} from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -41,6 +46,7 @@ import {
   AgentRankService,
   BalanceManager,
   ConfigurationService,
+  PerpsDataProcessor,
   PortfolioSnapshotter,
   TradeSimulator,
   TradingConstraintsService,
@@ -91,6 +97,7 @@ export class CompetitionManager {
   private voteManager: VoteManager;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
+  private perpsDataProcessor: PerpsDataProcessor;
 
   constructor(
     balanceManager: BalanceManager,
@@ -102,6 +109,7 @@ export class CompetitionManager {
     voteManager: VoteManager,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
+    perpsDataProcessor: PerpsDataProcessor,
   ) {
     this.balanceManager = balanceManager;
     this.tradeSimulator = tradeSimulator;
@@ -112,6 +120,7 @@ export class CompetitionManager {
     this.voteManager = voteManager;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
+    this.perpsDataProcessor = perpsDataProcessor;
   }
 
   /**
@@ -151,6 +160,7 @@ export class CompetitionManager {
     maxParticipants,
     tradingConstraints,
     rewards,
+    perpsProvider,
   }: {
     name: string;
     description?: string;
@@ -168,6 +178,12 @@ export class CompetitionManager {
     maxParticipants?: number;
     tradingConstraints?: TradingConstraintsInput;
     rewards?: Record<number, number>;
+    perpsProvider?: {
+      provider: "symphony" | "hyperliquid";
+      initialCapital?: number;
+      selfFundingThreshold?: number;
+      apiUrl?: string;
+    };
   }) {
     const id = uuidv4();
 
@@ -193,6 +209,35 @@ export class CompetitionManager {
     };
 
     await createCompetition(competition);
+
+    // Create perps competition config if it's a perps competition
+    if (type === "perpetual_futures") {
+      // Validate that perpsProvider is provided for perps competitions
+      if (!perpsProvider) {
+        throw new ApiError(
+          400,
+          "Perps provider configuration is required for perpetual futures competitions",
+        );
+      }
+
+      const perpsConfig = {
+        competitionId: id,
+        dataSource: "external_api" as const,
+        dataSourceConfig: {
+          type: "external_api" as const, // Required field for validation
+          provider: perpsProvider.provider,
+          apiUrl: perpsProvider.apiUrl,
+        },
+        initialCapital: perpsProvider.initialCapital?.toString() ?? "500.00",
+        selfFundingThresholdUsd:
+          perpsProvider.selfFundingThreshold?.toString() ?? "0.00",
+      };
+
+      await createPerpsCompetitionConfig(perpsConfig);
+      serviceLogger.debug(
+        `[CompetitionManager] Created perps config for competition ${id}: ${JSON.stringify(perpsConfig)}`,
+      );
+    }
 
     let createdRewards: SelectCompetitionReward[] = [];
     if (rewards) {
@@ -281,8 +326,18 @@ export class CompetitionManager {
 
     // Process all agent additions and activations
     for (const agentId of agentIds) {
-      // Reset balances
-      await this.balanceManager.resetAgentBalances(agentId);
+      // Handle balances based on competition type
+      if (competition.type === "trading") {
+        // Paper trading: Reset to standard balances (5k USDC per chain)
+        await this.balanceManager.resetAgentBalances(agentId);
+      } else if (competition.type === "perpetual_futures") {
+        // Perps: Clear all balances to prevent confusion
+        // Pass empty Map to delete all balances without creating new ones
+        await resetAgentBalances(agentId, new Map());
+        serviceLogger.debug(
+          `[CompetitionManager] Cleared balances for perps agent ${agentId}`,
+        );
+      }
 
       // Ensure agent is globally active (but don't force reactivation)
       const agent = await findAgentById(agentId);
@@ -342,14 +397,43 @@ export class CompetitionManager {
 
     // Take initial portfolio snapshots BEFORE setting status to active
     // This ensures no trades can happen during snapshot initialization
-    // and the snapshotter has exclusive access to price API rate limits
-    serviceLogger.debug(
-      `[CompetitionManager] Taking initial portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
-    );
-    await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
-    serviceLogger.debug(
-      `[CompetitionManager] Initial portfolio snapshots completed`,
-    );
+    // Different approach based on competition type:
+    if (competition.type === "trading") {
+      // Paper trading: Use portfolio snapshotter with reset balances
+      serviceLogger.debug(
+        `[CompetitionManager] Taking initial paper trading portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
+      );
+      await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+      serviceLogger.debug(
+        `[CompetitionManager] Initial paper trading portfolio snapshots completed`,
+      );
+    } else if (competition.type === "perpetual_futures") {
+      // Perps: Sync from Symphony to get initial $500 balance state
+      serviceLogger.debug(
+        `[CompetitionManager] Syncing initial perps data from Symphony for ${agentIds.length} agents (competition still pending)`,
+      );
+
+      const result =
+        await this.perpsDataProcessor.processPerpsCompetition(competitionId);
+
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
+
+      serviceLogger.debug(
+        `[CompetitionManager] Initial perps sync completed: ${successCount}/${totalCount} agents synced successfully`,
+      );
+
+      if (failedCount > 0) {
+        // Log which agents failed but don't throw - some agents may not have Symphony accounts yet
+        const failedAgentIds = result.syncResult.failed.map((f) => f.agentId);
+        serviceLogger.warn(
+          `[CompetitionManager] Failed to sync ${failedCount} out of ${totalCount} agents during competition start: ${failedAgentIds.join(", ")}`,
+        );
+      }
+    } else {
+      throw new Error(`Unknown competition type: ${competition.type}`);
+    }
 
     // NOW update the competition status to active
     // This opens trading and price endpoint access to agents
@@ -456,8 +540,39 @@ export class CompetitionManager {
       `[CompetitionManager] Ending competition: ${competition.name} (${competitionId}) - status updated to ENDED`,
     );
 
-    // Take final portfolio snapshots (force=true to ensure we get final values even though status is ENDED)
-    await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId, true);
+    // Take final data snapshot based on competition type
+    // force=true ensures we get final values even though status is ENDED
+    if (competition.type === "trading") {
+      // Paper trading: Take portfolio snapshots from balances
+      await this.portfolioSnapshotter.takePortfolioSnapshots(
+        competitionId,
+        true,
+      );
+      serviceLogger.debug(
+        `[CompetitionManager] Final paper trading portfolio snapshots completed`,
+      );
+    } else if (competition.type === "perpetual_futures") {
+      // Perps: Sync final data from Symphony
+      // This fetches final account summaries and positions, creating portfolio snapshots
+      const result =
+        await this.perpsDataProcessor.processPerpsCompetition(competitionId);
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
+      serviceLogger.debug(
+        `[CompetitionManager] Final perps sync completed: ${successCount}/${totalCount} agents synced successfully`,
+      );
+      if (failedCount > 0) {
+        // Log warning but don't fail the competition ending
+        serviceLogger.warn(
+          `[CompetitionManager] Failed to sync final data for ${failedCount} out of ${totalCount} agents in ending competition`,
+        );
+      }
+    } else {
+      serviceLogger.warn(
+        `[CompetitionManager] Unknown competition type ${competition.type} - skipping final snapshot`,
+      );
+    }
 
     // Get agents in the competition
     const competitionAgents = await getCompetitionAgents(competitionId);
@@ -628,12 +743,29 @@ export class CompetitionManager {
 
   /**
    * Calculates leaderboard from current live portfolio values
+   * Handles both paper trading and perpetual futures competitions efficiently
    * @param competitionId The competition ID
    * @returns Leaderboard entries sorted by portfolio value (descending)
    */
   private async calculateLeaderboardFromLivePortfolios(
     competitionId: string,
   ): Promise<LeaderboardEntry[]> {
+    // Check competition type to determine data source
+    const competition = await findById(competitionId);
+
+    if (competition?.type === "perpetual_futures") {
+      // For perps: Use efficient single-query method to get latest account summaries
+      // Already sorted by totalEquity DESC and filtered to active agents only
+      const summaries = await getCompetitionLeaderboardSummaries(competitionId);
+
+      return summaries.map((summary) => ({
+        agentId: summary.agentId,
+        value: Number(summary.totalEquity) || 0,
+        pnl: Number(summary.totalPnl) || 0, // Perps have PnL data available
+      }));
+    }
+
+    // For paper trading: Use existing balance-based calculation
     const agents = await getCompetitionAgents(competitionId);
 
     // Use bulk portfolio value calculation

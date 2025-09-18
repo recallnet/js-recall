@@ -10,9 +10,10 @@ import {
 
 /**
  * Symphony API response types
+ * Based on confirmed API contract (2025-01)
  */
 export interface SymphonyPositionResponse {
-  success: boolean;
+  success: boolean; // Success responses still have this field
   data: {
     userAddress: string;
     accountSummary: {
@@ -30,7 +31,8 @@ export interface SymphonyPositionResponse {
       openPositionsCount: number;
       closedPositionsCount: number;
       liquidatedPositionsCount: number;
-      performance?: {
+      // Performance is ALWAYS present (never null), with 0 values for new accounts
+      performance: {
         roi: number;
         roiPercent: number;
         totalTrades: number;
@@ -39,10 +41,18 @@ export interface SymphonyPositionResponse {
     };
     openPositions: SymphonyPosition[];
     // Note: Symphony only returns openPositions, not closed or liquidated
-    lastUpdated: string;
-    cacheExpiresAt: string;
+    lastUpdated: string; // Format: "2025-09-12T20:49:15.000Z"
+    cacheExpiresAt: string; // Format: "2025-09-12T20:49:15.000Z"
   };
   processingTime: number;
+}
+
+export interface SymphonyErrorResponse {
+  status: "error";
+  error: {
+    message: string;
+    details: string;
+  };
 }
 
 export interface SymphonyPosition {
@@ -94,6 +104,11 @@ export interface SymphonyTransfer {
  * - Account equity calculations
  *
  * Note: Symphony API endpoints do not require authentication
+ *
+ * Rate Limiting:
+ * - Symphony API has a 200 req/min limit
+ * - We enforce 100ms between requests (max 600 req/min) to stay well below this
+ * - Can request IP whitelisting from Symphony if needed
  */
 export class SymphonyPerpsProvider implements IPerpsDataProvider {
   private readonly baseUrl: string;
@@ -173,6 +188,19 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   }
 
   /**
+   * Type guard to check if response is a Symphony error
+   */
+  private isSymphonyError(data: unknown): data is SymphonyErrorResponse {
+    return (
+      typeof data === "object" &&
+      data !== null &&
+      "status" in data &&
+      (data as { status: unknown }).status === "error" &&
+      "error" in data
+    );
+  }
+
+  /**
    * Delay helper for retries
    */
   private async delay(ms: number): Promise<void> {
@@ -243,10 +271,10 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         closedPositionsCount: as.closedPositionsCount ?? 0,
         liquidatedPositionsCount: as.liquidatedPositionsCount ?? 0,
 
-        // Performance metrics - these are optional
-        roi: as.performance?.roi,
-        roiPercent: as.performance?.roiPercent,
-        averageTradeSize: as.performance?.averageTradeSize,
+        // Performance metrics - always present with 0 defaults for new accounts
+        roi: as.performance.roi,
+        roiPercent: as.performance.roiPercent,
+        averageTradeSize: as.performance.averageTradeSize,
 
         // Status - use 'unknown' as default
         accountStatus: as.accountStatus ?? "unknown",
@@ -391,11 +419,21 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
-        const response = await this.axiosInstance.get<T>(endpoint, {
+        const response = await this.axiosInstance.get<
+          T | SymphonyErrorResponse
+        >(endpoint, {
           params,
         });
 
-        return response.data;
+        // Check if response is an error using Symphony's format
+        const data = response.data as T | SymphonyErrorResponse;
+        if (this.isSymphonyError(data)) {
+          throw new Error(
+            `Symphony API error: ${data.error.message} - ${data.error.details}`,
+          );
+        }
+
+        return data as T;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
@@ -404,10 +442,21 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
           // Don't retry on client errors (4xx)
           if (status && status >= 400 && status < 500) {
-            serviceLogger.error(
-              `[SymphonyProvider] Client error (${status}):`,
-              error.response?.data,
-            );
+            // Check if the error response follows Symphony's error format
+            const errorData = error.response?.data as
+              | SymphonyErrorResponse
+              | undefined;
+            if (errorData?.status === "error") {
+              serviceLogger.error(
+                `[SymphonyProvider] Client error (${status}):`,
+                `${errorData.error.message} - ${errorData.error.details}`,
+              );
+            } else {
+              serviceLogger.error(
+                `[SymphonyProvider] Client error (${status}):`,
+                error.response?.data,
+              );
+            }
             throw error;
           }
 

@@ -10,6 +10,7 @@ import {
   sum,
 } from "drizzle-orm";
 
+import { agents, competitionAgents } from "@recallnet/db-schema/core/defs";
 import {
   perpetualPositions,
   perpsAccountSummaries,
@@ -809,6 +810,62 @@ async function batchSyncAgentsPerpsDataImpl(
 // =============================================================================
 
 /**
+ * Get latest account summaries for all agents in a competition, sorted for leaderboard
+ * Efficient single-query solution that avoids N+1 issues
+ * @param competitionId Competition ID
+ * @returns Array of latest account summaries sorted by totalEquity DESC
+ */
+async function getCompetitionLeaderboardSummariesImpl(
+  competitionId: string,
+): Promise<SelectPerpsAccountSummary[]> {
+  try {
+    // Single efficient query using DISTINCT ON to get latest per agent
+    // Then sort by totalEquity for leaderboard
+    const summaries = await dbRead
+      .selectDistinctOn([perpsAccountSummaries.agentId])
+      .from(perpsAccountSummaries)
+      .innerJoin(
+        competitionAgents,
+        and(
+          eq(perpsAccountSummaries.agentId, competitionAgents.agentId),
+          eq(
+            perpsAccountSummaries.competitionId,
+            competitionAgents.competitionId,
+          ),
+          eq(competitionAgents.status, "active"), // Only active agents
+        ),
+      )
+      .where(eq(perpsAccountSummaries.competitionId, competitionId))
+      .orderBy(
+        perpsAccountSummaries.agentId,
+        desc(perpsAccountSummaries.timestamp),
+      );
+
+    // Sort by totalEquity DESC for leaderboard (in memory since DISTINCT ON requires specific order)
+    // This is still efficient as we've already filtered to just the latest summaries
+    const sortedSummaries = summaries
+      .map((row) => row.perps_account_summaries) // Extract just the summary part
+      .sort((a, b) => {
+        const aEquity = Number(a.totalEquity) || 0;
+        const bEquity = Number(b.totalEquity) || 0;
+        return bEquity - aEquity;
+      });
+
+    repositoryLogger.debug(
+      `[PerpsRepository] Retrieved ${sortedSummaries.length} account summaries for competition leaderboard`,
+    );
+
+    return sortedSummaries;
+  } catch (error) {
+    repositoryLogger.error(
+      "Error in getCompetitionLeaderboardSummaries:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Get perps competition statistics using efficient SQL aggregations
  * @param competitionId Competition ID
  * @returns Competition statistics
@@ -857,6 +914,156 @@ async function getPerpsCompetitionStatsImpl(
     };
   } catch (error) {
     repositoryLogger.error("Error in getPerpsCompetitionStats:", error);
+    throw error;
+  }
+}
+
+/**
+ * Count positions for an agent across multiple competitions in bulk
+ * Optimized single query with GROUP BY to avoid N+1 queries
+ * @param agentId Agent ID
+ * @param competitionIds Array of competition IDs
+ * @returns Map of competition ID to position count
+ */
+async function countBulkAgentPositionsInCompetitionsImpl(
+  agentId: string,
+  competitionIds: string[],
+): Promise<Map<string, number>> {
+  if (competitionIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    repositoryLogger.debug(
+      `countBulkAgentPositionsInCompetitions called for agent ${agentId} in ${competitionIds.length} competitions`,
+    );
+
+    // Get position counts for all competitions in one query
+    const results = await dbRead
+      .select({
+        competitionId: perpetualPositions.competitionId,
+        count: drizzleCount(),
+      })
+      .from(perpetualPositions)
+      .where(
+        and(
+          eq(perpetualPositions.agentId, agentId),
+          inArray(perpetualPositions.competitionId, competitionIds),
+        ),
+      )
+      .groupBy(perpetualPositions.competitionId);
+
+    // Create map with results
+    const countMap = new Map<string, number>();
+
+    // Initialize all competitions with 0 (important for competitions with no positions)
+    for (const competitionId of competitionIds) {
+      countMap.set(competitionId, 0);
+    }
+
+    // Update with actual counts
+    for (const result of results) {
+      countMap.set(result.competitionId, result.count);
+    }
+
+    repositoryLogger.debug(
+      `Found positions in ${results.length}/${competitionIds.length} competitions`,
+    );
+
+    return countMap;
+  } catch (error) {
+    repositoryLogger.error(
+      "Error in countBulkAgentPositionsInCompetitions:",
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get all perps positions for a competition with pagination
+ * Similar to getCompetitionTradesImpl but for perps positions
+ * @param competitionId Competition ID
+ * @param limit Optional result limit
+ * @param offset Optional result offset
+ * @param statusFilter Optional status filter (defaults to "Open")
+ * @returns Object with positions array and total count
+ */
+async function getCompetitionPerpsPositionsImpl(
+  competitionId: string,
+  limit?: number,
+  offset?: number,
+  statusFilter?: string,
+) {
+  try {
+    const conditions = [eq(perpetualPositions.competitionId, competitionId)];
+
+    // Default to showing only open positions unless specified otherwise
+    if (statusFilter !== "all") {
+      conditions.push(eq(perpetualPositions.status, statusFilter || "Open"));
+    }
+
+    // Build the main query with agent join - following same pattern as getCompetitionTradesImpl
+    const positionsQuery = dbRead
+      .select({
+        // All position fields from perpetualPositions table
+        id: perpetualPositions.id,
+        competitionId: perpetualPositions.competitionId,
+        agentId: perpetualPositions.agentId,
+        providerPositionId: perpetualPositions.providerPositionId,
+        providerTradeId: perpetualPositions.providerTradeId,
+        asset: perpetualPositions.asset,
+        isLong: perpetualPositions.isLong,
+        leverage: perpetualPositions.leverage,
+        positionSize: perpetualPositions.positionSize,
+        collateralAmount: perpetualPositions.collateralAmount,
+        entryPrice: perpetualPositions.entryPrice,
+        currentPrice: perpetualPositions.currentPrice,
+        liquidationPrice: perpetualPositions.liquidationPrice,
+        pnlUsdValue: perpetualPositions.pnlUsdValue,
+        pnlPercentage: perpetualPositions.pnlPercentage,
+        status: perpetualPositions.status,
+        createdAt: perpetualPositions.createdAt,
+        lastUpdatedAt: perpetualPositions.lastUpdatedAt,
+        closedAt: perpetualPositions.closedAt,
+        capturedAt: perpetualPositions.capturedAt,
+        // Agent info embedded like in trades
+        agent: {
+          id: agents.id,
+          name: agents.name,
+          imageUrl: agents.imageUrl,
+          description: agents.description,
+        },
+      })
+      .from(perpetualPositions)
+      .leftJoin(agents, eq(perpetualPositions.agentId, agents.id))
+      .where(and(...conditions))
+      .orderBy(desc(perpetualPositions.lastUpdatedAt));
+
+    // Apply pagination
+    if (limit !== undefined) {
+      positionsQuery.limit(limit);
+    }
+
+    if (offset !== undefined) {
+      positionsQuery.offset(offset);
+    }
+
+    // Build count query
+    const totalQuery = dbRead
+      .select({ count: drizzleCount() })
+      .from(perpetualPositions)
+      .where(and(...conditions));
+
+    // Execute both queries in parallel for efficiency
+    const [results, total] = await Promise.all([positionsQuery, totalQuery]);
+
+    return {
+      positions: results,
+      total: total[0]?.count ?? 0,
+    };
+  } catch (error) {
+    repositoryLogger.error("Error in getCompetitionPerpsPositions:", error);
     throw error;
   }
 }
@@ -974,6 +1181,12 @@ export const getPerpsCompetitionStats = createTimedRepositoryFunction(
   "getPerpsCompetitionStats",
 );
 
+export const getCompetitionLeaderboardSummaries = createTimedRepositoryFunction(
+  getCompetitionLeaderboardSummariesImpl,
+  "PerpsRepository",
+  "getCompetitionLeaderboardSummaries",
+);
+
 export const syncAgentPerpsData = createTimedRepositoryFunction(
   syncAgentPerpsDataImpl,
   "PerpsRepository",
@@ -984,4 +1197,17 @@ export const batchSyncAgentsPerpsData = createTimedRepositoryFunction(
   batchSyncAgentsPerpsDataImpl,
   "PerpsRepository",
   "batchSyncAgentsPerpsData",
+);
+
+export const countBulkAgentPositionsInCompetitions =
+  createTimedRepositoryFunction(
+    countBulkAgentPositionsInCompetitionsImpl,
+    "PerpsRepository",
+    "countBulkAgentPositionsInCompetitions",
+  );
+
+export const getCompetitionPerpsPositions = createTimedRepositoryFunction(
+  getCompetitionPerpsPositionsImpl,
+  "PerpsRepository",
+  "getCompetitionPerpsPositions",
 );

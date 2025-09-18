@@ -55,6 +55,16 @@ export const COMPETITION_STATUS = {
   ENDED: "ended",
 } as const;
 
+// Competition type values
+export const COMPETITION_TYPE = {
+  TRADING: "trading",
+  PERPETUAL_FUTURES: "perpetual_futures",
+} as const;
+
+// Competition type
+export type CompetitionType =
+  (typeof COMPETITION_TYPE)[keyof typeof COMPETITION_TYPE];
+
 /**
  * USER AND AGENT TYPES
  */
@@ -134,6 +144,7 @@ export interface Agent {
   stats?: {
     completedCompetitions: number;
     totalTrades: number;
+    totalPositions?: number; // For perps competitions
     totalVotes: number;
     bestPlacement?: {
       competitionId: string;
@@ -341,17 +352,20 @@ export interface Competition {
   startDate: string | null;
   endDate: string | null;
   status: CompetitionStatus;
+  type?: CompetitionType; // Competition type (trading or perpetual_futures)
   crossChainTradingType: CrossChainTradingType;
   sandboxMode: boolean; // Controls automatic joining of newly registered agents
   createdAt: string;
   updatedAt: string;
   agentIds?: string[];
   stats?: {
-    totalTrades: number;
+    totalTrades?: number; // Optional - only for paper trading
+    totalPositions?: number; // Optional - only for perps
     totalAgents: number;
     totalVolume: number;
     totalVotes: number;
-    uniqueTokens: number;
+    uniqueTokens?: number; // Optional - only for paper trading
+    competitionType?: string; // Type indicator for clients
   };
   // Vote-related fields
   votingStartDate: string | null;
@@ -754,6 +768,7 @@ export interface GlobalLeaderboardResponse extends ApiResponse {
   stats: {
     activeAgents: number;
     totalTrades: number;
+    totalPositions?: number; // For perps competitions
     totalVolume: number;
     totalCompetitions: number;
     totalVotes: number;
@@ -848,7 +863,9 @@ export interface EnhancedCompetition extends Competition {
   portfolioValue: number;
   pnl: number;
   pnlPercent: number;
-  totalTrades: number;
+  totalTrades?: number; // Optional - only for paper trading
+  totalPositions?: number; // Optional - only for perps
+  competitionType?: string; // Type indicator for clients
   bestPlacement?: {
     rank: number;
     totalAgents: number;
@@ -924,4 +941,117 @@ export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
 export interface LinkUserWalletResponse extends ApiResponse {
   success: true;
   user: User;
+}
+
+/**
+ * PERPETUAL FUTURES TYPES
+ */
+
+// Perps position
+export interface PerpsPosition {
+  id: string;
+  agentId: string;
+  competitionId: string;
+  positionId: string | null;
+  marketId: string | null;
+  marketSymbol: string | null;
+  asset?: string;
+  side?: "long" | "short";
+  isLong?: boolean;
+  size: string;
+  collateral?: number;
+  averagePrice: string;
+  markPrice: string;
+  unrealizedPnl: string;
+  realizedPnl: string;
+  margin?: string;
+  leverage: string;
+  liquidationPrice: string | null;
+  status?: string;
+  openedAt?: string;
+  closedAt?: string | null;
+  timestamp: string;
+}
+
+// Perps account summary
+export interface PerpsAccountSummary {
+  id: string;
+  agentId: string;
+  competitionId: string;
+  accountId: string;
+  totalEquity: string;
+  availableBalance: string;
+  marginUsed: string;
+  totalPnl: string;
+  totalVolume: string;
+  openPositions: number;
+  timestamp: string;
+}
+
+// Perps positions response
+export interface PerpsPositionsResponse extends ApiResponse {
+  success: true;
+  agentId: string;
+  positions: PerpsPosition[];
+}
+
+// Perps account response
+export interface PerpsAccountResponse extends ApiResponse {
+  success: true;
+  agentId: string;
+  account: PerpsAccountSummary;
+}
+
+// Perps position with embedded agent info (for competition-wide endpoints)
+export interface PerpsPositionWithAgent extends PerpsPosition {
+  agent: {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    description: string | null;
+  };
+}
+
+// Competition perps positions response (old endpoint - agent-specific)
+export interface CompetitionPerpsPositionsResponse extends ApiResponse {
+  success: true;
+  competitionId: string;
+  positions: PerpsPosition[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+// Competition all perps positions response (new endpoint - all agents)
+export interface CompetitionAllPerpsPositionsResponse extends ApiResponse {
+  success: true;
+  positions: PerpsPositionWithAgent[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+export interface AgentPerpsPositionsResponse extends ApiResponse {
+  success: true;
+  competitionId: string;
+  agentId: string;
+  positions: PerpsPosition[];
+}
+
+export interface CompetitionPerpsSummaryResponse extends ApiResponse {
+  success: true;
+  competitionId: string;
+  summary: {
+    totalAgents: number;
+    totalPositions: number;
+    totalVolume: number;
+    averageEquity: number;
+  };
+  timestamp: string;
 }

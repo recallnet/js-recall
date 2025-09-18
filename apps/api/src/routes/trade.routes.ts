@@ -18,8 +18,8 @@ export function configureTradeRoutes(
    *   post:
    *     tags:
    *       - Trade
-   *     summary: Execute a trade
-   *     description: Execute a trade between two tokens
+   *     summary: Execute a trade (Paper Trading Only)
+   *     description: Execute a trade between two tokens. Only available during paper trading competitions.
    *     security:
    *       - BearerAuth: []
    *     requestBody:
@@ -144,7 +144,18 @@ export function configureTradeRoutes(
    *                       type: string
    *                       description: Symbol of the source token
    *       400:
-   *         description: Invalid input parameters
+   *         description: Invalid input parameters or endpoint not available for perpetual futures competitions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is not available for perpetual futures competitions. Perpetual futures positions are managed through Symphony, not through this API."
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
    *       403:
@@ -160,8 +171,8 @@ export function configureTradeRoutes(
    *   get:
    *     tags:
    *       - Trade
-   *     summary: Get a quote for a trade
-   *     description: Get a quote for a potential trade between two tokens
+   *     summary: Get a quote for a trade (Paper Trading Only)
+   *     description: Get a quote for a potential trade between two tokens. Only available during paper trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -271,7 +282,18 @@ export function configureTradeRoutes(
    *                       type: string
    *                       description: Blockchain type of the destination token
    *       400:
-   *         description: Invalid input parameters
+   *         description: Invalid input parameters or endpoint not available for perpetual futures competitions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "This endpoint is not available for perpetual futures competitions. Perpetual futures positions are managed through Symphony, not through this API."
    *       401:
    *         description: Unauthorized - Missing or invalid authentication
    *       500:
