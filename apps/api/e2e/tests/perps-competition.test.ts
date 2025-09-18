@@ -109,10 +109,9 @@ describe("Perps Competition", () => {
     // Check for perps-specific stats (perpsCompetitionConfig is available on enhanced competition response)
     // The detail endpoint returns an enhanced competition with stats
     const comp = typedDetailResponse.competition as EnhancedCompetition;
-    if (comp.stats) {
-      expect(comp.stats.totalPositions).toBeDefined();
-      expect(comp.stats.totalTrades).toBeUndefined();
-    }
+
+    expect(comp?.stats?.totalPositions).toBeDefined();
+    expect(comp.stats?.totalTrades).toBeUndefined();
   });
 
   test("should get perps positions for an agent", async () => {
