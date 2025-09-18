@@ -2,9 +2,9 @@ import { drizzle } from "drizzle-orm/node-postgres";
 
 import schema from "./index.js";
 
-export type DrizzleClient = ReturnType<typeof drizzle<typeof schema>>;
+const db = drizzle("", { schema });
+
+export type Database = typeof db;
 
 // Extract the transaction type from the Drizzle client
-export type Transaction = Parameters<
-  Parameters<DrizzleClient["transaction"]>[0]
->[0];
+export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];

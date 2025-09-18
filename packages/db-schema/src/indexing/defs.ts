@@ -11,7 +11,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { bytea, tokenAmount } from "../util.js";
+import { bytea, tokenAmount } from "../custom-types.js";
 
 export { indexingEvents, stakes, stakeChanges };
 

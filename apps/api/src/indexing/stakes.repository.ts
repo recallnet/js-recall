@@ -1,15 +1,15 @@
 import { and, asc, eq, getTableColumns, gt, isNull } from "drizzle-orm";
 
+import {
+  BlockHashCoder,
+  BlockchainAddressAsU8A,
+  TxHashCoder,
+} from "@recallnet/coders";
 import * as schema from "@recallnet/db-schema/indexing/defs";
 import type { StakeRow } from "@recallnet/db-schema/indexing/types";
 import { Transaction } from "@recallnet/db-schema/types";
 
 import { db } from "@/database/db.js";
-import {
-  BlockHashCoder,
-  BlockchainAddressAsU8A,
-  TxHashCoder,
-} from "@/lib/coders.js";
 
 export { StakesRepository };
 export type { Tx, StakeArgs, UnstakeArgs, RelockArgs, WithdrawArgs };

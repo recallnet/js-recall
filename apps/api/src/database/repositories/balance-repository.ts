@@ -8,7 +8,6 @@ import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
-import { SpecificChain } from "@/types/index.js";
 
 /**
  * Balance Repository
@@ -294,38 +293,44 @@ async function decrementBalanceInTransactionImpl(
  */
 
 export const count = createTimedRepositoryFunction(
-  countImpl,
+  repository.count.bind(repository),
   "BalanceRepository",
   "count",
 );
 
 export const getBalance = createTimedRepositoryFunction(
-  getBalanceImpl,
+  repository.getBalance.bind(repository),
   "BalanceRepository",
   "getBalance",
 );
 
 export const getAgentBalances = createTimedRepositoryFunction(
-  getAgentBalancesImpl,
+  repository.getAgentBalances.bind(repository),
   "BalanceRepository",
   "getAgentBalances",
 );
 
+export const getAgentsBulkBalances = createTimedRepositoryFunction(
+  repository.getAgentsBulkBalances.bind(repository),
+  "BalanceRepository",
+  "getAgentsBulkBalances",
+);
+
 export const resetAgentBalances = createTimedRepositoryFunction(
-  resetAgentBalancesImpl,
+  repository.resetAgentBalances.bind(repository),
   "BalanceRepository",
   "resetAgentBalances",
 );
 
 // Export atomic balance functions
 export const incrementBalanceInTransaction = createTimedRepositoryFunction(
-  incrementBalanceInTransactionImpl,
+  repository.incrementBalanceInTransaction.bind(repository),
   "BalanceRepository",
   "incrementBalanceInTransaction",
 );
 
 export const decrementBalanceInTransaction = createTimedRepositoryFunction(
-  decrementBalanceInTransactionImpl,
+  repository.decrementBalanceInTransaction.bind(repository),
   "BalanceRepository",
   "decrementBalanceInTransaction",
 );
