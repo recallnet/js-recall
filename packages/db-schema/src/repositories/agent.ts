@@ -329,7 +329,7 @@ export class AgentRepository {
         .where(eq(agents.id, id));
       return result;
     } catch (error) {
-      console.error("[AgentRepository] Error in findById:", error);
+      this.#logger.error("[AgentRepository] Error in findById:", error);
       throw error;
     }
   }
@@ -352,7 +352,7 @@ export class AgentRepository {
 
       return results;
     } catch (error) {
-      console.error("[AgentRepository] Error in findByIds:", error);
+      this.#logger.error("[AgentRepository] Error in findByIds:", error);
       throw error;
     }
   }
@@ -380,7 +380,7 @@ export class AgentRepository {
 
       return query;
     } catch (error) {
-      console.error("[AgentRepository] Error in findByOwnerId:", error);
+      this.#logger.error("[AgentRepository] Error in findByOwnerId:", error);
       throw error;
     }
   }
@@ -398,7 +398,7 @@ export class AgentRepository {
 
       return result;
     } catch (error) {
-      console.error("[AgentRepository] Error in findByApiKeyHash:", error);
+      this.#logger.error("[AgentRepository] Error in findByApiKeyHash:", error);
       throw error;
     }
   }
@@ -431,7 +431,7 @@ export class AgentRepository {
 
       return await query;
     } catch (error) {
-      console.error("[AgentRepository] Error in findByWallet:", error);
+      this.#logger.error("[AgentRepository] Error in findByWallet:", error);
       throw error;
     }
   }
@@ -464,7 +464,7 @@ export class AgentRepository {
 
       return await query;
     } catch (error) {
-      console.error("[AgentRepository] Error in findByName:", error);
+      this.#logger.error("[AgentRepository] Error in findByName:", error);
       throw error;
     }
   }
@@ -991,7 +991,10 @@ export class AgentRepository {
         .where(eq(agents.ownerId, userId));
       return res.rowCount || 0;
     } catch (error) {
-      console.error("[AgentRepository] Error in updateAgentsOwner:", error);
+      this.#logger.error(
+        "[AgentRepository] Error in updateAgentsOwner:",
+        error,
+      );
       throw error;
     }
   }
