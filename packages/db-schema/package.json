@@ -12,6 +12,7 @@
   "homepage": "https://github.com/recallnet/js-recall#readme",
   "type": "module",
   "exports": {
+    "./errors": "./src/errors.ts",
     "./repositories/admin": "./src/repositories/admin.ts",
     "./repositories/agent-nonce": "./src/repositories/agent-nonce.ts",
     "./repositories/agent": "./src/repositories/agent.ts",

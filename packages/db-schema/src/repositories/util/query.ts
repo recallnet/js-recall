@@ -1,6 +1,8 @@
 import { AnyColumn, asc, desc } from "drizzle-orm";
 import { PgSelect } from "drizzle-orm/pg-core";
 
+import { ParsingError } from "../../errors.js";
+
 /**
  * Apply sorting to a Drizzle query based on sort string
  * @param query The Drizzle query to apply sorting to
@@ -21,7 +23,9 @@ export function getSort<T extends PgSelect>(
     throw new Error("cannot sort by undefined");
   }
   if (parts.length > 3) {
-    throw new Error("compound sorting with more than 3 fields not allowed");
+    throw new ParsingError(
+      "compound sorting with more than 3 fields not allowed",
+    );
   }
 
   // Collect all ordering criteria
@@ -30,7 +34,7 @@ export function getSort<T extends PgSelect>(
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
     if (typeof part !== "string") {
-      throw new Error("cannot build sort with undefined");
+      throw new ParsingError("cannot build sort with undefined");
     }
 
     // Standard format: "-field" for desc, "field" for asc
@@ -39,7 +43,7 @@ export function getSort<T extends PgSelect>(
 
     const orderBy = orderByOptions[column];
     if (typeof orderBy === "undefined") {
-      throw new Error(`cannot sort by field: '${part}'`);
+      throw new ParsingError(`cannot sort by field: '${part}'`);
     }
 
     // Add to criteria array instead of applying immediately
