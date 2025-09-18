@@ -373,7 +373,7 @@ class StakesRepository {
     }
     const db = tx || this.#db;
     await db.transaction(async (tx) => {
-      const rows = await tx
+      const [row] = await tx
         .update(schema.stakes)
         .set({
           relockedAt: args.blockTimestamp,
@@ -390,11 +390,11 @@ class StakesRepository {
           wallet: schema.stakes.wallet,
           amount: schema.stakes.amount,
         });
-      const wallet = rows[0]?.wallet;
-      const amount = rows[0]?.amount;
-      if (!wallet || !amount) {
+      if (!row || !row.amount || !row.wallet) {
         throw new Error("Stake not found or stale (concurrent update)");
       }
+      const wallet = row.wallet;
+      const amount = row.amount;
       const txHash = TxHashCoder.encode(args.txHash);
       const blockHash = BlockHashCoder.encode(args.blockHash);
       await tx.insert(schema.stakeChanges).values({
@@ -442,7 +442,7 @@ class StakesRepository {
       }
       const amountBefore = prevRow.amountBefore;
 
-      const rows = await tx
+      const [row] = await tx
         .update(schema.stakes)
         .set({
           relockedAt: args.blockTimestamp,
@@ -460,8 +460,8 @@ class StakesRepository {
           wallet: schema.stakes.wallet,
           amount: schema.stakes.amount,
         });
-      const row = rows[0];
       if (!row) {
+        // Impossible situation: we locked the row, but the update failed.
         throw new Error("Stake not found or stale (concurrent update)");
       }
       const wallet = row.wallet;
@@ -498,7 +498,7 @@ class StakesRepository {
   async withdraw(args: WithdrawArgs, tx?: Transaction): Promise<void> {
     const db = tx || this.#db;
     await db.transaction(async (tx) => {
-      const rows = await tx
+      const [row] = await tx
         .update(schema.stakes)
         .set({
           withdrawnAt: args.blockTimestamp,
@@ -510,7 +510,6 @@ class StakesRepository {
           ),
         )
         .returning({ wallet: schema.stakes.wallet });
-      const row = rows[0];
       if (!row) {
         throw new Error("Stake not found or stale (concurrent update)");
       }
