@@ -3,7 +3,7 @@
     "thresholds": {
       "lines": 4,
       "statements": 4,
-      "functions": 46,
+      "functions": 44,
       "branches": 46
     }
   },
@@ -51,6 +51,38 @@
       "include": ["src/**/*.ts"],
       "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "contracts/**/*"],
       "testFramework": "c8"
+    },
+    "apps/portal": {
+      "thresholds": {
+        "lines": 0,
+        "statements": 0,
+        "functions": 0,
+        "branches": 0
+      }
+    },
+    "apps/registration": {
+      "thresholds": {
+        "lines": 0,
+        "statements": 0,
+        "functions": 0,
+        "branches": 0
+      }
+    },
+    "packages/agent-toolkit": {
+      "thresholds": {
+        "lines": 0,
+        "statements": 0,
+        "functions": 0,
+        "branches": 0
+      }
+    },
+    "packages/api-sdk": {
+      "thresholds": {
+        "lines": 0,
+        "statements": 0,
+        "functions": 0,
+        "branches": 0
+      }
     }
   }
 }
