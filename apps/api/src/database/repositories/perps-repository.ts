@@ -257,7 +257,7 @@ async function createPerpsAccountSummaryImpl(
 }
 
 /**
- * Batch create multiple account summaries efficiently
+ * Batch create multiple account summaries
  * @param summaries Array of summary data to create
  * @returns Array of created summaries
  */
@@ -497,7 +497,7 @@ async function batchGetAgentsSelfFundingAlertsImpl(
     }
 
     // Process in batches to avoid query size limits (PostgreSQL IN clause limit)
-    const batchSize = 500; // PostgreSQL can handle large IN clauses efficiently
+    const batchSize = 500;
     const allAlerts: SelectPerpsSelfFundingAlert[] = [];
 
     for (let i = 0; i < agentIds.length; i += batchSize) {
@@ -619,7 +619,7 @@ async function syncAgentPerpsDataImpl(
 }
 
 /**
- * Batch sync multiple agents' perps data efficiently
+ * Batch sync multiple agents' perps data
  * Processes agents in controlled batches to avoid database contention
  * @param agentSyncData Array of agent sync data
  * @returns Results with successes and failures
@@ -696,9 +696,8 @@ async function getCompetitionLeaderboardSummariesImpl(
   competitionId: string,
 ): Promise<SelectPerpsAccountSummary[]> {
   try {
-    // Single efficient query using DISTINCT ON to get latest per agent
-    // Then sort by totalEquity for leaderboard
-    const summaries = await dbRead
+    // Use a subquery to get latest summaries, then sort by totalEquity in SQL
+    const latestSummaries = dbRead
       .selectDistinctOn([perpsAccountSummaries.agentId])
       .from(perpsAccountSummaries)
       .innerJoin(
@@ -716,23 +715,25 @@ async function getCompetitionLeaderboardSummariesImpl(
       .orderBy(
         perpsAccountSummaries.agentId,
         desc(perpsAccountSummaries.timestamp),
-      );
+      )
+      .as("latest");
 
-    // Sort by totalEquity DESC for leaderboard (in memory since DISTINCT ON requires specific order)
-    // This is still efficient as we've already filtered to just the latest summaries
-    const sortedSummaries = summaries
-      .map((row) => row.perps_account_summaries) // Extract just the summary part
-      .sort((a, b) => {
-        const aEquity = Number(a.totalEquity) || 0;
-        const bEquity = Number(b.totalEquity) || 0;
-        return bEquity - aEquity;
-      });
+    // Now we can sort by totalEquity in SQL
+    const sortedSummaries = await dbRead
+      .select({
+        summary: latestSummaries.perps_account_summaries,
+      })
+      .from(latestSummaries)
+      .orderBy(desc(latestSummaries.perps_account_summaries.totalEquity));
+
+    // Extract just the summary part from the result
+    const summaries = sortedSummaries.map((row) => row.summary);
 
     repositoryLogger.debug(
-      `[PerpsRepository] Retrieved ${sortedSummaries.length} account summaries for competition leaderboard`,
+      `[PerpsRepository] Retrieved ${summaries.length} account summaries for competition leaderboard`,
     );
 
-    return sortedSummaries;
+    return summaries;
   } catch (error) {
     repositoryLogger.error(
       "Error in getCompetitionLeaderboardSummaries:",
@@ -743,7 +744,7 @@ async function getCompetitionLeaderboardSummariesImpl(
 }
 
 /**
- * Get perps competition statistics using efficient SQL aggregations
+ * Get perps competition statistics using SQL aggregations
  * @param competitionId Competition ID
  * @returns Competition statistics
  */
@@ -931,7 +932,7 @@ async function getCompetitionPerpsPositionsImpl(
       .from(perpetualPositions)
       .where(and(...conditions));
 
-    // Execute both queries in parallel for efficiency
+    // Execute both queries in parallel
     const [results, total] = await Promise.all([positionsQuery, totalQuery]);
 
     return {
