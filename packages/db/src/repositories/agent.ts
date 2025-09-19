@@ -15,8 +15,8 @@ import {
   competitionAgents,
   competitions,
   competitionsLeaderboard,
-} from "../core/defs.js";
-import { InsertAgent, SelectAgent } from "../core/types.js";
+} from "../schema/core/defs.js";
+import { InsertAgent, SelectAgent } from "../schema/core/types.js";
 import { Database, Transaction } from "../types.js";
 import { CompetitionRewardsRepository } from "./competition-rewards.js";
 import {

@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   InsertCompetitionReward,
   SelectCompetitionReward,
-} from "@recallnet/db-schema/core/types";
+} from "@recallnet/db/schema/core/types";
 
 import { db } from "@/database/db.js";
 import * as competitionRewardsRepository from "@/database/repositories/competition-rewards-repository.js";

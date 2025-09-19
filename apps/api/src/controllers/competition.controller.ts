@@ -1,7 +1,7 @@
 import { NextFunction, Response } from "express";
 import { LRUCache } from "lru-cache";
 
-import { ParsingError } from "@recallnet/db-schema/errors";
+import { ParsingError } from "@recallnet/db/errors";
 
 import { config } from "@/config/index.js";
 import { competitionLogger } from "@/lib/logger.js";

@@ -1,4 +1,4 @@
-import { VoteRepository } from "@recallnet/db-schema/repositories/vote";
+import { VoteRepository } from "@recallnet/db/repositories/vote";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";

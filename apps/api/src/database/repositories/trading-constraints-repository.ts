@@ -1,4 +1,4 @@
-import { TradingConstraintsRepository } from "@recallnet/db-schema/repositories/trading-constraints";
+import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 
 import { db } from "@/database/db.js";
 

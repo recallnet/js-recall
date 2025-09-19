@@ -32,7 +32,7 @@ js-recall/
 │   ├── address-utils/      # Address manipulation utilities
 │   ├── api-mcp/            # MCP integration package
 │   ├── api-sdk/            # Auto-generated API client
-│   ├── db-schema/          # Database schema definitions
+│   ├── db/                 # Database schema definitions
 │   ├── fonts/              # Shared font resources
 │   ├── staking-contracts/  # Staking contract interfaces
 │   ├── ui2/                # Modern UI component library

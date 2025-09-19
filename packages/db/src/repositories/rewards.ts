@@ -1,15 +1,15 @@
 import { and, eq } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { Database } from "../types.js";
-import { rewards, rewardsRoots, rewardsTree } from "../voting/defs.js";
+import { rewards, rewardsRoots, rewardsTree } from "../schema/voting/defs.js";
 import {
   InsertReward,
   InsertRewardsRoot,
   SelectReward,
   SelectRewardsRoot,
   SelectRewardsTree,
-} from "../voting/types.js";
+} from "../schema/voting/types.js";
+import { Database } from "../types.js";
 
 export class RewardsRepository {
   readonly #db: Database;

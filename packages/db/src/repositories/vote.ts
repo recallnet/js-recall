@@ -2,8 +2,8 @@ import { randomUUID } from "crypto";
 import { and, count as drizzleCount, eq, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { votes } from "../core/defs.js";
-import { InsertVote, SelectVote } from "../core/types.js";
+import { votes } from "../schema/core/defs.js";
+import { InsertVote, SelectVote } from "../schema/core/types.js";
 import { Database, Transaction } from "../types.js";
 
 /**

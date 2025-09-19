@@ -1,4 +1,4 @@
-import { AdminRepository } from "@recallnet/db-schema/repositories/admin";
+import { AdminRepository } from "@recallnet/db/repositories/admin";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";

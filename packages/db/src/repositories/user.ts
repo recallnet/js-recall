@@ -2,8 +2,8 @@ import { randomUUID } from "crypto";
 import { and, count as drizzleCount, eq, ilike, ne, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { users } from "../core/defs.js";
-import { InsertUser, SelectUser } from "../core/types.js";
+import { users } from "../schema/core/defs.js";
+import { InsertUser, SelectUser } from "../schema/core/types.js";
 import { Transaction } from "../types.js";
 import { Database } from "../types.js";
 import { UserSearchParams } from "./types/index.js";

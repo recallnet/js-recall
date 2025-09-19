@@ -5,7 +5,7 @@ import {
   competitionAgentStatus,
   competitionStatus,
   competitionType,
-} from "../../core/defs.js";
+} from "../../schema/core/defs.js";
 
 /**
  * Zod schema for the status of a user, agent, or admin.

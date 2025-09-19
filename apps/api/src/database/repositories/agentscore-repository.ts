@@ -1,4 +1,4 @@
-import { AgentScoreRepository } from "@recallnet/db-schema/repositories/agent-score";
+import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";

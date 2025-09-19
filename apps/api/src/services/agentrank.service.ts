@@ -1,6 +1,6 @@
 import { Rating, rate, rating } from "openskill";
 
-import type { Transaction as DatabaseTransaction } from "@recallnet/db-schema/types";
+import type { Transaction as DatabaseTransaction } from "@recallnet/db/types";
 
 import * as agentScoreRepo from "@/database/repositories/agentscore-repository.js";
 import * as competitionRepo from "@/database/repositories/competition-repository.js";

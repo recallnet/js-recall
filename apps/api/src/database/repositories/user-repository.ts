@@ -1,4 +1,4 @@
-import { UserRepository } from "@recallnet/db-schema/repositories/user";
+import { UserRepository } from "@recallnet/db/repositories/user";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";

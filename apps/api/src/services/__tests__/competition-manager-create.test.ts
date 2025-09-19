@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import type { SelectTradingConstraints } from "@recallnet/db-schema/trading/types";
+import type { SelectTradingConstraints } from "@recallnet/db/schema/trading/types";
 
 import { db } from "@/database/db.js";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";

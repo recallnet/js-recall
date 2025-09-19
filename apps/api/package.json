@@ -74,7 +74,7 @@
   "dependencies": {
     "@privy-io/server-auth": "^1.31.0",
     "@envio-dev/hypersync-client": "^0.6.5",
-    "@recallnet/db-schema": "workspace:*",
+    "@recallnet/db": "workspace:*",
     "@recallnet/staking-contracts": "workspace:*",
     "@sentry/node": "^10.5.0",
     "@sentry/profiling-node": "^10.5.0",

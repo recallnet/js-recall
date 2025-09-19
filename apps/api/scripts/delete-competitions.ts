@@ -8,18 +8,18 @@ import {
   competitions,
   competitionsLeaderboard,
   votes,
-} from "@recallnet/db-schema/core/defs";
+} from "@recallnet/db/schema/core/defs";
 import {
   agentScore,
   agentScoreHistory,
-} from "@recallnet/db-schema/ranking/defs";
+} from "@recallnet/db/schema/ranking/defs";
 import {
   portfolioSnapshots,
   trades,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
   tradingConstraints,
-} from "@recallnet/db-schema/trading/defs";
+} from "@recallnet/db/schema/trading/defs";
 
 import { db } from "@/database/db.js";
 

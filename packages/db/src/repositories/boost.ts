@@ -3,10 +3,13 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import { BlockchainAddressAsU8A } from "../coders/index.js";
+import * as schema from "../schema/voting/defs.js";
+import {
+  SelectAgentBoost,
+  SelectAgentBoostTotal,
+} from "../schema/voting/types.js";
 import type { Transaction } from "../types.js";
 import { Database } from "../types.js";
-import * as schema from "../voting/defs.js";
-import { SelectAgentBoost, SelectAgentBoostTotal } from "../voting/types.js";
 
 export { BoostRepository, BoostChangeMetaSchema };
 export type {

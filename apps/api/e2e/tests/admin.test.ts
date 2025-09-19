@@ -7,8 +7,8 @@ import {
   admins,
   competitionRewards,
   competitions,
-} from "@recallnet/db-schema/core/defs";
-import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
+} from "@recallnet/db/schema/core/defs";
+import { tradingConstraints } from "@recallnet/db/schema/trading/defs";
 
 import { db } from "@/database/db.js";
 import {

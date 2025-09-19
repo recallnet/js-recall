@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 
-import schema from "./index.js";
+import schema from "./schema/index.js";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _db = drizzle("", { schema });

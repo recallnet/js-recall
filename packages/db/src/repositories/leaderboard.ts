@@ -16,9 +16,12 @@ import {
   competitions,
   competitionsLeaderboard,
   votes,
-} from "../core/defs.js";
-import { agentScore } from "../ranking/defs.js";
-import { trades, tradingCompetitionsLeaderboard } from "../trading/defs.js";
+} from "../schema/core/defs.js";
+import { agentScore } from "../schema/ranking/defs.js";
+import {
+  trades,
+  tradingCompetitionsLeaderboard,
+} from "../schema/trading/defs.js";
 import { Database } from "../types.js";
 import type { RawAgentMetricsQueryResult } from "./types/agent-metrics.js";
 import { CompetitionType } from "./types/index.js";

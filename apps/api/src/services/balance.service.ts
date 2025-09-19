@@ -1,4 +1,4 @@
-import type { SelectBalance } from "@recallnet/db-schema/trading/types";
+import type { SelectBalance } from "@recallnet/db/schema/trading/types";
 
 import { config } from "@/config/index.js";
 import {

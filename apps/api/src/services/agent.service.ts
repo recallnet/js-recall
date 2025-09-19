@@ -8,8 +8,8 @@ import {
   InsertAgent,
   SelectAgent,
   SelectCompetition,
-} from "@recallnet/db-schema/core/types";
-import type { SelectBalance } from "@recallnet/db-schema/trading/types";
+} from "@recallnet/db/schema/core/types";
+import type { SelectBalance } from "@recallnet/db/schema/trading/types";
 
 import { config } from "@/config/index.js";
 import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";

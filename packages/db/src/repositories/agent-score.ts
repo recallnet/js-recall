@@ -2,13 +2,13 @@ import { randomUUID } from "crypto";
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { agents } from "../core/defs.js";
-import { agentScore, agentScoreHistory } from "../ranking/defs.js";
+import { agents } from "../schema/core/defs.js";
+import { agentScore, agentScoreHistory } from "../schema/ranking/defs.js";
 import {
   InsertAgentScore,
   InsertAgentScoreHistory,
   SelectAgentScore,
-} from "../ranking/types.js";
+} from "../schema/ranking/types.js";
 import type { Transaction as DatabaseTransaction } from "../types.js";
 import { Database } from "../types.js";
 

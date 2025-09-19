@@ -6,9 +6,9 @@ import {
   competitionAgentStatus,
   competitionStatus,
   competitionType,
-} from "@recallnet/db-schema/core/defs";
-import { MAX_HANDLE_LENGTH } from "@recallnet/db-schema/core/defs";
-import { crossChainTradingType } from "@recallnet/db-schema/trading/defs";
+} from "@recallnet/db/schema/core/defs";
+import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
+import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
 
 /**
  * Blockchain type enum

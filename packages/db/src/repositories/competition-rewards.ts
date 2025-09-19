@@ -2,11 +2,11 @@ import { randomUUID } from "crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { competitionRewards } from "../core/defs.js";
+import { competitionRewards } from "../schema/core/defs.js";
 import {
   InsertCompetitionReward,
   SelectCompetitionReward,
-} from "../core/types.js";
+} from "../schema/core/types.js";
 import { Database, Transaction } from "../types.js";
 
 /**

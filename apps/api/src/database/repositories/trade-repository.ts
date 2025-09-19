@@ -1,4 +1,4 @@
-import { TradeRepository } from "@recallnet/db-schema/repositories/trade";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";

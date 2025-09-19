@@ -1,4 +1,4 @@
-import { BalanceRepository } from "@recallnet/db-schema/repositories/balance";
+import { BalanceRepository } from "@recallnet/db/repositories/balance";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";

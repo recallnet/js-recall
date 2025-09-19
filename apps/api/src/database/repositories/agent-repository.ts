@@ -1,4 +1,4 @@
-import { AgentRepository } from "@recallnet/db-schema/repositories/agent";
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";

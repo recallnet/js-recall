@@ -10,7 +10,7 @@
       "@/*": ["./src/*"],
       "@/scripts/*": ["./scripts/*"],
       "@/e2e/*": ["./e2e/*"],
-      "@recallnet/db-schema/*": ["../../packages/db/src/*"]
+      "@recallnet/db/*": ["../../packages/db/src/*"]
     },
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,

@@ -1,7 +1,7 @@
 import {
   type BoostAgentResult,
   BoostRepository,
-} from "@recallnet/db-schema/repositories/boost";
+} from "@recallnet/db/repositories/boost";
 
 import { serviceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";

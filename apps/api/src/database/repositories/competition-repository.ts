@@ -1,4 +1,4 @@
-import { CompetitionRepository } from "@recallnet/db-schema/repositories/competition";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 
 import { db, dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";

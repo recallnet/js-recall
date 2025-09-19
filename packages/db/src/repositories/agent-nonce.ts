@@ -1,6 +1,6 @@
 import { eq, lt } from "drizzle-orm";
 
-import { agentNonces } from "../core/defs.js";
+import { agentNonces } from "../schema/core/defs.js";
 import { Database } from "../types.js";
 
 export interface InsertAgentNonce {

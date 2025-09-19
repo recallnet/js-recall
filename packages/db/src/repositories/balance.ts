@@ -1,8 +1,8 @@
 import { and, count as drizzleCount, eq, inArray, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { balances } from "../trading/defs.js";
-import type { SelectBalance } from "../trading/types.js";
+import { balances } from "../schema/trading/defs.js";
+import type { SelectBalance } from "../schema/trading/types.js";
 import type { Database, Transaction } from "../types.js";
 import { SpecificChain } from "./types/index.js";
 

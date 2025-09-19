@@ -21,9 +21,9 @@ import {
   competitionRewards,
   competitions,
   competitionsLeaderboard,
-} from "../core/defs.js";
+} from "../schema/core/defs.js";
 // Import for enrichment functionality
-import { votes } from "../core/defs.js";
+import { votes } from "../schema/core/defs.js";
 import {
   InsertCompetition,
   InsertCompetitionAgent,
@@ -31,18 +31,18 @@ import {
   SelectCompetition,
   SelectCompetitionsLeaderboard,
   UpdateCompetition,
-} from "../core/types.js";
+} from "../schema/core/types.js";
 import {
   portfolioSnapshots,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
-} from "../trading/defs.js";
-import { tradingConstraints } from "../trading/defs.js";
-import { InsertTradingCompetition } from "../trading/types.js";
+} from "../schema/trading/defs.js";
+import { tradingConstraints } from "../schema/trading/defs.js";
+import { InsertTradingCompetition } from "../schema/trading/types.js";
 import {
   InsertPortfolioSnapshot,
   SelectPortfolioSnapshot,
-} from "../trading/types.js";
+} from "../schema/trading/types.js";
 import { Database, Transaction } from "../types.js";
 import {
   BestPlacementDbSchema,

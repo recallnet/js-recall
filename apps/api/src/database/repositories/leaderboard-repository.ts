@@ -1,4 +1,4 @@
-import { LeaderboardRepository } from "@recallnet/db-schema/repositories/leaderboard";
+import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 
 import { dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";

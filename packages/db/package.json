@@ -1,5 +1,5 @@
 {
-  "name": "@recallnet/db-schema",
+  "name": "@recallnet/db",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "private": true,
@@ -7,12 +7,11 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/recallnet/js-recall.git",
-    "directory": "packages/db-schema"
+    "directory": "packages/db"
   },
   "homepage": "https://github.com/recallnet/js-recall#readme",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
     "./coders": "./src/coders/index.ts",
     "./errors": "./src/errors.ts",
     "./repositories/admin": "./src/repositories/admin.ts",
@@ -30,20 +29,21 @@
     "./repositories/user": "./src/repositories/user.ts",
     "./repositories/vote": "./src/repositories/vote.ts",
     "./types": "./src/types.ts",
-    "./core/defs": "./src/core/defs.ts",
-    "./core/relations": "./src/core/relations.ts",
-    "./core/types": "./src/core/types.ts",
-    "./indexing/defs": "./src/indexing/defs.ts",
-    "./indexing/types": "./src/indexing/types.ts",
-    "./ranking/defs": "./src/ranking/defs.ts",
-    "./ranking/relations": "./src/ranking/relations.ts",
-    "./ranking/types": "./src/ranking/types.ts",
-    "./trading/defs": "./src/trading/defs.ts",
-    "./trading/relations": "./src/trading/relations.ts",
-    "./trading/types": "./src/trading/types.ts",
-    "./voting/defs": "./src/voting/defs.ts",
-    "./voting/relations": "./src/voting/relations.ts",
-    "./voting/types": "./src/voting/types.ts"
+    "./schema": "./src/schema/index.ts",
+    "./schema/core/defs": "./src/schema/core/defs.ts",
+    "./schema/core/relations": "./src/schema/core/relations.ts",
+    "./schema/core/types": "./src/schema/core/types.ts",
+    "./schema/indexing/defs": "./src/schema/indexing/defs.ts",
+    "./schema/indexing/types": "./src/schema/indexing/types.ts",
+    "./schema/ranking/defs": "./src/schema/ranking/defs.ts",
+    "./schema/ranking/relations": "./src/schema/ranking/relations.ts",
+    "./schema/ranking/types": "./src/schema/ranking/types.ts",
+    "./schema/trading/defs": "./src/schema/trading/defs.ts",
+    "./schema/trading/relations": "./src/schema/trading/relations.ts",
+    "./schema/trading/types": "./src/schema/trading/types.ts",
+    "./schema/voting/defs": "./src/schema/voting/defs.ts",
+    "./schema/voting/relations": "./src/schema/voting/relations.ts",
+    "./schema/voting/types": "./src/schema/voting/types.ts"
   },
   "scripts": {
     "test:integration": "vitest run --project integration",

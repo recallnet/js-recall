@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 
-import { tradingConstraints } from "../trading/defs.js";
+import { tradingConstraints } from "../schema/trading/defs.js";
 import {
   InsertTradingConstraints,
   SelectTradingConstraints,
-} from "../trading/types.js";
+} from "../schema/trading/types.js";
 import { Database, Transaction } from "../types.js";
 
 export class TradingConstraintsRepository {

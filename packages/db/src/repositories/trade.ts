@@ -1,9 +1,9 @@
 import { and, desc, count as drizzleCount, eq, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { agents } from "../core/defs.js";
-import { trades } from "../trading/defs.js";
-import { InsertTrade } from "../trading/types.js";
+import { agents } from "../schema/core/defs.js";
+import { trades } from "../schema/trading/defs.js";
+import { InsertTrade } from "../schema/trading/types.js";
 import { Database } from "../types.js";
 import { BalanceRepository } from "./balance.js";
 import { SpecificChainSchema } from "./types/index.js";
