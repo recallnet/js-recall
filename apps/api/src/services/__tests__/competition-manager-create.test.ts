@@ -29,11 +29,26 @@ vi.mock("@/lib/logger.js", () => ({
     error: vi.fn(),
     warn: vi.fn(),
   },
+  repositoryLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
+  competitionRewardsLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
 }));
 
 // Mock all dependencies
 vi.mock("@/database/db.js", () => ({
   db: {
+    transaction: vi.fn(),
+  },
+  dbRead: {
     transaction: vi.fn(),
   },
 }));
