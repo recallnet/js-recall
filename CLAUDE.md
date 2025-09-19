@@ -33,6 +33,7 @@ We believe in leveraging PostgreSQL's power rather than reimplementing logic in 
 - Caching decisions require human review (consider platform caching like Vercel first)
 - Every query must have appropriate indexes
 - N+1 queries (fetching a list then making separate queries per item) must be avoided - use joins or batch fetching instead
+- Avoid situations where the number of database queries scales linearly (e.g. fetching a list then making separate queries per item). Use joins or batch fetching instead
 
 ### Testing as Documentation
 

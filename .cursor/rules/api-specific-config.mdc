@@ -37,6 +37,7 @@ alwaysApply: false
   - Multi-column patterns that match query patterns (e.g., `(agent_id, competition_id, timestamp DESC)`)
 - **Query Optimization Principles**:
   - Prevent the N+1 query problem: Instead of fetching a list then making separate queries per item, use joins or batch fetching
+  - Prevent the linear query scaling problem: Instead of fetching a list then making separate queries per item, use joins or batch fetching
   - Use database cursors for large result sets
   - Leverage database window functions for ranking and analytics
   - Use `EXPLAIN ANALYZE` to verify query performance
@@ -75,16 +76,49 @@ alwaysApply: false
 ## Atomic Operations & Race Condition Prevention
 
 ### Service Layer Atomicity
-- **TOCTOU Prevention**: Avoid Time-Of-Check-Time-Of-Use patterns
-  - ❌ Bad: `const comp = await getCompetition(); if (comp.type === 'perps') {...}`
-  - ✅ Good: `const isPerps = await isCompetitionType(id, 'perps'); if (isPerps) {...}`
-- **Atomic Check Methods**: Create single-purpose methods that combine fetch and validation
-  - Example: `isActiveCompetitionType()` instead of `getActiveCompetition()?.type === ...`
-  - Example: `checkCompetitionType()` returns `{ exists: boolean, isType: boolean }`
+- **TOCTOU Prevention**: Avoid Time-Of-Check-Time-Of-Use patterns where state can change between check and action
+  - ❌ Bad: Check participant limit separately from adding agent (race condition):
+    ```typescript
+    // Multiple agents could pass this check simultaneously!
+    const competition = await getCompetition(competitionId);
+    if (competition.registeredParticipants < competition.maxParticipants) {
+      await addAgentToCompetition(competitionId, agentId);  // ⚠️ Limit could be exceeded!
+      await incrementParticipantCount(competitionId);
+    }
+    ```
+  - ✅ Good: Use transactions with row locks (from `competition-repository.ts`):
+    ```typescript
+    await db.transaction(async (tx) => {
+      // Lock the competition row to prevent concurrent modifications
+      const [competition] = await tx
+        .select({ maxParticipants, registeredParticipants })
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .for("update");  // Row lock prevents other transactions from reading/modifying
+      
+      // Atomic insert with conflict handling
+      const insertResult = await tx
+        .insert(competitionAgents)
+        .values({ competitionId, agentId })
+        .onConflictDoNothing()
+        .returning();
+      
+      // Only check limit if actually inserted (not duplicate)
+      if (insertResult.length > 0) {
+        if (competition.registeredParticipants + 1 > competition.maxParticipants) {
+          throw new Error("Competition full");  // Transaction rollback keeps count accurate
+        }
+        // Update count atomically within same transaction
+        await tx.update(competitions).set({
+          registeredParticipants: sql`${competitions.registeredParticipants} + 1`
+        });
+      }
+    });
+    ```
 - **State Validation**: For operations that depend on current state:
   - Validate state as close to the action as possible
-  - Consider using database row locks for critical sections
-  - Use optimistic locking patterns where appropriate
+  - Use database row locks (`SELECT FOR UPDATE`) for critical sections
+  - Use optimistic locking with version numbers where appropriate
 
 ### Repository Layer Atomicity
 - **Transaction Boundaries**: Use database transactions for multi-step operations
