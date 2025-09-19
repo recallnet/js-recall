@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock, mockReset } from "vitest-mock-extended";
 
 import { type BoostRepository } from "@recallnet/db/repositories/boost";
@@ -70,8 +70,8 @@ describe("PreTGEInitBoostService", () => {
 
   describe("initBoost", () => {
     it("returns empty array when no voting competitions are open", async () => {
-      mockDb.transaction.mockImplementation(async (callback: any) =>
-        callback("mock-tx"),
+      mockDb.transaction.mockImplementation(
+        vi.fn((callback) => callback("mock-tx")),
       );
       mockCompetitionRepo.findVotingOpen.mockResolvedValue([]);
 
@@ -87,8 +87,8 @@ describe("PreTGEInitBoostService", () => {
       const existingBalance = 500000000000000000n; // 0.5 ETH
       const competition = createMockCompetition("comp-1");
 
-      mockDb.transaction.mockImplementation(async (callback: any) =>
-        callback("mock-tx"),
+      mockDb.transaction.mockImplementation(
+        vi.fn((callback) => callback("mock-tx")),
       );
       mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
       mockBoostRepo.userBoostBalance.mockResolvedValue(existingBalance);
@@ -117,8 +117,8 @@ describe("PreTGEInitBoostService", () => {
       const balanceAfter = boostAmount;
       const idemKey = new Uint8Array([1, 2, 3, 4]);
 
-      mockDb.transaction.mockImplementation(async (callback: any) =>
-        callback("mock-tx"),
+      mockDb.transaction.mockImplementation(
+        vi.fn((callback) => callback("mock-tx")),
       );
       mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
       mockBoostRepo.userBoostBalance.mockResolvedValue(0n);
@@ -154,8 +154,8 @@ describe("PreTGEInitBoostService", () => {
       const balance = 750000000000000000n;
       const idemKey = new Uint8Array([1, 2, 3, 4]);
 
-      mockDb.transaction.mockImplementation(async (callback: any) =>
-        callback("mock-tx"),
+      mockDb.transaction.mockImplementation(
+        vi.fn((callback) => callback("mock-tx")),
       );
       mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
       mockBoostRepo.userBoostBalance.mockResolvedValue(0n);
@@ -185,8 +185,8 @@ describe("PreTGEInitBoostService", () => {
       const newBalance = boostAmount;
       const idemKey = new Uint8Array([1, 2, 3, 4]);
 
-      mockDb.transaction.mockImplementation(async (callback: any) =>
-        callback("mock-tx"),
+      mockDb.transaction.mockImplementation(
+        vi.fn((callback) => callback("mock-tx")),
       );
       mockCompetitionRepo.findVotingOpen.mockResolvedValue(competitions);
 
@@ -223,8 +223,8 @@ describe("PreTGEInitBoostService", () => {
     });
 
     it("runs within a database transaction", async () => {
-      mockDb.transaction.mockImplementation(async (callback: any) =>
-        callback("mock-tx"),
+      mockDb.transaction.mockImplementation(
+        vi.fn((callback) => callback("mock-tx")),
       );
       mockCompetitionRepo.findVotingOpen.mockResolvedValue([]);
 
@@ -245,8 +245,8 @@ describe("PreTGEInitBoostService", () => {
 
     it("propagates repository errors within transaction", async () => {
       const error = new Error("Competition repository error");
-      mockDb.transaction.mockImplementation(async (callback: any) =>
-        callback("mock-tx"),
+      mockDb.transaction.mockImplementation(
+        vi.fn((callback) => callback("mock-tx")),
       );
       mockCompetitionRepo.findVotingOpen.mockRejectedValue(error);
 
