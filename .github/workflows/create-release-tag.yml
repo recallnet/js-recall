@@ -103,7 +103,8 @@ jobs:
           trust_level: 5
 
       - name: Verify key
-        run: gpg --list-secret-keys --keyid-format LONG
+        run: |
+          gpg --list-secret-keys --with-colons --batch >/dev/null
 
       - name: Create signed tag locally
         env:
@@ -111,8 +112,6 @@ jobs:
           COMMIT: ${{ steps.target.outputs.commit }}
         run: |
           set -euo pipefail
-          git config user.name  "textileio-machine"
-          git config user.email "40302381+textileio-machine@users.noreply.github.com"
           git tag -s "$TAG" "$COMMIT" -m "Release v${TAG#release-v}"
 
       # Push with machine PAT so tag creation meets the protection rule
