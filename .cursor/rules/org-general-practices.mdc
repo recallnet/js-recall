@@ -28,6 +28,11 @@ alwaysApply: true
 - **Choose Appropriate Loops:** Use `for` loops when iteration count is known upfront, `while` for conditional iteration. Modern `for` loops are often cleaner than `while` with manual increment.
 - **Early Exit Strategies:** Prefer methods that can exit early (`.some()`, `.every()`, `.find()`) over methods that process everything (`.filter().length`, `.map()`) when you just need a boolean or single result.
 - **Separation of Concerns:** Separate "what failed" (detailed logging) from "should we continue" (control flow) logic. Log details where the failure is detected, make decisions based on simple booleans.
+- **Push Computation to Data Layer:** When working with databases or external services:
+  - Prefer aggregating/sorting/filtering at the source over fetching-then-processing
+  - Example: SQL `SUM()` instead of fetching all rows to sum in JavaScript
+  - Example: API filtering parameters instead of fetching all then filtering
+  - This reduces memory usage, network transfer, and processing time
 
 ## Data Handling
 – **Mocking:** Mock data *only* for automated tests. Never use mocked or stubbed data in development or production environments.
@@ -37,12 +42,62 @@ alwaysApply: true
 – **Non-Interactive Execution:** When using command-line tools or scripts, ensure they run in non-interactive mode to prevent hangs (e.g., append `| cat` to commands like `git log` if needed, use appropriate flags).
 
 ## Documentation
-– **Inline Documentation:** Maintain excellent, thorough inline documentation (e.g., commentsr functions, methods, types, classes, and complex logic.
+– **Inline Documentation:** Maintain excellent, thorough inline documentation (e.g., comments for functions, methods, types, classes, and complex logic).
 – **READMEs:** When editing README files, conform to the [standard-readme](mdc:https:/github.com/RichardLitt/standard-readme) specification.
+– **CRITICAL - No Temporal or Comparative Comments:** 
+  - **NEVER** use words like "new", "optimized", "efficient", "replaces", "improved", "better", "faster", "atomic" in comments or TSDoc
+  - **NEVER** reference what the code replaces or how it compares to previous versions
+  - **NEVER** mention implementation optimizations (e.g., "avoids N+1", "uses atomic operations", "parallelized")
+  - **DO** describe WHAT the method does and its contract/behavior
+  - **DO** focus on the current functionality without historical context
+  - Example: ❌ BAD: "Optimized method that efficiently fetches users avoiding N+1 queries"
+  - Example: ✅ GOOD: "Fetches users with their associated posts in a single query"
 
 ## Security
 - Be mindful of security best practices, especially when handling user input, authentication, authorization, or interacting with external services.
 - Avoid common vulnerabilities (e.g., XSS, CSRF, insecure direct object references).
+
+## Dead Code Prevention
+- **Dead Code Detection**:
+  - Remove unused functions immediately upon discovery
+  - Use `grep` or semantic search to verify function usage before creating new ones
+  - Prefer extending existing functions over creating similar ones
+  - Remove commented-out code blocks (use version control for history)
+  - **AI AGENT REQUIREMENT**: When implementing a new method that replaces an old one, you MUST remove the old implementation in the same changeset
+- **Function Reuse Audit**:
+  - Before implementing: Search for similar functionality using semantic search
+  - Document why existing solutions don't work if creating new functions
+  - Mark deprecated functions with `@deprecated` TSDoc tag
+  - Include migration path in deprecation notice
+- **Immediate Cleanup (Part of Regular Development)**:
+  - **When implementing a replacement**: Remove the old implementation in the same PR
+  - **After refactoring**: Delete the original code immediately, don't leave both versions
+
+## Pull Request Standards
+- **PR Documentation**: Create `.agent/pr-description-[feature].md` for all features
+- **Required Sections**:
+  - Summary of changes (what and why)
+  - API changes (with request/response examples)
+  - Database changes (with migration details)
+  - Frontend changes (with screenshots if UI)
+  - Testing approach
+  - Performance impact analysis
+  - Breaking changes (if any)
+  - Deployment notes (if special steps required)
+- **Review Checklist**:
+  - [ ] Linter passes (`pnpm lint`)
+  - [ ] Tests pass (`pnpm test`) - Note: Coverage thresholds vary by package
+  - [ ] Documentation updated
+  - [ ] No `any` types introduced
+  - [ ] Database queries optimized
+  - [ ] Migration tested (if applicable)
+  - [ ] Performance impact assessed
+  - [ ] New critical code has tests (even if package has 0% threshold)
+- **PR Size Guidelines**:
+  - Ideal: < 400 lines changed
+  - Maximum: < 1000 lines changed
+  - Split larger changes into multiple PRs
+  - Use feature flags for gradual rollout
 
 # Agent Collaboration & Workflow (.agent/ Directory)
 
