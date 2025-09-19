@@ -4,7 +4,7 @@ import { isPgSchema } from "drizzle-orm/pg-core";
 import schema from "../schema/index.js";
 import { Database } from "../types.js";
 
-export async function dropAll(db: Database) {
+export async function dropAllSchemas(db: Database) {
   const schemas = Object.values(schema)
     .filter(isPgSchema)
     .map((s) => {

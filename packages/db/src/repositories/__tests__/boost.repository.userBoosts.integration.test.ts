@@ -11,14 +11,14 @@ import {
 
 import * as coreSchema from "../../schema/core/defs.js";
 import * as schema from "../../schema/voting/defs.js";
-import { dropAll } from "../../utils/drop-all.js";
+import { dropAllSchemas } from "../../utils/drop-all-schemas.js";
 import { pushSchema } from "../../utils/push-schema.js";
 import { BoostRepository } from "../boost.js";
 import { db } from "./db.js";
 
 describe("BoostRepository.userBoosts() Integration Tests", () => {
   beforeAll(async () => {
-    await dropAll(db);
+    await dropAllSchemas(db);
     const { apply } = await pushSchema(db);
     await apply();
   });
