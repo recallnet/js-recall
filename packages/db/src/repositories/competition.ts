@@ -7,9 +7,10 @@ import {
   count as drizzleCount,
   eq,
   getTableColumns,
-  gte,
+  gt,
   inArray,
   isNotNull,
+  lt,
   lte,
   or,
   sql,
@@ -984,8 +985,8 @@ export class CompetitionRepository {
         .from(competitions)
         .where(
           and(
-            lte(competitions.votingStartDate, now),
-            gte(competitions.votingEndDate, now),
+            lt(competitions.votingStartDate, now),
+            gt(competitions.votingEndDate, now),
           ),
         );
       return result;
