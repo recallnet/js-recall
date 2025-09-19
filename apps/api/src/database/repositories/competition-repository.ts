@@ -219,6 +219,13 @@ export const findLeaderboardByCompetition = createTimedRepositoryFunction(
   "findLeaderboardByCompetition",
 );
 
+export const findLeaderboardByCompetitionWithWallets =
+  createTimedRepositoryFunction(
+    repository.findLeaderboardByCompetitionWithWallets.bind(repository),
+    "CompetitionRepository",
+    "findLeaderboardByCompetitionWithWallets",
+  );
+
 export const findLeaderboardByTradingComp = createTimedRepositoryFunction(
   repository.findLeaderboardByTradingComp.bind(repository),
   "CompetitionRepository",

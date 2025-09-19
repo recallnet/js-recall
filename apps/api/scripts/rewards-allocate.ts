@@ -3,6 +3,9 @@ import { blue, cyan, green, red, yellow } from "kleur/colors";
 import * as path from "path";
 import { parse } from "ts-command-line-args";
 
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+
+import { db } from "@/database/db.js";
 import { RewardsService } from "@/services/rewards.service.js";
 
 // Load environment variables
@@ -91,7 +94,7 @@ async function allocateRewards() {
     console.log(`${blue("Start Timestamp:")} ${yellow(args.startTimestamp)}`);
 
     // Instantiate the RewardsService (will use config-based RewardsAllocator)
-    const rewardsService = new RewardsService();
+    const rewardsService = new RewardsService(new BoostRepository(db));
 
     // Call the allocate method with all required parameters
     await rewardsService.allocate(
