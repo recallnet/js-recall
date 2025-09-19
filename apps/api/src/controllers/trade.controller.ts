@@ -1,10 +1,35 @@
 import { NextFunction, Request, Response } from "express";
+import { z } from "zod";
 
 import { tradeLogger } from "@/lib/logger.js";
-import { calculateSlippage } from "@/lib/trade-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { BlockchainType, SpecificChain } from "@/types/index.js";
+import { BlockchainType, SPECIFIC_CHAIN_NAMES } from "@/types/index.js";
+
+const GetQuoteQuerySchema = z.object({
+  fromToken: z.string().min(1, "fromToken is required"),
+  toToken: z.string().min(1, "toToken is required"),
+  amount: z
+    .string()
+    .min(1, "amount is required")
+    .transform((val) => {
+      const parsed = parseFloat(val);
+      if (isNaN(parsed) || parsed <= 0) {
+        throw new z.ZodError([
+          {
+            code: z.ZodIssueCode.custom,
+            message: "Amount must be a positive number",
+            path: ["amount"],
+          },
+        ]);
+      }
+      return parsed;
+    }),
+  fromChain: z.nativeEnum(BlockchainType).optional(),
+  fromSpecificChain: z.enum(SPECIFIC_CHAIN_NAMES).optional(),
+  toChain: z.nativeEnum(BlockchainType).optional(),
+  toSpecificChain: z.enum(SPECIFIC_CHAIN_NAMES).optional(),
+});
 
 export function makeTradeController(services: ServiceRegistry) {
   /**
@@ -164,120 +189,22 @@ export function makeTradeController(services: ServiceRegistry) {
           );
         }
 
-        const {
-          fromToken,
-          toToken,
-          amount,
-          // Chain parameters
-          fromChain,
-          fromSpecificChain,
-          toChain,
-          toSpecificChain,
-        } = req.query;
+        // Parse and validate query parameters
+        const queryParams = GetQuoteQuerySchema.parse(req.query);
 
-        // Validate required parameters
-        if (!fromToken || !toToken || !amount) {
-          throw new ApiError(
-            400,
-            "Missing required parameters: fromToken, toToken, amount",
-          );
-        }
-
-        // Validate amount is a number
-        const parsedAmount = parseFloat(amount as string);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) {
-          throw new ApiError(400, "Amount must be a positive number");
-        }
-
-        // Determine chains for from/to tokens
-        let fromTokenChain: BlockchainType | undefined;
-        let fromTokenSpecificChain: SpecificChain | undefined;
-        let toTokenChain: BlockchainType | undefined;
-        let toTokenSpecificChain: SpecificChain | undefined;
-
-        // Parse chain parameters if provided
-        if (fromChain) {
-          fromTokenChain = fromChain as BlockchainType;
-        }
-        if (fromSpecificChain) {
-          fromTokenSpecificChain = fromSpecificChain as SpecificChain;
-        }
-        if (toChain) {
-          toTokenChain = toChain as BlockchainType;
-        }
-        if (toSpecificChain) {
-          toTokenSpecificChain = toSpecificChain as SpecificChain;
-        }
-
-        // Log chain information if provided
-        if (
-          fromTokenChain ||
-          fromTokenSpecificChain ||
-          toTokenChain ||
-          toTokenSpecificChain
-        ) {
-          tradeLogger.debug(`Quote with chain info:
-          From Token Chain: ${fromTokenChain || "auto"}, Specific Chain: ${fromTokenSpecificChain || "auto"}
-          To Token Chain: ${toTokenChain || "auto"}, Specific Chain: ${toTokenSpecificChain || "auto"}
-        `);
-        }
-
-        // Get token prices with chain information for better performance
-        const fromPrice = await services.priceTrackerService.getPrice(
-          fromToken as string,
-          fromTokenChain,
-          fromTokenSpecificChain,
-        );
-
-        const toPrice = await services.priceTrackerService.getPrice(
-          toToken as string,
-          toTokenChain,
-          toTokenSpecificChain,
-        );
-
-        if (
-          !fromPrice ||
-          !toPrice ||
-          fromPrice.price == null ||
-          toPrice.price == null
-        ) {
-          throw new ApiError(400, "Unable to determine price for tokens");
-        }
-
-        // Calculate the trade
-        const fromValueUSD = parsedAmount * fromPrice.price;
-
-        // Apply slippage based on trade size
-        const { effectiveFromValueUSD, slippagePercentage } =
-          calculateSlippage(fromValueUSD);
-        const toAmount = effectiveFromValueUSD / toPrice.price;
-
-        // Return quote with chain information
-        res.status(200).json({
-          fromToken,
-          toToken,
-          fromAmount: parsedAmount,
-          toAmount,
-          exchangeRate: toAmount / parsedAmount,
-          slippage: slippagePercentage,
-          tradeAmountUsd: fromValueUSD,
-          prices: {
-            fromToken: fromPrice.price,
-            toToken: toPrice.price,
-          },
-          symbols: {
-            fromTokenSymbol: fromPrice.symbol,
-            toTokenSymbol: toPrice.symbol,
-          },
-          chains: {
-            fromChain:
-              fromTokenChain ||
-              services.priceTrackerService.determineChain(fromToken as string),
-            toChain:
-              toTokenChain ||
-              services.priceTrackerService.determineChain(toToken as string),
-          },
+        // Call service method
+        const result = await services.tradeSimulatorService.getTradeQuote({
+          fromToken: queryParams.fromToken,
+          toToken: queryParams.toToken,
+          amount: queryParams.amount,
+          fromChain: queryParams.fromChain,
+          fromSpecificChain: queryParams.fromSpecificChain,
+          toChain: queryParams.toChain,
+          toSpecificChain: queryParams.toSpecificChain,
         });
+
+        // Return formatted response
+        res.status(200).json(result);
       } catch (error) {
         next(error);
       }

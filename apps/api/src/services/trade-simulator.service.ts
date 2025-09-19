@@ -46,6 +46,40 @@ interface ChainOptions {
   toSpecificChain?: SpecificChain;
 }
 
+// Interface for getTradeQuote parameters
+interface GetQuoteParams {
+  fromToken: string;
+  toToken: string;
+  amount: number;
+  fromChain?: BlockchainType;
+  fromSpecificChain?: SpecificChain;
+  toChain?: BlockchainType;
+  toSpecificChain?: SpecificChain;
+}
+
+// Interface for trade quote result
+interface TradeQuoteResult {
+  fromToken: string;
+  toToken: string;
+  fromAmount: number;
+  toAmount: number;
+  exchangeRate: number;
+  slippage: number;
+  tradeAmountUsd: number;
+  prices: {
+    fromToken: number;
+    toToken: number;
+  };
+  symbols: {
+    fromTokenSymbol: string;
+    toTokenSymbol: string;
+  };
+  chains: {
+    fromChain: string;
+    toChain: string;
+  };
+}
+
 /**
  * Trade Simulator Service
  * Executes simulated trades between tokens
@@ -458,6 +492,105 @@ export class TradeSimulatorService {
       }
 
       return portfolioValues;
+    }
+  }
+
+  /**
+   * Get a quote for a trade between two tokens
+   * @param params The quote parameters
+   * @returns Trade quote result with prices, amounts, and exchange rates
+   */
+  async getTradeQuote(params: GetQuoteParams): Promise<TradeQuoteResult> {
+    try {
+      const {
+        fromToken,
+        toToken,
+        amount,
+        fromChain,
+        fromSpecificChain,
+        toChain,
+        toSpecificChain,
+      } = params;
+
+      serviceLogger.debug(`[TradeSimulator] Getting quote:
+        From Token: ${fromToken} (${fromChain || "auto"}, ${fromSpecificChain || "auto"})
+        To Token: ${toToken} (${toChain || "auto"}, ${toSpecificChain || "auto"})
+        Amount: ${amount}
+      `);
+
+      // Get token prices with chain information (let getPrice handle auto-detection)
+      const fromPrice = await this.priceTrackerService.getPrice(
+        fromToken,
+        fromChain,
+        fromSpecificChain,
+      );
+
+      const toPrice = await this.priceTrackerService.getPrice(
+        toToken,
+        toChain,
+        toSpecificChain,
+      );
+
+      // Validate prices
+      if (
+        !fromPrice ||
+        !toPrice ||
+        fromPrice.price == null ||
+        toPrice.price == null
+      ) {
+        serviceLogger.debug(`[TradeSimulator] Missing price data:
+          From Token Price: ${fromPrice ? fromPrice.price : "null"}
+          To Token Price: ${toPrice ? toPrice.price : "null"}
+        `);
+        throw new ApiError(400, "Unable to determine price for tokens");
+      }
+
+      // Calculate trade amounts
+      const fromValueUSD = amount * fromPrice.price;
+      const { effectiveFromValueUSD, slippagePercentage } =
+        calculateSlippage(fromValueUSD);
+      const toAmount = effectiveFromValueUSD / toPrice.price;
+      const exchangeRate = toAmount / amount;
+
+      // Determine chains for response (use detected chains if not provided)
+      const fromChainResult =
+        fromChain || this.priceTrackerService.determineChain(fromToken);
+      const toChainResult =
+        toChain || this.priceTrackerService.determineChain(toToken);
+
+      serviceLogger.debug(`[TradeSimulator] Quote calculated:
+        From: ${amount} ${fromPrice.symbol} @ $${fromPrice.price} = $${fromValueUSD}
+        To: ${toAmount} ${toPrice.symbol} @ $${toPrice.price}
+        Exchange Rate: 1 ${fromPrice.symbol} = ${exchangeRate} ${toPrice.symbol}
+        Slippage: ${slippagePercentage}%
+        Chains: ${fromChainResult} → ${toChainResult}
+      `);
+
+      // Return result
+      return {
+        fromToken,
+        toToken,
+        fromAmount: amount,
+        toAmount,
+        exchangeRate,
+        slippage: slippagePercentage,
+        tradeAmountUsd: fromValueUSD,
+        prices: {
+          fromToken: fromPrice.price,
+          toToken: toPrice.price,
+        },
+        symbols: {
+          fromTokenSymbol: fromPrice.symbol,
+          toTokenSymbol: toPrice.symbol,
+        },
+        chains: {
+          fromChain: fromChainResult,
+          toChain: toChainResult,
+        },
+      };
+    } catch (error) {
+      serviceLogger.error(`[TradeSimulator] Error getting trade quote:`, error);
+      throw error;
     }
   }
 
