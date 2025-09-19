@@ -1,5 +1,6 @@
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+
 import { db } from "@/database/db.js";
-import { BoostRepository } from "@/database/repositories/boost.repository.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
@@ -10,6 +11,7 @@ import { AgentService } from "@/services/agent.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
 import { BalanceService } from "@/services/balance.service.js";
 import { BoostAwardService } from "@/services/boost-award.service.js";
+import { BoostService } from "@/services/boost.service.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import { CompetitionService } from "@/services/competition.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
@@ -45,6 +47,7 @@ class ServiceRegistry {
   private _emailService: EmailService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
+  private _boostService: BoostService;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
   private readonly _indexingService: IndexingService;
@@ -80,7 +83,11 @@ class ServiceRegistry {
 
     // Initialize user and agent services (require email service)
     this._userService = new UserService(this._emailService);
-    this._agentService = new AgentService(this._emailService);
+    this._agentService = new AgentService(
+      this._emailService,
+      this._balanceService,
+      this._priceTrackerService,
+    );
     this._adminService = new AdminService();
 
     // Initialize trading constraints service (no dependencies)
@@ -106,6 +113,14 @@ class ServiceRegistry {
     this._stakesRepository = new StakesRepository(db);
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
+
+    // Initialize BoostService with its dependencies
+    this._boostService = new BoostService(
+      this._boostRepository,
+      this._competitionService,
+      this._userService,
+    );
+
     this._boostAwardService = new BoostAwardService(
       this._boostRepository,
       this._userService,
@@ -202,6 +217,10 @@ class ServiceRegistry {
 
   get boostAwardService(): BoostAwardService {
     return this._boostAwardService;
+  }
+
+  get boostService(): BoostService {
+    return this._boostService;
   }
 
   get eventProcessor(): EventProcessor {

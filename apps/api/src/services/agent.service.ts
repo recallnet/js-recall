@@ -8,7 +8,8 @@ import {
   InsertAgent,
   SelectAgent,
   SelectCompetition,
-} from "@recallnet/db-schema/core/types";
+} from "@recallnet/db/schema/core/types";
+import type { SelectBalance } from "@recallnet/db/schema/trading/types";
 
 import { config } from "@/config/index.js";
 import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";
@@ -48,7 +49,9 @@ import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AgentMetricsHelper } from "@/services/agent-metrics-helper.js";
+import { BalanceService } from "@/services/balance.service.js";
 import { EmailService } from "@/services/email.service.js";
+import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import type { AgentWithMetrics } from "@/types/agent-metrics.js";
 import {
   AgentCompetitionsParams,
@@ -64,6 +67,16 @@ import {
 import { AgentQueryParams } from "@/types/sort/agent.js";
 
 /**
+ * Enhanced balance with price data and chain information
+ * Extends the base balance with additional computed fields
+ */
+export interface EnhancedBalance extends SelectBalance {
+  chain: string;
+  price?: number;
+  value?: number;
+}
+
+/**
  * Agent Service
  * Manages agent registration and API key authentication
  */
@@ -74,11 +87,21 @@ export class AgentService {
   private inactiveAgentsCache: Map<string, { reason: string; date: Date }>;
   // Email service for sending verification emails
   private emailService: EmailService;
+  // Balance service for managing agent balances
+  private balanceService: BalanceService;
+  // Price tracker service for getting token prices
+  private priceTrackerService: PriceTrackerService;
 
-  constructor(emailService: EmailService) {
+  constructor(
+    emailService: EmailService,
+    balanceService: BalanceService,
+    priceTrackerService: PriceTrackerService,
+  ) {
     this.apiKeyCache = new Map();
     this.inactiveAgentsCache = new Map();
     this.emailService = emailService;
+    this.balanceService = balanceService;
+    this.priceTrackerService = priceTrackerService;
   }
 
   /**
@@ -1884,6 +1907,62 @@ export class AgentService {
         error,
       );
       return 0;
+    }
+  }
+
+  /**
+   * Get enhanced balances for an agent with price data and chain information
+   * @param agentId The agent ID
+   * @returns Array of balances enhanced with price data, chain info, and values
+   */
+  async getEnhancedBalances(agentId: string): Promise<EnhancedBalance[]> {
+    try {
+      // Get all balances for the agent
+      const balances = await this.balanceService.getAllBalances(agentId);
+
+      // Extract all unique token addresses
+      const tokenAddresses = balances.map((b) => b.tokenAddress);
+
+      // Get all prices in bulk
+      const priceMap =
+        await this.priceTrackerService.getBulkPrices(tokenAddresses);
+
+      // Enhance balances with the price data
+      const enhancedBalances = balances.map((balance) => {
+        const priceReport = priceMap.get(balance.tokenAddress);
+
+        if (priceReport) {
+          return {
+            ...balance,
+            chain: priceReport.chain,
+            price: priceReport.price,
+            value: balance.amount * priceReport.price,
+            specificChain: priceReport.specificChain || balance.specificChain,
+            symbol: priceReport.symbol || balance.symbol,
+          };
+        }
+
+        // Fallback for tokens without price data
+        // Determine chain from specificChain since balance doesn't have a chain property
+        const chain = balance.specificChain === "svm" ? "svm" : "evm";
+        return {
+          ...balance,
+          chain,
+          specificChain: balance.specificChain,
+          symbol: balance.symbol,
+        };
+      });
+
+      return enhancedBalances;
+    } catch (error) {
+      serviceLogger.error(
+        `[AgentManager] Error getting enhanced balances for agent ${agentId}:`,
+        error,
+      );
+      throw new ApiError(
+        500,
+        `Failed to get enhanced balances: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }

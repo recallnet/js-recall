@@ -1,9 +1,9 @@
-import type { Transaction } from "@recallnet/db-schema/types";
-
 import type {
   BoostDiffResult,
   BoostRepository,
-} from "@/database/repositories/boost.repository.js";
+} from "@recallnet/db/repositories/boost";
+import { Transaction } from "@recallnet/db/types";
+
 import type { UserService } from "@/services/user.service.js";
 
 export { BoostAwardService };

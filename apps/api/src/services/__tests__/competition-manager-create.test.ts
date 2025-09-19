@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import type { SelectTradingConstraints } from "@recallnet/db-schema/trading/types";
+import type { SelectTradingConstraints } from "@recallnet/db/schema/trading/types";
 
 import { db } from "@/database/db.js";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";
@@ -29,11 +29,26 @@ vi.mock("@/lib/logger.js", () => ({
     error: vi.fn(),
     warn: vi.fn(),
   },
+  repositoryLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
+  competitionRewardsLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
 }));
 
 // Mock all dependencies
 vi.mock("@/database/db.js", () => ({
   db: {
+    transaction: vi.fn(),
+  },
+  dbRead: {
     transaction: vi.fn(),
   },
 }));

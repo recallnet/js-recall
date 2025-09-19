@@ -16,8 +16,6 @@
     "build": "tsc && tsc-alias && copyfiles -u 0 './drizzle/**/*.{sql,json}' dist",
     "test": "vitest run --project unit",
     "test:watch": "vitest watch --project unit",
-    "test:integration": "vitest run --project integration",
-    "test:integration:watch": "vitest watch --project integration",
     "test:e2e": "vitest run --project e2e",
     "test:all": "vitest run",
     "test:coverage": "vitest run --project unit --coverage",
@@ -76,7 +74,7 @@
   "dependencies": {
     "@privy-io/server-auth": "^1.31.0",
     "@envio-dev/hypersync-client": "^0.6.5",
-    "@recallnet/db-schema": "workspace:*",
+    "@recallnet/db": "workspace:*",
     "@recallnet/staking-contracts": "workspace:*",
     "@sentry/node": "^10.5.0",
     "@sentry/profiling-node": "^10.5.0",

@@ -9,17 +9,18 @@ import {
   test,
 } from "vitest";
 
-import * as coreSchema from "@recallnet/db-schema/core/defs";
-import * as schema from "@recallnet/db-schema/voting/defs";
-
-import { db, dropAll, migrateDb } from "@/database/db.js";
-
-import { BoostRepository } from "../boost.repository.js";
+import * as coreSchema from "../../schema/core/defs.js";
+import * as schema from "../../schema/voting/defs.js";
+import { dropAllSchemas } from "../../utils/drop-all-schemas.js";
+import { pushSchema } from "../../utils/push-schema.js";
+import { BoostRepository } from "../boost.js";
+import { db } from "./db.js";
 
 describe("BoostRepository.userBoosts() Integration Tests", () => {
   beforeAll(async () => {
-    await dropAll();
-    await migrateDb();
+    await dropAllSchemas(db);
+    const { apply } = await pushSchema(db);
+    await apply();
   });
 
   let repository: BoostRepository;

@@ -6,7 +6,7 @@ export interface User {
   privyId?: string;
   status: "active" | "inactive" | "suspended" | "deleted";
   name?: string;
-  email?: string;
+  email: string;
   isSubscribed: boolean;
   imageUrl?: string;
   metadata?: {

@@ -54,9 +54,9 @@ export function calculateSlippage(fromValueUSD: number): SlippageResult {
   // Randomness with slight upward bias (max of 2 uniforms skews high)
   const bias = Math.max(Math.random(), Math.random());
   const randomMultiplier = 0.95 + 0.25 * bias; // Range: [0.95, 1.20]
-  const actualSlippage = Math.min(
-    baseSlippage * randomMultiplier,
-    MAX_SLIPPAGE,
+  const actualSlippage = Math.max(
+    Math.min(baseSlippage * randomMultiplier, MAX_SLIPPAGE),
+    MIN_SLIPPAGE,
   );
   const slippagePercentage = actualSlippage * 100;
 

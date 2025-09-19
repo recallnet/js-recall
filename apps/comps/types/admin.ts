@@ -1,17 +1,6 @@
-export interface SandboxUser {
-  id: string;
-  walletAddress: string;
-  name?: string;
-  email?: string;
-  imageUrl?: string;
-  metadata?: Record<string, unknown>;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface AdminAgent {
   id: string;
+  handle: string;
   ownerId: string;
   name: string;
   description?: string;
@@ -34,8 +23,8 @@ export interface AdminSearchResult {
   success: boolean;
   searchType: string;
   results: {
-    users?: AdminUser[];
-    agents?: AdminAgent[];
+    users: AdminUser[];
+    agents: AdminAgent[];
   };
 }
 
@@ -63,13 +52,18 @@ export interface AdminAgentUpdateResponse {
 export interface AdminUser {
   id: string;
   walletAddress: string;
+  walletLastVerifiedAt?: string;
+  embeddedWalletAddress?: string;
+  privyId?: string;
   name?: string;
-  email?: string;
+  email: string;
+  isSubscribed: boolean;
   imageUrl?: string;
   metadata?: Record<string, unknown>;
   status: string;
   createdAt: string;
   updatedAt: string;
+  lastLoginAt?: string;
 }
 
 export interface AdminAgent {
