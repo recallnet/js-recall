@@ -3,6 +3,8 @@ import { MerkleTree } from "merkletreejs";
 import { hexToBytes, keccak256 } from "viem";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { competitions } from "@recallnet/db/schema/core/defs";
 import {
@@ -32,6 +34,8 @@ const mockRewardsAllocator = {
 
 describe("Rewards Service", () => {
   let rewardsRepo: RewardsRepository;
+  let competitionRepo: CompetitionRepository;
+  let boostRepo: BoostRepository;
   let rewardsService: RewardsService;
   let testCompetitionId: string;
 
@@ -41,10 +45,16 @@ describe("Rewards Service", () => {
   const testStartTimestamp = Math.floor(Date.now() / 1000); // Current timestamp
 
   beforeEach(async () => {
-    // Create RewardsService with mock RewardsAllocator
+    // Create repository instances
     rewardsRepo = new RewardsRepository(db, logger);
+    competitionRepo = new CompetitionRepository(db, db, logger);
+    boostRepo = new BoostRepository(db);
+
+    // Create RewardsService with all required dependencies
     rewardsService = new RewardsService(
       rewardsRepo,
+      competitionRepo,
+      boostRepo,
       mockRewardsAllocator as any, // eslint-disable-line
       db,
       logger,

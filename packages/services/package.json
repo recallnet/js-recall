@@ -53,6 +53,7 @@
   "dependencies": {
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
+    "@recallnet/rewards": "workspace:*",
     "@recallnet/staking-contracts": "workspace:*",
     "@sentry/node": "^10.5.0",
     "axios": "^1.6.0",

@@ -583,6 +583,66 @@ class BoostRepository {
   }
 
   /**
+   * Retrieve boost changes for a specific competition, showing which agents were boosted by which users.
+   *
+   * Behavior:
+   * 1) Join boost_changes with boost_balances to get user context.
+   * 2) Join with agent_boosts to link changes to specific agents.
+   * 3) Join with agent_boost_totals to get agent information.
+   * 4) Filter for negative delta amounts (debits/spending) for the specified user and competition.
+   *
+   * Read-Only Operation:
+   * - This method only reads data and does not modify any records.
+   * - Safe to call concurrently with other operations.
+   *
+   * Returns:
+   * - Array of boost change records showing user spending on agents.
+   * - Each record includes user ID, wallet, delta amount, creation timestamp, and agent ID.
+   * - Empty array if no boost spending found for the user/competition combination.
+   *
+   * Notes:
+   * - Only returns negative delta amounts (spending/debits), not credits.
+   * - Results are ordered by creation timestamp (most recent first).
+   * - The wallet address is returned as stored in the database (Uint8Array format).
+   *
+   * @param args - The query parameters
+   * @param args.competitionId - ID of the competition context
+   * @param tx - Optional database transaction to use for the query
+   * @returns Promise resolving to array of boost change records with agent information
+   */
+  async userBoostSpending(competitionId: string, tx?: Transaction) {
+    const executor = tx || this.#db;
+    return await executor
+      .select({
+        userId: schema.boostBalances.userId,
+        wallet: schema.boostChanges.wallet,
+        deltaAmount: schema.boostChanges.deltaAmount,
+        createdAt: schema.boostChanges.createdAt,
+        agentId: schema.agentBoostTotals.agentId,
+      })
+      .from(schema.boostChanges)
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        schema.agentBoosts,
+        eq(schema.boostChanges.id, schema.agentBoosts.changeId),
+      )
+      .innerJoin(
+        schema.agentBoostTotals,
+        eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
+      )
+      .where(
+        and(
+          eq(schema.boostBalances.competitionId, competitionId),
+          sql`${schema.boostChanges.deltaAmount} < 0`,
+        ),
+      )
+      .orderBy(schema.boostChanges.createdAt);
+  }
+
+  /**
    * Boost an agent by transferring Boost from a user's balance to the agent's total.
    *
    * Behavior:
