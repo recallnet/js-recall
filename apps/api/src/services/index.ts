@@ -1,11 +1,13 @@
 import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 
-import { db } from "@/database/db.js";
+import config from "@/config/index.js";
+import { db, dbRead } from "@/database/db.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
 import { StakesRepository } from "@/indexing/stakes.repository.js";
-import { indexingLogger } from "@/lib/logger.js";
+import { indexingLogger, repositoryLogger } from "@/lib/logger.js";
 import { AdminService } from "@/services/admin.service.js";
 import { AgentService } from "@/services/agent.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
@@ -23,6 +25,11 @@ import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserService } from "@/services/user.service.js";
 import { VoteService } from "@/services/vote.service.js";
+
+import {
+  InitBoostService,
+  PreTGEInitBoostService,
+} from "./init-boost.service.js";
 
 /**
  * Service Registry
@@ -48,6 +55,8 @@ class ServiceRegistry {
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
   private _boostService: BoostService;
+  private _initBoostService: InitBoostService;
+  private readonly _competitionRepository: CompetitionRepository;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
   private readonly _indexingService: IndexingService;
@@ -113,12 +122,24 @@ class ServiceRegistry {
     this._stakesRepository = new StakesRepository(db);
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
+    this._competitionRepository = new CompetitionRepository(
+      db,
+      dbRead,
+      repositoryLogger,
+    );
 
     // Initialize BoostService with its dependencies
     this._boostService = new BoostService(
       this._boostRepository,
       this._competitionService,
       this._userService,
+    );
+
+    this._initBoostService = new PreTGEInitBoostService(
+      db,
+      this._competitionRepository,
+      this._boostRepository,
+      config.boost.initialBoostAmount,
     );
 
     this._boostAwardService = new BoostAwardService(
@@ -229,6 +250,10 @@ class ServiceRegistry {
 
   get eventsRepository(): EventsRepository {
     return this._eventsRepository;
+  }
+
+  get initBoostService(): InitBoostService {
+    return this._initBoostService;
   }
 }
 
