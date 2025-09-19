@@ -83,13 +83,15 @@ export function calculateRewardsForUsers(
   for (const { user, competitor, boost, timestamp } of boostAllocations) {
     competitorTotals[competitor] = (
       competitorTotals[competitor] || new Decimal(0)
-    ).add(boost);
+    ).add(new Decimal(boost.toString()));
 
     if (!userTotals[user]) {
       userTotals[user] = {};
     }
 
-    const effectiveBoost = boostDecayFn(timestamp).times(boost);
+    const effectiveBoost = boostDecayFn(timestamp).times(
+      new Decimal(boost.toString()),
+    );
 
     userTotals[user]![competitor] = (
       userTotals[user]![competitor] || new Decimal(0)
@@ -154,10 +156,20 @@ export function calculateRewardsForCompetitors(
   );
   hook({ prizePoolSplits: prizePoolSplits });
 
+  // Build competitor to wallet mapping from leaderboard
+  const competitorToWalletMap: Record<string, string> = {};
+  for (const placement of leaderBoard) {
+    competitorToWalletMap[placement.competitor] = placement.wallet;
+  }
+
   const rewards: Reward[] = [];
   for (const [competitor, split] of Object.entries(prizePoolSplits)) {
+    const walletAddress = competitorToWalletMap[competitor];
+    if (!walletAddress) {
+      throw new Error(`No wallet address found for competitor: ${competitor}`);
+    }
     rewards.push({
-      address: competitor,
+      address: walletAddress,
       amount: BigInt(split.toFixed(0, Decimal.ROUND_DOWN)),
     });
   }
