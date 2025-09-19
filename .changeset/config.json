@@ -18,6 +18,6 @@
     "@recallnet/api-mcp",
     "@recallnet/ui2",
     "@recallnet/api-sdk",
-    "@recallnet/db-schema"
+    "@recallnet/db"
   ]
 }

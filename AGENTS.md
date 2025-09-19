@@ -37,7 +37,7 @@ This file provides guidance to AI coding agents when working with code in this r
 - `apps/api/` - Multi-chain trading simulator API (Node.js/Express + PostgreSQL)
 - `apps/comps/` - Competitions web app (Next.js)
 - `packages/` - Shared libraries, utilities, and toolkits
-  - `db-schema/` - Drizzle database schema definitions organized by domain
+  - `db/` - Drizzle database schema definitions organized by domain
 
 **Technology Stack:**
 
@@ -110,7 +110,7 @@ Code must pass all of these before merge:
 - `@recallnet/api-mcp` - MCP integration package
 - `@recallnet/ui2` - Modern UI components (shadcn/ui based)
 - `@recallnet/address-utils` - Address manipulation utilities
-- `@recallnet/db-schema` - Database schema definitions
+- `@recallnet/db` - Database schema definitions
 - `@recallnet/fonts` - Shared font resources
 - `@recallnet/staking-contracts` - Staking contract interfaces
 

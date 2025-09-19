@@ -21,7 +21,7 @@ import { eq } from "drizzle-orm";
 import * as path from "path";
 import * as readline from "readline";
 
-import { agents } from "@recallnet/db-schema/core/defs";
+import { agents } from "@recallnet/db/schema/core/defs";
 
 import { db } from "@/database/db.js";
 

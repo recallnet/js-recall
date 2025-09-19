@@ -1,4 +1,4 @@
-import { RewardsRepository } from "@recallnet/db-schema/repositories/rewards";
+import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";

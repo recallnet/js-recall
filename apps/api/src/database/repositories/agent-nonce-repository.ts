@@ -1,4 +1,4 @@
-import { AgentNonceRepository } from "@recallnet/db-schema/repositories/agent-nonce";
+import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
 
 import { db } from "@/database/db.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";

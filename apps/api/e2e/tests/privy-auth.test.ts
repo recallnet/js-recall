@@ -9,7 +9,7 @@ import {
   test,
 } from "vitest";
 
-import { agents, users, votes } from "@recallnet/db-schema/core/defs";
+import { agents, users, votes } from "@recallnet/db/schema/core/defs";
 
 import { CreateCompetitionResponse } from "@/e2e/utils/api-types.js";
 import {

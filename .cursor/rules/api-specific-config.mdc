@@ -8,7 +8,7 @@ alwaysApply: false
 ## Database & Schema Management
 
 ### Database Schema Organization
-- All database schemas must be placed in `packages/db-schema/src/` with appropriate subdirectories (`core/`, `auth/`, etc.)
+- All database schemas must be placed in `packages/db/src/` with appropriate subdirectories (`core/`, `auth/`, etc.)
 - Schema files must export table definitions and be properly imported in `core/defs.ts`
 - Always generate migrations using `pnpm db:generate` after schema changes which will automatically create the sql migration files
 - Repository classes must be placed in `apps/api/src/database/repositories/` and follow the naming pattern `*-repository.ts`

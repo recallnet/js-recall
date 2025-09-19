@@ -1,8 +1,8 @@
 import chalk from "chalk";
 import * as readline from "readline";
 
-import { competitions } from "@recallnet/db-schema/core/defs";
-import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
+import { competitions } from "@recallnet/db/schema/core/defs";
+import { tradingConstraints } from "@recallnet/db/schema/trading/defs";
 
 import { db } from "@/database/db.js";
 

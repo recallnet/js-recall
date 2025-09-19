@@ -5,11 +5,11 @@ import {
   SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
-} from "@recallnet/db-schema/core/types";
+} from "@recallnet/db/schema/core/types";
 import {
   InsertTradingConstraints,
   SelectTradingConstraints,
-} from "@recallnet/db-schema/trading/types";
+} from "@recallnet/db/schema/trading/types";
 
 import { db } from "@/database/db.js";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";

@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import cron from "node-cron";
 import * as path from "path";
 
-import { BlockchainAddressAsU8A } from "@recallnet/db-schema/coders";
+import { BlockchainAddressAsU8A } from "@recallnet/db/coders";
 
 import { createLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";

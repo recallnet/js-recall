@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { UpdateCompetition } from "@recallnet/db-schema/core/types";
+import { UpdateCompetition } from "@recallnet/db/schema/core/types";
 
 import { reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";

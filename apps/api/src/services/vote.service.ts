@@ -4,7 +4,7 @@ import {
   InsertVote,
   SelectCompetition,
   SelectVote,
-} from "@recallnet/db-schema/core/types";
+} from "@recallnet/db/schema/core/types";
 
 import { findById as findAgentById } from "@/database/repositories/agent-repository.js";
 import { isAgentActiveInCompetition } from "@/database/repositories/competition-repository.js";

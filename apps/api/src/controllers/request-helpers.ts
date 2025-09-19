@@ -1,7 +1,7 @@
 import { Request } from "express";
 import qs from "qs";
 
-import { UpdateCompetitionSchema } from "@recallnet/db-schema/core/types";
+import { UpdateCompetitionSchema } from "@recallnet/db/schema/core/types";
 
 import { config } from "@/config/index.js";
 import { ApiError } from "@/middleware/errorHandler.js";

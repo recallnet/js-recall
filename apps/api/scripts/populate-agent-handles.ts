@@ -15,8 +15,8 @@ import { desc, eq, isNull, sql } from "drizzle-orm";
 import * as readline from "readline";
 import { parse } from "ts-command-line-args";
 
-import { agents } from "@recallnet/db-schema/core/defs";
-import { agentScore } from "@recallnet/db-schema/ranking/defs";
+import { agents } from "@recallnet/db/schema/core/defs";
+import { agentScore } from "@recallnet/db/schema/ranking/defs";
 
 import { db } from "@/database/db.js";
 import {
