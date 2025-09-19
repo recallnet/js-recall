@@ -36,7 +36,6 @@ alwaysApply: false
   - Columns used in `ORDER BY` with `DISTINCT ON`
   - Multi-column patterns that match query patterns (e.g., `(agent_id, competition_id, timestamp DESC)`)
 - **Query Optimization Principles**:
-  - Prevent the N+1 query problem: Instead of fetching a list then making separate queries per item, use joins or batch fetching
   - Prevent the linear query scaling problem: Instead of fetching a list then making separate queries per item, use joins or batch fetching
   - Use database cursors for large result sets
   - Leverage database window functions for ranking and analytics
