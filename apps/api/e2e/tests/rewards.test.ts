@@ -3,6 +3,7 @@ import { MerkleTree } from "merkletreejs";
 import { hexToBytes, keccak256 } from "viem";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { competitions } from "@recallnet/db/schema/core/defs";
 import {
   rewards,
@@ -39,8 +40,17 @@ describe("Rewards Service", () => {
   const testStartTimestamp = Math.floor(Date.now() / 1000); // Current timestamp
 
   beforeEach(async () => {
-    // Create RewardsService with mock RewardsAllocator
-    rewardsService = new RewardsService(mockRewardsAllocator as any); // eslint-disable-line
+    // Reset the mock before each test
+    vi.clearAllMocks();
+
+    // Create boost repository instance for this test with database instance
+    const testBoostRepository = new BoostRepository(db);
+
+    // Create RewardsService with boost repository and mock RewardsAllocator
+    rewardsService = new RewardsService(
+      testBoostRepository,
+      mockRewardsAllocator as any, // eslint-disable-line
+    );
 
     // Create a test competition with UUID
     const competitionId = "756fddf2-d5a3-4d07-b769-109583469c88";
