@@ -696,38 +696,47 @@ async function getCompetitionLeaderboardSummariesImpl(
   competitionId: string,
 ): Promise<SelectPerpsAccountSummary[]> {
   try {
-    // Use a subquery to get latest summaries, then sort by totalEquity in SQL
-    const latestSummaries = dbRead
-      .selectDistinctOn([perpsAccountSummaries.agentId])
-      .from(perpsAccountSummaries)
-      .innerJoin(
-        competitionAgents,
+    // Get active agents first, then use lateral join to get their latest summaries
+    const activeAgents = dbRead
+      .select({
+        agentId: competitionAgents.agentId,
+      })
+      .from(competitionAgents)
+      .where(
         and(
-          eq(perpsAccountSummaries.agentId, competitionAgents.agentId),
-          eq(
-            perpsAccountSummaries.competitionId,
-            competitionAgents.competitionId,
-          ),
-          eq(competitionAgents.status, "active"), // Only active agents
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.status, "active"),
         ),
       )
-      .where(eq(perpsAccountSummaries.competitionId, competitionId))
-      .orderBy(
-        perpsAccountSummaries.agentId,
-        desc(perpsAccountSummaries.timestamp),
+      .as("active_agents");
+
+    // Create subquery for lateral join - gets the latest summary for each agent
+    // Note: We'll reference activeAgents.agentId from the outer query
+    const latestSummarySubquery = dbRead
+      .select()
+      .from(perpsAccountSummaries)
+      .where(
+        and(
+          eq(perpsAccountSummaries.competitionId, competitionId),
+          // This references the outer query's agent ID
+          sql`${perpsAccountSummaries.agentId} = ${activeAgents.agentId}`,
+        ),
       )
-      .as("latest");
+      .orderBy(desc(perpsAccountSummaries.timestamp))
+      .limit(1)
+      .as("latest_summary");
 
-    // Now we can sort by totalEquity in SQL
-    const sortedSummaries = await dbRead
-      .select({
-        summary: latestSummaries.perps_account_summaries,
-      })
-      .from(latestSummaries)
-      .orderBy(desc(latestSummaries.perps_account_summaries.totalEquity));
+    // Use leftJoinLateral to efficiently get the latest summary per agent
+    const results = await dbRead
+      .select()
+      .from(activeAgents)
+      .leftJoinLateral(latestSummarySubquery, sql`true`)
+      .orderBy(desc(sql`${latestSummarySubquery}.total_equity`));
 
-    // Extract just the summary part from the result
-    const summaries = sortedSummaries.map((row) => row.summary);
+    // Filter out nulls and return just the summary objects
+    const summaries = results
+      .filter((row) => row.latest_summary !== null)
+      .map((row) => row.latest_summary as SelectPerpsAccountSummary);
 
     repositoryLogger.debug(
       `[PerpsRepository] Retrieved ${summaries.length} account summaries for competition leaderboard`,
@@ -752,29 +761,42 @@ async function getPerpsCompetitionStatsImpl(
   competitionId: string,
 ): Promise<PerpsCompetitionStats> {
   try {
-    // Use a subquery to get the latest summary per agent, then aggregate
-    const statsQuery = dbRead
-      .selectDistinctOn([perpsAccountSummaries.agentId], {
+    // Get distinct agents in the competition
+    const distinctAgents = dbRead
+      .selectDistinct({
+        agentId: perpsAccountSummaries.agentId,
+      })
+      .from(perpsAccountSummaries)
+      .where(eq(perpsAccountSummaries.competitionId, competitionId))
+      .as("distinct_agents");
+
+    // Create subquery for lateral join - gets the latest summary for each agent
+    const latestSummarySubquery = dbRead
+      .select({
         agentId: perpsAccountSummaries.agentId,
         totalEquity: perpsAccountSummaries.totalEquity,
         totalVolume: perpsAccountSummaries.totalVolume,
       })
       .from(perpsAccountSummaries)
-      .where(eq(perpsAccountSummaries.competitionId, competitionId))
-      .orderBy(
-        perpsAccountSummaries.agentId,
-        desc(perpsAccountSummaries.timestamp),
+      .where(
+        and(
+          eq(perpsAccountSummaries.competitionId, competitionId),
+          sql`${perpsAccountSummaries.agentId} = ${distinctAgents.agentId}`,
+        ),
       )
-      .as("latest");
+      .orderBy(desc(perpsAccountSummaries.timestamp))
+      .limit(1)
+      .as("latest_summary");
 
-    // Aggregate the latest summaries
+    // Use leftJoinLateral to get latest summaries and aggregate
     const [stats] = await dbRead
       .select({
-        totalAgents: drizzleCount(statsQuery.agentId),
-        totalVolume: sum(statsQuery.totalVolume),
-        averageEquity: avg(statsQuery.totalEquity),
+        totalAgents: drizzleCount(latestSummarySubquery.agentId),
+        totalVolume: sum(latestSummarySubquery.totalVolume),
+        averageEquity: avg(latestSummarySubquery.totalEquity),
       })
-      .from(statsQuery);
+      .from(distinctAgents)
+      .leftJoinLateral(latestSummarySubquery, sql`true`);
 
     // Get position count separately (can't join easily with the subquery)
     const [positionStats] = await dbRead

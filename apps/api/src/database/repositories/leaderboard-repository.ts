@@ -6,6 +6,7 @@ import {
   eq,
   inArray,
   min,
+  sql,
   sum,
 } from "drizzle-orm";
 
@@ -188,29 +189,45 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
       : Promise.resolve([{ totalPositions: 0 }]),
 
     // 3. Get aggregated volume stats for perps competitions
-    // Using a subquery to get latest summary per agent, then sum in DB
+    // Using lateral join for scalability - avoids materializing intermediate results
     perpsIds.length > 0
-      ? (() => {
-          // Create subquery for latest summaries per agent
-          const latestSummaries = dbRead
-            .selectDistinctOn([perpsAccountSummaries.agentId], {
+      ? (async () => {
+          // Get distinct agents from all perps competitions
+          const distinctAgents = dbRead
+            .selectDistinct({
               agentId: perpsAccountSummaries.agentId,
-              totalVolume: perpsAccountSummaries.totalVolume,
             })
             .from(perpsAccountSummaries)
             .where(inArray(perpsAccountSummaries.competitionId, perpsIds))
-            .orderBy(
-              perpsAccountSummaries.agentId,
-              desc(perpsAccountSummaries.timestamp),
-            )
-            .as("latest");
+            .as("distinct_agents");
 
-          // Aggregate the volumes from the subquery
-          return dbRead
+          // Create subquery for lateral join - gets latest summary per agent
+          const latestSummarySubquery = dbRead
             .select({
-              totalVolume: sum(latestSummaries.totalVolume).mapWith(Number),
+              totalVolume: perpsAccountSummaries.totalVolume,
             })
-            .from(latestSummaries);
+            .from(perpsAccountSummaries)
+            .where(
+              and(
+                inArray(perpsAccountSummaries.competitionId, perpsIds),
+                sql`${perpsAccountSummaries.agentId} = ${distinctAgents.agentId}`,
+              ),
+            )
+            .orderBy(desc(perpsAccountSummaries.timestamp))
+            .limit(1)
+            .as("latest_summary");
+
+          // Use leftJoinLateral to get latest summaries and aggregate
+          const result = await dbRead
+            .select({
+              totalVolume: sum(latestSummarySubquery.totalVolume).mapWith(
+                Number,
+              ),
+            })
+            .from(distinctAgents)
+            .leftJoinLateral(latestSummarySubquery, sql`true`);
+
+          return result;
         })()
       : Promise.resolve([{ totalVolume: 0 }]),
 
