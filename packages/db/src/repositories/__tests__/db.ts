@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 
-import schema from "../../index.js";
+import schema from "../../schema/index.js";
 
 if (!process.env.VITE_DATABASE_URL) {
   throw new Error("VITE_DATABASE_URL is not set in environment variables");

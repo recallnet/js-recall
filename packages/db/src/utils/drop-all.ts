@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { isPgSchema } from "drizzle-orm/pg-core";
 
-import schema from "../index.js";
+import schema from "../schema/index.js";
 import { Database } from "../types.js";
 
 export async function dropAll(db: Database) {

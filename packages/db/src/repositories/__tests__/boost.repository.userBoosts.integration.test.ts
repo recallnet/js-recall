@@ -9,10 +9,10 @@ import {
   test,
 } from "vitest";
 
-import * as coreSchema from "../../core/defs.js";
+import * as coreSchema from "../../schema/core/defs.js";
+import * as schema from "../../schema/voting/defs.js";
 import { dropAll } from "../../utils/drop-all.js";
 import { pushSchema } from "../../utils/push-schema.js";
-import * as schema from "../../voting/defs.js";
 import { BoostRepository } from "../boost.js";
 import { db } from "./db.js";
 

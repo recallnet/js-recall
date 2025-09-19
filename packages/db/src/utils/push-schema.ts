@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 
-import schema from "../index.js";
+import schema from "../schema/index.js";
 import { Database } from "../types.js";
 
 const require = createRequire(import.meta.url);
