@@ -6,11 +6,14 @@ import { config } from "@/config/index.js";
 import { AuthenticatedRequest } from "@/types/index.js";
 
 import {
-  buildPaginationResponse,
   checkIsAdmin,
   checkIsCacheEnabled,
   checkIsPublicOrUserRequest,
   checkShouldCacheResponse,
+  generateCacheKey,
+} from "../request-helpers.js";
+import {
+  buildPaginationResponse,
   checkUniqueConstraintViolation,
   checkUserUniqueConstraintViolation,
   ensureAgentCompetitionFilters,
@@ -20,7 +23,6 @@ import {
   ensurePrivyIdentityToken,
   ensureUserId,
   ensureUuid,
-  generateCacheKey,
   parseAdminSearchQuery,
 } from "../request-helpers.js";
 

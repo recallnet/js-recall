@@ -1,3 +1,5 @@
+import type { SelectBalance } from "@recallnet/db-schema/trading/types";
+
 import { config } from "@/config/index.js";
 import {
   count,
@@ -130,7 +132,7 @@ export class BalanceService {
    * @param agentId The agent ID
    * @returns Array of Balance objects
    */
-  async getAllBalances(agentId: string) {
+  async getAllBalances(agentId: string): Promise<SelectBalance[]> {
     try {
       // Get from database
       const balances = await getAgentBalances(agentId);

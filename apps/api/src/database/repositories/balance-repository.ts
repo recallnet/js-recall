@@ -1,6 +1,7 @@
 import { and, count as drizzleCount, eq, inArray, sql } from "drizzle-orm";
 
 import { balances } from "@recallnet/db-schema/trading/defs";
+import type { SelectBalance } from "@recallnet/db-schema/trading/types";
 import type { Transaction as DatabaseTransaction } from "@recallnet/db-schema/types";
 
 import { config } from "@/config/index.js";
@@ -53,7 +54,7 @@ async function getBalanceImpl(agentId: string, tokenAddress: string) {
  * Get all balances for an agent
  * @param agentId Agent ID
  */
-async function getAgentBalancesImpl(agentId: string) {
+async function getAgentBalancesImpl(agentId: string): Promise<SelectBalance[]> {
   try {
     return await db
       .select()
@@ -69,7 +70,9 @@ async function getAgentBalancesImpl(agentId: string) {
  * Get all balances for multiple agents in bulk
  * @param agentIds Array of agent IDs
  */
-export async function getAgentsBulkBalances(agentIds: string[]) {
+export async function getAgentsBulkBalances(
+  agentIds: string[],
+): Promise<SelectBalance[]> {
   try {
     if (agentIds.length === 0) {
       return [];
