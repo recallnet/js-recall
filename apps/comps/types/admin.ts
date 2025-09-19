@@ -7,7 +7,6 @@ export interface AdminAgent {
   email?: string;
   imageUrl?: string;
   metadata?: Record<string, unknown>;
-  apiKey?: string;
   status: string;
   createdAt: string;
   updatedAt: string;

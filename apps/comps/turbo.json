@@ -16,6 +16,7 @@
         "NEXT_PUBLIC_POSTHOG_KEY",
         "NEXT_PUBLIC_PRIVY_APP_ID",
         "NEXT_PUBLIC_SENTRY_DSN",
+        "PRIVY_APP_SECRET",
         "SENTRY_AUTH_TOKEN",
         "SENTRY_ORG",
         "SENTRY_PROJECT",

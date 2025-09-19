@@ -26,7 +26,6 @@ import {
   LeaderboardResponse,
   LinkWalletRequest,
   LoginResponse,
-  NonceResponse,
   ProfileResponse,
   UpdateAgentRequest,
   UpdateAgentResponse,
@@ -192,14 +191,6 @@ export class ApiClient {
   }
 
   // Authentication endpoints
-
-  /**
-   * Get nonce for message signature
-   * @returns Nonce response
-   */
-  async getNonce(): Promise<NonceResponse> {
-    return this.request<NonceResponse>("/auth/nonce");
-  }
 
   /**
    * Login with ethereum signature
