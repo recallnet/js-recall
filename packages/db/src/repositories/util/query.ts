@@ -1,7 +1,7 @@
 import { AnyColumn, asc, desc } from "drizzle-orm";
 import { PgSelect } from "drizzle-orm/pg-core";
 
-import { ApiError } from "@/middleware/errorHandler.js";
+import { ParsingError } from "../../errors.js";
 
 /**
  * Apply sorting to a Drizzle query based on sort string
@@ -17,14 +17,12 @@ export function getSort<T extends PgSelect>(
   sortString: string,
   orderByOptions: Record<string, AnyColumn>,
 ) {
-  const parts = sortString.split(",");
-
-  if (parts.length < 1) {
-    throw new Error("cannot sort by undefined");
+  if (!sortString || sortString.trim() === "") {
+    throw new ParsingError("cannot sort by undefined");
   }
+  const parts = sortString.split(",");
   if (parts.length > 3) {
-    throw new ApiError(
-      400,
+    throw new ParsingError(
       "compound sorting with more than 3 fields not allowed",
     );
   }
@@ -35,7 +33,7 @@ export function getSort<T extends PgSelect>(
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
     if (typeof part !== "string") {
-      throw new ApiError(400, "cannot build sort with undefined");
+      throw new ParsingError("cannot build sort with undefined");
     }
 
     // Standard format: "-field" for desc, "field" for asc
@@ -44,7 +42,7 @@ export function getSort<T extends PgSelect>(
 
     const orderBy = orderByOptions[column];
     if (typeof orderBy === "undefined") {
-      throw new ApiError(400, `cannot sort by field: '${part}'`);
+      throw new ParsingError(`cannot sort by field: '${part}'`);
     }
 
     // Add to criteria array instead of applying immediately

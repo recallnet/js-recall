@@ -1,5 +1,6 @@
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+
 import { db } from "@/database/db.js";
-import { BoostRepository } from "@/database/repositories/boost.repository.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";

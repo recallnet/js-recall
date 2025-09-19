@@ -9,7 +9,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/scripts/*": ["./scripts/*"],
-      "@/e2e/*": ["./e2e/*"]
+      "@/e2e/*": ["./e2e/*"],
+      "@recallnet/db/*": ["../../packages/db/src/*"]
     },
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,

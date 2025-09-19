@@ -1,7 +1,8 @@
 import {
   type BoostAgentResult,
   BoostRepository,
-} from "@/database/repositories/boost.repository.js";
+} from "@recallnet/db/repositories/boost";
+
 import { serviceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import type { CompetitionService } from "@/services/competition.service.js";

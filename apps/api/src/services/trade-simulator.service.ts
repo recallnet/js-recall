@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { InsertTrade, SelectTrade } from "@recallnet/db-schema/trading/types";
+import { InsertTrade, SelectTrade } from "@recallnet/db/schema/trading/types";
 
 import { config, features } from "@/config/index.js";
 import {

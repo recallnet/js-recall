@@ -8,9 +8,13 @@
     "PRIVATE_FONTS",
     "FONTS_REPO_ACCESS_TOKEN",
     "DATABASE_URL",
-    "NODE_ENV"
+    "NODE_ENV",
+    "VITE_DATABASE_URL"
   ],
   "tasks": {
+    "test:integration": {
+      "cache": false
+    },
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],

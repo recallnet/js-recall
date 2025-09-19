@@ -9,7 +9,7 @@ import { Pool } from "pg";
 import client from "prom-client";
 import { fileURLToPath } from "url";
 
-import schema from "@recallnet/db-schema";
+import schema from "@recallnet/db/schema";
 
 import { config } from "@/config/index.js";
 import { wrapDatabaseWithSentry } from "@/database/sentry-wrapper.js";

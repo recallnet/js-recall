@@ -5,11 +5,11 @@ import {
   SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
-} from "@recallnet/db-schema/core/types";
+} from "@recallnet/db/schema/core/types";
 import {
   InsertTradingConstraints,
   SelectTradingConstraints,
-} from "@recallnet/db-schema/trading/types";
+} from "@recallnet/db/schema/trading/types";
 
 import { db } from "@/database/db.js";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";
@@ -37,11 +37,26 @@ vi.mock("@/lib/logger.js", () => ({
     error: vi.fn(),
     warn: vi.fn(),
   },
+  repositoryLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
+  competitionRewardsLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
 }));
 
 // Mock all dependencies
 vi.mock("@/database/db.js", () => ({
   db: {
+    transaction: vi.fn(),
+  },
+  dbRead: {
     transaction: vi.fn(),
   },
 }));

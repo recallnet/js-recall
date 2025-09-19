@@ -5,7 +5,7 @@ import type {
 import { type JWTPayload, exportJWK, importSPKI, jwtVerify } from "jose";
 import { type Hex, checksumAddress } from "viem";
 
-import { SelectUser } from "@recallnet/db-schema/core/types";
+import { SelectUser } from "@recallnet/db/schema/core/types";
 
 import { config } from "@/config/index.js";
 import { authLogger } from "@/lib/logger.js";

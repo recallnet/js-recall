@@ -4,9 +4,9 @@ import {
   SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
-} from "@recallnet/db-schema/core/types";
-import { SelectTrade } from "@recallnet/db-schema/trading/types";
-import type { Transaction as DatabaseTransaction } from "@recallnet/db-schema/types";
+} from "@recallnet/db/schema/core/types";
+import { SelectTrade } from "@recallnet/db/schema/trading/types";
+import type { Transaction as DatabaseTransaction } from "@recallnet/db/types";
 
 import { config } from "@/config/index.js";
 import { buildPaginationResponse } from "@/controllers/request-helpers.js";

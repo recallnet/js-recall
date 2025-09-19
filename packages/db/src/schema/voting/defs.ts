@@ -13,7 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { agents, competitions, users } from "../core/defs.js";
-import { blockchainAddress, bytea, tokenAmount } from "../util.js";
+import { blockchainAddress, bytea, tokenAmount } from "../custom-types.js";
 
 export const epochs = pgTable("epochs", {
   id: uuid().primaryKey().notNull().defaultRandom(),

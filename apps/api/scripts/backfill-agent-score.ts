@@ -7,12 +7,12 @@ import { parse } from "ts-command-line-args";
 import {
   competitionAgents,
   competitions,
-} from "@recallnet/db-schema/core/defs";
-import type { SelectCompetitionsLeaderboard } from "@recallnet/db-schema/core/types";
+} from "@recallnet/db/schema/core/defs";
+import type { SelectCompetitionsLeaderboard } from "@recallnet/db/schema/core/types";
 import {
   agentScore,
   agentScoreHistory,
-} from "@recallnet/db-schema/ranking/defs";
+} from "@recallnet/db/schema/ranking/defs";
 
 import { db } from "@/database/db.js";
 import * as competitionRepo from "@/database/repositories/competition-repository.js";
