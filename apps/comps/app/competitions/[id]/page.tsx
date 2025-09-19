@@ -2,12 +2,11 @@
 
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Zap } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
-import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentsTable } from "@/components/agents-table";
@@ -31,6 +30,7 @@ import { useSession } from "@/hooks/useSession";
 
 const LIMIT_AGENTS_PER_PAGE = 10;
 const LIMIT_TRADES_PER_PAGE = 10;
+const COST_TO_COMPETE = 300;
 
 export default function CompetitionPage({
   params,
@@ -107,7 +107,7 @@ export default function CompetitionPage({
     );
   }
 
-  const VotingBtn = ({
+  const BoostAgentsBtn = ({
     className,
     disabled,
   }: {
@@ -131,7 +131,7 @@ export default function CompetitionPage({
         }
       }}
     >
-      <span className="font-semibold">VOTE</span>{" "}
+      <span className="font-semibold">BOOST AGENTS</span>{" "}
       <ChevronRight className="ml-2" size={18} />
     </Button>
   );
@@ -152,30 +152,24 @@ export default function CompetitionPage({
         <div className="md:w-1/2">
           <CompetitionInfo competition={competition} />
           <div className="mt-5 flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
-            {competition.userVotingInfo?.info?.hasVoted ? (
-              <Tooltip
-                content="You've already voted in this competition."
-                className="w-full sm:w-1/2"
-              >
-                <VotingBtn
-                  disabled
-                  className="w-full justify-between uppercase"
-                />
-              </Tooltip>
-            ) : (
-              <VotingBtn className="w-full justify-between uppercase sm:w-1/2" />
-            )}
             <JoinCompetitionButton
               competitionId={id}
               variant="outline"
-              className="w-full justify-between border border-gray-700 uppercase sm:w-1/2"
+              className="w-full justify-between border border-gray-700 sm:w-1/2"
               disabled={competition.status !== "pending"}
               size="lg"
             >
-              <span className="font-semibold">COMPETE</span>{" "}
-              <Plus className="ml-2" size={18} />
+              <span>
+                COMPETE{" "}
+                <span className="text-yellow-500">{COST_TO_COMPETE}</span>{" "}
+                <span className="font-bold">Boost</span>{" "}
+                <Zap className="inline h-4 w-4 text-yellow-500" />
+              </span>{" "}
             </JoinCompetitionButton>
-            <Button
+
+            <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2" />
+
+            {/*<Button
               variant="outline"
               className={cn(
                 "w-full justify-between border border-gray-700 uppercase sm:w-1/2",
@@ -194,7 +188,7 @@ export default function CompetitionPage({
                 <span className="font-semibold">Chart</span>{" "}
                 <ChevronRight className="ml-2" size={18} />
               </div>
-            </Button>
+            </Button>*/}
           </div>
         </div>
       </div>
@@ -260,16 +254,6 @@ export default function CompetitionPage({
         </div>
       ) : (
         <>
-          <AgentsTable
-            ref={agentsTableRef}
-            competition={competition}
-            agents={agentsData.agents}
-            onFilterChange={setAgentsFilter}
-            onSortChange={setAgentsSort}
-            pagination={agentsData.pagination}
-            totalVotes={competition.stats.totalVotes}
-            onPageChange={handleAgentsPageChange}
-          />
           <TimelineChart
             ref={chartRef}
             className="mt-5"
@@ -284,8 +268,19 @@ export default function CompetitionPage({
             }
             onPageChange={handleAgentsPageChange}
           />
+          <AgentsTable
+            ref={agentsTableRef}
+            competition={competition}
+            agents={agentsData.agents}
+            onFilterChange={setAgentsFilter}
+            onSortChange={setAgentsSort}
+            pagination={agentsData.pagination}
+            totalVotes={competition.stats.totalVotes}
+            onPageChange={handleAgentsPageChange}
+          />
         </>
       )}
+
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
       <FooterSection />
     </div>
