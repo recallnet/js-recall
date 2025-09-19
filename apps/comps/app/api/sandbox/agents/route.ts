@@ -1,19 +1,12 @@
 import { NextRequest } from "next/server";
 
-import {
-  extractSessionCookie,
-  mainApiRequest,
-  sandboxAdminRequest,
-} from "@/app/api/sandbox/_lib/sandbox-config";
+import { getPrivyUserFromCookie } from "@/app/api/sandbox/_lib/privy-utils";
+import { sandboxAdminRequest } from "@/app/api/sandbox/_lib/sandbox-config";
 import {
   createSuccessResponse,
   withErrorHandling,
 } from "@/app/api/sandbox/_lib/sandbox-response";
-import {
-  AdminCreateAgentResponse,
-  CreateAgentRequest,
-  ProfileResponse,
-} from "@/types";
+import { AdminCreateAgentResponse, CreateAgentRequest } from "@/types";
 
 /**
  * POST /api/sandbox/agents
@@ -22,16 +15,12 @@ import {
  * 2. Creating agent in sandbox using the admin API
  */
 async function handleCreateAgent(request: NextRequest) {
-  // Extract session cookie
-  const sessionCookie = extractSessionCookie(request);
-
-  // Fetch user profile from the base API to get walletAddress
-  const profileData = await mainApiRequest<ProfileResponse>(
-    "/user/profile",
-    sessionCookie,
-  );
-  const { walletAddress } = profileData.user;
-
+  // Extract privy ID from cookie and reject if fully unauthenticated
+  const privyUser = await getPrivyUserFromCookie(request);
+  if (!privyUser) {
+    throw new Error("Unauthorized");
+  }
+  const { walletAddress } = privyUser;
   // Get the agent payload from the request body
   const agentPayload: CreateAgentRequest = await request.json();
   if (!agentPayload.name) {
@@ -39,8 +28,11 @@ async function handleCreateAgent(request: NextRequest) {
   }
 
   // Prepare payload for sandbox admin API
+  // Note: this will also update the user if it already exists, effectively handling any "sync"
+  // issues between the production<>sandbox database and user state.
   const sandboxPayload = {
     user: {
+      // Note: this is either the user's custom linked wallet or their embedded wallet
       walletAddress,
     },
     agent: {
