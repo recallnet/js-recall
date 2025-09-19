@@ -955,21 +955,20 @@ export interface PerpsPosition {
   positionId: string | null;
   marketId: string | null;
   marketSymbol: string | null;
-  asset?: string;
-  side?: "long" | "short";
-  isLong?: boolean;
-  size: string;
-  collateral?: number;
-  averagePrice: string;
-  markPrice: string;
-  unrealizedPnl: string;
-  realizedPnl: string;
-  margin?: string;
-  leverage: string;
-  liquidationPrice: string | null;
-  status?: string;
-  openedAt?: string;
-  closedAt?: string | null;
+  asset: string;
+  isLong: boolean;
+  leverage: number;
+  size: number;
+  collateral: number;
+  averagePrice: number;
+  markPrice: number;
+  liquidationPrice: number | null;
+  unrealizedPnl: number;
+  pnlPercentage: number;
+  realizedPnl: number;
+  status: string;
+  openedAt: string;
+  closedAt: string | null;
   timestamp: string;
 }
 

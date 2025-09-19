@@ -1,3 +1,5 @@
+import { Decimal } from "decimal.js";
+
 import type {
   InsertPerpetualPosition,
   InsertPerpsAccountSummary,
@@ -33,6 +35,17 @@ import type {
   PerpsPosition,
   PerpsProviderConfig,
 } from "@/types/perps.js";
+
+// Configure Decimal.js for financial calculations
+// Setting precision and rounding mode as suggested in the GitHub comment
+Decimal.set({
+  precision: 40,
+  rounding: Decimal.ROUND_HALF_UP,
+  minE: -40,
+  maxE: 40,
+  toExpNeg: -40,
+  toExpPos: 40,
+});
 
 /**
  * Provider-agnostic processor for perpetual futures data
@@ -104,7 +117,7 @@ export class PerpsDataProcessor {
   }
 
   /**
-   * Convert number to string, handling scientific notation and zero values
+   * Convert number to string using Decimal.js for precise financial calculations
    */
   private numberToString(value: number | undefined | null): string | null {
     if (value === undefined || value === null) {
@@ -119,29 +132,22 @@ export class PerpsDataProcessor {
       return "0";
     }
 
-    // For very small or very large numbers, use a different approach
-    const absValue = Math.abs(value);
+    try {
+      // Use Decimal.js for precise conversion
+      const decimal = new Decimal(value);
 
-    // For very small numbers (like 1e-8), use toFixed with appropriate precision
-    if (absValue < 0.0001 && absValue > 0) {
-      const str = value.toFixed(20);
-      // Remove trailing zeros but keep the number accurate
-      return str.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+      // Convert to fixed notation to avoid scientific notation
+      // toFixed() in Decimal.js automatically handles precision
+      // and removes unnecessary trailing zeros
+      return decimal.toFixed();
+    } catch (error) {
+      // If Decimal.js can't handle it, log and return null
+      serviceLogger.warn(
+        `[PerpsDataProcessor] Failed to convert number to string: ${value}`,
+        error,
+      );
+      return null;
     }
-
-    // For regular numbers, convert to string and check for scientific notation
-    let str = value.toString();
-
-    // If it's in scientific notation, convert it
-    if (str.includes("e")) {
-      // Use toFixed with reasonable precision, then clean up
-      const precision = str.includes("e-") ? 20 : 10;
-      str = value.toFixed(precision);
-      // Remove trailing zeros after decimal point
-      str = str.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
-    }
-
-    return str;
   }
 
   /**
@@ -398,7 +404,10 @@ export class PerpsDataProcessor {
           if (!agentData) return null;
 
           // totalEquity string is guaranteed to be valid ("0" at minimum) due to transform
-          const totalEquity = parseFloat(agentData.accountSummary.totalEquity);
+          // Use Decimal for precise parsing
+          const totalEquity = new Decimal(
+            agentData.accountSummary.totalEquity,
+          ).toNumber();
 
           return {
             agentId: r.agentId,
@@ -598,7 +607,7 @@ export class PerpsDataProcessor {
 
       // Parse self-funding threshold early for validation
       const earlyThreshold = perpsConfig.selfFundingThresholdUsd
-        ? parseFloat(perpsConfig.selfFundingThresholdUsd)
+        ? new Decimal(perpsConfig.selfFundingThresholdUsd).toNumber()
         : null;
 
       // Validate and extract competition start date (needed for monitoring)
@@ -615,6 +624,13 @@ export class PerpsDataProcessor {
           serviceLogger.warn(
             `[PerpsDataProcessor] Competition ${competitionId} hasn't started yet (starts ${competitionStartDate.toISOString()})`,
           );
+          // Skip processing for competitions that haven't started
+          return {
+            syncResult: {
+              successful: [],
+              failed: [],
+            },
+          };
         }
       }
 
@@ -691,7 +707,7 @@ export class PerpsDataProcessor {
           accountSummaries,
           competitionId,
           competitionStartDate, // Now TypeScript knows this is non-null
-          parseFloat(perpsConfig.initialCapital || "500"),
+          new Decimal(perpsConfig.initialCapital || "500").toNumber(),
           earlyThreshold ?? 0,
         );
 

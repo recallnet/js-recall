@@ -459,38 +459,69 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                       marketSymbol:
    *                         type: string
    *                         nullable: true
-   *                         example: "BTC-USD"
-   *                       side:
+   *                         example: "BTC"
+   *                       asset:
    *                         type: string
-   *                         enum: ["long", "short"]
-   *                       size:
-   *                         type: string
-   *                         description: Position size as string
-   *                       averagePrice:
-   *                         type: string
-   *                         description: Average entry price as string
-   *                       markPrice:
-   *                         type: string
-   *                         description: Current mark price as string
-   *                       unrealizedPnl:
-   *                         type: string
-   *                         description: Unrealized PnL as string
-   *                       realizedPnl:
-   *                         type: string
-   *                         description: Realized PnL as string
-   *                       margin:
-   *                         type: string
-   *                         description: Margin/collateral as string
+   *                         description: Asset symbol
+   *                         example: "BTC"
+   *                       isLong:
+   *                         type: boolean
+   *                         description: Whether position is long (true) or short (false)
+   *                         example: true
    *                       leverage:
-   *                         type: string
-   *                         description: Leverage as string
+   *                         type: number
+   *                         description: Position leverage
+   *                         example: 10
+   *                       size:
+   *                         type: number
+   *                         description: Position size
+   *                         example: 0.5
+   *                       collateral:
+   *                         type: number
+   *                         description: Collateral/margin amount
+   *                         example: 2250
+   *                       averagePrice:
+   *                         type: number
+   *                         description: Average entry price
+   *                         example: 45000
+   *                       markPrice:
+   *                         type: number
+   *                         description: Current mark price
+   *                         example: 46000
    *                       liquidationPrice:
-   *                         type: string
+   *                         type: number
    *                         nullable: true
-   *                         description: Liquidation price as string
+   *                         description: Liquidation price
+   *                         example: 40000
+   *                       unrealizedPnl:
+   *                         type: number
+   *                         description: Unrealized PnL
+   *                         example: 500
+   *                       pnlPercentage:
+   *                         type: number
+   *                         description: PnL as percentage of collateral (from Symphony)
+   *                         example: 0.05
+   *                       realizedPnl:
+   *                         type: number
+   *                         description: Realized PnL (always 0 in current implementation)
+   *                         example: 0
+   *                       status:
+   *                         type: string
+   *                         description: Position status
+   *                         example: "Open"
+   *                       openedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Position open timestamp
+   *                       closedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         nullable: true
+   *                         description: Position close timestamp (null if open)
    *                       timestamp:
    *                         type: string
    *                         format: date-time
+   *                         description: Last update timestamp
    *       400:
    *         description: Not a perpetual futures competition
    *       401:

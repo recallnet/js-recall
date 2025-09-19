@@ -819,6 +819,9 @@ export function configureCompetitionsRoutes(
    *                         uniqueTokens:
    *                           type: number
    *                           description: Total number of unique tokens traded (only for paper trading competitions)
+   *                         averageEquity:
+   *                           type: number
+   *                           description: Average equity across all agents (only for perpetual futures competitions)
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -1504,53 +1507,69 @@ export function configureCompetitionsRoutes(
    *                       marketSymbol:
    *                         type: string
    *                         nullable: true
-   *                         example: "BTC-USD"
-   *                       side:
+   *                         example: "BTC"
+   *                       asset:
    *                         type: string
-   *                         enum: ["long", "short"]
-   *                       size:
-   *                         type: string
-   *                         description: Position size as string
-   *                         example: "0.5"
-   *                       averagePrice:
-   *                         type: string
-   *                         description: Average entry price as string
-   *                         example: "45000.00"
-   *                       markPrice:
-   *                         type: string
-   *                         description: Current mark price as string
-   *                         example: "46000.00"
-   *                       liquidationPrice:
-   *                         type: string
-   *                         nullable: true
-   *                         description: Liquidation price as string
-   *                         example: "40000.00"
-   *                       unrealizedPnl:
-   *                         type: string
-   *                         description: Unrealized PnL as string
-   *                         example: "500.00"
-   *                       realizedPnl:
-   *                         type: string
-   *                         description: Realized PnL as string
-   *                         example: "100.00"
-   *                       margin:
-   *                         type: string
-   *                         description: Margin/collateral amount as string
-   *                         example: "2250.00"
+   *                         description: Asset symbol
+   *                         example: "BTC"
+   *                       isLong:
+   *                         type: boolean
+   *                         description: Whether position is long (true) or short (false)
+   *                         example: true
    *                       leverage:
-   *                         type: string
-   *                         description: Leverage as string
-   *                         example: "10"
+   *                         type: number
+   *                         description: Position leverage
+   *                         example: 10
+   *                       size:
+   *                         type: number
+   *                         description: Position size
+   *                         example: 0.5
+   *                       collateral:
+   *                         type: number
+   *                         description: Collateral/margin amount
+   *                         example: 2250
+   *                       averagePrice:
+   *                         type: number
+   *                         description: Average entry price
+   *                         example: 45000
+   *                       markPrice:
+   *                         type: number
+   *                         description: Current mark price
+   *                         example: 46000
+   *                       liquidationPrice:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Liquidation price
+   *                         example: 40000
+   *                       unrealizedPnl:
+   *                         type: number
+   *                         description: Unrealized PnL
+   *                         example: 500
+   *                       pnlPercentage:
+   *                         type: number
+   *                         description: PnL as percentage of collateral (from Symphony)
+   *                         example: 0.05
+   *                       realizedPnl:
+   *                         type: number
+   *                         description: Realized PnL (always 0 in current implementation)
+   *                         example: 0
    *                       status:
    *                         type: string
    *                         description: Position status
    *                         example: "Open"
-   *                       createdAt:
+   *                       openedAt:
    *                         type: string
    *                         format: date-time
-   *                       updatedAt:
+   *                         description: Position open timestamp
+   *                       closedAt:
    *                         type: string
    *                         format: date-time
+   *                         nullable: true
+   *                         description: Position close timestamp (null if open)
+   *                       timestamp:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Last update timestamp
    *       400:
    *         description: Bad request - Not a perpetual futures competition
    *         content:
@@ -1805,6 +1824,10 @@ export function configureCompetitionsRoutes(
    *                       unrealizedPnl:
    *                         type: number
    *                         example: 500
+   *                       pnlPercentage:
+   *                         type: number
+   *                         description: PnL as percentage of collateral (from Symphony)
+   *                         example: 0.05
    *                       realizedPnl:
    *                         type: number
    *                         example: 0

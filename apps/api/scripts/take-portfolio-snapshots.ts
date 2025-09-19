@@ -104,11 +104,10 @@ async function takePortfolioSnapshots() {
         throw paperError;
       }
     } else {
-      // Unknown competition type
-      logger.warn(
-        `Unknown competition type: ${activeCompetition.type}. No processing performed.`,
-      );
-      return;
+      // Unknown competition type - throw error to fail fast
+      const errorMessage = `Unknown competition type: ${activeCompetition.type}. Expected 'trading' or 'perpetual_futures'.`;
+      logger.error(errorMessage);
+      throw new Error(errorMessage);
     }
 
     const duration = Date.now() - startTime;

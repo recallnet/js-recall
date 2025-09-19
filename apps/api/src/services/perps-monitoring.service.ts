@@ -1,3 +1,5 @@
+import { Decimal } from "decimal.js";
+
 import { InsertPerpsSelfFundingAlert } from "@recallnet/db-schema/trading/types";
 
 import {
@@ -116,7 +118,7 @@ export class PerpsMonitoringService {
       `[PerpsMonitoringService] Starting monitoring for ${agents.length} agents in competition ${competitionId}`,
     );
 
-    // Batch fetch existing alerts for all agents to avoid N+1 queries
+    // Batch fetch existing alerts for all agents
     const existingAlerts = await this.batchGetExistingAlerts(
       agents.map((a) => a.agentId),
       competitionId,
@@ -198,8 +200,7 @@ export class PerpsMonitoringService {
   }
 
   /**
-   * Batch fetch existing alerts to avoid N+1 queries
-   * Now uses efficient batch method that fetches all alerts in 1-2 DB queries
+   * Batch fetch existing alerts
    */
   private async batchGetExistingAlerts(
     agentIds: string[],
@@ -340,15 +341,22 @@ export class PerpsMonitoringService {
         return null;
       }
 
-      // Calculate total deposited
-      const totalDeposited = allDeposits.reduce((sum, t) => sum + t.amount, 0);
+      // Calculate total deposited using Decimal for precision
+      const totalDeposited = allDeposits
+        .reduce((sum, t) => sum.plus(new Decimal(t.amount)), new Decimal(0))
+        .toNumber();
 
       // Check for violations:
       // 1. Any single deposit exceeds threshold
       // 2. Total of all deposits exceeds threshold (catches structuring)
-      const largeDeposits = allDeposits.filter((t) => t.amount > threshold);
+      const thresholdDecimal = new Decimal(threshold);
+      const largeDeposits = allDeposits.filter((t) =>
+        new Decimal(t.amount).greaterThan(thresholdDecimal),
+      );
       const hasLargeDeposit = largeDeposits.length > 0;
-      const hasSuspiciousTotal = totalDeposited > threshold;
+      const hasSuspiciousTotal = new Decimal(totalDeposited).greaterThan(
+        thresholdDecimal,
+      );
 
       if (!hasLargeDeposit && !hasSuspiciousTotal) {
         return null;
@@ -364,7 +372,9 @@ export class PerpsMonitoringService {
         note = `Detected ${largeDeposits.length} large deposit(s) exceeding $${threshold} threshold, total: $${totalDeposited.toFixed(2)}`;
       } else {
         // Potential structuring: many small deposits that add up
-        const avgDepositSize = totalDeposited / allDeposits.length;
+        const avgDepositSize = new Decimal(totalDeposited)
+          .dividedBy(allDeposits.length)
+          .toNumber();
         confidence = allDeposits.length > 5 ? "high" : "medium"; // Higher confidence if many small deposits
         note = `Potential structuring: ${allDeposits.length} deposits averaging $${avgDepositSize.toFixed(2)} each, totaling $${totalDeposited.toFixed(2)} (exceeds $${threshold} threshold)`;
       }
@@ -412,19 +422,31 @@ export class PerpsMonitoringService {
     agentId: string,
     competitionId: string,
   ): SelfFundingAlert | null {
-    // Defensive: ensure we have required fields
-    const totalEquity = accountSummary.totalEquity ?? 0;
-    const totalPnl = accountSummary.totalPnl ?? 0;
+    // Defensive: ensure we have required fields, using Decimal for precision
+    const totalEquityDecimal = new Decimal(accountSummary.totalEquity ?? 0);
+    const totalPnlDecimal = new Decimal(accountSummary.totalPnl ?? 0);
+    const initialCapitalDecimal = new Decimal(initialCapital);
 
     // Calculate expected equity
     // Note: This formula might need adjustment based on how the platform
     // handles fees and funding rates. We're not currently subtracting
     // totalFeesPaid as it may already be included in totalPnl.
-    const expectedEquity = initialCapital + totalPnl;
-    const unexplainedAmount = totalEquity - expectedEquity;
+    const expectedEquityDecimal = initialCapitalDecimal.plus(totalPnlDecimal);
+    const unexplainedAmountDecimal = totalEquityDecimal.minus(
+      expectedEquityDecimal,
+    );
+
+    // Convert to numbers for comparisons and storage
+    const totalEquity = totalEquityDecimal.toNumber();
+    const expectedEquity = expectedEquityDecimal.toNumber();
+    const unexplainedAmount = unexplainedAmountDecimal.toNumber();
 
     // Only flag if discrepancy exceeds threshold
-    if (Math.abs(unexplainedAmount) <= this.config.reconciliationThreshold) {
+    if (
+      unexplainedAmountDecimal
+        .abs()
+        .lessThanOrEqualTo(this.config.reconciliationThreshold)
+    ) {
       return null;
     }
 
@@ -441,14 +463,16 @@ export class PerpsMonitoringService {
       actualEquity: totalEquity,
       unexplainedAmount,
       detectionMethod: "balance_reconciliation",
-      confidence:
-        Math.abs(unexplainedAmount) > this.config.criticalAmountThreshold
-          ? "high"
-          : "medium",
-      severity:
-        Math.abs(unexplainedAmount) > this.config.criticalAmountThreshold
-          ? "critical"
-          : "warning",
+      confidence: unexplainedAmountDecimal
+        .abs()
+        .greaterThan(this.config.criticalAmountThreshold)
+        ? "high"
+        : "medium",
+      severity: unexplainedAmountDecimal
+        .abs()
+        .greaterThan(this.config.criticalAmountThreshold)
+        ? "critical"
+        : "warning",
       note: `Unexplained balance discrepancy. May include funding rates or platform-specific fees.`,
       accountSnapshot: accountSummary,
     };

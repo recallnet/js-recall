@@ -157,7 +157,7 @@ export class MockSymphonyServer {
     this.app.use(express.json());
 
     // Health check endpoint
-    this.app.get("/agent/all-positions", (req: Request, res: Response) => {
+    this.app.get("/agent/user-performance", (req: Request, res: Response) => {
       const userAddress = req.query.userAddress as string;
 
       if (!userAddress) {

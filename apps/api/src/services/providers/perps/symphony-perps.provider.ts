@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import axios, { AxiosInstance } from "axios";
 
 import { serviceLogger } from "@/lib/logger.js";
@@ -109,6 +110,13 @@ export interface SymphonyTransfer {
  * - Symphony API has a 200 req/min limit
  * - We enforce 100ms between requests (max 600 req/min) to stay well below this
  * - Can request IP whitelisting from Symphony if needed
+ *
+ * Raw Data Storage Strategy (addressing high traffic bursts):
+ * - Raw API responses are only stored for 1% of requests (via sampling)
+ * - This prevents database bloat during high traffic periods
+ * - The same sampling decision controls both raw data storage and Sentry reporting
+ * - Sampled data provides debugging capability without overwhelming storage
+ * - For production issues: Can be analyzed after the fact via stored samples
  */
 export class SymphonyPerpsProvider implements IPerpsDataProvider {
   private readonly baseUrl: string;
@@ -118,6 +126,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
   private readonly REQUEST_TIMEOUT = 30000; // 30 seconds
+  private readonly SAMPLING_RATE = 0.01; // 1% of requests for both Sentry and raw data storage
 
   constructor(apiUrl?: string) {
     // Use provided URL or fall back to config/environment
@@ -138,6 +147,18 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   }
 
   /**
+   * Mask wallet address for privacy in logs
+   * Shows first 6 and last 4 characters: 0x1234...abcd
+   * Keeps full address for debugging/traceability when needed
+   */
+  private maskWalletAddress(address: string): string {
+    if (!address || address.length < 10) {
+      return address; // Return as-is if invalid
+    }
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  /**
    * Get provider name for logging
    */
   getName(): string {
@@ -152,7 +173,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       // Since Symphony only provides data for registered addresses,
       // we check API availability by testing the endpoint exists
       // A 404 for an unknown address still indicates the API is healthy
-      const response = await this.axiosInstance.get("/agent/all-positions", {
+      const response = await this.axiosInstance.get("/agent/user-performance", {
         params: { userAddress: "0x0000000000000000000000000000000000000001" },
         timeout: 5000,
         validateStatus: (status) => {
@@ -212,12 +233,23 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
    */
   async getAccountSummary(walletAddress: string): Promise<PerpsAccountSummary> {
     const startTime = Date.now();
+    const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Add Sentry breadcrumb for debugging
+    Sentry.addBreadcrumb({
+      category: "symphony.api",
+      message: `Account summary request`,
+      level: "info",
+      data: {
+        walletAddress: maskedAddress,
+      },
+    });
 
     try {
       await this.enforceRateLimit();
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetching account summary for ${walletAddress}`,
+        `[SymphonyProvider] Fetching account summary for ${maskedAddress}`,
       );
 
       const data = await this.fetchPositionData(walletAddress);
@@ -245,7 +277,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       if (missingFields.length > 0) {
         serviceLogger.warn(
-          `[SymphonyProvider] Missing critical fields for ${walletAddress}: ${missingFields.join(", ")}. Using 0 as default.`,
+          `[SymphonyProvider] Missing critical fields for ${this.maskWalletAddress(walletAddress)}: ${missingFields.join(", ")}. Using 0 as default.`,
         );
       }
 
@@ -279,18 +311,47 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         // Status - use 'unknown' as default
         accountStatus: as.accountStatus ?? "unknown",
 
-        // Store raw data for debugging
-        rawData: data,
+        // Raw data storage: Only store for sampled requests (1% by default)
+        // This prevents overwhelming the database during high traffic bursts
+        rawData: undefined,
       };
 
+      // Combined sampling for both Sentry and raw data storage
+      // This ensures we only store raw data when we're also sending to Sentry
+      const shouldSample = Math.random() < this.SAMPLING_RATE;
+
+      if (shouldSample) {
+        // Store raw data in the response
+        summary.rawData = data;
+
+        // Also send to Sentry for monitoring
+        Sentry.captureMessage("Symphony API Response Sample", {
+          level: "debug",
+          extra: {
+            response: data,
+            walletAddress: maskedAddress,
+            processingTime: Date.now() - startTime,
+          },
+        });
+      }
+
       serviceLogger.debug(
-        `[SymphonyProvider] Fetched account summary for ${walletAddress} in ${Date.now() - startTime}ms`,
+        `[SymphonyProvider] Fetched account summary for ${maskedAddress} in ${Date.now() - startTime}ms`,
       );
 
       return summary;
     } catch (error) {
+      // Add error to Sentry with breadcrumb context
+      Sentry.captureException(error, {
+        extra: {
+          walletAddress: maskedAddress,
+          method: "getAccountSummary",
+          processingTime: Date.now() - startTime,
+        },
+      });
+
       serviceLogger.error(
-        `[SymphonyProvider] Error fetching account summary for ${walletAddress}:`,
+        `[SymphonyProvider] Error fetching account summary for ${maskedAddress}:`,
         error,
       );
       throw error;
@@ -302,12 +363,23 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
    */
   async getPositions(walletAddress: string): Promise<PerpsPosition[]> {
     const startTime = Date.now();
+    const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Add Sentry breadcrumb for debugging
+    Sentry.addBreadcrumb({
+      category: "symphony.api",
+      message: `Positions request`,
+      level: "info",
+      data: {
+        walletAddress: maskedAddress,
+      },
+    });
 
     try {
       await this.enforceRateLimit();
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetching positions for ${walletAddress}`,
+        `[SymphonyProvider] Fetching positions for ${maskedAddress}`,
       );
 
       const data = await this.fetchPositionData(walletAddress);
@@ -317,13 +389,22 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       const positions = this.transformPositions(data.openPositions, "Open");
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetched ${positions.length} open positions for ${walletAddress} in ${Date.now() - startTime}ms`,
+        `[SymphonyProvider] Fetched ${positions.length} open positions for ${maskedAddress} in ${Date.now() - startTime}ms`,
       );
 
       return positions;
     } catch (error) {
+      // Add error to Sentry with breadcrumb context
+      Sentry.captureException(error, {
+        extra: {
+          walletAddress: maskedAddress,
+          method: "getPositions",
+          processingTime: Date.now() - startTime,
+        },
+      });
+
       serviceLogger.error(
-        `[SymphonyProvider] Error fetching positions for ${walletAddress}:`,
+        `[SymphonyProvider] Error fetching positions for ${maskedAddress}:`,
         error,
       );
       throw error;
@@ -338,12 +419,24 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     since: Date,
   ): Promise<Transfer[]> {
     const startTime = Date.now();
+    const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Add Sentry breadcrumb for debugging
+    Sentry.addBreadcrumb({
+      category: "symphony.api",
+      message: `Transfer history request`,
+      level: "info",
+      data: {
+        walletAddress: maskedAddress,
+        since: since.toISOString(),
+      },
+    });
 
     try {
       await this.enforceRateLimit();
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetching transfers for ${walletAddress} since ${since.toISOString()}`,
+        `[SymphonyProvider] Fetching transfers for ${maskedAddress} since ${since.toISOString()}`,
       );
 
       const response = await this.makeRequest<SymphonyTransferResponse>(
@@ -356,7 +449,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       if (!response.success) {
         serviceLogger.warn(
-          `[SymphonyProvider] Transfer fetch unsuccessful for ${walletAddress}`,
+          `[SymphonyProvider] Transfer fetch unsuccessful for ${maskedAddress}`,
         );
         return [];
       }
@@ -374,13 +467,23 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       }));
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetched ${transfers.length} transfers for ${walletAddress} in ${Date.now() - startTime}ms`,
+        `[SymphonyProvider] Fetched ${transfers.length} transfers for ${maskedAddress} in ${Date.now() - startTime}ms`,
       );
 
       return transfers;
     } catch (error) {
+      // Add error to Sentry with breadcrumb context
+      Sentry.captureException(error, {
+        extra: {
+          walletAddress: maskedAddress,
+          method: "getTransferHistory",
+          since: since.toISOString(),
+          processingTime: Date.now() - startTime,
+        },
+      });
+
       serviceLogger.error(
-        `[SymphonyProvider] Error fetching transfers for ${walletAddress}:`,
+        `[SymphonyProvider] Error fetching transfers for ${maskedAddress}:`,
         error,
       );
       // Don't throw - transfer history is optional for self-funding detection
@@ -395,13 +498,13 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     walletAddress: string,
   ): Promise<SymphonyPositionResponse["data"]> {
     const response = await this.makeRequest<SymphonyPositionResponse>(
-      "/agent/all-positions",
+      "/agent/user-performance",
       { userAddress: walletAddress },
     );
 
     if (!response.success) {
       throw new Error(
-        `Symphony API returned unsuccessful response for ${walletAddress}`,
+        `Symphony API returned unsuccessful response for ${this.maskWalletAddress(walletAddress)}`,
       );
     }
 

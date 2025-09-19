@@ -6,6 +6,7 @@ import {
   eq,
   inArray,
   min,
+  sql,
   sum,
 } from "drizzle-orm";
 
@@ -149,7 +150,7 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
     };
   }
 
-  // Separate competition IDs by type for efficient querying
+  // Separate competition IDs by type
   const paperTradingIds = allEndedCompetitions
     .filter((c) => c.type === "trading")
     .map((c) => c.id);
@@ -158,7 +159,7 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
     .map((c) => c.id);
   const allCompetitionIds = allEndedCompetitions.map((c) => c.id);
 
-  // Run all queries in parallel for maximum efficiency
+  // Run all queries in parallel
   const [
     tradeStats,
     positionStats,
@@ -187,19 +188,48 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
           .where(inArray(perpetualPositions.competitionId, perpsIds))
       : Promise.resolve([{ totalPositions: 0 }]),
 
-    // 3. Get volume stats for perps competitions
+    // 3. Get aggregated volume stats for perps competitions
+    // Using lateral join for scalability - avoids materializing intermediate results
     perpsIds.length > 0
-      ? dbRead
-          .selectDistinctOn([perpsAccountSummaries.agentId], {
-            totalVolume: perpsAccountSummaries.totalVolume,
-          })
-          .from(perpsAccountSummaries)
-          .where(inArray(perpsAccountSummaries.competitionId, perpsIds))
-          .orderBy(
-            perpsAccountSummaries.agentId,
-            desc(perpsAccountSummaries.timestamp),
-          )
-      : Promise.resolve([]),
+      ? (async () => {
+          // Get distinct agents from all perps competitions
+          const distinctAgents = dbRead
+            .selectDistinct({
+              agentId: perpsAccountSummaries.agentId,
+            })
+            .from(perpsAccountSummaries)
+            .where(inArray(perpsAccountSummaries.competitionId, perpsIds))
+            .as("distinct_agents");
+
+          // Create subquery for lateral join - gets latest summary per agent
+          const latestSummarySubquery = dbRead
+            .select({
+              totalVolume: perpsAccountSummaries.totalVolume,
+            })
+            .from(perpsAccountSummaries)
+            .where(
+              and(
+                inArray(perpsAccountSummaries.competitionId, perpsIds),
+                sql`${perpsAccountSummaries.agentId} = ${distinctAgents.agentId}`,
+              ),
+            )
+            .orderBy(desc(perpsAccountSummaries.timestamp))
+            .limit(1)
+            .as("latest_summary");
+
+          // Use leftJoinLateral to get latest summaries and aggregate
+          const result = await dbRead
+            .select({
+              totalVolume: sum(latestSummarySubquery.totalVolume).mapWith(
+                Number,
+              ),
+            })
+            .from(distinctAgents)
+            .leftJoinLateral(latestSummarySubquery, sql`true`);
+
+          return result;
+        })()
+      : Promise.resolve([{ totalVolume: 0 }]),
 
     // 4. Get vote stats for all competitions
     dbRead
@@ -223,11 +253,8 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
       ),
   ]);
 
-  // Calculate total perps volume from the latest account summaries
-  const perpsVolume = perpsVolumeStats.reduce((total, summary) => {
-    const volume = Number(summary.totalVolume) || 0;
-    return total + volume;
-  }, 0);
+  // Get the aggregated perps volume (already summed in the database)
+  const perpsVolume = perpsVolumeStats[0]?.totalVolume ?? 0;
 
   // Combine volumes from both competition types
   const totalVolume = (tradeStats[0]?.totalVolume ?? 0) + perpsVolume;
@@ -249,8 +276,7 @@ async function getGlobalStatsAllTypesImpl(): Promise<{
 }
 
 /**
- * Get bulk agent metrics for multiple agents using optimized queries
- * This replaces N+1 query patterns in attachAgentMetrics
+ * Get bulk agent metrics for multiple agents
  * Returns raw query results for processing in the service layer
  *
  * @param agentIds Array of agent IDs to get metrics for
@@ -475,9 +501,7 @@ async function getBulkAgentMetricsImpl(
 }
 
 /**
- * Get optimized global agent metrics using separate queries to avoid N+1 problem
- * This replaces the N+1 query problem in calculateGlobalMetrics
- * Uses separate aggregation queries to avoid Cartesian product issues
+ * Get global agent metrics using separate queries
  * @returns Array of agent metrics with all required data
  */
 async function getOptimizedGlobalAgentMetricsImpl(): Promise<
@@ -536,7 +560,7 @@ async function getOptimizedGlobalAgentMetricsImpl(): Promise<
       .where(inArray(votes.agentId, agentIds))
       .groupBy(votes.agentId);
 
-    // Create lookup maps for efficient merging
+    // Create lookup maps
     const competitionCountMap = new Map(
       competitionCounts.map((c) => [c.agentId, c.numCompetitions]),
     );

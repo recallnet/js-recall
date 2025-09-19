@@ -1297,7 +1297,6 @@ export class AgentManager {
 
   /**
    * Attach agent metrics to multiple agents efficiently using bulk queries
-   * This replaces the N+1 query pattern of calling attachAgentMetrics in a loop
    *
    * @param sanitizedAgents Array of sanitized agents to attach metrics to
    * @returns Array of agents with attached metrics
