@@ -2,180 +2,132 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
 
-// Load coverage configuration
+const COVERAGE_REPORTS_DIR = path.join(__dirname, "../coverage-reports");
+const LATEST_REPORT_PATH = path.join(
+  COVERAGE_REPORTS_DIR,
+  "coverage-total.latest.json",
+);
+const COVERAGE_METRICS = ["lines", "statements", "functions", "branches"];
+
 const coverageConfig = JSON.parse(
   fs.readFileSync(path.join(__dirname, "../coverage.config.json"), "utf8"),
 );
 
-// Path to previous report (passed as CLI argument)
-const pathToPreviousReport = process.argv[2];
+const previousReportPath = process.argv[2] || LATEST_REPORT_PATH;
 
-/**
- * Finds all coverage-summary.json files in the monorepo
- * Handles both Vitest and c8 coverage report formats
- */
-function findCoverageSummaries() {
-  const summaries = {};
+function aggregateCoverage() {
+  const coverage = {};
+  const warnings = [];
   const rootDir = path.join(__dirname, "..");
 
-  // Get all apps and packages
-  const apps = fs
+  const appDirs = fs
     .readdirSync(path.join(rootDir, "apps"), { withFileTypes: true })
     .filter((dirent) => dirent.isDirectory())
     .map((dirent) => `apps/${dirent.name}`);
 
-  const packages = fs
+  const packageDirs = fs
     .readdirSync(path.join(rootDir, "packages"), { withFileTypes: true })
     .filter((dirent) => dirent.isDirectory())
     .map((dirent) => `packages/${dirent.name}`);
 
-  [...apps, ...packages].forEach((packagePath) => {
-    // Check for coverage-summary.json (Vitest format)
-    const vitestSummary = path.join(
+  [...appDirs, ...packageDirs].forEach((packageName) => {
+    const summaryPath = path.join(
       rootDir,
-      packagePath,
-      "coverage/coverage-summary.json",
-    );
-    // Check for coverage/coverage-summary.json (c8 format)
-    const c8Summary = path.join(
-      rootDir,
-      packagePath,
+      packageName,
       "coverage/coverage-summary.json",
     );
 
-    if (fs.existsSync(vitestSummary)) {
-      summaries[packagePath] = vitestSummary;
-    } else if (fs.existsSync(c8Summary)) {
-      summaries[packagePath] = c8Summary;
-    }
-  });
-
-  return summaries;
-}
-
-/**
- * Reads and aggregates all coverage summaries
- */
-function aggregateCoverage(summaryPaths) {
-  const aggregated = {};
-  const totals = {
-    lines: { total: 0, covered: 0 },
-    statements: { total: 0, covered: 0 },
-    functions: { total: 0, covered: 0 },
-    branches: { total: 0, covered: 0 },
-  };
-
-  Object.entries(summaryPaths).forEach(([packageName, summaryPath]) => {
     if (fs.existsSync(summaryPath)) {
-      const summary = JSON.parse(fs.readFileSync(summaryPath, "utf8"));
-      const packageTotal = summary.total;
-
-      aggregated[packageName] = packageTotal;
-
-      // Aggregate totals
-      Object.keys(totals).forEach((key) => {
-        totals[key].total += packageTotal[key].total;
-        totals[key].covered += packageTotal[key].covered;
-      });
-    } else {
-      console.warn(`Coverage summary not found for ${packageName}`);
-      aggregated[packageName] = {
-        lines: { pct: 0, total: 0, covered: 0 },
-        statements: { pct: 0, total: 0, covered: 0 },
-        functions: { pct: 0, total: 0, covered: 0 },
-        branches: { pct: 0, total: 0, covered: 0 },
-      };
+      try {
+        const summary = JSON.parse(fs.readFileSync(summaryPath, "utf8"));
+        coverage[packageName] = summary.total;
+      } catch (error) {
+        warnings.push(
+          `Failed to read coverage for ${packageName}: ${error.message}`,
+        );
+        coverage[packageName] = {
+          lines: { pct: "ERROR", total: "ERROR", covered: "ERROR" },
+          statements: { pct: "ERROR", total: "ERROR", covered: "ERROR" },
+          functions: { pct: "ERROR", total: "ERROR", covered: "ERROR" },
+          branches: { pct: "ERROR", total: "ERROR", covered: "ERROR" },
+        };
+      }
     }
   });
 
-  // Calculate total percentages
-  const total = {};
-  Object.keys(totals).forEach((key) => {
-    const pct =
-      totals[key].total > 0
-        ? (totals[key].covered / totals[key].total) * 100
-        : 0;
-    total[key] = {
-      ...totals[key],
-      pct: parseFloat(pct.toFixed(2)),
-    };
-  });
-
-  return { total, ...aggregated };
+  return { coverage, warnings };
 }
 
-/**
- * Reads previous coverage report if provided
- */
-function readPreviousCoverage(pathToReport) {
-  if (!pathToReport || !fs.existsSync(pathToReport)) {
+function readPreviousCoverage(reportPath) {
+  if (!reportPath || !fs.existsSync(reportPath)) {
     return null;
   }
-  return JSON.parse(fs.readFileSync(pathToReport, "utf8"));
+  const data = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+
+  // Handle both old and new JSON structure
+  return data.coverage || data;
 }
 
-/**
- * Calculates the difference between current and previous coverage
- */
-function calculateDiff(current, previous) {
-  if (!previous) return current;
+function calculateDiff(currentCoverage, previousCoverage) {
+  if (!previousCoverage) return currentCoverage;
 
-  const diff = {};
-  Object.keys(current).forEach((packageName) => {
-    diff[packageName] = {};
-    const metrics = ["lines", "statements", "functions", "branches"];
+  const coverageWithDiff = {};
+  Object.keys(currentCoverage).forEach((packageName) => {
+    coverageWithDiff[packageName] = {};
 
-    metrics.forEach((metric) => {
-      const currPct = current[packageName]?.[metric]?.pct || 0;
-      const prevPct = previous[packageName]?.[metric]?.pct || 0;
+    COVERAGE_METRICS.forEach((metric) => {
+      const currentMetric = currentCoverage[packageName][metric];
 
-      diff[packageName][metric] = {
-        ...current[packageName][metric],
-        diff: parseFloat((currPct - prevPct).toFixed(2)),
+      if (currentMetric.pct === "ERROR") {
+        coverageWithDiff[packageName][metric] = currentMetric;
+        return;
+      }
+
+      const current = currentMetric.pct;
+      const previous = previousCoverage[packageName]?.[metric]?.pct || 0;
+
+      coverageWithDiff[packageName][metric] = {
+        ...currentMetric,
+        diff: parseFloat((current - previous).toFixed(2)),
       };
     });
   });
 
-  return diff;
+  return coverageWithDiff;
 }
-
-/**
- * Checks coverage against thresholds
- */
 function checkThresholds(coverage) {
   const failures = [];
 
-  // Check global thresholds for total
-  const globalThresholds = coverageConfig.global.thresholds;
-  Object.entries(globalThresholds).forEach(([metric, threshold]) => {
-    const actual = coverage.total[metric].pct;
-    if (actual < threshold) {
-      failures.push({
-        package: "total",
-        metric,
-        threshold,
-        actual,
-      });
-    }
-  });
-
-  // Check per-package thresholds
-  Object.entries(coverage).forEach(([packageName, metrics]) => {
-    if (packageName === "total") return;
-
+  Object.entries(coverage).forEach(([packageName, packageMetrics]) => {
     const packageConfig = coverageConfig.packages[packageName];
-    const thresholds = packageConfig?.thresholds || globalThresholds;
 
-    Object.entries(thresholds).forEach(([metric, threshold]) => {
-      const actual = metrics[metric].pct;
-      if (actual < threshold) {
+    if (!packageConfig) {
+      failures.push({
+        package: packageName,
+        metric: "config",
+        threshold: "must be added to coverage.config.json",
+        actual: "missing",
+      });
+      return;
+    }
+
+    if (!packageConfig.thresholds) {
+      return;
+    }
+
+    const thresholds = packageConfig.thresholds;
+
+    Object.entries(thresholds).forEach(([metricName, threshold]) => {
+      const actualCoverage = packageMetrics[metricName].pct;
+      if (actualCoverage === "ERROR") return;
+
+      if (actualCoverage < threshold) {
         failures.push({
           package: packageName,
-          metric,
+          metric: metricName,
           threshold,
-          actual,
+          actual: actualCoverage,
         });
       }
     });
@@ -184,109 +136,109 @@ function checkThresholds(coverage) {
   return failures;
 }
 
-/**
- * Formats coverage for console output
- */
 function formatCoverageTable(coverage) {
-  const table = {};
+  const formattedTable = {};
 
-  Object.entries(coverage).forEach(([packageName, metrics]) => {
-    table[packageName] = {
-      lines: formatMetric(metrics.lines),
-      statements: formatMetric(metrics.statements),
-      functions: formatMetric(metrics.functions),
-      branches: formatMetric(metrics.branches),
+  Object.entries(coverage).forEach(([packageName, packageMetrics]) => {
+    formattedTable[packageName] = {
+      lines: formatMetric(packageMetrics.lines),
+      statements: formatMetric(packageMetrics.statements),
+      functions: formatMetric(packageMetrics.functions),
+      branches: formatMetric(packageMetrics.branches),
     };
   });
 
-  return table;
+  return formattedTable;
 }
 
 function formatMetric(metric) {
-  const pct = metric.pct.toFixed(2);
+  if (metric.pct === "ERROR") {
+    return "ERROR";
+  }
+  const percentage = metric.pct.toFixed(2);
   if (metric.diff !== undefined && metric.diff !== 0) {
     const sign = metric.diff > 0 ? "+" : "";
-    return `${pct}% (${sign}${metric.diff}%)`;
+    return `${percentage}% (${sign}${metric.diff}%)`;
   }
-  return `${pct}%`;
+  return `${percentage}%`;
 }
-
-/**
- * Saves coverage report with timestamp
- */
-function saveCoverageReport(coverage) {
+function saveCoverageReport(coverage, warnings = [], violations = []) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
 
-  const dir = path.join(__dirname, "../coverage-reports");
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(COVERAGE_REPORTS_DIR)) {
+    fs.mkdirSync(COVERAGE_REPORTS_DIR, { recursive: true });
   }
 
-  const filename = `coverage-total.${timestamp}.json`;
-  const filepath = path.join(dir, filename);
+  const timestampedFile = `coverage-total.${timestamp}.json`;
+  const timestampedPath = path.join(COVERAGE_REPORTS_DIR, timestampedFile);
 
-  fs.writeFileSync(filepath, JSON.stringify(coverage, null, 2));
-  fs.writeFileSync(
-    path.join(dir, "coverage-total.latest.json"),
-    JSON.stringify(coverage, null, 2),
-  );
+  const reportData = {
+    coverage,
+    warnings,
+    violations,
+  };
 
-  console.log(`\nCoverage report saved to: ${filepath}`);
+  const coverageJson = JSON.stringify(reportData, null, 2);
+  fs.writeFileSync(timestampedPath, coverageJson);
+  fs.writeFileSync(LATEST_REPORT_PATH, coverageJson);
+
+  console.log(`\nCoverage report saved to: ${timestampedPath}`);
 }
 
-/**
- * Main execution
- */
-async function main() {
+function main() {
   console.log("🔍 Collecting coverage reports...\n");
 
-  // Find all coverage summaries
-  const summaryPaths = findCoverageSummaries();
+  const { coverage: currentCoverage, warnings } = aggregateCoverage();
 
-  // Aggregate coverage
-  const currentCoverage = aggregateCoverage(summaryPaths);
+  let previousCoverage = null;
+  try {
+    previousCoverage = readPreviousCoverage(previousReportPath);
+  } catch (error) {
+    warnings.push(`Failed to read previous coverage report: ${error.message}`);
+  }
 
-  // Read previous coverage if provided
-  const previousCoverage = readPreviousCoverage(pathToPreviousReport);
-
-  // Calculate diff
   const coverageWithDiff = calculateDiff(currentCoverage, previousCoverage);
+  const formattedTable = formatCoverageTable(coverageWithDiff);
 
-  // Format for display
-  const table = formatCoverageTable(coverageWithDiff);
-
-  // Display table
   console.log("📊 Coverage Report");
-  console.table(table);
+  console.table(formattedTable);
 
-  // Check thresholds
-  const failures = checkThresholds(currentCoverage);
+  if (warnings.length > 0) {
+    console.warn("\n⚠️ Warnings:");
+    warnings.forEach((warning) => console.warn(`   ${warning}`));
+  }
 
-  if (failures.length > 0) {
+  const thresholdFailures = checkThresholds(currentCoverage);
+
+  if (thresholdFailures.length > 0) {
     console.error("\n❌ Coverage thresholds not met:");
-    failures.forEach(({ package: pkg, metric, threshold, actual }) => {
+    thresholdFailures.forEach(({ package: pkg, metric, threshold, actual }) => {
+      const displayValue =
+        typeof actual === "number" ? `${actual.toFixed(2)}%` : actual;
+      const displayThreshold =
+        typeof threshold === "number" ? `${threshold}%` : threshold;
       console.error(
-        `   ${pkg} - ${metric}: ${actual.toFixed(2)}% (required: ${threshold}%)`,
+        `   ${pkg} - ${metric}: ${displayValue} (required: ${displayThreshold})`,
       );
     });
 
-    // Save report before exiting
-    saveCoverageReport(currentCoverage);
+    saveCoverageReport(coverageWithDiff, warnings, thresholdFailures);
     process.exit(1);
   } else {
     console.log("\n✅ All coverage thresholds met!");
   }
 
-  // Save report
-  saveCoverageReport(currentCoverage);
+  saveCoverageReport(coverageWithDiff, warnings, []);
 }
 
 // Run if called directly
 if (require.main === module) {
-  main().catch((error) => {
+  try {
+    main();
+  } catch (error) {
     console.error("Error:", error);
     process.exit(1);
-  });
+  }
 }
 
 module.exports = { checkThresholds, aggregateCoverage };
