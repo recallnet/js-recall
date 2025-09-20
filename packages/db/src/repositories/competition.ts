@@ -7,8 +7,10 @@ import {
   count as drizzleCount,
   eq,
   getTableColumns,
+  gt,
   inArray,
   isNotNull,
+  lt,
   lte,
   or,
   sql,
@@ -970,6 +972,26 @@ export class CompetitionRepository {
       return result;
     } catch (error) {
       this.#logger.error("Error in findActive:", error);
+      throw error;
+    }
+  }
+
+  async findVotingOpen(tx?: Transaction) {
+    try {
+      const now = new Date();
+      const executor = tx || this.#db;
+      const result = await executor
+        .select()
+        .from(competitions)
+        .where(
+          and(
+            lt(competitions.votingStartDate, now),
+            gt(competitions.votingEndDate, now),
+          ),
+        );
+      return result;
+    } catch (error) {
+      this.#logger.error("Error in findVotingOpen:", error);
       throw error;
     }
   }

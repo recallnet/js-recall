@@ -146,6 +146,9 @@ export function makeUserController(services: ServiceRegistry) {
           updatedAt: now,
         });
 
+        // Grant initial boost if applicable
+        await services.initBoostService.initBoost(linkedUser);
+
         res.status(200).json({
           success: true,
           user: linkedUser,
