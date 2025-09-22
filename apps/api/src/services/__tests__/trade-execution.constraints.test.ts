@@ -9,7 +9,12 @@ import {
 } from "vitest";
 
 import { serviceLogger } from "@/lib/logger.js";
+import { BalanceService } from "@/services/balance.service.js";
+import { CompetitionService } from "@/services/competition.service.js";
+import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
+import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { TradeExecutionService } from "@/services/trade-execution.service.js";
+import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { BlockchainType, PriceReport } from "@/types/index.js";
 
 // Mock dependencies for unit tests
@@ -80,11 +85,11 @@ describe("TradeExecutionService - Constraints Tests", () => {
 
     // Create TradeExecutionService instance with mocked dependencies
     tradeExecutionService = new TradeExecutionService(
-      mockCompetitionService,
-      mockTradeSimulatorService,
-      mockBalanceService,
-      mockPriceTrackerService,
-      mockPortfolioSnapshotterService,
+      mockCompetitionService as unknown as CompetitionService,
+      mockTradeSimulatorService as unknown as TradeSimulatorService,
+      mockBalanceService as unknown as BalanceService,
+      mockPriceTrackerService as unknown as PriceTrackerService,
+      mockPortfolioSnapshotterService as unknown as PortfolioSnapshotterService,
     );
   });
 

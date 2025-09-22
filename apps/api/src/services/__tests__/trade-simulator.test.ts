@@ -9,6 +9,8 @@ import {
 } from "vitest";
 
 import { serviceLogger } from "@/lib/logger.js";
+import { BalanceService } from "@/services/balance.service.js";
+import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { BlockchainType, PriceReport } from "@/types/index.js";
 
@@ -54,8 +56,8 @@ describe("TradeSimulatorService", () => {
 
     // Create TradeSimulator instance with mocked dependencies
     tradeSimulator = new TradeSimulatorService(
-      mockBalanceService,
-      mockPriceTracker,
+      mockBalanceService as unknown as BalanceService,
+      mockPriceTracker as unknown as PriceTrackerService,
     );
   });
 
