@@ -1,6 +1,6 @@
 import { ORPCError, os } from "@orpc/server";
 
-import { SelectUser } from "@recallnet/db-schema/core/types";
+import { SelectUser } from "@recallnet/db/schema/core/types";
 
 export const authMiddleware = os
   .$context<{

@@ -1,7 +1,7 @@
 import { os } from "@orpc/server";
 import * as z from "zod";
 
-import { SelectUser } from "@recallnet/db-schema/core/types";
+import { SelectUser } from "@recallnet/db/schema/core/types";
 
 import { Database } from "@/rpc/types";
 

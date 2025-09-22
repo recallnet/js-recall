@@ -2,7 +2,7 @@ import { os } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { IronSession } from "iron-session";
 
-import schema from "@recallnet/db-schema";
+import schema from "@recallnet/db/schema";
 
 import { Database, SessionData } from "@/rpc/types";
 
