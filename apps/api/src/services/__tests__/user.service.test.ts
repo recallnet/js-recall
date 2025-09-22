@@ -1,6 +1,6 @@
 import { MockedObject, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SelectUser } from "@recallnet/db-schema/core/types";
+import { SelectUser } from "@recallnet/db/schema/core/types";
 
 import { EmailService } from "@/services/email.service.js";
 import { UserService } from "@/services/user.service.js";
