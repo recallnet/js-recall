@@ -112,10 +112,13 @@ class ServiceRegistry {
       this._competitionRewardService,
     );
 
-    // Initialize TradeExecutionService with both dependencies
+    // Initialize TradeExecutionService with all dependencies
     this._tradeExecutionService = new TradeExecutionService(
       this._competitionService,
       this._tradeSimulatorService,
+      this._balanceService,
+      this._priceTrackerService,
+      this._portfolioSnapshotterService,
     );
 
     // Initialize LeaderboardService with required dependencies
