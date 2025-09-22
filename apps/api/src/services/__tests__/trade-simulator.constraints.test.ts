@@ -82,6 +82,9 @@ describe("TradeSimulatorService - Trading Constraints", () => {
       const mockCompetitionService = {
         getCompetition: vi.fn(),
         isAgentActiveInCompetition: vi.fn(),
+      } as unknown as {
+        getCompetition: ReturnType<typeof vi.fn>;
+        isAgentActiveInCompetition: ReturnType<typeof vi.fn>;
       };
 
       // Create TradeSimulator instance with mocked dependencies
@@ -89,7 +92,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
         mockBalanceManager,
         mockPriceTracker,
         mockPortfolioSnapshotter,
-        mockCompetitionService as CompetitionService,
+        mockCompetitionService as unknown as CompetitionService,
       );
     });
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { BlockchainType } from "@/types/index.js";
+import { BlockchainType, SPECIFIC_CHAIN_VALUES } from "@/types/index.js";
 
 const GetQuoteQuerySchema = z.object({
   fromToken: z.string().min(1, "fromToken is required"),
@@ -11,53 +11,15 @@ const GetQuoteQuerySchema = z.object({
   amount: z
     .string()
     .min(1, "amount is required")
-    .transform((val) => {
+    .refine((val) => {
       const parsed = parseFloat(val);
-      if (isNaN(parsed) || parsed <= 0) {
-        throw new z.ZodError([
-          {
-            code: z.ZodIssueCode.custom,
-            message: "Amount must be a positive number",
-            path: ["amount"],
-          },
-        ]);
-      }
-      return parsed;
-    }),
+      return !isNaN(parsed) && parsed > 0;
+    }, "Amount must be a positive number")
+    .transform((val) => parseFloat(val)),
   fromChain: z.nativeEnum(BlockchainType).optional(),
-  fromSpecificChain: z
-    .enum([
-      "eth",
-      "polygon",
-      "bsc",
-      "arbitrum",
-      "optimism",
-      "avalanche",
-      "base",
-      "linea",
-      "zksync",
-      "scroll",
-      "mantle",
-      "svm",
-    ])
-    .optional(),
+  fromSpecificChain: z.enum(SPECIFIC_CHAIN_VALUES).optional(),
   toChain: z.nativeEnum(BlockchainType).optional(),
-  toSpecificChain: z
-    .enum([
-      "eth",
-      "polygon",
-      "bsc",
-      "arbitrum",
-      "optimism",
-      "avalanche",
-      "base",
-      "linea",
-      "zksync",
-      "scroll",
-      "mantle",
-      "svm",
-    ])
-    .optional(),
+  toSpecificChain: z.enum(SPECIFIC_CHAIN_VALUES).optional(),
 });
 
 const ExecuteTradeBodySchema = z.object({
@@ -67,56 +29,21 @@ const ExecuteTradeBodySchema = z.object({
     .number()
     .positive("Amount must be a positive number")
     .or(
-      z.string().transform((val) => {
-        const parsed = parseFloat(val);
-        if (isNaN(parsed) || parsed <= 0) {
-          throw new z.ZodError([
-            {
-              code: z.ZodIssueCode.custom,
-              message: "Amount must be a positive number",
-              path: ["amount"],
-            },
-          ]);
-        }
-        return parsed;
-      }),
+      z
+        .string()
+        .min(1, "Amount is required")
+        .refine((val) => {
+          const parsed = parseFloat(val);
+          return !isNaN(parsed) && parsed > 0;
+        }, "Amount must be a positive number")
+        .transform((val) => parseFloat(val)),
     ),
   reason: z.string().min(1, "reason is required"),
   slippageTolerance: z.number().optional(),
   fromChain: z.nativeEnum(BlockchainType).optional(),
-  fromSpecificChain: z
-    .enum([
-      "eth",
-      "polygon",
-      "bsc",
-      "arbitrum",
-      "optimism",
-      "avalanche",
-      "base",
-      "linea",
-      "zksync",
-      "scroll",
-      "mantle",
-      "svm",
-    ])
-    .optional(),
+  fromSpecificChain: z.enum(SPECIFIC_CHAIN_VALUES).optional(),
   toChain: z.nativeEnum(BlockchainType).optional(),
-  toSpecificChain: z
-    .enum([
-      "eth",
-      "polygon",
-      "bsc",
-      "arbitrum",
-      "optimism",
-      "avalanche",
-      "base",
-      "linea",
-      "zksync",
-      "scroll",
-      "mantle",
-      "svm",
-    ])
-    .optional(),
+  toSpecificChain: z.enum(SPECIFIC_CHAIN_VALUES).optional(),
 });
 
 export function makeTradeController(services: ServiceRegistry) {

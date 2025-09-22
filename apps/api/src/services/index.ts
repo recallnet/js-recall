@@ -112,11 +112,9 @@ class ServiceRegistry {
     );
 
     // Update CompetitionService to use the actual TradeSimulatorService
-    (
-      this._competitionService as CompetitionService & {
-        tradeSimulatorService: TradeSimulatorService;
-      }
-    ).tradeSimulatorService = this._tradeSimulatorService;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this._competitionService as any).tradeSimulatorService =
+      this._tradeSimulatorService;
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentService);
