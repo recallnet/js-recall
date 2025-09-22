@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { trades } from "@recallnet/db-schema/trading/defs";
+import { trades } from "@recallnet/db/schema/trading/defs";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";

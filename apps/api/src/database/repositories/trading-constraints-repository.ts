@@ -1,114 +1,13 @@
-import { eq } from "drizzle-orm";
-
-import { tradingConstraints } from "@recallnet/db-schema/trading/defs";
-import {
-  InsertTradingConstraints,
-  SelectTradingConstraints,
-} from "@recallnet/db-schema/trading/types";
+import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 
 import { db } from "@/database/db.js";
 
-// Type for database transaction
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-/**
- * Creates trading constraints for a competition
- * @param data - The trading constraints data to insert
- * @param tx - Optional database transaction
- * @returns The created trading constraints record
- */
-async function createImpl(
-  data: InsertTradingConstraints,
-  tx?: DatabaseTransaction,
-): Promise<SelectTradingConstraints | undefined> {
-  const dbClient = tx || db;
-  const [result] = await dbClient
-    .insert(tradingConstraints)
-    .values(data)
-    .returning();
-  return result;
-}
-
-/**
- * Finds trading constraints by competition ID
- * @param competitionId - The competition ID to find constraints for
- * @returns The trading constraints record or null if not found
- */
-async function findByCompetitionIdImpl(
-  competitionId: string,
-): Promise<SelectTradingConstraints | null> {
-  const [result] = await db
-    .select()
-    .from(tradingConstraints)
-    .where(eq(tradingConstraints.competitionId, competitionId))
-    .limit(1);
-  return result || null;
-}
-
-/**
- * Updates trading constraints for a competition
- * @param competitionId - The competition ID to update constraints for
- * @param data - The updated trading constraints data
- * @param tx - Optional database transaction
- * @returns The updated trading constraints record
- */
-async function updateImpl(
-  competitionId: string,
-  data: Partial<InsertTradingConstraints>,
-  tx?: DatabaseTransaction,
-): Promise<SelectTradingConstraints | undefined> {
-  const dbClient = tx || db;
-  const [result] = await dbClient
-    .update(tradingConstraints)
-    .set({
-      ...data,
-      updatedAt: new Date(),
-    })
-    .where(eq(tradingConstraints.competitionId, competitionId))
-    .returning();
-  return result;
-}
-
-/**
- * Deletes trading constraints for a competition
- * @param competitionId - The competition ID to delete constraints for
- * @returns True if constraints were deleted, false if not found
- */
-async function deleteImpl(competitionId: string): Promise<boolean> {
-  const result = await db
-    .delete(tradingConstraints)
-    .where(eq(tradingConstraints.competitionId, competitionId));
-  return result.rowCount ? result.rowCount > 0 : false;
-}
-
-/**
- * Upserts trading constraints for a competition
- * @param data - The trading constraints data to upsert
- * @returns The upserted trading constraints record
- */
-async function upsertImpl(
-  data: InsertTradingConstraints,
-): Promise<SelectTradingConstraints | undefined> {
-  const [result] = await db
-    .insert(tradingConstraints)
-    .values(data)
-    .onConflictDoUpdate({
-      target: tradingConstraints.competitionId,
-      set: {
-        minimumPairAgeHours: data.minimumPairAgeHours,
-        minimum24hVolumeUsd: data.minimum24hVolumeUsd,
-        minimumLiquidityUsd: data.minimumLiquidityUsd,
-        minimumFdvUsd: data.minimumFdvUsd,
-        updatedAt: new Date(),
-      },
-    })
-    .returning();
-  return result;
-}
+const repository = new TradingConstraintsRepository(db);
 
 // Export the repository functions
-export const create = createImpl;
-export const findByCompetitionId = findByCompetitionIdImpl;
-export const update = updateImpl;
-export const deleteConstraints = deleteImpl;
-export const upsert = upsertImpl;
+export const create = repository.create.bind(repository);
+export const findByCompetitionId =
+  repository.findByCompetitionId.bind(repository);
+export const update = repository.update.bind(repository);
+export const deleteConstraints = repository.delete.bind(repository);
+export const upsert = repository.upsert.bind(repository);

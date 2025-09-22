@@ -16,7 +16,7 @@ import { eq, isNull, sql } from "drizzle-orm";
 import * as readline from "readline";
 import { parse } from "ts-command-line-args";
 
-import { agents } from "@recallnet/db-schema/core/defs";
+import { agents } from "@recallnet/db/schema/core/defs";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";

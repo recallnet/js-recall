@@ -7,7 +7,7 @@ RUN npm install -g pnpm typescript turbo bun
 COPY package.json pnpm-*.yaml .npmrc ./
 COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/typescript-config/package.json packages/typescript-config/
-COPY packages/db-schema/package.json packages/db-schema/
+COPY packages/db/package.json packages/db/
 COPY packages/staking-contracts/package.json packages/staking-contracts/
 COPY packages/rewards/package.json packages/rewards/
 COPY apps/api/package.json apps/api/
@@ -17,7 +17,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build the application
-RUN pnpm --filter=@recallnet/db-schema build && \
+RUN pnpm --filter=@recallnet/db build && \
     pnpm --filter=@recallnet/staking-contracts build && \
     pnpm --filter=@recallnet/rewards build && \
     pnpm --filter=api build

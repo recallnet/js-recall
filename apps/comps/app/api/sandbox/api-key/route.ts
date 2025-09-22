@@ -2,52 +2,41 @@ import { NextRequest } from "next/server";
 
 import {
   extractSessionCookie,
-  mainApiRequest,
   sandboxAdminRequest,
 } from "@/app/api/sandbox/_lib/sandbox-config";
 import {
   createSuccessResponse,
   withErrorHandling,
 } from "@/app/api/sandbox/_lib/sandbox-response";
-import {
-  AdminAgentKeyResponse,
-  AdminSearchResult,
-  ProfileResponse,
-} from "@/types";
+import { AdminAgentKeyResponse, AdminSearchResult } from "@/types";
 
 /**
  * GET /api/sandbox/api-key?name={agentName}
  * Retrieves an agent's API key from the sandbox by:
- * 1. Validating the agent name belongs to the logged-in user
- * 2. Finding the agent's ID in the sandbox using its name
- * 3. Getting the agent's API key
+ * 1. Finding the agent's ID in the sandbox using its handle (globally unique)
+ * 2. Getting the agent's API key
  */
 async function handleGetAgentApiKey(request: NextRequest) {
   // Extract session cookie
   const sessionCookie = extractSessionCookie(request);
+  if (!sessionCookie) {
+    throw new Error("Authentication required");
+  }
 
-  // Get agent name from query parameters
+  // Get agent handle from query parameters
   const { searchParams } = new URL(request.url);
   const agentHandle = searchParams.get("handle");
   if (!agentHandle) {
-    throw new Error("Agent name is required");
+    throw new Error("Agent handle is required");
   }
 
-  // Fetch user profile from the base API
-  const profileData = await mainApiRequest<ProfileResponse>(
-    "/user/profile",
-    sessionCookie,
-  );
-  const { user } = profileData;
-  const { email } = user;
-
-  // Find the agent's ID in the sandbox using its name
+  // Find the agent's ID in the sandbox using its handle
   const searchData = await sandboxAdminRequest<AdminSearchResult>(
-    `/admin/search?user.email=${email}&agent.handle=${encodeURIComponent(agentHandle)}&join=true`,
+    `/admin/search?agent.handle=${encodeURIComponent(agentHandle)}`,
   );
 
   // Check if agent exists in sandbox
-  if (!searchData.results?.agents || searchData.results.agents.length === 0) {
+  if (searchData.results.agents.length === 0) {
     throw new Error("Agent not found in sandbox");
   }
 

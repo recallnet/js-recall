@@ -1,4 +1,5 @@
 #!/bin/sh
+export CI=1
 
 echo "🚀 Running pre-push quality checks..."
 

@@ -1,12 +1,4 @@
 {
-  "global": {
-    "thresholds": {
-      "lines": 4,
-      "statements": 4,
-      "functions": 46,
-      "branches": 46
-    }
-  },
   "packages": {
     "apps/api": {
       "thresholds": {

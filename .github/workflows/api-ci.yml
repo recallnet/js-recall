@@ -110,7 +110,7 @@ jobs:
         run: |
           cat > .env.test << EOF
           NODE_ENV=test
-          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trading_simulator_test
+          VITE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trading_simulator_test
           ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters
           EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
           TEST_MODE=true
@@ -124,13 +124,12 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trading_simulator_test
 
       - name: Run integration tests
-        working-directory: apps/api
         run: |
-          echo "Running integration tests (real database)..."
-          pnpm vitest run --project integration
+          echo "Running integration tests..."
+          pnpm test:integration
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trading_simulator_test
+          VITE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trading_simulator_test
           TEST_MODE: true
 
   e2e-tests:

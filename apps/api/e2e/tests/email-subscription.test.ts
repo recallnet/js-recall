@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { describe, expect, test } from "vitest";
 
-import { users } from "@recallnet/db-schema/core/defs";
+import { users } from "@recallnet/db/schema/core/defs";
 
 import {
   UserProfileResponse,

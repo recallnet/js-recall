@@ -87,6 +87,37 @@ Commonly used scripts defined in `package.json` or `turbo.json`:
 - `pnpm docs:check`: Verify TSDoc coverage.
 - `pnpm docs:build`: Generate TypeDoc documentation for all packages.
 
+## Frontend-Backend Contract Standards
+- **Response Consistency**:
+  - All numeric values as numbers, not strings
+  - Boolean flags instead of string enums when binary (e.g., `isLong` vs `side: "long" | "short"`)
+  - Consistent field naming across similar endpoints
+  - Embedded relations follow same structure everywhere
+  - Dates as ISO 8601 strings (e.g., `2024-01-01T00:00:00Z`)
+- **Pagination Contract**:
+  ```typescript
+  {
+    data: T[],
+    pagination: {
+      total: number,
+      limit: number,
+      offset: number,
+      hasMore: boolean
+    }
+  }
+  ```
+- **Type Sharing**:
+  - API types defined in `apps/api/src/types/`
+  - Frontend types in `apps/comps/types/`
+  - Shared types in packages when used by multiple apps
+  - Use code generation for API client types when possible
+- **Field Consistency Rules**:
+  - IDs: Always string (UUIDs)
+  - Amounts/Prices: Always number with explicit precision
+  - Timestamps: ISO 8601 strings
+  - Enums: Use TypeScript string literal unions
+  - Optional fields: Use `| null` for API, handle in frontend
+
 ## Additional Resources (Project Context)
 - [Root README](README.md)
 - [Turborepo Documentation](mdc:https:/turbo.build/repo/docs)

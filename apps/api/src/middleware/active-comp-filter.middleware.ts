@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 
-import { competitions } from "@recallnet/db-schema/core/defs";
+import { competitions } from "@recallnet/db/schema/core/defs";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";

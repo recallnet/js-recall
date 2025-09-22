@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { InsertUser, SelectUser } from "@recallnet/db-schema/core/types";
-import { Transaction } from "@recallnet/db-schema/types";
+import { InsertUser, SelectUser } from "@recallnet/db/schema/core/types";
+import { Transaction } from "@recallnet/db/types";
 
 import { db } from "@/database/db.js";
 import { updateAgentsOwner } from "@/database/repositories/agent-repository.js";

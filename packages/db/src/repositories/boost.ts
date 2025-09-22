@@ -2,18 +2,23 @@ import { and, eq, sql, sum } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
-import type { Transaction } from "@recallnet/db-schema/types";
-import * as schema from "@recallnet/db-schema/voting/defs";
+import { BlockchainAddressAsU8A } from "../coders/index.js";
+import * as schema from "../schema/voting/defs.js";
 import {
   SelectAgentBoost,
   SelectAgentBoostTotal,
-} from "@recallnet/db-schema/voting/types";
-
-import { db } from "@/database/db.js";
-import { BlockchainAddressAsU8A } from "@/lib/coders.js";
+} from "../schema/voting/types.js";
+import type { Transaction } from "../types.js";
+import { Database } from "../types.js";
 
 export { BoostRepository, BoostChangeMetaSchema };
-export type { BoostDiffArgs, BoostDiffResult, BoostChangeMeta };
+export type {
+  BoostDiffArgs,
+  BoostDiffResult,
+  BoostChangeMeta,
+  BoostAgentArgs,
+  BoostAgentResult,
+};
 
 /** Schema of an optional structured context to attach to each boost change. */
 const BoostChangeMetaSchema = z.object({
@@ -160,9 +165,9 @@ type BoostAgentResult =
  *     delta as appropriate.
  */
 class BoostRepository {
-  readonly #db: typeof db;
+  readonly #db: Database;
 
-  constructor(database: typeof db = db) {
+  constructor(database: Database) {
     this.#db = database;
   }
 
@@ -472,7 +477,7 @@ class BoostRepository {
       competitionId: string;
     },
     tx?: Transaction,
-  ) {
+  ): Promise<bigint> {
     const executor = tx || this.#db;
     const [res] = await executor
       .select()
@@ -490,7 +495,7 @@ class BoostRepository {
   async agentBoostTotals(
     { competitionId }: { competitionId: string },
     tx?: Transaction,
-  ) {
+  ): Promise<Record<string, bigint>> {
     const executor = tx || this.#db;
     const res = await executor
       .select()
@@ -536,7 +541,7 @@ class BoostRepository {
   async userBoosts(
     { userId, competitionId }: { userId: string; competitionId: string },
     tx?: Transaction,
-  ) {
+  ): Promise<Record<string, bigint>> {
     const executor = tx || this.#db;
     const res = await executor
       .select({

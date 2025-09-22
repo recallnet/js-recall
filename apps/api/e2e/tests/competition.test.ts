@@ -2,7 +2,7 @@ import axios from "axios";
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { agents, competitionAgents } from "@recallnet/db-schema/core/defs";
+import { agents, competitionAgents } from "@recallnet/db/schema/core/defs";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";

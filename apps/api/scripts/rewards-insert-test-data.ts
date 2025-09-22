@@ -5,8 +5,8 @@ import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { hexToBytes, keccak256 } from "viem";
 
-import { competitions } from "@recallnet/db-schema/core/defs";
-import { rewards } from "@recallnet/db-schema/voting/defs";
+import { competitions } from "@recallnet/db/schema/core/defs";
+import { rewards } from "@recallnet/db/schema/voting/defs";
 
 import { db } from "@/database/db.js";
 import {

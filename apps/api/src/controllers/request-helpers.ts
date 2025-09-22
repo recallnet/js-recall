@@ -1,7 +1,7 @@
 import { Request } from "express";
 import qs from "qs";
 
-import { UpdateCompetitionSchema } from "@recallnet/db-schema/core/types";
+import { UpdateCompetitionSchema } from "@recallnet/db/schema/core/types";
 
 import { config } from "@/config/index.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -218,9 +218,9 @@ export function checkUserUniqueConstraintViolation(error: unknown) {
 }
 
 /**
- * Check if the request is an unauthenticated *or* user authenticated (frontend) request
+ * Check if the request is public or from a user (not agent or admin)
  * @param req Express request
- * @returns True if the request is authenticated as an admin, false otherwise
+ * @returns True if the request is public or from a user, false otherwise
  */
 export function checkIsPublicOrUserRequest(req: Request) {
   return !req.agentId && !checkIsAdmin(req);
@@ -241,6 +241,20 @@ export function checkIsCacheEnabled() {
  */
 export function checkShouldCacheResponse(req: Request) {
   return checkIsCacheEnabled() && checkIsPublicOrUserRequest(req);
+}
+
+/**
+ * Get cache visibility based on request context
+ * @param req Express request
+ * @returns Cache visibility level
+ */
+export function getCacheVisibility(
+  req: Request,
+): "user" | "anon" | "admin" | "agent" {
+  if (req.isAdmin) return "admin";
+  if (req.agentId) return "agent";
+  if (req.userId) return "user";
+  return "anon";
 }
 
 /**
