@@ -188,15 +188,6 @@ export class CoinGeckoProvider implements PriceSource {
   }
 
   // Not implemented for now
-  private async fetchBatchPrices(
-    tokenAddresses: string[],
-    chain: BlockchainType,
-    specificChain: SpecificChain,
-  ) {
-    return new Map<string, DexScreenerTokenInfo | null>();
-  }
-
-  // Not implemented for now
   async getBatchPrices() {
     return new Map<string, DexScreenerTokenInfo | null>();
   }
