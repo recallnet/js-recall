@@ -30,15 +30,12 @@ type InitNoStakeResult = BoostDiffResult & { competitionId: string };
 
 const TEXT_ENCODER = new TextEncoder();
 
-const DECIMALS = 18; // RECALL TOKEN DECIMALS
-
 export class BoostAwardService {
   readonly #db: Database;
   readonly #competitionRepo: CompetitionRepository;
   readonly #boostRepository: BoostRepository;
   readonly #stakesRepository: StakesRepository;
   readonly #userService: UserService;
-  readonly #divisor: bigint;
   readonly #noStakeBoostAmount: bigint;
 
   constructor(
@@ -54,7 +51,6 @@ export class BoostAwardService {
     this.#boostRepository = boostRepository;
     this.#stakesRepository = stakesRepository;
     this.#userService = userService;
-    this.#divisor = 10n ** BigInt(DECIMALS);
     this.#noStakeBoostAmount = noStakeBoostAmount || 1000n;
   }
 
@@ -97,7 +93,7 @@ export class BoostAwardService {
       // Staked after the voting starts
       multiplier = 1n;
     }
-    const boostAmount = (stake.amount * multiplier) / this.#divisor;
+    const boostAmount = stake.amount * multiplier;
     return this.#boostRepository.increase(
       {
         userId: userId,
