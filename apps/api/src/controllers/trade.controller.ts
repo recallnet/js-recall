@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
-import { tradeLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { BlockchainType, SPECIFIC_CHAIN_NAMES } from "@/types/index.js";
@@ -88,48 +87,6 @@ export function makeTradeController(services: ServiceRegistry) {
           );
         }
 
-        tradeLogger.debug(
-          `Executing trade with competition ID: ${competitionId}`,
-        );
-
-        // Fetch the competition and check if end date has passed
-        const competition =
-          await services.competitionService.getCompetition(competitionId);
-        if (!competition) {
-          throw new ApiError(404, `Competition not found: ${competitionId}`);
-        }
-
-        // Check if this is a perps competition - paper trading only
-        if (competition.type === "perpetual_futures") {
-          throw new ApiError(
-            400,
-            "This endpoint is not available for perpetual futures competitions. " +
-              "Perpetual futures positions are managed through Symphony, not through this API.",
-          );
-        }
-
-        // Check if competition has passed its end date
-        const now = new Date();
-        if (competition.endDate !== null && now > competition.endDate) {
-          throw new ApiError(
-            400,
-            `Competition has ended. Trading is no longer allowed for competition: ${competition.name}`,
-          );
-        }
-
-        // Check if agent is registered and active in the competition
-        const isAgentActive =
-          await services.competitionService.isAgentActiveInCompetition(
-            competitionId,
-            agentId,
-          );
-        if (!isAgentActive) {
-          throw new ApiError(
-            403,
-            `Agent ${agentId} is not registered for competition ${competitionId}. Trading is not allowed.`,
-          );
-        }
-
         // Create chain options object if any chain parameters were provided
         const chainOptions =
           fromChain || fromSpecificChain || toChain || toSpecificChain
@@ -141,24 +98,18 @@ export function makeTradeController(services: ServiceRegistry) {
               }
             : undefined;
 
-        // Log chain options if provided
-        if (chainOptions) {
-          tradeLogger.debug(
-            `Using chain options: ${JSON.stringify(chainOptions)}`,
-          );
-        }
-
-        // Execute the trade with optional chain parameters
-        const trade = await services.tradeSimulatorService.executeTrade(
-          agentId,
-          competitionId,
-          fromToken,
-          toToken,
-          parsedAmount,
-          reason,
-          slippageTolerance,
-          chainOptions,
-        );
+        // Execute the trade via service
+        const trade =
+          await services.simulatedTradeExecutionService.executeTrade({
+            agentId,
+            competitionId,
+            fromToken,
+            toToken,
+            fromAmount: parsedAmount,
+            reason,
+            slippageTolerance,
+            chainOptions,
+          });
 
         // Return successful trade result
         res.status(200).json({
