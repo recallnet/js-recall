@@ -278,6 +278,9 @@ export const config = {
       apiKey: process.env.NOVES_API_KEY || "",
       enabled: !!process.env.NOVES_API_KEY,
     },
+    coingecko: {
+      apiKey: process.env.COINGECKO_API_KEY || "",
+    },
     // Domain for API authentication and verification purposes
     domain:
       process.env.API_DOMAIN || "https://api.competitions.recall.network/",
