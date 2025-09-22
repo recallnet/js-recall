@@ -141,7 +141,6 @@ export const useUnlockKeys = (
         const refetchResult = await sandboxKeyQuery.refetch();
         if (refetchResult.data?.agent?.id) {
           currentSandboxAgentId = refetchResult.data.agent.id;
-          console.error("Agent found after refetch:", currentSandboxAgentId);
         } else {
           // Agent still doesn't exist, create it
           const createResult = await createSandboxAgentMutation.mutateAsync();

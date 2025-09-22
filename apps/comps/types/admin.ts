@@ -58,20 +58,6 @@ export interface AdminCreateAgentRequest {
   };
 }
 
-export interface AdminCreateAgentRequest {
-  user: {
-    walletAddress: string;
-  };
-  agent: {
-    name: string;
-    handle: string;
-    description?: string;
-    imageUrl?: string;
-    email?: string;
-    metadata?: Record<string, unknown>;
-  };
-}
-
 export interface AdminCreateAgentResponse {
   success: boolean;
   agent: AdminAgent;
