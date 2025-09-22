@@ -63,11 +63,6 @@ class ServiceRegistry {
       this._balanceService,
       this._priceTrackerService,
     );
-    this._tradeSimulatorService = new TradeSimulatorService(
-      this._balanceService,
-      this._priceTrackerService,
-      this._portfolioSnapshotterService,
-    );
 
     // Configuration service for dynamic settings
     this._configurationService = new ConfigurationService();
@@ -95,9 +90,10 @@ class ServiceRegistry {
     // Initialize core reward service (no dependencies)
     this._competitionRewardService = new CompetitionRewardService();
 
+    // Initialize competition service first (without trade simulator)
     this._competitionService = new CompetitionService(
       this._balanceService,
-      this._tradeSimulatorService,
+      {} as TradeSimulatorService, // Will be set after TradeSimulatorService is created
       this._portfolioSnapshotterService,
       this._agentService,
       this._configurationService,
@@ -106,6 +102,21 @@ class ServiceRegistry {
       this._tradingConstraintsService,
       this._competitionRewardService,
     );
+
+    // Now initialize TradeSimulatorService with CompetitionService
+    this._tradeSimulatorService = new TradeSimulatorService(
+      this._balanceService,
+      this._priceTrackerService,
+      this._portfolioSnapshotterService,
+      this._competitionService,
+    );
+
+    // Update CompetitionService to use the actual TradeSimulatorService
+    (
+      this._competitionService as CompetitionService & {
+        tradeSimulatorService: TradeSimulatorService;
+      }
+    ).tradeSimulatorService = this._tradeSimulatorService;
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentService);

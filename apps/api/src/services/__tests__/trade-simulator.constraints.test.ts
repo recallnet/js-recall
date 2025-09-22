@@ -11,6 +11,7 @@ import {
 
 import { config } from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
+import { CompetitionService } from "@/services/competition.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { BlockchainType, PriceReport } from "@/types/index.js";
@@ -78,11 +79,17 @@ describe("TradeSimulatorService - Trading Constraints", () => {
         takePortfolioSnapshotForAgent: vi.fn(),
       };
 
+      const mockCompetitionService = {
+        getCompetition: vi.fn(),
+        isAgentActiveInCompetition: vi.fn(),
+      };
+
       // Create TradeSimulator instance with mocked dependencies
       tradeSimulator = new TradeSimulatorService(
         mockBalanceManager,
         mockPriceTracker,
         mockPortfolioSnapshotter,
+        mockCompetitionService as CompetitionService,
       );
     });
 

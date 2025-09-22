@@ -16,6 +16,7 @@ import { serviceLogger } from "@/lib/logger.js";
 import { EXEMPT_TOKENS, calculateSlippage } from "@/lib/trade-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { BalanceService } from "@/services/balance.service.js";
+import { CompetitionService } from "@/services/competition.service.js";
 import { PortfolioSnapshotterService } from "@/services/index.js";
 import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
 import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
@@ -87,6 +88,7 @@ interface TradeQuoteResult {
 export class TradeSimulatorService {
   private balanceService: BalanceService;
   private priceTrackerService: PriceTrackerService;
+  private competitionService: CompetitionService;
   // Cache of recent trades for performance (agentId -> trades)
   private tradeCache: Map<string, SelectTrade[]>;
   // Maximum trade percentage of portfolio value
@@ -100,10 +102,12 @@ export class TradeSimulatorService {
     balanceService: BalanceService,
     priceTrackerService: PriceTrackerService,
     portfolioSnapshotterService: PortfolioSnapshotterService,
+    competitionService: CompetitionService,
   ) {
     this.balanceService = balanceService;
     this.priceTrackerService = priceTrackerService;
     this.portfolioSnapshotterService = portfolioSnapshotterService;
+    this.competitionService = competitionService;
     this.dexScreenerProvider = new DexScreenerProvider();
     this.tradeCache = new Map();
     this.constraintsCache = new Map();
@@ -144,6 +148,35 @@ export class TradeSimulatorService {
                 Slippage Tolerance: ${slippageTolerance || "default"}
                 Chain Options: ${chainOptions ? JSON.stringify(chainOptions) : "none"}
             `);
+
+      // Validate competition existence and status
+      const competition =
+        await this.competitionService.getCompetition(competitionId);
+      if (!competition) {
+        throw new ApiError(404, `Competition not found: ${competitionId}`);
+      }
+
+      // Check if competition has ended
+      const now = new Date();
+      if (competition.endDate !== null && now > competition.endDate) {
+        throw new ApiError(
+          400,
+          `Competition has ended. Trading is no longer allowed for competition: ${competition.name}`,
+        );
+      }
+
+      // Check if agent is registered and active
+      const isAgentActive =
+        await this.competitionService.isAgentActiveInCompetition(
+          competitionId,
+          agentId,
+        );
+      if (!isAgentActive) {
+        throw new ApiError(
+          403,
+          `Agent ${agentId} is not registered for competition ${competitionId}. Trading is not allowed.`,
+        );
+      }
 
       // Validate basic trade inputs
       this.validateTradeInputs(fromToken, toToken, fromAmount, reason);
