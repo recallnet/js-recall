@@ -46,6 +46,18 @@ export const findCompetitionByRootHash = createTimedRepositoryFunction(
   "findCompetitionByRootHash",
 );
 
+export const getTotalClaimableRewardsByAddress = createTimedRepositoryFunction(
+  repository.getTotalClaimableRewardsByAddress.bind(repository),
+  "RewardsRepository",
+  "getTotalClaimableRewardsByAddress",
+);
+
+export const getRewardsWithRootsByAddress = createTimedRepositoryFunction(
+  repository.getRewardsWithRootsByAddress.bind(repository),
+  "RewardsRepository",
+  "getRewardsWithRootsByAddress",
+);
+
 export const markRewardAsClaimed = createTimedRepositoryFunction(
   repository.markRewardAsClaimed.bind(repository),
   "RewardsRepository",
