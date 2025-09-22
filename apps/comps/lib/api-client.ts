@@ -1,3 +1,5 @@
+import * as dnum from "dnum";
+
 import {
   Agent,
   AgentApiKeyResponse,
@@ -591,7 +593,7 @@ export class ApiClient {
    */
   async getBoostBalance({ competitionId }: { competitionId: string }): Promise<{
     success: boolean;
-    balance: bigint;
+    balance: number;
   }> {
     const res = await this.request<{ success: boolean; balance: string }>(
       `/competitions/${competitionId}/boost`,
@@ -599,7 +601,7 @@ export class ApiClient {
 
     return {
       ...res,
-      balance: BigInt(res.balance),
+      balance: attoBoostStringToBoost(res.balance),
     };
   }
 
@@ -612,7 +614,7 @@ export class ApiClient {
     competitionId,
   }: {
     competitionId: string;
-  }): Promise<{ success: boolean; boosts: Record<string, bigint> }> {
+  }): Promise<{ success: boolean; boosts: Record<string, number> }> {
     const res = await this.request<{
       success: boolean;
       boosts: Record<string, string>;
@@ -621,7 +623,10 @@ export class ApiClient {
     return {
       ...res,
       boosts: Object.fromEntries(
-        Object.entries(res.boosts).map(([key, value]) => [key, BigInt(value)]),
+        Object.entries(res.boosts).map(([key, value]) => [
+          key,
+          attoBoostStringToBoost(value),
+        ]),
       ),
     };
   }
@@ -630,7 +635,7 @@ export class ApiClient {
     competitionId,
   }: {
     competitionId: string;
-  }): Promise<{ success: boolean; boostTotals: Record<string, bigint> }> {
+  }): Promise<{ success: boolean; boostTotals: Record<string, number> }> {
     const res = await this.request<{
       success: boolean;
       boostTotals: Record<string, string>;
@@ -641,7 +646,7 @@ export class ApiClient {
       boostTotals: Object.fromEntries(
         Object.entries(res.boostTotals).map(([key, value]) => [
           key,
-          BigInt(value),
+          attoBoostStringToBoost(value),
         ]),
       ),
     };
@@ -663,15 +668,15 @@ export class ApiClient {
   }: {
     competitionId: string;
     agentId: string;
-    currentAgentBoostTotal: bigint;
-    amount: bigint;
-  }): Promise<{ success: boolean; agentTotal: bigint }> {
+    currentAgentBoostTotal: number;
+    amount: number;
+  }): Promise<{ success: boolean; agentTotal: number }> {
     const idemKey = btoa(
-      `${competitionId}-${agentId}-${currentAgentBoostTotal.toString()}`,
+      `${competitionId}-${agentId}-${currentAgentBoostTotal}`,
     );
 
     const data = {
-      amount: amount.toString(),
+      amount: boostToAttoBoostString(amount),
       idemKey,
     };
 
@@ -682,9 +687,21 @@ export class ApiClient {
 
     return {
       ...res,
-      agentTotal: BigInt(res.agentTotal),
+      agentTotal: attoBoostStringToBoost(res.agentTotal),
     };
   }
+}
+
+function attoBoostStringToBoost(attoBoost: string) {
+  const res = dnum.div(attoBoost, 10 ** 18, {
+    rounding: "ROUND_DOWN",
+  });
+  return dnum.toNumber(res);
+}
+
+function boostToAttoBoostString(boost: number) {
+  const res = dnum.mul(dnum.from(boost), 10 ** 18);
+  return dnum.toString(res);
 }
 
 /**

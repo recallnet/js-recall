@@ -102,25 +102,25 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   // Calculate total boost for percentage calculation
   const totalBoost = useMemo(() => {
-    if (!boostTotals?.success) return 0n;
+    if (!boostTotals?.success) return 0;
     return Object.values(boostTotals.boostTotals).reduce(
       (sum, amount) => sum + amount,
-      0n,
+      0,
     );
   }, [boostTotals]);
 
   // Calculate user's total spent boost for progress bar
   const userSpentBoost = useMemo(() => {
-    if (!userBoosts?.success) return 0n;
+    if (!userBoosts?.success) return 0;
     return Object.values(userBoosts.boosts).reduce(
       (sum, amount) => sum + amount,
-      0n,
+      0,
     );
   }, [userBoosts]);
 
   // Calculate total boost value (available + user spent) for progress bar
   const totalBoostValue = useMemo(() => {
-    const availableBalance = boostBalance?.success ? boostBalance.balance : 0n;
+    const availableBalance = boostBalance?.success ? boostBalance.balance : 0;
     return availableBalance + userSpentBoost;
   }, [boostBalance, userSpentBoost]);
 
@@ -373,7 +373,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                       boostBalance?.success &&
                       boostBalance.balance > 0n &&
                       totalBoostValue > 0n
-                        ? `${Math.min(100, Number((boostBalance.balance * 100n) / totalBoostValue))}%`
+                        ? `${Math.min(100, Number((boostBalance.balance * 100) / totalBoostValue))}%`
                         : "0%",
                   }}
                 />
@@ -500,16 +500,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           if (!open) setSelectedAgent(null);
         }}
         agent={selectedAgent}
-        availableBoost={boostBalance?.balance || 0n}
+        availableBoost={boostBalance?.balance || 0}
         currentAgentBoostTotal={
           selectedAgent && boostTotals?.success
-            ? boostTotals.boostTotals[selectedAgent.id] || 0n
-            : 0n
+            ? boostTotals.boostTotals[selectedAgent.id] || 0
+            : 0
         }
         currentUserBoostAmount={
           selectedAgent && userBoosts?.success
-            ? userBoosts.boosts[selectedAgent.id] || 0n
-            : 0n
+            ? userBoosts.boosts[selectedAgent.id] || 0
+            : 0
         }
         competitionId={competition.id}
       />

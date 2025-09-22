@@ -39,6 +39,7 @@
     "connectkit": "^1.9.1",
     "cookie": "^1.0.2",
     "date-fns": "^4.1.0",
+    "dnum": "^2.15.0",
     "embla-carousel-auto-scroll": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "jdenticon": "^3.3.0",
