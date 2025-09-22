@@ -36,7 +36,7 @@ export class BoostAwardService {
   readonly #boostRepository: BoostRepository;
   readonly #stakesRepository: StakesRepository;
   readonly #userService: UserService;
-  readonly #noStakeBoostAmount: bigint;
+  readonly #noStakeBoostAmount?: bigint;
 
   constructor(
     database: Database,
@@ -51,7 +51,7 @@ export class BoostAwardService {
     this.#boostRepository = boostRepository;
     this.#stakesRepository = stakesRepository;
     this.#userService = userService;
-    this.#noStakeBoostAmount = noStakeBoostAmount || 1000n;
+    this.#noStakeBoostAmount = noStakeBoostAmount;
   }
 
   async awardForStake(
@@ -190,6 +190,10 @@ export class BoostAwardService {
   ): Promise<InitNoStakeResult[]> {
     const executor = tx ?? this.#db;
     return executor.transaction(async (tx) => {
+      const amount = this.#noStakeBoostAmount;
+      if (!amount) {
+        throw new Error("No-stake boost amount not configured");
+      }
       const competitions = await this.#competitionRepo.findVotingOpen(tx);
 
       if (competitions.length === 0) {
@@ -202,7 +206,7 @@ export class BoostAwardService {
             competition.id,
             userId,
             wallet,
-            this.#noStakeBoostAmount,
+            amount,
             "initNoStake",
             tx,
           );

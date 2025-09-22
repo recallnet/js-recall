@@ -9,8 +9,7 @@
     "FONTS_REPO_ACCESS_TOKEN",
     "DATABASE_URL",
     "NODE_ENV",
-    "VITE_DATABASE_URL",
-    "NO_STAKE_BOOST_AMOUNT"
+    "VITE_DATABASE_URL"
   ],
   "tasks": {
     "test:integration": {
