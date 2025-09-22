@@ -6,7 +6,11 @@ import { apiClient } from "@/lib/api-client";
 import { sandboxClient } from "@/lib/sandbox-client";
 import { AdminAgentKeyResponse } from "@/types/admin";
 
-export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
+export const useUnlockKeys = (
+  agentHandle: string,
+  agentId?: string,
+  userWalletAddress?: string,
+) => {
   const queryClient = useQueryClient();
 
   // Query for production agent API key
@@ -34,11 +38,20 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
           error instanceof Error &&
           error.message.includes("Agent not found")
         ) {
+          if (!userWalletAddress) {
+            throw new Error("Wallet address required to create sandbox agent");
+          }
+
           const createResult = await sandboxClient.createAgent({
-            handle: agentHandle,
-            // Note: the name is technically required by the backend API, but all we need is the
-            // agent handle since this is globally unique and used for querying the API key
-            name: agentHandle,
+            user: {
+              walletAddress: userWalletAddress,
+            },
+            agent: {
+              handle: agentHandle,
+              // Note: the name is technically required by the backend API, but all we need is the
+              // agent handle since this is globally unique and used for querying the API key
+              name: agentHandle,
+            },
           });
           if (!createResult.success) {
             throw new Error("Failed to create sandbox agent");
