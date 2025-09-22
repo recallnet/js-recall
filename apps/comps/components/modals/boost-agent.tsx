@@ -80,16 +80,16 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
   const newAgentBoostTotal = currentAgentBoostTotal + boostAmount;
   const newUserBoostAmount = currentUserBoostAmount + boostAmount;
   const newUserPercentage =
-    newAgentBoostTotal > 0n
+    newAgentBoostTotal > 0
       ? Number((newUserBoostAmount * 100) / newAgentBoostTotal)
       : 0;
   const currentUserPercentage =
-    currentAgentBoostTotal > 0n
+    currentAgentBoostTotal > 0
       ? Number((currentUserBoostAmount * 100) / currentAgentBoostTotal)
       : 0;
 
   const handleAmountChange = (newAmount: number) => {
-    if (newAmount >= 0n && newAmount <= availableBoost) {
+    if (newAmount >= 0 && newAmount <= availableBoost) {
       setBoostAmount(newAmount);
     }
   };
@@ -172,7 +172,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={handleDecrement}
-                    disabled={boostAmount <= 0n}
+                    disabled={boostAmount <= 0}
                     className="h-10 w-10 rounded-full p-0"
                   >
                     <Minus className="h-4 w-4" />
@@ -222,7 +222,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
             <DialogFooter>
               <Button
                 onClick={handleReview}
-                disabled={boostAmount <= 0n}
+                disabled={boostAmount <= 0}
                 className="w-full"
               >
                 REVIEW

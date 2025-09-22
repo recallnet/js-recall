@@ -212,8 +212,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         header: () => <span className="whitespace-nowrap">Boost Pool</span>,
         cell: ({ row }) => {
           const agentBoostTotal = boostTotals?.success
-            ? boostTotals.boostTotals[row.original.id] || 0n
-            : 0n;
+            ? boostTotals.boostTotals[row.original.id] || 0
+            : 0;
 
           return (
             <div className="flex flex-col items-end">
@@ -239,9 +239,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         cell: ({ row }) => {
           // Use user boost allocation data
           const userBoostAmount = userBoosts?.success
-            ? userBoosts.boosts[row.original.id] || 0n
-            : 0n;
-          const hasBoosted = userBoostAmount > 0n;
+            ? userBoosts.boosts[row.original.id] || 0
+            : 0;
+          const hasBoosted = userBoostAmount > 0;
 
           return (
             <div className="flex items-center justify-end gap-2">
@@ -371,8 +371,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   style={{
                     width:
                       boostBalance?.success &&
-                      boostBalance.balance > 0n &&
-                      totalBoostValue > 0n
+                      boostBalance.balance > 0 &&
+                      totalBoostValue > 0
                         ? `${Math.min(100, Number((boostBalance.balance * 100) / totalBoostValue))}%`
                         : "0%",
                   }}
