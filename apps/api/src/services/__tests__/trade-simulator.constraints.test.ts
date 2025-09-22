@@ -11,7 +11,6 @@ import {
 
 import { config } from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { CompetitionService } from "@/services/competition.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { BlockchainType, PriceReport } from "@/types/index.js";
@@ -79,20 +78,11 @@ describe("TradeSimulatorService - Trading Constraints", () => {
         takePortfolioSnapshotForAgent: vi.fn(),
       };
 
-      const mockCompetitionService = {
-        getCompetition: vi.fn(),
-        isAgentActiveInCompetition: vi.fn(),
-      } as unknown as {
-        getCompetition: ReturnType<typeof vi.fn>;
-        isAgentActiveInCompetition: ReturnType<typeof vi.fn>;
-      };
-
       // Create TradeSimulator instance with mocked dependencies
       tradeSimulator = new TradeSimulatorService(
         mockBalanceManager,
         mockPriceTracker,
         mockPortfolioSnapshotter,
-        mockCompetitionService as unknown as CompetitionService,
       );
     });
 
@@ -482,7 +472,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
           .mockResolvedValueOnce(invalidToPrice);
 
         await expect(
-          tradeSimulator.executeTrade(
+          tradeSimulator.executeTradeInternal(
             uuidv4(),
             uuidv4(),
             "0x1111111111111111111111111111111111111111",
@@ -531,7 +521,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
         // For burn tokens, constraints should be skipped, but the trade may still fail due to mocking limitations
         // The important thing is that constraints are skipped for burn tokens
         try {
-          await tradeSimulator.executeTrade(
+          await tradeSimulator.executeTradeInternal(
             uuidv4(),
             uuidv4(),
             "0x1111111111111111111111111111111111111111",

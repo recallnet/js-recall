@@ -89,7 +89,7 @@ export function makeTradeController(services: ServiceRegistry) {
             : undefined;
 
         // Call service method
-        const trade = await services.tradeSimulatorService.executeTrade(
+        const trade = await services.tradeExecutionService.executeTrade(
           agentId,
           competitionId,
           validatedBody.fromToken,
@@ -122,7 +122,7 @@ export function makeTradeController(services: ServiceRegistry) {
         const queryParams = GetQuoteQuerySchema.parse(req.query);
 
         // Call service method
-        const result = await services.tradeSimulatorService.getTradeQuote({
+        const result = await services.tradeExecutionService.getTradeQuote({
           fromToken: queryParams.fromToken,
           toToken: queryParams.toToken,
           amount: queryParams.amount,

@@ -19,6 +19,7 @@ import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
+import { TradeExecutionService } from "@/services/trade-execution.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserService } from "@/services/user.service.js";
@@ -34,6 +35,7 @@ class ServiceRegistry {
   // Services
   private _balanceService: BalanceService;
   private _priceTrackerService: PriceTrackerService;
+  private _tradeExecutionService: TradeExecutionService;
   private _tradeSimulatorService: TradeSimulatorService;
   private _competitionService: CompetitionService;
   private _userService: UserService;
@@ -90,10 +92,17 @@ class ServiceRegistry {
     // Initialize core reward service (no dependencies)
     this._competitionRewardService = new CompetitionRewardService();
 
-    // Initialize competition service first (without trade simulator)
+    // Initialize TradeSimulatorService first (no service dependencies)
+    this._tradeSimulatorService = new TradeSimulatorService(
+      this._balanceService,
+      this._priceTrackerService,
+      this._portfolioSnapshotterService,
+    );
+
+    // Initialize CompetitionService with TradeSimulatorService
     this._competitionService = new CompetitionService(
       this._balanceService,
-      {} as TradeSimulatorService, // Will be set after TradeSimulatorService is created
+      this._tradeSimulatorService,
       this._portfolioSnapshotterService,
       this._agentService,
       this._configurationService,
@@ -103,18 +112,11 @@ class ServiceRegistry {
       this._competitionRewardService,
     );
 
-    // Now initialize TradeSimulatorService with CompetitionService
-    this._tradeSimulatorService = new TradeSimulatorService(
-      this._balanceService,
-      this._priceTrackerService,
-      this._portfolioSnapshotterService,
+    // Initialize TradeExecutionService with both dependencies
+    this._tradeExecutionService = new TradeExecutionService(
       this._competitionService,
+      this._tradeSimulatorService,
     );
-
-    // Update CompetitionService to use the actual TradeSimulatorService
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this._competitionService as any).tradeSimulatorService =
-      this._tradeSimulatorService;
 
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentService);
@@ -162,6 +164,10 @@ class ServiceRegistry {
 
   get priceTrackerService(): PriceTrackerService {
     return this._priceTrackerService;
+  }
+
+  get tradeExecutionService(): TradeExecutionService {
+    return this._tradeExecutionService;
   }
 
   get tradeSimulatorService(): TradeSimulatorService {
@@ -254,6 +260,7 @@ export {
   PortfolioSnapshotterService,
   PriceTrackerService,
   ServiceRegistry,
+  TradeExecutionService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
