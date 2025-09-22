@@ -12,7 +12,6 @@ import { BalanceService } from "@/services/balance.service.js";
 import { CompetitionService } from "@/services/competition.service.js";
 import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
-import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
 
@@ -32,40 +31,6 @@ interface ChainOptions {
   fromSpecificChain?: SpecificChain;
   toChain?: BlockchainType;
   toSpecificChain?: SpecificChain;
-}
-
-// Interface for getTradeQuote parameters
-interface GetQuoteParams {
-  fromToken: string;
-  toToken: string;
-  amount: number;
-  fromChain?: BlockchainType;
-  fromSpecificChain?: SpecificChain;
-  toChain?: BlockchainType;
-  toSpecificChain?: SpecificChain;
-}
-
-// Interface for trade quote result
-interface TradeQuoteResult {
-  fromToken: string;
-  toToken: string;
-  fromAmount: number;
-  toAmount: number;
-  exchangeRate: number;
-  slippage: number;
-  tradeAmountUsd: number;
-  prices: {
-    fromToken: number;
-    toToken: number;
-  };
-  symbols: {
-    fromTokenSymbol: string;
-    toTokenSymbol: string;
-  };
-  chains: {
-    fromChain: string;
-    toChain: string;
-  };
 }
 
 /**
@@ -102,7 +67,7 @@ export class TradeExecutionService {
   }
 
   /**
-   * Execute a trade between two tokens with competition validation
+   * Execute a trade between two tokens
    * @param agentId The agent ID
    * @param competitionId The competition ID
    * @param fromToken The source token address
