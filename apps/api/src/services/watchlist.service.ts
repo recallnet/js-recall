@@ -99,15 +99,15 @@ export class WatchlistService {
 
         // If API is down or returns error, fail-safe (allow access)
         if (!response.ok) {
-          serviceLogger.warn(
+          serviceLogger.error(
             {
               address: normalizedAddress,
               status: response.status,
               statusText: response.statusText,
             },
-            "[WatchlistService] Skipping watchlist address check. Chainalysis API returned error",
+            "[WatchlistService] Chainalysis API error",
           );
-          return false;
+          throw new Error(`Chainalysis API error: ${response.statusText}`);
         }
 
         // Check if any identification has sanctions category
@@ -130,15 +130,15 @@ export class WatchlistService {
         throw error;
       }
     } catch (error) {
-      // Allow access in case of network errors, timeouts, etc.
+      // Do not allow access in case of network errors, timeouts, etc.
       serviceLogger.error(
         {
           address,
           error,
         },
-        `[WatchlistService] Error checking address (watchlist check skipped)`,
+        `[WatchlistService] Error checking address`,
       );
-      return false;
+      throw error;
     }
   }
 

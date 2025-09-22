@@ -168,7 +168,7 @@ describe("WatchlistService", () => {
       );
     });
 
-    it("should return false on API error (fail-safe)", async () => {
+    it("should throw on API error", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -176,16 +176,18 @@ describe("WatchlistService", () => {
         statusText: "Internal Server Error",
       });
 
-      const result = await watchlistService.isAddressSanctioned(address);
-      expect(result).toBe(false);
+      await expect(
+        watchlistService.isAddressSanctioned(address),
+      ).rejects.toThrow("Chainalysis API error: Internal Server Error");
     });
 
-    it("should return false on network error (fail-safe)", async () => {
+    it("should throw on network error", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-      const result = await watchlistService.isAddressSanctioned(address);
-      expect(result).toBe(false);
+      await expect(
+        watchlistService.isAddressSanctioned(address),
+      ).rejects.toThrow("Network error");
     });
 
     it("should handle timeout with AbortController", async () => {
@@ -194,9 +196,9 @@ describe("WatchlistService", () => {
       // Mock an aborted request
       mockFetch.mockRejectedValueOnce(new Error("This operation was aborted"));
 
-      const result = await watchlistService.isAddressSanctioned(address);
-
-      expect(result).toBe(false); // Should fail-safe on timeout
+      await expect(
+        watchlistService.isAddressSanctioned(address),
+      ).rejects.toThrow("This operation was aborted");
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
