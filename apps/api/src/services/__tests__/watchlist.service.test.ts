@@ -1,10 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { RetryConfig } from "@/lib/retry-helper.js";
 import { WatchlistService } from "@/services/watchlist.service.js";
 
 // Mock global fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
+
+const TEST_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 2,
+  initialDelay: 100,
+  maxDelay: 1000,
+  exponent: 2,
+  maxElapsedTime: 5000,
+};
 
 // Mock the config module (override the Chainalysis API key)
 vi.mock("@/config/index.js", () => ({
@@ -28,7 +37,7 @@ describe("WatchlistService", () => {
     vi.clearAllMocks();
     const { config } = await import("@/config/index.js");
     config.watchlist.chainalysisApiKey = "";
-    watchlistService = new WatchlistService();
+    watchlistService = new WatchlistService(TEST_RETRY_CONFIG);
   });
 
   describe("isConfigured", () => {
@@ -39,7 +48,7 @@ describe("WatchlistService", () => {
     it("should return true when API key is set", async () => {
       const { config } = await import("@/config/index.js");
       config.watchlist.chainalysisApiKey = "test-api-key";
-      watchlistService = new WatchlistService();
+      watchlistService = new WatchlistService(TEST_RETRY_CONFIG);
       expect(watchlistService.isConfigured()).toBe(true);
     });
   });
@@ -59,13 +68,13 @@ describe("WatchlistService", () => {
     beforeEach(async () => {
       const { config } = await import("@/config/index.js");
       config.watchlist.chainalysisApiKey = "test-api-key";
-      watchlistService = new WatchlistService();
+      watchlistService = new WatchlistService(TEST_RETRY_CONFIG);
     });
 
     it("should return false when API key is not configured", async () => {
       const { config } = await import("@/config/index.js");
       config.watchlist.chainalysisApiKey = "";
-      watchlistService = new WatchlistService();
+      watchlistService = new WatchlistService(TEST_RETRY_CONFIG);
 
       const result = await watchlistService.isAddressSanctioned(
         "0x1234567890abcdef1234567890abcdef12345678",
@@ -170,31 +179,50 @@ describe("WatchlistService", () => {
 
     it("should throw on API error", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: "Internal Server Error",
-      });
+      // Mock multiple rejections for retries (initial + 2 retries = 3 total)
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+        });
 
       await expect(
         watchlistService.isAddressSanctioned(address),
       ).rejects.toThrow("Chainalysis API error: Internal Server Error");
-    });
+    }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
 
     it("should throw on network error", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
-      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+      // Mock multiple rejections for retries (initial + 2 retries = 3 total)
+      mockFetch
+        .mockRejectedValueOnce(new Error("Network error"))
+        .mockRejectedValueOnce(new Error("Network error"))
+        .mockRejectedValueOnce(new Error("Network error"));
 
       await expect(
         watchlistService.isAddressSanctioned(address),
       ).rejects.toThrow("Network error");
-    });
+    }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
 
     it("should handle timeout with AbortController", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
 
-      // Mock an aborted request
-      mockFetch.mockRejectedValueOnce(new Error("This operation was aborted"));
+      // Mock an aborted request - multiple times for retries (initial + 2 retries = 3 total)
+      mockFetch
+        .mockRejectedValueOnce(new Error("This operation was aborted"))
+        .mockRejectedValueOnce(new Error("This operation was aborted"))
+        .mockRejectedValueOnce(new Error("This operation was aborted"));
 
       await expect(
         watchlistService.isAddressSanctioned(address),
@@ -205,7 +233,7 @@ describe("WatchlistService", () => {
           signal: expect.any(AbortSignal),
         }),
       );
-    });
+    }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
 
     it("should handle empty identifications array", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";

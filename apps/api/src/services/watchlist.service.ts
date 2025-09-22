@@ -1,5 +1,12 @@
 import { config } from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
+import {
+  DEFAULT_RETRY_CONFIG,
+  NonRetryableError,
+  RetryConfig,
+  RetryableError,
+  withRetry,
+} from "@/lib/retry-helper.js";
 
 /**
  * Category of the identification. Only "sanctions" designates a sanctioned address, and other
@@ -27,7 +34,7 @@ interface ChainalysisResponse {
 /**
  * Check if an identification is sanctioned
  * @param identification The identification to check
- * @returns boolean - true if sanctioned, false if clean or on error (fail-safe)
+ * @returns boolean - true if sanctioned, false if clean
  */
 function checkIsSanctioned(identification: ChainalysisIdentification): boolean {
   const category = identification.category;
@@ -43,8 +50,9 @@ export class WatchlistService {
   private readonly baseUrl = "https://public.chainalysis.com/api/v1/address";
   private readonly requestTimeout = 10_000;
 
-  constructor() {
+  constructor(readonly retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG) {
     this.apiKey = config.watchlist.chainalysisApiKey;
+    this.retryConfig = retryConfig;
 
     if (!this.apiKey) {
       serviceLogger.warn(
@@ -56,11 +64,12 @@ export class WatchlistService {
   /**
    * Check if a wallet address is sanctioned
    * @param address The wallet address to check (case-insensitive)
-   * @returns Promise<boolean> - true if sanctioned, false if clean or on error (fail-safe)
+   * @returns Promise<boolean> - true if sanctioned, false if clean
+   * @throws Error if API is unavailable or network issues (fail closed for security)
    */
   async isAddressSanctioned(address: string): Promise<boolean> {
     try {
-      // Skip check if API key not configured (fail-safe)
+      // Skip check if API key not configured (fail-safe - only exception)
       if (!this.isConfigured()) {
         serviceLogger.debug(
           {
@@ -80,63 +89,93 @@ export class WatchlistService {
         `[WatchlistService] Checking address`,
       );
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        this.requestTimeout,
-      );
+      // Use retry logic for API calls with exponential backoff
+      return await withRetry(async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(
+          () => controller.abort(),
+          this.requestTimeout,
+        );
 
-      try {
-        const response = await fetch(`${this.baseUrl}/${normalizedAddress}`, {
-          method: "GET",
-          headers: {
-            "X-API-Key": this.apiKey,
-            Accept: "application/json",
-          },
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-
-        // If API is down or returns error, fail-safe (allow access)
-        if (!response.ok) {
-          serviceLogger.error(
-            {
-              address: normalizedAddress,
-              status: response.status,
-              statusText: response.statusText,
+        try {
+          const response = await fetch(`${this.baseUrl}/${normalizedAddress}`, {
+            method: "GET",
+            headers: {
+              "X-API-Key": this.apiKey,
+              Accept: "application/json",
             },
-            "[WatchlistService] Chainalysis API error",
-          );
-          throw new Error(`Chainalysis API error: ${response.statusText}`);
-        }
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
 
-        // Check if any identification has sanctions category
-        const data: ChainalysisResponse = await response.json();
-        const isSanctioned =
-          data.identifications?.some(checkIsSanctioned) ?? false;
-        if (isSanctioned) {
-          serviceLogger.warn(
-            {
-              address: normalizedAddress,
-              identifications: data.identifications.filter(checkIsSanctioned),
-            },
-            "[WatchlistService] SANCTIONED ADDRESS DETECTED",
-          );
-        }
+          // Handle API errors
+          if (!response.ok) {
+            const errorMessage = `Chainalysis API error: ${response.statusText}`;
+            serviceLogger.error(
+              {
+                address: normalizedAddress,
+                status: response.status,
+                statusText: response.statusText,
+              },
+              "[WatchlistService] Chainalysis API error",
+            );
 
-        return isSanctioned;
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
+            // Determine if error is retryable
+            if (response.status >= 500 || response.status === 429) {
+              // Server errors and rate limiting are retryable
+              throw new RetryableError(errorMessage);
+            } else {
+              // Other client errors (400, 404, etc.) are generally not retryable
+              throw new NonRetryableError(errorMessage);
+            }
+          }
+
+          // Check if any identification has sanctions category
+          const data: ChainalysisResponse = await response.json();
+          const isSanctioned =
+            data.identifications?.some(checkIsSanctioned) ?? false;
+          if (isSanctioned) {
+            serviceLogger.warn(
+              {
+                address: normalizedAddress,
+                identifications: data.identifications.filter(checkIsSanctioned),
+              },
+              "[WatchlistService] SANCTIONED ADDRESS DETECTED",
+            );
+          }
+
+          return isSanctioned;
+        } catch (error) {
+          clearTimeout(timeoutId);
+
+          // Handle network errors and timeouts as retryable
+          if (error instanceof Error) {
+            const message = error.message.toLowerCase();
+            if (
+              message.includes("abort") ||
+              message.includes("timeout") ||
+              message.includes("network") ||
+              message.includes("fetch")
+            ) {
+              throw new RetryableError(
+                `Network error: ${error.message}`,
+                error,
+              );
+            }
+          }
+
+          // Re-throw other errors as-is (may be RetryableError or NonRetryableError)
+          throw error;
+        }
+      }, this.retryConfig);
     } catch (error) {
-      // Do not allow access in case of network errors, timeouts, etc.
+      // Fail closed: Do not allow access in case of network errors, timeouts, etc.
       serviceLogger.error(
         {
           address,
           error,
         },
-        `[WatchlistService] Error checking address`,
+        `[WatchlistService] Error checking address after retries - failing closed for security`,
       );
       throw error;
     }
