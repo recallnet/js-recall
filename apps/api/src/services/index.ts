@@ -1,12 +1,12 @@
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
 
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
-import { StakesRepository } from "@/indexing/stakes.repository.js";
 import { indexingLogger, repositoryLogger } from "@/lib/logger.js";
 import { AdminService } from "@/services/admin.service.js";
 import { AgentService } from "@/services/agent.service.js";
@@ -25,11 +25,6 @@ import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserService } from "@/services/user.service.js";
 import { VoteService } from "@/services/vote.service.js";
-
-import {
-  InitBoostService,
-  PreTGEInitBoostService,
-} from "./init-boost.service.js";
 
 /**
  * Service Registry
@@ -55,7 +50,6 @@ class ServiceRegistry {
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
   private _boostService: BoostService;
-  private _initBoostService: InitBoostService;
   private readonly _competitionRepository: CompetitionRepository;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
@@ -135,16 +129,13 @@ class ServiceRegistry {
       this._userService,
     );
 
-    this._initBoostService = new PreTGEInitBoostService(
+    this._boostAwardService = new BoostAwardService(
       db,
       this._competitionRepository,
       this._boostRepository,
-      config.boost.initialBoostAmount,
-    );
-
-    this._boostAwardService = new BoostAwardService(
-      this._boostRepository,
+      this._stakesRepository,
       this._userService,
+      config.boost.noStakeBoostAmount,
     );
     this._eventProcessor = new EventProcessor(
       db,
@@ -250,10 +241,6 @@ class ServiceRegistry {
 
   get eventsRepository(): EventsRepository {
     return this._eventsRepository;
-  }
-
-  get initBoostService(): InitBoostService {
-    return this._initBoostService;
   }
 }
 

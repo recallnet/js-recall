@@ -10,7 +10,7 @@
     "DATABASE_URL",
     "NODE_ENV",
     "VITE_DATABASE_URL",
-    "INITIAL_BOOST_AMOUNT"
+    "NO_STAKE_BOOST_AMOUNT"
   ],
   "tasks": {
     "test:integration": {

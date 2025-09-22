@@ -401,9 +401,9 @@ export const config = {
   },
   boost: {
     // Amount of boost (in wei) to grant on wallet linking pre TGE
-    initialBoostAmount: process.env.INITIAL_BOOST_AMOUNT
-      ? BigInt(process.env.INITIAL_BOOST_AMOUNT)
-      : 500000000000000000000n, // 500 boost by default
+    noStakeBoostAmount: process.env.NO_STAKE_BOOST_AMOUNT
+      ? BigInt(process.env.NO_STAKE_BOOST_AMOUNT)
+      : undefined,
   },
 };
 
