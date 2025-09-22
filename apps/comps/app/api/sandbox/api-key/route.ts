@@ -46,16 +46,16 @@ async function handleGetAgentApiKey(request: NextRequest) {
   }
 
   // Find the agent's ID in the sandbox using its handle
-  // Note: We check if user already exists in sandbox with an email, else, wallet address. This helps
+  // Note: We check if user already exists in sandbox with a wallet address, else, email. This helps
   // with Privy-related backwards compatibility. The user inclusion in the search query is
   // *important* to ensure that the requester is the owner of the agent, otherwise, the API key can
   // be leaked.
   let searchForUserWithAgent = await sandboxAdminRequest<AdminSearchResult>(
-    `/admin/search?user.email=${encodeURIComponent(email)}&agent.handle=${agentHandle}&join=true`,
+    `/admin/search?user.walletAddress=${walletAddress}&agent.handle=${agentHandle}&join=true`,
   );
   if (searchForUserWithAgent.results.agents.length === 0) {
     searchForUserWithAgent = await sandboxAdminRequest<AdminSearchResult>(
-      `/admin/search?user.walletAddress=${walletAddress}&agent.handle=${agentHandle}&join=true`,
+      `/admin/search?user.email=${encodeURIComponent(email)}&agent.handle=${agentHandle}&join=true`,
     );
   }
   // Since we used the `join=true` flag, we know that the user is the owner of the agent.
