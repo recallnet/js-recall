@@ -692,15 +692,17 @@ export class ApiClient {
   }
 }
 
+const attoBoostDivisor = 10 ** 18;
+
 function attoBoostStringToBoost(attoBoost: string) {
-  const res = dnum.div(attoBoost, 10 ** 18, {
-    rounding: "ROUND_DOWN",
+  const res = dnum.div(attoBoost, attoBoostDivisor, {
+    rounding: "ROUND_DOWN", // Always round down to avoid overestimating boost balance
   });
   return dnum.toNumber(res);
 }
 
 function boostToAttoBoostString(boost: number) {
-  const res = dnum.mul(dnum.from(boost), 10 ** 18);
+  const res = dnum.mul(dnum.from(boost), attoBoostDivisor);
   return dnum.toString(res);
 }
 
