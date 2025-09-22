@@ -78,7 +78,7 @@ export class TradeExecutionService {
   private balanceService: BalanceService;
   private priceTrackerService: PriceTrackerService;
   private portfolioSnapshotterService: PortfolioSnapshotterService;
-  private dexScreenerProvider: DexScreenerProvider;
+
   // Cache of trading constraints per competition
   private constraintsCache: Map<string, TradingConstraints>;
   // Maximum trade percentage of portfolio value
@@ -96,7 +96,6 @@ export class TradeExecutionService {
     this.balanceService = balanceService;
     this.priceTrackerService = priceTrackerService;
     this.portfolioSnapshotterService = portfolioSnapshotterService;
-    this.dexScreenerProvider = new DexScreenerProvider();
     this.constraintsCache = new Map();
     // Get the maximum trade percentage from config
     this.maxTradePercentage = config.maxTradePercentage;
@@ -263,16 +262,6 @@ export class TradeExecutionService {
       // Otherwise, wrap it in an ApiError
       throw new ApiError(400, errorMessage);
     }
-  }
-
-  /**
-   * Get a quote for a trade between two tokens
-   * @param params The quote parameters
-   * @returns Trade quote result with prices, amounts, and exchange rates
-   */
-  async getTradeQuote(params: GetQuoteParams): Promise<TradeQuoteResult> {
-    // Delegate to TradeSimulatorService
-    return await this.tradeSimulatorService.getTradeQuote(params);
   }
 
   /**

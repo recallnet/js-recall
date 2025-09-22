@@ -122,7 +122,7 @@ export function makeTradeController(services: ServiceRegistry) {
         const queryParams = GetQuoteQuerySchema.parse(req.query);
 
         // Call service method
-        const result = await services.tradeExecutionService.getTradeQuote({
+        const result = await services.tradeSimulatorService.getTradeQuote({
           fromToken: queryParams.fromToken,
           toToken: queryParams.toToken,
           amount: queryParams.amount,

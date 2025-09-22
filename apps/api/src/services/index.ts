@@ -92,14 +92,11 @@ class ServiceRegistry {
     // Initialize core reward service (no dependencies)
     this._competitionRewardService = new CompetitionRewardService();
 
-    // Initialize TradeSimulatorService first (no service dependencies)
     this._tradeSimulatorService = new TradeSimulatorService(
       this._balanceService,
       this._priceTrackerService,
-      this._portfolioSnapshotterService,
     );
 
-    // Initialize CompetitionService with TradeSimulatorService
     this._competitionService = new CompetitionService(
       this._balanceService,
       this._tradeSimulatorService,
@@ -112,7 +109,6 @@ class ServiceRegistry {
       this._competitionRewardService,
     );
 
-    // Initialize TradeExecutionService with all dependencies
     this._tradeExecutionService = new TradeExecutionService(
       this._competitionService,
       this._tradeSimulatorService,
