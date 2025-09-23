@@ -92,9 +92,11 @@ export class PerpsRepository {
    */
   async createPerpsCompetitionConfig(
     config: InsertPerpsCompetitionConfig,
+    tx?: Transaction,
   ): Promise<SelectPerpsCompetitionConfig> {
     try {
-      const [result] = await this.#db
+      const executor = tx || this.#db;
+      const [result] = await executor
         .insert(perpsCompetitionConfig)
         .values(config)
         .returning();

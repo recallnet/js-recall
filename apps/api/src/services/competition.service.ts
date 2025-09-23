@@ -46,6 +46,7 @@ import {
 import {
   createPerpsCompetitionConfig,
   getCompetitionLeaderboardSummaries,
+  getPerpsCompetitionStats,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
@@ -186,11 +187,14 @@ type CompetitionDetailsData = {
   success: boolean;
   competition: SelectCompetition & {
     stats: {
-      totalTrades: number;
       totalAgents: number;
-      totalVolume: number;
       totalVotes: number;
-      uniqueTokens: number;
+      // Paper trading stats
+      totalTrades?: number;
+      totalVolume?: number;
+      uniqueTokens?: number;
+      // Perps stats
+      totalPositions?: number;
     };
     tradingConstraints: {
       minimumPairAgeHours: number | null;
@@ -479,7 +483,7 @@ export class CompetitionService {
             perpsProvider.selfFundingThreshold?.toString() ?? "0.00",
         };
 
-        await createPerpsCompetitionConfig(perpsConfig);
+        await createPerpsCompetitionConfig(perpsConfig, tx);
         serviceLogger.debug(
           `[CompetitionService] Created perps config for competition ${id}: ${JSON.stringify(perpsConfig)}`,
         );
@@ -2487,14 +2491,36 @@ export class CompetitionService {
         0,
       );
 
-      // Assemble stats
-      const stats = {
-        totalTrades: tradeMetrics.totalTrades,
-        totalAgents: competition.registeredParticipants,
-        totalVolume: tradeMetrics.totalVolume,
-        totalVotes,
-        uniqueTokens: tradeMetrics.uniqueTokens,
+      // Build stats based on competition type
+      let stats: {
+        totalAgents: number;
+        totalVotes: number;
+        totalTrades?: number;
+        totalVolume?: number;
+        uniqueTokens?: number;
+        totalPositions?: number;
       };
+
+      if (competition.type === "perpetual_futures") {
+        // For perps competitions, get perps-specific stats
+        const perpsStatsData = await getPerpsCompetitionStats(
+          params.competitionId,
+        );
+        stats = {
+          totalAgents: competition.registeredParticipants,
+          totalVotes,
+          totalPositions: perpsStatsData?.totalPositions ?? 0,
+        };
+      } else {
+        // For paper trading competitions, include trade metrics
+        stats = {
+          totalTrades: tradeMetrics.totalTrades,
+          totalAgents: competition.registeredParticipants,
+          totalVolume: tradeMetrics.totalVolume,
+          totalVotes,
+          uniqueTokens: tradeMetrics.uniqueTokens,
+        };
+      }
 
       // Format rewards
       const formattedRewards = rewards.map((r) => ({
