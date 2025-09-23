@@ -1,22 +1,3 @@
-/**
- * Unit Tests for TradingConstraintsService
- *
- * Target: Comprehensive coverage of trading constraints business logic
- * Rationale: Zero test coverage on critical financial constraint validation system
- * Scenarios: CRUD operations, validation edge cases, error handling, configuration integration
- *
- * Tests cover:
- * - Service initialization and dependency injection
- * - Constraint creation with defaults and custom values
- * - Constraint retrieval and fallback behavior
- * - Update operations with partial data
- * - Delete operations and error handling
- * - Upsert functionality for idempotent operations
- * - Validation logic for all constraint types
- * - Edge cases: boundary values, null handling, extreme inputs
- * - Configuration integration and default value application
- * - Error propagation from repository layer
- */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { config } from "@/config/index.js";

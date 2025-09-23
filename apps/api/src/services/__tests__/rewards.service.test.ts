@@ -1,19 +1,3 @@
-/**
- * Test plan for RewardsService - Critical Financial System Component
- *
- * Target module: RewardsService (rewards.service.ts)
- * Reason: Highest priority gap - handles financial rewards with 0% test coverage
- *
- * Scenarios to cover:
- * 1. Constructor - configuration and initialization validation
- * 2. calculateRewards - error handling and database integration
- * 3. allocate - Merkle tree creation, blockchain publishing, database transactions
- * 4. retrieveProof - Merkle proof generation and validation
- * 5. Helper functions - createLeafNode, faux node generation
- *
- * Stubs/fixtures: Mock database, blockchain allocator, sample reward data
- * Expected signals: No financial data corruption, proper error handling, transaction integrity
- */
 import { type Hex, encodePacked, keccak256 } from "viem";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
