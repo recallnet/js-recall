@@ -19,10 +19,10 @@ export interface RetryConfig {
  */
 export const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxRetries: 3,
-  initialDelay: 1000, // 1 second
-  maxDelay: 10000, // 10 seconds
+  initialDelay: 1000,
+  maxDelay: 10_000,
   exponent: 2,
-  maxElapsedTime: 30000, // 30 seconds total
+  maxElapsedTime: 30_000,
 };
 
 /**
