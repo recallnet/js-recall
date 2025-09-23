@@ -44,10 +44,10 @@ function checkIsSanctioned(identification: ChainalysisIdentification): boolean {
 }
 
 /**
- * Watchlist Service
+ * Wallet Address Watchlist
  * Checks wallet addresses against Chainalysis sanctions list
  */
-export class WatchlistService {
+export class WalletWatchlist {
   private readonly apiKey: string;
   private readonly baseUrl = "https://public.chainalysis.com/api/v1/address";
   private readonly requestTimeout = 10_000;
