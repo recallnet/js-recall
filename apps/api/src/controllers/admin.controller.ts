@@ -483,7 +483,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async startCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
+        // Validate request body
         const result = flatParse(AdminStartCompetitionSchema, req.body);
         if (!result.success) {
           throw new ApiError(400, `Invalid request format: ${result.error}`);
@@ -491,9 +491,11 @@ export function makeAdminController(services: ServiceRegistry) {
 
         const {
           competitionId,
+          agentIds,
+          tradingConstraints,
+          // Fields for creating new competition
           name,
           description,
-          agentIds,
           tradingType,
           sandboxMode,
           externalUrl,
@@ -505,130 +507,41 @@ export function makeAdminController(services: ServiceRegistry) {
           votingEndDate,
           joinStartDate,
           joinEndDate,
-          tradingConstraints,
           rewards,
           perpsProvider,
         } = result.data;
 
-        // Validate that all provided agent IDs exist in the database and are active
-        const invalidAgentIds: string[] = [];
-        const validAgentIds: string[] = [];
-
-        for (const agentId of agentIds) {
-          const agent = await services.agentService.getAgent(agentId);
-
-          if (!agent) {
-            invalidAgentIds.push(agentId);
-            continue;
-          }
-
-          if (agent.status !== "active") {
-            invalidAgentIds.push(agentId);
-            continue;
-          }
-
-          validAgentIds.push(agentId);
-        }
-
-        // If there are invalid agent IDs, return an error with the list
-        if (invalidAgentIds.length > 0) {
-          throw new ApiError(
-            400,
-            `Cannot start competition: the following agent IDs are invalid or inactive: ${invalidAgentIds.join(", ")}`,
-          );
-        }
-
-        let finalAgentIds = [...validAgentIds]; // Start with validated agent IDs
-
-        // Get pre-registered agents from the database if we have a competitionId
-        if (competitionId) {
-          const competitionAgents =
-            await services.agentService.getAgentsForCompetition(competitionId, {
-              sort: "",
-              limit: 1000,
-              offset: 0,
-            });
-          const registeredAgents = competitionAgents.agents.map(
-            (agent) => agent.id,
-          );
-          // Combine with provided agentIds, removing duplicates
-          const combinedAgents = [
-            ...new Set([...finalAgentIds, ...registeredAgents]),
-          ];
-          finalAgentIds = combinedAgents;
-        }
-
-        // Now check if we have any agents to start the competition with
-        if (finalAgentIds.length === 0) {
-          throw new ApiError(
-            400,
-            "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
-          );
-        }
-
-        let competition;
-
-        // Check if we're starting an existing competition or creating a new one
-        if (competitionId) {
-          // Get the existing competition
-          competition =
-            await services.competitionService.getCompetition(competitionId);
-
-          if (!competition) {
-            throw new ApiError(404, "Competition not found");
-          }
-
-          // Verify competition is in PENDING state
-          if (competition.status !== "pending") {
-            throw new ApiError(
-              400,
-              `Competition is already in ${competition.status} state and cannot be started`,
-            );
-          }
-        } else {
-          // We need name to create a new competition
-          // Schema validation ensures either competitionId or name is provided
-
-          // Create a new competition
-          competition = await services.competitionService.createCompetition({
-            name: name!,
-            description,
-            tradingType,
-            sandboxMode,
-            externalUrl,
-            imageUrl,
-            type,
-            startDate: startDate ? new Date(startDate) : undefined,
-            endDate: endDate ? new Date(endDate) : undefined,
-            votingStartDate: votingStartDate
-              ? new Date(votingStartDate)
-              : undefined,
-            votingEndDate: votingEndDate ? new Date(votingEndDate) : undefined,
-            joinStartDate: joinStartDate ? new Date(joinStartDate) : undefined,
-            joinEndDate: joinEndDate ? new Date(joinEndDate) : undefined,
-            // Note: maxParticipants not available when starting new competition since this starting comps method has "dual" purpose actions
-            maxParticipants: undefined,
+        // Call service method with creation params only if no competitionId
+        const competition =
+          await services.competitionService.startOrCreateCompetition({
+            competitionId,
+            agentIds,
             tradingConstraints,
-            rewards,
-            perpsProvider,
+            creationParams: competitionId
+              ? undefined
+              : {
+                  name: name!,
+                  description,
+                  tradingType,
+                  sandboxMode,
+                  externalUrl,
+                  imageUrl,
+                  type,
+                  startDate,
+                  endDate,
+                  votingStartDate,
+                  votingEndDate,
+                  joinStartDate,
+                  joinEndDate,
+                  rewards,
+                  perpsProvider,
+                },
           });
-        }
-
-        // Start the competition
-        const startedCompetition =
-          await services.competitionService.startCompetition(
-            competition.id,
-            finalAgentIds,
-            tradingConstraints,
-          );
 
         // Return the started competition
         res.status(200).json({
           success: true,
-          competition: {
-            ...startedCompetition,
-            agentIds: finalAgentIds,
-          },
+          competition,
         });
       } catch (error) {
         next(error);
