@@ -10,12 +10,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowUp, Search } from "lucide-react";
+import { Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { IconButton } from "@recallnet/ui2/components/icon-button";
-import { Input } from "@recallnet/ui2/components/input";
+import { Button } from "@recallnet/ui2/components/button";
 import {
   SortableTableHeader,
   Table,
@@ -26,9 +25,9 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 import { toast } from "@recallnet/ui2/components/toast";
-import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Pagination } from "@/components/pagination/index";
+import { useBoostBalance, useBoostTotals, useBoosts } from "@/hooks/useBoost";
 import { useSession } from "@/hooks/useSession";
 import { useVote } from "@/hooks/useVote";
 import {
@@ -41,6 +40,7 @@ import { formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
+import BoostAgentModal from "../modals/boost-agent";
 import ConfirmVoteModal from "../modals/confirm-vote";
 import { RankBadge } from "./rank-badge";
 
@@ -57,9 +57,9 @@ export interface AgentsTableProps {
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
-  totalVotes,
+  //totalVotes,
   competition,
-  onFilterChange,
+  //onFilterChange,
   onSortChange,
   onPageChange,
   pagination,
@@ -70,13 +70,25 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    vote: session.ready && session.isAuthenticated,
+    yourShare: session.ready && session.isAuthenticated,
   });
   const [selectedAgent, setSelectedAgent] = useState<AgentCompetition | null>(
     null,
   );
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
+  const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
   const { mutate: vote, isPending: isPendingVote } = useVote();
+
+  // Boost hooks
+  const { data: boostBalance, isLoading: isLoadingBoostBalance } =
+    useBoostBalance(competition.id);
+  const { data: userBoosts, isLoading: isLoadingUserBoosts } = useBoosts(
+    competition.id,
+  );
+  const { data: boostTotals, isLoading: isLoadingBoostTotals } = useBoostTotals(
+    competition.id,
+  );
+
   const page =
     pagination.limit > 0
       ? Math.floor(pagination.offset / pagination.limit) + 1
@@ -84,9 +96,37 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   useEffect(() => {
     setColumnVisibility({
-      vote: session.ready && session.isAuthenticated,
+      yourShare: session.ready && session.isAuthenticated,
     });
   }, [session]);
+
+  // Calculate total boost for percentage calculation
+  const totalBoost = useMemo(() => {
+    if (!boostTotals?.success) return 0;
+    return Object.values(boostTotals.boostTotals).reduce(
+      (sum, amount) => sum + amount,
+      0,
+    );
+  }, [boostTotals]);
+
+  // Calculate user's total spent boost for progress bar
+  const userSpentBoost = useMemo(() => {
+    if (!userBoosts?.success) return 0;
+    return Object.values(userBoosts.boosts).reduce(
+      (sum, amount) => sum + amount,
+      0,
+    );
+  }, [userBoosts]);
+
+  // Calculate total boost value (available + user spent) for progress bar
+  const totalBoostValue = useMemo(() => {
+    const availableBalance = boostBalance?.success ? boostBalance.balance : 0;
+    return availableBalance + userSpentBoost;
+  }, [boostBalance, userSpentBoost]);
+
+  // Check if boost data is loading
+  const isBoostDataLoading =
+    isLoadingBoostBalance || isLoadingUserBoosts || isLoadingBoostTotals;
 
   const handleVote = async () => {
     if (!selectedAgent) return;
@@ -107,6 +147,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         },
       },
     );
+  };
+
+  const handleBoost = (agent: AgentCompetition) => {
+    setSelectedAgent(agent);
+    setIsBoostModalOpen(true);
   };
 
   const columns = useMemo<ColumnDef<AgentCompetition>[]>(
@@ -160,105 +205,87 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         enableSorting: true,
         size: 140,
       },
+
       {
-        id: "pnl",
-        accessorKey: "pnl",
-        header: () => "P&L",
+        id: "boostPool",
+        accessorKey: "boostTotal",
+        header: () => <span className="whitespace-nowrap">Boost Pool</span>,
         cell: ({ row }) => {
-          const pnlColor =
-            row.original.pnlPercent >= 0 ? "text-green-500" : "text-red-500";
+          const agentBoostTotal = boostTotals?.success
+            ? boostTotals.boostTotals[row.original.id] || 0
+            : 0;
+
           return (
-            <div className="flex flex-col">
-              <span className={`text-secondary-foreground font-semibold`}>
-                {row.original.pnlPercent >= 0 ? "+" : ""}
-                {row.original.pnl.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                  maximumFractionDigits: 2,
-                })}
+            <div className="flex flex-col items-end">
+              <span className="text-secondary-foreground font-semibold">
+                {isBoostDataLoading ? "..." : agentBoostTotal.toString()}
               </span>
-              <span className={`text-xs ${pnlColor}`}>
-                ({row.original.pnlPercent >= 0 ? "+" : ""}
-                {row.original.pnlPercent.toFixed(2)}%)
+              <span className="text-xs text-slate-400">
+                ({formatPercentage(Number(agentBoostTotal), Number(totalBoost))}
+                )
               </span>
             </div>
           );
         },
-        enableSorting: true,
-        size: 140,
-      },
-      {
-        id: "change24h",
-        accessorKey: "change24h",
-        header: () => "24h",
-        cell: ({ row }) => {
-          const percentColor =
-            row.original.change24hPercent >= 0
-              ? "text-green-500"
-              : "text-red-500";
-          return (
-            <div className="flex flex-col font-semibold">
-              <span className={`text-xs ${percentColor}`}>
-                {row.original.change24hPercent >= 0 ? "+" : ""}
-                {row.original.change24hPercent.toFixed(2)}%
-              </span>
-            </div>
-          );
-        },
-        enableSorting: true,
+        enableSorting: false,
         size: 100,
-      },
-      {
-        id: "voteCount",
-        accessorKey: "voteCount",
-        header: () => "Votes",
-        cell: ({ row }) => (
-          <div className="flex flex-col items-end">
-            <span className="text-secondary-foreground font-semibold">
-              {row.original.voteCount}
-            </span>
-            <span className="text-xs text-slate-400">
-              ({formatPercentage(row.original.voteCount, totalVotes ?? 0)})
-            </span>
-          </div>
-        ),
-        enableSorting: true,
-        size: 80,
         meta: {
           className: "flex justify-end",
         },
       },
       {
-        id: "vote",
-        header: () => "Vote",
-        cell: ({ row }) => (
-          <IconButton
-            className={cn(
-              "enabled:text-blue-500 enabled:hover:bg-blue-500 enabled:hover:text-white disabled:cursor-not-allowed",
-              competition.userVotingInfo?.info.agentId === row.original.id
-                ? "[&:disabled]:opacity-100"
-                : "",
-            )}
-            iconClassName="h-8 w-8"
-            Icon={ArrowUp}
-            disabled={!competition.userVotingInfo?.canVote}
-            onClick={() => {
-              setSelectedAgent(row.original);
-              setIsVoteModalOpen(true);
-            }}
-          />
-        ),
-        size: 70,
+        id: "yourShare",
+        header: () => <span className="whitespace-nowrap">Your Share</span>,
+        cell: ({ row }) => {
+          // Use user boost allocation data
+          const userBoostAmount = userBoosts?.success
+            ? userBoosts.boosts[row.original.id] || 0
+            : 0;
+          const hasBoosted = userBoostAmount > 0;
+
+          return (
+            <div className="flex items-center justify-end gap-2">
+              {hasBoosted ? (
+                <>
+                  <span className="font-bold text-yellow-500">
+                    {isBoostDataLoading ? "..." : userBoostAmount.toString()}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="hover:bg-muted h-8 w-8 rounded-lg border border-yellow-500 p-0 hover:text-white"
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      handleBoost(row.original);
+                    }}
+                  >
+                    <Zap className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="hover:bg-muted h-8 rounded-lg border border-yellow-500 font-bold text-white"
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                    handleBoost(row.original);
+                  }}
+                >
+                  Boost{" "}
+                  <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
+                </Button>
+              )}
+            </div>
+          );
+        },
+        size: 120,
         meta: {
-          className: "justify-center",
+          className: "flex justify-end",
         },
       },
     ],
-    [
-      totalVotes,
-      competition.userVotingInfo?.canVote,
-      competition.userVotingInfo?.info.agentId,
-    ],
+    [boostTotals, userBoosts, isBoostDataLoading, totalBoost],
   );
 
   const table = useReactTable({
@@ -306,17 +333,54 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   return (
     <div className="mt-12 w-full" ref={ref}>
-      <h2 className="mb-5 text-2xl font-bold">
-        Competition {competitionTitles[competition.status]} ({pagination.total})
-      </h2>
-      <div className="mb-5 flex w-full items-center gap-2 rounded-2xl border px-3 py-2 md:w-1/2">
-        <Search className="text-secondary-foreground mr-1 h-5" />
-        <Input
-          className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-          placeholder="Search for an agent..."
-          onChange={(e) => onFilterChange(e.target.value)}
-          aria-label="Search for an agent"
-        />
+      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="w-full md:w-1/2">
+          <h2 className="p-4 text-2xl font-bold">
+            Competition {competitionTitles[competition.status]}
+            {/*({pagination.total})*/}
+          </h2>
+          {/*<div className="flex w-full items-center gap-2 rounded-2xl border px-3 py-2">
+            <Search className="text-secondary-foreground mr-1 h-5" />
+            <Input
+              className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              placeholder="Search for an agent..."
+              onChange={(e) => onFilterChange(e.target.value)}
+              aria-label="Search for an agent"
+            />
+          </div>*/}
+        </div>
+
+        {/* Available Boost Progress Bar */}
+        <div className="w-full md:w-1/2 lg:ml-8">
+          <div className="rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-2 whitespace-nowrap text-2xl font-bold">
+                <Zap className="h-4 w-4 text-yellow-500" />
+                <span className="font-bold">
+                  {isBoostDataLoading
+                    ? "..."
+                    : boostBalance?.balance.toString()}
+                </span>
+                <span className="text-secondary-foreground text-sm font-medium">
+                  available
+                </span>
+              </span>
+              <div className="bg-muted h-3 flex-1 overflow-hidden rounded-full">
+                <div
+                  className="h-full rounded-full bg-yellow-500 transition-all duration-300"
+                  style={{
+                    width:
+                      boostBalance?.success &&
+                      boostBalance.balance > 0 &&
+                      totalBoostValue > 0
+                        ? `${Math.min(100, Number((boostBalance.balance * 100) / totalBoostValue))}%`
+                        : "0%",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div
         ref={tableContainerRef}
@@ -427,6 +491,27 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         agentName={selectedAgent?.name ?? ""}
         onVote={handleVote}
         isLoading={isPendingVote}
+      />
+
+      <BoostAgentModal
+        isOpen={isBoostModalOpen}
+        onClose={(open) => {
+          setIsBoostModalOpen(open);
+          if (!open) setSelectedAgent(null);
+        }}
+        agent={selectedAgent}
+        availableBoost={boostBalance?.balance || 0}
+        currentAgentBoostTotal={
+          selectedAgent && boostTotals?.success
+            ? boostTotals.boostTotals[selectedAgent.id] || 0
+            : 0
+        }
+        currentUserBoostAmount={
+          selectedAgent && userBoosts?.success
+            ? userBoosts.boosts[selectedAgent.id] || 0
+            : 0
+        }
+        competitionId={competition.id}
       />
     </div>
   );

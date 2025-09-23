@@ -1,11 +1,11 @@
 import { and, desc, eq } from "drizzle-orm";
 
-import { indexingEvents } from "@recallnet/db-schema/indexing/defs";
+import { BlockHashCoder, TxHashCoder } from "@recallnet/db/coders";
+import { indexingEvents } from "@recallnet/db/schema/indexing/defs";
 
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { EventData } from "@/indexing/blockchain-types.js";
-import { BlockHashCoder, TxHashCoder } from "@/lib/coders.js";
 
 /**
  * EventsRepository

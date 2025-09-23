@@ -4,9 +4,12 @@ import {
   SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
-} from "@recallnet/db-schema/core/types";
-import type { Transaction as DatabaseTransaction } from "@recallnet/db-schema/types";
+} from "@recallnet/db/schema/core/types";
+import { SelectTrade } from "@recallnet/db/schema/trading/types";
+import type { Transaction as DatabaseTransaction } from "@recallnet/db/types";
 
+import { config } from "@/config/index.js";
+import { buildPaginationResponse } from "@/controllers/request-helpers.js";
 import { db } from "@/database/db.js";
 import {
   findById as findAgentById,
@@ -26,9 +29,11 @@ import {
   get24hSnapshots,
   getAgentCompetitionRecord,
   getAllCompetitionAgents,
+  getBatchVoteCounts,
   getBulkAgentCompetitionRecords,
   getBulkLatestPortfolioSnapshots,
   getCompetitionAgents,
+  getEnrichedCompetitions,
   getLatestPortfolioSnapshots,
   isAgentActiveInCompetition,
   markCompetitionAsEnded,
@@ -52,9 +57,7 @@ import {
   VoteService,
 } from "@/services/index.js";
 import {
-  COMPETITION_JOIN_ERROR_TYPES,
   CompetitionAgentStatus,
-  CompetitionJoinError,
   CompetitionStatus,
   CompetitionType,
   CrossChainTradingType,
@@ -81,6 +84,241 @@ interface LeaderboardEntry {
   value: number; // Portfolio value in USD
   pnl: number; // Profit/Loss amount (0 if not calculated)
 }
+
+/**
+ * Leaderboard data structure
+ */
+type LeaderboardData = {
+  success: boolean;
+  competition: SelectCompetition;
+  leaderboard: Array<{
+    rank: number;
+    agentId: string;
+    agentName: string;
+    agentHandle: string;
+    portfolioValue: number;
+    active: boolean;
+    deactivationReason: string | null;
+  }>;
+  inactiveAgents: Array<{
+    agentId: string;
+    agentName: string;
+    agentHandle: string;
+    portfolioValue: number;
+    active: boolean;
+    deactivationReason: string | null;
+  }>;
+  hasInactiveAgents: boolean;
+};
+
+/**
+ * Competition rules data structure
+ */
+type CompetitionRulesData = {
+  success: boolean;
+  competition: SelectCompetition;
+  rules: {
+    tradingRules: string[];
+    rateLimits: string[];
+    availableChains: {
+      svm: boolean;
+      evm: string[];
+    };
+    slippageFormula: string;
+    tradingConstraints: {
+      minimumPairAgeHours: number;
+      minimum24hVolumeUsd: number;
+      minimumLiquidityUsd: number;
+      minimumFdvUsd: number;
+      minTradesPerDay: number | null;
+    };
+  };
+};
+
+/**
+ * Enriched competition data structure
+ */
+type EnrichedCompetition = SelectCompetition & {
+  tradingConstraints?: {
+    minimumPairAgeHours: number | null;
+    minimum24hVolumeUsd: number | null;
+    minimumLiquidityUsd: number | null;
+    minimumFdvUsd: number | null;
+    minTradesPerDay: number | null;
+  };
+  votingEnabled?: boolean;
+  userVotingInfo?: {
+    canVote: boolean;
+    reason?: string;
+    info: {
+      hasVoted: boolean;
+      agentId?: string;
+      votedAt?: Date;
+    };
+  };
+  totalVotes?: number;
+};
+
+/**
+ * Enriched competitions list data structure
+ */
+type EnrichedCompetitionsData = {
+  success: boolean;
+  competitions: Array<EnrichedCompetition>;
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+};
+
+/**
+ * Competition details with enriched data
+ */
+type CompetitionDetailsData = {
+  success: boolean;
+  competition: SelectCompetition & {
+    stats: {
+      totalTrades: number;
+      totalAgents: number;
+      totalVolume: number;
+      totalVotes: number;
+      uniqueTokens: number;
+    };
+    tradingConstraints: {
+      minimumPairAgeHours: number | null;
+      minimum24hVolumeUsd: number | null;
+      minimumLiquidityUsd: number | null;
+      minimumFdvUsd: number | null;
+      minTradesPerDay: number | null;
+    };
+    rewards: Array<{
+      rank: number;
+      reward: number;
+      agentId: string | null;
+    }>;
+    votingEnabled?: boolean;
+    userVotingInfo?: {
+      canVote: boolean;
+      reason?: string;
+      info: {
+        hasVoted: boolean;
+        agentId?: string;
+        votedAt?: Date;
+      };
+    };
+  };
+};
+
+/**
+ * Competition agents data structure
+ */
+type CompetitionAgentsData = {
+  success: boolean;
+  competitionId: string;
+  registeredParticipants: number;
+  maxParticipants: number | null;
+  agents: Array<{
+    id: string;
+    name: string;
+    handle: string;
+    description: string | null;
+    imageUrl: string | null;
+    portfolioValue: number;
+    active: boolean;
+    deactivationReason: string | null;
+    rank: number | null;
+    score: number | null;
+    voteCount: number;
+  }>;
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+};
+
+/**
+ * Competition timeline data structure
+ */
+type CompetitionTimelineData = {
+  success: boolean;
+  competitionId: string;
+  timeline: Array<{
+    agentId: string;
+    agentName: string;
+    timeline: Array<{ timestamp: string; totalValue: number }>;
+  }>;
+};
+
+/**
+ * Trade data structure as returned by repository with agent info
+ */
+type TradeWithAgent = {
+  id: string;
+  competitionId: string | null;
+  agentId: string;
+  fromToken: string;
+  toToken: string;
+  fromAmount: number;
+  toAmount: number;
+  fromTokenSymbol: string | null;
+  toTokenSymbol: string | null;
+  fromSpecificChain: string | null;
+  toSpecificChain: string | null;
+  tradeAmountUsd: number;
+  timestamp: Date | null;
+  reason: string | null;
+  agent: {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    description: string | null;
+  } | null;
+};
+
+/**
+ * Competition trades data structure
+ */
+type CompetitionTradesData = {
+  success: boolean;
+  trades: TradeWithAgent[];
+  competition: SelectCompetition;
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+};
+
+/**
+ * Agent competition trades data structure
+ */
+type AgentCompetitionTradesData = {
+  success: boolean;
+  trades: SelectTrade[]; // Agent trades use basic SelectTrade format
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+};
+
+/**
+ * Basic competition info for unauthenticated users
+ */
+type BasicCompetitionInfo = {
+  id: string;
+  name: string;
+  status: CompetitionStatus;
+  externalUrl: string | null;
+  imageUrl: string | null;
+  startDate?: Date;
+};
 
 /**
  * Competition Service
@@ -1031,6 +1269,7 @@ export class CompetitionService {
   /**
    * Get all upcoming (pending) competitions
    * @returns Object with competitions array and total count
+   * TODO(stbrody): add caching
    */
   async getUpcomingCompetitions() {
     return findByStatus({
@@ -1123,77 +1362,102 @@ export class CompetitionService {
    * balances, taking initial snapshot, etc.)
    * @param competitionId Competition ID
    * @param agentId Agent ID
-   * @param userId User ID (for ownership validation)
+   * @param userId Optional user ID from session authentication
+   * @param authenticatedAgentId Optional agent ID from API key authentication
    */
   async joinCompetition(
     competitionId: string,
     agentId: string,
-    userId: string,
+    userId?: string,
+    authenticatedAgentId?: string,
   ): Promise<void> {
     serviceLogger.debug(
-      `[CompetitionManager] Join competition request: agent ${agentId} to competition ${competitionId} by user ${userId}`,
+      `[CompetitionManager] Join competition request: agent ${agentId} to competition ${competitionId}`,
     );
 
-    // 1. Check if competition exists
+    // Validate authentication
+    if (!authenticatedAgentId && !userId) {
+      throw new ApiError(401, "Authentication required");
+    }
+
+    if (authenticatedAgentId) {
+      // Agent API key authentication
+      if (authenticatedAgentId !== agentId) {
+        throw new ApiError(403, "Agent API key does not match agent ID in URL");
+      }
+    }
+
+    // Check if agent exists and validate ownership
+    const agent = await this.agentService.getAgent(agentId);
+    if (!agent) {
+      throw new ApiError(404, `Agent not found: ${agentId}`);
+    }
+
+    // Complete authentication validation and get validated user ID
+    let validatedUserId: string;
+    if (authenticatedAgentId) {
+      // For agent API key auth, set the validated user ID from the agent
+      validatedUserId = agent.ownerId;
+    } else if (userId) {
+      // For user session auth, verify ownership
+      if (agent.ownerId !== userId) {
+        throw new ApiError(403, "Access denied: You do not own this agent");
+      }
+      validatedUserId = userId;
+    } else {
+      // This shouldn't happen due to earlier check, but TypeScript needs this
+      throw new ApiError(401, "Authentication required");
+    }
+
+    // Check if competition exists
     const competition = await findById(competitionId);
     if (!competition) {
-      throw new Error(`Competition not found: ${competitionId}`);
+      throw new ApiError(404, `Competition not found: ${competitionId}`);
     }
 
-    // 2. Check if agent exists
-    const agent = await findAgentById(agentId);
-    if (!agent) {
-      throw new Error(`Agent not found: ${agentId}`);
-    }
-
-    // 3. Check if agent belongs to user
-    if (agent.ownerId !== userId) {
-      throw new Error("Agent does not belong to requesting user");
-    }
-
-    // 4. Check join date constraints FIRST (must take precedence over other errors)
+    // Check join date constraints FIRST (must take precedence over other errors)
     const now = new Date();
 
     if (competition.joinStartDate && now < competition.joinStartDate) {
-      const error = new Error(
+      throw new ApiError(
+        403,
         `Competition joining opens at ${competition.joinStartDate.toISOString()}`,
-      ) as CompetitionJoinError;
-      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_NOT_YET_OPEN;
-      error.code = 403;
-      throw error;
+      );
     }
 
     if (competition.joinEndDate && now > competition.joinEndDate) {
-      const error = new Error(
+      throw new ApiError(
+        403,
         `Competition joining closed at ${competition.joinEndDate.toISOString()}`,
-      ) as CompetitionJoinError;
-      error.type = COMPETITION_JOIN_ERROR_TYPES.JOIN_CLOSED;
-      error.code = 403;
-      throw error;
+      );
     }
 
-    // 5. Check agent status is eligible
+    // Check agent status is eligible
     if (agent.status === "deleted" || agent.status === "suspended") {
-      throw new Error("Agent is not eligible to join competitions");
+      throw new ApiError(403, "Agent is not eligible to join competitions");
     }
 
-    // 6. Check if competition status is pending
+    // Check if competition status is pending
     if (competition.status !== "pending") {
-      throw new Error("Cannot join competition that has already started/ended");
+      throw new ApiError(
+        403,
+        "Cannot join competition that has already started/ended",
+      );
     }
 
-    // 7. Check if agent is already actively registered
+    // Check if agent is already actively registered
     const isAlreadyActive = await isAgentActiveInCompetition(
       competitionId,
       agentId,
     );
     if (isAlreadyActive) {
-      throw new Error(
+      throw new ApiError(
+        403,
         "Agent is already actively registered for this competition",
       );
     }
 
-    // 8. Atomically add agent to competition with participant limit check
+    // Atomically add agent to competition with participant limit check
     // This prevents race conditions when multiple agents try to join simultaneously
     try {
       await addAgentToCompetition(competitionId, agentId);
@@ -1203,19 +1467,13 @@ export class CompetitionService {
         error instanceof Error &&
         error.message.includes("maximum participant limit")
       ) {
-        const competitionError = new Error(
-          error.message,
-        ) as CompetitionJoinError;
-        competitionError.type =
-          COMPETITION_JOIN_ERROR_TYPES.PARTICIPANT_LIMIT_EXCEEDED;
-        competitionError.code = 403;
-        throw competitionError;
+        throw new ApiError(403, error.message);
       }
       throw error;
     }
 
     serviceLogger.debug(
-      `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId}`,
+      `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId} for user ${validatedUserId}`,
     );
   }
 
@@ -1223,46 +1481,74 @@ export class CompetitionService {
    * Remove an agent from a competition
    * @param competitionId Competition ID
    * @param agentId Agent ID
-   * @param userId User ID (for ownership validation)
+   * @param userId Optional user ID from session authentication
+   * @param authenticatedAgentId Optional agent ID from API key authentication
    */
   async leaveCompetition(
     competitionId: string,
     agentId: string,
-    userId: string,
+    userId?: string,
+    authenticatedAgentId?: string,
   ): Promise<void> {
     serviceLogger.debug(
-      `[CompetitionManager] Leave competition request: agent ${agentId} from competition ${competitionId} by user ${userId}`,
+      `[CompetitionManager] Leave competition request: agent ${agentId} from competition ${competitionId}`,
     );
 
-    // 1. Check if competition exists
+    // Validate authentication
+    if (!authenticatedAgentId && !userId) {
+      throw new ApiError(401, "Authentication required");
+    }
+
+    if (authenticatedAgentId) {
+      // Agent API key authentication
+      if (authenticatedAgentId !== agentId) {
+        throw new ApiError(403, "Agent API key does not match agent ID in URL");
+      }
+    }
+
+    // Check if agent exists and validate ownership
+    const agent = await this.agentService.getAgent(agentId);
+    if (!agent) {
+      throw new ApiError(404, `Agent not found: ${agentId}`);
+    }
+
+    // Complete authentication validation and get validated user ID
+    let validatedUserId: string;
+    if (authenticatedAgentId) {
+      // For agent API key auth, set the validated user ID from the agent
+      validatedUserId = agent.ownerId;
+    } else if (userId) {
+      // For user session auth, verify ownership
+      if (agent.ownerId !== userId) {
+        throw new ApiError(403, "Access denied: You do not own this agent");
+      }
+      validatedUserId = userId;
+    } else {
+      // This shouldn't happen due to earlier check, but TypeScript needs this
+      throw new ApiError(401, "Authentication required");
+    }
+
+    // Check if competition exists
     const competition = await findById(competitionId);
     if (!competition) {
-      throw new Error(`Competition not found: ${competitionId}`);
+      throw new ApiError(404, `Competition not found: ${competitionId}`);
     }
 
-    // 2. Check if agent exists
-    const agent = await findAgentById(agentId);
-    if (!agent) {
-      throw new Error(`Agent not found: ${agentId}`);
-    }
-
-    // 3. Check if agent belongs to user
-    if (agent.ownerId !== userId) {
-      throw new Error("Agent does not belong to requesting user");
-    }
-
-    // 4. Check if agent is in the competition (any status)
+    // Check if agent is in the competition (any status)
     const isInCompetition = await this.isAgentInCompetition(
       competitionId,
       agentId,
     );
     if (!isInCompetition) {
-      throw new Error("Agent is not in this competition");
+      throw new ApiError(403, "Agent is not in this competition");
     }
 
-    // 5. Handle based on competition status
+    // Handle based on competition status
     if (competition.status === "ended") {
-      throw new Error("Cannot leave competition that has already ended");
+      throw new ApiError(
+        403,
+        "Cannot leave competition that has already ended",
+      );
     } else if (competition.status === "active") {
       // During active competition: mark agent as withdrawn from this competition
       await updateAgentCompetitionStatus(
@@ -1288,7 +1574,7 @@ export class CompetitionService {
     }
 
     serviceLogger.debug(
-      `[CompetitionManager] Successfully processed leave request for agent ${agentId} from competition ${competitionId}`,
+      `[CompetitionManager] Successfully processed leave request for agent ${agentId} from competition ${competitionId} for user ${validatedUserId}`,
     );
   }
 
@@ -1464,6 +1750,952 @@ export class CompetitionService {
     } catch (error) {
       serviceLogger.error(
         `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get leaderboard with authorization checks
+   * @param params Parameters for leaderboard request
+   * @returns Leaderboard data with proper authorization
+   */
+  async getLeaderboardWithAuthorization(params: {
+    competitionId?: string;
+    agentId?: string;
+    isAdmin?: boolean;
+  }): Promise<LeaderboardData> {
+    try {
+      // Get active competition or use provided competitionId
+      const competitionId =
+        params.competitionId || (await this.getActiveCompetition())?.id;
+
+      if (!competitionId) {
+        throw new ApiError(
+          400,
+          "No active competition and no competitionId provided",
+        );
+      }
+
+      // Check if competition exists
+      const competition = await this.getCompetition(competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
+      }
+
+      // Authentication and Authorization
+      if (params.isAdmin) {
+        // Admin access: Log and proceed
+        serviceLogger.debug(
+          `Admin accessing leaderboard for competition ${competitionId}.`,
+        );
+      } else {
+        // Not an admin, an agentId is required
+        if (!params.agentId) {
+          throw new ApiError(
+            401,
+            "Authentication required to view leaderboard",
+          );
+        }
+        // AgentId is present, verify active participation
+        const isAgentActive = await this.isAgentActiveInCompetition(
+          competitionId,
+          params.agentId,
+        );
+        if (!isAgentActive) {
+          throw new ApiError(
+            403,
+            "Forbidden: Your agent is not actively participating in this competition.",
+          );
+        }
+      }
+
+      // Get leaderboard data (active and inactive agents)
+      const leaderboardData =
+        await this.getLeaderboardWithInactiveAgents(competitionId);
+
+      // Get only the agents that are in this competition
+      const competitionAgentIds = [
+        ...leaderboardData.activeAgents.map((entry) => entry.agentId),
+        ...leaderboardData.inactiveAgents.map((entry) => entry.agentId),
+      ];
+      const agents =
+        await this.agentService.getAgentsByIds(competitionAgentIds);
+      const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
+
+      // Build active leaderboard with ranks
+      const activeLeaderboard = leaderboardData.activeAgents.map(
+        (entry, index) => {
+          const agent = agentMap.get(entry.agentId);
+          return {
+            rank: index + 1,
+            agentId: entry.agentId,
+            agentName: agent ? agent.name : "Unknown Agent",
+            agentHandle: agent ? agent.handle : "unknown_agent",
+            portfolioValue: entry.value,
+            active: true,
+            deactivationReason: null,
+          };
+        },
+      );
+
+      // Build inactive agents list
+      const inactiveAgents = leaderboardData.inactiveAgents.map((entry) => {
+        const agent = agentMap.get(entry.agentId);
+        return {
+          agentId: entry.agentId,
+          agentName: agent ? agent.name : "Unknown Agent",
+          agentHandle: agent ? agent.handle : "unknown_agent",
+          portfolioValue: entry.value,
+          active: false,
+          deactivationReason: entry.deactivationReason,
+        };
+      });
+
+      const result = {
+        success: true,
+        competition,
+        leaderboard: activeLeaderboard,
+        inactiveAgents: inactiveAgents,
+        hasInactiveAgents: inactiveAgents.length > 0,
+      };
+
+      return result;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting leaderboard with authorization:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get competition status with participation info
+   * @param agentId Optional agent ID for participation check
+   * @param isAdmin Whether the requester is an admin
+   * @returns Competition status with authorization-based information
+   */
+  async getCompetitionStatus(
+    agentId?: string,
+    isAdmin?: boolean,
+  ): Promise<{
+    success: boolean;
+    active: boolean;
+    competition: SelectCompetition | null | BasicCompetitionInfo;
+    isAdmin?: boolean;
+    participating?: boolean;
+    message?: string;
+  }> {
+    try {
+      // Get active competition
+      const activeCompetition = await this.getActiveCompetition();
+
+      // If no active competition, return null status
+      if (!activeCompetition) {
+        serviceLogger.debug("[CompetitionService] No active competition found");
+        return {
+          success: true,
+          active: false,
+          competition: null,
+          message: "No active competition found",
+        };
+      }
+
+      serviceLogger.debug(
+        `[CompetitionService] Found active competition: ${activeCompetition.id}`,
+      );
+
+      // If admin, return full status
+      if (isAdmin) {
+        serviceLogger.debug(
+          `[CompetitionService] Admin ${agentId} accessing competition status`,
+        );
+        return {
+          success: true,
+          active: true,
+          competition: activeCompetition,
+          isAdmin: true,
+          participating: false,
+        };
+      }
+
+      // If not authenticated, just return basic status
+      const basicInfo = {
+        id: activeCompetition.id,
+        name: activeCompetition.name,
+        status: activeCompetition.status,
+        externalUrl: activeCompetition.externalUrl,
+        imageUrl: activeCompetition.imageUrl,
+      };
+
+      if (!agentId) {
+        return {
+          success: true,
+          active: true,
+          competition: basicInfo,
+          message: "Authentication required to check participation status",
+        };
+      }
+
+      // Check if the agent is actively participating in the competition
+      const isAgentActiveInCompetitionResult =
+        await this.isAgentActiveInCompetition(activeCompetition.id, agentId);
+
+      // If agent is not actively participating, return limited info
+      if (!isAgentActiveInCompetitionResult) {
+        serviceLogger.debug(
+          `[CompetitionService] Agent ${agentId} is not in competition ${activeCompetition.id}`,
+        );
+
+        return {
+          success: true,
+          active: true,
+          competition: {
+            ...basicInfo,
+            startDate: activeCompetition.startDate || undefined,
+          },
+          participating: false,
+          message: "Your agent is not participating in this competition",
+        };
+      }
+
+      // Agent is participating
+      serviceLogger.debug(
+        `[CompetitionService] Agent ${agentId} is participating in competition ${activeCompetition.id}`,
+      );
+
+      // Return full competition info
+      return {
+        success: true,
+        active: true,
+        competition: activeCompetition,
+        participating: true,
+      };
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting competition status:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get competition rules for the active competition as a participant
+   * @param params Parameters for rules request
+   * @returns Formatted competition rules
+   */
+  async getCompetitionRules(params: {
+    agentId?: string;
+    isAdmin?: boolean;
+  }): Promise<CompetitionRulesData> {
+    try {
+      // Get active competition first, as rules are always for the active one
+      const activeCompetition = await this.getActiveCompetition();
+
+      if (!activeCompetition) {
+        throw new ApiError(
+          404,
+          "No active competition found to get rules for.",
+        );
+      }
+
+      // Authentication and Authorization
+      if (params.isAdmin) {
+        // Admin access: Log and proceed
+        serviceLogger.debug(
+          `Admin accessing rules for competition ${activeCompetition.id}.`,
+        );
+      } else {
+        // Not an admin, an agentId is required
+        if (!params.agentId) {
+          throw new ApiError(
+            401,
+            "Authentication required to view competition rules: Agent ID missing.",
+          );
+        }
+        // AgentId is present, verify participation in the active competition
+        if (activeCompetition.status !== "active") {
+          throw new ApiError(
+            400,
+            "No active competition found to get rules for.",
+          );
+        }
+        const isAgentActive = await this.isAgentActiveInCompetition(
+          activeCompetition.id,
+          params.agentId,
+        );
+        if (!isAgentActive) {
+          throw new ApiError(
+            403,
+            "Forbidden: Your agent is not actively participating in this competition.",
+          );
+        }
+      }
+
+      // Build initial balances description based on config
+      const initialBalanceDescriptions = [];
+
+      // Chain-specific balances
+      for (const chain of Object.keys(config.specificChainBalances)) {
+        const chainBalances =
+          config.specificChainBalances[
+            chain as keyof typeof config.specificChainBalances
+          ];
+        const tokenItems = [];
+
+        for (const token of Object.keys(chainBalances)) {
+          const amount = chainBalances[token];
+          if (amount && amount > 0) {
+            tokenItems.push(`${amount} ${token.toUpperCase()}`);
+          }
+        }
+
+        if (tokenItems.length > 0) {
+          let chainName = chain;
+          // Format chain name for better readability
+          if (chain === "eth") chainName = "Ethereum";
+          else if (chain === "svm") chainName = "Solana";
+          else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
+
+          initialBalanceDescriptions.push(
+            `${chainName}: ${tokenItems.join(", ")}`,
+          );
+        }
+      }
+
+      // Get trading constraints for the active competition
+      const tradingConstraints =
+        await this.tradingConstraintsService.getConstraintsWithDefaults(
+          activeCompetition.id,
+        );
+
+      // Define base rules
+      const tradingRules = [
+        "Trading is only allowed for tokens with valid price data",
+        `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
+        "Minimum trade amount: 0.000001 tokens",
+        `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
+        "No shorting allowed (trades limited to available balance)",
+        "Slippage is applied to all trades based on trade size",
+        `Cross-chain trading type: ${activeCompetition.crossChainTradingType}`,
+        "Transaction fees are not simulated",
+        `Token eligibility requires minimum ${tradingConstraints.minimumPairAgeHours} hours of trading history`,
+        `Token must have minimum 24h volume of $${tradingConstraints.minimum24hVolumeUsd.toLocaleString()} USD`,
+        `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
+        `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
+      ];
+
+      // Add minimum trades per day rule if set
+      if (tradingConstraints.minTradesPerDay !== null) {
+        tradingRules.push(
+          `Minimum trades per day requirement: ${tradingConstraints.minTradesPerDay} trades`,
+        );
+      }
+
+      const rateLimits = [
+        `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
+        "100 requests per minute for trade operations",
+        "300 requests per minute for price queries",
+        "30 requests per minute for balance/portfolio checks",
+        "3,000 requests per minute across all endpoints",
+        "10,000 requests per hour per agent",
+      ];
+
+      const availableChains = {
+        svm: true,
+        evm: config.evmChains,
+      };
+
+      const slippageFormula =
+        "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
+
+      // Assemble all rules
+      const allRules = {
+        tradingRules,
+        rateLimits,
+        availableChains,
+        slippageFormula,
+        tradingConstraints,
+      };
+
+      const result = {
+        success: true,
+        competition: activeCompetition,
+        rules: allRules,
+      };
+
+      return result;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting competition rules:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get upcoming competitions with authentication check
+   * @param agentId Optional agent ID for authentication
+   * @param isAdmin Whether the requester is an admin
+   * @returns Upcoming competitions
+   */
+  async getUpcomingCompetitionsWithAuth(
+    agentId?: string,
+    isAdmin?: boolean,
+  ): Promise<SelectCompetition[]> {
+    try {
+      // Authentication check
+      if (!isAdmin && !agentId) {
+        throw new ApiError(401, "Authentication required");
+      }
+
+      if (isAdmin) {
+        serviceLogger.debug(
+          `[CompetitionService] Admin ${agentId} requesting upcoming competitions`,
+        );
+      } else {
+        serviceLogger.debug(
+          `[CompetitionService] Agent ${agentId} requesting upcoming competitions`,
+        );
+      }
+
+      // Get upcoming competitions
+      const result = await this.getUpcomingCompetitions();
+
+      return result.competitions;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting upcoming competitions with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get enriched competitions with user voting data
+   * @param params Parameters for competitions request
+   * @returns Enriched competitions list
+   */
+  async getEnrichedCompetitions(params: {
+    status?: CompetitionStatus;
+    pagingParams: PagingParams;
+    userId?: string;
+    agentId?: string;
+    isAdmin?: boolean;
+  }): Promise<EnrichedCompetitionsData> {
+    try {
+      // Get competitions
+      const { competitions, total } = await this.getCompetitions(
+        params.status,
+        params.pagingParams,
+      );
+
+      // If user is authenticated, enrich competitions with voting information
+      let enrichedCompetitions = competitions;
+      if (params.userId) {
+        const competitionIds = competitions.map((c) => c.id);
+
+        // Fetch all data in parallel with batch queries
+        const [enrichmentData, voteCountsMap] = await Promise.all([
+          getEnrichedCompetitions(params.userId, competitionIds),
+          getBatchVoteCounts(competitionIds),
+        ]);
+
+        // Create lookup maps for efficient access
+        const enrichmentMap = new Map(
+          enrichmentData.map((data) => [data.competitionId, data]),
+        );
+
+        enrichedCompetitions = competitions.map((competition) => {
+          const enrichment = enrichmentMap.get(competition.id);
+          if (!enrichment) {
+            throw new ApiError(500, "invalid competition state");
+          }
+
+          const hasVoted = !!enrichment.userVoteAgentId;
+          const compVotingStatus =
+            this.voteService.checkCompetitionVotingEligibility(competition);
+
+          const votingState = {
+            canVote: compVotingStatus.canVote,
+            reason: compVotingStatus.reason,
+            info: {
+              hasVoted,
+              agentId: enrichment.userVoteAgentId || undefined,
+              votedAt: enrichment.userVoteCreatedAt || undefined,
+            },
+          };
+
+          const totalVotes = voteCountsMap.get(competition.id)?.totalVotes || 0;
+
+          const tradingConstraints = {
+            minimumPairAgeHours: enrichment.minimumPairAgeHours,
+            minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
+            minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
+            minimumFdvUsd: enrichment.minimumFdvUsd,
+            minTradesPerDay: enrichment.minTradesPerDay,
+          };
+
+          return {
+            ...competition,
+            tradingConstraints,
+            votingEnabled: votingState.canVote || votingState.info.hasVoted,
+            userVotingInfo: votingState,
+            totalVotes,
+          };
+        });
+      }
+
+      // Calculate hasMore based on total and current page
+      const hasMore =
+        params.pagingParams.offset + params.pagingParams.limit < total;
+
+      const result = {
+        success: true,
+        competitions: enrichedCompetitions,
+        pagination: {
+          total: total,
+          limit: params.pagingParams.limit,
+          offset: params.pagingParams.offset,
+          hasMore: hasMore,
+        },
+      };
+
+      return result;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting enriched competitions:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get competition by ID with caching and authorization
+   * @param params Parameters for competition request
+   * @returns Competition details with enriched data
+   */
+  async getCompetitionById(params: {
+    competitionId: string;
+    userId?: string;
+    agentId?: string;
+    isAdmin?: boolean;
+  }): Promise<CompetitionDetailsData> {
+    try {
+      // Fetch all data pieces first
+      const [
+        competition,
+        tradeMetrics,
+        voteCountsMap,
+        rewards,
+        tradingConstraints,
+        votingState,
+      ] = await Promise.all([
+        // Get competition details
+        this.getCompetition(params.competitionId),
+        // Get trade metrics for this competition
+        this.tradeSimulatorService.getCompetitionTradeMetrics(
+          params.competitionId,
+        ),
+        // Get vote counts for this competition
+        this.voteService.getVoteCountsByCompetition(params.competitionId),
+        // Get reward structure
+        this.competitionRewardService.getRewardsByCompetition(
+          params.competitionId,
+        ),
+        // Get trading constraints
+        this.tradingConstraintsService.getConstraintsWithDefaults(
+          params.competitionId,
+        ),
+        // Get voting state if user is authenticated
+        params.userId
+          ? this.voteService.getCompetitionVotingState(
+              params.userId,
+              params.competitionId,
+            )
+          : Promise.resolve(null),
+      ]);
+
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
+      }
+
+      // Calculate total votes
+      const totalVotes = Array.from(voteCountsMap.values()).reduce(
+        (sum, count) => sum + count,
+        0,
+      );
+
+      // Assemble stats
+      const stats = {
+        totalTrades: tradeMetrics.totalTrades,
+        totalAgents: competition.registeredParticipants,
+        totalVolume: tradeMetrics.totalVolume,
+        totalVotes,
+        uniqueTokens: tradeMetrics.uniqueTokens,
+      };
+
+      // Format rewards
+      const formattedRewards = rewards.map((r) => ({
+        rank: r.rank,
+        reward: r.reward,
+        agentId: r.agentId,
+      }));
+
+      // Assemble final response
+      const result = {
+        success: true,
+        competition: {
+          ...competition,
+          stats,
+          tradingConstraints,
+          rewards: formattedRewards,
+          votingEnabled: votingState
+            ? votingState.canVote || votingState.info.hasVoted
+            : false,
+          userVotingInfo: votingState || undefined,
+        },
+      };
+
+      return result;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting competition by ID with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get competition agents with caching
+   * @param params Parameters for agents request
+   * @returns Competition agents with pagination
+   */
+  async getCompetitionAgents(params: {
+    competitionId: string;
+    queryParams: {
+      limit: number;
+      offset: number;
+      sortBy?: string;
+      sortOrder?: string;
+    };
+  }): Promise<CompetitionAgentsData> {
+    try {
+      // Get competition
+      const competition = await this.getCompetition(params.competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
+      }
+
+      // Get agents for this competition with sorting and pagination
+      const { agents, total } = await this.getCompetitionAgentsWithMetrics(
+        params.competitionId,
+        params.queryParams,
+      );
+
+      const result = {
+        success: true,
+        competitionId: params.competitionId,
+        registeredParticipants: competition.registeredParticipants,
+        maxParticipants: competition.maxParticipants,
+        agents,
+        pagination: buildPaginationResponse(
+          total,
+          params.queryParams.limit,
+          params.queryParams.offset,
+        ),
+      };
+
+      return result;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting competition agents with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get competition timeline with caching
+   * @param competitionId The competition ID
+   * @param bucket Time bucket interval in minutes
+   * @returns Competition timeline data
+   */
+  async getCompetitionTimeline(
+    competitionId: string,
+    bucket: number,
+  ): Promise<CompetitionTimelineData> {
+    try {
+      // Get competition
+      const competition = await this.getCompetition(competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
+      }
+
+      // Get timeline data from portfolio snapshotter
+      const rawData =
+        await this.portfolioSnapshotterService.getAgentPortfolioTimeline(
+          competitionId,
+          bucket,
+        );
+
+      // Transform into the required structure
+      const agentsMap = new Map<
+        string,
+        {
+          agentId: string;
+          agentName: string;
+          timeline: Array<{ timestamp: string; totalValue: number }>;
+        }
+      >();
+
+      for (const item of rawData) {
+        if (!agentsMap.has(item.agentId)) {
+          agentsMap.set(item.agentId, {
+            agentId: item.agentId,
+            agentName: item.agentName,
+            timeline: [],
+          });
+        }
+
+        agentsMap.get(item.agentId)!.timeline.push({
+          timestamp: item.timestamp,
+          totalValue: item.totalValue,
+        });
+      }
+
+      const result = {
+        success: true,
+        competitionId,
+        timeline: Array.from(agentsMap.values()),
+      };
+
+      return result;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting competition timeline with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get rules for a specific competition by competition ID.
+   * @param competitionId The competition ID
+   * @returns Competition rules
+   */
+  async getRulesForSpecificCompetition(
+    competitionId: string,
+  ): Promise<CompetitionRulesData> {
+    try {
+      // Get competition
+      const competition = await this.getCompetition(competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
+      }
+
+      // Get trading constraints
+      const tradingConstraints =
+        await this.tradingConstraintsService.getConstraintsWithDefaults(
+          competition.id,
+        );
+
+      // Build initial balances description based on config (original logic)
+      const initialBalanceDescriptions = [];
+
+      // Chain-specific balances
+      for (const chain of Object.keys(config.specificChainBalances)) {
+        const chainBalances =
+          config.specificChainBalances[
+            chain as keyof typeof config.specificChainBalances
+          ];
+        const tokenItems = [];
+
+        for (const token of Object.keys(chainBalances)) {
+          const amount = chainBalances[token];
+          if (amount && amount > 0) {
+            tokenItems.push(`${amount} ${token.toUpperCase()}`);
+          }
+        }
+
+        if (tokenItems.length > 0) {
+          let chainName = chain;
+          // Format chain name for better readability
+          if (chain === "eth") chainName = "Ethereum";
+          else if (chain === "svm") chainName = "Solana";
+          else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
+
+          initialBalanceDescriptions.push(
+            `${chainName}: ${tokenItems.join(", ")}`,
+          );
+        }
+      }
+
+      // Define base rules (same logic as getRules but for specific competition)
+      const tradingRules = [
+        "Trading is only allowed for tokens with valid price data",
+        `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
+        "Minimum trade amount: 0.000001 tokens",
+        `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
+        "No shorting allowed (trades limited to available balance)",
+        "Slippage is applied to all trades based on trade size",
+        `Cross-chain trading type: ${competition.crossChainTradingType}`,
+        "Transaction fees are not simulated",
+        `Token eligibility requires minimum ${tradingConstraints.minimumPairAgeHours} hours of trading history`,
+        `Token must have minimum 24h volume of $${tradingConstraints.minimum24hVolumeUsd.toLocaleString()} USD`,
+        `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
+        `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
+      ];
+
+      // Add minimum trades per day rule if set
+      if (tradingConstraints.minTradesPerDay !== null) {
+        tradingRules.push(
+          `Minimum trades per day requirement: ${tradingConstraints.minTradesPerDay} trades`,
+        );
+      }
+
+      const rateLimits = [
+        `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
+        "100 requests per minute for trade operations",
+        "300 requests per minute for price queries",
+        "30 requests per minute for balance/portfolio checks",
+        "3,000 requests per minute across all endpoints",
+        "10,000 requests per hour per agent",
+      ];
+
+      const availableChains = {
+        svm: true,
+        evm: config.evmChains,
+      };
+
+      const slippageFormula =
+        "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
+
+      // Assemble all rules (original format)
+      const rules = {
+        tradingRules,
+        rateLimits,
+        availableChains,
+        slippageFormula,
+        tradingConstraints,
+      };
+
+      const result = {
+        success: true,
+        competition,
+        rules,
+      };
+
+      return result;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting competition rules with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get competition trades with caching
+   * @param params Parameters for trades request
+   * @returns Competition trades with pagination
+   */
+  async getCompetitionTrades(params: {
+    competitionId: string;
+    pagingParams: PagingParams;
+  }): Promise<CompetitionTradesData> {
+    try {
+      // Get competition
+      const competition = await this.getCompetition(params.competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
+      }
+
+      // Get trades for the competition
+      const { trades, total } =
+        await this.tradeSimulatorService.getCompetitionTrades(
+          params.competitionId,
+          params.pagingParams.limit,
+          params.pagingParams.offset,
+        );
+
+      const result = {
+        success: true,
+        trades,
+        competition,
+        pagination: buildPaginationResponse(
+          total,
+          params.pagingParams.limit,
+          params.pagingParams.offset,
+        ),
+      };
+
+      return result;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting competition trades with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get agent trades in competition with caching
+   * @param params Parameters for agent trades request
+   * @returns Agent trades in competition with pagination
+   */
+  async getAgentTradesInCompetition(params: {
+    competitionId: string;
+    agentId: string;
+    pagingParams: PagingParams;
+  }): Promise<AgentCompetitionTradesData> {
+    try {
+      // Get competition
+      const competition = await this.getCompetition(params.competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
+      }
+
+      // Check if agent exists
+      const agent = await this.agentService.getAgent(params.agentId);
+      if (!agent) {
+        throw new ApiError(404, "Agent not found");
+      }
+
+      // Get trades
+      const { trades, total } =
+        await this.tradeSimulatorService.getAgentTradesInCompetition(
+          params.competitionId,
+          params.agentId,
+          params.pagingParams.limit,
+          params.pagingParams.offset,
+        );
+
+      const result = {
+        success: true,
+        trades,
+        pagination: buildPaginationResponse(
+          total,
+          params.pagingParams.limit,
+          params.pagingParams.offset,
+        ),
+      };
+
+      return result;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting agent competition trades with auth:`,
+        error,
       );
       throw error;
     }

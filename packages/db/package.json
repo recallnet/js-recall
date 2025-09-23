@@ -1,0 +1,381 @@
+{
+  "name": "@recallnet/db",
+  "version": "0.0.0",
+  "license": "MIT AND Apache-2.0",
+  "private": true,
+  "description": "Recall Drizzle schema and data access repositories.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/recallnet/js-recall.git",
+    "directory": "packages/db"
+  },
+  "homepage": "https://github.com/recallnet/js-recall#readme",
+  "type": "module",
+  "exports": {
+    "./coders": {
+      "import": {
+        "types": "./dist/coders/index.d.ts",
+        "default": "./dist/coders/index.js"
+      },
+      "require": {
+        "types": "./dist/coders/index.d.cts",
+        "default": "./dist/coders/index.cjs"
+      }
+    },
+    "./errors": {
+      "import": {
+        "types": "./dist/errors.d.ts",
+        "default": "./dist/errors.js"
+      },
+      "require": {
+        "types": "./dist/errors.d.cts",
+        "default": "./dist/errors.cjs"
+      }
+    },
+    "./repositories/admin": {
+      "import": {
+        "types": "./dist/repositories/admin.d.ts",
+        "default": "./dist/repositories/admin.js"
+      },
+      "require": {
+        "types": "./dist/repositories/admin.d.cts",
+        "default": "./dist/repositories/admin.cjs"
+      }
+    },
+    "./repositories/agent-nonce": {
+      "import": {
+        "types": "./dist/repositories/agent-nonce.d.ts",
+        "default": "./dist/repositories/agent-nonce.js"
+      },
+      "require": {
+        "types": "./dist/repositories/agent-nonce.d.cts",
+        "default": "./dist/repositories/agent-nonce.cjs"
+      }
+    },
+    "./repositories/agent": {
+      "import": {
+        "types": "./dist/repositories/agent.d.ts",
+        "default": "./dist/repositories/agent.js"
+      },
+      "require": {
+        "types": "./dist/repositories/agent.d.cts",
+        "default": "./dist/repositories/agent.cjs"
+      }
+    },
+    "./repositories/agent-score": {
+      "import": {
+        "types": "./dist/repositories/agent-score.d.ts",
+        "default": "./dist/repositories/agent-score.js"
+      },
+      "require": {
+        "types": "./dist/repositories/agent-score.d.cts",
+        "default": "./dist/repositories/agent-score.cjs"
+      }
+    },
+    "./repositories/balance": {
+      "import": {
+        "types": "./dist/repositories/balance.d.ts",
+        "default": "./dist/repositories/balance.js"
+      },
+      "require": {
+        "types": "./dist/repositories/balance.d.cts",
+        "default": "./dist/repositories/balance.cjs"
+      }
+    },
+    "./repositories/boost": {
+      "import": {
+        "types": "./dist/repositories/boost.d.ts",
+        "default": "./dist/repositories/boost.js"
+      },
+      "require": {
+        "types": "./dist/repositories/boost.d.cts",
+        "default": "./dist/repositories/boost.cjs"
+      }
+    },
+    "./repositories/competition": {
+      "import": {
+        "types": "./dist/repositories/competition.d.ts",
+        "default": "./dist/repositories/competition.js"
+      },
+      "require": {
+        "types": "./dist/repositories/competition.d.cts",
+        "default": "./dist/repositories/competition.cjs"
+      }
+    },
+    "./repositories/competition-rewards": {
+      "import": {
+        "types": "./dist/repositories/competition-rewards.d.ts",
+        "default": "./dist/repositories/competition-rewards.js"
+      },
+      "require": {
+        "types": "./dist/repositories/competition-rewards.d.cts",
+        "default": "./dist/repositories/competition-rewards.cjs"
+      }
+    },
+    "./repositories/leaderboard": {
+      "import": {
+        "types": "./dist/repositories/leaderboard.d.ts",
+        "default": "./dist/repositories/leaderboard.js"
+      },
+      "require": {
+        "types": "./dist/repositories/leaderboard.d.cts",
+        "default": "./dist/repositories/leaderboard.cjs"
+      }
+    },
+    "./repositories/rewards": {
+      "import": {
+        "types": "./dist/repositories/rewards.d.ts",
+        "default": "./dist/repositories/rewards.js"
+      },
+      "require": {
+        "types": "./dist/repositories/rewards.d.cts",
+        "default": "./dist/repositories/rewards.cjs"
+      }
+    },
+    "./repositories/stakes": {
+      "import": {
+        "types": "./dist/repositories/stakes.d.ts",
+        "default": "./dist/repositories/stakes.js"
+      },
+      "require": {
+        "types": "./dist/repositories/stakes.d.cts",
+        "default": "./dist/repositories/stakes.cjs"
+      }
+    },
+    "./repositories/trade": {
+      "import": {
+        "types": "./dist/repositories/trade.d.ts",
+        "default": "./dist/repositories/trade.js"
+      },
+      "require": {
+        "types": "./dist/repositories/trade.d.cts",
+        "default": "./dist/repositories/trade.cjs"
+      }
+    },
+    "./repositories/trading-constraints": {
+      "import": {
+        "types": "./dist/repositories/trading-constraints.d.ts",
+        "default": "./dist/repositories/trading-constraints.js"
+      },
+      "require": {
+        "types": "./dist/repositories/trading-constraints.d.cts",
+        "default": "./dist/repositories/trading-constraints.cjs"
+      }
+    },
+    "./repositories/user": {
+      "import": {
+        "types": "./dist/repositories/user.d.ts",
+        "default": "./dist/repositories/user.js"
+      },
+      "require": {
+        "types": "./dist/repositories/user.d.cts",
+        "default": "./dist/repositories/user.cjs"
+      }
+    },
+    "./repositories/vote": {
+      "import": {
+        "types": "./dist/repositories/vote.d.ts",
+        "default": "./dist/repositories/vote.js"
+      },
+      "require": {
+        "types": "./dist/repositories/vote.d.cts",
+        "default": "./dist/repositories/vote.cjs"
+      }
+    },
+    "./types": {
+      "import": {
+        "types": "./dist/types.d.ts",
+        "default": "./dist/types.js"
+      },
+      "require": {
+        "types": "./dist/types.d.cts",
+        "default": "./dist/types.cjs"
+      }
+    },
+    "./schema": {
+      "import": {
+        "types": "./dist/schema/index.d.ts",
+        "default": "./dist/schema/index.js"
+      },
+      "require": {
+        "types": "./dist/schema/index.d.cts",
+        "default": "./dist/schema/index.cjs"
+      }
+    },
+    "./schema/core/defs": {
+      "import": {
+        "types": "./dist/schema/core/defs.d.ts",
+        "default": "./dist/schema/core/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/core/defs.d.cts",
+        "default": "./dist/schema/core/defs.cjs"
+      }
+    },
+    "./schema/core/relations": {
+      "import": {
+        "types": "./dist/schema/core/relations.d.ts",
+        "default": "./dist/schema/core/relations.js"
+      },
+      "require": {
+        "types": "./dist/schema/core/relations.d.cts",
+        "default": "./dist/schema/core/relations.cjs"
+      }
+    },
+    "./schema/core/types": {
+      "import": {
+        "types": "./dist/schema/core/types.d.ts",
+        "default": "./dist/schema/core/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/core/types.d.cts",
+        "default": "./dist/schema/core/types.cjs"
+      }
+    },
+    "./schema/indexing/defs": {
+      "import": {
+        "types": "./dist/schema/indexing/defs.d.ts",
+        "default": "./dist/schema/indexing/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/indexing/defs.d.cts",
+        "default": "./dist/schema/indexing/defs.cjs"
+      }
+    },
+    "./schema/indexing/types": {
+      "import": {
+        "types": "./dist/schema/indexing/types.d.ts",
+        "default": "./dist/schema/indexing/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/indexing/types.d.cts",
+        "default": "./dist/schema/indexing/types.cjs"
+      }
+    },
+    "./schema/ranking/defs": {
+      "import": {
+        "types": "./dist/schema/ranking/defs.d.ts",
+        "default": "./dist/schema/ranking/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/ranking/defs.d.cts",
+        "default": "./dist/schema/ranking/defs.cjs"
+      }
+    },
+    "./schema/ranking/relations": {
+      "import": {
+        "types": "./dist/schema/ranking/relations.d.ts",
+        "default": "./dist/schema/ranking/relations.js"
+      },
+      "require": {
+        "types": "./dist/schema/ranking/relations.d.cts",
+        "default": "./dist/schema/ranking/relations.cjs"
+      }
+    },
+    "./schema/ranking/types": {
+      "import": {
+        "types": "./dist/schema/ranking/types.d.ts",
+        "default": "./dist/schema/ranking/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/ranking/types.d.cts",
+        "default": "./dist/schema/ranking/types.cjs"
+      }
+    },
+    "./schema/trading/defs": {
+      "import": {
+        "types": "./dist/schema/trading/defs.d.ts",
+        "default": "./dist/schema/trading/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/trading/defs.d.cts",
+        "default": "./dist/schema/trading/defs.cjs"
+      }
+    },
+    "./schema/trading/relations": {
+      "import": {
+        "types": "./dist/schema/trading/relations.d.ts",
+        "default": "./dist/schema/trading/relations.js"
+      },
+      "require": {
+        "types": "./dist/schema/trading/relations.d.cts",
+        "default": "./dist/schema/trading/relations.cjs"
+      }
+    },
+    "./schema/trading/types": {
+      "import": {
+        "types": "./dist/schema/trading/types.d.ts",
+        "default": "./dist/schema/trading/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/trading/types.d.cts",
+        "default": "./dist/schema/trading/types.cjs"
+      }
+    },
+    "./schema/voting/defs": {
+      "import": {
+        "types": "./dist/schema/voting/defs.d.ts",
+        "default": "./dist/schema/voting/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/voting/defs.d.cts",
+        "default": "./dist/schema/voting/defs.cjs"
+      }
+    },
+    "./schema/voting/relations": {
+      "import": {
+        "types": "./dist/schema/voting/relations.d.ts",
+        "default": "./dist/schema/voting/relations.js"
+      },
+      "require": {
+        "types": "./dist/schema/voting/relations.d.cts",
+        "default": "./dist/schema/voting/relations.cjs"
+      }
+    },
+    "./schema/voting/types": {
+      "import": {
+        "types": "./dist/schema/voting/types.d.ts",
+        "default": "./dist/schema/voting/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/voting/types.d.cts",
+        "default": "./dist/schema/voting/types.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test:integration": "vitest run --project integration",
+    "clean": "rm -rf .turbo node_modules dist",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
+    "docs:check": "typedoc --emit none",
+    "docs:build": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "typedoc --watch --serve",
+    "build": "tsup",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.43.1",
+    "drizzle-zod": "^0.8.2",
+    "pino": "^9.7.0",
+    "zod": "^3.25.17"
+  },
+  "devDependencies": {
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "drizzle-kit": "^0.31.1",
+    "tsup": "^8.3.6",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
+    "typedoc-plugin-markdown": "^4.6.0",
+    "typescript": "^5.7.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
+  }
+}

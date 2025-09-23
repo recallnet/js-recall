@@ -1,8 +1,8 @@
 import { MerkleTree } from "merkletreejs";
 import { Hex, encodePacked, hexToBytes, keccak256 } from "viem";
 
-import { rewardsRoots, rewardsTree } from "@recallnet/db-schema/voting/defs";
-import { InsertReward } from "@recallnet/db-schema/voting/types";
+import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/voting/defs";
+import { InsertReward } from "@recallnet/db/schema/voting/types";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
 
 import { config } from "@/config/index.js";

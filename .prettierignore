@@ -11,6 +11,7 @@ packages/fonts/src/*
 **/node_modules
 **/.next
 **/.turbo
+**/coverage
 
 # Speakeasy SDK generated / hidden files
 packages/api-sdk/.tshy

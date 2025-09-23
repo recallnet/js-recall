@@ -3,13 +3,13 @@ import { MerkleTree } from "merkletreejs";
 import { hexToBytes, keccak256 } from "viem";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-import { competitions } from "@recallnet/db-schema/core/defs";
+import { competitions } from "@recallnet/db/schema/core/defs";
 import {
   rewards,
   rewardsRoots,
   rewardsTree,
-} from "@recallnet/db-schema/voting/defs";
-import { InsertReward } from "@recallnet/db-schema/voting/types";
+} from "@recallnet/db/schema/voting/defs";
+import { InsertReward } from "@recallnet/db/schema/voting/types";
 
 import { db } from "@/database/db.js";
 import { insertRewards } from "@/database/repositories/rewards-repository.js";

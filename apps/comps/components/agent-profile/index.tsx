@@ -136,8 +136,10 @@ export default function AgentProfile({
           try {
             await updateSandboxAgent.mutateAsync({
               agentId: sandboxAgentData.agent.id,
-              name: field === "name" ? (value as string) : agent.name,
-              handle: field === "handle" ? (value as string) : agent.handle,
+              params: {
+                name: field === "name" ? (value as string) : agent.name,
+                handle: field === "handle" ? (value as string) : agent.handle,
+              },
             });
           } catch (sandboxError) {
             console.error(
@@ -435,7 +437,11 @@ export default function AgentProfile({
               Docs <ExternalLink className="h-4 w-4" />
             </Link>
           </div>
-          <Credentials agent={agent} className="mt-6" />
+          <Credentials
+            agent={agent}
+            userWalletAddress={owner.walletAddress}
+            className="mt-6"
+          />
         </div>
       )}
 

@@ -1,7 +1,7 @@
 import {
   InsertTradingConstraints,
   SelectTradingConstraints,
-} from "@recallnet/db-schema/trading/types";
+} from "@recallnet/db/schema/trading/types";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
