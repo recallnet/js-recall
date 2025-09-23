@@ -230,10 +230,6 @@ if (config.sentry?.enabled) {
 // Apply error handler
 app.use(errorHandler);
 
-// Start blockchain indexing, if enabled
-const indexingService = services.indexingService;
-indexingService.start();
-
 // Start HTTP server
 const mainServer = app.listen(PORT, "0.0.0.0", () => {
   apiLogger.info(`\n========================================`);
@@ -257,8 +253,6 @@ const gracefulShutdown = async (signal: string) => {
   apiLogger.info(
     `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
   );
-
-  await indexingService.close();
 
   // Close both servers
   mainServer.close(async () => {
