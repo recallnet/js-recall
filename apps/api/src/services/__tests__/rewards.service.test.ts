@@ -20,7 +20,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   SelectReward,
   SelectRewardsTree,
-} from "@recallnet/db-schema/voting/types";
+} from "@recallnet/db/schema/voting/types";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
 
 import { config } from "@/config/index.js";
