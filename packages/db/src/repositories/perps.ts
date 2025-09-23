@@ -16,17 +16,26 @@ import {
   perpetualPositions,
   perpsAccountSummaries,
   perpsCompetitionConfig,
+  perpsRiskMetrics,
   perpsSelfFundingAlerts,
+  perpsTransferHistory,
+  perpsTwrPeriods,
 } from "../schema/trading/defs.js";
 import {
   InsertPerpetualPosition,
   InsertPerpsAccountSummary,
   InsertPerpsCompetitionConfig,
+  InsertPerpsRiskMetrics,
   InsertPerpsSelfFundingAlert,
+  InsertPerpsTransferHistory,
+  InsertPerpsTwrPeriod,
   SelectPerpetualPosition,
   SelectPerpsAccountSummary,
   SelectPerpsCompetitionConfig,
+  SelectPerpsRiskMetrics,
   SelectPerpsSelfFundingAlert,
+  SelectPerpsTransferHistory,
+  SelectPerpsTwrPeriod,
 } from "../schema/trading/types.js";
 import { Database, Transaction } from "../types.js";
 
@@ -1008,5 +1017,323 @@ export class PerpsRepository {
       this.#logger.error("Error in getCompetitionPerpsPositions:", error);
       throw error;
     }
+  }
+
+  // =============================================================================
+  // TRANSFER HISTORY OPERATIONS
+  // =============================================================================
+
+  /**
+   * Save transfer history with equity snapshots
+   * @param transfer Transfer data with equity snapshots
+   * @param tx Optional transaction
+   * @returns Created transfer record
+   */
+  async saveTransferHistory(
+    transfer: InsertPerpsTransferHistory,
+    tx?: Transaction,
+  ): Promise<SelectPerpsTransferHistory> {
+    try {
+      const executor = tx || this.#db;
+      const [result] = await executor
+        .insert(perpsTransferHistory)
+        .values(transfer)
+        .returning();
+
+      if (!result) {
+        throw new Error("Failed to save transfer history");
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Saved transfer: agent=${transfer.agentId}, type=${transfer.type}, amount=${transfer.amount}`,
+      );
+
+      return result;
+    } catch (error) {
+      this.#logger.error("Error in saveTransferHistory:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch save transfers (used during sync operations)
+   * @param transfers Array of transfer records
+   * @returns Array of created transfer records
+   */
+  async batchSaveTransferHistory(
+    transfers: InsertPerpsTransferHistory[],
+  ): Promise<SelectPerpsTransferHistory[]> {
+    if (transfers.length === 0) {
+      return [];
+    }
+
+    try {
+      // Process in batches to avoid PostgreSQL query limits
+      const BATCH_SIZE = 500;
+      const allResults: SelectPerpsTransferHistory[] = [];
+
+      for (let i = 0; i < transfers.length; i += BATCH_SIZE) {
+        const batch = transfers.slice(i, i + BATCH_SIZE);
+        const results = await this.#db
+          .insert(perpsTransferHistory)
+          .values(batch)
+          .onConflictDoNothing({ target: perpsTransferHistory.txHash })
+          .returning();
+
+        allResults.push(...results);
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Batch saved ${allResults.length} transfers in ${Math.ceil(transfers.length / BATCH_SIZE)} batches`,
+      );
+
+      return allResults;
+    } catch (error) {
+      this.#logger.error("Error in batchSaveTransferHistory:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get transfer history for an agent in a competition
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param since Optional timestamp to get transfers after
+   * @returns Array of transfer records
+   */
+  async getAgentTransferHistory(
+    agentId: string,
+    competitionId: string,
+    since?: Date,
+  ): Promise<SelectPerpsTransferHistory[]> {
+    try {
+      const conditions = [
+        eq(perpsTransferHistory.agentId, agentId),
+        eq(perpsTransferHistory.competitionId, competitionId),
+      ];
+
+      if (since) {
+        conditions.push(
+          sql`${perpsTransferHistory.transferTimestamp} > ${since}`,
+        );
+      }
+
+      const transfers = await this.#dbRead
+        .select()
+        .from(perpsTransferHistory)
+        .where(and(...conditions))
+        .orderBy(perpsTransferHistory.transferTimestamp);
+
+      this.#logger.debug(
+        `[PerpsRepository] Retrieved ${transfers.length} transfers for agent ${agentId}`,
+      );
+
+      return transfers;
+    } catch (error) {
+      this.#logger.error("Error in getAgentTransferHistory:", error);
+      throw error;
+    }
+  }
+
+  // =============================================================================
+  // RISK METRICS OPERATIONS
+  // =============================================================================
+
+  /**
+   * Upsert risk metrics for an agent
+   * @param metrics Risk metrics to save/update
+   * @param tx Optional transaction
+   * @returns Saved risk metrics
+   */
+  async upsertRiskMetrics(
+    metrics: InsertPerpsRiskMetrics,
+    tx?: Transaction,
+  ): Promise<SelectPerpsRiskMetrics> {
+    try {
+      const executor = tx || this.#db;
+      const [result] = await executor
+        .insert(perpsRiskMetrics)
+        .values(metrics)
+        .onConflictDoUpdate({
+          target: [perpsRiskMetrics.agentId, perpsRiskMetrics.competitionId],
+          set: {
+            timeWeightedReturn: metrics.timeWeightedReturn,
+            calmarRatio: metrics.calmarRatio,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            transferCount: metrics.transferCount,
+            periodCount: metrics.periodCount,
+            snapshotCount: metrics.snapshotCount,
+            calculationTimestamp: sql`CURRENT_TIMESTAMP`,
+          },
+        })
+        .returning();
+
+      if (!result) {
+        throw new Error("Failed to save risk metrics");
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Upserted risk metrics: agent=${metrics.agentId}, calmar=${metrics.calmarRatio}`,
+      );
+
+      return result;
+    } catch (error) {
+      this.#logger.error("Error in upsertRiskMetrics:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save TWR periods for risk metrics
+   * @param metricsId Risk metrics ID
+   * @param periods Array of TWR periods
+   * @param tx Optional transaction
+   * @returns Saved TWR periods
+   */
+  async saveTwrPeriods(
+    metricsId: string,
+    periods: Omit<InsertPerpsTwrPeriod, "id" | "metricsId">[],
+    tx?: Transaction,
+  ): Promise<SelectPerpsTwrPeriod[]> {
+    if (periods.length === 0) {
+      return [];
+    }
+
+    try {
+      const executor = tx || this.#db;
+
+      // Delete existing periods for this metrics ID
+      await executor
+        .delete(perpsTwrPeriods)
+        .where(eq(perpsTwrPeriods.metricsId, metricsId));
+
+      // Insert new periods
+      const periodsToInsert = periods.map((p) => ({
+        ...p,
+        metricsId,
+      }));
+
+      const results = await executor
+        .insert(perpsTwrPeriods)
+        .values(periodsToInsert)
+        .returning();
+
+      this.#logger.debug(
+        `[PerpsRepository] Saved ${results.length} TWR periods for metrics ${metricsId}`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error("Error in saveTwrPeriods:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get risk metrics leaderboard for a competition
+   * @param competitionId Competition ID
+   * @param limit Optional limit
+   * @param offset Optional offset
+   * @returns Object with metrics array and total count
+   */
+  async getCompetitionRiskMetricsLeaderboard(
+    competitionId: string,
+    limit = 100,
+    offset = 0,
+  ): Promise<{
+    metrics: Array<
+      SelectPerpsRiskMetrics & {
+        agent: { id: string; name: string; imageUrl: string | null } | null;
+      }
+    >;
+    total: number;
+  }> {
+    try {
+      // Data query with agent join
+      const metricsQuery = this.#dbRead
+        .select({
+          id: perpsRiskMetrics.id,
+          agentId: perpsRiskMetrics.agentId,
+          competitionId: perpsRiskMetrics.competitionId,
+          timeWeightedReturn: perpsRiskMetrics.timeWeightedReturn,
+          calmarRatio: perpsRiskMetrics.calmarRatio,
+          annualizedReturn: perpsRiskMetrics.annualizedReturn,
+          maxDrawdown: perpsRiskMetrics.maxDrawdown,
+          transferCount: perpsRiskMetrics.transferCount,
+          periodCount: perpsRiskMetrics.periodCount,
+          calculationTimestamp: perpsRiskMetrics.calculationTimestamp,
+          snapshotCount: perpsRiskMetrics.snapshotCount,
+          agent: {
+            id: agents.id,
+            name: agents.name,
+            imageUrl: agents.imageUrl,
+          },
+        })
+        .from(perpsRiskMetrics)
+        .leftJoin(agents, eq(perpsRiskMetrics.agentId, agents.id))
+        .where(eq(perpsRiskMetrics.competitionId, competitionId))
+        .orderBy(desc(perpsRiskMetrics.calmarRatio))
+        .limit(limit)
+        .offset(offset);
+
+      // Count query
+      const totalQuery = this.#dbRead
+        .select({ count: drizzleCount() })
+        .from(perpsRiskMetrics)
+        .where(eq(perpsRiskMetrics.competitionId, competitionId));
+
+      const [results, total] = await Promise.all([metricsQuery, totalQuery]);
+
+      return {
+        metrics: results,
+        total: total[0]?.count ?? 0,
+      };
+    } catch (error) {
+      this.#logger.error(
+        "Error in getCompetitionRiskMetricsLeaderboard:",
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Atomic operation to save risk metrics with periods
+   * @param metrics Risk metrics
+   * @param periods TWR periods
+   * @returns Saved metrics and periods
+   */
+  async saveRiskMetricsWithPeriods(
+    metrics: InsertPerpsRiskMetrics,
+    periods: Omit<InsertPerpsTwrPeriod, "id" | "metricsId">[],
+  ): Promise<{
+    metrics: SelectPerpsRiskMetrics;
+    periods: SelectPerpsTwrPeriod[];
+  }> {
+    return await this.#db.transaction(async (tx) => {
+      try {
+        // Save or update risk metrics
+        const savedMetrics = await this.upsertRiskMetrics(metrics, tx);
+
+        // Save TWR periods
+        const savedPeriods = await this.saveTwrPeriods(
+          savedMetrics.id,
+          periods,
+          tx,
+        );
+
+        return {
+          metrics: savedMetrics,
+          periods: savedPeriods,
+        };
+      } catch (error) {
+        this.#logger.error(
+          "Error in saveRiskMetricsWithPeriods transaction:",
+          error,
+        );
+        throw error;
+      }
+    });
   }
 }

@@ -52,6 +52,8 @@ describe("PerpsMonitoringService", () => {
     to: "0x123", // Will be matched case-insensitively
     timestamp: new Date("2024-01-15"), // After competition start
     txHash: "0xabc123",
+    equityBefore: 10000, // Account equity before transfer
+    equityAfter: 10150, // Account equity after transfer (increased by deposit amount)
   };
 
   const mockCompetitionConfig: SelectPerpsCompetitionConfig = {
@@ -451,6 +453,8 @@ describe("PerpsMonitoringService", () => {
           to: "0x123", // Agent's wallet
           timestamp: new Date("2024-01-15"), // After competition start
           txHash: "0xabc",
+          equityBefore: 10000,
+          equityAfter: 10500, // Increased by deposit amount
         };
 
         vi.mocked(
@@ -497,6 +501,8 @@ describe("PerpsMonitoringService", () => {
           to: "0X123", // Different case
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
+          equityBefore: 10000,
+          equityAfter: 10500,
         };
 
         vi.mocked(
@@ -527,6 +533,8 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2023-12-15"), // Before competition
           txHash: "0xabc",
+          equityBefore: 10000,
+          equityAfter: 10500,
         };
 
         vi.mocked(
@@ -558,6 +566,8 @@ describe("PerpsMonitoringService", () => {
           to: "0xExternal",
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
+          equityBefore: 10500,
+          equityAfter: 10000, // Decreased by withdrawal amount
         };
 
         vi.mocked(
@@ -589,6 +599,8 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date("2024-01-15"),
             txHash: "0xabc1",
+            equityBefore: 10000,
+            equityAfter: 10200,
           },
           {
             type: "deposit",
@@ -598,6 +610,8 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date("2024-01-16"),
             txHash: "0xabc2",
+            equityBefore: 10200,
+            equityAfter: 10500,
           },
         ];
 
@@ -663,6 +677,8 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
+          equityBefore: 10000,
+          equityAfter: 10100,
         };
 
         vi.mocked(
@@ -693,6 +709,8 @@ describe("PerpsMonitoringService", () => {
           to: "0x999", // Different address
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
+          equityBefore: 10000,
+          equityAfter: 10500,
         };
 
         vi.mocked(
@@ -723,6 +741,8 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2024-01-01"), // Exactly at competition start
           txHash: "0xabc",
+          equityBefore: 10000,
+          equityAfter: 10500,
         };
 
         vi.mocked(
@@ -759,6 +779,8 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
+          equityBefore: 10000,
+          equityAfter: 10000.01, // Tiny increase
         };
 
         vi.mocked(
@@ -807,6 +829,8 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date("2024-01-15"),
             txHash: "0xabc1",
+            equityBefore: 10000,
+            equityAfter: 10030,
           },
           {
             type: "deposit",
@@ -816,6 +840,8 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date("2024-01-16"),
             txHash: "0xabc2",
+            equityBefore: 10030,
+            equityAfter: 10070,
           },
           {
             type: "deposit",
@@ -825,6 +851,8 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date("2024-01-17"),
             txHash: "0xabc3",
+            equityBefore: 10070,
+            equityAfter: 10120,
           },
           // Total: 30 + 40 + 50 = 120, which exceeds threshold of 100
         ];
@@ -874,6 +902,8 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date(`2024-01-${10 + i}`),
             txHash: `0xabc${i}`,
+            equityBefore: 10000 + i * 15,
+            equityAfter: 10000 + (i + 1) * 15,
           }),
         );
         // Total: 10 * 15 = 150, exceeds threshold
@@ -924,6 +954,8 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date("2024-01-15"),
             txHash: "0xabc1",
+            equityBefore: 10000,
+            equityAfter: 10200,
           },
           {
             type: "deposit",
@@ -933,6 +965,8 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date("2024-01-16"),
             txHash: "0xabc2",
+            equityBefore: 10200,
+            equityAfter: 10250,
           },
         ];
 
@@ -1306,6 +1340,8 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
+          equityBefore: 10000,
+          equityAfter: 10300,
         };
         vi.mocked(
           mockProviderWithTransfers.getTransferHistory!,

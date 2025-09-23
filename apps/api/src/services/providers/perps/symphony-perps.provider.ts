@@ -95,6 +95,15 @@ export interface SymphonyTransfer {
   timestamp: string;
   txHash: string;
   chainId: number;
+
+  accountSnapshotBefore: {
+    totalEquity: number;
+    timestamp: string;
+  };
+  accountSnapshotAfter: {
+    totalEquity: number;
+    timestamp: string;
+  };
 }
 
 /**
@@ -130,7 +139,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
   constructor(apiUrl?: string) {
     // Use provided URL or fall back to config/environment
-    this.baseUrl = apiUrl || "https://api.symphony.finance";
+    this.baseUrl = apiUrl || "https://api.symphony.io";
 
     // Create axios instance with defaults
     this.axiosInstance = axios.create({
@@ -454,7 +463,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         return [];
       }
 
-      // Transform to generic transfer format
+      // Transform to generic transfer format with equity snapshots
       const transfers: Transfer[] = response.transfers.map((t) => ({
         type: t.type,
         amount: t.amount,
@@ -464,6 +473,9 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         timestamp: new Date(t.timestamp),
         txHash: t.txHash,
         chainId: t.chainId,
+        // Extract equity snapshots for TWR calculation
+        equityBefore: t.accountSnapshotBefore.totalEquity,
+        equityAfter: t.accountSnapshotAfter.totalEquity,
       }));
 
       serviceLogger.debug(

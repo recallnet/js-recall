@@ -40,3 +40,14 @@ export type SelectPerpsSelfFundingAlert =
   typeof defs.perpsSelfFundingAlerts.$inferSelect;
 export type InsertPerpsSelfFundingAlert =
   typeof defs.perpsSelfFundingAlerts.$inferInsert;
+
+export type SelectPerpsTransferHistory =
+  typeof defs.perpsTransferHistory.$inferSelect;
+export type InsertPerpsTransferHistory =
+  typeof defs.perpsTransferHistory.$inferInsert;
+
+export type SelectPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferSelect;
+export type InsertPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferInsert;
+
+export type SelectPerpsTwrPeriod = typeof defs.perpsTwrPeriods.$inferSelect;
+export type InsertPerpsTwrPeriod = typeof defs.perpsTwrPeriods.$inferInsert;

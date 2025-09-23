@@ -421,8 +421,123 @@ export const perpsAccountSummaries = tradingComps.table(
 );
 
 /**
- * Self-funding detection alerts for perps competitions
+ * Transfer history for TWR calculations
  */
+export const perpsTransferHistory = tradingComps.table(
+  "perps_transfer_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id),
+    competitionId: uuid("competition_id").notNull(),
+
+    // Transfer details
+    type: varchar("type", { length: 20 }).notNull(), // 'deposit' | 'withdraw'
+    amount: numeric("amount").notNull(),
+    asset: varchar("asset", { length: 10 }).notNull(),
+    fromAddress: varchar("from_address", { length: 100 }).notNull(), // Required per API spec
+    toAddress: varchar("to_address", { length: 100 }).notNull(), // Required per API spec
+    txHash: varchar("tx_hash", { length: 100 }).notNull(), // Required per API spec
+    chainId: integer("chain_id").notNull(), // Required per API spec
+
+    // Critical for TWR calculation
+    equityBefore: numeric("equity_before").notNull(),
+    equityAfter: numeric("equity_after").notNull(),
+    transferTimestamp: timestamp("transfer_timestamp", {
+      withTimezone: true,
+    }).notNull(),
+
+    // Metadata
+    capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_perps_transfers_agent_comp").on(
+      table.agentId,
+      table.competitionId,
+    ),
+    index("idx_perps_transfers_timestamp").on(table.transferTimestamp),
+    // Unique constraint since txHash is always required per API spec
+    unique("idx_perps_transfers_tx_hash").on(table.txHash),
+  ],
+);
+
+/**
+ * Risk metrics table for Calmar ratio and TWR
+ */
+export const perpsRiskMetrics = tradingComps.table(
+  "perps_risk_metrics",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id),
+    competitionId: uuid("competition_id").notNull(),
+
+    // Core metrics for Calmar calculation
+    timeWeightedReturn: numeric("time_weighted_return").notNull(),
+    calmarRatio: numeric("calmar_ratio").notNull(),
+    annualizedReturn: numeric("annualized_return").notNull(),
+    maxDrawdown: numeric("max_drawdown").notNull(),
+
+    // Summary statistics
+    transferCount: integer("transfer_count").notNull().default(0),
+    periodCount: integer("period_count").notNull().default(1),
+
+    // Metadata
+    calculationTimestamp: timestamp("calculation_timestamp", {
+      withTimezone: true,
+    }).defaultNow(),
+    snapshotCount: integer("snapshot_count").notNull(),
+  },
+  (table) => [
+    // Unique constraint for upsert operations
+    unique("idx_perps_metrics_unique").on(table.agentId, table.competitionId),
+    index("idx_perps_metrics_agent_comp").on(
+      table.agentId,
+      table.competitionId,
+    ),
+    index("idx_perps_metrics_calmar").on(
+      table.competitionId,
+      table.calmarRatio.desc(),
+    ),
+  ],
+);
+
+/**
+ * TWR period returns - normalized for proper querying and type safety
+ */
+export const perpsTwrPeriods = tradingComps.table(
+  "perps_twr_periods",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    metricsId: uuid("metrics_id")
+      .notNull()
+      .references(() => perpsRiskMetrics.id, { onDelete: "cascade" }),
+
+    // Period boundaries
+    periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+    periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+
+    // Period performance
+    periodReturn: numeric("period_return").notNull(),
+    startingEquity: numeric("starting_equity").notNull(),
+    endingEquity: numeric("ending_equity").notNull(),
+
+    // Transfer that triggered this period (null for first period)
+    transferId: uuid("transfer_id").references(() => perpsTransferHistory.id, {
+      onDelete: "set null",
+    }),
+
+    // Ordering
+    sequenceNumber: integer("sequence_number").notNull(),
+  },
+  (table) => [
+    index("idx_twr_periods_metrics").on(table.metricsId),
+    index("idx_twr_periods_sequence").on(table.metricsId, table.sequenceNumber),
+  ],
+);
+
 export const perpsSelfFundingAlerts = tradingComps.table(
   "perps_self_funding_alerts",
   {

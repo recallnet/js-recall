@@ -77,7 +77,7 @@ export interface PerpsPosition {
 }
 
 /**
- * USDC transfer record for self-funding detection
+ * USDC transfer record with equity snapshots for TWR calculation
  */
 export interface Transfer {
   type: "deposit" | "withdraw";
@@ -88,6 +88,10 @@ export interface Transfer {
   timestamp: Date;
   txHash?: string;
   chainId?: number;
+
+  // Equity snapshots for TWR calculation
+  equityBefore: number;
+  equityAfter: number;
 }
 
 /**
