@@ -25,7 +25,6 @@ import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserService } from "@/services/user.service.js";
 import { VoteService } from "@/services/vote.service.js";
-import { WatchlistService } from "@/services/watchlist.service.js";
 
 /**
  * Service Registry
@@ -50,7 +49,6 @@ class ServiceRegistry {
   private _emailService: EmailService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
-  private _watchlistService: WatchlistService;
   private _boostService: BoostService;
   private readonly _competitionRepository: CompetitionRepository;
   private readonly _boostRepository: BoostRepository;
@@ -86,14 +84,8 @@ class ServiceRegistry {
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
 
-    // Initialize watchlist service (no dependencies)
-    this._watchlistService = new WatchlistService();
-
     // Initialize user, agent, and admin services
-    this._userService = new UserService(
-      this._emailService,
-      this._watchlistService,
-    );
+    this._userService = new UserService(this._emailService);
     this._agentService = new AgentService(
       this._emailService,
       this._balanceService,
@@ -227,10 +219,6 @@ class ServiceRegistry {
     return this._competitionRewardService;
   }
 
-  get watchlistService(): WatchlistService {
-    return this._watchlistService;
-  }
-
   get indexingService(): IndexingService {
     return this._indexingService;
   }
@@ -273,7 +261,6 @@ export {
   TradingConstraintsService,
   UserService,
   VoteService,
-  WatchlistService,
 };
 
 export default ServiceRegistry;

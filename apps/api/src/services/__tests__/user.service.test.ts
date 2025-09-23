@@ -4,7 +4,6 @@ import { SelectUser } from "@recallnet/db/schema/core/types";
 
 import { EmailService } from "@/services/email.service.js";
 import { UserService } from "@/services/user.service.js";
-import { WatchlistService } from "@/services/watchlist.service.js";
 
 // Dependency mocks
 vi.mock("@/database/repositories/user-repository.js", () => ({
@@ -20,34 +19,67 @@ vi.mock("@/database/db.js", () => ({
     transaction: vi.fn(),
   },
 }));
-vi.mock("@/lib/logger.js");
+vi.mock("@/lib/logger.js", () => {
+  const mockLogger = {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  };
+
+  return {
+    logger: mockLogger,
+    createLogger: vi.fn(() => mockLogger),
+    dbLogger: mockLogger,
+    authLogger: mockLogger,
+    apiLogger: mockLogger,
+    tradeLogger: mockLogger,
+    competitionLogger: mockLogger,
+    competitionRewardsLogger: mockLogger,
+    adminLogger: mockLogger,
+    userLogger: mockLogger,
+    agentLogger: mockLogger,
+    priceLogger: mockLogger,
+    balanceLogger: mockLogger,
+    repositoryLogger: mockLogger,
+    middlewareLogger: mockLogger,
+    serviceLogger: mockLogger,
+    configLogger: mockLogger,
+    indexingLogger: mockLogger,
+  };
+});
+// Create a mock instance that we can control
+const mockWatchlistInstance = {
+  isAddressSanctioned: vi.fn(),
+  isConfigured: vi.fn().mockReturnValue(true),
+  getStatus: vi
+    .fn()
+    .mockReturnValue({ configured: true, baseUrl: "", timeout: 1000 }),
+};
+
+vi.mock("@/lib/watchlist.js", () => ({
+  WatchlistService: vi.fn().mockImplementation(() => mockWatchlistInstance),
+}));
 
 // Mock services
 type MockEmailService = Partial<MockedObject<EmailService>>;
-type MockWatchlistService = Partial<MockedObject<WatchlistService>>;
 
 describe("UserManager", () => {
   describe("watchlist integration", () => {
     let userManager: UserService;
     let mockEmailService: MockEmailService;
-    let mockWatchlistService: MockWatchlistService;
 
     beforeEach(async () => {
       vi.clearAllMocks();
+
+      // Reset the shared watchlist mock
+      mockWatchlistInstance.isAddressSanctioned.mockReset();
 
       // Now we get full TypeScript intellisense and type checking
       mockEmailService = {
         subscribeUser: vi.fn().mockResolvedValue({ success: true }),
         unsubscribeUser: vi.fn().mockResolvedValue({ success: true }),
         isConfigured: vi.fn().mockReturnValue(true),
-      };
-
-      mockWatchlistService = {
-        isAddressSanctioned: vi.fn(),
-        isConfigured: vi.fn().mockReturnValue(true),
-        getStatus: vi
-          .fn()
-          .mockReturnValue({ configured: true, baseUrl: "", timeout: 1000 }),
       };
 
       // Mock the repository functions
@@ -62,8 +94,8 @@ describe("UserManager", () => {
         isSubscribed: false,
       } as SelectUser);
 
-      // @ts-expect-error - mockEmailService and mockWatchlistService are a subset of the original services
-      userManager = new UserService(mockEmailService, mockWatchlistService);
+      // @ts-expect-error - mockEmailService is a subset of the original services
+      userManager = new UserService(mockEmailService);
     });
 
     describe("updateUser", () => {
@@ -87,7 +119,7 @@ describe("UserManager", () => {
       });
 
       it("should reject update with sanctioned wallet address", async () => {
-        mockWatchlistService.isAddressSanctioned?.mockResolvedValue(true);
+        mockWatchlistInstance.isAddressSanctioned.mockResolvedValue(true);
 
         await expect(
           userManager.updateUser({
@@ -98,7 +130,7 @@ describe("UserManager", () => {
           "This wallet address is not permitted for use on this platform",
         );
 
-        expect(mockWatchlistService.isAddressSanctioned).toHaveBeenCalledWith(
+        expect(mockWatchlistInstance.isAddressSanctioned).toHaveBeenCalledWith(
           sanctionedWalletAddress,
         );
       });
@@ -129,7 +161,9 @@ describe("UserManager", () => {
           email: "newemail@example.com",
         });
 
-        expect(mockWatchlistService.isAddressSanctioned).not.toHaveBeenCalled();
+        expect(
+          mockWatchlistInstance.isAddressSanctioned,
+        ).not.toHaveBeenCalled();
       });
 
       it("should not check watchlist if new wallet address is same as current", async () => {
@@ -158,7 +192,9 @@ describe("UserManager", () => {
           walletAddress: currentWalletAddress,
         });
 
-        expect(mockWatchlistService.isAddressSanctioned).not.toHaveBeenCalled();
+        expect(
+          mockWatchlistInstance.isAddressSanctioned,
+        ).not.toHaveBeenCalled();
       });
     });
   });

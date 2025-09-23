@@ -1,5 +1,5 @@
 import { config } from "@/config/index.js";
-import { serviceLogger } from "@/lib/logger.js";
+import { createLogger } from "@/lib/logger.js";
 import {
   DEFAULT_RETRY_CONFIG,
   NonRetryableError,
@@ -7,6 +7,8 @@ import {
   RetryableError,
   withRetry,
 } from "@/lib/retry-helper.js";
+
+const logger = createLogger("Watchlist");
 
 /**
  * Category of the identification. Only "sanctions" designates a sanctioned address, and other
@@ -55,8 +57,8 @@ export class WatchlistService {
     this.retryConfig = retryConfig;
 
     if (!this.apiKey) {
-      serviceLogger.warn(
-        "[WatchlistService] CHAINALYSIS_API_KEY not configured - watchlist checks will be skipped",
+      logger.warn(
+        "CHAINALYSIS_API_KEY not configured - watchlist checks will be skipped",
       );
     }
   }
@@ -71,22 +73,22 @@ export class WatchlistService {
     try {
       // Skip check if API key not configured (fail-safe - only exception)
       if (!this.isConfigured()) {
-        serviceLogger.debug(
+        logger.debug(
           {
             address,
           },
-          "[WatchlistService] API key not configured, allowing address",
+          "API key not configured, allowing address",
         );
         return false;
       }
 
       // Normalize address (Chainalysis API is case-sensitive)
       const normalizedAddress = address.toLowerCase();
-      serviceLogger.debug(
+      logger.debug(
         {
           address: normalizedAddress,
         },
-        `[WatchlistService] Checking address`,
+        `Checking address`,
       );
 
       // Use retry logic for API calls with exponential backoff
@@ -111,13 +113,13 @@ export class WatchlistService {
           // Handle API errors
           if (!response.ok) {
             const errorMessage = `Chainalysis API error: ${response.statusText}`;
-            serviceLogger.error(
+            logger.error(
               {
                 address: normalizedAddress,
                 status: response.status,
                 statusText: response.statusText,
               },
-              "[WatchlistService] Chainalysis API error",
+              "Chainalysis API error",
             );
 
             // Determine if error is retryable
@@ -135,12 +137,12 @@ export class WatchlistService {
           const isSanctioned =
             data.identifications?.some(checkIsSanctioned) ?? false;
           if (isSanctioned) {
-            serviceLogger.warn(
+            logger.warn(
               {
                 address: normalizedAddress,
                 identifications: data.identifications.filter(checkIsSanctioned),
               },
-              "[WatchlistService] SANCTIONED ADDRESS DETECTED",
+              "SANCTIONED ADDRESS DETECTED",
             );
           }
 
@@ -170,12 +172,12 @@ export class WatchlistService {
       }, this.retryConfig);
     } catch (error) {
       // Fail closed: Do not allow access in case of network errors, timeouts, etc.
-      serviceLogger.error(
+      logger.error(
         {
           address,
           error,
         },
-        `[WatchlistService] Error checking address after retries - failing closed for security`,
+        `Error checking address after retries - failing closed for security`,
       );
       throw error;
     }

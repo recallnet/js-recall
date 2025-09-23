@@ -20,8 +20,8 @@ import {
 } from "@/database/repositories/user-repository.js";
 import { updateVotesOwner } from "@/database/repositories/vote-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
+import { WatchlistService } from "@/lib/watchlist.js";
 import { EmailService } from "@/services/email.service.js";
-import { WatchlistService } from "@/services/watchlist.service.js";
 import { UserMetadata, UserSearchParams } from "@/types/index.js";
 
 /**
@@ -35,14 +35,11 @@ export class UserService {
   private userProfileCache: Map<string, SelectUser>; // userId -> user profile
   // Email service for sending verification emails
   private emailService: EmailService;
-  // Watchlist service for sanctions wallet address checking
-  private watchlistService: WatchlistService;
 
-  constructor(emailService: EmailService, watchlistService: WatchlistService) {
+  constructor(emailService: EmailService) {
     this.userWalletCache = new Map();
     this.userProfileCache = new Map();
     this.emailService = emailService;
-    this.watchlistService = watchlistService;
   }
 
   /**
@@ -245,7 +242,8 @@ export class UserService {
         user.walletAddress !== currentUser.walletAddress
       ) {
         // Note: this could happen if, e.g., a user tries to link a custom wallet to their account
-        const isSanctioned = await this.watchlistService.isAddressSanctioned(
+        const watchlistService = new WatchlistService();
+        const isSanctioned = await watchlistService.isAddressSanctioned(
           user.walletAddress,
         );
         if (isSanctioned) {
