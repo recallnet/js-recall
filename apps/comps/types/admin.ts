@@ -28,10 +28,34 @@ export interface AdminSearchResult {
   };
 }
 
+export interface AdminCreateUserRequest {
+  walletAddress: string;
+  email: string;
+  name?: string;
+  imageUrl?: string;
+  metadata?: Record<string, unknown>;
+  privyId?: string;
+  embeddedWalletAddress?: string;
+}
+
 export interface AdminUserResponse {
   success: boolean;
   user: AdminUser;
   message?: string;
+}
+
+export interface AdminCreateAgentRequest {
+  user: {
+    walletAddress: string;
+  };
+  agent: {
+    name: string;
+    handle: string;
+    description?: string;
+    imageUrl?: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
+  };
 }
 
 export interface AdminCreateAgentResponse {
@@ -42,6 +66,18 @@ export interface AdminCreateAgentResponse {
 export interface AdminAgentKeyResponse {
   success: boolean;
   agent: AdminAgentWithKey;
+}
+
+export interface AdminUpdateAgentRequest {
+  agentId: string;
+  params: {
+    name?: string;
+    handle?: string;
+    description?: string;
+    imageUrl?: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
+  };
 }
 
 export interface AdminAgentUpdateResponse {
@@ -75,7 +111,6 @@ export interface AdminAgent {
   description?: string;
   imageUrl?: string;
   metadata?: Record<string, unknown>;
-  apiKey?: string;
   status: string;
   createdAt: string;
   updatedAt: string;
