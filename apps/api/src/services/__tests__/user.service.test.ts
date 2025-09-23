@@ -58,7 +58,7 @@ const mockWatchlistInstance = {
 };
 
 vi.mock("@/lib/watchlist.js", () => ({
-  WatchlistService: vi.fn().mockImplementation(() => mockWatchlistInstance),
+  WalletWatchlist: vi.fn().mockImplementation(() => mockWatchlistInstance),
 }));
 
 // Mock services

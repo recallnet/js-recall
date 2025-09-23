@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RetryConfig, RetryExhaustedError } from "@/lib/retry-helper.js";
-import { WatchlistService } from "@/lib/watchlist.js";
+import { WalletWatchlist } from "@/lib/watchlist.js";
 
 // Mock global fetch
 const mockFetch = vi.fn();
@@ -31,13 +31,13 @@ vi.mock("@/config/index.js", () => ({
 }));
 
 describe("WatchlistService", () => {
-  let watchlistService: WatchlistService;
+  let watchlistService: WalletWatchlist;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     const { config } = await import("@/config/index.js");
     config.watchlist.chainalysisApiKey = "";
-    watchlistService = new WatchlistService(TEST_RETRY_CONFIG);
+    watchlistService = new WalletWatchlist(TEST_RETRY_CONFIG);
   });
 
   describe("isConfigured", () => {
@@ -48,7 +48,7 @@ describe("WatchlistService", () => {
     it("should return true when API key is set", async () => {
       const { config } = await import("@/config/index.js");
       config.watchlist.chainalysisApiKey = "test-api-key";
-      watchlistService = new WatchlistService(TEST_RETRY_CONFIG);
+      watchlistService = new WalletWatchlist(TEST_RETRY_CONFIG);
       expect(watchlistService.isConfigured()).toBe(true);
     });
   });
@@ -68,13 +68,13 @@ describe("WatchlistService", () => {
     beforeEach(async () => {
       const { config } = await import("@/config/index.js");
       config.watchlist.chainalysisApiKey = "test-api-key";
-      watchlistService = new WatchlistService(TEST_RETRY_CONFIG);
+      watchlistService = new WalletWatchlist(TEST_RETRY_CONFIG);
     });
 
     it("should return false when API key is not configured", async () => {
       const { config } = await import("@/config/index.js");
       config.watchlist.chainalysisApiKey = "";
-      watchlistService = new WatchlistService(TEST_RETRY_CONFIG);
+      watchlistService = new WalletWatchlist(TEST_RETRY_CONFIG);
 
       const result = await watchlistService.isAddressSanctioned(
         "0x1234567890abcdef1234567890abcdef12345678",
