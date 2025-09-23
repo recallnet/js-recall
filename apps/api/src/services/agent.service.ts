@@ -817,7 +817,7 @@ export class AgentService {
    * @param searchParams Parameters to search by (name, ownerId, status)
    * @returns Array of agents matching the search criteria
    */
-  async searchAgents(searchParams: AgentSearchParams) {
+  async searchAgents(searchParams: AgentSearchParams): Promise<AgentPublic[]> {
     try {
       serviceLogger.debug(
         `[AgentManager] Searching for agents with params:`,
@@ -830,7 +830,7 @@ export class AgentService {
       serviceLogger.debug(
         `[AgentManager] Found ${agents.length} agents matching search criteria`,
       );
-      return agents;
+      return agents.map(this.sanitizeAgent.bind(this));
     } catch (error) {
       serviceLogger.error("[AgentManager] Error searching agents:", error);
       return [];
@@ -1254,7 +1254,7 @@ export class AgentService {
   }: {
     filter?: string;
     pagingParams: PagingParams;
-  }) {
+  }): Promise<SelectAgent[]> {
     if (filter?.length === 42) {
       return findByWallet({ walletAddress: filter, pagingParams });
     }

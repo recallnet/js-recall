@@ -15,8 +15,11 @@ import { ServiceRegistry } from "@/services/index.js";
 import {
   ActorStatus,
   AdminCreateAgentSchema,
+  Agent,
+  AgentPublic,
   User,
-  UserMetadata,
+  toApiAgent,
+  toApiUser,
 } from "@/types/index.js";
 
 import {
@@ -51,24 +54,6 @@ import {
 
 // TODO: need user deactivation logic
 
-// TODO: unify interfaces since these enforce "null" values vs `@/types/index.js` that uses undefined
-// Also, types aren't really used anywhere else, so we should probably remove them?
-interface Agent {
-  id: string;
-  ownerId: string;
-  walletAddress: string | null;
-  name: string;
-  handle: string;
-  description: string | null;
-  imageUrl: string | null;
-  apiKey: string;
-  metadata: unknown;
-  email: string | null;
-  status: ActorStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 interface AdminUserRegistrationResponse {
   success: boolean;
   user: User;
@@ -84,7 +69,7 @@ interface AdminAgentRegistrationResponse {
 
 interface AdminSearchResults {
   users: User[];
-  agents: Omit<Agent, "apiKey">[];
+  agents: AgentPublic[];
 }
 
 export interface AdminSearchUsersAndAgentsResponse {
@@ -292,22 +277,7 @@ export function makeAdminController(services: ServiceRegistry) {
               // If agent creation fails, we still return the user but note the agent error
               return res.status(201).json({
                 success: true,
-                user: {
-                  id: user.id,
-                  walletAddress: user.walletAddress,
-                  walletLastVerifiedAt: user.walletLastVerifiedAt,
-                  embeddedWalletAddress: user.embeddedWalletAddress,
-                  name: user.name,
-                  email: user.email,
-                  isSubscribed: user.isSubscribed,
-                  privyId: user.privyId,
-                  imageUrl: user.imageUrl,
-                  metadata: user.metadata,
-                  status: user.status,
-                  createdAt: user.createdAt,
-                  updatedAt: user.updatedAt,
-                  lastLoginAt: user.lastLoginAt,
-                },
+                user: toApiUser(user),
                 agentError:
                   agentError instanceof Error
                     ? agentError.message
@@ -319,42 +289,11 @@ export function makeAdminController(services: ServiceRegistry) {
           // Return success with created user and agent
           const response: AdminUserRegistrationResponse = {
             success: true,
-            user: {
-              id: user.id,
-              name: user.name ?? undefined,
-              email: user.email ?? undefined,
-              isSubscribed: user.isSubscribed,
-              privyId: user.privyId ?? undefined,
-              walletAddress: user.walletAddress,
-              embeddedWalletAddress: user.embeddedWalletAddress ?? "",
-              walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
-              imageUrl: user.imageUrl ?? undefined,
-              metadata: user.metadata
-                ? (user.metadata as UserMetadata)
-                : undefined,
-              status: user.status as ActorStatus,
-              createdAt: user.createdAt,
-              updatedAt: user.updatedAt,
-              lastLoginAt: user.lastLoginAt ?? undefined,
-            },
+            user: toApiUser(user),
           };
 
           if (agent) {
-            response.agent = {
-              id: agent.id,
-              ownerId: agent.ownerId,
-              walletAddress: agent.walletAddress,
-              name: agent.name,
-              handle: agent.handle ?? generateHandleFromName(agent.name),
-              description: agent.description,
-              imageUrl: agent.imageUrl,
-              apiKey: agent.apiKey,
-              metadata: agent.metadata,
-              status: agent.status as ActorStatus,
-              email: agent.email,
-              createdAt: agent.createdAt,
-              updatedAt: agent.updatedAt,
-            };
+            response.agent = toApiAgent(agent);
           }
 
           return res.status(201).json(response);
@@ -452,10 +391,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
           const response: AdminAgentRegistrationResponse = {
             success: true,
-            agent: {
-              ...agent,
-              handle: agent.handle,
-            },
+            agent: toApiAgent(agent),
           };
 
           return res.status(201).json(response);
@@ -925,22 +861,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const users = await services.userService.getAllUsers();
 
         // Format the response to match the expected structure
-        const formattedUsers = users.map((user) => ({
-          id: user.id,
-          walletAddress: user.walletAddress,
-          walletLastVerifiedAt: user.walletLastVerifiedAt,
-          embeddedWalletAddress: user.embeddedWalletAddress,
-          name: user.name,
-          email: user.email,
-          isSubscribed: user.isSubscribed,
-          privyId: user.privyId,
-          status: user.status,
-          imageUrl: user.imageUrl,
-          metadata: user.metadata,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          lastLoginAt: user.lastLoginAt,
-        }));
+        const formattedUsers = users.map(toApiUser);
 
         // Return the users
         res.status(200).json({
@@ -1073,44 +994,12 @@ export function makeAdminController(services: ServiceRegistry) {
         if (user) {
           const users = await services.userService.searchUsers(user);
 
-          results.users = users.map((user) => ({
-            id: user.id,
-            walletAddress: user.walletAddress,
-            walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
-            name: user.name ?? undefined,
-            email: user.email ?? undefined,
-            isSubscribed: user.isSubscribed,
-            privyId: user.privyId ?? undefined,
-            embeddedWalletAddress: user.embeddedWalletAddress ?? undefined,
-            status: user.status,
-            imageUrl: user.imageUrl ?? undefined,
-            metadata: user.metadata
-              ? (user.metadata as UserMetadata)
-              : undefined,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-            lastLoginAt: user.lastLoginAt ?? undefined,
-          }));
+          results.users = users.map(toApiUser);
         }
 
         // Search agents if requested
         if (agent) {
-          const agents = await services.agentService.searchAgents(agent);
-
-          results.agents = agents.map((agent) => ({
-            id: agent.id,
-            ownerId: agent.ownerId,
-            walletAddress: agent.walletAddress,
-            name: agent.name,
-            handle: agent.handle,
-            description: agent.description,
-            status: agent.status,
-            imageUrl: agent.imageUrl,
-            metadata: agent.metadata,
-            email: agent.email,
-            createdAt: agent.createdAt,
-            updatedAt: agent.updatedAt,
-          }));
+          results.agents = await services.agentService.searchAgents(agent);
         }
 
         if (join) {
@@ -1169,20 +1058,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const totalCount = await services.agentService.countAgents();
 
         // Format the agents for the response
-        const formattedAgents = agents.map((agent) => ({
-          id: agent.id,
-          ownerId: agent.ownerId,
-          walletAddress: agent.walletAddress,
-          name: agent.name,
-          handle: agent.handle,
-          email: agent.email,
-          description: agent.description,
-          status: agent.status,
-          imageUrl: agent.imageUrl,
-          metadata: agent.metadata,
-          createdAt: agent.createdAt,
-          updatedAt: agent.updatedAt,
-        }));
+        const formattedAgents = agents.map(toApiAgent);
 
         // Return the agents with pagination metadata
         res.status(200).json({
