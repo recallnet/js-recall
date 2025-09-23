@@ -12,8 +12,10 @@ import {
   useCreateSandboxAgent,
   useCreateSandboxUser,
 } from "@/hooks/useSandbox";
+import { useSession } from "@/hooks/useSession";
 
 function CreateAgentView() {
+  const { backendUser } = useSession();
   const createAgent = useCreateAgent();
   const createSandboxUser = useCreateSandboxUser();
   const createSandboxAgent = useCreateSandboxAgent();
@@ -40,10 +42,18 @@ function CreateAgentView() {
 
     setCreatedAgentId(result.agent.id);
 
-    if (ENABLE_SANDBOX) {
+    if (ENABLE_SANDBOX && backendUser) {
       try {
         // Create user in sandbox (if not already exists)
-        await createSandboxUser.mutateAsync();
+        await createSandboxUser.mutateAsync({
+          walletAddress: backendUser.walletAddress,
+          email: backendUser.email,
+          name: backendUser.name,
+          imageUrl: backendUser.imageUrl,
+          metadata: backendUser.metadata,
+          privyId: backendUser.privyId,
+          embeddedWalletAddress: backendUser.embeddedWalletAddress,
+        });
       } catch (error) {
         console.warn("Failed to create user in sandbox:", error);
         // Continue with agent creation even if user creation fails
@@ -51,16 +61,25 @@ function CreateAgentView() {
 
       // Create agent in sandbox
       try {
+        if (!backendUser?.walletAddress) {
+          throw new Error("User wallet address not found");
+        }
+
         await createSandboxAgent.mutateAsync({
-          name: data.name,
-          handle: data.handle,
-          description: data.description,
-          imageUrl: data.imageUrl,
-          metadata: {
-            skills: data.skills,
-            repositoryUrl: data.repositoryUrl,
-            x: data.x,
-            telegram: data.telegram,
+          user: {
+            walletAddress: backendUser.walletAddress,
+          },
+          agent: {
+            name: data.name,
+            handle: data.handle,
+            description: data.description,
+            imageUrl: data.imageUrl,
+            metadata: {
+              skills: data.skills,
+              repositoryUrl: data.repositoryUrl,
+              x: data.x,
+              telegram: data.telegram,
+            },
           },
         });
 

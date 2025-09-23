@@ -5,7 +5,10 @@ import { sandboxClient } from "@/lib/sandbox-client";
 import {
   AdminAgentKeyResponse,
   AdminAgentUpdateResponse,
+  AdminCreateAgentRequest,
   AdminCreateAgentResponse,
+  AdminCreateUserRequest,
+  AdminUpdateAgentRequest,
   AdminUserResponse,
 } from "@/types/admin";
 
@@ -14,8 +17,8 @@ import {
  * @returns Mutation for creating a user
  */
 export const useCreateSandboxUser = () => {
-  return useMutation<AdminUserResponse, Error>({
-    mutationFn: () => sandboxClient.createUser(),
+  return useMutation<AdminUserResponse, Error, AdminCreateUserRequest>({
+    mutationFn: (userData) => sandboxClient.createUser(userData),
   });
 };
 
@@ -24,19 +27,8 @@ export const useCreateSandboxUser = () => {
  * @returns Mutation for creating an agent
  */
 export const useCreateSandboxAgent = () => {
-  return useMutation<
-    AdminCreateAgentResponse,
-    Error,
-    {
-      name: string;
-      handle: string;
-      description?: string;
-      imageUrl?: string;
-      email?: string;
-      metadata?: Record<string, unknown>;
-    }
-  >({
-    mutationFn: (agentData) => sandboxClient.createAgent(agentData),
+  return useMutation<AdminCreateAgentResponse, Error, AdminCreateAgentRequest>({
+    mutationFn: (data) => sandboxClient.createAgent(data),
   });
 };
 
@@ -58,20 +50,7 @@ export const useSandboxAgentApiKey = (agentHandle: string | null) => {
  * @returns Mutation for updating an agent
  */
 export const useUpdateSandboxAgent = () => {
-  return useMutation<
-    AdminAgentUpdateResponse,
-    Error,
-    {
-      agentId: string;
-      name?: string;
-      handle?: string;
-      description?: string;
-      imageUrl?: string;
-      email?: string;
-      metadata?: Record<string, unknown>;
-    }
-  >({
-    mutationFn: ({ agentId, ...agentData }) =>
-      sandboxClient.updateAgent(agentId, agentData),
+  return useMutation<AdminAgentUpdateResponse, Error, AdminUpdateAgentRequest>({
+    mutationFn: (data) => sandboxClient.updateAgent(data),
   });
 };
