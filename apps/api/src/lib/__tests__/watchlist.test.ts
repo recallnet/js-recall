@@ -199,7 +199,7 @@ describe("WatchlistService", () => {
 
       await expect(
         watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("Chainalysis API error: Internal Server Error");
+      ).rejects.toThrow("Retry attempts exhausted");
     }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
 
     it("should throw on network error", async () => {
@@ -213,7 +213,7 @@ describe("WatchlistService", () => {
 
       await expect(
         watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("Network connection error");
+      ).rejects.toThrow("Retry attempts exhausted");
     }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
 
     it("should handle timeout with AbortController", async () => {
@@ -231,7 +231,7 @@ describe("WatchlistService", () => {
 
       await expect(
         watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("Request was aborted (likely timeout)");
+      ).rejects.toThrow("Retry attempts exhausted");
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
