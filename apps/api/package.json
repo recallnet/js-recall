@@ -59,7 +59,7 @@
     "generate": "pnpm generate-docs && prettier --write openapi",
     "allocate-rewards": "tsx scripts/allocate-rewards.ts",
     "cron:portfolio-snapshot": "tsx scripts/take-portfolio-snapshots.ts",
-    "cron:indexing": "tsx scripts/indexing.ts",
+    "run:indexer": "tsx scripts/indexing.ts",
     "cron:auto-end-competitions": "tsx scripts/auto-end-competitions.ts",
     "cron:portfolio-snapshot:run-once": "tsx scripts/take-portfolio-snapshots.ts --run-once",
     "cron:auto-end-competitions:run-once": "tsx scripts/auto-end-competitions.ts --run-once"
