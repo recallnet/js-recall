@@ -137,3 +137,46 @@ export const getCompetitionPerpsPositions = createTimedRepositoryFunction(
   "PerpsRepository",
   "getCompetitionPerpsPositions",
 );
+
+export const saveTransferHistory = createTimedRepositoryFunction(
+  repository.saveTransferHistory.bind(repository),
+  "PerpsRepository",
+  "saveTransferHistory",
+);
+
+export const batchSaveTransferHistory = createTimedRepositoryFunction(
+  repository.batchSaveTransferHistory.bind(repository),
+  "PerpsRepository",
+  "batchSaveTransferHistory",
+);
+
+export const getAgentTransferHistory = createTimedRepositoryFunction(
+  repository.getAgentTransferHistory.bind(repository),
+  "PerpsRepository",
+  "getAgentTransferHistory",
+);
+
+export const upsertRiskMetrics = createTimedRepositoryFunction(
+  repository.upsertRiskMetrics.bind(repository),
+  "PerpsRepository",
+  "upsertRiskMetrics",
+);
+
+export const saveTwrPeriods = createTimedRepositoryFunction(
+  repository.saveTwrPeriods.bind(repository),
+  "PerpsRepository",
+  "saveTwrPeriods",
+);
+
+export const getCompetitionRiskMetricsLeaderboard =
+  createTimedRepositoryFunction(
+    repository.getCompetitionRiskMetricsLeaderboard.bind(repository),
+    "PerpsRepository",
+    "getCompetitionRiskMetricsLeaderboard",
+  );
+
+export const saveRiskMetricsWithPeriods = createTimedRepositoryFunction(
+  repository.saveRiskMetricsWithPeriods.bind(repository),
+  "PerpsRepository",
+  "saveRiskMetricsWithPeriods",
+);
