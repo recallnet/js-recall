@@ -13,7 +13,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
 import { Competition } from "@/types/competition";
-import { formatCompetitionType } from "@/utils/competition-utils";
+import { getCompetitionSkills } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
 import { CompetitionStatusBadge } from "./competition-status-badge";
@@ -110,9 +110,14 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           <div className="flex items-center gap-2 border-b p-4 sm:p-[25px]">
             <CellTitle>Skills</CellTitle>
             <div className="flex flex-wrap gap-2">
-              <span className="rounded border p-2 text-xs capitalize">
-                {formatCompetitionType(competition.type)}
-              </span>
+              {getCompetitionSkills(competition.type).map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded border p-2 text-xs capitalize"
+                >
+                  {skill}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -143,8 +148,16 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
           <div className="grid grid-cols-3">
             <div className="flex flex-col items-start justify-center gap-2 border-r p-4 sm:p-[25px]">
-              <CellTitle>Total Trades</CellTitle>
-              <span className="font-bold">{competition.stats.totalTrades}</span>
+              <CellTitle>
+                {competition.type === "perpetual_futures"
+                  ? "Total Positions"
+                  : "Total Trades"}
+              </CellTitle>
+              <span className="font-bold">
+                {competition.type === "perpetual_futures"
+                  ? (competition.stats.totalPositions ?? 0)
+                  : (competition.stats.totalTrades ?? 0)}
+              </span>
             </div>
             <div className="flex flex-col items-start justify-center gap-2 border-r p-4 sm:p-[25px]">
               <CellTitle>Volume</CellTitle>
@@ -157,9 +170,21 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               </span>
             </div>
             <div className="flex flex-col items-start justify-center gap-2 p-4 sm:p-[25px]">
-              <CellTitle>Tokens Traded</CellTitle>
+              <CellTitle>
+                {competition.type === "perpetual_futures"
+                  ? "Average Equity"
+                  : "Tokens Traded"}
+              </CellTitle>
               <span className="font-bold">
-                {competition.stats.uniqueTokens}
+                {competition.type === "perpetual_futures"
+                  ? `$${(competition.stats.averageEquity ?? 0).toLocaleString(
+                      undefined,
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      },
+                    )}`
+                  : (competition.stats.uniqueTokens ?? 0)}
               </span>
             </div>
           </div>

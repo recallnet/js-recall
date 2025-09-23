@@ -209,78 +209,6 @@ async function getPerpsPositionsImpl(
   }
 }
 
-/**
- * Get positions for multiple agents in bulk (with optional status filter)
- * @param competitionId Competition ID
- * @param agentIds Array of agent IDs
- * @param status Optional status filter ("Open", "Closed", etc.)
- * @returns Map of agent ID to their positions
- */
-async function getBulkPerpsPositionsImpl(
-  competitionId: string,
-  agentIds: string[],
-  status?: string,
-): Promise<Map<string, SelectPerpetualPosition[]>> {
-  if (agentIds.length === 0) {
-    return new Map();
-  }
-
-  try {
-    const conditions = [
-      eq(perpetualPositions.competitionId, competitionId),
-      inArray(perpetualPositions.agentId, agentIds),
-    ];
-
-    if (status) {
-      conditions.push(eq(perpetualPositions.status, status));
-    }
-
-    const positions = await dbRead
-      .select()
-      .from(perpetualPositions)
-      .where(and(...conditions))
-      .orderBy(desc(perpetualPositions.createdAt));
-
-    // Group positions by agent ID
-    const positionMap = new Map<string, SelectPerpetualPosition[]>();
-    for (const position of positions) {
-      const agentPositions = positionMap.get(position.agentId) || [];
-      agentPositions.push(position);
-      positionMap.set(position.agentId, agentPositions);
-    }
-
-    // Ensure all requested agents have an entry (even if empty)
-    for (const agentId of agentIds) {
-      if (!positionMap.has(agentId)) {
-        positionMap.set(agentId, []);
-      }
-    }
-
-    repositoryLogger.debug(
-      `[PerpsRepository] Retrieved ${positions.length} positions for ${agentIds.length} agents`,
-    );
-
-    return positionMap;
-  } catch (error) {
-    repositoryLogger.error("Error in getBulkPerpsPositions:", error);
-    throw error;
-  }
-}
-
-/**
- * Get all open positions for multiple agents in bulk
- * This is a convenience wrapper around getBulkPerpsPositions with status="Open"
- * @param competitionId Competition ID
- * @param agentIds Array of agent IDs
- * @returns Map of agent ID to their open positions
- */
-async function getBulkOpenPositionsImpl(
-  competitionId: string,
-  agentIds: string[],
-): Promise<Map<string, SelectPerpetualPosition[]>> {
-  return getBulkPerpsPositionsImpl(competitionId, agentIds, "Open");
-}
-
 // =============================================================================
 // PERPS ACCOUNT SUMMARIES
 // =============================================================================
@@ -329,7 +257,7 @@ async function createPerpsAccountSummaryImpl(
 }
 
 /**
- * Batch create multiple account summaries efficiently
+ * Batch create multiple account summaries
  * @param summaries Array of summary data to create
  * @returns Array of created summaries
  */
@@ -383,56 +311,6 @@ async function getLatestPerpsAccountSummaryImpl(
     return result || null;
   } catch (error) {
     repositoryLogger.error("Error in getLatestPerpsAccountSummary:", error);
-    throw error;
-  }
-}
-
-/**
- * Get latest account summaries for multiple agents in bulk
- * @param competitionId Competition ID
- * @param agentIds Array of agent IDs
- * @returns Array of latest summaries
- */
-async function getBulkLatestAccountSummariesImpl(
-  competitionId: string,
-  agentIds: string[],
-): Promise<SelectPerpsAccountSummary[]> {
-  if (agentIds.length === 0) {
-    return [];
-  }
-
-  try {
-    // Process in batches to avoid query size limits (PostgreSQL IN clause limit)
-    const summaries: SelectPerpsAccountSummary[] = [];
-    const batchSize = 500; // PostgreSQL can handle large IN clauses efficiently
-
-    for (let i = 0; i < agentIds.length; i += batchSize) {
-      const batchAgentIds = agentIds.slice(i, i + batchSize);
-
-      const batchResults = await dbRead
-        .selectDistinctOn([perpsAccountSummaries.agentId])
-        .from(perpsAccountSummaries)
-        .where(
-          and(
-            inArray(perpsAccountSummaries.agentId, batchAgentIds),
-            eq(perpsAccountSummaries.competitionId, competitionId),
-          ),
-        )
-        .orderBy(
-          perpsAccountSummaries.agentId,
-          desc(perpsAccountSummaries.timestamp),
-        );
-
-      summaries.push(...batchResults);
-    }
-
-    repositoryLogger.debug(
-      `[PerpsRepository] Retrieved ${summaries.length} latest account summaries for ${agentIds.length} agents`,
-    );
-
-    return summaries;
-  } catch (error) {
-    repositoryLogger.error("Error in getBulkLatestAccountSummaries:", error);
     throw error;
   }
 }
@@ -597,7 +475,7 @@ async function getAgentSelfFundingAlertsImpl(
 }
 
 /**
- * Batch get self-funding alerts for multiple agents (fixes N+1 query problem)
+ * Batch get self-funding alerts for multiple agents
  * @param agentIds Array of agent IDs
  * @param competitionId Competition ID
  * @returns Map of agent ID to their alerts
@@ -619,7 +497,7 @@ async function batchGetAgentsSelfFundingAlertsImpl(
     }
 
     // Process in batches to avoid query size limits (PostgreSQL IN clause limit)
-    const batchSize = 500; // PostgreSQL can handle large IN clauses efficiently
+    const batchSize = 500;
     const allAlerts: SelectPerpsSelfFundingAlert[] = [];
 
     for (let i = 0; i < agentIds.length; i += batchSize) {
@@ -741,7 +619,7 @@ async function syncAgentPerpsDataImpl(
 }
 
 /**
- * Batch sync multiple agents' perps data efficiently
+ * Batch sync multiple agents' perps data
  * Processes agents in controlled batches to avoid database contention
  * @param agentSyncData Array of agent sync data
  * @returns Results with successes and failures
@@ -811,7 +689,6 @@ async function batchSyncAgentsPerpsDataImpl(
 
 /**
  * Get latest account summaries for all agents in a competition, sorted for leaderboard
- * Efficient single-query solution that avoids N+1 issues
  * @param competitionId Competition ID
  * @returns Array of latest account summaries sorted by totalEquity DESC
  */
@@ -819,43 +696,53 @@ async function getCompetitionLeaderboardSummariesImpl(
   competitionId: string,
 ): Promise<SelectPerpsAccountSummary[]> {
   try {
-    // Single efficient query using DISTINCT ON to get latest per agent
-    // Then sort by totalEquity for leaderboard
-    const summaries = await dbRead
-      .selectDistinctOn([perpsAccountSummaries.agentId])
-      .from(perpsAccountSummaries)
-      .innerJoin(
-        competitionAgents,
+    // Get active agents first, then use lateral join to get their latest summaries
+    const activeAgents = dbRead
+      .select({
+        agentId: competitionAgents.agentId,
+      })
+      .from(competitionAgents)
+      .where(
         and(
-          eq(perpsAccountSummaries.agentId, competitionAgents.agentId),
-          eq(
-            perpsAccountSummaries.competitionId,
-            competitionAgents.competitionId,
-          ),
-          eq(competitionAgents.status, "active"), // Only active agents
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.status, "active"),
         ),
       )
-      .where(eq(perpsAccountSummaries.competitionId, competitionId))
-      .orderBy(
-        perpsAccountSummaries.agentId,
-        desc(perpsAccountSummaries.timestamp),
-      );
+      .as("active_agents");
 
-    // Sort by totalEquity DESC for leaderboard (in memory since DISTINCT ON requires specific order)
-    // This is still efficient as we've already filtered to just the latest summaries
-    const sortedSummaries = summaries
-      .map((row) => row.perps_account_summaries) // Extract just the summary part
-      .sort((a, b) => {
-        const aEquity = Number(a.totalEquity) || 0;
-        const bEquity = Number(b.totalEquity) || 0;
-        return bEquity - aEquity;
-      });
+    // Create subquery for lateral join - gets the latest summary for each agent
+    // Note: We'll reference activeAgents.agentId from the outer query
+    const latestSummarySubquery = dbRead
+      .select()
+      .from(perpsAccountSummaries)
+      .where(
+        and(
+          eq(perpsAccountSummaries.competitionId, competitionId),
+          // This references the outer query's agent ID
+          sql`${perpsAccountSummaries.agentId} = ${activeAgents.agentId}`,
+        ),
+      )
+      .orderBy(desc(perpsAccountSummaries.timestamp))
+      .limit(1)
+      .as("latest_summary");
+
+    // Use leftJoinLateral to efficiently get the latest summary per agent
+    const results = await dbRead
+      .select()
+      .from(activeAgents)
+      .leftJoinLateral(latestSummarySubquery, sql`true`)
+      .orderBy(desc(sql`${latestSummarySubquery}.total_equity`));
+
+    // Filter out nulls and return just the summary objects
+    const summaries = results
+      .filter((row) => row.latest_summary !== null)
+      .map((row) => row.latest_summary as SelectPerpsAccountSummary);
 
     repositoryLogger.debug(
-      `[PerpsRepository] Retrieved ${sortedSummaries.length} account summaries for competition leaderboard`,
+      `[PerpsRepository] Retrieved ${summaries.length} account summaries for competition leaderboard`,
     );
 
-    return sortedSummaries;
+    return summaries;
   } catch (error) {
     repositoryLogger.error(
       "Error in getCompetitionLeaderboardSummaries:",
@@ -866,7 +753,7 @@ async function getCompetitionLeaderboardSummariesImpl(
 }
 
 /**
- * Get perps competition statistics using efficient SQL aggregations
+ * Get perps competition statistics using SQL aggregations
  * @param competitionId Competition ID
  * @returns Competition statistics
  */
@@ -874,29 +761,42 @@ async function getPerpsCompetitionStatsImpl(
   competitionId: string,
 ): Promise<PerpsCompetitionStats> {
   try {
-    // Use a subquery to get the latest summary per agent, then aggregate
-    const statsQuery = dbRead
-      .selectDistinctOn([perpsAccountSummaries.agentId], {
+    // Get distinct agents in the competition
+    const distinctAgents = dbRead
+      .selectDistinct({
+        agentId: perpsAccountSummaries.agentId,
+      })
+      .from(perpsAccountSummaries)
+      .where(eq(perpsAccountSummaries.competitionId, competitionId))
+      .as("distinct_agents");
+
+    // Create subquery for lateral join - gets the latest summary for each agent
+    const latestSummarySubquery = dbRead
+      .select({
         agentId: perpsAccountSummaries.agentId,
         totalEquity: perpsAccountSummaries.totalEquity,
         totalVolume: perpsAccountSummaries.totalVolume,
       })
       .from(perpsAccountSummaries)
-      .where(eq(perpsAccountSummaries.competitionId, competitionId))
-      .orderBy(
-        perpsAccountSummaries.agentId,
-        desc(perpsAccountSummaries.timestamp),
+      .where(
+        and(
+          eq(perpsAccountSummaries.competitionId, competitionId),
+          sql`${perpsAccountSummaries.agentId} = ${distinctAgents.agentId}`,
+        ),
       )
-      .as("latest");
+      .orderBy(desc(perpsAccountSummaries.timestamp))
+      .limit(1)
+      .as("latest_summary");
 
-    // Aggregate the latest summaries
+    // Use leftJoinLateral to get latest summaries and aggregate
     const [stats] = await dbRead
       .select({
-        totalAgents: drizzleCount(statsQuery.agentId),
-        totalVolume: sum(statsQuery.totalVolume),
-        averageEquity: avg(statsQuery.totalEquity),
+        totalAgents: drizzleCount(latestSummarySubquery.agentId),
+        totalVolume: sum(latestSummarySubquery.totalVolume),
+        averageEquity: avg(latestSummarySubquery.totalEquity),
       })
-      .from(statsQuery);
+      .from(distinctAgents)
+      .leftJoinLateral(latestSummarySubquery, sql`true`);
 
     // Get position count separately (can't join easily with the subquery)
     const [positionStats] = await dbRead
@@ -920,7 +820,6 @@ async function getPerpsCompetitionStatsImpl(
 
 /**
  * Count positions for an agent across multiple competitions in bulk
- * Optimized single query with GROUP BY to avoid N+1 queries
  * @param agentId Agent ID
  * @param competitionIds Array of competition IDs
  * @returns Map of competition ID to position count
@@ -1055,7 +954,7 @@ async function getCompetitionPerpsPositionsImpl(
       .from(perpetualPositions)
       .where(and(...conditions));
 
-    // Execute both queries in parallel for efficiency
+    // Execute both queries in parallel
     const [results, total] = await Promise.all([positionsQuery, totalQuery]);
 
     return {
@@ -1103,18 +1002,6 @@ export const getPerpsPositions = createTimedRepositoryFunction(
   "getPerpsPositions",
 );
 
-export const getBulkPerpsPositions = createTimedRepositoryFunction(
-  getBulkPerpsPositionsImpl,
-  "PerpsRepository",
-  "getBulkPerpsPositions",
-);
-
-export const getBulkOpenPositions = createTimedRepositoryFunction(
-  getBulkOpenPositionsImpl,
-  "PerpsRepository",
-  "getBulkOpenPositions",
-);
-
 export const createPerpsAccountSummary = createTimedRepositoryFunction(
   createPerpsAccountSummaryImpl,
   "PerpsRepository",
@@ -1131,12 +1018,6 @@ export const getLatestPerpsAccountSummary = createTimedRepositoryFunction(
   getLatestPerpsAccountSummaryImpl,
   "PerpsRepository",
   "getLatestPerpsAccountSummary",
-);
-
-export const getBulkLatestAccountSummaries = createTimedRepositoryFunction(
-  getBulkLatestAccountSummariesImpl,
-  "PerpsRepository",
-  "getBulkLatestAccountSummaries",
 );
 
 export const createPerpsSelfFundingAlert = createTimedRepositoryFunction(

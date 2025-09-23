@@ -543,8 +543,7 @@ describe("Perps Competition", () => {
       expect(position?.agentId).toBe(agent.id);
       expect(position?.competitionId).toBe(competition.id);
       expect(position?.marketSymbol).toBeDefined();
-      // TODO: Re-enable when API returns isLong instead of side
-      // expect(position?.isLong).toBeDefined();
+      expect(position?.isLong).toBeDefined();
       expect(position?.size).toBeDefined();
       expect(position?.averagePrice).toBeDefined();
     }
@@ -660,8 +659,7 @@ describe("Perps Competition", () => {
       expect(position?.agentId).toBe(agent.id);
       expect(position?.competitionId).toBe(competition.id);
       expect(position?.marketSymbol).toBeDefined();
-      // TODO: Re-enable when API returns isLong instead of side
-      // expect(position?.isLong).toBeDefined();
+      expect(position?.isLong).toBeDefined();
       expect(position?.size).toBeDefined();
       expect(position?.averagePrice).toBeDefined();
     }
@@ -865,22 +863,18 @@ describe("Perps Competition", () => {
       (p) => p.marketSymbol === "BTC",
     );
     expect(btcPosition).toBeDefined();
-    // TODO: Re-enable when API returns isLong instead of side
-    // expect(btcPosition?.isLong).toBe(true);
-    // TODO: Change back to numbers when API is fixed (from mzk/perps-live-trading-frontend)
-    expect(btcPosition?.size).toBe("0.5");
-    expect(btcPosition?.averagePrice).toBe("45000");
-    expect(btcPosition?.markPrice).toBe("47000");
-    expect(btcPosition?.unrealizedPnl).toBe("1000");
+    expect(btcPosition?.isLong).toBe(true);
+    expect(btcPosition?.size).toBe(0.5);
+    expect(btcPosition?.averagePrice).toBe(45000);
+    expect(btcPosition?.markPrice).toBe(47000);
+    expect(btcPosition?.unrealizedPnl).toBe(1000);
 
     const ethPosition = typedAgent1Positions.positions.find(
       (p) => p.marketSymbol === "ETH",
     );
     expect(ethPosition).toBeDefined();
-    // TODO: Re-enable when API returns isLong instead of side
-    // expect(ethPosition?.isLong).toBe(false);
-    // TODO: Change back to number when API is fixed (from mzk/perps-live-trading-frontend)
-    expect(ethPosition?.size).toBe("2");
+    expect(ethPosition?.isLong).toBe(false);
+    expect(ethPosition?.size).toBe(2);
 
     // Verify agent1's account summary
     const agent1Account = await agent1Client.getPerpsAccount();
@@ -904,11 +898,9 @@ describe("Perps Competition", () => {
 
     const solPosition = typedAgent2Positions.positions[0];
     expect(solPosition?.marketSymbol).toBe("SOL");
-    // TODO: Re-enable when API returns isLong instead of side
-    // expect(solPosition?.isLong).toBe(true);
-    // TODO: Change back to numbers when API is fixed (from mzk/perps-live-trading-frontend)
-    expect(solPosition?.size).toBe("10");
-    expect(solPosition?.unrealizedPnl).toBe("-50");
+    expect(solPosition?.isLong).toBe(true);
+    expect(solPosition?.size).toBe(10);
+    expect(solPosition?.unrealizedPnl).toBe(-50);
 
     // Verify agent2's account summary
     const agent2Account = await agent2Client.getPerpsAccount();

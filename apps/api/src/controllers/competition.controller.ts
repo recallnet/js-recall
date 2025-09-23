@@ -711,6 +711,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           totalVolume: number;
           totalVotes: number;
           uniqueTokens?: number;
+          averageEquity?: number;
           competitionType: string;
         };
 
@@ -735,6 +736,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             totalPositions: perpsStats.totalPositions,
             totalAgents: perpsStats.totalAgents,
             totalVolume: perpsStats.totalVolume,
+            averageEquity: perpsStats.averageEquity,
             totalVotes,
             competitionType: competition.type,
           };
@@ -1379,15 +1381,19 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const competitionId = ensureUuid(req.params.competitionId);
         const pagingParams = PagingParamsSchema.parse(req.query);
 
-        // Check if competition exists
-        const competition =
-          await services.competitionManager.getCompetition(competitionId);
-        if (!competition) {
+        // Check if competition exists and its type
+        const { exists, isType: isPerpsCompetition } =
+          await services.competitionManager.checkCompetitionType(
+            competitionId,
+            "perpetual_futures",
+          );
+
+        if (!exists) {
           throw new ApiError(404, "Competition not found");
         }
 
         // Check if this is a perps competition
-        if (competition.type === "perpetual_futures") {
+        if (isPerpsCompetition) {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
@@ -1454,10 +1460,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
         );
         const pagingParams = PagingParamsSchema.parse(req.query);
 
-        // Check if competition exists
-        const competition =
-          await services.competitionManager.getCompetition(competitionId);
-        if (!competition) {
+        // Check if competition exists and its type
+        const { exists, isType: isPerpsCompetition } =
+          await services.competitionManager.checkCompetitionType(
+            competitionId,
+            "perpetual_futures",
+          );
+
+        if (!exists) {
           throw new ApiError(404, "Competition not found");
         }
 
@@ -1468,7 +1478,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Check if this is a perps competition
-        if (competition.type === "perpetual_futures") {
+        if (isPerpsCompetition) {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
@@ -1578,28 +1588,33 @@ export function makeCompetitionController(services: ServiceRegistry) {
           competitionId,
         );
 
-        // Convert to match the same format as authenticated endpoint for consistency
+        // Convert to match the same format as all-positions endpoint for consistency
         const formattedPositions = positions.map((position) => ({
           id: position.id,
-          agentId: position.agentId,
           competitionId: position.competitionId,
+          agentId: position.agentId,
           positionId: position.providerPositionId || null,
           marketId: position.asset || null,
           marketSymbol: position.asset || null,
-          side: position.isLong ? "long" : "short",
-          size: position.positionSize || "0",
-          averagePrice: position.entryPrice || "0",
-          markPrice: position.currentPrice || "0",
-          liquidationPrice: position.liquidationPrice || null,
-          unrealizedPnl: position.pnlUsdValue || "0",
-          realizedPnl: "0", // Not tracked in this table
-          margin: position.collateralAmount || "0",
-          leverage: position.leverage || "1",
+          asset: position.asset,
+          isLong: position.isLong,
+          leverage: Number(position.leverage || 0),
+          size: Number(position.positionSize),
+          collateral: Number(position.collateralAmount),
+          averagePrice: Number(position.entryPrice),
+          markPrice: Number(position.currentPrice || 0),
+          liquidationPrice: position.liquidationPrice
+            ? Number(position.liquidationPrice)
+            : null,
+          unrealizedPnl: Number(position.pnlUsdValue || 0),
+          pnlPercentage: Number(position.pnlPercentage || 0),
+          realizedPnl: 0,
           status: position.status || "Open",
-          createdAt: position.createdAt.toISOString(),
-          updatedAt: (
-            position.lastUpdatedAt || position.createdAt
-          ).toISOString(),
+          openedAt: position.createdAt.toISOString(),
+          closedAt: position.closedAt ? position.closedAt.toISOString() : null,
+          timestamp: position.lastUpdatedAt
+            ? position.lastUpdatedAt.toISOString()
+            : position.createdAt.toISOString(),
         }));
 
         const responseBody = {
@@ -1763,6 +1778,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
             ? Number(pos.liquidationPrice)
             : null,
           unrealizedPnl: Number(pos.pnlUsdValue || 0),
+          pnlPercentage: Number(pos.pnlPercentage || 0),
           realizedPnl: 0, // Not tracked in our schema
           status: pos.status,
           openedAt: pos.createdAt.toISOString(),
