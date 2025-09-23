@@ -31,9 +31,9 @@ interface BoostAgentModalProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
   agent: AgentCompetition | null;
-  availableBoost: bigint;
-  currentAgentBoostTotal: bigint;
-  currentUserBoostAmount: bigint;
+  availableBoost: number;
+  currentAgentBoostTotal: number;
+  currentUserBoostAmount: number;
   competitionId: string;
 }
 
@@ -49,7 +49,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
   competitionId,
 }) => {
   const [step, setStep] = useState<BoostStep>("choose");
-  const [boostAmount, setBoostAmount] = useState<bigint>(availableBoost);
+  const [boostAmount, setBoostAmount] = useState<number>(availableBoost);
   const [error, setError] = useState<string | null>(null);
 
   const { mutate: boostAgent, isPending: isBoosting } = useBoostAgent({
@@ -66,43 +66,44 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setStep("choose");
-      setBoostAmount(0n);
+      setBoostAmount(0);
       setError(null);
     }
   }, [isOpen]);
 
   // Calculate slider percentage
-  const sliderPercentage =
-    availableBoost > 0n ? Number((boostAmount * 100n) / availableBoost) : 0;
+  const sliderPercentage = Math.round(
+    availableBoost > 0 ? Number((boostAmount * 100) / availableBoost) : 0,
+  );
 
   // Calculate new values after boost
   const newAgentBoostTotal = currentAgentBoostTotal + boostAmount;
   const newUserBoostAmount = currentUserBoostAmount + boostAmount;
   const newUserPercentage =
-    newAgentBoostTotal > 0n
-      ? Number((newUserBoostAmount * 100n) / newAgentBoostTotal)
+    newAgentBoostTotal > 0
+      ? Number((newUserBoostAmount * 100) / newAgentBoostTotal)
       : 0;
   const currentUserPercentage =
-    currentAgentBoostTotal > 0n
-      ? Number((currentUserBoostAmount * 100n) / currentAgentBoostTotal)
+    currentAgentBoostTotal > 0
+      ? Number((currentUserBoostAmount * 100) / currentAgentBoostTotal)
       : 0;
 
-  const handleAmountChange = (newAmount: bigint) => {
-    if (newAmount >= 0n && newAmount <= availableBoost) {
+  const handleAmountChange = (newAmount: number) => {
+    if (newAmount >= 0 && newAmount <= availableBoost) {
       setBoostAmount(newAmount);
     }
   };
 
   const handleIncrement = () => {
-    const increment = 1n; // Change by 1
+    const increment = 1; // Change by 1
     const newAmount = boostAmount + increment;
     handleAmountChange(newAmount > availableBoost ? availableBoost : newAmount);
   };
 
   const handleDecrement = () => {
-    const decrement = 1n; // Change by 1
+    const decrement = 1; // Change by 1
     const newAmount = boostAmount - decrement;
-    handleAmountChange(newAmount < 0n ? 0n : newAmount);
+    handleAmountChange(newAmount < 0 ? 0 : newAmount);
   };
 
   const handleReview = () => {
@@ -171,7 +172,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={handleDecrement}
-                    disabled={boostAmount <= 0n}
+                    disabled={boostAmount <= 0}
                     className="h-10 w-10 rounded-full p-0"
                   >
                     <Minus className="h-4 w-4" />
@@ -204,8 +205,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                     value={[Number(boostAmount)]}
                     onValueChange={([value]) => {
                       if (value !== undefined) {
-                        const newAmount = BigInt(value);
-                        handleAmountChange(newAmount);
+                        handleAmountChange(value);
                       }
                     }}
                     max={Number(availableBoost)}
@@ -222,7 +222,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
             <DialogFooter>
               <Button
                 onClick={handleReview}
-                disabled={boostAmount <= 0n}
+                disabled={boostAmount <= 0}
                 className="w-full"
               >
                 REVIEW
