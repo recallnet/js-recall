@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { RetryConfig } from "@/lib/retry-helper.js";
+import { RetryConfig, RetryExhaustedError } from "@/lib/retry-helper.js";
 import { WatchlistService } from "@/lib/watchlist.js";
 
 // Mock global fetch
@@ -199,7 +199,7 @@ describe("WatchlistService", () => {
 
       await expect(
         watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("Retry attempts exhausted");
+      ).rejects.toThrow(RetryExhaustedError);
     }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
 
     it("should throw on network error", async () => {
@@ -213,7 +213,7 @@ describe("WatchlistService", () => {
 
       await expect(
         watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("Retry attempts exhausted");
+      ).rejects.toThrow(RetryExhaustedError);
     }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
 
     it("should handle timeout with AbortController", async () => {
@@ -231,7 +231,7 @@ describe("WatchlistService", () => {
 
       await expect(
         watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("Retry attempts exhausted");
+      ).rejects.toThrow(RetryExhaustedError);
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({

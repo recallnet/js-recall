@@ -1,3 +1,6 @@
+/**
+ * Configuration options for retry behavior.
+ */
 export interface RetryConfig {
   /** Maximum number of retry attempts (not including initial attempt) */
   maxRetries: number;
@@ -20,8 +23,13 @@ export interface RetryConfig {
     error: unknown;
     elapsedMs: number;
   }) => void;
+  /** Custom predicate to determine if an error is retryable (in addition to built-in logic) */
+  isRetryable?: (error: unknown) => boolean;
 }
 
+/**
+ * Default retry configuration with sensible defaults.
+ */
 export const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxRetries: 3,
   initialDelay: 1000,
@@ -31,6 +39,9 @@ export const DEFAULT_RETRY_CONFIG: RetryConfig = {
   jitter: "full",
 };
 
+/**
+ * Error indicating that an operation should be retried.
+ */
 export class RetryableError extends Error {
   constructor(
     message: string,
@@ -41,6 +52,9 @@ export class RetryableError extends Error {
   }
 }
 
+/**
+ * Error indicating that an operation should not be retried.
+ */
 export class NonRetryableError extends Error {
   constructor(
     message: string,
@@ -51,14 +65,63 @@ export class NonRetryableError extends Error {
   }
 }
 
+/**
+ * Error indicating that retry attempts have been exhausted.
+ */
+export class RetryExhaustedError extends Error {
+  constructor(
+    message: string,
+    public readonly cause?: Error,
+    public readonly attempts?: number,
+  ) {
+    super(message, cause ? { cause } : undefined);
+    this.name = "RetryExhaustedError";
+  }
+}
+
 /** Optional shape for HTTP-like errors */
 type MaybeHttpError = Error & {
   code?: string;
   name?: string;
-  response?: { status?: number; headers?: Record<string, string> };
+  response?: {
+    status?: number;
+    headers?: Record<string, string> | Headers;
+  };
 };
 
-/** Parse Retry-After seconds (or HTTP date) into ms */
+/**
+ * Get header value case-insensitively from various header formats.
+ * @param headers - Headers object (Record or Headers instance)
+ * @param name - Header name to look for
+ * @returns Header value or undefined
+ */
+function getHeaderCaseInsensitive(
+  headers: Record<string, string> | Headers | undefined,
+  name: string,
+): string | undefined {
+  if (!headers) return undefined;
+
+  // Handle Headers instance (from fetch API)
+  if (headers instanceof Headers) {
+    return headers.get(name) ?? undefined;
+  }
+
+  // Handle plain object with case-insensitive lookup
+  const lowerName = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === lowerName) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Parse Retry-After header value (seconds or HTTP date) into milliseconds.
+ * @param h - The Retry-After header value
+ * @returns Delay in milliseconds, or null if invalid
+ */
 function parseRetryAfterMs(h?: string | null | undefined): number | null {
   if (!h) return null;
   const s = Number(h);
@@ -68,6 +131,12 @@ function parseRetryAfterMs(h?: string | null | undefined): number | null {
   return null;
 }
 
+/**
+ * Determine if an error is likely to be transient and retryable based on
+ * HTTP status codes, Node.js error codes, and error patterns.
+ * @param err - The error to evaluate
+ * @returns True if the error appears to be retryable
+ */
 function isNetworkLikelyRetryable(err: unknown): boolean {
   // Known transient HTTP statuses
   const http = err as MaybeHttpError;
@@ -81,19 +150,45 @@ function isNetworkLikelyRetryable(err: unknown): boolean {
   const code = (e?.code || "").toLowerCase();
   const msg = (e?.message || "").toLowerCase();
 
+  // Comprehensive list of transient error codes
   const transientCodes = [
+    // Connection errors
     "econnreset",
-    "enotfound",
-    "etimedout",
     "econnrefused",
+    "econnaborted",
+    "epipe",
     "ehostunreach",
-    "enetworkdown",
+    "ehostdown",
+    "enetunreach",
+    "enetdown",
+    "enetreset",
+
+    // DNS errors
+    "enotfound",
+    "eai_again", // DNS temporary failure
+    "etempfail",
+
+    // Timeout errors
+    "etimedout",
+    "esockettimedout",
+
+    // SSL/TLS transient errors
+    "eproto", // Protocol error (can be transient)
+    "ssl_error_syscall", // SSL system call error
   ];
   if (transientCodes.includes(code)) return true;
 
-  const transientNames = ["aborterror", "timeouterror"];
+  // Error names that indicate transient issues
+  const transientNames = [
+    "aborterror",
+    "timeouterror",
+    "networkerror",
+    "fetcherror",
+    "requesttimeouterror",
+  ];
   if (transientNames.includes(name)) return true;
 
+  // Message patterns that indicate transient issues
   const patterns = [
     "network",
     "connection",
@@ -101,10 +196,59 @@ function isNetworkLikelyRetryable(err: unknown): boolean {
     "socket",
     "fetch",
     "aborted",
+    "dns",
+    "getaddrinfo",
+    "certificate", // Some certificate errors are transient
+    "ssl",
+    "tls",
+    "closed before receiving",
+    "premature close",
+    "eai_", // DNS resolution errors
+    "temporary failure",
+    "service unavailable",
   ];
   return patterns.some((p) => msg.includes(p));
 }
 
+/**
+ * Validate retry configuration parameters.
+ * @param config - The configuration to validate
+ * @throws Error if configuration is invalid
+ */
+function validateRetryConfig(config: RetryConfig): void {
+  const errors: string[] = [];
+  if (!Number.isFinite(config.maxRetries) || config.maxRetries < 0) {
+    errors.push("maxRetries must be a non-negative finite number");
+  }
+  if (!Number.isFinite(config.initialDelay) || config.initialDelay < 0) {
+    errors.push("initialDelay must be a non-negative finite number");
+  }
+  if (!Number.isFinite(config.maxDelay) || config.maxDelay < 0) {
+    errors.push("maxDelay must be a non-negative finite number");
+  }
+  if (!Number.isFinite(config.exponent) || config.exponent < 1) {
+    errors.push("exponent must be a finite number >= 1");
+  }
+  if (!Number.isFinite(config.maxElapsedTime) || config.maxElapsedTime < 0) {
+    errors.push("maxElapsedTime must be a non-negative finite number");
+  }
+  if (config.initialDelay > config.maxDelay) {
+    errors.push("initialDelay cannot be greater than maxDelay");
+  }
+  if (config.jitter && !["none", "full", "equal"].includes(config.jitter)) {
+    errors.push('jitter must be one of: "none", "full", "equal"');
+  }
+  if (errors.length > 0) {
+    throw new Error(`Invalid retry configuration: ${errors.join("; ")}`);
+  }
+}
+
+/**
+ * Apply jitter to a base delay value according to the specified strategy.
+ * @param base - The base delay value in milliseconds
+ * @param kind - The jitter strategy to apply
+ * @returns The jittered delay value
+ */
 function applyJitter(base: number, kind: RetryConfig["jitter"]): number {
   if (kind === "none") return base;
   if (kind === "equal") {
@@ -118,12 +262,19 @@ function applyJitter(base: number, kind: RetryConfig["jitter"]): number {
 
 /**
  * Execute `fn` with retries + exponential backoff + jitter + optional Retry-After handling.
+ * @param fn - The async function to execute with retries
+ * @param cfg - Partial retry configuration (merged with defaults)
+ * @returns Promise that resolves with the function result or rejects with final error
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
   cfg: Partial<RetryConfig> = {},
 ): Promise<T> {
   const c: RetryConfig = { ...DEFAULT_RETRY_CONFIG, ...cfg };
+
+  // Validate the configuration
+  validateRetryConfig(c);
+
   const start = Date.now();
   let lastError: unknown;
 
@@ -134,24 +285,29 @@ export async function withRetry<T>(
     }
 
     // Delay before attempt >= 2
+    const MIN_DELAY = 10; // Brief delay to avoid busy-waiting
     if (attemptIndex > 1) {
       const elapsed = Date.now() - start;
       if (elapsed >= c.maxElapsedTime) break;
 
-      // Exponential backoff baseline
       const backoff = Math.min(
         c.initialDelay * Math.pow(c.exponent, attemptIndex - 2),
         c.maxDelay,
       );
-      // Remaining time budget
       const remaining = Math.max(0, c.maxElapsedTime - elapsed);
+      if (remaining === 0) break;
+
       let delay = applyJitter(Math.min(backoff, remaining), c.jitter);
 
-      // If last error had Retry-After, prefer it (capped by remaining)
-      const raMs = parseRetryAfterMs(
-        (lastError as MaybeHttpError)?.response?.headers?.["retry-after"],
+      const httpError = lastError as MaybeHttpError;
+      const retryAfterValue = getHeaderCaseInsensitive(
+        httpError?.response?.headers,
+        "retry-after",
       );
+      const raMs = parseRetryAfterMs(retryAfterValue);
       if (raMs != null) delay = Math.min(raMs, remaining);
+
+      if (delay > 0 && delay < MIN_DELAY) delay = MIN_DELAY;
 
       c.onRetry?.({
         attempt: attemptIndex - 1,
@@ -167,7 +323,12 @@ export async function withRetry<T>(
             "abort",
             () => {
               clearTimeout(t);
-              reject(new NonRetryableError("Aborted during backoff"));
+              reject(
+                new NonRetryableError(
+                  "Aborted during backoff",
+                  new Error("Operation cancelled"),
+                ),
+              );
             },
             { once: true },
           );
@@ -190,6 +351,11 @@ export async function withRetry<T>(
         continue;
       }
 
+      // Check custom retry predicate first
+      if (c.isRetryable && c.isRetryable(err)) {
+        continue;
+      }
+
       // Retry on network/transient signals, otherwise bail
       if (!isNetworkLikelyRetryable(err)) {
         throw err;
@@ -203,5 +369,10 @@ export async function withRetry<T>(
     lastError instanceof Error
       ? lastError
       : new Error(String(lastError ?? "Unknown error"));
-  throw new RetryableError("Retry attempts exhausted", e);
+  const actualAttempts = c.maxRetries + 1;
+  throw new RetryExhaustedError(
+    `Operation failed after ${actualAttempts} attempts`,
+    e,
+    actualAttempts,
+  );
 }

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   NonRetryableError,
   RetryConfig,
+  RetryExhaustedError,
   RetryableError,
   withRetry,
 } from "../retry-helper.js";
@@ -36,7 +37,14 @@ describe("retry-helper", () => {
           () => Promise.reject(new RetryableError("error")),
           TEST_RETRY_CONFIG,
         ),
-      ).rejects.toThrow("Retry attempts exhausted");
+      ).rejects.toThrow(RetryExhaustedError);
+
+      await expect(
+        withRetry(
+          () => Promise.reject(new RetryableError("error")),
+          TEST_RETRY_CONFIG,
+        ),
+      ).rejects.toThrow("Operation failed after 3 attempts");
     });
 
     it("should throw an error if the function throws a non-retryable error", async () => {
@@ -178,6 +186,102 @@ describe("retry-helper", () => {
           }),
         );
         expect(callCount).toBe(1);
+      });
+
+      it("should use custom isRetryable predicate", async () => {
+        const customRetryConfig: RetryConfig = {
+          ...TEST_RETRY_CONFIG,
+          isRetryable: (error) => {
+            return error instanceof Error && error.message === "retry-me";
+          },
+        };
+
+        let attemptCount = 0;
+        await expect(
+          withRetry(() => {
+            attemptCount++;
+            if (attemptCount === 1) {
+              return Promise.reject(new Error("retry-me"));
+            }
+            return Promise.resolve("success");
+          }, customRetryConfig),
+        ).resolves.toBe("success");
+
+        expect(attemptCount).toBe(2);
+      });
+
+      it("should not retry if custom predicate returns false", async () => {
+        const customRetryConfig: RetryConfig = {
+          ...TEST_RETRY_CONFIG,
+          isRetryable: () => false,
+        };
+
+        // Use an error message that won't trigger built-in retry logic
+        await expect(
+          withRetry(
+            () => Promise.reject(new Error("custom business error")),
+            customRetryConfig,
+          ),
+        ).rejects.toThrow("custom business error");
+      });
+    });
+
+    describe("config validation", () => {
+      it("should throw on invalid maxRetries", async () => {
+        await expect(
+          withRetry(() => Promise.resolve("test"), {
+            ...TEST_RETRY_CONFIG,
+            maxRetries: -1,
+          }),
+        ).rejects.toThrow("Invalid retry configuration");
+      });
+
+      it("should throw on invalid initialDelay", async () => {
+        await expect(
+          withRetry(() => Promise.resolve("test"), {
+            ...TEST_RETRY_CONFIG,
+            initialDelay: NaN,
+          }),
+        ).rejects.toThrow("Invalid retry configuration");
+      });
+
+      it("should throw on invalid maxDelay", async () => {
+        await expect(
+          withRetry(() => Promise.resolve("test"), {
+            ...TEST_RETRY_CONFIG,
+            maxDelay: -100,
+          }),
+        ).rejects.toThrow("Invalid retry configuration");
+      });
+
+      it("should throw on invalid exponent", async () => {
+        await expect(
+          withRetry(() => Promise.resolve("test"), {
+            ...TEST_RETRY_CONFIG,
+            exponent: 0.5,
+          }),
+        ).rejects.toThrow("Invalid retry configuration");
+      });
+
+      it("should throw if initialDelay > maxDelay", async () => {
+        await expect(
+          withRetry(() => Promise.resolve("test"), {
+            ...TEST_RETRY_CONFIG,
+            initialDelay: 2000,
+            maxDelay: 1000,
+          }),
+        ).rejects.toThrow("Invalid retry configuration");
+      });
+
+      it("should throw on invalid jitter value", async () => {
+        await expect(
+          withRetry(() => Promise.resolve("test"), {
+            ...TEST_RETRY_CONFIG,
+            // We want to test the invalid jitter value
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            jitter: "invalid" as any,
+          }),
+        ).rejects.toThrow("Invalid retry configuration");
       });
     });
   });
