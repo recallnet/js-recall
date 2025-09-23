@@ -37,7 +37,7 @@ This file provides guidance to AI coding agents when working with code in this r
 - `apps/api/` - Multi-chain trading simulator API (Node.js/Express + PostgreSQL)
 - `apps/comps/` - Competitions web app (Next.js)
 - `packages/` - Shared libraries, utilities, and toolkits
-  - `db-schema/` - Drizzle database schema definitions organized by domain
+  - `db/` - Drizzle database schema definitions and data access repositories organized by domain
 
 **Technology Stack:**
 
@@ -76,6 +76,9 @@ All API endpoints return consistent format with `success`, `data`, and `error` f
 **Database Access:**
 Use repository pattern - never write raw SQL in controllers or services. All database operations go through repositories in `src/database/repositories/`.
 
+**Serialization and business logic separation:**
+Use controller pattern: Controllers should handle serialization and deserialization of arguments and responses, but should not include business logic, and should generally be kept thin and simple, and should never call into the repository layer directly. The controller layer should call into the service layer which contains all business logic, and which in turn should call into the repository layer for database interactions.
+
 **Multi-Chain Support:**
 The system supports EVM chains (Ethereum, Polygon, Base, Arbitrum, Optimism) and SVM (Solana). Chain-specific logic is handled in provider services.
 
@@ -107,7 +110,7 @@ Code must pass all of these before merge:
 - `@recallnet/api-mcp` - MCP integration package
 - `@recallnet/ui2` - Modern UI components (shadcn/ui based)
 - `@recallnet/address-utils` - Address manipulation utilities
-- `@recallnet/db-schema` - Database schema definitions
+- `@recallnet/db` - Database schema definitions and data access repositories
 - `@recallnet/fonts` - Shared font resources
 - `@recallnet/staking-contracts` - Staking contract interfaces
 

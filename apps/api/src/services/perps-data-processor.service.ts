@@ -3,7 +3,7 @@ import { Decimal } from "decimal.js";
 import type {
   InsertPerpetualPosition,
   InsertPerpsAccountSummary,
-} from "@recallnet/db-schema/trading/types";
+} from "@recallnet/db/schema/trading/types";
 
 import { findByIds as findAgentsByIds } from "@/database/repositories/agent-repository.js";
 import {

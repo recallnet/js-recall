@@ -50,53 +50,87 @@ jobs:
       - name: Run unit tests
         working-directory: apps/api
         run: |
-          # List test files to ensure they're found
-          echo "Found these unit test files:"
-          find src -name "*.test.ts" || echo "No unit test files found"
+          echo "Running unit tests (mocked, no database)..."
+          pnpm vitest run --project unit
+        env:
+          NODE_ENV: test
 
-          # Create a simplified test environment file
+  integration-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: trading_simulator_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build everything
+        run: pnpm build
+
+      - name: Create test environment
+        working-directory: apps/api
+        run: |
           cat > .env.test << EOF
           NODE_ENV=test
-          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trading_simulator_test
-          # Note: root encryption key is also used for sessions; requires a 32 character length
+          VITE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trading_simulator_test
           ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters
           EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
           TEST_MODE=true
           EOF
 
-          # Create a wrapper script to ensure proper test execution
-          cat > run-unit-tests-with-fail.cjs << EOF
-          const { execSync } = require('child_process');
-
-          console.log('⏳ Starting unit tests with wrapper...');
-
-          try {
-            // Run the unit tests with NODE_ENV=test
-            execSync('pnpm test', {
-              stdio: 'inherit',
-              env: {
-                ...process.env,
-                NODE_ENV: 'test',
-                TEST_MODE: 'true'
-              }
-            });
-
-            console.log('✅ Unit tests completed successfully');
-            process.exit(0);
-          } catch (error) {
-            console.error('⚠️ Error in unit tests:', error.message);
-
-            // Properly fail the build when tests fail
-            process.exit(1);
-          }
-          EOF
-
-          # Run the tests through the wrapper script
-          node run-unit-tests-with-fail.cjs
+      - name: Run database migrations
+        working-directory: apps/api
+        run: pnpm db:migrate
         env:
           NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trading_simulator_test
+
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests..."
+          pnpm test:integration
+        env:
+          NODE_ENV: test
+          VITE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trading_simulator_test
           TEST_MODE: true
-          NODE_OPTIONS: --max-old-space-size=4096
 
   e2e-tests:
     runs-on: ubuntu-latest
@@ -117,13 +151,7 @@ jobs:
           - 5432:5432
 
     steps:
-      # Setup SSH key for contracts submodule
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.STAKING_CONTRACTS_DEPLOY_KEY }}
-
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: true
@@ -275,6 +303,11 @@ jobs:
 
           # Disable cache API
           DISABLE_CACHE_API=true
+
+          # Faux Loops API settings
+          LOOPS_API_KEY=faux_loops_api_key
+          LOOPS_MAILING_LIST_ID=faux_loops_mailing_list_id
+          LOOPS_BASE_URL=http://127.0.0.1:4010
           EOF
 
       - name: Run E2E tests

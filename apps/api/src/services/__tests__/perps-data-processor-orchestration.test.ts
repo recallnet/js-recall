@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { SelectAgent } from "@recallnet/db-schema/core/types";
+import type { SelectAgent } from "@recallnet/db/schema/core/types";
 import type {
   SelectPerpetualPosition,
   SelectPerpsAccountSummary,
   SelectPerpsCompetitionConfig,
-} from "@recallnet/db-schema/trading/types";
+} from "@recallnet/db/schema/trading/types";
 
 import * as agentRepo from "@/database/repositories/agent-repository.js";
 import * as competitionRepo from "@/database/repositories/competition-repository.js";

@@ -1,14 +1,19 @@
+import { v4 as uuidv4 } from "uuid";
 import { describe, expect, test } from "vitest";
 
-import { UserProfileResponse } from "@/e2e/utils/api-types.js";
+import { users } from "@recallnet/db/schema/core/defs";
+
+import {
+  UserProfileResponse,
+  UserSubscriptionResponse,
+} from "@/e2e/utils/api-types.js";
 
 import { ApiClient } from "../utils/api-client.js";
-import { createTestPrivyUser } from "../utils/privy.js";
+import { connectToDb } from "../utils/db-manager.js";
+import { createTestPrivyUser, generateRandomPrivyId } from "../utils/privy.js";
+import { generateRandomEthAddress } from "../utils/test-helpers.js";
 
-// TODO: the email subscription service only executes if we set Loops API key and config info.
-// We need to mock the API and override it in tests in order for the `isSubscribed` field to be
-// correctly set to `true` in the user profile. Else, it's always `false`.
-describe("Email Subscription", () => {
+describe("email subscription", () => {
   test("should subscribe user to email list upon user creation", async () => {
     const client = new ApiClient();
     const testUser = createTestPrivyUser({
@@ -25,7 +30,75 @@ describe("Email Subscription", () => {
     expect(user.name).toBe(name);
     expect(user.email).toBe(email);
     expect(user.privyId).toBe(privyId);
-    // TODO: ideally, this is `true` but tests cannot currently override the behavior of the email service
-    expect(user.isSubscribed).toBe(false);
+    expect(user.isSubscribed).toBe(true);
+  });
+
+  test("subscribes user and is idempotent on subscribe", async () => {
+    const client = new ApiClient();
+
+    // Manually create a user via db write
+    const db = await connectToDb();
+    const walletAddress = generateRandomEthAddress();
+    const userId = uuidv4();
+    const privyId = generateRandomPrivyId();
+    const email = `bob@example.com`;
+    const [row] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        name: "Bob Test",
+        email,
+        privyId,
+        walletAddress,
+        embeddedWalletAddress: walletAddress,
+        isSubscribed: false,
+      })
+      .returning();
+    expect(row).toBeDefined();
+    expect(row!.isSubscribed).toBe(false);
+    const userClient = await client.createPrivyUserClient({
+      email,
+      privyId,
+      walletAddress,
+    });
+
+    // Initial profile
+    const profile = (await userClient.getUserProfile()) as UserProfileResponse;
+    expect(profile.success).toBe(true);
+    expect(profile.user.isSubscribed).toBe(false);
+
+    // Subscribe
+    const sub =
+      (await userClient.subscribeToMailingList()) as UserSubscriptionResponse;
+    expect(sub.success).toBe(true);
+    expect(sub.isSubscribed).toBe(true);
+
+    // Duplicate subscribe -> idempotent 200
+    const dup =
+      (await userClient.subscribeToMailingList()) as UserSubscriptionResponse;
+    expect(dup.success).toBe(true);
+    expect(dup.isSubscribed).toBe(true);
+  });
+
+  test("unsubscribes user and is idempotent on unsubscribe", async () => {
+    const client = new ApiClient();
+    const userClient = await client.createPrivyUserClient();
+
+    // Ensure subscribed first (this happens upon user creation)
+    const profile = (await userClient.getUserProfile()) as UserProfileResponse;
+    expect(profile.success).toBe(true);
+    expect(profile.user.isSubscribed).toBe(true);
+
+    // Unsubscribe
+    const unsub =
+      (await userClient.unsubscribeFromMailingList()) as UserSubscriptionResponse;
+    expect(unsub.success).toBe(true);
+    expect(unsub.isSubscribed).toBe(false);
+
+    // Duplicate unsubscribe -> idempotent 200
+    const dupUnsub =
+      (await userClient.unsubscribeFromMailingList()) as UserSubscriptionResponse;
+    expect(dupUnsub.success).toBe(true);
+    expect(dupUnsub.isSubscribed).toBe(false);
   });
 });

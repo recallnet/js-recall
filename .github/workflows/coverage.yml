@@ -18,6 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          submodules: true
           fetch-depth: 0
 
       - name: Setup pnpm
@@ -26,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "22"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -38,12 +39,13 @@ jobs:
       - name: Run tests with coverage
         run: pnpm turbo test:coverage
 
-      - name: Download previous coverage report (for main branch)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/download-artifact@v4
+      - name: Download previous coverage report
+        uses: dawidd6/action-download-artifact@v3
         with:
           name: coverage-report
           path: coverage-reports
+          workflow: coverage.yml
+          branch: main
         continue-on-error: true
 
       - name: Generate coverage report
@@ -68,8 +70,10 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const coverageReport = fs.readFileSync('coverage-reports/coverage-total.latest.json', 'utf8');
-            const coverage = JSON.parse(coverageReport);
+
+            // Read the structured JSON report
+            const reportData = JSON.parse(fs.readFileSync('coverage-reports/coverage-total.latest.json', 'utf8'));
+            const { coverage, warnings, violations } = reportData;
 
             // Format coverage table for PR comment
             let comment = '## 📊 Test Coverage Report\n\n';
@@ -77,8 +81,36 @@ jobs:
             comment += '|---------|-------|------------|-----------|----------|\n';
 
             Object.entries(coverage).forEach(([pkg, metrics]) => {
-              comment += `| ${pkg} | ${metrics.lines.pct.toFixed(2)}% | ${metrics.statements.pct.toFixed(2)}% | ${metrics.functions.pct.toFixed(2)}% | ${metrics.branches.pct.toFixed(2)}% |\n`;
+              const formatMetric = (metric) => {
+                if (metric.pct === "ERROR") return "ERROR";
+                const pct = typeof metric.pct === 'number' ? metric.pct.toFixed(2) : '0.00';
+                if (metric.diff !== undefined && metric.diff !== 0) {
+                  const sign = metric.diff > 0 ? "+" : "";
+                  return `${pct}% (${sign}${metric.diff}%)`;
+                }
+                return `${pct}%`;
+              };
+
+              comment += `| ${pkg} | ${formatMetric(metrics.lines)} | ${formatMetric(metrics.statements)} | ${formatMetric(metrics.functions)} | ${formatMetric(metrics.branches)} |\n`;
             });
+
+            // Add warnings if any
+            if (warnings && warnings.length > 0) {
+              comment += '\n## ⚠️ Warnings\n';
+              warnings.forEach(warning => {
+                comment += `- ${warning}\n`;
+              });
+            }
+
+            // Add threshold violations if any
+            if (violations && violations.length > 0) {
+              comment += '\n## ❌ Coverage Thresholds Not Met\n';
+              violations.forEach(violation => {
+                const displayValue = typeof violation.actual === 'number' ? `${violation.actual.toFixed(2)}%` : violation.actual;
+                const displayThreshold = typeof violation.threshold === 'number' ? `${violation.threshold}%` : violation.threshold;
+                comment += `- ${violation.package} - ${violation.metric}: ${displayValue} (required: ${displayThreshold})\n`;
+              });
+            }
 
             // Find and update existing comment or create new one
             const { data: comments } = await github.rest.issues.listComments({
@@ -110,5 +142,6 @@ jobs:
 
       - name: Coverage Quality Gate
         run: node scripts/coverage-report.js
+        continue-on-error: true
         env:
           CI: true

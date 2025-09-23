@@ -6,15 +6,15 @@ import {
   competitionAgentStatus,
   competitionStatus,
   competitionType,
-} from "@recallnet/db-schema/core/defs";
-import { MAX_HANDLE_LENGTH } from "@recallnet/db-schema/core/defs";
-import { crossChainTradingType } from "@recallnet/db-schema/trading/defs";
+} from "@recallnet/db/schema/core/defs";
+import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
+import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
 import {
   InsertPerpetualPosition,
   InsertPerpsAccountSummary,
   SelectPerpetualPosition,
   SelectPerpsAccountSummary,
-} from "@recallnet/db-schema/trading/types";
+} from "@recallnet/db/schema/trading/types";
 
 /**
  * Blockchain type enum
@@ -1077,31 +1077,6 @@ export const AdminSearchUsersAndAgentsQuerySchema = z.strictObject({
 export type AdminSearchUsersAndAgentsQuery = z.infer<
   typeof AdminSearchUsersAndAgentsQuerySchema
 >;
-
-/**
- * Competition join error types for specific error handling
- */
-export const COMPETITION_JOIN_ERROR_TYPES = {
-  COMPETITION_NOT_FOUND: "COMPETITION_NOT_FOUND",
-  AGENT_NOT_FOUND: "AGENT_NOT_FOUND",
-  AGENT_NOT_ELIGIBLE: "AGENT_NOT_ELIGIBLE",
-  COMPETITION_ALREADY_STARTED: "COMPETITION_ALREADY_STARTED",
-  AGENT_ALREADY_REGISTERED: "AGENT_ALREADY_REGISTERED",
-  JOIN_NOT_YET_OPEN: "JOIN_NOT_YET_OPEN",
-  JOIN_CLOSED: "JOIN_CLOSED",
-  PARTICIPANT_LIMIT_EXCEEDED: "PARTICIPANT_LIMIT_EXCEEDED",
-} as const;
-
-export type CompetitionJoinErrorType =
-  (typeof COMPETITION_JOIN_ERROR_TYPES)[keyof typeof COMPETITION_JOIN_ERROR_TYPES];
-
-/**
- * Competition join error interface
- */
-export interface CompetitionJoinError extends Error {
-  type: CompetitionJoinErrorType;
-  code: number;
-}
 
 /**
  * Bucket parameter schema for competition timeline queries

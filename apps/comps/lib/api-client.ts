@@ -35,13 +35,14 @@ import {
   UpdateAgentResponse,
   UpdateProfileRequest,
   UserCompetitionsResponse,
+  UserSubscriptionResponse,
   VerifyEmailResponse,
   VoteResponse,
   VotesResponse,
   VotingStateResponse,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const PROXY_API_ENDPOINT = "/api/proxy";
 
 /**
  * Base HTTP error class with status code support
@@ -63,6 +64,11 @@ export class HttpError extends Error {
  */
 export class UnauthorizedError extends HttpError {
   constructor(message?: string) {
+    message = message?.includes(
+      "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+    )
+      ? "Error authenticating. Please try again."
+      : message;
     super(401, "Unauthorized", message || "Unauthorized access");
     this.name = "UnauthorizedError";
   }
@@ -114,7 +120,7 @@ export class ServerError extends HttpError {
 export class ApiClient {
   private readonly baseUrl: string;
 
-  constructor(baseUrl: string = API_BASE_URL) {
+  constructor(baseUrl: string = PROXY_API_ENDPOINT) {
     this.baseUrl = baseUrl;
   }
 
@@ -217,6 +223,26 @@ export class ApiClient {
     return this.request<ProfileResponse>("/user/wallet/link", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Subscribe to mailing list
+   * @returns Profile response
+   */
+  async subscribeToMailingList(): Promise<UserSubscriptionResponse> {
+    return this.request<UserSubscriptionResponse>("/user/subscribe", {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Unsubscribe from mailing list
+   * @returns Profile response
+   */
+  async unsubscribeFromMailingList(): Promise<UserSubscriptionResponse> {
+    return this.request<UserSubscriptionResponse>("/user/unsubscribe", {
+      method: "POST",
     });
   }
 
@@ -588,6 +614,108 @@ export class ApiClient {
     return this.request<VotingStateResponse>(
       `/user/votes/${competitionId}/state`,
     );
+  }
+
+  /**
+   * Get user's boost balance for a competition
+   * @param competitionId - Competition ID
+   * @returns User's balance
+   */
+  async getBoostBalance({ competitionId }: { competitionId: string }): Promise<{
+    success: boolean;
+    balance: bigint;
+  }> {
+    const res = await this.request<{ success: boolean; balance: string }>(
+      `/competitions/${competitionId}/boost`,
+    );
+
+    return {
+      ...res,
+      balance: BigInt(res.balance),
+    };
+  }
+
+  /**
+   * Get user's agent boost totals for a competition
+   * @param competitionId - Competition ID
+   * @returns Users total boost amount per agent id
+   */
+  async getBoosts({
+    competitionId,
+  }: {
+    competitionId: string;
+  }): Promise<{ success: boolean; boosts: Record<string, bigint> }> {
+    const res = await this.request<{
+      success: boolean;
+      boosts: Record<string, string>;
+    }>(`/competitions/${competitionId}/boosts`);
+
+    return {
+      ...res,
+      boosts: Object.fromEntries(
+        Object.entries(res.boosts).map(([key, value]) => [key, BigInt(value)]),
+      ),
+    };
+  }
+
+  async getAgentBoostTotals({
+    competitionId,
+  }: {
+    competitionId: string;
+  }): Promise<{ success: boolean; boostTotals: Record<string, bigint> }> {
+    const res = await this.request<{
+      success: boolean;
+      boostTotals: Record<string, string>;
+    }>(`/competitions/${competitionId}/agents/boosts`);
+
+    return {
+      ...res,
+      boostTotals: Object.fromEntries(
+        Object.entries(res.boostTotals).map(([key, value]) => [
+          key,
+          BigInt(value),
+        ]),
+      ),
+    };
+  }
+
+  /**
+   * Boost an agent in a competition
+   * @param competitionId - Competition ID
+   * @param agentId - The agent to boost
+   * @param currentAgentBoostTotal - The current agent boost total, used for idempotency
+   * @param amount - The amount to boost
+   * @returns The new agent boost total
+   */
+  async boostAgent({
+    competitionId,
+    agentId,
+    currentAgentBoostTotal,
+    amount,
+  }: {
+    competitionId: string;
+    agentId: string;
+    currentAgentBoostTotal: bigint;
+    amount: bigint;
+  }): Promise<{ success: boolean; agentTotal: bigint }> {
+    const idemKey = btoa(
+      `${competitionId}-${agentId}-${currentAgentBoostTotal.toString()}`,
+    );
+
+    const data = {
+      amount: amount.toString(),
+      idemKey,
+    };
+
+    const res = await this.request<{ success: boolean; agentTotal: string }>(
+      `/competitions/${competitionId}/agents/${agentId}/boost`,
+      { method: "POST", body: JSON.stringify(data) },
+    );
+
+    return {
+      ...res,
+      agentTotal: BigInt(res.agentTotal),
+    };
   }
 }
 

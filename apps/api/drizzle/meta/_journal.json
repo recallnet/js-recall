@@ -281,6 +281,27 @@
       "when": 1757461044810,
       "tag": "0039_condemned_naoko",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1757882757587,
+      "tag": "0040_elite_blazing_skull",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1758038160591,
+      "tag": "0041_flippant_jazinda",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1758645365645,
+      "tag": "0042_yellow_beyonder",
+      "breakpoints": true
     }
   ]
 }

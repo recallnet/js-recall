@@ -74,7 +74,9 @@ describe("Competition Timeline API", () => {
 
     // Force a snapshot directly
     const services = new ServiceRegistry();
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competition.id);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competition.id,
+    );
 
     // Get competition timeline
     const timelineResponse = (await agentClient1.getCompetitionTimeline(
@@ -285,7 +287,9 @@ describe("Competition Timeline API", () => {
 
     // Force a snapshot directly
     const services = new ServiceRegistry();
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competition.id);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competition.id,
+    );
 
     // Disqualify agent 2
     await adminClient.removeAgentFromCompetition(

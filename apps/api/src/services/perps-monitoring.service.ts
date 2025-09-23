@@ -1,6 +1,6 @@
 import { Decimal } from "decimal.js";
 
-import { InsertPerpsSelfFundingAlert } from "@recallnet/db-schema/trading/types";
+import { InsertPerpsSelfFundingAlert } from "@recallnet/db/schema/trading/types";
 
 import {
   batchCreatePerpsSelfFundingAlerts,

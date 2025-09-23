@@ -9,7 +9,7 @@ import { Pool } from "pg";
 import client from "prom-client";
 import { fileURLToPath } from "url";
 
-import schema from "@recallnet/db-schema";
+import schema from "@recallnet/db/schema";
 
 import { config } from "@/config/index.js";
 import { wrapDatabaseWithSentry } from "@/database/sentry-wrapper.js";
@@ -18,6 +18,17 @@ import { getTraceId } from "@/lib/trace-context.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Drizzle `db` or transaction type.
+ */
+export type DbTransaction = typeof db.transaction extends (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this is fine, we don't care about that type
+  callback: (tx: infer T) => any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this is fine, we don't care about that type
+) => any
+  ? T
+  : never;
 
 // Prometheus metrics for database operations - check if already registered
 const getOrCreateDbMetrics = () => {
@@ -175,6 +186,8 @@ const dbLogger = {
         "COMMIT",
         "ROLLBACK",
         "START", // Transaction commands
+        "SAVEPOINT", // Nested transaction savepoint
+        "RELEASE", // Release savepoint
       ];
 
       if (knownOperations.includes(firstWord)) {

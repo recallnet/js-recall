@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/rewards-allocator.ts"],
+  entry: ["src/rewards-allocator.ts", "src/rewards-claimer.ts"],
   format: ["esm"],
   dts: true,
   clean: true,

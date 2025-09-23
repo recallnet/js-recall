@@ -1,9 +1,14 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import * as crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { admins } from "@recallnet/db-schema/core/defs";
+import {
+  admins,
+  competitionRewards,
+  competitions,
+} from "@recallnet/db/schema/core/defs";
+import { tradingConstraints } from "@recallnet/db/schema/trading/defs";
 
 import { db } from "@/database/db.js";
 import {
@@ -1740,5 +1745,291 @@ describe("Admin API", () => {
     expect(Array.isArray(startResponse.competition.agentIds)).toBe(true);
     expect(startResponse.competition.agentIds).toContain(agent1.id);
     expect(startResponse.competition.agentIds).toContain(agent2.id);
+    test("should atomically rollback competition update when rewards fail", async () => {
+      const client = createTestClient(getBaseUrl());
+      await client.loginAsAdmin(adminApiKey);
+
+      // First create a competition with initial rewards
+      const createResponse = await axios.post(
+        `${getBaseUrl()}/api/admin/competition/create`,
+        {
+          name: "Atomic Test Competition",
+          description: "Testing atomic updates",
+          type: "trading",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+
+      expect(createResponse.status).toBe(201);
+      const competitionId = createResponse.data.competition.id;
+
+      // Add initial rewards
+      await axios.put(
+        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        {
+          rewards: {
+            1: 100,
+            2: 50,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+
+      // Get initial state
+      const [initialCompetition] = await db
+        .select()
+        .from(competitions)
+        .where(eq(competitions.id, competitionId));
+      expect(initialCompetition).toBeDefined();
+      const initialName = initialCompetition!.name;
+
+      // Try to update with invalid rewards structure that will fail validation
+      try {
+        await axios.put(
+          `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+          {
+            name: "This Should Not Be Saved",
+            description: "This update should be rolled back",
+            rewards: {
+              "-1": 1000, // Invalid rank (negative)
+              "0": 500, // Invalid rank (zero)
+            },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${adminApiKey}`,
+            },
+          },
+        );
+        expect.fail("Expected request to fail");
+      } catch (error) {
+        const axiosError = error as AxiosError;
+        expect(axiosError.response?.status).toBe(400);
+      }
+
+      // Verify the competition was not updated (transaction rolled back)
+      const [finalCompetition] = await db
+        .select()
+        .from(competitions)
+        .where(eq(competitions.id, competitionId));
+
+      expect(finalCompetition).toBeDefined();
+      expect(finalCompetition!.name).toBe(initialName);
+      expect(finalCompetition!.description).toBe("Testing atomic updates");
+    });
+
+    test("should atomically update competition with trading constraints", async () => {
+      const client = createTestClient(getBaseUrl());
+      await client.loginAsAdmin(adminApiKey);
+
+      // Create a competition
+      const createResponse = await axios.post(
+        `${getBaseUrl()}/api/admin/competition/create`,
+        {
+          name: "Trading Constraints Test",
+          description: "Testing constraints update",
+          type: "trading",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+
+      const competitionId = createResponse.data.competition.id;
+
+      // Update with all components atomically
+      const updateResponse = await axios.put(
+        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        {
+          name: "Updated with Constraints",
+          rewards: {
+            1: 5000,
+            2: 2500,
+            3: 1000,
+          },
+          tradingConstraints: {
+            minimumPairAgeHours: 72,
+            minimum24hVolumeUsd: 50000,
+            minimumLiquidityUsd: 100000,
+            minimumFdvUsd: 500000,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+
+      expect(updateResponse.status).toBe(200);
+      expect(updateResponse.data.competition.name).toBe(
+        "Updated with Constraints",
+      );
+      expect(updateResponse.data.competition.rewards).toHaveLength(3);
+
+      // Verify all data was saved in the database
+      const [competition] = await db
+        .select()
+        .from(competitions)
+        .where(eq(competitions.id, competitionId));
+      expect(competition).toBeDefined();
+      expect(competition!.name).toBe("Updated with Constraints");
+
+      const constraints = await db
+        .select()
+        .from(tradingConstraints)
+        .where(eq(tradingConstraints.competitionId, competitionId));
+      expect(constraints).toHaveLength(1);
+      expect(constraints[0]).toBeDefined();
+      expect(constraints[0]!.minimumPairAgeHours).toBe(72);
+      expect(constraints[0]!.minimum24hVolumeUsd).toBe(50000);
+
+      const rewards = await db
+        .select()
+        .from(competitionRewards)
+        .where(eq(competitionRewards.competitionId, competitionId))
+        .orderBy(competitionRewards.rank);
+      expect(rewards).toHaveLength(3);
+      expect(rewards[0]).toBeDefined();
+      expect(rewards[0]!.reward).toBe(5000);
+      expect(rewards[1]!.reward).toBe(2500);
+      expect(rewards[2]!.reward).toBe(1000);
+    });
+
+    test("should atomically rollback competition creation when rewards fail", async () => {
+      const client = createTestClient(getBaseUrl());
+      await client.loginAsAdmin(adminApiKey);
+
+      // Try to create a competition with invalid rewards that will fail validation
+      try {
+        await axios.post(
+          `${getBaseUrl()}/api/admin/competition/create`,
+          {
+            name: "Should Not Be Created",
+            description: "This competition should be rolled back",
+            tradingType: "disallowAll",
+            sandboxMode: false,
+            type: "trading",
+            rewards: {
+              "-1": 1000, // Invalid rank (negative)
+              "0": 500, // Invalid rank (zero)
+            },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${adminApiKey}`,
+            },
+          },
+        );
+        expect.fail("Expected request to fail");
+      } catch (error) {
+        const axiosError = error as AxiosError;
+        expect(axiosError.response?.status).toBe(400);
+      }
+
+      // Verify no competition was created
+      const allCompetitions = await db
+        .select()
+        .from(competitions)
+        .where(eq(competitions.name, "Should Not Be Created"));
+      expect(allCompetitions).toHaveLength(0);
+
+      // Verify no constraints were created
+      const allConstraints = await db.select().from(tradingConstraints);
+      const initialConstraintCount = allConstraints.length;
+
+      // Try another creation that should succeed to verify the count
+      const validResponse = await axios.post(
+        `${getBaseUrl()}/api/admin/competition/create`,
+        {
+          name: "Valid Competition After Rollback",
+          description: "This should succeed",
+          tradingType: "disallowAll",
+          sandboxMode: false,
+          type: "trading",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+
+      expect(validResponse.data.success).toBe(true);
+
+      const newConstraints = await db.select().from(tradingConstraints);
+      expect(newConstraints.length).toBe(initialConstraintCount + 1);
+    });
+
+    test("should atomically create competition with constraints and rewards", async () => {
+      const client = createTestClient(getBaseUrl());
+      await client.loginAsAdmin(adminApiKey);
+
+      const createResponse = await axios.post(
+        `${getBaseUrl()}/api/admin/competition/create`,
+        {
+          name: "Atomic Create Test",
+          description: "Testing atomic creation",
+          tradingType: "disallowAll",
+          sandboxMode: false,
+          type: "trading",
+          tradingConstraints: {
+            minimumPairAgeHours: 96,
+            minimum24hVolumeUsd: 75000,
+            minimumLiquidityUsd: 150000,
+            minimumFdvUsd: 500000,
+          },
+          rewards: {
+            1: 10000,
+            2: 5000,
+            3: 2000,
+            4: 1000,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      );
+
+      expect(createResponse.data.success).toBe(true);
+      const competitionId = createResponse.data.competition.id;
+
+      // Verify all data was created atomically in the database
+      const [competition] = await db
+        .select()
+        .from(competitions)
+        .where(eq(competitions.id, competitionId));
+      expect(competition).toBeDefined();
+      expect(competition!.name).toBe("Atomic Create Test");
+
+      const constraints = await db
+        .select()
+        .from(tradingConstraints)
+        .where(eq(tradingConstraints.competitionId, competitionId));
+      expect(constraints).toHaveLength(1);
+      expect(constraints[0]?.minimumPairAgeHours).toBe(96);
+      expect(constraints[0]?.minimum24hVolumeUsd).toBe(75000);
+
+      const rewards = await db
+        .select()
+        .from(competitionRewards)
+        .where(eq(competitionRewards.competitionId, competitionId))
+        .orderBy(competitionRewards.rank);
+      expect(rewards).toHaveLength(4);
+      expect(rewards[0]?.reward).toBe(10000);
+      expect(rewards[3]?.reward).toBe(1000);
+    });
   });
 });

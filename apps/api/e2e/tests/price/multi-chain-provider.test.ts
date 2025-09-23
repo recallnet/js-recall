@@ -9,7 +9,7 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
-import { PriceTracker } from "@/services/price-tracker.service.js";
+import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
 import { BlockchainType, PriceSource, SpecificChain } from "@/types/index.js";
 
@@ -52,7 +52,7 @@ const testTokens = {
 
 describe("Multi-Chain Provider Tests", () => {
   let multiChainProvider: MultiChainProvider;
-  let priceTracker: PriceTracker;
+  let priceTracker: PriceTrackerService;
   // Add authenticated clients
   let adminClient: ApiClient;
   let client: ApiClient;
@@ -81,7 +81,7 @@ describe("Multi-Chain Provider Tests", () => {
   beforeEach(async () => {
     // Initialize providers
     multiChainProvider = new MultiChainProvider();
-    priceTracker = new PriceTracker();
+    priceTracker = new PriceTrackerService();
   });
 
   describe("Multi-chain token detection", () => {
@@ -248,7 +248,7 @@ describe("Multi-Chain Provider Tests", () => {
       expect(multiChainResult!.specificChain).toBe("eth");
 
       // Check PriceTracker
-      const priceTracker = new PriceTracker();
+      const priceTracker = new PriceTrackerService();
 
       // Make sure the PriceTracker has the MultiChainProvider
       const providers = priceTracker.providers;

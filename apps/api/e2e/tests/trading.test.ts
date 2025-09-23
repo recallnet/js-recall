@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { trades as tradesDef } from "@recallnet/db-schema/trading/defs";
-import { InsertTrade } from "@recallnet/db-schema/trading/types";
+import { trades as tradesDef } from "@recallnet/db/schema/trading/defs";
+import { InsertTrade } from "@recallnet/db/schema/trading/types";
 
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
@@ -447,7 +447,8 @@ describe("Trading API", () => {
       if (tokenAddress === usdcTokenAddress) continue;
 
       // Only consolidate Solana (SVM) tokens - we want to avoid cross-chain trades
-      const tokenChain = services.priceTracker.determineChain(tokenAddress);
+      const tokenChain =
+        services.priceTrackerService.determineChain(tokenAddress);
       if (tokenChain !== BlockchainType.SVM) {
         continue;
       }

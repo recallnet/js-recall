@@ -1,14 +1,15 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, gt, isNull } from "drizzle-orm";
 
-import * as schema from "@recallnet/db-schema/indexing/defs";
-import type { StakeRow } from "@recallnet/db-schema/indexing/types";
-
-import { db } from "@/database/db.js";
 import {
   BlockHashCoder,
   BlockchainAddressAsU8A,
   TxHashCoder,
-} from "@/lib/coders.js";
+} from "@recallnet/db/coders";
+import * as schema from "@recallnet/db/schema/indexing/defs";
+import type { StakeRow } from "@recallnet/db/schema/indexing/types";
+import { Transaction } from "@recallnet/db/types";
+
+import { db } from "@/database/db.js";
 
 export { StakesRepository };
 export type { Tx, StakeArgs, UnstakeArgs, RelockArgs, WithdrawArgs };
@@ -127,13 +128,14 @@ class StakesRepository {
    *   (Event uniqueness should still be enforced at a higher level on `(tx_hash, log_index)`.)
    *
    * Returns:
-   * - `true` if a new `stakes` row was inserted (first time we saw this stake id).
-   * - `false` if it already existed (no journal row is written in that case).
+   * - `StakeRow` if a new `stakes` row was inserted (first time we saw this stake id).
+   * - `undefined` if it already existed (no journal row is written in that case).
    */
-  stake(args: StakeArgs): Promise<boolean> {
+  stake(args: StakeArgs, tx?: Transaction): Promise<StakeRow | undefined> {
     const wallet = BlockchainAddressAsU8A.encode(args.wallet);
-    return this.#db.transaction(async (tx) => {
-      const insertedRows = await tx
+    const executor = tx || this.#db;
+    return executor.transaction(async (tx) => {
+      const [stake] = await tx
         .insert(schema.stakes)
         .values({
           id: args.stakeId,
@@ -149,10 +151,10 @@ class StakesRepository {
           relockedAt: null,
         })
         .onConflictDoNothing()
-        .returning({ id: schema.stakes.id });
+        .returning(getTableColumns(schema.stakes));
 
-      if (insertedRows.length == 0) {
-        return false;
+      if (!stake) {
+        return undefined;
       }
       const txHash = TxHashCoder.encode(args.txHash);
       const blockHash = BlockHashCoder.encode(args.blockHash);
@@ -171,7 +173,7 @@ class StakesRepository {
           createdAt: args.blockTimestamp,
         })
         .onConflictDoNothing();
-      return true;
+      return stake;
     });
   }
 
@@ -184,8 +186,9 @@ class StakesRepository {
    * Usage:
    * - Called by `unstake()` to decide partial vs full flows.
    */
-  async findById(id: bigint): Promise<StakeRow | undefined> {
-    const rows = await this.#db
+  async findById(id: bigint, tx?: Transaction): Promise<StakeRow | undefined> {
+    const db = tx || this.#db;
+    const rows = await db
       .select()
       .from(schema.stakes)
       .where(eq(schema.stakes.id, id))
@@ -207,8 +210,8 @@ class StakesRepository {
    * - If the stake id doesn’t exist, this is a no-op (idempotent from caller view).
    * - Both paths must write a `stake_changes` row in the same transaction.
    */
-  async unstake(args: UnstakeArgs): Promise<void> {
-    const found = await this.findById(args.stakeId);
+  async unstake(args: UnstakeArgs, tx?: Transaction): Promise<void> {
+    const found = await this.findById(args.stakeId, tx);
     if (!found) {
       return;
     }
@@ -216,10 +219,10 @@ class StakesRepository {
     const remainingAmount = args.remainingAmount;
     if (remainingAmount < amountStaked) {
       // Partial Unstake
-      await this.partialUnstake(args, amountStaked);
+      await this.partialUnstake(args, amountStaked, tx);
     } else {
       // Full Unstake
-      await this.fullUnstake(args, amountStaked);
+      await this.fullUnstake(args, amountStaked, tx);
     }
   }
 
@@ -234,12 +237,17 @@ class StakesRepository {
    * Concurrency:
    * - Guarded by `eq(stakes.amount, amountStaked)` to avoid lost updates.
    */
-  async partialUnstake(args: UnstakeArgs, amountStaked: bigint): Promise<void> {
+  async partialUnstake(
+    args: UnstakeArgs,
+    amountStaked: bigint,
+    tx?: Transaction,
+  ): Promise<void> {
     const deltaAmount = args.remainingAmount - amountStaked; // should be negative
     if (deltaAmount >= 0n) {
       throw new Error("Cannot unstake more than staked amount");
     }
-    await this.#db.transaction(async (tx) => {
+    const db = tx || this.#db;
+    await db.transaction(async (tx) => {
       const rows = await tx
         .update(schema.stakes)
         .set({
@@ -285,12 +293,17 @@ class StakesRepository {
    * Concurrency:
    * - Guarded by `eq(stakes.amount, amountStaked)` and `isNull(stakes.unstakedAt)`.
    */
-  async fullUnstake(args: UnstakeArgs, amountStaked: bigint): Promise<void> {
+  async fullUnstake(
+    args: UnstakeArgs,
+    amountStaked: bigint,
+    tx?: Transaction,
+  ): Promise<void> {
     const deltaAmount = args.remainingAmount - amountStaked; // Should be exactly 0
     if (deltaAmount !== 0n) {
       throw new Error("Should unstake exactly the staked amount");
     }
-    await this.#db.transaction(async (tx) => {
+    const db = tx || this.#db;
+    await db.transaction(async (tx) => {
       const rows = await tx
         .update(schema.stakes)
         .set({
@@ -333,14 +346,14 @@ class StakesRepository {
    * - Full relock: updatedAmount == 0n (close out active amount).
    * - Partial relock: updatedAmount > 0n (reduce active amount to updatedAmount).
    */
-  async relock(args: RelockArgs): Promise<void> {
+  async relock(args: RelockArgs, tx?: Transaction): Promise<void> {
     const updatedAmount = args.updatedAmount;
     if (updatedAmount == 0n) {
       // Full Relock
-      await this.fullRelock(args);
+      await this.fullRelock(args, tx);
     } else {
       // Partial Relock
-      await this.partialRelock(args);
+      await this.partialRelock(args, tx);
     }
   }
 
@@ -354,11 +367,12 @@ class StakesRepository {
    * Concurrency:
    * - Requires both `relockedAt` and `unstakedAt` to be NULL prior to update.
    */
-  async fullRelock(args: RelockArgs) {
+  async fullRelock(args: RelockArgs, tx?: Transaction): Promise<void> {
     if (args.updatedAmount !== 0n) {
       throw new Error("Should relock exactly the staked amount");
     }
-    await this.#db.transaction(async (tx) => {
+    const db = tx || this.#db;
+    await db.transaction(async (tx) => {
       const rows = await tx
         .update(schema.stakes)
         .set({
@@ -409,11 +423,12 @@ class StakesRepository {
    * - Locks the row with `.for("update")` to read `amountBefore` safely,
    *   then enforces `relockedAt IS NULL` and `unstakedAt IS NULL` on update.
    */
-  async partialRelock(args: RelockArgs) {
+  async partialRelock(args: RelockArgs, tx?: Transaction): Promise<void> {
     if (args.updatedAmount <= 0n) {
       throw new Error("Should relock non-zero amount");
     }
-    await this.#db.transaction(async (tx) => {
+    const db = tx || this.#db;
+    await db.transaction(async (tx) => {
       const prevRows = await tx
         .select({
           amountBefore: schema.stakes.amount,
@@ -480,8 +495,9 @@ class StakesRepository {
    * Concurrency:
    * - Guarded by `isNull(stakes.withdrawnAt)`.
    */
-  async withdraw(args: WithdrawArgs) {
-    await this.#db.transaction(async (tx) => {
+  async withdraw(args: WithdrawArgs, tx?: Transaction): Promise<void> {
+    const db = tx || this.#db;
+    await db.transaction(async (tx) => {
       const rows = await tx
         .update(schema.stakes)
         .set({
@@ -514,5 +530,26 @@ class StakesRepository {
         createdAt: args.blockTimestamp,
       });
     });
+  }
+
+  async allStaked(
+    afterId?: bigint,
+    limit: number = 100,
+  ): Promise<Array<StakeRow>> {
+    let condition;
+    if (afterId) {
+      condition = and(
+        gt(schema.stakes.id, afterId),
+        isNull(schema.stakes.unstakedAt),
+      );
+    } else {
+      condition = isNull(schema.stakes.unstakedAt);
+    }
+    return this.#db
+      .select()
+      .from(schema.stakes)
+      .where(condition)
+      .orderBy(asc(schema.stakes.id))
+      .limit(limit);
   }
 }

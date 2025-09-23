@@ -11,8 +11,8 @@ import {
 
 import { config } from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { PriceTracker } from "@/services/price-tracker.service.js";
-import { TradeSimulator } from "@/services/trade-simulator.service.js";
+import { PriceTrackerService } from "@/services/price-tracker.service.js";
+import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { BlockchainType, PriceReport } from "@/types/index.js";
 
 // Mock dependencies for unit tests
@@ -43,9 +43,9 @@ const DEFAULT_CONSTRAINTS = {
   minimumFdvUsd: MINIMUM_FDV_USD,
 };
 
-describe("TradeSimulator - Trading Constraints", () => {
+describe("TradeSimulatorService - Trading Constraints", () => {
   describe("Unit Tests", () => {
-    let tradeSimulator: TradeSimulator;
+    let tradeSimulator: TradeSimulatorService;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let mockBalanceManager: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,7 +79,7 @@ describe("TradeSimulator - Trading Constraints", () => {
       };
 
       // Create TradeSimulator instance with mocked dependencies
-      tradeSimulator = new TradeSimulator(
+      tradeSimulator = new TradeSimulatorService(
         mockBalanceManager,
         mockPriceTracker,
         mockPortfolioSnapshotter,
@@ -545,7 +545,7 @@ describe("TradeSimulator - Trading Constraints", () => {
   });
 
   describe("Integration Tests", () => {
-    let priceTracker: PriceTracker;
+    let priceTracker: PriceTrackerService;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let originalConsoleLog: any;
 
@@ -590,7 +590,7 @@ describe("TradeSimulator - Trading Constraints", () => {
       originalConsoleLog = serviceLogger.debug;
       // Don't mock serviceLogger.debug so we can see the constraint data
 
-      priceTracker = new PriceTracker();
+      priceTracker = new PriceTrackerService();
     });
 
     afterAll(() => {

@@ -10,7 +10,7 @@ import {
   wait,
 } from "@/e2e/utils/test-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { PriceTracker } from "@/services/price-tracker.service.js";
+import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
 
 const reason = "portfolio-snapshots end-to-end tests";
@@ -105,7 +105,9 @@ describe("Portfolio Snapshots", () => {
     const initialSnapshotCount = initialSnapshotsResponse.snapshots.length;
 
     // Force a snapshot directly
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     // Wait for snapshot to be processed
     await wait(500);
 
@@ -122,7 +124,9 @@ describe("Portfolio Snapshots", () => {
     const countAfterFirstManualSnapshot = afterFirstSnapshotCount;
 
     // Force another snapshot
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
 
     // Wait for snapshot to be processed
     await wait(500);
@@ -277,7 +281,7 @@ describe("Portfolio Snapshots", () => {
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
 
     // Use direct service call instead of API
-    const priceTracker = new PriceTracker();
+    const priceTracker = new PriceTrackerService();
     await priceTracker.getPrice(usdcTokenAddress);
 
     const cacheSpy = vi.spyOn(priceTracker, "getCachedPrice");

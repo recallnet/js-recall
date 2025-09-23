@@ -5,9 +5,9 @@ import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
 import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
 import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
-import { AdminManager } from "@/services/admin-manager.service.js";
-import { AgentManager } from "@/services/agent-manager.service.js";
-import { UserManager } from "@/services/user-manager.service.js";
+import { AdminService } from "@/services/admin.service.js";
+import { AgentService } from "@/services/agent.service.js";
+import { UserService } from "@/services/user.service.js";
 
 /**
  * Unified Authentication Middleware
@@ -24,9 +24,9 @@ import { UserManager } from "@/services/user-manager.service.js";
  * Note: relies on `siweSessionMiddleware` having run first to populate `req.session`.
  */
 export const authMiddleware = (
-  agentManager: AgentManager,
-  userManager: UserManager,
-  adminManager: AdminManager,
+  agentService: AgentService,
+  userService: UserService,
+  adminService: AdminService,
 ) => {
   return async (req: Request, _: Response, next: NextFunction) => {
     try {
@@ -53,7 +53,7 @@ export const authMiddleware = (
           authLogger.debug(
             `[AuthMiddleware] Privy authentication successful for user ID: ${privyId}`,
           );
-          const user = await userManager.getUserByPrivyId(privyId);
+          const user = await userService.getUserByPrivyId(privyId);
           if (!user) {
             // Note: we allow the `/auth/login` endpoint to be accessed if a user without Privy
             // related data exists. This is part of a backwards compatibility measure. A user will
@@ -99,7 +99,7 @@ export const authMiddleware = (
 
       // Try agent API key authentication first
       try {
-        const agentId = await agentManager.validateApiKey(apiKey);
+        const agentId = await agentService.validateApiKey(apiKey);
         if (agentId) {
           authLogger.debug(
             `[AuthMiddleware] Agent API key validation succeeded - agent ID: ${agentId}`,
@@ -107,7 +107,7 @@ export const authMiddleware = (
           req.agentId = agentId;
 
           // Get the agent to find its owner
-          const agent = await agentManager.getAgent(agentId);
+          const agent = await agentService.getAgent(agentId);
           if (agent) {
             req.userId = agent.ownerId;
             authLogger.debug(
@@ -139,7 +139,7 @@ export const authMiddleware = (
 
       // Try admin API key authentication
       try {
-        const adminId = await adminManager.validateApiKey(apiKey);
+        const adminId = await adminService.validateApiKey(apiKey);
         if (adminId) {
           authLogger.debug(
             `[AuthMiddleware] Admin API key validation succeeded - admin ID: ${adminId}`,
@@ -148,7 +148,7 @@ export const authMiddleware = (
           req.isAdmin = true;
 
           // Get admin info for request context
-          const admin = await adminManager.getAdmin(adminId);
+          const admin = await adminService.getAdmin(adminId);
           if (admin) {
             req.admin = {
               id: adminId,

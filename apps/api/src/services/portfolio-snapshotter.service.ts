@@ -8,20 +8,23 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { BalanceManager, PriceTracker } from "@/services/index.js";
+import { BalanceService, PriceTrackerService } from "@/services/index.js";
 import { PriceReport } from "@/types/index.js";
 
 /**
  * Portfolio Snapshotter Service
  * Manages creating portfolio snapshots
  */
-export class PortfolioSnapshotter {
-  private balanceManager: BalanceManager;
-  private priceTracker: PriceTracker;
+export class PortfolioSnapshotterService {
+  private balanceService: BalanceService;
+  private priceTrackerService: PriceTrackerService;
 
-  constructor(balanceManager: BalanceManager, priceTracker: PriceTracker) {
-    this.balanceManager = balanceManager;
-    this.priceTracker = priceTracker;
+  constructor(
+    balanceService: BalanceService,
+    priceTrackerService: PriceTrackerService,
+  ) {
+    this.balanceService = balanceService;
+    this.priceTrackerService = priceTrackerService;
   }
 
   /**
@@ -72,7 +75,7 @@ export class PortfolioSnapshotter {
       );
     }
 
-    const balances = await this.balanceManager.getAllBalances(agentId);
+    const balances = await this.balanceService.getAllBalances(agentId);
 
     // Skip if no balances
     if (balances.length === 0) {
@@ -263,7 +266,7 @@ export class PortfolioSnapshotter {
         `[PortfolioSnapshotter] Fetching prices for ${tokensNeedingPrices.length} tokens (attempt ${attemptNumber}/${maxRetries + 1})`,
       );
       const newPrices =
-        await this.priceTracker.getBulkPrices(tokensNeedingPrices);
+        await this.priceTrackerService.getBulkPrices(tokensNeedingPrices);
 
       // Merge new prices into our map (preserving existing successful prices)
       for (const [tokenAddress, priceReport] of newPrices) {

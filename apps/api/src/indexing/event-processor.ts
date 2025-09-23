@@ -1,10 +1,17 @@
 import type { Logger } from "pino";
-import { decodeEventLog } from "viem";
+import { decodeEventLog, hexToBytes } from "viem";
 
+import { db } from "@/database/db.js";
+import {
+  findCompetitionByRootHash,
+  markRewardAsClaimed,
+} from "@/database/repositories/rewards-repository.js";
 import { EVENTS } from "@/indexing/blockchain-events-config.js";
 import type { EventData } from "@/indexing/blockchain-types.js";
 import type { EventsRepository } from "@/indexing/events.repository.js";
 import type { StakesRepository } from "@/indexing/stakes.repository.js";
+import type { BoostAwardService } from "@/services/boost-award.service.js";
+import type { CompetitionService } from "@/services/index.js";
 
 export { EventProcessor };
 
@@ -45,14 +52,23 @@ class EventProcessor {
   readonly #eventsRepository: EventsRepository;
   readonly #stakesRepository: StakesRepository;
   readonly #logger: Logger;
+  readonly #boostAwardService: BoostAwardService;
+  readonly #competitionService: CompetitionService;
+  readonly #db: typeof db;
 
   constructor(
+    database: typeof db,
     eventsRepository: EventsRepository,
     stakesRepository: StakesRepository,
+    boostAwardService: BoostAwardService,
+    competitionService: CompetitionService,
     logger: Logger,
   ) {
+    this.#db = database;
     this.#eventsRepository = eventsRepository;
     this.#stakesRepository = stakesRepository;
+    this.#boostAwardService = boostAwardService;
+    this.#competitionService = competitionService;
     this.#logger = logger;
   }
 
@@ -112,6 +128,9 @@ class EventProcessor {
       case "Withdraw":
         await this.processWithdrawEvent(event);
         break;
+      case "RewardClaimed":
+        await this.processRewardClaimedEvent(event);
+        break;
       default:
         this.#logger.warn(
           `Unknown event type for stakes processing: ${eventName}`,
@@ -161,16 +180,47 @@ class EventProcessor {
     const stakedAt = Math.floor(event.blockTimestamp.getTime() / 1000); // seconds;
     const lockupEndTime = Number(decodedEvent.args.lockupEndTime); // seconds;
     const duration = lockupEndTime - stakedAt;
-    const isStakeAdded = await this.#stakesRepository.stake({
-      stakeId: tokenId,
-      wallet: staker,
-      amount: amount,
-      duration: duration,
-      blockNumber: event.blockNumber,
-      blockHash: event.blockHash,
-      blockTimestamp: event.blockTimestamp,
-      txHash: event.transactionHash,
-      logIndex: event.logIndex,
+    const isStakeAdded = await this.#db.transaction(async (tx) => {
+      const stake = await this.#stakesRepository.stake(
+        {
+          stakeId: tokenId,
+          wallet: staker,
+          amount: amount,
+          duration: duration,
+          blockNumber: event.blockNumber,
+          blockHash: event.blockHash,
+          blockTimestamp: event.blockTimestamp,
+          txHash: event.transactionHash,
+          logIndex: event.logIndex,
+        },
+        tx,
+      );
+      if (stake) {
+        const competition =
+          await this.#competitionService.getActiveCompetition();
+        if (
+          competition &&
+          competition.votingStartDate &&
+          competition.votingEndDate
+        ) {
+          await this.#boostAwardService.awardForStake(
+            {
+              id: tokenId,
+              wallet: staker,
+              amount: amount,
+              stakedAt: stake.stakedAt,
+              canUnstakeAfter: stake.canUnstakeAfter,
+            },
+            {
+              id: competition.id,
+              votingStartDate: competition.votingStartDate,
+              votingEndDate: competition.votingEndDate,
+            },
+            tx,
+          );
+        }
+      }
+      return stake;
     });
     if (isStakeAdded) {
       this.#logger.info(
@@ -278,6 +328,56 @@ class EventProcessor {
       txHash: event.transactionHash,
       logIndex: event.logIndex,
     });
+  }
+
+  /**
+   * Handle the "RewardClaimed" event.
+   *
+   * Decoding (from `EVENTS.RewardClaimed.abi`):
+   * - root: bytes32 (merkle root hash)
+   * - user: address (user who claimed the reward)
+   * - amount: uint256 (amount of reward claimed)
+   *
+   * Persistence:
+   * - Calls `findCompetitionByRootHash` to get the competition ID from the root hash
+   * - Calls `markRewardAsClaimed` to update the claimed status in the rewards table
+   */
+  async processRewardClaimedEvent(event: EventData) {
+    const decodedEvent = decodeEventLog({
+      abi: EVENTS.RewardClaimed.abi,
+      data: event.raw.data,
+      topics: event.raw.topics,
+    });
+
+    const root = decodedEvent.args.root;
+    const user = decodedEvent.args.user;
+    const amount = decodedEvent.args.amount;
+
+    const rootHashBytes = hexToBytes(root);
+
+    const competitionId = await findCompetitionByRootHash(rootHashBytes);
+    if (!competitionId) {
+      this.#logger.warn(
+        `No competition found for root hash ${root} in RewardClaimed event (${event.transactionHash})`,
+      );
+      return;
+    }
+
+    const updatedReward = await markRewardAsClaimed(
+      competitionId,
+      user,
+      amount,
+    );
+
+    if (updatedReward) {
+      this.#logger.info(
+        `Marked reward as claimed for user ${user} in competition ${competitionId}`,
+      );
+    } else {
+      this.#logger.warn(
+        `No reward found to mark as claimed for user ${user} in competition ${competitionId}`,
+      );
+    }
   }
 
   /**

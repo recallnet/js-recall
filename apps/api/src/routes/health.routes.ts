@@ -81,27 +81,27 @@ export function configureHealthRoutes(
    *                   type: object
    *                   description: Status of individual services
    *                   properties:
-   *                     priceTracker:
+   *                     priceTrackerService:
    *                       type: string
    *                       description: Status of the price tracker service
    *                       example: ok
-   *                     balanceManager:
+   *                     balanceService:
    *                       type: string
    *                       description: Status of the balance manager service
    *                       example: ok
-   *                     tradeSimulator:
+   *                     tradeSimulatorService:
    *                       type: string
    *                       description: Status of the trade simulator service
    *                       example: ok
-   *                     competitionManager:
+   *                     competitionService:
    *                       type: string
    *                       description: Status of the competition manager service
    *                       example: ok
-   *                     userManager:
+   *                     userService:
    *                       type: string
    *                       description: Status of the user manager service
    *                       example: ok
-   *                     agentManager:
+   *                     agentService:
    *                       type: string
    *                       description: Status of the agent manager service
    *       500:

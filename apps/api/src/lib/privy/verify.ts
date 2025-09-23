@@ -5,11 +5,11 @@ import type {
 import { type JWTPayload, exportJWK, importSPKI, jwtVerify } from "jose";
 import { type Hex, checksumAddress } from "viem";
 
-import { SelectUser } from "@recallnet/db-schema/core/types";
+import { SelectUser } from "@recallnet/db/schema/core/types";
 
 import { config } from "@/config/index.js";
 import { authLogger } from "@/lib/logger.js";
-import type { UserManager } from "@/services/user-manager.service.js";
+import type { UserService } from "@/services/user.service.js";
 
 import { PRIVY_ISSUER, PrivyUserInfo, extractPrivyUserInfo } from "./utils.js";
 
@@ -119,7 +119,9 @@ ${matches.join("\n")}
     const finalPayload = parseJwtPayloadToPrivyTypes(payload);
     return { privyId: payload.sub, claims: finalPayload };
   } catch (error) {
-    authLogger.error("Privy identity token verification failed:", error);
+    authLogger.error(
+      `Privy identity token verification failed: ${JSON.stringify(error)}`,
+    );
     throw new Error("Authentication failed");
   }
 }
@@ -163,7 +165,7 @@ export async function verifyAndGetPrivyUserInfo(
  */
 export async function verifyPrivyIdentityTokenAndUpdateUser(
   idToken: string,
-  userManager: UserManager,
+  userService: UserService,
 ): Promise<SelectUser> {
   // Note: in the future, we can simply use `verifyIdentityToken` to get the `privyId`, which is
   // stored in the `users` table as `privyID`. But, since we need to account for legacy users, we
@@ -174,9 +176,9 @@ export async function verifyPrivyIdentityTokenAndUpdateUser(
   const now = new Date();
 
   // 1. Handle post-Privy migration users
-  const existingUserWithPrivyId = await userManager.getUserByPrivyId(privyId);
+  const existingUserWithPrivyId = await userService.getUserByPrivyId(privyId);
   if (existingUserWithPrivyId) {
-    return await userManager.updateUser({
+    return await userService.updateUser({
       id: existingUserWithPrivyId.id,
       lastLoginAt: now,
     });
@@ -196,9 +198,9 @@ export async function verifyPrivyIdentityTokenAndUpdateUser(
   )[0]?.address;
   if (customWalletAddress) {
     const existingUserWithWallet =
-      await userManager.getUserByWalletAddress(customWalletAddress);
+      await userService.getUserByWalletAddress(customWalletAddress);
     if (existingUserWithWallet) {
-      return await userManager.updateUser({
+      return await userService.updateUser({
         id: existingUserWithWallet.id,
         name: existingUserWithWallet.name ?? name,
         email,
@@ -210,7 +212,7 @@ export async function verifyPrivyIdentityTokenAndUpdateUser(
   }
 
   // 4. Create completely new user, using the embedded wallet address as the primary wallet address
-  return await userManager.registerUser(
+  return await userService.registerUser(
     embeddedWalletAddress,
     name,
     email,

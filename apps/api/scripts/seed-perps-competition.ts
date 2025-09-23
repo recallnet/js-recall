@@ -42,18 +42,18 @@ import * as dotenv from "dotenv";
 import { inArray, like } from "drizzle-orm";
 import * as path from "path";
 
-import { competitions, users } from "@recallnet/db-schema/core/defs";
+import { competitions, users } from "@recallnet/db/schema/core/defs";
 import {
   perpetualPositions,
   perpsAccountSummaries,
   perpsCompetitionConfig,
   portfolioSnapshots,
-} from "@recallnet/db-schema/trading/defs";
+} from "@recallnet/db/schema/trading/defs";
 import {
   InsertPerpetualPosition,
   InsertPerpsAccountSummary,
   InsertPortfolioSnapshot,
-} from "@recallnet/db-schema/trading/types";
+} from "@recallnet/db/schema/trading/types";
 
 import { db } from "@/database/db.js";
 import * as competitionRepository from "@/database/repositories/competition-repository.js";

@@ -207,7 +207,7 @@ async function setupCompetition() {
 
     // Check if a competition is already active
     const activeCompetition =
-      await services.competitionManager.getActiveCompetition();
+      await services.competitionService.getActiveCompetition();
 
     if (activeCompetition) {
       console.log(
@@ -234,7 +234,7 @@ async function setupCompetition() {
       console.log(
         `\n${colors.blue}Ending current competition...${colors.reset}`,
       );
-      await services.competitionManager.endCompetition(activeCompetition.id);
+      await services.competitionService.endCompetition(activeCompetition.id);
       console.log(
         `${colors.green}Successfully ended previous competition.${colors.reset}`,
       );
@@ -290,7 +290,7 @@ async function setupCompetition() {
 
     // Create and start the competition
     console.log(`\n${colors.blue}Creating competition...${colors.reset}`);
-    const competition = await services.competitionManager.createCompetition({
+    const competition = await services.competitionService.createCompetition({
       name,
       description,
     });
@@ -299,7 +299,7 @@ async function setupCompetition() {
       `${colors.blue}Starting competition with ${agentIds.length} agents...${colors.reset}`,
     );
     const startedCompetition =
-      await services.competitionManager.startCompetition(
+      await services.competitionService.startCompetition(
         competition.id,
         agentIds,
       );

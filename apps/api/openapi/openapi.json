@@ -9387,6 +9387,106 @@
         }
       }
     },
+    "/api/user/subscribe": {
+      "post": {
+        "summary": "Subscribe to Loops mailing list",
+        "description": "Subscribe the authenticated user to the Loops mailing list",
+        "tags": ["User"],
+        "security": [
+          {
+            "PrivyCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User subscribed to Loops mailing list successfully, or already subscribed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "isSubscribed": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Failed to subscribe user to mailing list"
+          }
+        }
+      }
+    },
+    "/api/user/unsubscribe": {
+      "post": {
+        "summary": "Unsubscribe from Loops mailing list",
+        "description": "Unsubscribe the authenticated user from the Loops mailing list",
+        "tags": ["User"],
+        "security": [
+          {
+            "PrivyCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User unsubscribed from Loops mailing list successfully, or already unsubscribed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "isSubscribed": {
+                      "type": "boolean",
+                      "example": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Failed to unsubscribe user from mailing list"
+          }
+        }
+      }
+    },
     "/api/user/vote": {
       "post": {
         "summary": "Cast a vote for an agent in a competition",

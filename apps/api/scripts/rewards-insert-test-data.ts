@@ -1,26 +1,42 @@
 import * as dotenv from "dotenv";
+import { blue, cyan, green, magenta, red, yellow } from "kleur/colors";
+import { MerkleTree } from "merkletreejs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
+import { hexToBytes, keccak256 } from "viem";
 
-import { competitions } from "@recallnet/db-schema/core/defs";
-import { rewards } from "@recallnet/db-schema/voting/defs";
+import { competitions } from "@recallnet/db/schema/core/defs";
+import { rewards } from "@recallnet/db/schema/voting/defs";
 
 import { db } from "@/database/db.js";
-import { createLeafNode } from "@/services/rewards.service.js";
+import {
+  createFauxLeafNode,
+  createLeafNode,
+} from "@/services/rewards.service.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-// Colors for console output
-const colors = {
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  green: "\x1b[32m",
-  blue: "\x1b[34m",
-  cyan: "\x1b[36m",
-  magenta: "\x1b[35m",
-  reset: "\x1b[0m",
-};
+/**
+ * Predefined test wallets for rewards testing
+ */
+const TEST_WALLETS = [
+  {
+    privateKey:
+      "0xb75556f5ddcdeaaa9f811f17e0b60082e19ced1f5d2b12a9b63a50cb1fe24c8b",
+    address: "0x00A826b7a0C21C7f3C7156C4e1Aa197a111B8233",
+  },
+  {
+    privateKey:
+      "0x686f7b7389a72765ff54ffa484775fc0a5a2977f8d273f869186f317d726e5d0",
+    address: "0x1eC7b77A5E5B9Cf7aa1bdfc88367C2CCCe3176c7",
+  },
+  {
+    privateKey:
+      "0x6f9dbe6d65e6e7757301b0448d1e1590ee15bd9454e333f31662d45c772af75d",
+    address: "0xacCf94CC4B331DEA07892993F034793397D3CE93",
+  },
+];
 
 /**
  * Insert one competition and three rewards into the database
@@ -28,20 +44,26 @@ const colors = {
 async function insertCompetitionAndRewards() {
   try {
     console.log(
-      `${colors.cyan}╔════════════════════════════════════════════════════════════════╗${colors.reset}`,
+      cyan(
+        `╔════════════════════════════════════════════════════════════════╗`,
+      ),
     );
     console.log(
-      `${colors.cyan}║              INSERTING COMPETITION AND REWARDS                 ║${colors.reset}`,
+      cyan(
+        `║              INSERTING COMPETITION AND REWARDS                 ║`,
+      ),
     );
     console.log(
-      `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
+      cyan(
+        `╚════════════════════════════════════════════════════════════════╝`,
+      ),
     );
 
     // Insert competition
     const competitionId = uuidv4();
 
     console.log(
-      `\n${colors.blue}Inserting competition with ID: ${colors.yellow}${competitionId}${colors.reset}`,
+      `\n${blue("Inserting competition with ID:")} ${yellow(competitionId)}`,
     );
 
     await db.insert(competitions).values({
@@ -54,24 +76,27 @@ async function insertCompetitionAndRewards() {
       endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     });
 
-    // Define reward data
+    // Define reward data with predefined test wallets
     const rewardsData = [
       {
-        address: "0x1234567890123456789012345678901234567890" as `0x${string}`,
-        amount: BigInt("1000000000000000000"), // 1 token with 18 decimals
+        address: TEST_WALLETS[0]!.address as `0x${string}`,
+        amount: BigInt("100000000000000000"), // 0.1 token in WEI
+        privateKey: TEST_WALLETS[0]!.privateKey,
       },
       {
-        address: "0x2345678901234567890123456789012345678901" as `0x${string}`,
-        amount: BigInt("2000000000000000000"), // 2 tokens with 18 decimals
+        address: TEST_WALLETS[1]!.address as `0x${string}`,
+        amount: BigInt("200000000000000000"), // 0.2 tokens in WEI
+        privateKey: TEST_WALLETS[1]!.privateKey,
       },
       {
-        address: "0x3456789012345678901234567890123456789012" as `0x${string}`,
-        amount: BigInt("3000000000000000000"), // 3 tokens with 18 decimals
+        address: TEST_WALLETS[2]!.address as `0x${string}`,
+        amount: BigInt("300000000000000000"), // 0.3 tokens in WEI
+        privateKey: TEST_WALLETS[2]!.privateKey,
       },
     ];
 
     console.log(
-      `\n${colors.blue}Inserting rewards for competition: ${colors.yellow}${competitionId}${colors.reset}`,
+      `\n${blue("Inserting rewards for competition:")} ${yellow(competitionId)}`,
     );
 
     // Insert rewards
@@ -83,27 +108,99 @@ async function insertCompetitionAndRewards() {
         competitionId: competitionId,
         address: reward.address,
         amount: reward.amount,
-        leafHash: new Uint8Array(leafHash),
+        leafHash: hexToBytes(leafHash),
         claimed: false,
       });
 
       console.log(
-        `${colors.green}Inserted reward for address: ${colors.yellow}${reward.address}${colors.reset} with amount: ${colors.yellow}${reward.amount.toString()}${colors.reset}`,
+        `${green("Inserted reward for address:")} ${yellow(reward.address)} ${green("with amount:")} ${yellow(reward.amount.toString())}`,
       );
+      console.log(`${magenta("Private key:")} ${yellow(reward.privateKey)}`);
     }
 
+    console.log(`\n${green("Successfully inserted competition and rewards.")}`);
+    console.log(`${green("Competition ID:")} ${yellow(competitionId)}`);
     console.log(
-      `\n${colors.green}Successfully inserted competition and rewards.${colors.reset}`,
+      `${green("You can now run:")} ${yellow(`pnpm rewards:allocate --competitionId ${competitionId} --tokenAddress <TOKEN_ADDRESS> --startTimestamp <TIMESTAMP>`)}`,
+    );
+
+    // Generate Merkle tree and proofs
+    console.log(`\n${blue("Generating Merkle tree and proofs...")}`);
+
+    // Create leaf hashes for the merkle tree
+    const leafHashes = rewardsData.map((reward) =>
+      createLeafNode(reward.address, reward.amount),
+    );
+
+    // Prepend faux leaf node
+    const fauxLeaf = createFauxLeafNode(competitionId);
+    const allLeaves = [fauxLeaf, ...leafHashes];
+
+    // Build Merkle tree
+    const merkleTree = new MerkleTree(allLeaves, keccak256, {
+      sortPairs: true,
+      hashLeaves: false,
+      sortLeaves: true,
+    });
+
+    const merkleRoot = merkleTree.getHexRoot();
+
+    console.log(`${green("Merkle Root:")} ${yellow(merkleRoot)}`);
+
+    // Generate proofs for each user (excluding the faux leaf)
+    const userProofs = rewardsData.map((reward, index) => {
+      const leafHash = leafHashes[index]!;
+      const proof = merkleTree.getHexProof(leafHash);
+      return {
+        address: reward.address,
+        amount: reward.amount,
+        privateKey: reward.privateKey,
+        proof: proof,
+      };
+    });
+
+    // Display merkle root and all data in a summary
+    console.log(
+      `\n${cyan(`╔════════════════════════════════════════════════════════════════╗`)}`,
     );
     console.log(
-      `${colors.green}Competition ID: ${colors.yellow}${competitionId}${colors.reset}`,
+      `${cyan(`║                    MERKLE TREE & PROOFS SUMMARY               ║`)}`,
     );
     console.log(
-      `${colors.green}You can now run: ${colors.yellow}pnpm rewards:allocate ${competitionId}${colors.reset}`,
+      `${cyan(`╚════════════════════════════════════════════════════════════════╝`)}`,
     );
+
+    console.log(`\n${green("Merkle Root:")} ${yellow(merkleRoot)}`);
+
+    userProofs.forEach((userProof, index) => {
+      console.log(`\n${blue(`Reward ${index + 1}:`)}`);
+      console.log(`${yellow("Address:")} ${userProof.address}`);
+      console.log(`${yellow("Private Key:")} ${userProof.privateKey}`);
+      console.log(`${yellow("Amount:")} ${userProof.amount.toString()}`);
+      console.log(`${yellow("Leaf Hash:")} 0x${leafHashes[index]!}`);
+      console.log(`${yellow("Proof:")} [${userProof.proof.join(", ")}]`);
+    });
+
+    // Print ready-to-use claim commands for each user
+    console.log(
+      `\n${cyan(`╔════════════════════════════════════════════════════════════════╗`)}`,
+    );
+    console.log(
+      `${cyan(`║                    READY-TO-USE CLAIM COMMANDS                 ║`)}`,
+    );
+    console.log(
+      `${cyan(`╚════════════════════════════════════════════════════════════════╝`)}`,
+    );
+
+    userProofs.forEach((userProof, index) => {
+      console.log(`\n${green(`User ${index + 1} Claim Command:`)}`);
+      console.log(
+        `${yellow(`pnpm rewards:claim --privateKey ${userProof.privateKey} --merkleRoot ${merkleRoot} --proof '${JSON.stringify(userProof.proof)}' --amount ${userProof.amount.toString()}`)}`,
+      );
+    });
   } catch (error) {
     console.error(
-      `\n${colors.red}Error inserting competition and rewards:${colors.reset}`,
+      `\n${red("Error inserting competition and rewards:")}`,
       error instanceof Error ? error.message : error,
     );
     process.exit(1);

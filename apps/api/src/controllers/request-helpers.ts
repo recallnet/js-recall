@@ -1,7 +1,7 @@
 import { Request } from "express";
 import qs from "qs";
 
-import { UpdateCompetitionSchema } from "@recallnet/db-schema/core/types";
+import { UpdateCompetitionSchema } from "@recallnet/db/schema/core/types";
 
 import { config } from "@/config/index.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -218,9 +218,9 @@ export function checkUserUniqueConstraintViolation(error: unknown) {
 }
 
 /**
- * Check if the request is an unauthenticated *or* user authenticated (frontend) request
+ * Check if the request is public or from a user (not agent or admin)
  * @param req Express request
- * @returns True if the request is authenticated as an admin, false otherwise
+ * @returns True if the request is public or from a user, false otherwise
  */
 export function checkIsPublicOrUserRequest(req: Request) {
   return !req.agentId && !checkIsAdmin(req);
@@ -244,6 +244,20 @@ export function checkShouldCacheResponse(req: Request) {
 }
 
 /**
+ * Get cache visibility based on request context
+ * @param req Express request
+ * @returns Cache visibility level
+ */
+export function getCacheVisibility(
+  req: Request,
+): "user" | "anon" | "admin" | "agent" {
+  if (req.isAdmin) return "admin";
+  if (req.agentId) return "agent";
+  if (req.userId) return "user";
+  return "anon";
+}
+
+/**
  * Generate a cache key for the request in the format:
  * `<name>:<visibility>:<params>`
  *
@@ -253,7 +267,8 @@ export function checkShouldCacheResponse(req: Request) {
  *
  * @param req Express request
  * @param name The name of the cache
- * @param params (Optional) arbitrary parameters to include in the cache key as a JSON string
+ * @param params (Optional) arbitrary parameters to include in the cache key as a JSON string.
+ * Note: For user-specific data, include userId in the params object.
  * @returns The cache key
  */
 export function generateCacheKey(

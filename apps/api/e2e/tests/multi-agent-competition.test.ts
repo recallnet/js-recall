@@ -450,7 +450,9 @@ describe("Multi-Agent Competition", () => {
       assert(agent, "Agent is undefined");
 
       // Force a snapshot to ensure we have current values
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+      );
       await wait(500);
 
       // Get agent's initial portfolio value
@@ -489,7 +491,9 @@ describe("Multi-Agent Competition", () => {
       assert(agent, "Agent is undefined");
 
       // Force one final snapshot to ensure we have the latest prices
-      await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+      await services.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+      );
       await wait(500);
 
       // Get agent's final portfolio value

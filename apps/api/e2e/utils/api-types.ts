@@ -1054,3 +1054,11 @@ export interface CompetitionPerpsSummaryResponse extends ApiResponse {
   };
   timestamp: string;
 }
+/*
+ * Response type for getting user subscription status
+ */
+export interface UserSubscriptionResponse extends ApiResponse {
+  success: true;
+  userId: string;
+  isSubscribed: boolean;
+}

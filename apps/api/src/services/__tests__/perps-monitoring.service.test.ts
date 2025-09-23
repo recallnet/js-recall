@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   SelectPerpsCompetitionConfig,
   SelectPerpsSelfFundingAlert,
-} from "@recallnet/db-schema/trading/types";
+} from "@recallnet/db/schema/trading/types";
 
 import * as perpsRepo from "@/database/repositories/perps-repository.js";
 import { PerpsMonitoringService } from "@/services/perps-monitoring.service.js";

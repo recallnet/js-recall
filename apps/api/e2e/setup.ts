@@ -11,6 +11,10 @@ import path from "path";
 import { createLogger } from "@/lib/logger.js";
 
 import { dbManager } from "./utils/db-manager.js";
+import {
+  startLoopsMockServer,
+  stopLoopsMockServer,
+} from "./utils/loops-mock.js";
 import { MockSymphonyServer } from "./utils/mock-symphony-server.js";
 import { startServer, stopServer } from "./utils/server.js";
 
@@ -149,9 +153,24 @@ export async function setup() {
     process.env.METRICS_PORT = "3003";
   }
 
+  // Ensure Loos variables are set (to trigger the `EmailService` logic properly)
+  if (!process.env.LOOPS_BASE_URL) {
+    process.env.LOOPS_BASE_URL = "http://127.0.0.1:4010";
+  }
+  if (!process.env.LOOPS_API_KEY) {
+    process.env.LOOPS_API_KEY = "test-api-key";
+  }
+  if (!process.env.LOOPS_MAILING_LIST_ID) {
+    process.env.LOOPS_MAILING_LIST_ID = "test-mailing-list";
+  }
+
   log("🚀 Setting up E2E test environment...");
 
   try {
+    // Start Loops mock server first
+    log("🔄 Starting Loops mock server...");
+    await startLoopsMockServer(process.env.LOOPS_BASE_URL);
+
     // Initialize database using our new DbManager
     log("📦 Initializing database...");
     await dbManager.initialize();
@@ -197,6 +216,9 @@ export async function teardown() {
   // Stop server
   log("🛑 Stopping server...");
   stopServer();
+
+  // Stop Loops mock server
+  await stopLoopsMockServer();
 
   log("✅ Test environment cleaned up");
 }

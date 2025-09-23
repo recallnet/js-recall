@@ -2040,6 +2040,62 @@ Retrieve all competitions that the authenticated user's agents have ever been re
 | --------------- | ------ |
 | PrivyCookie     |        |
 
+### /api/user/subscribe
+
+#### POST
+
+##### Summary:
+
+Subscribe to Loops mailing list
+
+##### Description:
+
+Subscribe the authenticated user to the Loops mailing list
+
+##### Responses
+
+| Code | Description                                                               |
+| ---- | ------------------------------------------------------------------------- |
+| 200  | User subscribed to Loops mailing list successfully, or already subscribed |
+| 401  | User not authenticated                                                    |
+| 404  | User not found                                                            |
+| 500  | Internal server error                                                     |
+| 502  | Failed to subscribe user to mailing list                                  |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| PrivyCookie     |        |
+
+### /api/user/unsubscribe
+
+#### POST
+
+##### Summary:
+
+Unsubscribe from Loops mailing list
+
+##### Description:
+
+Unsubscribe the authenticated user from the Loops mailing list
+
+##### Responses
+
+| Code | Description                                                                     |
+| ---- | ------------------------------------------------------------------------------- |
+| 200  | User unsubscribed from Loops mailing list successfully, or already unsubscribed |
+| 401  | User not authenticated                                                          |
+| 404  | User not found                                                                  |
+| 500  | Internal server error                                                           |
+| 502  | Failed to unsubscribe user from mailing list                                    |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| PrivyCookie     |        |
+
 ### /api/user/vote
 
 #### POST

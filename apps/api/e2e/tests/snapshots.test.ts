@@ -61,9 +61,13 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(1000);
 
     // Manually trigger additional snapshots to have data at different times
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
 
     // Call the function under test
@@ -281,11 +285,17 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(1000);
 
     // Create multiple snapshots at different times
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
-    await services.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competitionId,
+    );
     await wait(500);
 
     // Call the function under test

@@ -22,7 +22,7 @@ async function takePortfolioSnapshots() {
   try {
     // Check if a competition is active
     const activeCompetition =
-      await services.competitionManager.getActiveCompetition();
+      await services.competitionService.getActiveCompetition();
 
     if (!activeCompetition) {
       const duration = Date.now() - startTime;
@@ -93,7 +93,7 @@ async function takePortfolioSnapshots() {
       logger.info("Taking paper trading portfolio snapshots...");
 
       try {
-        await services.portfolioSnapshotter.takePortfolioSnapshots(
+        await services.portfolioSnapshotterService.takePortfolioSnapshots(
           activeCompetition.id,
         );
       } catch (paperError) {

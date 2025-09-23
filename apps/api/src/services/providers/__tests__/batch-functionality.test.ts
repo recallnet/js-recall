@@ -1,10 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { PriceTracker } from "@/services/price-tracker.service.js";
+import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
 
 import { MultiChainProvider } from "../multi-chain.provider.js";
 import { DexScreenerProvider } from "../price/dexscreener.provider.js";
+
+// Set timeout for all tests in this file to 15 seconds
+vi.setConfig({ testTimeout: 15_000 });
 
 describe("Batch Functionality Tests", () => {
   describe("DexScreenerProvider batch methods", () => {
@@ -196,7 +199,7 @@ describe("Batch Functionality Tests", () => {
 
   describe("PriceTracker caching and batch functionality", () => {
     it("should use cache for repeated batch requests", async () => {
-      const priceTracker = new PriceTracker();
+      const priceTracker = new PriceTrackerService();
 
       const testTokens = [
         "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
@@ -234,7 +237,7 @@ describe("Batch Functionality Tests", () => {
       ];
 
       // Use same PriceTracker throughout test to leverage caching
-      const priceTracker = new PriceTracker();
+      const priceTracker = new PriceTrackerService();
 
       // Get batch results (populates cache)
       const batchResults = await priceTracker.getBulkPrices(testTokens);

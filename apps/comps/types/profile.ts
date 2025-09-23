@@ -6,7 +6,7 @@ export interface User {
   privyId?: string;
   status: "active" | "inactive" | "suspended" | "deleted";
   name?: string;
-  email?: string;
+  email: string;
   isSubscribed: boolean;
   imageUrl?: string;
   metadata?: {
@@ -38,4 +38,10 @@ export interface VerifyEmailResponse {
 
 export interface LinkWalletRequest {
   walletAddress: string;
+}
+
+export interface UserSubscriptionResponse {
+  success: boolean;
+  userId: string;
+  isSubscribed: boolean;
 }
