@@ -94,21 +94,6 @@ export class UserService {
       const normalizedEmbeddedWalletAddress =
         embeddedWalletAddress?.toLowerCase();
 
-      // Check wallet addresses against sanctions list
-      // Note: user registration always uses the wallet address and embedded wallet as the same
-      // value, and then users can update it later. This is more of a safeguard.
-      const isWalletSanctioned =
-        normalizedEmbeddedWalletAddress &&
-        normalizedWalletAddress !== normalizedEmbeddedWalletAddress &&
-        (await this.watchlistService.isAddressSanctioned(
-          normalizedWalletAddress,
-        ));
-      if (isWalletSanctioned) {
-        throw new Error(
-          "This wallet address is not permitted for use on this platform",
-        );
-      }
-
       // Create user record with subscription status
       // Note: the `newUserId` could be different than the `savedUserId` because registering a new
       // user will update on conflict—so the `id` will be original `user.id` in the database.
