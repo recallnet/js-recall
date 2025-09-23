@@ -9,6 +9,12 @@ import {
 } from "@recallnet/db/schema/core/defs";
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
+import {
+  InsertPerpetualPosition,
+  InsertPerpsAccountSummary,
+  SelectPerpetualPosition,
+  SelectPerpsAccountSummary,
+} from "@recallnet/db/schema/trading/types";
 
 /**
  * Blockchain type enum
@@ -252,6 +258,7 @@ export interface AdminMetadata {
 export const AgentStatsSchema = z.object({
   completedCompetitions: z.number(),
   totalTrades: z.number(),
+  totalPositions: z.number(),
   totalVotes: z.number(),
   bestPlacement: z
     .object({
@@ -452,7 +459,10 @@ export interface EnhancedCompetition {
   portfolioValue: number;
   pnl: number;
   pnlPercent: number;
-  totalTrades: number;
+  // Competition-type specific metrics
+  competitionType?: CompetitionType; // Included for client awareness
+  totalTrades?: number; // For paper trading competitions
+  totalPositions?: number; // For perpetual futures competitions
   // TODO: dry out the type for best placement
   bestPlacement?: {
     rank: number;
@@ -1109,6 +1119,64 @@ export const BestPlacementDbSchema = z.looseObject({
   rank: z.coerce.number(),
   total_agents: z.coerce.number(),
 });
+
+// =============================================================================
+// PERPS TYPES
+// =============================================================================
+
+/**
+ * Data for reviewing a perps self-funding alert
+ */
+export interface PerpsSelfFundingAlertReview {
+  reviewed: boolean;
+  reviewedAt: Date;
+  reviewedBy: string;
+  actionTaken?: string;
+  reviewNote?: string;
+}
+
+/**
+ * Data for syncing a single agent's perps data
+ */
+export interface AgentPerpsSyncData {
+  agentId: string;
+  competitionId: string;
+  positions: InsertPerpetualPosition[];
+  accountSummary: InsertPerpsAccountSummary;
+}
+
+/**
+ * Result of syncing agent perps data
+ */
+export interface AgentPerpsSyncResult {
+  positions: SelectPerpetualPosition[];
+  summary: SelectPerpsAccountSummary;
+}
+
+/**
+ * Result of batch syncing multiple agents
+ */
+export interface BatchPerpsSyncResult {
+  successful: Array<{
+    agentId: string;
+    positions: SelectPerpetualPosition[];
+    summary: SelectPerpsAccountSummary;
+  }>;
+  failed: Array<{
+    agentId: string;
+    error: Error;
+  }>;
+}
+
+/**
+ * Statistics for a perps competition
+ */
+export interface PerpsCompetitionStats {
+  totalAgents: number;
+  totalPositions: number;
+  totalVolume: number;
+  averageEquity: number;
+}
 /**
  * Privy identity token parameter schema
  */

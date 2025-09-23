@@ -74,6 +74,15 @@ export function makeTradeController(services: ServiceRegistry) {
           throw new ApiError(404, `Competition not found: ${competitionId}`);
         }
 
+        // Check if this is a perps competition - paper trading only
+        if (competition.type === "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is not available for perpetual futures competitions. " +
+              "Perpetual futures positions are managed through Symphony, not through this API.",
+          );
+        }
+
         // Check if competition has passed its end date
         const now = new Date();
         if (competition.endDate !== null && now > competition.endDate) {
@@ -144,6 +153,17 @@ export function makeTradeController(services: ServiceRegistry) {
      */
     async getQuote(req: Request, res: Response, next: NextFunction) {
       try {
+        // Check if there's an active competition and if it's a perps competition
+        const activeCompetition =
+          await services.competitionService.getActiveCompetition();
+        if (activeCompetition?.type === "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is not available for perpetual futures competitions. " +
+              "Perpetual futures positions are managed through Symphony, not through this API.",
+          );
+        }
+
         const {
           fromToken,
           toToken,

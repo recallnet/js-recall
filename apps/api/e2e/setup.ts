@@ -15,6 +15,7 @@ import {
   startLoopsMockServer,
   stopLoopsMockServer,
 } from "./utils/loops-mock.js";
+import { MockSymphonyServer } from "./utils/mock-symphony-server.js";
 import { startServer, stopServer } from "./utils/server.js";
 
 // Path to log file
@@ -22,6 +23,9 @@ const logFile = path.resolve(__dirname, "e2e-server.log");
 
 // Create a test-specific logger
 const testLogger = createLogger("E2E-Setup");
+
+// Mock Symphony server instance
+let mockSymphonyServer: MockSymphonyServer | null = null;
 
 // Function to log to both Pino logger and file
 const log = (message: string) => {
@@ -171,6 +175,15 @@ export async function setup() {
     log("📦 Initializing database...");
     await dbManager.initialize();
 
+    // Start mock Symphony server for perps testing
+    log("🎭 Starting mock Symphony server...");
+    mockSymphonyServer = new MockSymphonyServer(4567);
+    await mockSymphonyServer.start();
+
+    // Set Symphony API URL to point to our mock server
+    const SYMPHONY_API_URL = "http://localhost:4567";
+    testLogger.info(`SYMPHONY_API_URL set to: ${SYMPHONY_API_URL}`);
+
     // Start server
     log("🌐 Starting server...");
     await startServer();
@@ -188,6 +201,13 @@ export async function setup() {
 // Teardown function to run after all tests
 export async function teardown() {
   log("🧹 Cleaning up test environment...");
+
+  // Stop mock Symphony server
+  if (mockSymphonyServer) {
+    log("🛑 Stopping mock Symphony server...");
+    await mockSymphonyServer.stop();
+    mockSymphonyServer = null;
+  }
 
   // Close database connection using our DbManager
   log("🔌 Closing database connection...");

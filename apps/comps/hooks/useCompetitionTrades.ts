@@ -15,6 +15,7 @@ const apiClient = new ApiClient();
 export const useCompetitionTrades = (
   competitionId?: string,
   params: GetCompetitionTradesParams = {},
+  enabled: boolean = true,
 ) => {
   const { isAuthenticated } = useSession();
 
@@ -24,7 +25,7 @@ export const useCompetitionTrades = (
       if (!competitionId) throw new Error("Competition ID is required");
       return apiClient.getCompetitionTrades(competitionId, params);
     },
-    enabled: !!competitionId && isAuthenticated,
+    enabled: !!competitionId && isAuthenticated && enabled,
     placeholderData: (prev) => prev,
   });
 };

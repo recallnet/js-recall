@@ -225,6 +225,19 @@ export function makeAgentController(services: ServiceRegistry) {
       try {
         const agentId = req.agentId as string;
 
+        // Check if there's an active perps competition
+        const isPerpsCompetition =
+          await services.competitionService.isActiveCompetitionType(
+            "perpetual_futures",
+          );
+        if (isPerpsCompetition) {
+          throw new ApiError(
+            400,
+            "This endpoint is not available for perpetual futures competitions. " +
+              "Use GET /api/agent/perps/account for account summary.",
+          );
+        }
+
         // Get enhanced balances from the service layer
         const enhancedBalances =
           await services.agentService.getEnhancedBalances(agentId);
@@ -249,6 +262,19 @@ export function makeAgentController(services: ServiceRegistry) {
     async getTrades(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId as string;
+
+        // Check if there's an active perps competition
+        const isPerpsCompetition =
+          await services.competitionService.isActiveCompetitionType(
+            "perpetual_futures",
+          );
+        if (isPerpsCompetition) {
+          throw new ApiError(
+            400,
+            "This endpoint is not available for perpetual futures competitions. " +
+              "Use GET /api/agent/perps/positions for current positions.",
+          );
+        }
 
         // Get the trades
         const trades =
@@ -315,6 +341,182 @@ export function makeAgentController(services: ServiceRegistry) {
             offset: paging.offset,
             total: results.total,
             hasMore: paging.limit + paging.offset < results.total,
+          },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get perps positions for the authenticated agent
+     * @param req Express request with agentId from API key
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getPerpsPositions(req: Request, res: Response, next: NextFunction) {
+      try {
+        const agentId = req.agentId as string;
+
+        // Check if there's an active perps competition
+        const activeCompetition =
+          await services.competitionService.getActiveCompetition();
+
+        if (!activeCompetition) {
+          throw new ApiError(404, "No active competition found");
+        }
+
+        if (activeCompetition.type !== "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is only available for perpetual futures competitions. " +
+              "Use GET /api/agent/trades for paper trading positions.",
+          );
+        }
+
+        // Check if agent is registered in the competition
+        const isRegistered =
+          await services.competitionService.isAgentActiveInCompetition(
+            activeCompetition.id,
+            agentId,
+          );
+
+        if (!isRegistered) {
+          throw new ApiError(
+            403,
+            "Agent is not registered in the active perps competition",
+          );
+        }
+
+        // Get positions from the service
+        const positions = await services.perpsDataProcessor.getAgentPositions(
+          agentId,
+          activeCompetition.id,
+        );
+
+        // Return the positions with consistent format across all endpoints
+        res.status(200).json({
+          success: true,
+          agentId,
+          positions: positions.map((pos) => ({
+            id: pos.id,
+            competitionId: pos.competitionId,
+            agentId: pos.agentId,
+            positionId: pos.providerPositionId || null,
+            marketId: pos.asset || null,
+            marketSymbol: pos.asset || null,
+            asset: pos.asset,
+            isLong: pos.isLong,
+            leverage: Number(pos.leverage || 0),
+            size: Number(pos.positionSize),
+            collateral: Number(pos.collateralAmount),
+            averagePrice: Number(pos.entryPrice),
+            markPrice: Number(pos.currentPrice || 0),
+            liquidationPrice: pos.liquidationPrice
+              ? Number(pos.liquidationPrice)
+              : null,
+            unrealizedPnl: Number(pos.pnlUsdValue || 0),
+            pnlPercentage: Number(pos.pnlPercentage || 0), // Include Symphony's calculation
+            realizedPnl: 0, // Not tracked in current schema
+            status: pos.status || "Open",
+            openedAt: pos.createdAt.toISOString(),
+            closedAt: pos.closedAt ? pos.closedAt.toISOString() : null,
+            timestamp: pos.lastUpdatedAt
+              ? pos.lastUpdatedAt.toISOString()
+              : pos.createdAt.toISOString(),
+          })),
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get perps account summary for the authenticated agent
+     * @param req Express request with agentId from API key
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getPerpsAccount(req: Request, res: Response, next: NextFunction) {
+      try {
+        const agentId = req.agentId as string;
+
+        // Check if there's an active perps competition
+        const activeCompetition =
+          await services.competitionService.getActiveCompetition();
+
+        if (!activeCompetition) {
+          throw new ApiError(404, "No active competition found");
+        }
+
+        if (activeCompetition.type !== "perpetual_futures") {
+          throw new ApiError(
+            400,
+            "This endpoint is only available for perpetual futures competitions. " +
+              "Use GET /api/agent/balances for paper trading account.",
+          );
+        }
+
+        // Check if agent is registered in the competition
+        const isRegistered =
+          await services.competitionService.isAgentActiveInCompetition(
+            activeCompetition.id,
+            agentId,
+          );
+
+        if (!isRegistered) {
+          throw new ApiError(
+            403,
+            "Agent is not registered in the active perps competition",
+          );
+        }
+
+        // Get latest account summary from the service
+        const summary =
+          await services.perpsDataProcessor.getAgentAccountSummary(
+            agentId,
+            activeCompetition.id,
+          );
+
+        if (!summary) {
+          // No data yet - return default values
+          res.status(200).json({
+            success: true,
+            agentId,
+            account: {
+              id: "",
+              agentId,
+              competitionId: activeCompetition.id,
+              accountId: "",
+              totalEquity: "0",
+              availableBalance: "0",
+              marginUsed: "0",
+              totalPnl: "0",
+              totalVolume: "0",
+              openPositions: 0,
+              timestamp: new Date().toISOString(),
+            },
+          });
+          return;
+        }
+
+        // Return the account summary
+        res.status(200).json({
+          success: true,
+          agentId,
+          account: {
+            id: summary.id,
+            agentId: summary.agentId,
+            competitionId: summary.competitionId,
+            accountId: "", // Not tracked in current schema
+            totalEquity: summary.totalEquity || "0",
+            availableBalance: summary.availableBalance || "0",
+            marginUsed: summary.marginUsed || "0",
+            totalPnl: summary.totalPnl || "0",
+            totalVolume: summary.totalVolume || "0",
+            openPositions: summary.openPositionsCount || 0,
+            timestamp:
+              summary.timestamp?.toISOString() || new Date().toISOString(),
           },
         });
       } catch (error) {
