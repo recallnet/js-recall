@@ -64,7 +64,6 @@ describe("RewardsService", () => {
       insert: vi.fn().mockReturnThis(),
       values: vi.fn().mockResolvedValue(undefined),
     };
-
     (db as unknown as { transaction: ReturnType<typeof vi.fn> }).transaction =
       vi
         .fn()
