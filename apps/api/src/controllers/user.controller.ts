@@ -25,7 +25,10 @@ import {
  * Handles user-specific operations with SIWE session authentication
  * Sets req.userId from authenticated session
  */
-export function makeUserController(services: ServiceRegistry) {
+export function makeUserController(
+  services: ServiceRegistry,
+  boostMode: "no-stake" | "stake",
+) {
   return {
     /**
      * Get profile for the authenticated user
@@ -145,6 +148,18 @@ export function makeUserController(services: ServiceRegistry) {
           walletLastVerifiedAt: now,
           updatedAt: now,
         });
+
+        // Grant initial boost if applicable
+        if (boostMode === "no-stake") {
+          await services.boostAwardService.initNoStake(
+            linkedUser.id,
+            linkedUser.walletAddress,
+          );
+        } else {
+          await services.boostAwardService.initForStake(
+            linkedUser.walletAddress,
+          );
+        }
 
         res.status(200).json({
           success: true,

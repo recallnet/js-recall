@@ -123,6 +123,12 @@ export const findActive = createTimedRepositoryFunction(
   "findActive",
 );
 
+export const findVotingOpen = createTimedRepositoryFunction(
+  repository.findVotingOpen.bind(repository),
+  "CompetitionRepository",
+  "findVotingOpen",
+);
+
 export const createPortfolioSnapshot = createTimedRepositoryFunction(
   repository.createPortfolioSnapshot.bind(repository),
   "CompetitionRepository",

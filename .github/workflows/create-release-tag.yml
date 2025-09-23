@@ -31,6 +31,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate version input
         id: ver
@@ -88,17 +89,40 @@ jobs:
             exit 1
           fi
 
-      - name: Create and push tag
+      # GPG setup for signed tags
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+          git_committer_name: "textileio-machine"
+          git_committer_email: "40302381+textileio-machine@users.noreply.github.com"
+          trust_level: 5
+
+      - name: Verify key
+        run: |
+          gpg --list-secret-keys --with-colons --batch >/dev/null
+
+      - name: Create signed tag locally
+        env:
+          TAG: release-v${{ steps.ver.outputs.ver }}
+          COMMIT: ${{ steps.target.outputs.commit }}
         run: |
           set -euo pipefail
-          TAG="release-v${{ steps.ver.outputs.ver }}"
-          COMMIT="${{ steps.target.outputs.commit }}"
+          git tag -s "$TAG" "$COMMIT" -m "Release v${TAG#release-v}"
 
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git tag -a "$TAG" "$COMMIT" -m "Release v${{ steps.ver.outputs.ver }}"
-          git push origin "$TAG"
+      # Push with machine PAT so tag creation meets the protection rule
+      - name: Push tag with PAT
+        env:
+          GH_PUSH_TOKEN: ${{ secrets.RELEASE_TAG_PAT }}
+          REPO: ${{ github.repository }}
+          TAG: release-v${{ steps.ver.outputs.ver }}
+        run: |
+          set -euo pipefail
+          git push "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${REPO}.git" "$TAG"
 
       - name: Summary
         run: |

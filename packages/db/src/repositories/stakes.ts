@@ -4,12 +4,10 @@ import {
   BlockHashCoder,
   BlockchainAddressAsU8A,
   TxHashCoder,
-} from "@recallnet/db/coders";
-import * as schema from "@recallnet/db/schema/indexing/defs";
-import type { StakeRow } from "@recallnet/db/schema/indexing/types";
-import { Transaction } from "@recallnet/db/types";
-
-import { db } from "@/database/db.js";
+} from "../coders/index.js";
+import * as schema from "../schema/indexing/defs.js";
+import type { StakeRow } from "../schema/indexing/types.js";
+import { Database, Transaction } from "../types.js";
 
 export { StakesRepository };
 export type { Tx, StakeArgs, UnstakeArgs, RelockArgs, WithdrawArgs };
@@ -111,8 +109,8 @@ type WithdrawArgs = {
  *   `stake_changes` together.
  */
 class StakesRepository {
-  readonly #db: typeof db;
-  constructor(database: typeof db = db) {
+  readonly #db: Database;
+  constructor(database: Database) {
     this.#db = database;
   }
 
@@ -551,5 +549,23 @@ class StakesRepository {
       .where(condition)
       .orderBy(asc(schema.stakes.id))
       .limit(limit);
+  }
+
+  async allStakedByWallet(
+    wallet: string,
+    tx?: Transaction,
+  ): Promise<Array<StakeRow>> {
+    const walletBytes = BlockchainAddressAsU8A.encode(wallet);
+    const executor = tx ?? this.#db;
+    return executor
+      .select()
+      .from(schema.stakes)
+      .where(
+        and(
+          eq(schema.stakes.wallet, walletBytes),
+          isNull(schema.stakes.unstakedAt),
+        ),
+      )
+      .orderBy(asc(schema.stakes.id));
   }
 }

@@ -6,7 +6,11 @@ import { apiClient } from "@/lib/api-client";
 import { sandboxClient } from "@/lib/sandbox-client";
 import { AdminAgentKeyResponse } from "@/types/admin";
 
-export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
+export const useUnlockKeys = (
+  agentHandle: string,
+  agentId?: string,
+  userWalletAddress?: string,
+) => {
   const queryClient = useQueryClient();
 
   // Query for production agent API key
@@ -19,6 +23,52 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
     enabled: !!agentId,
   });
 
+  // Mutation to create sandbox agent if it doesn't exist
+  const createSandboxAgentMutation = useMutation({
+    mutationFn: async () => {
+      if (!userWalletAddress) {
+        throw new Error("Wallet address required to create sandbox agent");
+      }
+
+      const createResult = await sandboxClient.createAgent({
+        user: {
+          walletAddress: userWalletAddress,
+        },
+        agent: {
+          handle: agentHandle,
+          // Note: the name is technically required by the backend API, but all we need is the
+          // agent handle since this is globally unique and used for querying the API key
+          name: agentHandle,
+        },
+      });
+
+      if (!createResult.success) {
+        throw new Error("Failed to create sandbox agent");
+      }
+
+      return {
+        success: true,
+        agent: {
+          id: createResult.agent.id,
+          apiKey: createResult.agent.apiKey,
+          name: createResult.agent.name,
+        },
+      } as AdminAgentKeyResponse;
+    },
+    onSuccess: (data) => {
+      // Update the cache with the newly created agent data
+      queryClient.setQueryData(["sandbox-agent-api-key", agentHandle], data);
+      // Invalidate to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: ["sandbox-agent-api-key", agentHandle],
+      });
+      // Also invalidate sandbox competitions since we have a new agent
+      queryClient.invalidateQueries({
+        queryKey: ["sandbox-agent-competitions"],
+      });
+    },
+  });
+
   // Query for sandbox agent API key
   const sandboxKeyQuery = useQuery({
     queryKey: ["sandbox-agent-api-key", agentHandle],
@@ -28,30 +78,12 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
         // to get the agent ID relative to the sandbox (the sandbox vs production agent IDs differ)
         return await sandboxClient.getAgentApiKey(agentHandle);
       } catch (error) {
-        // If sandbox agent doesn't exist, create it. Note: this is a proactive action in case the
-        // "sync" between the main API and sandbox somehow gets out of sync
+        // If agent doesn't exist in sandbox yet, return null instead of failing
         if (
           error instanceof Error &&
           error.message.includes("Agent not found")
         ) {
-          const createResult = await sandboxClient.createAgent({
-            handle: agentHandle,
-            // Note: the name is technically required by the backend API, but all we need is the
-            // agent handle since this is globally unique and used for querying the API key
-            name: agentHandle,
-          });
-          if (!createResult.success) {
-            throw new Error("Failed to create sandbox agent");
-          }
-          const { id, apiKey, name } = createResult.agent;
-          return {
-            success: true,
-            agent: {
-              id,
-              apiKey,
-              name,
-            },
-          } as AdminAgentKeyResponse;
+          return null;
         }
         throw error;
       }
@@ -64,6 +96,15 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
       }
       // Retry other errors normally (max 3 times)
       return failureCount < 3;
+    },
+    // Refetch every 2 seconds if the result is null (agent not found)
+    // This ensures we quickly detect when an agent is created
+    refetchInterval: (data) => {
+      return data === null ? 2000 : false;
+    },
+    // Consider data stale immediately if it's null
+    staleTime: (data) => {
+      return data === null ? 0 : 5 * 60 * 1000; // 5 minutes for valid data
     },
   });
 
@@ -92,7 +133,26 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!sandboxAgentId) throw new Error("Unable to find sandbox agent");
+      let currentSandboxAgentId = sandboxAgentId;
+
+      // If sandbox agent doesn't exist, create it first
+      if (!currentSandboxAgentId) {
+        // Check if we need to refetch first (in case the agent was created elsewhere)
+        const refetchResult = await sandboxKeyQuery.refetch();
+        if (refetchResult.data?.agent?.id) {
+          currentSandboxAgentId = refetchResult.data.agent.id;
+        } else {
+          // Agent still doesn't exist, create it
+          const createResult = await createSandboxAgentMutation.mutateAsync();
+          currentSandboxAgentId = createResult.agent.id;
+
+          // Wait a moment for the agent to be fully created
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          // Force refetch to get the latest data
+          await sandboxKeyQuery.refetch();
+        }
+      }
 
       if (isInActiveSandboxCompetition) {
         return { alreadyJoined: true };
@@ -108,7 +168,10 @@ export const useUnlockKeys = (agentHandle: string, agentId?: string) => {
       // Join the first active competition
       const competitionId = competitionsRes.competitions[0].id;
       try {
-        await sandboxClient.joinCompetition(competitionId, sandboxAgentId);
+        await sandboxClient.joinCompetition(
+          competitionId,
+          currentSandboxAgentId,
+        );
         return { alreadyJoined: false };
       } catch (joinError) {
         // Check if the error is because agent is already in competition

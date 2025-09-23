@@ -17,6 +17,13 @@ alwaysApply: true
   - Provide `@example` blocks for non-obvious usage.
   - Aim for near-complete documentation coverage (e.g., target 99% if tooling allows measurement).
 - **Type Safety:** Utilize TypeScript's type system effectively. Avoid `any` where possible and prefer specific types.
+  - **Explicit Return Types:** All functions must have explicit return types. Never rely on TypeScript's type inference for function returns.
+  - **Named Types over Ad-hoc Types:** Prefer creating named types/interfaces over inline type definitions, especially when:
+    - The type is used in more than one place
+    - The type represents a domain concept
+    - The type is complex (objects with multiple properties)
+  - Example: ❌ BAD: `function getUser(): { id: string; name: string; email: string }`
+  - Example: ✅ GOOD: `interface User { id: string; name: string; email: string }` then `function getUser(): User`
 - **Async/Await:** Use `async/await` consistently for asynchronous operations. Handle errors properly using `try...catch` blocks or promise rejection handling.
 - **Immutability:** Prefer immutable data structures and updates, especially when dealing with state management, to avoid side effects.
 
