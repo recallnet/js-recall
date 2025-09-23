@@ -1,11 +1,13 @@
 import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
 
-import { db } from "@/database/db.js";
+import config from "@/config/index.js";
+import { db, dbRead } from "@/database/db.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
-import { StakesRepository } from "@/indexing/stakes.repository.js";
-import { indexingLogger } from "@/lib/logger.js";
+import { indexingLogger, repositoryLogger } from "@/lib/logger.js";
 import { AdminService } from "@/services/admin.service.js";
 import { AgentService } from "@/services/agent.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
@@ -50,6 +52,7 @@ class ServiceRegistry {
   private _competitionRewardService: CompetitionRewardService;
   private _watchlistService: WatchlistService;
   private _boostService: BoostService;
+  private readonly _competitionRepository: CompetitionRepository;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
   private readonly _indexingService: IndexingService;
@@ -121,6 +124,11 @@ class ServiceRegistry {
     this._stakesRepository = new StakesRepository(db);
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
+    this._competitionRepository = new CompetitionRepository(
+      db,
+      dbRead,
+      repositoryLogger,
+    );
 
     // Initialize BoostService with its dependencies
     this._boostService = new BoostService(
@@ -130,8 +138,12 @@ class ServiceRegistry {
     );
 
     this._boostAwardService = new BoostAwardService(
+      db,
+      this._competitionRepository,
       this._boostRepository,
+      this._stakesRepository,
       this._userService,
+      config.boost.noStakeBoostAmount,
     );
     this._eventProcessor = new EventProcessor(
       db,

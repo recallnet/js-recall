@@ -87,6 +87,7 @@
         "REWARDS_ALLOCATOR_PRIVATE_KEY",
         "REWARDS_CONTRACT_ADDRESS",
         "RPC_PROVIDER",
+        "NO_STAKE_BOOST_AMOUNT",
         "CHAINALYSIS_API_KEY"
       ]
     }

@@ -2,11 +2,11 @@ import type {
   BoostDiffResult,
   BoostRepository,
 } from "@recallnet/db/repositories/boost";
-import { Transaction } from "@recallnet/db/types";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { Database, Transaction } from "@recallnet/db/types";
 
 import type { UserService } from "@/services/user.service.js";
-
-export { BoostAwardService };
 
 type StakePosition = {
   id: bigint;
@@ -22,19 +22,36 @@ type CompetitionPosition = {
   votingEndDate: Date;
 };
 
+type InitForStakeResult = BoostDiffResult & {
+  competitionId: string;
+  stakeId: bigint;
+};
+type InitNoStakeResult = BoostDiffResult & { competitionId: string };
+
 const TEXT_ENCODER = new TextEncoder();
 
-const DECIMALS = 18; // RECALL TOKEN DECIMALS
-
-class BoostAwardService {
+export class BoostAwardService {
+  readonly #db: Database;
+  readonly #competitionRepo: CompetitionRepository;
   readonly #boostRepository: BoostRepository;
+  readonly #stakesRepository: StakesRepository;
   readonly #userService: UserService;
-  readonly #divisor: bigint;
+  readonly #noStakeBoostAmount?: bigint;
 
-  constructor(boostRepository: BoostRepository, userService: UserService) {
+  constructor(
+    database: Database,
+    competitionRepo: CompetitionRepository,
+    boostRepository: BoostRepository,
+    stakesRepository: StakesRepository,
+    userService: UserService,
+    noStakeBoostAmount?: bigint,
+  ) {
+    this.#db = database;
+    this.#competitionRepo = competitionRepo;
     this.#boostRepository = boostRepository;
+    this.#stakesRepository = stakesRepository;
     this.#userService = userService;
-    this.#divisor = 10n ** BigInt(DECIMALS);
+    this.#noStakeBoostAmount = noStakeBoostAmount;
   }
 
   async awardForStake(
@@ -76,7 +93,7 @@ class BoostAwardService {
       // Staked after the voting starts
       multiplier = 1n;
     }
-    const boostAmount = (stake.amount * multiplier) / this.#divisor;
+    const boostAmount = stake.amount * multiplier;
     return this.#boostRepository.increase(
       {
         userId: userId,
@@ -118,5 +135,87 @@ class BoostAwardService {
       },
       tx,
     );
+  }
+
+  async initForStake(
+    wallet: string,
+    tx?: Transaction,
+  ): Promise<InitForStakeResult[]> {
+    const executor = tx ?? this.#db;
+    return executor.transaction(async (tx) => {
+      const stakes = await this.#stakesRepository.allStakedByWallet(wallet, tx);
+      if (stakes.length === 0) {
+        return [];
+      }
+
+      const competitions = await this.#competitionRepo.findVotingOpen(tx);
+      if (competitions.length === 0) {
+        return [];
+      }
+
+      return Promise.all(
+        competitions.flatMap((competition) => {
+          const { votingStartDate, votingEndDate } = competition;
+          if (!votingStartDate || !votingEndDate) {
+            throw new Error("Competition missing voting dates");
+          }
+          return stakes.map(async (stake) => {
+            const awardRes = await this.awardForStake(
+              {
+                ...stake,
+                wallet,
+              },
+              {
+                ...competition,
+                votingStartDate,
+                votingEndDate,
+              },
+              tx,
+            );
+            return {
+              ...awardRes,
+              competitionId: competition.id,
+              stakeId: stake.id,
+            };
+          });
+        }),
+      );
+    });
+  }
+
+  async initNoStake(
+    userId: string,
+    wallet: string,
+    tx?: Transaction,
+  ): Promise<InitNoStakeResult[]> {
+    const executor = tx ?? this.#db;
+    return executor.transaction(async (tx) => {
+      const amount = this.#noStakeBoostAmount;
+      if (!amount) {
+        throw new Error("No-stake boost amount not configured");
+      }
+      const competitions = await this.#competitionRepo.findVotingOpen(tx);
+
+      if (competitions.length === 0) {
+        return [];
+      }
+
+      return Promise.all(
+        competitions.map(async (competition) => {
+          const awardRes = await this.awardNoStake(
+            competition.id,
+            userId,
+            wallet,
+            amount,
+            "initNoStake",
+            tx,
+          );
+          return {
+            ...awardRes,
+            competitionId: competition.id,
+          };
+        }),
+      );
+    });
   }
 }

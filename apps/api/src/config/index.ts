@@ -399,6 +399,12 @@ export const config = {
     // RPC provider URL for blockchain interactions
     rpcProvider: process.env.RPC_PROVIDER || "",
   },
+  boost: {
+    // Amount of boost (in wei) to grant on wallet linking pre TGE
+    noStakeBoostAmount: process.env.NO_STAKE_BOOST_AMOUNT
+      ? BigInt(process.env.NO_STAKE_BOOST_AMOUNT)
+      : undefined,
+  },
   // Chainalysis API key
   watchlist: {
     chainalysisApiKey: process.env.CHAINALYSIS_API_KEY || "",

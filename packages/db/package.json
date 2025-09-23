@@ -132,6 +132,16 @@
         "default": "./dist/repositories/rewards.cjs"
       }
     },
+    "./repositories/stakes": {
+      "import": {
+        "types": "./dist/repositories/stakes.d.ts",
+        "default": "./dist/repositories/stakes.js"
+      },
+      "require": {
+        "types": "./dist/repositories/stakes.d.cts",
+        "default": "./dist/repositories/stakes.cjs"
+      }
+    },
     "./repositories/trade": {
       "import": {
         "types": "./dist/repositories/trade.d.ts",
@@ -346,7 +356,8 @@
     "docs:build": "typedoc",
     "docs:watch": "typedoc --watch",
     "docs:serve": "typedoc --watch --serve",
-    "build": "tsup"
+    "build": "tsup",
+    "dev": "tsc --watch"
   },
   "dependencies": {
     "drizzle-orm": "^0.43.1",
