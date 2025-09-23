@@ -1,9 +1,11 @@
 import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
 import { InsertAdmin, SelectAdmin } from "@recallnet/db/schema/core/types";
 
-import { config } from "@/config/index.js";
+import { config, reloadSecurityConfig } from "@/config/index.js";
 import {
   count,
   create,
@@ -19,6 +21,7 @@ import {
   updatePassword,
 } from "@/database/repositories/admin-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
+import { ApiError } from "@/middleware/errorHandler.js";
 import { AdminMetadata, SearchAdminsParams } from "@/types/index.js";
 
 /**
@@ -52,18 +55,88 @@ export class AdminService {
   ) {
     try {
       // Check if any admin already exists
-      const existingAdmins = await findAll();
+      const existingAdmins = await this.getAllAdmins();
       if (existingAdmins.length > 0) {
-        throw new Error("Admin setup not allowed - admin already exists");
+        throw new ApiError(
+          403,
+          "Admin setup is not allowed - an admin account already exists",
+        );
       }
 
-      // Validate inputs
-      if (!username || !password || !email) {
-        throw new Error("Username, password, and email are required");
-      }
+      // Ensure that ROOT_ENCRYPTION_KEY exists in .env file
+      try {
+        // Find the correct .env file based on environment
+        const envFile = process.env.NODE_ENV === "test" ? ".env.test" : ".env";
+        const envPath = path.resolve(process.cwd(), envFile);
+        serviceLogger.info(`Checking for ${envFile} file at: ${envPath}`);
 
-      if (password.length < 8) {
-        throw new Error("Password must be at least 8 characters long");
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, "utf8");
+          const rootKeyPattern = /ROOT_ENCRYPTION_KEY=.*$/m;
+
+          // Check if ROOT_ENCRYPTION_KEY already exists and is not the default
+          const keyMatch = rootKeyPattern.exec(envContent);
+          let needsNewKey = true;
+
+          if (keyMatch) {
+            const currentValue = keyMatch[0].split("=")[1];
+            if (
+              currentValue &&
+              currentValue.length >= 32 &&
+              !currentValue.includes("default_encryption_key") &&
+              !currentValue.includes("your_") &&
+              !currentValue.includes("dev_") &&
+              !currentValue.includes("test_") &&
+              !currentValue.includes("replace_in_production")
+            ) {
+              // Key exists and seems to be a proper key already
+              serviceLogger.info("ROOT_ENCRYPTION_KEY already exists in .env");
+              needsNewKey = false;
+            }
+          }
+
+          if (needsNewKey) {
+            // Generate a new secure encryption key
+            const newEncryptionKey = crypto.randomBytes(32).toString("hex");
+            serviceLogger.info("Generated new ROOT_ENCRYPTION_KEY");
+
+            // Update the .env file
+            let updatedEnvContent = envContent;
+
+            if (keyMatch) {
+              // Replace existing key
+              updatedEnvContent = envContent.replace(
+                rootKeyPattern,
+                `ROOT_ENCRYPTION_KEY=${newEncryptionKey}`,
+              );
+            } else {
+              // Add new key
+              updatedEnvContent =
+                envContent.trim() +
+                `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
+            }
+
+            fs.writeFileSync(envPath, updatedEnvContent);
+            serviceLogger.info(
+              `Updated ROOT_ENCRYPTION_KEY in ${envFile} file`,
+            );
+
+            // We need to update the process.env with the new key for it to be used immediately
+            process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
+
+            // Reload the configuration to pick up the new encryption key
+            reloadSecurityConfig();
+
+            serviceLogger.info(
+              "✅ Configuration reloaded with new encryption key",
+            );
+          }
+        } else {
+          serviceLogger.error(`${envFile} file not found at expected location`);
+        }
+      } catch (envError) {
+        serviceLogger.error("Error updating ROOT_ENCRYPTION_KEY:", envError);
+        // Continue with admin setup even if the env update fails
       }
 
       // Generate admin ID
