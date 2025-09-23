@@ -93,13 +93,9 @@ export async function withRetry<T>(
         throw error.cause || error;
       }
 
-      // Don't retry if it's not explicitly marked as retryable and we don't recognize it
+      // Don't retry if it's not explicitly marked as retryable
       if (!(error instanceof RetryableError)) {
-        // For unknown errors, we could choose to retry or not
-        // For network-related errors, we'll retry
-        if (!isNetworkError(error)) {
-          throw error;
-        }
+        throw error;
       }
 
       // Check if we've exceeded max elapsed time
@@ -112,32 +108,4 @@ export async function withRetry<T>(
 
   // All retries exhausted, throw the last error
   throw lastError || new Error("Retry attempts exhausted");
-}
-
-/**
- * Check if an error appears to be a network-related error that might be retryable
- * @param error The error to check
- * @returns true if the error appears to be network-related
- */
-function isNetworkError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  const message = error.message.toLowerCase();
-
-  // Common network error patterns
-  const networkErrorPatterns = [
-    "network error",
-    "connection",
-    "timeout",
-    "econnreset",
-    "enotfound",
-    "econnrefused",
-    "socket",
-    "fetch",
-    "aborted",
-  ];
-
-  return networkErrorPatterns.some((pattern) => message.includes(pattern));
 }

@@ -147,23 +147,42 @@ export class WatchlistService {
 
           return isSanctioned;
         } catch (error) {
-          // Handle network errors and timeouts as retryable
+          // Handle specific fetch/network errors as retryable
           if (error instanceof Error) {
-            const message = error.message.toLowerCase();
-            if (
-              message.includes("abort") ||
-              message.includes("timeout") ||
-              message.includes("network") ||
-              message.includes("fetch")
-            ) {
+            // AbortError when request is aborted (including timeouts)
+            if (error.name === "AbortError") {
               throw new RetryableError(
-                `Network error: ${error.message}`,
+                "Request was aborted (likely timeout)",
                 error,
               );
             }
+
+            // TypeError is thrown for network errors in fetch (DNS resolution, connection refused, etc.)
+            if (error instanceof TypeError) {
+              throw new RetryableError("Network connection error", error);
+            }
+
+            // Check for Node.js specific network error codes
+            const nodeError = error as Error & { code?: string };
+            if (nodeError.code) {
+              const retryableNetworkCodes = [
+                "ECONNRESET", // Connection reset
+                "ENOTFOUND", // DNS lookup failed
+                "ECONNREFUSED", // Connection refused
+                "ETIMEDOUT", // Connection timeout
+                "ECONNABORTED", // Connection aborted
+              ];
+
+              if (retryableNetworkCodes.includes(nodeError.code)) {
+                throw new RetryableError(
+                  `Network error: ${nodeError.code}`,
+                  error,
+                );
+              }
+            }
           }
 
-          // Re-throw other errors as-is (may be RetryableError or NonRetryableError)
+          // Re-throw other errors as-is (may be RetryableError or NonRetryableError from API response handling)
           throw error;
         } finally {
           clearTimeout(timeoutId);

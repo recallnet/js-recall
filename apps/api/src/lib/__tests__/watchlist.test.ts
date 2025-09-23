@@ -205,28 +205,33 @@ describe("WatchlistService", () => {
     it("should throw on network error", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
       // Mock multiple rejections for retries (initial + 2 retries = 3 total)
+      // TypeError is what fetch throws for network errors
       mockFetch
-        .mockRejectedValueOnce(new Error("Network error"))
-        .mockRejectedValueOnce(new Error("Network error"))
-        .mockRejectedValueOnce(new Error("Network error"));
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"));
 
       await expect(
         watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("Network error");
+      ).rejects.toThrow("Network connection error");
     }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
 
     it("should handle timeout with AbortController", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
 
       // Mock an aborted request - multiple times for retries (initial + 2 retries = 3 total)
+      // Create proper AbortError objects
+      const abortError = new Error("This operation was aborted");
+      abortError.name = "AbortError";
+
       mockFetch
-        .mockRejectedValueOnce(new Error("This operation was aborted"))
-        .mockRejectedValueOnce(new Error("This operation was aborted"))
-        .mockRejectedValueOnce(new Error("This operation was aborted"));
+        .mockRejectedValueOnce(abortError)
+        .mockRejectedValueOnce(abortError)
+        .mockRejectedValueOnce(abortError);
 
       await expect(
         watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("This operation was aborted");
+      ).rejects.toThrow("Request was aborted (likely timeout)");
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
