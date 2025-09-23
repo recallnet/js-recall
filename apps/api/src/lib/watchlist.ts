@@ -108,7 +108,6 @@ export class WatchlistService {
             },
             signal: controller.signal,
           });
-          clearTimeout(timeoutId);
 
           // Handle API errors
           if (!response.ok) {
@@ -148,8 +147,6 @@ export class WatchlistService {
 
           return isSanctioned;
         } catch (error) {
-          clearTimeout(timeoutId);
-
           // Handle network errors and timeouts as retryable
           if (error instanceof Error) {
             const message = error.message.toLowerCase();
@@ -168,6 +165,8 @@ export class WatchlistService {
 
           // Re-throw other errors as-is (may be RetryableError or NonRetryableError)
           throw error;
+        } finally {
+          clearTimeout(timeoutId);
         }
       }, this.retryConfig);
     } catch (error) {
