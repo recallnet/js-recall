@@ -50,6 +50,12 @@ vi.mock("@/lib/logger.js", () => ({
     warn: vi.fn(),
     error: vi.fn(),
   },
+  repositoryLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 describe("RewardsService", () => {
