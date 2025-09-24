@@ -132,7 +132,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const totalBoostValue = useMemo(() => {
     const availableBalance = isSuccessBoostBalance ? boostBalance.balance : 0n;
     return availableBalance + userSpentBoost;
-  }, [boostBalance, userSpentBoost]);
+  }, [boostBalance, userSpentBoost, isSuccessBoostBalance]);
 
   // Check if boost data is loading
   const isBoostDataLoading =
