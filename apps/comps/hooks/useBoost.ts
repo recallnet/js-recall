@@ -8,17 +8,6 @@ import {
 
 import { useSession } from "@/hooks/useSession";
 import { apiClient } from "@/lib/api-client";
-import { tanstackClient } from "@/rpc/clients/tanstack-query";
-
-export const useBoostBalance = (competitionId: string) => {
-  const { isAuthenticated } = useSession();
-  return useQuery(
-    tanstackClient.boost.balance.queryOptions({
-      input: { competitionId },
-      enabled: isAuthenticated,
-    }),
-  );
-};
 
 export const useBoosts = (competitionId: string) => {
   const { isAuthenticated } = useSession();
