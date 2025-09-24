@@ -1219,22 +1219,33 @@ export class PerpsRepository {
         .delete(perpsTwrPeriods)
         .where(eq(perpsTwrPeriods.metricsId, metricsId));
 
-      // Insert new periods
+      // Insert new periods in batches
+      const BATCH_SIZE = 500;
+      const allResults: SelectPerpsTwrPeriod[] = [];
+
+      // Map periods with metricsId
       const periodsToInsert = periods.map((p) => ({
         ...p,
         metricsId,
       }));
 
-      const results = await executor
-        .insert(perpsTwrPeriods)
-        .values(periodsToInsert)
-        .returning();
+      // Process in batches
+      for (let i = 0; i < periodsToInsert.length; i += BATCH_SIZE) {
+        const batch = periodsToInsert.slice(i, i + BATCH_SIZE);
+
+        const results = await executor
+          .insert(perpsTwrPeriods)
+          .values(batch)
+          .returning();
+
+        allResults.push(...results);
+      }
 
       this.#logger.debug(
-        `[PerpsRepository] Saved ${results.length} TWR periods for metrics ${metricsId}`,
+        `[PerpsRepository] Saved ${allResults.length} TWR periods for metrics ${metricsId} in ${Math.ceil(periodsToInsert.length / BATCH_SIZE)} batches`,
       );
 
-      return results;
+      return allResults;
     } catch (error) {
       this.#logger.error("Error in saveTwrPeriods:", error);
       throw error;

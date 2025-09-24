@@ -159,6 +159,12 @@ export const getAgentPortfolioSnapshots = createTimedRepositoryFunction(
   "getAgentPortfolioSnapshots",
 );
 
+export const calculateMaxDrawdownSQL = createTimedRepositoryFunction(
+  repository.calculateMaxDrawdownSQL.bind(repository),
+  "CompetitionRepository",
+  "calculateMaxDrawdownSQL",
+);
+
 export const getBoundedSnapshots = createTimedRepositoryFunction(
   repository.getBoundedSnapshots.bind(repository),
   "CompetitionRepository",
