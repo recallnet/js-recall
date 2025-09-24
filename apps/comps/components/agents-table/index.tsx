@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   ColumnDef,
   SortingState,
@@ -27,9 +28,10 @@ import {
 import { toast } from "@recallnet/ui2/components/toast";
 
 import { Pagination } from "@/components/pagination/index";
-import { useBoostBalance, useBoostTotals, useBoosts } from "@/hooks/useBoost";
+import { useBoostTotals, useBoosts } from "@/hooks/useBoost";
 import { useSession } from "@/hooks/useSession";
 import { useVote } from "@/hooks/useVote";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import {
   AgentCompetition,
   Competition,
@@ -80,8 +82,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const { mutate: vote, isPending: isPendingVote } = useVote();
 
   // Boost hooks
-  const { data: boostBalance, isLoading: isLoadingBoostBalance } =
-    useBoostBalance(competition.id);
+  const {
+    data: boostBalance,
+    isLoading: isLoadingBoostBalance,
+    isSuccess: isSuccessBoostBalance,
+  } = useQuery(
+    tanstackClient.boost.balance.queryOptions({
+      input: { competitionId: competition.id },
+      enabled: session.isAuthenticated,
+    }),
+  );
   const { data: userBoosts, isLoading: isLoadingUserBoosts } = useBoosts(
     competition.id,
   );
@@ -120,7 +130,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   // Calculate total boost value (available + user spent) for progress bar
   const totalBoostValue = useMemo(() => {
-    const availableBalance = boostBalance?.success ? boostBalance.balance : 0;
+    const availableBalance = isSuccessBoostBalance ? boostBalance.balance : 0n;
     return availableBalance + userSpentBoost;
   }, [boostBalance, userSpentBoost]);
 
@@ -370,10 +380,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   className="h-full rounded-full bg-yellow-500 transition-all duration-300"
                   style={{
                     width:
-                      boostBalance?.success &&
-                      boostBalance.balance > 0 &&
-                      totalBoostValue > 0
-                        ? `${Math.min(100, Number((boostBalance.balance * 100) / totalBoostValue))}%`
+                      isSuccessBoostBalance &&
+                      boostBalance.balance > 0n &&
+                      totalBoostValue > 0n
+                        ? `${Math.min(100, Number((boostBalance.balance * 100n) / totalBoostValue))}%`
                         : "0%",
                   }}
                 />
