@@ -22,16 +22,21 @@ import {
   syncAgentPerpsData,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
+import { CalmarRatioService } from "@/services/calmar-ratio.service.js";
 import { PerpsMonitoringService } from "@/services/perps-monitoring.service.js";
 import { PerpsProviderFactory } from "@/services/providers/perps-provider.factory.js";
 import type {
   AgentPerpsSyncResult,
   BatchPerpsSyncResult,
   PerpsCompetitionStats,
+  SuccessfulAgentSync,
 } from "@/types/index.js";
 import type {
+  BatchPerpsSyncWithSummaries,
+  CalmarRatioCalculationResult,
   IPerpsDataProvider,
   PerpsAccountSummary,
+  PerpsCompetitionProcessingResult,
   PerpsPosition,
   PerpsProviderConfig,
 } from "@/types/perps.js";
@@ -274,12 +279,7 @@ export class PerpsDataProcessor {
     agents: Array<{ agentId: string; walletAddress: string }>,
     competitionId: string,
     provider: IPerpsDataProvider,
-  ): Promise<
-    BatchPerpsSyncResult & {
-      accountSummaries: Map<string, PerpsAccountSummary>;
-      agents: Array<{ agentId: string; walletAddress: string }>;
-    }
-  > {
+  ): Promise<BatchPerpsSyncWithSummaries> {
     if (!provider) {
       throw new Error("[PerpsDataProcessor] Provider is required");
     }
@@ -481,12 +481,7 @@ export class PerpsDataProcessor {
   async processCompetitionAgents(
     competitionId: string,
     provider: IPerpsDataProvider,
-  ): Promise<
-    BatchPerpsSyncResult & {
-      accountSummaries: Map<string, PerpsAccountSummary>;
-      agents: Array<{ agentId: string; walletAddress: string }>;
-    }
-  > {
+  ): Promise<BatchPerpsSyncWithSummaries> {
     if (!provider) {
       throw new Error("[PerpsDataProcessor] Provider is required");
     }
@@ -568,15 +563,9 @@ export class PerpsDataProcessor {
    * @param competitionId Competition ID
    * @returns Combined results from sync and monitoring
    */
-  async processPerpsCompetition(competitionId: string): Promise<{
-    syncResult: BatchPerpsSyncResult;
-    monitoringResult?: {
-      successful: number;
-      failed: number;
-      alertsCreated: number;
-    };
-    error?: string;
-  }> {
+  async processPerpsCompetition(
+    competitionId: string,
+  ): Promise<PerpsCompetitionProcessingResult> {
     let syncResult: BatchPerpsSyncResult = { successful: [], failed: [] };
 
     try {
@@ -722,9 +711,40 @@ export class PerpsDataProcessor {
         );
       }
 
+      // 5. Calculate Calmar Ratio for ranking (only for active competitions with successful agents)
+      let calmarRatioResult;
+      if (competition.status === "active" && syncResult.successful.length > 0) {
+        try {
+          serviceLogger.info(
+            `[PerpsDataProcessor] Calculating Calmar Ratios for ${syncResult.successful.length} agents`,
+          );
+
+          calmarRatioResult = await this.calculateCalmarRatiosForCompetition(
+            competitionId,
+            syncResult.successful,
+          );
+
+          serviceLogger.info(
+            `[PerpsDataProcessor] Calmar Ratio calculations complete: ${calmarRatioResult.successful} successful, ${calmarRatioResult.failed} failed`,
+          );
+        } catch (error) {
+          serviceLogger.error(
+            `[PerpsDataProcessor] Error calculating Calmar Ratios:`,
+            error,
+          );
+          // Don't fail the entire process if Calmar calculation fails
+          calmarRatioResult = {
+            successful: 0,
+            failed: syncResult.successful.length,
+            errors: [error instanceof Error ? error.message : "Unknown error"],
+          };
+        }
+      }
+
       return {
         syncResult,
         monitoringResult,
+        calmarRatioResult,
       };
     } catch (error) {
       serviceLogger.error(
@@ -747,6 +767,144 @@ export class PerpsDataProcessor {
    */
   private shouldRunMonitoring(threshold: number | null): boolean {
     return threshold !== null && !isNaN(threshold) && threshold >= 0;
+  }
+
+  /**
+   * Calculate Calmar Ratios for all successful agents in a competition
+   * Processes in batches to avoid overloading the system
+   * @param competitionId Competition ID
+   * @param successfulAgents Agents that were successfully synced
+   * @returns Summary of calculation results
+   */
+  private async calculateCalmarRatiosForCompetition(
+    competitionId: string,
+    successfulAgents: SuccessfulAgentSync[],
+  ): Promise<CalmarRatioCalculationResult> {
+    if (successfulAgents.length === 0) {
+      return { successful: 0, failed: 0 };
+    }
+
+    const calmarService = new CalmarRatioService();
+    const results: Required<CalmarRatioCalculationResult> = {
+      successful: 0,
+      failed: 0,
+      errors: [],
+    };
+
+    // Process in batches to avoid overwhelming the system
+    const BATCH_SIZE = 10;
+    const MAX_ERRORS_TO_STORE = 100; // Cap errors array to prevent memory issues
+    const MAX_CONSECUTIVE_FAILURES = 3; // Circuit breaker threshold
+
+    let consecutiveFailures = 0;
+    let systemicFailureDetected = false;
+
+    for (let i = 0; i < successfulAgents.length; i += BATCH_SIZE) {
+      const batch = successfulAgents.slice(i, i + BATCH_SIZE);
+
+      // Use Promise.allSettled so one failure doesn't block others
+      const batchResults = await Promise.allSettled(
+        batch.map((agent) =>
+          calmarService.calculateAndSaveCalmarRatio(
+            agent.agentId,
+            competitionId,
+          ),
+        ),
+      );
+
+      // Count successes and failures in this batch
+      let batchFailures = 0;
+
+      batchResults.forEach((result, idx) => {
+        if (result.status === "fulfilled") {
+          results.successful++;
+        } else {
+          results.failed++;
+          batchFailures++;
+
+          const agent = batch[idx];
+          const errorMsg = `Agent ${agent?.agentId}: ${result.reason?.message || "Unknown error"}`;
+
+          // Only store first N errors to prevent memory issues
+          if (results.errors.length < MAX_ERRORS_TO_STORE) {
+            results.errors.push(errorMsg);
+          } else if (results.errors.length === MAX_ERRORS_TO_STORE) {
+            results.errors.push(
+              `... and ${successfulAgents.length - i} more errors`,
+            );
+          }
+
+          // Log individual failures for debugging
+          serviceLogger.warn(
+            `[PerpsDataProcessor] Failed to calculate Calmar for ${agent?.agentId}: ${result.reason}`,
+          );
+        }
+      });
+
+      // Circuit breaker: Check if entire batch failed
+      const batchFailureRate = batchFailures / batch.length;
+      if (batchFailureRate === 1) {
+        consecutiveFailures++;
+
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          systemicFailureDetected = true;
+          const remainingAgents = successfulAgents.length - (i + BATCH_SIZE);
+
+          serviceLogger.error(
+            `[PerpsDataProcessor] Circuit breaker triggered: ${consecutiveFailures} consecutive batch failures. ` +
+              `Stopping Calmar calculations. ${remainingAgents} agents skipped.`,
+          );
+
+          // Mark remaining agents as failed
+          results.failed += remainingAgents;
+
+          // Add circuit breaker message to errors
+          if (results.errors.length < MAX_ERRORS_TO_STORE) {
+            results.errors.push(
+              `Circuit breaker triggered after ${consecutiveFailures} consecutive batch failures. ` +
+                `${remainingAgents} agents skipped.`,
+            );
+          }
+
+          break; // Exit the loop
+        }
+      } else {
+        // Reset counter if batch had any successes
+        consecutiveFailures = 0;
+      }
+
+      // Log batch progress
+      if (
+        (i + BATCH_SIZE) % 50 === 0 ||
+        i + BATCH_SIZE >= successfulAgents.length
+      ) {
+        serviceLogger.info(
+          `[PerpsDataProcessor] Calmar calculation progress: ${i + BATCH_SIZE}/${successfulAgents.length} agents processed`,
+        );
+      }
+    }
+
+    // Log if we hit the error cap
+    if (results.errors.length > MAX_ERRORS_TO_STORE) {
+      serviceLogger.warn(
+        `[PerpsDataProcessor] Error array capped at ${MAX_ERRORS_TO_STORE} entries. Total failures: ${results.failed}`,
+      );
+    }
+
+    // Log if circuit breaker was triggered
+    if (systemicFailureDetected) {
+      serviceLogger.error(
+        `[PerpsDataProcessor] Calmar calculations halted due to systemic failures. ` +
+          `Successful: ${results.successful}, Failed: ${results.failed}`,
+      );
+    }
+
+    // Only include errors field if there are actual errors
+    return {
+      successful: results.successful,
+      failed: results.failed,
+      ...(results.errors.length > 0 && { errors: results.errors }),
+    };
   }
 
   /**

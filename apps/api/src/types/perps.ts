@@ -2,6 +2,7 @@
  * Perps Provider Types
  * Generic types for perpetual futures data providers
  */
+import type { BatchPerpsSyncResult } from "./index.js";
 
 /**
  * Generic perps account summary
@@ -175,4 +176,40 @@ export interface PerpsProcessingResult {
   positionsProcessed: number;
   summaryCreated: boolean;
   error?: string;
+}
+
+/**
+ * Result of Calmar Ratio calculations
+ */
+export interface CalmarRatioCalculationResult {
+  successful: number;
+  failed: number;
+  errors?: string[];
+}
+
+/**
+ * Result of monitoring self-funding violations
+ */
+export interface PerpsMonitoringResult {
+  successful: number;
+  failed: number;
+  alertsCreated: number;
+}
+
+/**
+ * Combined result of processing a perps competition
+ */
+export interface PerpsCompetitionProcessingResult {
+  syncResult: BatchPerpsSyncResult;
+  monitoringResult?: PerpsMonitoringResult;
+  calmarRatioResult?: CalmarRatioCalculationResult;
+  error?: string;
+}
+
+/**
+ * Extended batch sync result with account summaries
+ */
+export interface BatchPerpsSyncWithSummaries extends BatchPerpsSyncResult {
+  accountSummaries: Map<string, PerpsAccountSummary>;
+  agents: Array<{ agentId: string; walletAddress: string }>;
 }

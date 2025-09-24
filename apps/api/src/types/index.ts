@@ -1154,18 +1154,28 @@ export interface AgentPerpsSyncResult {
 }
 
 /**
+ * Successfully synced agent data
+ */
+export interface SuccessfulAgentSync {
+  agentId: string;
+  positions: SelectPerpetualPosition[];
+  summary: SelectPerpsAccountSummary;
+}
+
+/**
+ * Failed agent sync
+ */
+export interface FailedAgentSync {
+  agentId: string;
+  error: Error;
+}
+
+/**
  * Result of batch syncing multiple agents
  */
 export interface BatchPerpsSyncResult {
-  successful: Array<{
-    agentId: string;
-    positions: SelectPerpetualPosition[];
-    summary: SelectPerpsAccountSummary;
-  }>;
-  failed: Array<{
-    agentId: string;
-    error: Error;
-  }>;
+  successful: SuccessfulAgentSync[];
+  failed: FailedAgentSync[];
 }
 
 /**
