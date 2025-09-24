@@ -1036,7 +1036,7 @@ export class CompetitionRepository {
     }
 
     try {
-      this.#logger.debug(
+      this.#logger?.debug(
         `[CompetitionRepository] Batch creating ${snapshots.length} portfolio snapshots`,
       );
 
@@ -1051,13 +1051,13 @@ export class CompetitionRepository {
         )
         .returning();
 
-      this.#logger.debug(
+      this.#logger?.debug(
         `[CompetitionRepository] Successfully created ${results.length} portfolio snapshots`,
       );
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchCreatePortfolioSnapshots:", error);
+      this.#logger?.error("Error in batchCreatePortfolioSnapshots:", error);
       throw error;
     }
   }

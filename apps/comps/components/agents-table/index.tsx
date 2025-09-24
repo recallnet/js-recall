@@ -31,6 +31,7 @@ import { Pagination } from "@/components/pagination/index";
 import { useBoostTotals, useBoosts } from "@/hooks/useBoost";
 import { useSession } from "@/hooks/useSession";
 import { useVote } from "@/hooks/useVote";
+import { attoValueToNumberValue } from "@/lib/atto-conversions";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import {
   AgentCompetition,
@@ -90,6 +91,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     tanstackClient.boost.balance.queryOptions({
       input: { competitionId: competition.id },
       enabled: session.isAuthenticated,
+      select: (res) => attoValueToNumberValue(res.balance),
     }),
   );
   const { data: userBoosts, isLoading: isLoadingUserBoosts } = useBoosts(
@@ -130,7 +132,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   // Calculate total boost value (available + user spent) for progress bar
   const totalBoostValue = useMemo(() => {
-    const availableBalance = isSuccessBoostBalance ? boostBalance.balance : 0n;
+    const availableBalance = isSuccessBoostBalance ? boostBalance : 0;
     return availableBalance + userSpentBoost;
   }, [boostBalance, userSpentBoost, isSuccessBoostBalance]);
 
@@ -367,9 +369,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               <span className="flex items-center gap-2 whitespace-nowrap text-2xl font-bold">
                 <Zap className="h-4 w-4 text-yellow-500" />
                 <span className="font-bold">
-                  {isBoostDataLoading
-                    ? "..."
-                    : boostBalance?.balance.toString()}
+                  {isBoostDataLoading ? "..." : boostBalance?.toString()}
                 </span>
                 <span className="text-secondary-foreground text-sm font-medium">
                   available
@@ -381,9 +381,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   style={{
                     width:
                       isSuccessBoostBalance &&
-                      boostBalance.balance > 0n &&
-                      totalBoostValue > 0n
-                        ? `${Math.min(100, Number((boostBalance.balance * 100n) / totalBoostValue))}%`
+                      boostBalance > 0 &&
+                      totalBoostValue > 0
+                        ? `${Math.min(100, Number((boostBalance * 100) / totalBoostValue))}%`
                         : "0%",
                   }}
                 />
@@ -510,7 +510,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           if (!open) setSelectedAgent(null);
         }}
         agent={selectedAgent}
-        availableBoost={boostBalance?.balance || 0}
+        availableBoost={boostBalance || 0}
         currentAgentBoostTotal={
           selectedAgent && boostTotals?.success
             ? boostTotals.boostTotals[selectedAgent.id] || 0
