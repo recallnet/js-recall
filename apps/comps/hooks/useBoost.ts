@@ -1,3 +1,4 @@
+import type * as _A from "@orpc/contract";
 import {
   UseMutationOptions,
   useMutation,
@@ -7,22 +8,16 @@ import {
 
 import { useSession } from "@/hooks/useSession";
 import { apiClient } from "@/lib/api-client";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 export const useBoostBalance = (competitionId: string) => {
   const { isAuthenticated } = useSession();
-  return useQuery({
-    queryKey: ["boostBalance", competitionId],
-    queryFn: async () => {
-      try {
-        const res = await apiClient.getBoostBalance({ competitionId });
-        if (!res.success) throw new Error("Error when fetching boost balance");
-        return res;
-      } catch (error) {
-        throw error;
-      }
-    },
-    enabled: isAuthenticated,
-  });
+  return useQuery(
+    tanstackClient.boost.balance.queryOptions({
+      input: { competitionId },
+      enabled: isAuthenticated,
+    }),
+  );
 };
 
 export const useBoosts = (competitionId: string) => {

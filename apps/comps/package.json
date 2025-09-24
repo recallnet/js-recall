@@ -23,6 +23,7 @@
     "@lottiefiles/dotlottie-react": "^0.14.3",
     "@next/third-parties": "^15.3.4",
     "@orpc/client": "^1.8.9",
+    "@orpc/contract": "^1.9.0",
     "@orpc/server": "^1.8.9",
     "@orpc/tanstack-query": "^1.8.9",
     "@privy-io/node": "^0.1.0",
