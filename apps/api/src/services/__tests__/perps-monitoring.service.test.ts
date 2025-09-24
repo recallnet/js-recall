@@ -97,6 +97,8 @@ describe("PerpsMonitoringService", () => {
     vi.mocked(perpsRepo.batchCreatePerpsSelfFundingAlerts).mockResolvedValue(
       [],
     );
+    // Mock the new batchSaveTransferHistory method
+    vi.mocked(perpsRepo.batchSaveTransferHistory).mockResolvedValue([]);
 
     service = new PerpsMonitoringService(mockProviderWithTransfers);
   });
@@ -440,6 +442,231 @@ describe("PerpsMonitoringService", () => {
           mockProviderWithTransfers.getAccountSummary,
         ).toHaveBeenCalledWith("0x123");
         expect(result.successful).toHaveLength(1);
+      });
+    });
+
+    describe("TWR transfer history saving", () => {
+      it("should save all transfers for TWR calculations", async () => {
+        const transfers: Transfer[] = [
+          {
+            type: "deposit",
+            amount: 500,
+            asset: "USDC",
+            from: "0xExternal",
+            to: "0x123",
+            timestamp: new Date("2024-01-15"),
+            txHash: "0xabc",
+            chainId: 42161,
+            equityBefore: 10000,
+            equityAfter: 10500,
+          },
+          {
+            type: "withdraw", // Should save withdrawals too
+            amount: 200,
+            asset: "USDC",
+            from: "0x123",
+            to: "0xExternal",
+            timestamp: new Date("2024-01-16"),
+            txHash: "0xdef",
+            chainId: 137,
+            equityBefore: 10500,
+            equityAfter: 10300,
+          },
+        ];
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue(transfers);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should save both deposits and withdrawals
+        expect(perpsRepo.batchSaveTransferHistory).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentId: "agent-1",
+              competitionId: "comp-1",
+              type: "deposit",
+              amount: "500",
+              asset: "USDC",
+              fromAddress: "0xExternal",
+              toAddress: "0x123",
+              txHash: "0xabc",
+              chainId: 42161,
+              equityBefore: "10000",
+              equityAfter: "10500",
+              transferTimestamp: new Date("2024-01-15"),
+            }),
+            expect.objectContaining({
+              agentId: "agent-1",
+              competitionId: "comp-1",
+              type: "withdraw",
+              amount: "200",
+              asset: "USDC",
+              fromAddress: "0x123",
+              toAddress: "0xExternal",
+              txHash: "0xdef",
+              chainId: 137,
+              equityBefore: "10500",
+              equityAfter: "10300",
+              transferTimestamp: new Date("2024-01-16"),
+            }),
+          ]),
+        );
+      });
+
+      it("should handle missing txHash with fallback", async () => {
+        const transferWithoutTxHash: Transfer = {
+          type: "deposit",
+          amount: 100,
+          asset: "USDC",
+          from: "0xExternal",
+          to: "0x123",
+          timestamp: new Date("2024-01-15T10:00:00Z"),
+          // No txHash
+          chainId: 42161,
+          equityBefore: 10000,
+          equityAfter: 10100,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([transferWithoutTxHash]);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should create fallback txHash
+        expect(perpsRepo.batchSaveTransferHistory).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              txHash: "2024-01-15T10:00:00.000Z-deposit-100", // Fallback format
+            }),
+          ]),
+        );
+      });
+
+      it("should handle missing chainId with default", async () => {
+        const transferWithoutChainId: Transfer = {
+          type: "deposit",
+          amount: 100,
+          asset: "USDC",
+          from: "0xExternal",
+          to: "0x123",
+          timestamp: new Date("2024-01-15"),
+          txHash: "0xabc",
+          // No chainId
+          equityBefore: 10000,
+          equityAfter: 10100,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([transferWithoutChainId]);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should use default chainId of 0
+        expect(perpsRepo.batchSaveTransferHistory).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              chainId: 0, // Default value
+            }),
+          ]),
+        );
+      });
+
+      it("should continue monitoring if TWR save fails", async () => {
+        // Mock save to fail
+        vi.mocked(perpsRepo.batchSaveTransferHistory).mockRejectedValueOnce(
+          new Error("Database error"),
+        );
+
+        const suspiciousTransfer: Transfer = {
+          type: "deposit",
+          amount: 500, // Above threshold
+          asset: "USDC",
+          from: "0xExternal",
+          to: "0x123",
+          timestamp: new Date("2024-01-15"),
+          txHash: "0xabc",
+          equityBefore: 10000,
+          equityAfter: 10500,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([suspiciousTransfer]);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should still detect self-funding even if TWR save failed
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(
+          perpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              detectionMethod: "transfer_history",
+              unexplainedAmount: "500",
+            }),
+          ]),
+        );
+      });
+
+      it("should not call batchSaveTransferHistory when no transfers exist", async () => {
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([]); // No transfers
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should not call save when no transfers
+        expect(perpsRepo.batchSaveTransferHistory).not.toHaveBeenCalled();
       });
     });
 

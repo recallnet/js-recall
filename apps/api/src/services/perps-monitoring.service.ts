@@ -1,10 +1,14 @@
 import { Decimal } from "decimal.js";
 
-import { InsertPerpsSelfFundingAlert } from "@recallnet/db/schema/trading/types";
+import {
+  InsertPerpsSelfFundingAlert,
+  InsertPerpsTransferHistory,
+} from "@recallnet/db/schema/trading/types";
 
 import {
   batchCreatePerpsSelfFundingAlerts,
   batchGetAgentsSelfFundingAlerts,
+  batchSaveTransferHistory,
   getPerpsCompetitionConfig,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
@@ -310,6 +314,7 @@ export class PerpsMonitoringService {
   /**
    * Check transfer history for deposits after competition start
    * Detects both individual large deposits and cumulative small deposits (structuring)
+   * Also saves all transfers to database for TWR calculations
    */
   private async checkTransferHistory(
     walletAddress: string,
@@ -328,6 +333,12 @@ export class PerpsMonitoringService {
         walletAddress,
         competitionStartDate,
       );
+
+      // Save all transfers to database for TWR calculations
+      // This happens BEFORE self-funding checks so we capture data regardless
+      if (transfers.length > 0) {
+        await this.saveTransfersForTWR(transfers, agentId, competitionId);
+      }
 
       // Get ALL deposits to this address after competition start
       const allDeposits = transfers.filter(
@@ -530,6 +541,51 @@ export class PerpsMonitoringService {
         error,
       );
       return false;
+    }
+  }
+
+  /**
+   * Save transfers to database for TWR calculations
+   * Transforms Transfer objects into database format and batch saves them
+   */
+  private async saveTransfersForTWR(
+    transfers: Transfer[],
+    agentId: string,
+    competitionId: string,
+  ): Promise<void> {
+    try {
+      // Transform Transfer objects to InsertPerpsTransferHistory format
+      const transferRecords: InsertPerpsTransferHistory[] = transfers.map(
+        (t) => ({
+          agentId,
+          competitionId,
+          type: t.type,
+          amount: t.amount.toString(),
+          asset: t.asset,
+          fromAddress: t.from,
+          toAddress: t.to,
+          txHash:
+            t.txHash || `${t.timestamp.toISOString()}-${t.type}-${t.amount}`, // Fallback for missing txHash
+          chainId: t.chainId || 0, // Default to 0 if not provided
+          equityBefore: t.equityBefore.toString(),
+          equityAfter: t.equityAfter.toString(),
+          transferTimestamp: t.timestamp,
+        }),
+      );
+
+      // Batch save all transfers
+      const saved = await batchSaveTransferHistory(transferRecords);
+
+      serviceLogger.info(
+        `[PerpsMonitoringService] Saved ${saved.length} transfers for agent ${agentId} in competition ${competitionId}`,
+      );
+    } catch (error) {
+      // Log error but don't fail the monitoring process
+      // TWR calculation is important but not critical for self-funding detection
+      serviceLogger.error(
+        `[PerpsMonitoringService] Failed to save transfers for TWR:`,
+        error,
+      );
     }
   }
 }
