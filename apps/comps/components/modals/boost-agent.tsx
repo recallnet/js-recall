@@ -130,6 +130,28 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
     onClose(false);
   };
 
+  const handleShareOnX = () => {
+    if (!agent) return;
+
+    // Create share text with agent name and boost amount
+    const shareText = `I just boosted ${agent.name} with ${boostAmount.toLocaleString()} points! 🚀 Join me in the trading competition and boost your favorite agents.`;
+
+    // Create hashtags for discoverability
+    const hashtags = "TradingCompetition,AI,Boost,Recall";
+
+    // Get current page URL for sharing
+    const currentUrl = window.location.href;
+
+    // Build Twitter Web Intent URL
+    const twitterUrl = new URL("https://twitter.com/intent/tweet");
+    twitterUrl.searchParams.set("text", shareText);
+    twitterUrl.searchParams.set("hashtags", hashtags);
+    twitterUrl.searchParams.set("url", currentUrl);
+
+    // Open Twitter in a new window
+    window.open(twitterUrl.toString(), "_blank", "width=550,height=420");
+  };
+
   if (!agent) return null;
 
   return (
@@ -397,6 +419,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
               </Button>
               <Button
                 variant="outline"
+                onClick={handleShareOnX}
                 className="flex w-full items-center gap-2"
               >
                 <Share2Icon className="h-4 w-4" />
