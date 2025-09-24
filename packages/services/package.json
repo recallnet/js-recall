@@ -54,6 +54,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
+    "@coingecko/coingecko-typescript": "^2.0.0",
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
     "@recallnet/rewards": "workspace:*",
