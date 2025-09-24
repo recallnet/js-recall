@@ -1,11 +1,7 @@
 /**
  * API response types and base interfaces
  */
-import type {
-  AgentPublic,
-  Agent as BaseAgent,
-  User,
-} from "../../src/types/index.js";
+import type { AgentPublic, User } from "../../src/types/index.js";
 
 // Base response type for all API responses
 export interface ApiResponse {
