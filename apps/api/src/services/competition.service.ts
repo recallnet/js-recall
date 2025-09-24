@@ -11,10 +11,7 @@ import type { Transaction as DatabaseTransaction } from "@recallnet/db/types";
 import { config } from "@/config/index.js";
 import { buildPaginationResponse } from "@/controllers/request-helpers.js";
 import { db } from "@/database/db.js";
-import {
-  findById as findAgentById,
-  findByCompetition,
-} from "@/database/repositories/agent-repository.js";
+import { findByCompetition } from "@/database/repositories/agent-repository.js";
 import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
 import { resetAgentBalances } from "@/database/repositories/balance-repository.js";
 import {
@@ -75,6 +72,47 @@ import {
   AgentDbSortFields,
   AgentQueryParams,
 } from "@/types/sort/agent.js";
+
+/**
+ * Parameters for creating a new competition
+ */
+export interface CreateCompetitionParams {
+  name: string;
+  description?: string;
+  tradingType?: CrossChainTradingType;
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  type?: CompetitionType;
+  startDate?: Date;
+  endDate?: Date;
+  votingStartDate?: Date;
+  votingEndDate?: Date;
+  joinStartDate?: Date;
+  joinEndDate?: Date;
+  maxParticipants?: number;
+  tradingConstraints?: TradingConstraintsInput;
+  rewards?: Record<number, number>;
+  perpsProvider?: {
+    provider: "symphony" | "hyperliquid";
+    initialCapital?: number;
+    selfFundingThreshold?: number;
+    apiUrl?: string;
+  };
+}
+
+/**
+ * Return type for started competition with trading constraints and agent IDs
+ */
+export type StartedCompetitionResult = SelectCompetition & {
+  tradingConstraints: {
+    minimumPairAgeHours?: number;
+    minimum24hVolumeUsd?: number;
+    minimumLiquidityUsd?: number;
+    minimumFdvUsd?: number;
+  };
+  agentIds: string[];
+};
 
 interface TradingConstraintsInput {
   minimumPairAgeHours?: number;
@@ -408,30 +446,7 @@ export class CompetitionService {
     tradingConstraints,
     rewards,
     perpsProvider,
-  }: {
-    name: string;
-    description?: string;
-    tradingType?: CrossChainTradingType;
-    sandboxMode?: boolean;
-    externalUrl?: string;
-    imageUrl?: string;
-    type?: CompetitionType;
-    startDate?: Date;
-    endDate?: Date;
-    votingStartDate?: Date;
-    votingEndDate?: Date;
-    joinStartDate?: Date;
-    joinEndDate?: Date;
-    maxParticipants?: number;
-    tradingConstraints?: TradingConstraintsInput;
-    rewards?: Record<number, number>;
-    perpsProvider?: {
-      provider: "symphony" | "hyperliquid";
-      initialCapital?: number;
-      selfFundingThreshold?: number;
-      apiUrl?: string;
-    };
-  }) {
+  }: CreateCompetitionParams) {
     const id = uuidv4();
 
     const competition: Parameters<typeof createCompetition>[0] = {
@@ -560,6 +575,50 @@ export class CompetitionService {
   }
 
   /**
+   * Validates agent IDs and returns valid and invalid lists
+   * @param agentIds Array of agent IDs to validate
+   * @returns List of valid agent IDs
+   */
+  private async validateAgentIds(agentIds: string[]): Promise<string[]> {
+    const validAgentIds: string[] = [];
+    const invalidAgentIds: string[] = [];
+
+    for (const agentId of agentIds) {
+      const agent = await this.agentService.getAgent(agentId);
+      if (!agent || agent.status !== "active") {
+        invalidAgentIds.push(agentId);
+      } else {
+        validAgentIds.push(agentId);
+      }
+    }
+
+    // If there are invalid agent IDs, throw an error with the list
+    if (invalidAgentIds.length > 0) {
+      throw new ApiError(
+        400,
+        `Cannot start competition: the following agent IDs are invalid or inactive: ${invalidAgentIds.join(", ")}`,
+      );
+    }
+
+    return validAgentIds;
+  }
+
+  /**
+   * Gets pre-registered agent IDs for a competition
+   * @param competitionId The competition ID
+   * @returns Array of pre-registered agent IDs
+   */
+  private async getPreRegisteredAgentIds(
+    competitionId: string,
+  ): Promise<string[]> {
+    const competitionAgents = await this.agentService.getAgentsForCompetition(
+      competitionId,
+      { sort: "", limit: 1000, offset: 0 },
+    );
+    return competitionAgents.agents.map((agent) => agent.id);
+  }
+
+  /**
    * Start a competition.
    * For all agents in the competition, resets their portfolio balances to starting values,
    * ensures they are registered and active in the competition, and takes an initial portfolio
@@ -574,14 +633,16 @@ export class CompetitionService {
     competitionId: string,
     agentIds: string[],
     tradingConstraints?: TradingConstraintsInput,
-  ) {
+  ): Promise<StartedCompetitionResult> {
     const competition = await findById(competitionId);
     if (!competition) {
       throw new Error(`Competition not found: ${competitionId}`);
     }
 
     if (competition.status !== "pending") {
-      throw new Error(`Competition cannot be started: ${competition.status}`);
+      throw new Error(
+        `Competition is already in ${competition.status} state and cannot be started`,
+      );
     }
 
     const activeCompetition = await findActive();
@@ -591,8 +652,28 @@ export class CompetitionService {
       );
     }
 
+    // Validate provided agent IDs
+    const validAgentIds = await this.validateAgentIds(agentIds);
+
+    // Get pre-registered agents
+    const preRegisteredAgentIds =
+      await this.getPreRegisteredAgentIds(competitionId);
+
+    // Combine agent lists (remove duplicates)
+    const finalAgentIds = [
+      ...new Set([...validAgentIds, ...preRegisteredAgentIds]),
+    ];
+
+    // Check if we have any agents
+    if (finalAgentIds.length === 0) {
+      throw new ApiError(
+        400,
+        "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
+      );
+    }
+
     // Process all agent additions and activations
-    for (const agentId of agentIds) {
+    for (const agentId of finalAgentIds) {
       // Handle balances based on competition type
       if (competition.type === "trading") {
         // Paper trading: Reset to standard balances (5k USDC per chain)
@@ -606,17 +687,7 @@ export class CompetitionService {
         );
       }
 
-      // Ensure agent is globally active (but don't force reactivation)
-      const agent = await findAgentById(agentId);
-      if (!agent) {
-        throw new Error(`Agent not found: ${agentId}`);
-      }
-
-      if (agent.status !== "active") {
-        throw new Error(
-          `Cannot start competition with agent ${agentId}: agent status is ${agent.status}`,
-        );
-      }
+      // Note: Agent validation already done above, so we know agent exists and is active
 
       // Register agent in the competition (automatically sets status to 'active')
       try {
@@ -732,7 +803,51 @@ export class CompetitionService {
         minimumLiquidityUsd: newConstraints?.minimumLiquidityUsd,
         minimumFdvUsd: newConstraints?.minimumFdvUsd,
       },
-    };
+      agentIds: finalAgentIds,
+    } as StartedCompetitionResult;
+  }
+
+  /**
+   * Start or create and start a competition.
+   * If competitionId is provided, starts the existing competition.
+   * If competitionId is not provided, creates a new competition with the given params and starts it.
+   * @param params Parameters including either competitionId or competition creation data
+   * @returns The started competition with final agent IDs
+   */
+  async startOrCreateCompetition(params: {
+    competitionId?: string;
+    agentIds: string[];
+    tradingConstraints?: TradingConstraintsInput;
+    // Optional creation params (required when competitionId not provided)
+    creationParams?: CreateCompetitionParams;
+  }): Promise<StartedCompetitionResult> {
+    let competitionId: string;
+
+    if (params.competitionId) {
+      competitionId = params.competitionId;
+    } else {
+      // Create new competition
+      if (!params.creationParams?.name) {
+        throw new ApiError(
+          400,
+          "Name is required when creating a new competition",
+        );
+      }
+
+      const newCompetition = await this.createCompetition({
+        ...params.creationParams,
+        tradingConstraints: params.tradingConstraints,
+      });
+
+      competitionId = newCompetition.id;
+    }
+
+    // Start the competition
+    return await this.startCompetition(
+      competitionId,
+      params.agentIds,
+      params.tradingConstraints,
+    );
   }
 
   /**
