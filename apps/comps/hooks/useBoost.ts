@@ -1,4 +1,3 @@
-import type * as _A from "@orpc/contract";
 import {
   UseMutationOptions,
   useMutation,
