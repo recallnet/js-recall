@@ -1,4 +1,9 @@
-import { createORPCClient, onError } from "@orpc/client";
+import {
+  SafeClient,
+  createORPCClient,
+  createSafeClient,
+  onError,
+} from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { RouterClient } from "@orpc/server";
 
@@ -17,3 +22,4 @@ const link = new RPCLink({
 
 // Create a client for your router
 export const client: RouterClient<typeof router> = createORPCClient(link);
+export const safeClient: SafeClient<typeof client> = createSafeClient(client);
