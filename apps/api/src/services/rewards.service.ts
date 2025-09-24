@@ -1,12 +1,24 @@
 import { MerkleTree } from "merkletreejs";
-import { Hex, encodePacked, hexToBytes, keccak256 } from "viem";
+import { Hex, bytesToHex, encodePacked, hexToBytes, keccak256 } from "viem";
 
+import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/voting/defs";
-import { InsertReward } from "@recallnet/db/schema/voting/types";
+import {
+  BoostAllocation,
+  BoostAllocationWindow,
+  Leaderboard,
+  Reward,
+  calculateRewardsForCompetitors,
+  calculateRewardsForUsers,
+} from "@recallnet/rewards";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
+import {
+  findById,
+  findLeaderboardByCompetitionWithWallets,
+} from "@/database/repositories/competition-repository.js";
 import {
   getRewardsByCompetition,
   getRewardsTreeByCompetition,
@@ -19,8 +31,13 @@ import { serviceLogger } from "@/lib/logger.js";
  */
 export class RewardsService {
   private rewardsAllocator: RewardsAllocator | null = null;
+  private boostRepository: BoostRepository;
 
-  constructor(rewardsAllocator?: RewardsAllocator) {
+  constructor(
+    boostRepository: BoostRepository,
+    rewardsAllocator?: RewardsAllocator,
+  ) {
+    this.boostRepository = boostRepository;
     if (rewardsAllocator) {
       this.rewardsAllocator = rewardsAllocator;
     } else {
@@ -45,10 +62,75 @@ export class RewardsService {
   /**
    * Calculate rewards for a given input
    */
-  public async calculateRewards(): Promise<void> {
+  public async calculateRewards(
+    competitionId: string,
+    prizePoolUsers: bigint,
+    prizePoolCompetitors: bigint,
+  ): Promise<void> {
     try {
-      const rewards = await this.calculate();
-      await insertRewards(rewards);
+      const competition = await findById(competitionId);
+      if (!competition) {
+        throw new Error("Competition not found");
+      }
+
+      if (!competition.votingStartDate || !competition.votingEndDate) {
+        throw new Error("Voting start or end date not found");
+      }
+
+      if (competition.status !== "ended") {
+        throw new Error("Competition is not ended");
+      }
+
+      const boostAllocationWindow = {
+        start: competition.votingStartDate,
+        end: competition.votingEndDate,
+      };
+
+      const leaderboardWithWallets =
+        await findLeaderboardByCompetitionWithWallets(competitionId);
+      if (leaderboardWithWallets.length === 0) {
+        throw new Error("No leaderboard entries found");
+      }
+      const leaderBoard = leaderboardWithWallets.map((entry) => ({
+        competitor: entry.agentId,
+        wallet: entry.userWalletAddress,
+        rank: entry.rank,
+      }));
+
+      const boostSpendingData =
+        await this.boostRepository.userBoostSpending(competitionId);
+
+      const boostAllocations: BoostAllocation[] = boostSpendingData.map(
+        (entry) => {
+          return {
+            user: bytesToHex(entry.wallet) as string,
+            competitor: entry.agentId,
+            boost: -entry.deltaAmount, // Convert negative spending to positive boost
+            timestamp: entry.createdAt,
+          };
+        },
+      );
+
+      const rewards = this.calculate(
+        prizePoolUsers,
+        prizePoolCompetitors,
+        boostAllocations,
+        leaderBoard,
+        boostAllocationWindow,
+      );
+
+      // TODO: add user_id column to rewards table
+      await insertRewards(
+        rewards.map((reward) => ({
+          competitionId: competitionId,
+          address: reward.address,
+          amount: reward.amount,
+          leafHash: hexToBytes(
+            createLeafNode(reward.address as Hex, reward.amount),
+          ),
+          id: crypto.randomUUID(),
+        })),
+      );
     } catch (error) {
       serviceLogger.error("[RewardsService] Error in calculateRewards:", error);
       throw error;
@@ -233,9 +315,38 @@ export class RewardsService {
    * @returns Array of calculated rewards
    * @private
    */
-  private async calculate(): Promise<InsertReward[]> {
-    // TODO: Implement actual reward calculation logic
-    return [];
+  private calculate(
+    prizePoolUsers: bigint,
+    prizePoolCompetitors: bigint,
+    boostAllocations: BoostAllocation[],
+    leaderBoard: Leaderboard,
+    window: BoostAllocationWindow,
+  ): Reward[] {
+    const userRewards = calculateRewardsForUsers(
+      prizePoolUsers,
+      boostAllocations,
+      leaderBoard,
+      window,
+    );
+    const competitorRewards = calculateRewardsForCompetitors(
+      prizePoolCompetitors,
+      leaderBoard,
+    );
+
+    // in case an address is both a voter and a competitor, we need to sum the amounts
+    const rewards = [...userRewards, ...competitorRewards];
+    const rewardsByAddress = rewards.reduce(
+      (acc, reward) => {
+        acc[reward.address] = (acc[reward.address] || 0n) + reward.amount;
+        return acc;
+      },
+      {} as Record<string, bigint>,
+    );
+
+    return Object.entries(rewardsByAddress).map(([address, amount]) => ({
+      address,
+      amount,
+    }));
   }
 }
 
@@ -245,7 +356,7 @@ export class RewardsService {
  * @param amount The reward amount as a bigint
  * @returns Buffer containing the keccak256 hash of the encoded parameters
  */
-export function createLeafNode(address: `0x${string}`, amount: bigint): Hex {
+export function createLeafNode(address: Hex, amount: bigint): Hex {
   return keccak256(
     encodePacked(["string", "address", "uint256"], ["rl", address, amount]),
   );
