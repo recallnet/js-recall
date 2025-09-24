@@ -106,8 +106,6 @@ Code must pass all of these before merge:
 
 **Shared Packages:**
 
-- `@recallnet/api-sdk` - Auto-generated API client
-- `@recallnet/api-mcp` - MCP integration package
 - `@recallnet/ui2` - Modern UI components (shadcn/ui based)
 - `@recallnet/address-utils` - Address manipulation utilities
 - `@recallnet/db` - Database schema definitions and data access repositories
