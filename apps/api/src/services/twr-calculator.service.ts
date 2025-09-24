@@ -229,9 +229,10 @@ export class TWRCalculatorService {
     );
 
     // Filter transfers within our date range
+    // Use inclusive start, exclusive end [startDate, endDate) - standard time range pattern
     const relevantTransfers = sortedTransfers.filter((t) => {
       const transferTime = new Date(t.transferTimestamp);
-      return transferTime > startDate && transferTime < endDate;
+      return transferTime >= startDate && transferTime < endDate;
     });
 
     serviceLogger.debug(

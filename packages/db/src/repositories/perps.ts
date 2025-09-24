@@ -1096,6 +1096,17 @@ export class PerpsRepository {
 
   /**
    * Get transfer history for an agent in a competition
+   *
+   * NOTE: This method intentionally has NO LIMIT on results. While this could
+   * theoretically cause memory issues with thousands of transfers, in practice:
+   * 1. Competitions are typically 1 week long
+   * 2. Agents focus on trading, not constant self-funding
+   * 3. Even 100 transfers/day would only be 700 records (~100KB)
+   * 4. We need ALL transfers for accurate TWR calculation
+   *
+   * If this becomes an issue in production, consider implementing streaming
+   * or pagination with careful TWR period management.
+   *
    * @param agentId Agent ID
    * @param competitionId Competition ID
    * @param since Optional timestamp to get transfers after

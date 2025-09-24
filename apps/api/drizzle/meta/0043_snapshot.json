@@ -1,5 +1,5 @@
 {
-  "id": "5e791c3e-bb8e-4b2b-8e56-0f9b5a82dbb3",
+  "id": "c60a9b75-7f39-4f6b-b48e-a04409690ab0",
   "prevId": "5d83b2d4-3cc6-4e9b-b6df-938a0a9c644e",
   "version": "7",
   "dialect": "postgresql",
@@ -3319,6 +3319,33 @@
         "idx_perps_transfers_timestamp": {
           "name": "idx_perps_transfers_timestamp",
           "columns": [
+            {
+              "expression": "transfer_timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_perps_transfers_agent_comp_timestamp": {
+          "name": "idx_perps_transfers_agent_comp_timestamp",
+          "columns": [
+            {
+              "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
             {
               "expression": "transfer_timestamp",
               "isExpression": false,

@@ -51,5 +51,6 @@ CREATE INDEX "idx_perps_metrics_agent_comp" ON "trading_comps"."perps_risk_metri
 CREATE INDEX "idx_perps_metrics_calmar" ON "trading_comps"."perps_risk_metrics" USING btree ("competition_id","calmar_ratio" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "idx_perps_transfers_agent_comp" ON "trading_comps"."perps_transfer_history" USING btree ("agent_id","competition_id");--> statement-breakpoint
 CREATE INDEX "idx_perps_transfers_timestamp" ON "trading_comps"."perps_transfer_history" USING btree ("transfer_timestamp");--> statement-breakpoint
+CREATE INDEX "idx_perps_transfers_agent_comp_timestamp" ON "trading_comps"."perps_transfer_history" USING btree ("agent_id","competition_id","transfer_timestamp");--> statement-breakpoint
 CREATE INDEX "idx_twr_periods_metrics" ON "trading_comps"."perps_twr_periods" USING btree ("metrics_id");--> statement-breakpoint
 CREATE INDEX "idx_twr_periods_sequence" ON "trading_comps"."perps_twr_periods" USING btree ("metrics_id","sequence_number");

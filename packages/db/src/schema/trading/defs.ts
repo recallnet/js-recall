@@ -457,6 +457,13 @@ export const perpsTransferHistory = tradingComps.table(
       table.competitionId,
     ),
     index("idx_perps_transfers_timestamp").on(table.transferTimestamp),
+    // Compound index for efficient getAgentTransferHistory queries with since filter
+    // Covers: WHERE agent_id = ? AND competition_id = ? AND transfer_timestamp > ?
+    index("idx_perps_transfers_agent_comp_timestamp").on(
+      table.agentId,
+      table.competitionId,
+      table.transferTimestamp,
+    ),
     // Unique constraint since txHash is always required per API spec
     unique("idx_perps_transfers_tx_hash").on(table.txHash),
   ],
