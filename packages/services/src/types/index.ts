@@ -142,11 +142,37 @@ export interface Trade {
  */
 export interface PriceSource {
   getName(): string;
+
+  /**
+   * Get price for a single token
+   */
   getPrice(
     tokenAddress: string,
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null>;
+
+  /**
+   * Get prices for multiple tokens in batch
+   */
+  getBatchPrices(
+    tokenAddresses: string[],
+    chain: BlockchainType,
+    specificChain: SpecificChain,
+  ): Promise<Map<string, DexScreenerTokenInfo | null>>;
+
+  /**
+   * Determine blockchain type from token address format
+   */
+  determineChain(tokenAddress: string): BlockchainType;
+}
+
+/**
+ * Available price provider implementations
+ */
+export enum PriceProvider {
+  COINGECKO = "coingecko",
+  DEXSCREENER = "dexscreener",
 }
 
 // DexScreener API interfaces

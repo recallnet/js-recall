@@ -9,6 +9,14 @@ import {
 import { CrossChainTradingType } from "@recallnet/services/types";
 
 import { createSentryConfig } from "@/lib/sentry-config.js";
+<<<<<<< HEAD
+=======
+import {
+  CrossChainTradingType,
+  PriceProvider,
+  SpecificChain,
+} from "@/types/index.js";
+>>>>>>> 5d22d32d (feat(api): use CG or dexscreener in multichain provider)
 
 // Simple console logging for config initialization (before full logger setup)
 const configLogger = {
@@ -135,9 +143,7 @@ export const config = {
     coingecko: {
       apiKey: process.env.COINGECKO_API_KEY || "",
     },
-    // Domain for API authentication and verification purposes
-    domain:
-      process.env.API_DOMAIN || "https://api.competitions.recall.network/",
+    priceProvider: (process.env.PRICE_PROVIDER || "coingecko") as PriceProvider, // Default to CoinGecko
   },
 
   priceTracker: {
