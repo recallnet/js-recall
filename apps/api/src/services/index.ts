@@ -93,7 +93,10 @@ class ServiceRegistry {
       this._balanceService,
       this._priceTrackerService,
     );
-    this._adminService = new AdminService();
+    this._adminService = new AdminService(
+      this._userService,
+      this._agentService,
+    );
 
     // Initialize trading constraints service (no dependencies)
     this._tradingConstraintsService = new TradingConstraintsService();

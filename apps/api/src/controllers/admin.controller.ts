@@ -43,10 +43,7 @@ import {
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
 } from "./admin.schema.js";
-import {
-  checkUserUniqueConstraintViolation,
-  parseAdminSearchQuery,
-} from "./request-helpers.js";
+import { parseAdminSearchQuery } from "./request-helpers.js";
 
 // TODO: need user deactivation logic
 
@@ -138,108 +135,31 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        const {
-          walletAddress,
-          embeddedWalletAddress,
-          privyId,
-          name,
-          email,
-          userImageUrl,
-          userMetadata,
-          agentName,
-          agentHandle,
-          agentDescription,
-          agentImageUrl,
-          agentMetadata,
-          agentWalletAddress,
-        } = result.data;
+        // Delegate business logic to service
+        const { user, agent, agentError } =
+          await services.adminService.registerUserAndAgent(result.data);
 
-        try {
-          // Create the user
-          const user = await services.userService.registerUser(
-            walletAddress,
-            name,
-            email,
-            userImageUrl,
-            userMetadata,
-            privyId,
-            embeddedWalletAddress,
-          );
-
-          let agent = null;
-
-          // If agent details are provided, create an agent for this user
-          if (agentName) {
-            try {
-              agent = await services.agentService.createAgent({
-                ownerId: user.id,
-                name: agentName,
-                handle: agentHandle ?? generateHandleFromName(agentName), // Auto-generate from name
-                description: agentDescription,
-                imageUrl: agentImageUrl,
-                metadata: agentMetadata,
-                walletAddress: agentWalletAddress,
-              });
-            } catch (agentError) {
-              adminLogger.error("Error creating agent for user:", agentError);
-              // If agent creation fails, we still return the user but note the agent error
-              return res.status(201).json({
-                success: true,
-                user: toApiUser(user),
-                agentError:
-                  agentError instanceof Error
-                    ? agentError.message
-                    : "Failed to create agent",
-              });
-            }
-          }
-
-          // Return success with created user and agent
-          const response: AdminUserRegistrationResponse = {
+        // Handle case where agent creation failed but user was created successfully
+        if (agentError) {
+          return res.status(201).json({
             success: true,
             user: toApiUser(user),
-          };
-
-          if (agent) {
-            response.agent = toApiAgent(agent);
-          }
-
-          return res.status(201).json(response);
-        } catch (error) {
-          adminLogger.error("Error registering user:", error);
-
-          // Check if this is an invalid wallet address error
-          if (
-            error instanceof Error &&
-            (error.message.includes("Wallet address is required") ||
-              error.message.includes("Invalid Ethereum address"))
-          ) {
-            return res.status(400).json({
-              success: false,
-              error: error.message,
-            });
-          }
-
-          // Unique constraint violations → 409 Conflict with friendly message
-          const violatedField = checkUserUniqueConstraintViolation(error);
-          if (violatedField) {
-            return res.status(409).json({
-              success: false,
-              error: `A user with this ${violatedField} already exists`,
-            });
-          }
-
-          // Handle other errors
-          return res.status(500).json({
-            success: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Unknown error registering user",
+            agentError,
           });
         }
+
+        // Return success with created user and agent
+        const response: AdminUserRegistrationResponse = {
+          success: true,
+          user: toApiUser(user),
+        };
+
+        if (agent) {
+          response.agent = toApiAgent(agent);
+        }
+
+        return res.status(201).json(response);
       } catch (error) {
-        adminLogger.error("Uncaught error in registerUser:", error);
         next(error);
       }
     },

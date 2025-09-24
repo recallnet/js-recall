@@ -3,7 +3,12 @@ import * as fs from "fs";
 import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-import { InsertAdmin, SelectAdmin } from "@recallnet/db/schema/core/types";
+import {
+  InsertAdmin,
+  SelectAdmin,
+  SelectAgent,
+  SelectUser,
+} from "@recallnet/db/schema/core/types";
 
 import { config, reloadSecurityConfig } from "@/config/index.js";
 import {
@@ -20,8 +25,12 @@ import {
   updateLastLogin,
   updatePassword,
 } from "@/database/repositories/admin-repository.js";
+import { checkUserUniqueConstraintViolation } from "@/lib/error-utils.js";
+import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
+import { AgentService } from "@/services/agent.service.js";
+import { UserService } from "@/services/user.service.js";
 import { AdminMetadata, SearchAdminsParams } from "@/types/index.js";
 
 /**
@@ -34,9 +43,15 @@ export class AdminService {
   // Cache for admin profiles by ID
   private adminProfileCache: Map<string, SelectAdmin>; // adminId -> admin profile
 
-  constructor() {
+  // Service dependencies
+  private userService: UserService;
+  private agentService: AgentService;
+
+  constructor(userService: UserService, agentService: AgentService) {
     this.apiKeyCache = new Map();
     this.adminProfileCache = new Map();
+    this.userService = userService;
+    this.agentService = agentService;
   }
 
   /**
@@ -858,6 +873,119 @@ export class AdminService {
     } catch (error) {
       serviceLogger.error("[AdminManager] Health check failed:", error);
       return false;
+    }
+  }
+
+  /**
+   * Register a new user and optionally create their first agent
+   * @param userData User registration data
+   * @returns Result object with user and optionally agent data
+   * @throws {ApiError} With appropriate HTTP status code and message
+   */
+  async registerUserAndAgent(userData: {
+    walletAddress: string;
+    embeddedWalletAddress?: string;
+    privyId?: string;
+    name?: string;
+    email?: string;
+    userImageUrl?: string;
+    userMetadata?: Record<string, unknown>;
+    agentName?: string;
+    agentHandle?: string;
+    agentDescription?: string;
+    agentImageUrl?: string;
+    agentMetadata?: Record<string, unknown>;
+    agentWalletAddress?: string;
+  }): Promise<{
+    user: SelectUser;
+    agent?: SelectAgent;
+    agentError?: string;
+  }> {
+    try {
+      const {
+        walletAddress,
+        embeddedWalletAddress,
+        privyId,
+        name,
+        email,
+        userImageUrl,
+        userMetadata,
+        agentName,
+        agentHandle,
+        agentDescription,
+        agentImageUrl,
+        agentMetadata,
+        agentWalletAddress,
+      } = userData;
+
+      // Create the user
+      const user = await this.userService.registerUser(
+        walletAddress,
+        name,
+        email,
+        userImageUrl,
+        userMetadata,
+        privyId,
+        embeddedWalletAddress,
+      );
+
+      let agent: SelectAgent | undefined = undefined;
+      let agentError: string | undefined;
+
+      // If agent details are provided, create an agent for this user
+      if (agentName) {
+        try {
+          agent = await this.agentService.createAgent({
+            ownerId: user.id,
+            name: agentName,
+            handle: agentHandle ?? generateHandleFromName(agentName), // Auto-generate from name
+            description: agentDescription,
+            imageUrl: agentImageUrl,
+            metadata: agentMetadata,
+            walletAddress: agentWalletAddress,
+          });
+        } catch (error) {
+          serviceLogger.error("Error creating agent for user:", error);
+          // If agent creation fails, we still return the user but note the agent error
+          agentError =
+            error instanceof Error ? error.message : "Failed to create agent";
+        }
+      }
+
+      return {
+        user,
+        agent,
+        agentError,
+      };
+    } catch (error) {
+      serviceLogger.error("[AdminManager] Error registering user:", error);
+
+      if (error instanceof Error) {
+        // Check for invalid wallet address errors
+        if (
+          error.message.includes("Wallet address is required") ||
+          error.message.includes("Invalid Ethereum address")
+        ) {
+          throw new ApiError(400, error.message);
+        }
+
+        // Check for unique constraint violations
+        const constraintError = checkUserUniqueConstraintViolation(error);
+        if (constraintError) {
+          throw new ApiError(
+            409,
+            `A user with this ${constraintError} already exists`,
+          );
+        }
+      }
+
+      // For any other errors, wrap them as internal server errors
+      throw new ApiError(
+        500,
+        error instanceof Error
+          ? error.message
+          : "Unknown error registering user",
+      );
     }
   }
 
