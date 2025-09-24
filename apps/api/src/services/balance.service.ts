@@ -9,7 +9,7 @@ import {
   resetAgentBalances,
 } from "@/database/repositories/balance-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { SpecificChain } from "@/types/index.js";
+import { CompetitionType, SpecificChain } from "@/types/index.js";
 
 /**
  * Balance Service
@@ -208,10 +208,14 @@ export class BalanceService {
   }
 
   /**
-   * Reset an agent's balances to initial values
+   * Reset an agent's balances to initial values, based on the competition type
    * @param agentId The agent ID
+   * @param competitionType The competition type
    */
-  async resetAgentBalances(agentId: string): Promise<void> {
+  async resetAgentBalances(
+    agentId: string,
+    competitionType: CompetitionType,
+  ): Promise<void> {
     try {
       serviceLogger.debug(
         `[BalanceManager] Resetting balances for agent ${agentId}`,
@@ -222,8 +226,10 @@ export class BalanceService {
         { amount: number; symbol: string }
       >();
 
-      // Add specific chain token balances (more granular)
-      this.addSpecificChainTokensToBalances(initialBalances);
+      if (competitionType === "trading") {
+        // Paper trading: Reset to standard balances
+        this.addSpecificChainTokensToBalances(initialBalances);
+      }
 
       // Reset in database
       await resetAgentBalances(agentId, initialBalances);
@@ -235,9 +241,18 @@ export class BalanceService {
       });
       this.balanceCache.set(agentId, balanceMap);
 
-      serviceLogger.debug(
-        `[BalanceManager] Successfully reset balances for agent ${agentId}`,
-      );
+      switch (competitionType) {
+        case "trading":
+          serviceLogger.debug(
+            `[BalanceManager] Successfully reset paper trading balances for agent ${agentId}`,
+          );
+          break;
+        case "perpetual_futures":
+          serviceLogger.debug(
+            `[BalanceManager] Successfully cleared balances for perps agent ${agentId}`,
+          );
+          break;
+      }
     } catch (error) {
       serviceLogger.error(
         `[BalanceManager] Error resetting balances for agent ${agentId}:`,
