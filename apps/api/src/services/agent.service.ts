@@ -115,7 +115,7 @@ export class AgentService {
    * @param metadata Optional agent metadata
    * @param email Optional email address
    * @param walletAddress Optional Ethereum wallet address
-   * @returns The created agent with API credentials
+   * @returns The created agent with unencrypted API credentials for display to admin
    */
   async createAgent({
     ownerId,
@@ -135,7 +135,7 @@ export class AgentService {
     metadata?: AgentMetadata;
     email?: string;
     walletAddress?: string;
-  }) {
+  }): Promise<SelectAgent> {
     try {
       // Validate wallet address if provided
       if (walletAddress && !this.isValidEthereumAddress(walletAddress)) {

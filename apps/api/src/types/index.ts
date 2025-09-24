@@ -591,7 +591,7 @@ export function toApiUser(dbUser: SelectUser): User {
 }
 
 /**
- * Converts a database Agent object to API Agent format
+ * Converts a database Agent object to API Agent format, *including* unencrypted API credentials.
  * @param dbAgent Database agent object with null values
  * @returns API agent object with undefined values
  */
