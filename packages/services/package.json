@@ -1,0 +1,53 @@
+{
+  "name": "@recallnet/services",
+  "version": "0.0.0",
+  "license": "MIT AND Apache-2.0",
+  "private": true,
+  "description": "Recall Drizzle schema and data access repositories.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/recallnet/js-recall.git",
+    "directory": "packages/services"
+  },
+  "homepage": "https://github.com/recallnet/js-recall#readme",
+  "type": "module",
+  "exports": {
+    "./boost": {
+      "import": {
+        "types": "./dist/boost.d.ts",
+        "default": "./dist/boost.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test:integration": "vitest run --project integration",
+    "clean": "rm -rf .turbo node_modules dist",
+    "lint": "eslint . --max-warnings 0",
+    "docs:check": "typedoc --emit none",
+    "docs:build": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "typedoc --watch --serve",
+    "build": "tsup",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@recallnet/db": "workspace:*",
+    "neverthrow": "^8.2.0",
+    "pino": "^9.7.0"
+  },
+  "devDependencies": {
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "tsup": "^8.3.6",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
+    "typedoc-plugin-markdown": "^4.6.0",
+    "typescript": "^5.7.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
+  }
+}

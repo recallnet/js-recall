@@ -1,18 +1,16 @@
-import { os } from "@orpc/server";
 import { eq } from "drizzle-orm";
-import { IronSession } from "iron-session";
 
 import schema from "@recallnet/db/schema";
 
-import { Database, SessionData } from "@/rpc/types";
+import { base } from "@/rpc/context/base";
+import { Database } from "@/rpc/types";
 
-export const userMiddleware = os
-  .$context<{
-    ironSession: IronSession<SessionData>;
-    db: Database;
-  }>()
-  .middleware(async ({ context, next }) => {
-    const userId = context.ironSession.userId;
+import { privyUserMiddleware } from "./privy-user";
+
+export const userMiddleware = base
+  .middleware(privyUserMiddleware)
+  .concat(async ({ context, next }) => {
+    const userId = context.privyUser?.id;
     if (!userId) {
       return await next({
         context: {
@@ -22,7 +20,7 @@ export const userMiddleware = os
     }
 
     const user = await context.db.query.users.findFirst({
-      where: eq(schema.users.id, userId),
+      where: eq(schema.users.privyId, userId),
     });
 
     return await next({

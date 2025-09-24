@@ -1,9 +1,10 @@
 import { RPCHandler } from "@orpc/server/fetch";
 import { cookies } from "next/headers";
 
-import { db } from "@/db";
+import { db } from "@/lib/db";
+import { privyClient } from "@/lib/privy-client";
+import { boostService } from "@/lib/services";
 import { router } from "@/rpc/router/index";
-import { sessionOptions } from "@/session";
 
 const handler = new RPCHandler(router);
 
@@ -12,7 +13,8 @@ async function handleRequest(request: Request) {
     prefix: "/rpc",
     context: {
       cookies: await cookies(),
-      sessionOptions,
+      privyClient,
+      boostService,
       db,
     },
   });

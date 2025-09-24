@@ -1,12 +1,12 @@
-import { ORPCError, os } from "@orpc/server";
+import { ORPCError } from "@orpc/server";
 
-import { SelectUser } from "@recallnet/db/schema/core/types";
+import { base } from "@/rpc/context/base";
 
-export const authMiddleware = os
-  .$context<{
-    user: SelectUser | undefined;
-  }>()
-  .middleware(async ({ context, next }) => {
+import { userMiddleware } from "./user";
+
+export const authMiddleware = base
+  .middleware(userMiddleware)
+  .concat(async ({ context, next }) => {
     if (!context.user) {
       throw new ORPCError("UNAUTHORIZED");
     }

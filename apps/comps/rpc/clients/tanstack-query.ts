@@ -1,5 +1,6 @@
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { RouterUtils, createTanstackQueryUtils } from "@orpc/tanstack-query";
 
 import { client } from "./client-side";
 
-export const tanstackClient = createTanstackQueryUtils(client);
+export const tanstackClient: RouterUtils<typeof client> =
+  createTanstackQueryUtils(client);

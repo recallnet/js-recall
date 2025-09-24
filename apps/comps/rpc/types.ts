@@ -1,14 +1,3 @@
-import { SiweMessage } from "siwe";
-
-import { db } from "@/db";
-
-export interface SessionData {
-  nonce?: string;
-  siwe?: SiweMessage;
-  agentId?: string;
-  userId?: string;
-  adminId?: string;
-  wallet?: string;
-}
+import { db } from "@/lib/db";
 
 export type Database = typeof db;

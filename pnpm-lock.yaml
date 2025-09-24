@@ -56,6 +56,9 @@ importers:
       '@recallnet/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@recallnet/services':
+        specifier: workspace:*
+        version: link:../../packages/services
       '@recallnet/staking-contracts':
         specifier: workspace:*
         version: link:../../packages/staking-contracts
@@ -262,17 +265,17 @@ importers:
         specifier: ^15.3.4
         version: 15.3.4(next@15.3.2(@babel/core@7.28.0)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
       '@orpc/client':
-        specifier: ^1.8.6
+        specifier: ^1.8.9
         version: 1.8.9(@opentelemetry/api@1.9.0)
-      '@orpc/openapi':
-        specifier: ^1.8.6
-        version: 1.8.9(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@orpc/server':
-        specifier: ^1.8.6
+        specifier: ^1.8.9
         version: 1.8.9(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@orpc/tanstack-query':
-        specifier: ^1.8.6
-        version: 1.8.6(@opentelemetry/api@1.9.0)(@orpc/client@1.8.9(@opentelemetry/api@1.9.0))(@tanstack/query-core@5.76.0)
+        specifier: ^1.8.9
+        version: 1.8.9(@opentelemetry/api@1.9.0)(@orpc/client@1.8.9(@opentelemetry/api@1.9.0))(@tanstack/query-core@5.76.0)
+      '@privy-io/node':
+        specifier: ^0.1.0
+        version: 0.1.0(viem@2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23))
       '@privy-io/react-auth':
         specifier: ^2.24.0
         version: 2.24.0(@solana/web3.js@1.98.4(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10))(@types/react@19.1.4)(bs58@6.0.0)(bufferutil@4.0.9)(immer@10.1.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)(use-sync-external-store@1.5.0(react@19.1.0))(utf-8-validate@5.0.10)(zod@3.25.23)
@@ -291,6 +294,9 @@ importers:
       '@recallnet/fonts':
         specifier: workspace:*
         version: link:../../packages/fonts
+      '@recallnet/services':
+        specifier: workspace:*
+        version: link:../../packages/services
       '@recallnet/ui2':
         specifier: workspace:*
         version: link:../../packages/ui2
@@ -312,9 +318,6 @@ importers:
       '@vercel/analytics':
         specifier: ^1.5.0
         version: 1.5.0(next@15.3.2(@babel/core@7.28.0)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
-      '@vercel/postgres':
-        specifier: ^0.10.0
-        version: 0.10.0(utf-8-validate@5.0.10)
       '@wagmi/core':
         specifier: ^2.17.0
         version: 2.17.2(@tanstack/query-core@5.76.0)(@types/react@19.1.4)(immer@10.1.1)(react@19.1.0)(typescript@5.8.3)(use-sync-external-store@1.5.0(react@19.1.0))(viem@2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23))
@@ -342,9 +345,6 @@ importers:
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.1.0)
-      iron-session:
-        specifier: ^8.0.4
-        version: 8.0.4
       jdenticon:
         specifier: ^3.3.0
         version: 3.3.0
@@ -387,9 +387,6 @@ importers:
       recharts:
         specifier: ^3.1.0
         version: 3.1.0(@types/react@19.1.4)(react-dom@19.1.0(react@19.1.0))(react-is@18.3.1)(react@19.1.0)(redux@5.0.1)
-      siwe:
-        specifier: ^3.0.0
-        version: 3.0.0(ethers@6.14.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       uuid:
         specifier: ^9.0.0
         version: 9.0.1
@@ -540,6 +537,9 @@ importers:
       drizzle-zod:
         specifier: ^0.8.2
         version: 0.8.2(drizzle-orm@0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0))(zod@3.25.76)
+      neverthrow:
+        specifier: ^8.2.0
+        version: 8.2.0
       pino:
         specifier: ^9.7.0
         version: 9.7.0
@@ -681,6 +681,49 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.3.0)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1)
+
+  packages/services:
+    dependencies:
+      '@recallnet/db':
+        specifier: workspace:*
+        version: link:../db
+      neverthrow:
+        specifier: ^8.2.0
+        version: 8.2.0
+      pino:
+        specifier: ^9.7.0
+        version: 9.7.0
+    devDependencies:
+      '@recallnet/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@recallnet/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.3.0
+      tsup:
+        specifier: ^8.3.6
+        version: 8.5.0(jiti@2.4.2)(postcss@8.5.6)(tsx@4.20.5)(typescript@5.8.3)(yaml@2.8.1)
+      typedoc:
+        specifier: ^0.28.1
+        version: 0.28.4(typescript@5.8.3)
+      typedoc-plugin-coverage:
+        specifier: ^3.4.1
+        version: 3.4.1(typedoc@0.28.4(typescript@5.8.3))
+      typedoc-plugin-markdown:
+        specifier: ^4.6.0
+        version: 4.6.3(typedoc@0.28.4(typescript@5.8.3))
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.3
+      vite-tsconfig-paths:
+        specifier: ^5.1.4
+        version: 5.1.4(typescript@5.8.3)(vite@7.1.6(@types/node@24.3.0)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.5)(yaml@2.8.1))
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.3.0)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.5)(yaml@2.8.1)
 
   packages/staking-contracts:
     dependencies:
@@ -2668,6 +2711,10 @@ packages:
     resolution: {integrity: sha512-HxngEd2XUcg9xi20JkwlLCtYwfoFw4JGkuZpT+WlsPD4gB/cxkvTD8fSsoAnphGZhFdZYKeQIPCuFlWPm1uE0g==}
     engines: {node: ^14.21.3 || >=16}
 
+  '@noble/curves@1.9.7':
+    resolution: {integrity: sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==}
+    engines: {node: ^14.21.3 || >=16}
+
   '@noble/hashes@1.3.2':
     resolution: {integrity: sha512-MVC8EAQp7MvEcm30KWENFjgR+Mkmf+D189XJTkFIlwohU5hcBbn1ZkKq7KVTi2Hme3PMGF390DaL52beVrIihQ==}
     engines: {node: '>= 16'}
@@ -3097,12 +3144,6 @@ packages:
   '@orpc/interop@1.8.9':
     resolution: {integrity: sha512-S5fk+G9cVzRCfsvrs36woOjjgXGNFB9/TCEQsF6ZEDt0XGIodT8DS7UUWT7NzJsKvq61cR4NAAxvsejWZnaSlg==}
 
-  '@orpc/openapi-client@1.8.9':
-    resolution: {integrity: sha512-lV4+CH7nU9KBMx01npXLgnWcdNFlhrGEbKTet05ATlXXKlKtQ9J96Ll7GKYuI8ArXIa6Pydh/WBdBpllth+dWg==}
-
-  '@orpc/openapi@1.8.9':
-    resolution: {integrity: sha512-uSFCeyR+d+T8XIF5IzGYdvVpNKd1jDhfUFiXwFRu+7wLj8UG7esStsTqqOTK+sDFC+gs56goQdBPQbn5vmNlCw==}
-
   '@orpc/server@1.8.9':
     resolution: {integrity: sha512-VkTdiU5ED2Csj3NYcHg26T+naU0A9qv18/XidPwAlncmLuUNOG2B7LFBFVlRCTBxHzGkA3tUfZHBcH/r408sUQ==}
     peerDependencies:
@@ -3112,14 +3153,6 @@ packages:
       crossws:
         optional: true
       ws:
-        optional: true
-
-  '@orpc/shared@1.8.6':
-    resolution: {integrity: sha512-laRl5tvBZTFQVvdS7tWN83xlY7w7xVcn/U7GFVsy2a/lTBg4o0sK+bdN8EUGm0ijwxH1gOhUvbwinnSuXVRL8A==}
-    peerDependencies:
-      '@opentelemetry/api': '>=1.9.0'
-    peerDependenciesMeta:
-      '@opentelemetry/api':
         optional: true
 
   '@orpc/shared@1.8.9':
@@ -3145,10 +3178,10 @@ packages:
   '@orpc/standard-server@1.8.9':
     resolution: {integrity: sha512-NuF8j9KzCYUCZF5UKS2QN/HIfg98OR+3bIxqXhHk361Wa10xAaJOVKYEgjnU/ZGCnhPGPWPhFvhbujGcKC4OWw==}
 
-  '@orpc/tanstack-query@1.8.6':
-    resolution: {integrity: sha512-+koozDrqYeesCk5R60KE1HUZsz+drkue+V6oDwJa+VfDtWZnrXiIjxV90akptDPiQm/xm+Xr+gedblx42nn/xA==}
+  '@orpc/tanstack-query@1.8.9':
+    resolution: {integrity: sha512-aH78ohwiKRR1AbVAOct+wgg2Mj+ZShYWCwYy4IXl9NXHVu2WyhVjcrJRdJiqkqW/OA440keAELnkjTgyAlvTdw==}
     peerDependencies:
-      '@orpc/client': 1.8.6
+      '@orpc/client': 1.8.9
       '@tanstack/query-core': '>=5.80.2'
 
   '@oven/bun-darwin-aarch64@1.2.17':
@@ -3241,6 +3274,14 @@ packages:
     peerDependenciesMeta:
       permissionless:
         optional: true
+      viem:
+        optional: true
+
+  '@privy-io/node@0.1.0':
+    resolution: {integrity: sha512-pdceQHKtpUTifbXCns9HU8FjMUPZnXKf3eGVMiq4WC0bEglSkuwIUiYZZQ6/7xlW6Mabz1e68u1f8S3vobjKDw==}
+    peerDependencies:
+      viem: ^2.24.1
+    peerDependenciesMeta:
       viem:
         optional: true
 
@@ -6089,6 +6130,7 @@ packages:
 
   bun@1.2.17:
     resolution: {integrity: sha512-lrUZTWS24eVy6v+Eph8VTwqFPcG7/XQ0rLBQEMNoQs2Vd7ctVdMGAzJKKGZRUQH+rgkD8rBeHGIVoWxX4vJLCA==}
+    cpu: [arm64, x64, aarch64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -7882,9 +7924,6 @@ packages:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
     engines: {node: '>= 0.10'}
 
-  iron-session@8.0.4:
-    resolution: {integrity: sha512-9ivNnaKOd08osD0lJ3i6If23GFS2LsxyMU8Gf/uBUEgm8/8CC1hrrCHFDpMo3IFbpBgwoo/eairRsaD3c5itxA==}
-
   iron-webcrypto@1.2.1:
     resolution: {integrity: sha512-feOM6FaSr6rEABp/eDfVseKyTMDt+KGpeB35SkVn9Tyn0CqvVsY3EwI0v5i8nMHyJnzCIQf7nsy3p41TPkJZhg==}
 
@@ -8893,6 +8932,10 @@ packages:
   netmask@2.0.2:
     resolution: {integrity: sha512-dBpDMdxv9Irdq66304OLfEmQ9tbNRFnFTuZiLo+bD+r332bBmMJ8GBLXklIXXgxd3+v9+KUnZaUR5PJMa75Gsg==}
     engines: {node: '>= 0.4.0'}
+
+  neverthrow@8.2.0:
+    resolution: {integrity: sha512-kOCT/1MCPAxY5iUV3wytNFUMUolzuwd/VF/1KCx7kf6CutrOsTie+84zTGTpgQycjvfLdBBdvBvFLqFD2c0wkQ==}
+    engines: {node: '>=18'}
 
   next-navigation-guard@0.1.2:
     resolution: {integrity: sha512-gh+hUMqnI9a/iQ3sxCd7aagQB0NTioe7kj7UJagVfWh+GWfyr4mErlBy2yNZk0VyXebtW86I3cP6lcwraIFhYA==}
@@ -10052,9 +10095,6 @@ packages:
     resolution: {integrity: sha512-BgLRGy7tNS9H66aIMASq1qSYbAAJV6Z6WR4QYTvj5FgF15rZ/ympT1uixHXwzbZUBDbkvqUI1KR0fH1FhMaQ9w==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
-
-  rou3@0.7.5:
-    resolution: {integrity: sha512-bwUHDHw1HSARty7TWNV71R0NZs5fOt74OM+hcMdJyPfchfRktEmxLoMSNa7PwEp6WqJ0a3feKztsIfTUEYhskw==}
 
   router@2.2.0:
     resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
@@ -13991,7 +14031,7 @@ snapshots:
       '@ethereumjs/tx': 4.2.0
       '@metamask/superstruct': 3.2.1
       '@noble/hashes': 1.8.0
-      '@scure/base': 1.2.5
+      '@scure/base': 1.2.6
       '@types/debug': 4.1.12
       debug: 4.4.1(supports-color@5.5.0)
       pony-cause: 2.1.11
@@ -14005,7 +14045,7 @@ snapshots:
       '@ethereumjs/tx': 4.2.0
       '@metamask/superstruct': 3.2.1
       '@noble/hashes': 1.8.0
-      '@scure/base': 1.2.5
+      '@scure/base': 1.2.6
       '@types/debug': 4.1.12
       debug: 4.4.1(supports-color@5.5.0)
       pony-cause: 2.1.11
@@ -14071,6 +14111,7 @@ snapshots:
   '@neondatabase/serverless@0.9.5':
     dependencies:
       '@types/pg': 8.11.6
+    optional: true
 
   '@next/env@15.3.2': {}
 
@@ -14141,6 +14182,10 @@ snapshots:
       '@noble/hashes': 1.8.0
 
   '@noble/curves@1.9.2':
+    dependencies:
+      '@noble/hashes': 1.8.0
+
+  '@noble/curves@1.9.7':
     dependencies:
       '@noble/hashes': 1.8.0
 
@@ -14718,30 +14763,6 @@ snapshots:
 
   '@orpc/interop@1.8.9': {}
 
-  '@orpc/openapi-client@1.8.9(@opentelemetry/api@1.9.0)':
-    dependencies:
-      '@orpc/client': 1.8.9(@opentelemetry/api@1.9.0)
-      '@orpc/contract': 1.8.9(@opentelemetry/api@1.9.0)
-      '@orpc/shared': 1.8.9(@opentelemetry/api@1.9.0)
-      '@orpc/standard-server': 1.8.9(@opentelemetry/api@1.9.0)
-    transitivePeerDependencies:
-      - '@opentelemetry/api'
-
-  '@orpc/openapi@1.8.9(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
-    dependencies:
-      '@orpc/client': 1.8.9(@opentelemetry/api@1.9.0)
-      '@orpc/contract': 1.8.9(@opentelemetry/api@1.9.0)
-      '@orpc/interop': 1.8.9
-      '@orpc/openapi-client': 1.8.9(@opentelemetry/api@1.9.0)
-      '@orpc/server': 1.8.9(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
-      '@orpc/shared': 1.8.9(@opentelemetry/api@1.9.0)
-      '@orpc/standard-server': 1.8.9(@opentelemetry/api@1.9.0)
-      rou3: 0.7.5
-    transitivePeerDependencies:
-      - '@opentelemetry/api'
-      - crossws
-      - ws
-
   '@orpc/server@1.8.9(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
     dependencies:
       '@orpc/client': 1.8.9(@opentelemetry/api@1.9.0)
@@ -14759,13 +14780,6 @@ snapshots:
       ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - '@opentelemetry/api'
-
-  '@orpc/shared@1.8.6(@opentelemetry/api@1.9.0)':
-    dependencies:
-      radash: 12.1.1
-      type-fest: 4.41.0
-    optionalDependencies:
-      '@opentelemetry/api': 1.9.0
 
   '@orpc/shared@1.8.9(@opentelemetry/api@1.9.0)':
     dependencies:
@@ -14811,10 +14825,10 @@ snapshots:
     transitivePeerDependencies:
       - '@opentelemetry/api'
 
-  '@orpc/tanstack-query@1.8.6(@opentelemetry/api@1.9.0)(@orpc/client@1.8.9(@opentelemetry/api@1.9.0))(@tanstack/query-core@5.76.0)':
+  '@orpc/tanstack-query@1.8.9(@opentelemetry/api@1.9.0)(@orpc/client@1.8.9(@opentelemetry/api@1.9.0))(@tanstack/query-core@5.76.0)':
     dependencies:
       '@orpc/client': 1.8.9(@opentelemetry/api@1.9.0)
-      '@orpc/shared': 1.8.6(@opentelemetry/api@1.9.0)
+      '@orpc/shared': 1.8.9(@opentelemetry/api@1.9.0)
       '@tanstack/query-core': 5.76.0
     transitivePeerDependencies:
       - '@opentelemetry/api'
@@ -14903,6 +14917,19 @@ snapshots:
       - bufferutil
       - typescript
       - utf-8-validate
+
+  '@privy-io/node@0.1.0(viem@2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23))':
+    dependencies:
+      '@hpke/chacha20poly1305': 1.7.1
+      '@hpke/core': 1.7.4
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@scure/base': 1.2.6
+      canonicalize: 2.1.0
+      jose: 6.1.0
+      lru-cache: 11.1.0
+    optionalDependencies:
+      viem: 2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
 
   '@privy-io/public-api@2.44.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)':
     dependencies:
@@ -15883,7 +15910,7 @@ snapshots:
     dependencies:
       big.js: 6.2.2
       dayjs: 1.11.13
-      viem: 2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
+      viem: 2.37.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
     transitivePeerDependencies:
       - bufferutil
       - typescript
@@ -15894,7 +15921,7 @@ snapshots:
     dependencies:
       big.js: 6.2.2
       dayjs: 1.11.13
-      viem: 2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
+      viem: 2.37.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
     transitivePeerDependencies:
       - bufferutil
       - typescript
@@ -15951,7 +15978,7 @@ snapshots:
       '@reown/appkit-wallet': 1.7.3(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
       '@walletconnect/universal-provider': 2.19.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
       valtio: 1.13.2(@types/react@19.1.4)(react@19.1.0)
-      viem: 2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
+      viem: 2.37.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -16349,7 +16376,7 @@ snapshots:
       '@walletconnect/logger': 2.1.2
       '@walletconnect/universal-provider': 2.19.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
       valtio: 1.13.2(@types/react@19.1.4)(react@19.1.0)
-      viem: 2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
+      viem: 2.37.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -16498,7 +16525,7 @@ snapshots:
       '@walletconnect/universal-provider': 2.19.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
       bs58: 6.0.0
       valtio: 1.13.2(@types/react@19.1.4)(react@19.1.0)
-      viem: 2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
+      viem: 2.37.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23)
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -16628,7 +16655,7 @@ snapshots:
 
   '@rollup/pluginutils@5.3.0(rollup@4.41.0)':
     dependencies:
-      '@types/estree': 1.0.7
+      '@types/estree': 1.0.8
       estree-walker: 2.0.2
       picomatch: 4.0.3
     optionalDependencies:
@@ -16797,7 +16824,7 @@ snapshots:
     dependencies:
       '@noble/curves': 1.7.0
       '@noble/hashes': 1.6.1
-      '@scure/base': 1.2.5
+      '@scure/base': 1.2.6
 
   '@scure/bip32@1.6.2':
     dependencies:
@@ -16807,9 +16834,9 @@ snapshots:
 
   '@scure/bip32@1.7.0':
     dependencies:
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.2
       '@noble/hashes': 1.8.0
-      '@scure/base': 1.2.5
+      '@scure/base': 1.2.6
 
   '@scure/bip39@1.3.0':
     dependencies:
@@ -16819,7 +16846,7 @@ snapshots:
   '@scure/bip39@1.5.0':
     dependencies:
       '@noble/hashes': 1.6.1
-      '@scure/base': 1.2.5
+      '@scure/base': 1.2.6
 
   '@scure/bip39@1.5.4':
     dependencies:
@@ -16829,7 +16856,7 @@ snapshots:
   '@scure/bip39@1.6.0':
     dependencies:
       '@noble/hashes': 1.8.0
-      '@scure/base': 1.2.5
+      '@scure/base': 1.2.6
 
   '@sentry-internal/browser-utils@10.10.0':
     dependencies:
@@ -17414,7 +17441,7 @@ snapshots:
 
   '@solana/wallet-standard-util@1.1.2':
     dependencies:
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.2
       '@solana/wallet-standard-chains': 1.1.1
       '@solana/wallet-standard-features': 1.3.0
 
@@ -17445,7 +17472,7 @@ snapshots:
   '@solana/web3.js@1.98.4(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)':
     dependencies:
       '@babel/runtime': 7.27.1
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
       '@solana/buffer-layout': 4.0.1
       '@solana/codecs-numbers': 2.3.0(typescript@5.8.3)
@@ -17897,6 +17924,7 @@ snapshots:
       '@types/node': 22.15.19
       pg-protocol: 1.10.0
       pg-types: 4.1.0
+    optional: true
 
   '@types/pg@8.15.4':
     dependencies:
@@ -18078,6 +18106,7 @@ snapshots:
       ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - utf-8-validate
+    optional: true
 
   '@vitejs/plugin-react@5.0.2(vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1))':
     dependencies:
@@ -19369,11 +19398,6 @@ snapshots:
       typescript: 5.8.3
       zod: 3.25.76
 
-  abitype@1.0.8(typescript@5.8.3)(zod@3.22.4):
-    optionalDependencies:
-      typescript: 5.8.3
-      zod: 3.22.4
-
   abitype@1.0.8(typescript@5.8.3)(zod@3.25.23):
     optionalDependencies:
       typescript: 5.8.3
@@ -19818,7 +19842,7 @@ snapshots:
 
   bun-types@1.2.17:
     dependencies:
-      '@types/node': 22.15.19
+      '@types/node': 20.17.48
 
   bun@1.2.17:
     optionalDependencies:
@@ -20538,7 +20562,7 @@ snapshots:
     dependencies:
       '@ecies/ciphers': 0.2.3(@noble/ciphers@1.3.0)
       '@noble/ciphers': 1.3.0
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.2
       '@noble/hashes': 1.8.0
 
   ee-first@1.1.1: {}
@@ -21877,12 +21901,6 @@ snapshots:
 
   ipaddr.js@1.9.1: {}
 
-  iron-session@8.0.4:
-    dependencies:
-      cookie: 0.7.2
-      iron-webcrypto: 1.2.1
-      uncrypto: 0.1.3
-
   iron-webcrypto@1.2.1: {}
 
   is-alphabetical@2.0.1: {}
@@ -22004,7 +22022,7 @@ snapshots:
 
   is-reference@1.2.1:
     dependencies:
-      '@types/estree': 1.0.7
+      '@types/estree': 1.0.8
 
   is-regex@1.2.1:
     dependencies:
@@ -22230,7 +22248,7 @@ snapshots:
       whatwg-encoding: 3.1.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
-      ws: 8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -22707,7 +22725,7 @@ snapshots:
 
   micro-packed@0.7.3:
     dependencies:
-      '@scure/base': 1.2.5
+      '@scure/base': 1.2.6
 
   micromark-core-commonmark@2.0.3:
     dependencies:
@@ -22975,6 +22993,10 @@ snapshots:
 
   netmask@2.0.2: {}
 
+  neverthrow@8.2.0:
+    optionalDependencies:
+      '@rollup/rollup-linux-x64-gnu': 4.50.2
+
   next-navigation-guard@0.1.2(next@15.3.2(@babel/core@7.28.0)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0):
     dependencies:
       next: 15.3.2(@babel/core@7.28.0)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -23133,7 +23155,8 @@ snapshots:
       define-properties: 1.2.1
       es-object-atoms: 1.1.1
 
-  obuf@1.1.2: {}
+  obuf@1.1.2:
+    optional: true
 
   ofetch@1.4.1:
     dependencies:
@@ -23256,7 +23279,7 @@ snapshots:
   ox@0.4.4(typescript@5.8.3)(zod@3.25.76):
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.2
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
@@ -23270,25 +23293,11 @@ snapshots:
   ox@0.6.7(typescript@5.8.3)(zod@3.25.23):
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.2
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
       abitype: 1.0.8(typescript@5.8.3)(zod@3.25.23)
-      eventemitter3: 5.0.1
-    optionalDependencies:
-      typescript: 5.8.3
-    transitivePeerDependencies:
-      - zod
-
-  ox@0.6.9(typescript@5.8.3)(zod@3.22.4):
-    dependencies:
-      '@adraffy/ens-normalize': 1.11.0
-      '@noble/curves': 1.9.1
-      '@noble/hashes': 1.8.0
-      '@scure/bip32': 1.6.2
-      '@scure/bip39': 1.5.4
-      abitype: 1.0.8(typescript@5.8.3)(zod@3.22.4)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.8.3
@@ -23506,7 +23515,8 @@ snapshots:
 
   pg-int8@1.0.1: {}
 
-  pg-numeric@1.0.2: {}
+  pg-numeric@1.0.2:
+    optional: true
 
   pg-pool@3.10.0(pg@8.16.0):
     dependencies:
@@ -23531,6 +23541,7 @@ snapshots:
       postgres-date: 2.1.0
       postgres-interval: 3.0.0
       postgres-range: 1.1.4
+    optional: true
 
   pg@8.16.0:
     dependencies:
@@ -23718,25 +23729,30 @@ snapshots:
 
   postgres-array@2.0.0: {}
 
-  postgres-array@3.0.4: {}
+  postgres-array@3.0.4:
+    optional: true
 
   postgres-bytea@1.0.0: {}
 
   postgres-bytea@3.0.0:
     dependencies:
       obuf: 1.1.2
+    optional: true
 
   postgres-date@1.0.7: {}
 
-  postgres-date@2.1.0: {}
+  postgres-date@2.1.0:
+    optional: true
 
   postgres-interval@1.2.0:
     dependencies:
       xtend: 4.0.2
 
-  postgres-interval@3.0.0: {}
+  postgres-interval@3.0.0:
+    optional: true
 
-  postgres-range@1.1.4: {}
+  postgres-range@1.1.4:
+    optional: true
 
   posthog-js@1.257.0:
     dependencies:
@@ -24340,8 +24356,6 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.50.2
       fsevents: 2.3.3
 
-  rou3@0.7.5: {}
-
   router@2.2.0:
     dependencies:
       debug: 4.4.1(supports-color@5.5.0)
@@ -24360,7 +24374,7 @@ snapshots:
       buffer: 6.0.3
       eventemitter3: 5.0.1
       uuid: 8.3.2
-      ws: 8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     optionalDependencies:
       bufferutil: 4.0.9
       utf-8-validate: 5.0.10
@@ -25780,23 +25794,6 @@ snapshots:
       - utf-8-validate
       - zod
 
-  viem@2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4):
-    dependencies:
-      '@noble/curves': 1.8.2
-      '@noble/hashes': 1.7.2
-      '@scure/bip32': 1.6.2
-      '@scure/bip39': 1.5.4
-      abitype: 1.0.8(typescript@5.8.3)(zod@3.22.4)
-      isows: 1.0.7(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))
-      ox: 0.6.9(typescript@5.8.3)(zod@3.22.4)
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-    optionalDependencies:
-      typescript: 5.8.3
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-      - zod
-
   viem@2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.23):
     dependencies:
       '@noble/curves': 1.8.2
@@ -26368,7 +26365,7 @@ snapshots:
 
   webauthn-p256@0.0.10:
     dependencies:
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.2
       '@noble/hashes': 1.8.0
 
   webextension-polyfill@0.10.0: {}

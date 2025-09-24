@@ -1,6 +1,8 @@
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { UserRepository } from "@recallnet/db/repositories/user";
+import { BoostService } from "@recallnet/services/boost";
 
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
@@ -13,7 +15,6 @@ import { AgentService } from "@/services/agent.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
 import { BalanceService } from "@/services/balance.service.js";
 import { BoostAwardService } from "@/services/boost-award.service.js";
-import { BoostService } from "@/services/boost.service.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import { CompetitionService } from "@/services/competition.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
@@ -55,6 +56,7 @@ class ServiceRegistry {
   private readonly _competitionRepository: CompetitionRepository;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
+  private readonly _userRepository: UserRepository;
   private readonly _indexingService: IndexingService;
   private readonly _eventsRepository: EventsRepository;
   private readonly _eventProcessor: EventProcessor;
@@ -126,12 +128,13 @@ class ServiceRegistry {
       dbRead,
       repositoryLogger,
     );
+    this._userRepository = new UserRepository(db);
 
     // Initialize BoostService with its dependencies
     this._boostService = new BoostService(
       this._boostRepository,
-      this._competitionService,
-      this._userService,
+      this._competitionRepository,
+      this._userRepository,
     );
 
     this._boostAwardService = new BoostAwardService(
