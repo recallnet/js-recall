@@ -92,6 +92,7 @@ class ServiceRegistry {
       this._emailService,
       this._balanceService,
       this._priceTrackerService,
+      this._userService,
     );
     this._adminService = new AdminService(
       this._userService,

@@ -1080,7 +1080,7 @@ export const AdminCreateAgentSchema = z.object({
     walletAddress: z.string().optional(),
     description: z.string().optional(),
     imageUrl: z.string().optional(),
-    metadata: z.nullish(AgentMetadataSchema),
+    metadata: AgentMetadataSchema.optional(),
   }),
 });
 

@@ -4,7 +4,6 @@ import { UpdateCompetition } from "@recallnet/db/schema/core/types";
 
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
-import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -177,89 +176,20 @@ export function makeAdminController(services: ServiceRegistry) {
           throw new ApiError(400, `Invalid request format: ${result.error}`);
         }
         const { user, agent } = result.data;
-        const { id: userId, walletAddress: userWalletAddress } = user;
-        const {
-          name,
-          handle,
-          email,
-          walletAddress: agentWalletAddress,
-          description,
-          imageUrl,
-          metadata,
-        } = agent;
 
-        // Check if a user with this wallet address already exists
-        const existingUser = userWalletAddress
-          ? await services.userService.getUserByWalletAddress(userWalletAddress)
-          : userId
-            ? await services.userService.getUser(userId)
-            : undefined;
+        // Create agent using service method that handles user resolution
+        const createdAgent = await services.agentService.createAgentForOwner(
+          { userId: user.id, walletAddress: user.walletAddress },
+          agent,
+        );
 
-        if (!existingUser) {
-          const errorMessage = `User '${userWalletAddress ? userWalletAddress : userId}' does not exist`;
-          adminLogger.warn("User not found error:", errorMessage);
-          return res.status(404).json({
-            success: false,
-            error: errorMessage,
-          });
-        }
+        const response: AdminAgentRegistrationResponse = {
+          success: true,
+          agent: toApiAgent(createdAgent),
+        };
 
-        try {
-          // Create the agent
-          const agent = await services.agentService.createAgent({
-            ownerId: existingUser.id,
-            name,
-            handle: handle ?? generateHandleFromName(name),
-            description,
-            email,
-            imageUrl,
-            metadata: metadata ?? undefined,
-            walletAddress: agentWalletAddress,
-          });
-
-          const response: AdminAgentRegistrationResponse = {
-            success: true,
-            agent: toApiAgent(agent),
-          };
-
-          return res.status(201).json(response);
-        } catch (error) {
-          adminLogger.error("Error registering agent:", error);
-
-          // Check if this is a duplicate wallet address error that somehow got here
-          if (
-            error instanceof Error &&
-            error.message.includes("already exists")
-          ) {
-            return res.status(409).json({
-              success: false,
-              error: error.message,
-            });
-          }
-
-          // Check if this is an invalid wallet address error
-          if (
-            error instanceof Error &&
-            (error.message.includes("Wallet address is required") ||
-              error.message.includes("Invalid Ethereum address"))
-          ) {
-            return res.status(400).json({
-              success: false,
-              error: error.message,
-            });
-          }
-
-          // Handle other errors
-          return res.status(500).json({
-            success: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Unknown error registering agent",
-          });
-        }
+        return res.status(201).json(response);
       } catch (error) {
-        adminLogger.error("Uncaught error in registerUser:", error);
         next(error);
       }
     },
