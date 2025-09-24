@@ -9,12 +9,6 @@ import {
 } from "@recallnet/db/schema/core/defs";
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
-import {
-  InsertPerpetualPosition,
-  InsertPerpsAccountSummary,
-  SelectPerpetualPosition,
-  SelectPerpsAccountSummary,
-} from "@recallnet/db/schema/trading/types";
 
 /**
  * Blockchain type enum
@@ -1120,73 +1114,6 @@ export const BestPlacementDbSchema = z.looseObject({
   total_agents: z.coerce.number(),
 });
 
-// =============================================================================
-// PERPS TYPES
-// =============================================================================
-
-/**
- * Data for reviewing a perps self-funding alert
- */
-export interface PerpsSelfFundingAlertReview {
-  reviewed: boolean;
-  reviewedAt: Date;
-  reviewedBy: string;
-  actionTaken?: string;
-  reviewNote?: string;
-}
-
-/**
- * Data for syncing a single agent's perps data
- */
-export interface AgentPerpsSyncData {
-  agentId: string;
-  competitionId: string;
-  positions: InsertPerpetualPosition[];
-  accountSummary: InsertPerpsAccountSummary;
-}
-
-/**
- * Result of syncing agent perps data
- */
-export interface AgentPerpsSyncResult {
-  positions: SelectPerpetualPosition[];
-  summary: SelectPerpsAccountSummary;
-}
-
-/**
- * Successfully synced agent data
- */
-export interface SuccessfulAgentSync {
-  agentId: string;
-  positions: SelectPerpetualPosition[];
-  summary: SelectPerpsAccountSummary;
-}
-
-/**
- * Failed agent sync
- */
-export interface FailedAgentSync {
-  agentId: string;
-  error: Error;
-}
-
-/**
- * Result of batch syncing multiple agents
- */
-export interface BatchPerpsSyncResult {
-  successful: SuccessfulAgentSync[];
-  failed: FailedAgentSync[];
-}
-
-/**
- * Statistics for a perps competition
- */
-export interface PerpsCompetitionStats {
-  totalAgents: number;
-  totalPositions: number;
-  totalVolume: number;
-  averageEquity: number;
-}
 /**
  * Privy identity token parameter schema
  */

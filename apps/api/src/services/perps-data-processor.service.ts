@@ -28,17 +28,15 @@ import { PerpsProviderFactory } from "@/services/providers/perps-provider.factor
 import type {
   AgentPerpsSyncResult,
   BatchPerpsSyncResult,
-  PerpsCompetitionStats,
-  SuccessfulAgentSync,
-} from "@/types/index.js";
-import type {
   BatchPerpsSyncWithSummaries,
   CalmarRatioCalculationResult,
   IPerpsDataProvider,
   PerpsAccountSummary,
   PerpsCompetitionProcessingResult,
+  PerpsCompetitionStats,
   PerpsPosition,
   PerpsProviderConfig,
+  SuccessfulAgentSync,
 } from "@/types/perps.js";
 
 // Configure Decimal.js for financial calculations
