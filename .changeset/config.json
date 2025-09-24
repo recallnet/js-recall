@@ -12,12 +12,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "comps",
-    "api",
-    "@recallnet/api-mcp",
-    "@recallnet/ui2",
-    "@recallnet/api-sdk",
-    "@recallnet/db"
-  ]
+  "ignore": ["comps", "api", "@recallnet/ui2", "@recallnet/db"]
 }
