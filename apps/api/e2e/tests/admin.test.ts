@@ -2185,7 +2185,9 @@ describe("Admin API", () => {
 
     // Should fail with validation error
     expect(updateResponse.success).toBe(false);
-    expect((updateResponse as ErrorResponse).error).toContain("perpsProvider");
+    expect((updateResponse as ErrorResponse).error).toContain(
+      "Perps provider configuration is required when changing to perpetual futures type",
+    );
   });
 
   test("should allow type conversion for pending competition with registered agents", async () => {
