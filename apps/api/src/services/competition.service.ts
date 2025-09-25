@@ -247,7 +247,7 @@ type CompetitionDetailsData = {
       agentId: string | null;
     }>;
     votingEnabled?: boolean;
-    boostEnabled: boolean;
+    openForBoosting: boolean;
     userVotingInfo?: {
       canVote: boolean;
       reason?: string;
@@ -2551,7 +2551,7 @@ export class CompetitionService {
     }
   }
 
-  async competitionBoostEnabled(competitionId: string): Promise<boolean> {
+  async competitionOpenForBoosting(competitionId: string): Promise<boolean> {
     const competition = await this.getCompetition(competitionId);
     if (!competition) {
       throw new ApiError(404, "Competition not found");
@@ -2589,7 +2589,7 @@ export class CompetitionService {
         rewards,
         tradingConstraints,
         votingState,
-        boostEnabled,
+        openForBoosting,
       ] = await Promise.all([
         // Get competition details
         this.getCompetition(params.competitionId),
@@ -2614,7 +2614,7 @@ export class CompetitionService {
               params.competitionId,
             )
           : Promise.resolve(null),
-        this.competitionBoostEnabled(params.competitionId),
+        this.competitionOpenForBoosting(params.competitionId),
       ]);
 
       if (!competition) {
@@ -2677,7 +2677,7 @@ export class CompetitionService {
             ? votingState.canVote || votingState.info.hasVoted
             : false,
           userVotingInfo: votingState || undefined,
-          boostEnabled,
+          openForBoosting,
         },
       };
 

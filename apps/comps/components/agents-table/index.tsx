@@ -134,13 +134,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     return (
       boostBalance === 0 &&
       Object.keys(userBoosts || {}).length === 0 &&
-      competition.boostEnabled
+      competition.openForBoosting
     );
   }, [boostBalance, userBoosts, competition]);
 
   const showBoostBalance = useMemo(() => {
     return (
-      boostBalance !== undefined && boostBalance > 0 && competition.boostEnabled
+      boostBalance !== undefined &&
+      boostBalance > 0 &&
+      competition.openForBoosting
     );
   }, [boostBalance, competition]);
 
@@ -300,7 +302,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
           return (
             <div className="flex items-center justify-end gap-2">
-              {competition.boostEnabled ? (
+              {competition.openForBoosting ? (
                 hasBoosted ? (
                   <>
                     <span className="font-bold text-yellow-500">
