@@ -66,12 +66,13 @@ export class HttpError extends Error {
  */
 export class UnauthorizedError extends HttpError {
   constructor(message?: string) {
-    message = message?.includes(
-      "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+    // Normalize noisy upstream messages into a friendly one
+    const normalized = message?.includes(
+      "[AuthMiddleware] Authentication required",
     )
       ? "Error authenticating. Please try again."
       : message;
-    super(401, "Unauthorized", message || "Unauthorized access");
+    super(401, "Unauthorized", normalized || "Unauthorized access");
     this.name = "UnauthorizedError";
   }
 }
