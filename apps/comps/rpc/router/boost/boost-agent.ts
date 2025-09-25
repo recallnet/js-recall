@@ -13,13 +13,14 @@ export const boostAgent = base
     z.object({
       competitionId: z.string(),
       agentId: z.string().uuid(),
-      amount: z.bigint(),
+      amount: z.bigint().min(1n),
       idemKey: z.string(),
     }),
   )
   .errors({
     OUTSIDE_BOOST_WINDOW: {},
     COMPETITION_MISSING_VOTING_DATES: {},
+    ALREADY_BOOSTED_AGENT: {},
   })
   .handler(async ({ input, context, errors }) => {
     const res = await context.boostService.boostAgent({
@@ -41,10 +42,12 @@ export const boostAgent = base
           throw errors.COMPETITION_MISSING_VOTING_DATES();
         case BoostError.OutsideCompetitionBoostWindow:
           throw errors.OUTSIDE_BOOST_WINDOW();
+        case BoostError.AlreadyBoostedAgent:
+          throw errors.ALREADY_BOOSTED_AGENT();
         default:
           assertNever(res.error);
       }
     } else {
-      return { result: res.value };
+      return res.value;
     }
   });

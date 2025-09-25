@@ -1,5 +1,5 @@
 {
-  "name": "@recallnet/services",
+  "name": "@recallnet/conversions",
   "version": "0.0.0",
   "license": "MIT AND Apache-2.0",
   "private": true,
@@ -7,15 +7,15 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/recallnet/js-recall.git",
-    "directory": "packages/services"
+    "directory": "packages/conversions"
   },
   "homepage": "https://github.com/recallnet/js-recall#readme",
   "type": "module",
   "exports": {
-    "./boost": {
+    "./atto-conversions": {
       "import": {
-        "types": "./dist/boost.d.ts",
-        "default": "./dist/boost.js"
+        "types": "./dist/atto-conversions.d.ts",
+        "default": "./dist/atto-conversions.js"
       }
     }
   },
@@ -33,15 +33,11 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@recallnet/conversions": "workspace:*",
-    "@recallnet/db": "workspace:*",
-    "neverthrow": "^8.2.0",
-    "pino": "^9.7.0"
+    "dnum": "^2.15.0"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
-    "@types/node": "^24.3.0",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",

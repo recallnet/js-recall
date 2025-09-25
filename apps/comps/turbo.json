@@ -20,7 +20,8 @@
         "SENTRY_ORG",
         "SENTRY_PROJECT",
         "NEXT_RUNTIME",
-        "POSTGRES_URL"
+        "POSTGRES_URL",
+        "PRIVY_APP_SECRET"
       ]
     }
   }

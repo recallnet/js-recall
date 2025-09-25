@@ -19,6 +19,6 @@ export const agentBoostTotals = base
           assertNever(res.error);
       }
     } else {
-      return { boostTotals: res.value };
+      return res.value;
     }
   });

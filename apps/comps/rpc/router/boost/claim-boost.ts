@@ -1,25 +1,35 @@
 import { z } from "zod";
 
-import { BoostError, type BoostService } from "@recallnet/services/boost";
+import { BoostError } from "@recallnet/services/boost";
 
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { assertNever } from "@/rpc/router/utils/assert-never";
 
-export const balance = base
+export const claimBoost = base
   .use(authMiddleware)
-  .input(z.object({ competitionId: z.string() }))
-  .handler(async ({ input, context, errors }) => {
-    const res = await context.boostService.getUserBoostBalance(
+  .errors({
+    BOOST_ALREADY_CLAIMED: {
+      message: "Boost already claimed",
+    },
+  })
+  .input(
+    z.object({
+      competitionId: z.string().uuid(),
+    }),
+  )
+  .handler(async ({ context, input, errors }) => {
+    const res = await context.boostService.claimBoost(
       context.user.id,
+      context.user.walletAddress,
       input.competitionId,
     );
     if (res.isErr()) {
       switch (res.error) {
-        case BoostError.UserNotFound:
-          throw errors.NOT_FOUND();
         case BoostError.RepositoryError:
           throw errors.INTERNAL();
+        case BoostError.AlreadyClaimedBoost:
+          throw errors.BOOST_ALREADY_CLAIMED();
         default:
           assertNever(res.error);
       }

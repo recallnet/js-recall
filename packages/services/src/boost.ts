@@ -1,4 +1,4 @@
-import { ResultAsync, errAsync } from "neverthrow";
+import { ResultAsync, errAsync, ok } from "neverthrow";
 import { Logger } from "pino";
 
 import { BoostRepository } from "@recallnet/db/repositories/boost";
@@ -22,6 +22,8 @@ export enum BoostError {
   CompetitionNotFound,
   CompetitionMissingVotingDates,
   OutsideCompetitionBoostWindow,
+  AlreadyClaimedBoost,
+  AlreadyBoostedAgent,
 }
 
 /**
@@ -32,18 +34,40 @@ export class BoostService {
   private boostRepository: BoostRepository;
   private competitionRepository: CompetitionRepository;
   private userRepository: UserRepository;
+  private nonStakeBoostAmount: bigint;
   private logger?: Logger;
 
   constructor(
     boostRepository: BoostRepository,
     competitionRepository: CompetitionRepository,
     userRepository: UserRepository,
+    nonStakeBoostAmount: bigint = 1000000000000000000000n,
     logger?: Logger,
   ) {
     this.boostRepository = boostRepository;
     this.competitionRepository = competitionRepository;
     this.userRepository = userRepository;
+    this.nonStakeBoostAmount = nonStakeBoostAmount;
     this.logger = logger;
+  }
+
+  async claimBoost(userId: string, wallet: string, competitionId: string) {
+    return ResultAsync.fromPromise(
+      this.boostRepository.increase({
+        userId,
+        wallet,
+        competitionId,
+        amount: this.nonStakeBoostAmount,
+        idemKey: Buffer.from(`claim-${userId}-${competitionId}`),
+        meta: { description: "Claim non-stake boost" },
+      }),
+      () => BoostError.RepositoryError as const,
+    ).andThen((result) => {
+      if (result.type === "noop") {
+        return errAsync(BoostError.AlreadyClaimedBoost as const);
+      }
+      return ok(result);
+    });
   }
 
   /**
@@ -151,7 +175,12 @@ export class BoostService {
             idemKey,
           }),
           () => BoostError.RepositoryError as const,
-        );
+        ).andThen((result) => {
+          if (result.type === "noop") {
+            return errAsync(BoostError.AlreadyBoostedAgent as const);
+          }
+          return ok(result);
+        });
       });
   }
 }
