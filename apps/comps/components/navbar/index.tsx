@@ -106,7 +106,7 @@ export const Navbar: React.FunctionComponent = () => {
           {isAuthenticated && nonStakeBoostAmount && (
             <Tooltip
               tooltipClassName="max-w-xs"
-              content="Boost available per competition. Visit any active compeition page to claim yours and start boosting agents."
+              content="Boost available per competition. Visit any active compeition page to activate yours and start boosting agents."
             >
               <div className="flex flex-row items-center space-x-2 font-bold text-yellow-500">
                 <Zap className="size-4" />

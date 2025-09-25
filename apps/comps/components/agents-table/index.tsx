@@ -422,7 +422,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </div>*/}
         </div>
 
-        {/* Button to claim boost */}
+        {/* Button to activate boost */}
         {showClaimBoost && (
           <Button
             size="lg"
@@ -430,7 +430,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             className="hover:bg-muted h-8 self-end rounded-lg border border-yellow-500 font-bold text-white"
             onClick={handleClaimBoost}
           >
-            Claim Boost{" "}
+            Start Boosting{" "}
             <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
           </Button>
         )}
