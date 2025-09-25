@@ -45,6 +45,6 @@ export const boostAgent = base
           assertNever(res.error);
       }
     } else {
-      return { result: res.value };
+      return res.value;
     }
   });

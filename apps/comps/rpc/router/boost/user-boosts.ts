@@ -22,6 +22,6 @@ export const userBoosts = base
           assertNever(res.error);
       }
     } else {
-      return { userBoosts: res.value };
+      return res.value;
     }
   });

@@ -34,6 +34,6 @@ export const claimBoost = base
           assertNever(res.error);
       }
     } else {
-      return { boostAward: res.value };
+      return res.value;
     }
   });

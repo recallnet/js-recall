@@ -24,6 +24,6 @@ export const balance = base
           assertNever(res.error);
       }
     } else {
-      return { balance: res.value };
+      return res.value;
     }
   });

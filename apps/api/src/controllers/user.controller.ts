@@ -27,7 +27,7 @@ import {
  */
 export function makeUserController(
   services: ServiceRegistry,
-  boostMode: "no-stake" | "stake",
+  isStakeMode: boolean = false,
 ) {
   return {
     /**
@@ -150,12 +150,7 @@ export function makeUserController(
         });
 
         // Grant initial boost if applicable
-        if (boostMode === "no-stake") {
-          await services.boostAwardService.initNoStake(
-            linkedUser.id,
-            linkedUser.walletAddress,
-          );
-        } else {
+        if (isStakeMode) {
           await services.boostAwardService.initForStake(
             linkedUser.walletAddress,
           );

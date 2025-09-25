@@ -16,3 +16,8 @@ export function valueToAttoString(value: dnum.Numberish) {
   const res = dnum.mul(dnum.from(value), attoDivisor);
   return dnum.toString(res);
 }
+
+export function valueToAttoBigInt(value: dnum.Numberish) {
+  const res = dnum.mul(value, attoDivisor);
+  return BigInt(dnum.toString(res));
+}
