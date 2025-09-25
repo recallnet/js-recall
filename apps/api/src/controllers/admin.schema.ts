@@ -286,3 +286,10 @@ export const AdminListAllAgentsQuerySchema = z.object({
     .optional()
     .describe("Sort order (e.g., '-createdAt' for desc, 'name' for asc)"),
 });
+
+/**
+ * Admin get competition transfer violations params schema
+ */
+export const AdminGetCompetitionTransferViolationsParamsSchema = z.object({
+  competitionId: UuidSchema,
+});

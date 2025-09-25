@@ -45,6 +45,7 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import {
   createPerpsCompetitionConfig,
+  getCompetitionTransferViolationCounts,
   getPerpsCompetitionStats,
   getRiskAdjustedLeaderboard,
 } from "@/database/repositories/perps-repository.js";
@@ -2992,6 +2993,76 @@ export class CompetitionService {
     } catch (error) {
       serviceLogger.error(
         `[CompetitionService] Error getting agent competition trades with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get transfer violation summary for a perps competition
+   * Returns only agents who have made transfers during the competition
+   * @param competitionId Competition ID
+   * @returns Array of agents with transfer counts
+   */
+  async getCompetitionTransferViolations(competitionId: string): Promise<
+    Array<{
+      agentId: string;
+      agentName: string;
+      transferCount: number;
+    }>
+  > {
+    try {
+      // 1. Verify competition exists and is perps type
+      const competition = await this.getCompetition(competitionId);
+      if (!competition) {
+        throw new ApiError(404, `Competition ${competitionId} not found`);
+      }
+
+      if (competition.type !== "perpetual_futures") {
+        throw new ApiError(
+          400,
+          `Competition ${competitionId} is not a perpetual futures competition`,
+        );
+      }
+
+      if (!competition.startDate) {
+        // No transfers can be violations if competition hasn't started
+        return [];
+      }
+
+      // 2. Get transfer violation counts from repository (SQL aggregation)
+      const violationCounts = await getCompetitionTransferViolationCounts(
+        competitionId,
+        competition.startDate,
+      );
+
+      // 3. Enrich with agent names (batch fetch)
+      if (violationCounts.length === 0) {
+        return [];
+      }
+
+      const agentIds = violationCounts.map((v) => v.agentId);
+      const agents = await this.agentService.getAgentsByIds(agentIds);
+
+      // Create a map for quick lookup
+      const agentMap = new Map(agents.map((agent) => [agent.id, agent.name]));
+
+      // 4. Combine data and return
+      const results = violationCounts.map((violation) => ({
+        agentId: violation.agentId,
+        agentName: agentMap.get(violation.agentId) ?? "Unknown Agent",
+        transferCount: violation.transferCount,
+      }));
+
+      serviceLogger.info(
+        `[CompetitionService] Found ${results.length} agents with transfer violations in competition ${competitionId}`,
+      );
+
+      return results;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting competition transfer violations:`,
         error,
       );
       throw error;

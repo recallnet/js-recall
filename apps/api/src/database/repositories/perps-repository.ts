@@ -156,6 +156,13 @@ export const getAgentTransferHistory = createTimedRepositoryFunction(
   "getAgentTransferHistory",
 );
 
+export const getCompetitionTransferViolationCounts =
+  createTimedRepositoryFunction(
+    repository.getCompetitionTransferViolationCounts.bind(repository),
+    "PerpsRepository",
+    "getCompetitionTransferViolationCounts",
+  );
+
 export const upsertRiskMetrics = createTimedRepositoryFunction(
   repository.upsertRiskMetrics.bind(repository),
   "PerpsRepository",

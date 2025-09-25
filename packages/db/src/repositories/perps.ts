@@ -4,6 +4,7 @@ import {
   desc,
   count as drizzleCount,
   eq,
+  gt,
   inArray,
   not,
   sql,
@@ -890,7 +891,7 @@ export class PerpsRepository {
         .limit(1)
         .as("latest_summary");
 
-      // Use leftJoinLateral to efficiently get the latest summary per agent
+      // Use leftJoinLateral to get the latest summary per agent
       const results = await this.#dbRead
         .select()
         .from(activeAgents)
@@ -1251,6 +1252,49 @@ export class PerpsRepository {
       return transfers;
     } catch (error) {
       this.#logger.error("Error in getAgentTransferHistory:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get transfer violation counts for all agents in a competition
+   * Uses SQL aggregation for scalability - returns only agents with transfers
+   * @param competitionId Competition ID
+   * @param startDate Competition start date (only count transfers after this)
+   * @returns Array of agents with transfer counts (only includes agents with violations)
+   */
+  async getCompetitionTransferViolationCounts(
+    competitionId: string,
+    startDate: Date,
+  ): Promise<Array<{ agentId: string; transferCount: number }>> {
+    try {
+      // Use SQL GROUP BY and COUNT for efficient aggregation
+      // Only returns agents who have transfers (violations)
+      const results = await this.#dbRead
+        .select({
+          agentId: perpsTransferHistory.agentId,
+          transferCount: drizzleCount(perpsTransferHistory.id),
+        })
+        .from(perpsTransferHistory)
+        .where(
+          and(
+            eq(perpsTransferHistory.competitionId, competitionId),
+            gt(perpsTransferHistory.transferTimestamp, startDate), // Only transfers after competition start
+          ),
+        )
+        .groupBy(perpsTransferHistory.agentId)
+        .orderBy(desc(drizzleCount(perpsTransferHistory.id))); // Order by most violations first
+
+      this.#logger.debug(
+        `[PerpsRepository] Found ${results.length} agents with transfer violations in competition ${competitionId}`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error(
+        "Error in getCompetitionTransferViolationCounts:",
+        error,
+      );
       throw error;
     }
   }

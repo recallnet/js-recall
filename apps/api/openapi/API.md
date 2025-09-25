@@ -219,6 +219,39 @@ Get portfolio snapshots for a competition, optionally filtered by agent
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/admin/competition/{competitionId}/transfer-violations
+
+#### GET
+
+##### Summary:
+
+Get transfer violations for a perps competition
+
+##### Description:
+
+Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                |
+| ---- | ------------------------------------------ |
+| 200  | Transfer violations retrieved successfully |
+| 400  | Competition is not a perps competition     |
+| 404  | Competition not found                      |
+| 500  | Server error                               |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/reports/performance
 
 #### GET

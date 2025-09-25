@@ -1300,6 +1300,114 @@
         }
       }
     },
+    "/api/admin/competition/{competitionId}/transfer-violations": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get transfer violations for a perps competition",
+        "description": "Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Competition ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer violations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "violations": {
+                      "type": "array",
+                      "description": "Array of agents with transfer violations (empty if no violations found)",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "agentId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "Agent ID"
+                          },
+                          "agentName": {
+                            "type": "string",
+                            "description": "Agent name"
+                          },
+                          "transferCount": {
+                            "type": "integer",
+                            "description": "Number of transfers made during competition",
+                            "minimum": 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Competition is not a perps competition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Competition is not a perpetual futures competition"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Competition not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Competition not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/api/admin/reports/performance": {
       "get": {
         "tags": ["Admin"],

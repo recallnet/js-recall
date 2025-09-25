@@ -30,6 +30,7 @@ import {
   AdminGetAgentParamsSchema,
   AdminGetCompetitionSnapshotsParamsSchema,
   AdminGetCompetitionSnapshotsQuerySchema,
+  AdminGetCompetitionTransferViolationsParamsSchema,
   AdminGetPerformanceReportsQuerySchema,
   AdminListAllAgentsQuerySchema,
   AdminReactivateAgentInCompetitionParamsSchema,
@@ -1925,6 +1926,44 @@ export function makeAdminController(services: ServiceRegistry) {
             name: result.agent?.name || "Unknown",
             apiKey: result.apiKey,
           },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get competition transfer violations
+     * Returns agents who have made transfers during the competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionTransferViolations(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Validate params using flatParse
+        const result = flatParse(
+          AdminGetCompetitionTransferViolationsParamsSchema,
+          req.params,
+        );
+        if (!result.success) {
+          throw new ApiError(400, `Invalid parameters: ${result.error}`);
+        }
+        const { competitionId } = result.data;
+
+        // Get transfer violations from service
+        const violations =
+          await services.competitionService.getCompetitionTransferViolations(
+            competitionId,
+          );
+
+        res.json({
+          success: true,
+          violations,
         });
       } catch (error) {
         next(error);
