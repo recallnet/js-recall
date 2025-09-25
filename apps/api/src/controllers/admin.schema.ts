@@ -106,27 +106,14 @@ export const AdminCreateCompetitionSchema = z
 
 /**
  * Admin update competition schema (note: mostly the same as competition creation, but with optional name)
+ * Note: Validation for perpsProvider requirement when changing type to perpetual_futures
+ * is handled in the service layer, as it requires knowing the current competition type
  */
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
-})
-  .extend({
-    name: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      // If changing to perps type, perpsProvider is required
-      if (data.type === "perpetual_futures" && !data.perpsProvider) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "perpsProvider configuration is required when updating competition type to perpetual_futures",
-      path: ["perpsProvider"],
-    },
-  );
+}).extend({
+  name: z.string().optional(),
+});
 
 /**
  * Admin start competition schema
