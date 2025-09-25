@@ -175,13 +175,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const totalBoost = useMemo(() => {
     if (!isSuccessBoostTotals) return 0;
     return Object.values(boostTotals).reduce((sum, amount) => sum + amount, 0);
-  }, [boostTotals]);
+  }, [boostTotals, isSuccessBoostTotals]);
 
   // Calculate user's total spent boost for progress bar
   const userSpentBoost = useMemo(() => {
     if (!isSuccessUserBoosts) return 0;
     return Object.values(userBoosts).reduce((sum, amount) => sum + amount, 0);
-  }, [userBoosts]);
+  }, [userBoosts, isSuccessUserBoosts]);
 
   // Calculate total boost value (available + user spent) for progress bar
   const totalBoostValue = useMemo(() => {
@@ -371,6 +371,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       totalBoost,
       boostBalance,
       isSuccessBoostTotals,
+      competition,
+      isSuccessUserBoosts,
     ],
   );
 
