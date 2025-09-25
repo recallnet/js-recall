@@ -959,6 +959,19 @@ export interface LinkUserWalletResponse extends ApiResponse {
 }
 
 /**
+ * Admin response for competition transfer violations
+ */
+export interface AdminCompetitionTransferViolationsResponse
+  extends ApiResponse {
+  success: true;
+  violations: Array<{
+    agentId: string;
+    agentName: string;
+    transferCount: number;
+  }>;
+}
+
+/**
  * PERPETUAL FUTURES TYPES
  */
 

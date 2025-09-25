@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
 import {
+  type AdminCompetitionTransferViolationsResponse,
   type AgentCompetitionsResponse,
   type AgentPerpsPositionsResponse,
   type AgentProfileResponse,
@@ -1493,5 +1494,163 @@ describe("Perps Competition", () => {
 
     // Portfolio value should match mock data
     expect(agentEntry?.portfolioValue).toBe(1100);
+  });
+
+  test("should detect and report competition transfer violations via admin endpoint", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with specific wallets
+    // 0x4444 has transfers configured in mock Symphony server
+    const { agent: agentWithTransfers } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent With Transfer Violations",
+        agentWalletAddress: "0x4444444444444444444444444444444444444444",
+      });
+
+    // 0x1111 has no transfers configured
+    const { agent: agentNoTransfers } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Without Transfers",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111",
+    });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Transfer Violation Detection Test ${Date.now()}`,
+      agentIds: [agentWithTransfers.id, agentNoTransfers.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait to ensure competition is fully started
+    await wait(1000);
+
+    // Trigger sync to process transfers
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for processing to complete
+    await wait(500);
+
+    // Call the admin endpoint to check for transfer violations
+    const violationsResponse =
+      await adminClient.getCompetitionTransferViolations(competition.id);
+
+    expect(violationsResponse.success).toBe(true);
+
+    // Type assertion since we've verified success
+    const typedViolationsResponse =
+      violationsResponse as AdminCompetitionTransferViolationsResponse;
+
+    // Should only include agents with transfers (violations)
+    // 0x4444 has transfers configured in mock server
+    expect(typedViolationsResponse.violations).toHaveLength(1);
+
+    const violation = typedViolationsResponse.violations[0];
+    expect(violation).toBeDefined();
+    expect(violation?.agentId).toBe(agentWithTransfers.id);
+    expect(violation?.agentName).toBe("Agent With Transfer Violations");
+    expect(violation?.transferCount).toBeGreaterThan(0);
+
+    // Agent without transfers should NOT be in the response
+    const noTransferViolation = typedViolationsResponse.violations.find(
+      (v) => v.agentId === agentNoTransfers.id,
+    );
+    expect(noTransferViolation).toBeUndefined();
+  });
+
+  test("should return empty array when no transfer violations exist", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents that don't have transfers in mock data
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Clean Agent 1",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Clean Agent 2",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222",
+    });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `No Violations Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Check for violations - should be empty
+    const violationsResponse =
+      await adminClient.getCompetitionTransferViolations(competition.id);
+
+    expect(violationsResponse.success).toBe(true);
+
+    const typedViolationsResponse =
+      violationsResponse as AdminCompetitionTransferViolationsResponse;
+    expect(typedViolationsResponse.violations).toHaveLength(0);
+  });
+
+  test("should return 400 for non-perps competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Paper Trading Agent for Violation Test",
+    });
+
+    // Start a PAPER TRADING competition (not perps)
+    const response = await startTestCompetition({
+      adminClient,
+      name: `Paper Trading Competition ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Try to get transfer violations for paper trading competition
+    const violationsResponse =
+      await adminClient.getCompetitionTransferViolations(competition.id);
+
+    expect(violationsResponse.success).toBe(false);
+    const errorResponse = violationsResponse as ErrorResponse;
+    expect(errorResponse.status).toBe(400);
+    expect(errorResponse.error).toContain(
+      "not a perpetual futures competition",
+    );
+  });
+
+  test("should return 404 for non-existent competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const fakeCompetitionId = randomUUID();
+
+    // Try to get transfer violations for non-existent competition
+    const violationsResponse =
+      await adminClient.getCompetitionTransferViolations(fakeCompetitionId);
+
+    expect(violationsResponse.success).toBe(false);
+    const errorResponse = violationsResponse as ErrorResponse;
+    expect(errorResponse.status).toBe(404);
+    expect(errorResponse.error).toContain("not found");
   });
 });

@@ -8,6 +8,7 @@ import {
   AdminAddAgentToCompetitionResponse,
   AdminAgentResponse,
   AdminAgentsListResponse,
+  AdminCompetitionTransferViolationsResponse,
   AdminReactivateAgentInCompetitionResponse,
   AdminRemoveAgentFromCompetitionResponse,
   AdminSearchParams,
@@ -931,6 +932,24 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "add agent to competition");
+    }
+  }
+
+  /**
+   * Get competition transfer violations (admin only)
+   * @param competitionId ID of the competition
+   * @returns Transfer violations for agents in the competition
+   */
+  async getCompetitionTransferViolations(
+    competitionId: string,
+  ): Promise<AdminCompetitionTransferViolationsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/competition/${competitionId}/transfer-violations`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get competition transfer violations");
     }
   }
 

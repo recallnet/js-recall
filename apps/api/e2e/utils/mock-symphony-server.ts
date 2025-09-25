@@ -125,11 +125,11 @@ export class MockSymphonyServer {
       transfers: [],
     });
 
-    // Pre-configured test wallet for Calmar testing (NO transfers allowed)
+    // Pre-configured test wallet for Calmar testing AND transfer violation testing
     // Portfolio shows volatility: $1700 → $1200 → $1550
     // Simple return: (1550/1700) - 1 = -8.8%
     // Max drawdown: (1200/1700) - 1 = -29.4%
-    // Demonstrates risk-adjusted metrics without transfer complexity
+    // Also includes test transfers for violation detection
     this.setAgentData("0x4444444444444444444444444444444444444444", {
       initialCapital: 1700,
       totalEquity: 1550,
@@ -141,7 +141,30 @@ export class MockSymphonyServer {
       totalRealizedPnl: -150,
       totalFeesPaid: 30,
       openPositions: [],
-      transfers: [], // No transfers - prohibited during competition
+      transfers: [
+        // Test transfers for violation detection
+        // Using dynamic timestamps to occur after competition start
+        {
+          type: "deposit",
+          amount: 200,
+          asset: "USDC",
+          from: "0xdeadbeef111111111111111111111111111111111",
+          to: "0x4444444444444444444444444444444444444444",
+          timestamp: "dynamic:0.5", // 0.5 seconds after request (after competition start)
+          txHash: "0xtransfer_violation_deposit_1",
+          chainId: 42161,
+        },
+        {
+          type: "withdraw",
+          amount: 50,
+          asset: "USDC",
+          from: "0x4444444444444444444444444444444444444444",
+          to: "0xdeadbeef222222222222222222222222222222222",
+          timestamp: "dynamic:1.0", // 1 second after request (after competition start)
+          txHash: "0xtransfer_violation_withdraw_1",
+          chainId: 42161,
+        },
+      ],
     });
   }
 
