@@ -48,14 +48,6 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
       link: "https://flat-agustinia-3f3.notion.site/Recall-Launch-Media-Kit-196dfc9427de80de9d96e1dd85a8b036",
     },
   ];
-  const socialLinks = [
-    { icon: FaXTwitter, url: "https://x.com/recallnet" },
-    { icon: FaDiscord, url: "https://discord.com/invite/recallnet" },
-    {
-      icon: FaYoutube,
-      url: "https://www.youtube.com/channel/UCpFqp6DtxvXaP7LUjxT3KpA",
-    },
-  ];
 
   return (
     <footer className={cn("mt-10", className)}>
@@ -92,21 +84,6 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
             >
               <span className="text-md">¬</span>
               <span>{text}</span>
-            </a>
-          ))}
-        </div>
-        <div className="gap-13 xs:col-span-2 xs:justify-end col-span-3 flex justify-center">
-          {socialLinks.map((link, i) => (
-            <a
-              key={i}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <link.icon
-                size={25}
-                className="text-secondary-foreground text-xl transition duration-300 ease-in-out hover:text-white"
-              />
             </a>
           ))}
         </div>
