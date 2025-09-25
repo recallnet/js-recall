@@ -1,5 +1,6 @@
 import {
   getGlobalStats,
+  getGlobalStatsAllTypes,
   getOptimizedGlobalAgentMetrics,
 } from "@/database/repositories/leaderboard-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
@@ -26,8 +27,8 @@ export class LeaderboardService {
    */
   async getGlobalLeaderboardWithSorting(params: LeaderboardParams) {
     try {
-      // Get global stats (existing functionality)
-      const stats = await getGlobalStats(params.type);
+      // Get global stats across all competition types
+      const stats = await getGlobalStatsAllTypes();
       if (stats.competitionIds.length === 0) {
         return this.emptyLeaderboardResponse(params);
       }
@@ -50,6 +51,7 @@ export class LeaderboardService {
           activeAgents: stats.activeAgents,
           totalCompetitions: stats.totalCompetitions,
           totalTrades: stats.totalTrades,
+          totalPositions: stats.totalPositions,
           totalVolume: stats.totalVolume,
           totalVotes: stats.totalVotes,
         },

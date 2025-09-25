@@ -7,6 +7,8 @@ import {
   AgentCompetitionsResponse,
   AgentWithOwnerResponse,
   AgentsResponse,
+  CompetitionPerpsPositionsResponse,
+  CompetitionPerpsSummaryResponse,
   CompetitionResponse,
   CompetitionRulesResponse,
   CompetitionTimelineResponse,
@@ -20,6 +22,7 @@ import {
   GetAgentsParams,
   GetCompetitionAgentsParams,
   GetCompetitionPerformanceParams,
+  GetCompetitionPerpsPositionsParams,
   GetCompetitionTradesParams,
   GetCompetitionsParams,
   GetLeaderboardParams,
@@ -297,6 +300,35 @@ export class ApiClient {
     const queryParams = this.formatQueryParams(params);
     return this.request<CompetitionTradesResponse>(
       `/competitions/${competitionId}/trades${queryParams}`,
+    );
+  }
+
+  /**
+   * Get perps positions for a competition
+   * @param competitionId - Competition ID
+   * @param params - Query parameters
+   * @returns Perps positions response
+   */
+  async getCompetitionPerpsPositions(
+    competitionId: string,
+    params: GetCompetitionPerpsPositionsParams = {},
+  ): Promise<CompetitionPerpsPositionsResponse> {
+    const queryParams = this.formatQueryParams(params);
+    return this.request<CompetitionPerpsPositionsResponse>(
+      `/competitions/${competitionId}/perps/all-positions${queryParams}`,
+    );
+  }
+
+  /**
+   * Get perps summary for a competition
+   * @param competitionId - Competition ID
+   * @returns Perps summary response
+   */
+  async getCompetitionPerpsSummary(
+    competitionId: string,
+  ): Promise<CompetitionPerpsSummaryResponse> {
+    return this.request<CompetitionPerpsSummaryResponse>(
+      `/competitions/${competitionId}/perps/summary`,
     );
   }
 

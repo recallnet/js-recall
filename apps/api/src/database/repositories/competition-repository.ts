@@ -4,16 +4,11 @@ import { db, dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
-/**
- * Competition Repository
- * Handles database operations for competitions
- */
-
 const repository = new CompetitionRepository(db, dbRead, repositoryLogger);
 
-// ----------------------------------------------------------------------------
+// =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
-// ----------------------------------------------------------------------------
+// =============================================================================
 
 /**
  * All repository functions wrapped with timing and metrics
@@ -138,6 +133,12 @@ export const createPortfolioSnapshot = createTimedRepositoryFunction(
   repository.createPortfolioSnapshot.bind(repository),
   "CompetitionRepository",
   "createPortfolioSnapshot",
+);
+
+export const batchCreatePortfolioSnapshots = createTimedRepositoryFunction(
+  repository.batchCreatePortfolioSnapshots.bind(repository),
+  "CompetitionRepository",
+  "batchCreatePortfolioSnapshots",
 );
 
 export const getLatestPortfolioSnapshots = createTimedRepositoryFunction(

@@ -92,9 +92,11 @@ const ApiKeyRow = ({
 
 export const Credentials = ({
   agent,
+  userWalletAddress,
   className,
 }: {
   agent: Agent;
+  userWalletAddress?: string;
   className?: string;
 }) => {
   const {
@@ -103,7 +105,7 @@ export const Credentials = ({
     isLoadingKeys,
     isSandboxUnlocked,
     mutation,
-  } = useUnlockKeys(agent.handle, agent.id);
+  } = useUnlockKeys(agent.handle, agent.id, userWalletAddress);
 
   const unlockKeys = () => {
     mutation.mutate();

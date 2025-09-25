@@ -122,6 +122,16 @@
         "default": "./dist/repositories/leaderboard.cjs"
       }
     },
+    "./repositories/perps": {
+      "import": {
+        "types": "./dist/repositories/perps.d.ts",
+        "default": "./dist/repositories/perps.js"
+      },
+      "require": {
+        "types": "./dist/repositories/perps.d.cts",
+        "default": "./dist/repositories/perps.cjs"
+      }
+    },
     "./repositories/rewards": {
       "import": {
         "types": "./dist/repositories/rewards.d.ts",

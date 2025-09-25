@@ -11,11 +11,9 @@ import type { Transaction as DatabaseTransaction } from "@recallnet/db/types";
 import { config } from "@/config/index.js";
 import { buildPaginationResponse } from "@/controllers/request-helpers.js";
 import { db } from "@/database/db.js";
-import {
-  findById as findAgentById,
-  findByCompetition,
-} from "@/database/repositories/agent-repository.js";
+import { findByCompetition } from "@/database/repositories/agent-repository.js";
 import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
+import { resetAgentBalances } from "@/database/repositories/balance-repository.js";
 import {
   addAgentToCompetition,
   batchInsertLeaderboard,
@@ -42,6 +40,11 @@ import {
   update as updateCompetition,
   updateOne,
 } from "@/database/repositories/competition-repository.js";
+import {
+  createPerpsCompetitionConfig,
+  getCompetitionLeaderboardSummaries,
+  getPerpsCompetitionStats,
+} from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
 import { ApiError } from "@/middleware/errorHandler.js";
@@ -51,6 +54,7 @@ import {
   AgentService,
   BalanceService,
   ConfigurationService,
+  PerpsDataProcessor,
   PortfolioSnapshotterService,
   TradeSimulatorService,
   TradingConstraintsService,
@@ -68,6 +72,47 @@ import {
   AgentDbSortFields,
   AgentQueryParams,
 } from "@/types/sort/agent.js";
+
+/**
+ * Parameters for creating a new competition
+ */
+export interface CreateCompetitionParams {
+  name: string;
+  description?: string;
+  tradingType?: CrossChainTradingType;
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  type?: CompetitionType;
+  startDate?: Date;
+  endDate?: Date;
+  votingStartDate?: Date;
+  votingEndDate?: Date;
+  joinStartDate?: Date;
+  joinEndDate?: Date;
+  maxParticipants?: number;
+  tradingConstraints?: TradingConstraintsInput;
+  rewards?: Record<number, number>;
+  perpsProvider?: {
+    provider: "symphony" | "hyperliquid";
+    initialCapital?: number;
+    selfFundingThreshold?: number;
+    apiUrl?: string;
+  };
+}
+
+/**
+ * Return type for started competition with trading constraints and agent IDs
+ */
+export type StartedCompetitionResult = SelectCompetition & {
+  tradingConstraints: {
+    minimumPairAgeHours?: number;
+    minimum24hVolumeUsd?: number;
+    minimumLiquidityUsd?: number;
+    minimumFdvUsd?: number;
+  };
+  agentIds: string[];
+};
 
 interface TradingConstraintsInput {
   minimumPairAgeHours?: number;
@@ -180,11 +225,14 @@ type CompetitionDetailsData = {
   success: boolean;
   competition: SelectCompetition & {
     stats: {
-      totalTrades: number;
       totalAgents: number;
-      totalVolume: number;
       totalVotes: number;
-      uniqueTokens: number;
+      // Paper trading stats
+      totalTrades?: number;
+      totalVolume?: number;
+      uniqueTokens?: number;
+      // Perps stats
+      totalPositions?: number;
     };
     tradingConstraints: {
       minimumPairAgeHours: number | null;
@@ -334,6 +382,7 @@ export class CompetitionService {
   private voteService: VoteService;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
+  private perpsDataProcessor: PerpsDataProcessor;
 
   constructor(
     balanceService: BalanceService,
@@ -345,6 +394,7 @@ export class CompetitionService {
     voteService: VoteService,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
+    perpsDataProcessor: PerpsDataProcessor,
   ) {
     this.balanceService = balanceService;
     this.tradeSimulatorService = tradeSimulatorService;
@@ -355,6 +405,7 @@ export class CompetitionService {
     this.voteService = voteService;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
+    this.perpsDataProcessor = perpsDataProcessor;
   }
 
   /**
@@ -394,24 +445,8 @@ export class CompetitionService {
     maxParticipants,
     tradingConstraints,
     rewards,
-  }: {
-    name: string;
-    description?: string;
-    tradingType?: CrossChainTradingType;
-    sandboxMode?: boolean;
-    externalUrl?: string;
-    imageUrl?: string;
-    type?: CompetitionType;
-    startDate?: Date;
-    endDate?: Date;
-    votingStartDate?: Date;
-    votingEndDate?: Date;
-    joinStartDate?: Date;
-    joinEndDate?: Date;
-    maxParticipants?: number;
-    tradingConstraints?: TradingConstraintsInput;
-    rewards?: Record<number, number>;
-  }) {
+    perpsProvider,
+  }: CreateCompetitionParams) {
     const id = uuidv4();
 
     const competition: Parameters<typeof createCompetition>[0] = {
@@ -439,6 +474,35 @@ export class CompetitionService {
     const result = await db.transaction(async (tx) => {
       // Create the competition
       await createCompetition(competition, tx);
+
+      // Create perps competition config if it's a perps competition
+      if (type === "perpetual_futures") {
+        // Validate that perpsProvider is provided for perps competitions
+        if (!perpsProvider) {
+          throw new ApiError(
+            400,
+            "Perps provider configuration is required for perpetual futures competitions",
+          );
+        }
+
+        const perpsConfig = {
+          competitionId: id,
+          dataSource: "external_api" as const,
+          dataSourceConfig: {
+            type: "external_api" as const,
+            provider: perpsProvider.provider,
+            apiUrl: perpsProvider.apiUrl,
+          },
+          initialCapital: perpsProvider.initialCapital?.toString() ?? "500.00",
+          selfFundingThresholdUsd:
+            perpsProvider.selfFundingThreshold?.toString() ?? "0.00",
+        };
+
+        await createPerpsCompetitionConfig(perpsConfig, tx);
+        serviceLogger.debug(
+          `[CompetitionService] Created perps config for competition ${id}: ${JSON.stringify(perpsConfig)}`,
+        );
+      }
 
       let createdRewards: SelectCompetitionReward[] = [];
       if (rewards) {
@@ -511,6 +575,50 @@ export class CompetitionService {
   }
 
   /**
+   * Validates agent IDs and returns valid and invalid lists
+   * @param agentIds Array of agent IDs to validate
+   * @returns List of valid agent IDs
+   */
+  private async validateAgentIds(agentIds: string[]): Promise<string[]> {
+    const validAgentIds: string[] = [];
+    const invalidAgentIds: string[] = [];
+
+    for (const agentId of agentIds) {
+      const agent = await this.agentService.getAgent(agentId);
+      if (!agent || agent.status !== "active") {
+        invalidAgentIds.push(agentId);
+      } else {
+        validAgentIds.push(agentId);
+      }
+    }
+
+    // If there are invalid agent IDs, throw an error with the list
+    if (invalidAgentIds.length > 0) {
+      throw new ApiError(
+        400,
+        `Cannot start competition: the following agent IDs are invalid or inactive: ${invalidAgentIds.join(", ")}`,
+      );
+    }
+
+    return validAgentIds;
+  }
+
+  /**
+   * Gets pre-registered agent IDs for a competition
+   * @param competitionId The competition ID
+   * @returns Array of pre-registered agent IDs
+   */
+  private async getPreRegisteredAgentIds(
+    competitionId: string,
+  ): Promise<string[]> {
+    const competitionAgents = await this.agentService.getAgentsForCompetition(
+      competitionId,
+      { sort: "", limit: 1000, offset: 0 },
+    );
+    return competitionAgents.agents.map((agent) => agent.id);
+  }
+
+  /**
    * Start a competition.
    * For all agents in the competition, resets their portfolio balances to starting values,
    * ensures they are registered and active in the competition, and takes an initial portfolio
@@ -525,14 +633,16 @@ export class CompetitionService {
     competitionId: string,
     agentIds: string[],
     tradingConstraints?: TradingConstraintsInput,
-  ) {
+  ): Promise<StartedCompetitionResult> {
     const competition = await findById(competitionId);
     if (!competition) {
       throw new Error(`Competition not found: ${competitionId}`);
     }
 
     if (competition.status !== "pending") {
-      throw new Error(`Competition cannot be started: ${competition.status}`);
+      throw new Error(
+        `Competition is already in ${competition.status} state and cannot be started`,
+      );
     }
 
     const activeCompetition = await findActive();
@@ -542,22 +652,42 @@ export class CompetitionService {
       );
     }
 
+    // Validate provided agent IDs
+    const validAgentIds = await this.validateAgentIds(agentIds);
+
+    // Get pre-registered agents
+    const preRegisteredAgentIds =
+      await this.getPreRegisteredAgentIds(competitionId);
+
+    // Combine agent lists (remove duplicates)
+    const finalAgentIds = [
+      ...new Set([...validAgentIds, ...preRegisteredAgentIds]),
+    ];
+
+    // Check if we have any agents
+    if (finalAgentIds.length === 0) {
+      throw new ApiError(
+        400,
+        "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
+      );
+    }
+
     // Process all agent additions and activations
-    for (const agentId of agentIds) {
-      // Reset balances
-      await this.balanceService.resetAgentBalances(agentId);
-
-      // Ensure agent is globally active (but don't force reactivation)
-      const agent = await findAgentById(agentId);
-      if (!agent) {
-        throw new Error(`Agent not found: ${agentId}`);
-      }
-
-      if (agent.status !== "active") {
-        throw new Error(
-          `Cannot start competition with agent ${agentId}: agent status is ${agent.status}`,
+    for (const agentId of finalAgentIds) {
+      // Handle balances based on competition type
+      if (competition.type === "trading") {
+        // Paper trading: Reset to standard balances (5k USDC per chain)
+        await this.balanceService.resetAgentBalances(agentId);
+      } else if (competition.type === "perpetual_futures") {
+        // Perps: Clear all balances to prevent confusion
+        // Pass empty Map to delete all balances without creating new ones
+        await resetAgentBalances(agentId, new Map());
+        serviceLogger.debug(
+          `[CompetitionService] Cleared balances for perps agent ${agentId}`,
         );
       }
+
+      // Note: Agent validation already done above, so we know agent exists and is active
 
       // Register agent in the competition (automatically sets status to 'active')
       try {
@@ -605,16 +735,45 @@ export class CompetitionService {
 
     // Take initial portfolio snapshots BEFORE setting status to active
     // This ensures no trades can happen during snapshot initialization
-    // and the snapshotter has exclusive access to price API rate limits
-    serviceLogger.debug(
-      `[CompetitionManager] Taking initial portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
-    );
-    await this.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
-    serviceLogger.debug(
-      `[CompetitionManager] Initial portfolio snapshots completed`,
-    );
+    // Different approach based on competition type:
+    if (competition.type === "trading") {
+      // Paper trading: Use portfolio snapshotter with reset balances
+      serviceLogger.debug(
+        `[CompetitionService] Taking initial paper trading portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
+      );
+      await this.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+      );
+      serviceLogger.debug(
+        `[CompetitionService] Initial paper trading portfolio snapshots completed`,
+      );
+    } else if (competition.type === "perpetual_futures") {
+      // Perps: Sync from Symphony to get initial $500 balance state
+      serviceLogger.debug(
+        `[CompetitionService] Syncing initial perps data from Symphony for ${agentIds.length} agents (competition still pending)`,
+      );
+
+      const result =
+        await this.perpsDataProcessor.processPerpsCompetition(competitionId);
+
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
+
+      serviceLogger.debug(
+        `[CompetitionService] Initial perps sync completed: ${successCount}/${totalCount} agents synced successfully`,
+      );
+
+      if (failedCount > 0) {
+        // Log which agents failed but don't throw - some agents may not have Symphony accounts yet
+        const failedAgentIds = result.syncResult.failed.map((f) => f.agentId);
+        serviceLogger.warn(
+          `[CompetitionService] Failed to sync ${failedCount} out of ${totalCount} agents during competition start: ${failedAgentIds.join(", ")}`,
+        );
+      }
+    } else {
+      throw new Error(`Unknown competition type: ${competition.type}`);
+    }
 
     // NOW update the competition status to active
     // This opens trading and price endpoint access to agents
@@ -644,7 +803,51 @@ export class CompetitionService {
         minimumLiquidityUsd: newConstraints?.minimumLiquidityUsd,
         minimumFdvUsd: newConstraints?.minimumFdvUsd,
       },
-    };
+      agentIds: finalAgentIds,
+    } as StartedCompetitionResult;
+  }
+
+  /**
+   * Start or create and start a competition.
+   * If competitionId is provided, starts the existing competition.
+   * If competitionId is not provided, creates a new competition with the given params and starts it.
+   * @param params Parameters including either competitionId or competition creation data
+   * @returns The started competition with final agent IDs
+   */
+  async startOrCreateCompetition(params: {
+    competitionId?: string;
+    agentIds: string[];
+    tradingConstraints?: TradingConstraintsInput;
+    // Optional creation params (required when competitionId not provided)
+    creationParams?: CreateCompetitionParams;
+  }): Promise<StartedCompetitionResult> {
+    let competitionId: string;
+
+    if (params.competitionId) {
+      competitionId = params.competitionId;
+    } else {
+      // Create new competition
+      if (!params.creationParams?.name) {
+        throw new ApiError(
+          400,
+          "Name is required when creating a new competition",
+        );
+      }
+
+      const newCompetition = await this.createCompetition({
+        ...params.creationParams,
+        tradingConstraints: params.tradingConstraints,
+      });
+
+      competitionId = newCompetition.id;
+    }
+
+    // Start the competition
+    return await this.startCompetition(
+      competitionId,
+      params.agentIds,
+      params.tradingConstraints,
+    );
   }
 
   /**
@@ -702,10 +905,10 @@ export class CompetitionService {
    * @returns The updated competition
    */
   async endCompetition(competitionId: string) {
-    // Mark as ending (active -> ending)
-    const markedAsEnding = await markCompetitionAsEnding(competitionId);
+    // Mark as ending (active -> ending) - this returns the competition object
+    let competition = await markCompetitionAsEnding(competitionId);
 
-    if (!markedAsEnding) {
+    if (!competition) {
       const current = await findById(competitionId);
       if (!current) {
         throw new Error(`Competition not found: ${competitionId}`);
@@ -719,19 +922,47 @@ export class CompetitionService {
         );
       }
       // If "ending", continue processing (retry scenario)
+      // In retry scenario, use the current competition we already fetched
+      competition = current;
     }
 
     serviceLogger.debug(
       `[CompetitionManager] Marked competition as ending: ${competitionId}`,
     );
 
-    // Take final portfolio snapshots (force=true to ensure we get final values even though comp
-    // is ending). We do this outside the transaction since it is idempotent, to keep the amount
-    // of work done in the transaction to a minimum.
-    await this.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-      true,
-    );
+    // Take final data snapshot based on competition type
+    // force=true ensures we get final values even though status is ENDED
+    if (competition.type === "trading") {
+      // Paper trading: Take portfolio snapshots from balances
+      await this.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+        true,
+      );
+      serviceLogger.debug(
+        `[CompetitionService] Final paper trading portfolio snapshots completed`,
+      );
+    } else if (competition.type === "perpetual_futures") {
+      // Perps: Sync final data from Symphony
+      // This fetches final account summaries and positions, creating portfolio snapshots
+      const result =
+        await this.perpsDataProcessor.processPerpsCompetition(competitionId);
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
+      serviceLogger.debug(
+        `[CompetitionService] Final perps sync completed: ${successCount}/${totalCount} agents synced successfully`,
+      );
+      if (failedCount > 0) {
+        // Log warning but don't fail the competition ending
+        serviceLogger.warn(
+          `[CompetitionService] Failed to sync final data for ${failedCount} out of ${totalCount} agents in ending competition`,
+        );
+      }
+    } else {
+      serviceLogger.warn(
+        `[CompetitionService] Unknown competition type ${competition.type} - skipping final snapshot`,
+      );
+    }
 
     // Get agents in the competition (outside transaction - they won't change)
     const competitionAgents = await getCompetitionAgents(competitionId);
@@ -740,8 +971,8 @@ export class CompetitionService {
     await this.configurationService.loadCompetitionSettings();
 
     // Final transaction to persist results
-    const { competition, leaderboardCount } = await db.transaction(
-      async (tx) => {
+    const { competition: finalCompetition, leaderboardCount } =
+      await db.transaction(async (tx) => {
         // Mark as ended. This is our guard against concurrent execution - if another process is
         // ending the same competition in parallel, only one will manage to mark it as ended, and
         // the other one's transaction will fail.
@@ -766,8 +997,7 @@ export class CompetitionService {
         );
 
         return { competition: updated, leaderboardCount };
-      },
-    );
+      });
 
     // Log success only after transaction has committed
     serviceLogger.debug(
@@ -775,7 +1005,7 @@ export class CompetitionService {
         `${competitionAgents.length} agents, ${leaderboardCount} leaderboard entries`,
     );
 
-    return competition;
+    return finalCompetition;
   }
 
   /**
@@ -794,6 +1024,35 @@ export class CompetitionService {
    */
   async getActiveCompetition() {
     return findActive();
+  }
+
+  /**
+   * Check if the active competition is of a specific type (atomic operation)
+   * @param type The competition type to check
+   * @returns true if active competition matches the type, false otherwise
+   */
+  async isActiveCompetitionType(
+    type: "trading" | "perpetual_futures",
+  ): Promise<boolean> {
+    const activeCompetition = await findActive();
+    return activeCompetition?.type === type;
+  }
+
+  /**
+   * Check if a specific competition is of a given type (atomic operation)
+   * @param competitionId The competition ID to check
+   * @param type The competition type to check
+   * @returns Object with exists (if competition exists) and isType (if it matches the type)
+   */
+  async checkCompetitionType(
+    competitionId: string,
+    type: "trading" | "perpetual_futures",
+  ): Promise<{ exists: boolean; isType: boolean }> {
+    const competition = await findById(competitionId);
+    return {
+      exists: !!competition,
+      isType: competition?.type === type,
+    };
   }
 
   /**
@@ -931,6 +1190,22 @@ export class CompetitionService {
   private async calculateLeaderboardFromLivePortfolios(
     competitionId: string,
   ): Promise<LeaderboardEntry[]> {
+    // Check competition type to determine data source
+    const competition = await findById(competitionId);
+
+    if (competition?.type === "perpetual_futures") {
+      // For perps: Use efficient single-query method to get latest account summaries
+      // Already sorted by totalEquity DESC and filtered to active agents only
+      const summaries = await getCompetitionLeaderboardSummaries(competitionId);
+
+      return summaries.map((summary) => ({
+        agentId: summary.agentId,
+        value: Number(summary.totalEquity) || 0,
+        pnl: Number(summary.totalPnl) || 0, // Perps have PnL data available
+      }));
+    }
+
+    // For paper trading: Use existing balance-based calculation
     const agents = await getCompetitionAgents(competitionId);
 
     // Use bulk portfolio value calculation
@@ -2331,14 +2606,36 @@ export class CompetitionService {
         0,
       );
 
-      // Assemble stats
-      const stats = {
-        totalTrades: tradeMetrics.totalTrades,
-        totalAgents: competition.registeredParticipants,
-        totalVolume: tradeMetrics.totalVolume,
-        totalVotes,
-        uniqueTokens: tradeMetrics.uniqueTokens,
+      // Build stats based on competition type
+      let stats: {
+        totalAgents: number;
+        totalVotes: number;
+        totalTrades?: number;
+        totalVolume?: number;
+        uniqueTokens?: number;
+        totalPositions?: number;
       };
+
+      if (competition.type === "perpetual_futures") {
+        // For perps competitions, get perps-specific stats
+        const perpsStatsData = await getPerpsCompetitionStats(
+          params.competitionId,
+        );
+        stats = {
+          totalAgents: competition.registeredParticipants,
+          totalVotes,
+          totalPositions: perpsStatsData?.totalPositions ?? 0,
+        };
+      } else {
+        // For paper trading competitions, include trade metrics
+        stats = {
+          totalTrades: tradeMetrics.totalTrades,
+          totalAgents: competition.registeredParticipants,
+          totalVolume: tradeMetrics.totalVolume,
+          totalVotes,
+          uniqueTokens: tradeMetrics.uniqueTokens,
+        };
+      }
 
       // Format rewards
       const formattedRewards = rewards.map((r) => ({
