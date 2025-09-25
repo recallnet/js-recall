@@ -109,9 +109,24 @@ export const AdminCreateCompetitionSchema = z
  */
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
-}).extend({
-  name: z.string().optional(),
-});
+})
+  .extend({
+    name: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      // If changing to perps type, perpsProvider is required
+      if (data.type === "perpetual_futures" && !data.perpsProvider) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "perpsProvider configuration is required when updating competition type to perpetual_futures",
+      path: ["perpsProvider"],
+    },
+  );
 
 /**
  * Admin start competition schema

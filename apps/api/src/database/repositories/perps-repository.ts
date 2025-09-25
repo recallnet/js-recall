@@ -28,6 +28,12 @@ export const getPerpsCompetitionConfig = createTimedRepositoryFunction(
   "getPerpsCompetitionConfig",
 );
 
+export const deletePerpsCompetitionConfig = createTimedRepositoryFunction(
+  repository.deletePerpsCompetitionConfig.bind(repository),
+  "PerpsRepository",
+  "deletePerpsCompetitionConfig",
+);
+
 export const upsertPerpsPosition = createTimedRepositoryFunction(
   repository.upsertPerpsPosition.bind(repository),
   "PerpsRepository",

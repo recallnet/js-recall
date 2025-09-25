@@ -146,6 +146,37 @@ export class PerpsRepository {
     }
   }
 
+  /**
+   * Delete perps competition configuration
+   * @param competitionId Competition ID
+   * @param tx Optional transaction
+   * @returns True if deleted, false if not found
+   */
+  async deletePerpsCompetitionConfig(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<boolean> {
+    try {
+      const executor = tx || this.#db;
+      const result = await executor
+        .delete(perpsCompetitionConfig)
+        .where(eq(perpsCompetitionConfig.competitionId, competitionId));
+
+      const deleted = (result?.rowCount ?? 0) > 0;
+
+      if (deleted) {
+        this.#logger.debug(
+          `[PerpsRepository] Deleted perps config for competition ${competitionId}`,
+        );
+      }
+
+      return deleted;
+    } catch (error) {
+      this.#logger.error("Error in deletePerpsCompetitionConfig:", error);
+      throw error;
+    }
+  }
+
   // =============================================================================
   // PERPETUAL POSITIONS
   // =============================================================================

@@ -797,9 +797,13 @@ export function makeAdminController(services: ServiceRegistry) {
           );
         }
 
-        // Extract rewards and tradingConstraints from the validated data
-        const { rewards, tradingConstraints, ...competitionUpdates } =
-          bodyResult.data;
+        // Extract rewards, tradingConstraints, and perpsProvider from the validated data
+        const {
+          rewards,
+          tradingConstraints,
+          perpsProvider,
+          ...competitionUpdates
+        } = bodyResult.data;
         const updates = competitionUpdates as UpdateCompetition;
 
         // Check if there are any updates to apply
@@ -818,6 +822,7 @@ export function makeAdminController(services: ServiceRegistry) {
             updates,
             tradingConstraints,
             rewards,
+            perpsProvider,
           );
 
         // Return the updated competition

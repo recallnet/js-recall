@@ -45,6 +45,7 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import {
   createPerpsCompetitionConfig,
+  deletePerpsCompetitionConfig,
   getCompetitionTransferViolationCounts,
   getPerpsCompetitionStats,
   getRiskAdjustedLeaderboard,
@@ -1575,6 +1576,7 @@ export class CompetitionService {
    * @param updates The core competition fields to update
    * @param tradingConstraints Optional trading constraints to update
    * @param rewards Optional rewards to replace
+   * @param perpsProvider Optional perps provider config (required when changing to perps type)
    * @returns The updated competition with constraints and rewards
    */
   async updateCompetition(
@@ -1582,6 +1584,12 @@ export class CompetitionService {
     updates: UpdateCompetition,
     tradingConstraints?: TradingConstraintsInput,
     rewards?: Record<number, number>,
+    perpsProvider?: {
+      provider: "symphony" | "hyperliquid";
+      initialCapital?: number;
+      selfFundingThreshold?: number;
+      apiUrl?: string;
+    },
   ): Promise<{
     competition: SelectCompetition;
     updatedRewards: SelectCompetitionReward[];
@@ -1592,8 +1600,76 @@ export class CompetitionService {
       throw new Error(`Competition not found: ${competitionId}`);
     }
 
+    // Check if type is being changed
+    const isTypeChanging =
+      updates.type !== undefined && updates.type !== existingCompetition.type;
+
+    if (isTypeChanging) {
+      // Only allow type changes for pending competitions
+      if (existingCompetition.status !== "pending") {
+        throw new ApiError(
+          400,
+          `Cannot change competition type once it has started. Current status: ${existingCompetition.status}`,
+        );
+      }
+
+      // Validate perps provider is provided when converting to perps
+      if (updates.type === "perpetual_futures" && !perpsProvider) {
+        throw new ApiError(
+          400,
+          "Perps provider configuration is required when changing to perpetual futures type",
+        );
+      }
+    }
+
     // Execute all updates in a single transaction
     const result = await db.transaction(async (tx) => {
+      // Handle type conversion if needed
+      if (isTypeChanging && updates.type) {
+        const oldType = existingCompetition.type;
+        const newType = updates.type;
+
+        serviceLogger.info(
+          `[CompetitionService] Converting competition ${competitionId} from ${oldType} to ${newType}`,
+        );
+
+        if (oldType === "trading" && newType === "perpetual_futures") {
+          // Spot → Perps: Create perps config
+          // At this point we know perpsProvider exists because we validated above
+          if (!perpsProvider) {
+            throw new ApiError(
+              500,
+              "Internal error: perps provider missing despite validation",
+            );
+          }
+
+          const perpsConfig = {
+            competitionId,
+            dataSource: "external_api" as const,
+            dataSourceConfig: {
+              type: "external_api" as const,
+              provider: perpsProvider.provider,
+              apiUrl: perpsProvider.apiUrl,
+            },
+            initialCapital:
+              perpsProvider.initialCapital?.toString() ?? "500.00",
+            selfFundingThresholdUsd:
+              perpsProvider.selfFundingThreshold?.toString() ?? "0.00",
+          };
+
+          await createPerpsCompetitionConfig(perpsConfig, tx);
+          serviceLogger.debug(
+            `[CompetitionService] Created perps config for converted competition ${competitionId}`,
+          );
+        } else if (oldType === "perpetual_futures" && newType === "trading") {
+          // Perps → Spot: Delete perps config using repository method
+          await deletePerpsCompetitionConfig(competitionId, tx);
+          serviceLogger.debug(
+            `[CompetitionService] Deleted perps config for converted competition ${competitionId}`,
+          );
+        }
+      }
+
       // Update the competition
       const updatedCompetition = await updateOne(competitionId, updates, tx);
 
@@ -1620,7 +1696,7 @@ export class CompetitionService {
     });
 
     serviceLogger.debug(
-      `[CompetitionManager] Updated competition: ${competitionId}`,
+      `[CompetitionService] Updated competition: ${competitionId}`,
     );
 
     return result;
