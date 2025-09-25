@@ -135,6 +135,7 @@ class ServiceRegistry {
       this._boostRepository,
       this._competitionRepository,
       this._userRepository,
+      config.boost.noStakeBoostAmount,
     );
 
     this._boostAwardService = new BoostAwardService(

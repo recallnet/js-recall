@@ -6,7 +6,7 @@ import ServiceRegistry from "@/services/index.js";
 import { ensureUuid } from "./request-helpers.js";
 
 const BoostAgentSchema = z.object({
-  amount: z.number().min(1),
+  amount: z.coerce.bigint(),
   idemKey: z
     .string()
     .refine(
@@ -43,7 +43,7 @@ export function makeBoostController(services: ServiceRegistry) {
         } else {
           res.status(200).json({
             success: true,
-            balance: result.value,
+            balance: result.value.toString(),
           });
         }
       } catch (error) {
@@ -63,7 +63,12 @@ export function makeBoostController(services: ServiceRegistry) {
         } else {
           res.status(200).json({
             success: true,
-            boostTotals: result.value,
+            boostTotals: Object.fromEntries(
+              Object.entries(result.value).map(([key, value]) => [
+                key,
+                value.toString(),
+              ]),
+            ),
           });
         }
       } catch (error) {
@@ -90,7 +95,12 @@ export function makeBoostController(services: ServiceRegistry) {
         } else {
           res.status(200).json({
             success: true,
-            boosts: result.value,
+            boosts: Object.fromEntries(
+              Object.entries(result.value).map(([key, value]) => [
+                key,
+                value.toString(),
+              ]),
+            ),
           });
         }
       } catch (error) {
@@ -118,7 +128,7 @@ export function makeBoostController(services: ServiceRegistry) {
         } else {
           res.status(200).json({
             success: true,
-            agentTotal: result.value.agentBoostTotal.total,
+            agentTotal: result.value.agentBoostTotal.total.toString(),
           });
         }
       } catch (error) {

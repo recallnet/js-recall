@@ -13,7 +13,7 @@ export const boostAgent = base
     z.object({
       competitionId: z.string(),
       agentId: z.string().uuid(),
-      amount: z.number().min(1),
+      amount: z.bigint().min(1n),
       idemKey: z.string(),
     }),
   )

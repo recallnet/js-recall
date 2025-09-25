@@ -1,4 +1,9 @@
 import {
+  attoValueToNumberValue,
+  valueToAttoString,
+} from "@recallnet/conversions/atto-conversions";
+
+import {
   Agent,
   AgentApiKeyResponse,
   AgentCompetitionResponse,
@@ -625,11 +630,14 @@ export class ApiClient {
     success: boolean;
     balance: number;
   }> {
-    const res = await this.request<{ success: boolean; balance: number }>(
+    const res = await this.request<{ success: boolean; balance: string }>(
       `/competitions/${competitionId}/boost`,
     );
 
-    return res;
+    return {
+      ...res,
+      balance: attoValueToNumberValue(res.balance),
+    };
   }
 
   /**
@@ -644,10 +652,18 @@ export class ApiClient {
   }): Promise<{ success: boolean; boosts: Record<string, number> }> {
     const res = await this.request<{
       success: boolean;
-      boosts: Record<string, number>;
+      boosts: Record<string, string>;
     }>(`/competitions/${competitionId}/boosts`);
 
-    return res;
+    return {
+      ...res,
+      boosts: Object.fromEntries(
+        Object.entries(res.boosts).map(([key, value]) => [
+          key,
+          attoValueToNumberValue(value),
+        ]),
+      ),
+    };
   }
 
   async getAgentBoostTotals({
@@ -657,10 +673,18 @@ export class ApiClient {
   }): Promise<{ success: boolean; boostTotals: Record<string, number> }> {
     const res = await this.request<{
       success: boolean;
-      boostTotals: Record<string, number>;
+      boostTotals: Record<string, string>;
     }>(`/competitions/${competitionId}/agents/boosts`);
 
-    return res;
+    return {
+      ...res,
+      boostTotals: Object.fromEntries(
+        Object.entries(res.boostTotals).map(([key, value]) => [
+          key,
+          attoValueToNumberValue(value),
+        ]),
+      ),
+    };
   }
 
   /**
@@ -687,16 +711,19 @@ export class ApiClient {
     );
 
     const data = {
-      amount,
+      amount: valueToAttoString(amount),
       idemKey,
     };
 
-    const res = await this.request<{ success: boolean; agentTotal: number }>(
+    const res = await this.request<{ success: boolean; agentTotal: string }>(
       `/competitions/${competitionId}/agents/${agentId}/boost`,
       { method: "POST", body: JSON.stringify(data) },
     );
 
-    return res;
+    return {
+      ...res,
+      agentTotal: attoValueToNumberValue(res.agentTotal),
+    };
   }
 }
 

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
+import { valueToAttoBigInt } from "@recallnet/conversions/atto-conversions";
 import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
@@ -132,7 +133,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
       competitionId,
       agentId: agent.id,
       idemKey: btoa(`${competitionId}-${agent.id}-${currentAgentBoostTotal}`),
-      amount: boostAmount,
+      amount: valueToAttoBigInt(boostAmount),
     });
   };
 

@@ -15,6 +15,7 @@ import { Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
+import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { Button } from "@recallnet/ui2/components/button";
 import {
   SortableTableHeader,
@@ -93,6 +94,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     tanstackClient.boost.balance.queryOptions({
       input: { competitionId: competition.id },
       enabled: session.isAuthenticated,
+      select: (data) => attoValueToNumberValue(data),
     }),
   );
 
@@ -104,6 +106,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     tanstackClient.boost.userBoosts.queryOptions({
       input: { competitionId: competition.id },
       enabled: session.isAuthenticated,
+      select: (data) =>
+        Object.fromEntries(
+          Object.entries(data).map(([key, value]) => [
+            key,
+            attoValueToNumberValue(value),
+          ]),
+        ),
     }),
   );
   const {
@@ -113,6 +122,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   } = useQuery(
     tanstackClient.boost.agentBoostTotals.queryOptions({
       input: { competitionId: competition.id },
+      select: (data) =>
+        Object.fromEntries(
+          Object.entries(data).map(([key, value]) => [
+            key,
+            attoValueToNumberValue(value),
+          ]),
+        ),
     }),
   );
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
@@ -15,7 +16,7 @@ import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { useSession } from "@/hooks";
 
 const nonStakeBoostAmount = process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT
-  ? Number(process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT)
+  ? BigInt(process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT)
   : undefined;
 
 const formattedNumber = new Intl.NumberFormat();
@@ -110,7 +111,11 @@ export const Navbar: React.FunctionComponent = () => {
             >
               <div className="flex flex-row items-center space-x-2 font-bold text-yellow-500">
                 <Zap className="size-4" />
-                <span>{formattedNumber.format(nonStakeBoostAmount)}</span>
+                <span>
+                  {formattedNumber.format(
+                    attoValueToNumberValue(nonStakeBoostAmount),
+                  )}
+                </span>
               </div>
             </Tooltip>
           )}
