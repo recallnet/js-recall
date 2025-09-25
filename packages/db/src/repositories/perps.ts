@@ -29,6 +29,7 @@ import {
   InsertPerpsSelfFundingAlert,
   InsertPerpsTransferHistory,
   InsertPerpsTwrPeriod,
+  RiskAdjustedLeaderboardEntry,
   SelectPerpetualPosition,
   SelectPerpsAccountSummary,
   SelectPerpsCompetitionConfig,
@@ -744,6 +745,117 @@ export class PerpsRepository {
   // =============================================================================
 
   /**
+   * Get risk-adjusted leaderboard with Calmar ratio fallback to equity
+   * Combines risk metrics and account summaries in a single query
+   * @param competitionId Competition ID
+   * @param limit Optional limit for pagination
+   * @param offset Optional offset for pagination
+   * @returns Array of leaderboard entries sorted by Calmar (if available) then equity
+   */
+  async getRiskAdjustedLeaderboard(
+    competitionId: string,
+    limit = 50,
+    offset = 0,
+  ): Promise<RiskAdjustedLeaderboardEntry[]> {
+    try {
+      // Get active agents subquery (same pattern as below method)
+      const activeAgents = this.#dbRead
+        .select({
+          agentId: competitionAgents.agentId,
+        })
+        .from(competitionAgents)
+        .where(
+          and(
+            eq(competitionAgents.competitionId, competitionId),
+            eq(competitionAgents.status, "active"),
+          ),
+        )
+        .as("active_agents");
+
+      // Latest summary subquery for lateral join
+      const latestSummarySubquery = this.#dbRead
+        .select({
+          agentId: perpsAccountSummaries.agentId,
+          totalEquity: perpsAccountSummaries.totalEquity,
+          totalPnl: perpsAccountSummaries.totalPnl,
+          timestamp: perpsAccountSummaries.timestamp,
+        })
+        .from(perpsAccountSummaries)
+        .where(
+          and(
+            eq(perpsAccountSummaries.competitionId, competitionId),
+            sql`${perpsAccountSummaries.agentId} = ${activeAgents.agentId}`,
+          ),
+        )
+        .orderBy(desc(perpsAccountSummaries.timestamp))
+        .limit(1)
+        .as("latest_summary");
+
+      // Risk metrics subquery for lateral join
+      const riskMetricsSubquery = this.#dbRead
+        .select({
+          agentId: perpsRiskMetrics.agentId,
+          calmarRatio: perpsRiskMetrics.calmarRatio,
+          timeWeightedReturn: perpsRiskMetrics.timeWeightedReturn,
+          maxDrawdown: perpsRiskMetrics.maxDrawdown,
+        })
+        .from(perpsRiskMetrics)
+        .where(
+          and(
+            eq(perpsRiskMetrics.competitionId, competitionId),
+            sql`${perpsRiskMetrics.agentId} = ${activeAgents.agentId}`,
+          ),
+        )
+        .limit(1)
+        .as("risk_metrics");
+
+      // Single query with lateral joins for both summaries and risk metrics
+      const results = await this.#dbRead
+        .select({
+          agentId: activeAgents.agentId,
+          totalEquity: latestSummarySubquery.totalEquity,
+          totalPnl: latestSummarySubquery.totalPnl,
+          calmarRatio: riskMetricsSubquery.calmarRatio,
+          timeWeightedReturn: riskMetricsSubquery.timeWeightedReturn,
+          maxDrawdown: riskMetricsSubquery.maxDrawdown,
+        })
+        .from(activeAgents)
+        .leftJoinLateral(latestSummarySubquery, sql`true`)
+        .leftJoinLateral(riskMetricsSubquery, sql`true`)
+        .orderBy(
+          // Sort by: has risk metrics first, then by calmar ratio, then by equity
+          sql`CASE WHEN ${riskMetricsSubquery.calmarRatio} IS NOT NULL THEN 0 ELSE 1 END`,
+          desc(sql`${riskMetricsSubquery.calmarRatio}`),
+          desc(sql`${latestSummarySubquery.totalEquity}`),
+        )
+        .limit(limit)
+        .offset(offset);
+
+      // Transform to the expected type
+      const leaderboard: RiskAdjustedLeaderboardEntry[] = results
+        .filter((row) => row.totalEquity !== null) // Filter out agents without summaries
+        .map((row) => ({
+          agentId: row.agentId,
+          totalEquity: row.totalEquity || "0",
+          totalPnl: row.totalPnl,
+          calmarRatio: row.calmarRatio,
+          timeWeightedReturn: row.timeWeightedReturn,
+          maxDrawdown: row.maxDrawdown,
+          hasRiskMetrics: row.calmarRatio !== null,
+        }));
+
+      this.#logger.debug(
+        `[PerpsRepository] Retrieved ${leaderboard.length} risk-adjusted leaderboard entries`,
+      );
+
+      return leaderboard;
+    } catch (error) {
+      this.#logger.error("Error in getRiskAdjustedLeaderboard:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get latest account summaries for all agents in a competition, sorted for leaderboard
    * @param competitionId Competition ID
    * @returns Array of latest account summaries sorted by totalEquity DESC
@@ -1357,5 +1469,47 @@ export class PerpsRepository {
         throw error;
       }
     });
+  }
+
+  /**
+   * Get risk metrics for an agent across multiple competitions in a single query
+   * @param agentId Agent ID
+   * @param competitionIds Array of competition IDs
+   * @returns Map of competition ID to risk metrics
+   */
+  async getBulkAgentRiskMetrics(
+    agentId: string,
+    competitionIds: string[],
+  ): Promise<Map<string, SelectPerpsRiskMetrics>> {
+    try {
+      if (competitionIds.length === 0) {
+        return new Map();
+      }
+
+      const results = await this.#dbRead
+        .select()
+        .from(perpsRiskMetrics)
+        .where(
+          and(
+            eq(perpsRiskMetrics.agentId, agentId),
+            inArray(perpsRiskMetrics.competitionId, competitionIds),
+          ),
+        );
+
+      // Convert to Map for O(1) lookups
+      const metricsMap = new Map<string, SelectPerpsRiskMetrics>();
+      for (const metric of results) {
+        metricsMap.set(metric.competitionId, metric);
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Fetched ${results.length} risk metrics for agent ${agentId} across ${competitionIds.length} competitions`,
+      );
+
+      return metricsMap;
+    } catch (error) {
+      this.#logger.error("Error in getBulkAgentRiskMetrics:", error);
+      throw error;
+    }
   }
 }

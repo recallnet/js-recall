@@ -1344,6 +1344,62 @@ export class CompetitionRepository {
   }
 
   /**
+   * Get first and last portfolio snapshots for TWR calculation
+   * This is optimized to fetch only the boundary snapshots
+   * @param competitionId Competition ID
+   * @param agentId Agent ID
+   * @returns Object with first and last snapshots
+   */
+  async getFirstAndLastSnapshots(
+    competitionId: string,
+    agentId: string,
+  ): Promise<{
+    first: SelectPortfolioSnapshot | null;
+    last: SelectPortfolioSnapshot | null;
+  }> {
+    try {
+      // Get the oldest snapshot (first)
+      const firstQuery = this.#db
+        .select()
+        .from(portfolioSnapshots)
+        .where(
+          and(
+            eq(portfolioSnapshots.competitionId, competitionId),
+            eq(portfolioSnapshots.agentId, agentId),
+          ),
+        )
+        .orderBy(asc(portfolioSnapshots.timestamp))
+        .limit(1);
+
+      // Get the newest snapshot (last)
+      const lastQuery = this.#db
+        .select()
+        .from(portfolioSnapshots)
+        .where(
+          and(
+            eq(portfolioSnapshots.competitionId, competitionId),
+            eq(portfolioSnapshots.agentId, agentId),
+          ),
+        )
+        .orderBy(desc(portfolioSnapshots.timestamp))
+        .limit(1);
+
+      const [firstResult, lastResult] = await Promise.all([
+        firstQuery,
+        lastQuery,
+      ]);
+
+      return {
+        first: firstResult[0] || null,
+        last: lastResult[0] || null,
+      };
+    } catch (error) {
+      this.#logger.error("Error in getFirstAndLastSnapshots:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Calculate maximum drawdown using SQL window functions for efficiency
    * This avoids loading all snapshots into memory
    *

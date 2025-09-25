@@ -394,6 +394,11 @@ export interface LeaderboardEntry {
   portfolioValue: number;
   active: boolean;
   deactivationReason?: string;
+  // Risk-adjusted metrics (primarily for perps competitions)
+  calmarRatio?: number | null;
+  timeWeightedReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
 }
 
 // Inactive agent entry (no rank assignment)
@@ -514,6 +519,11 @@ export interface CompetitionAgent {
   change24h: number; // Portfolio value change in last 24 hours (USD)
   change24hPercent: number; // 24h change as percentage
   voteCount: number; // Number of votes this agent has received
+  // Risk-adjusted metrics (primarily for perps competitions)
+  calmarRatio?: number | null;
+  timeWeightedReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
 }
 
 // Competition constraints
@@ -870,6 +880,11 @@ export interface EnhancedCompetition extends Competition {
     rank: number;
     totalAgents: number;
   };
+  // Risk-adjusted metrics (primarily for perps competitions)
+  calmarRatio?: number | null;
+  timeWeightedReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
 }
 
 /**

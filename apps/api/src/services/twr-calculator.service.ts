@@ -6,7 +6,7 @@ import type {
   SelectPerpsTransferHistory,
 } from "@recallnet/db/schema/trading/types";
 
-import { getAgentPortfolioSnapshots } from "@/database/repositories/competition-repository.js";
+import { getFirstAndLastSnapshots } from "@/database/repositories/competition-repository.js";
 import { getAgentTransferHistory } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 
@@ -80,28 +80,16 @@ export class TWRCalculatorService {
         `[TWRCalculator] Calculating TWR for agent ${agentId} in competition ${competitionId}`,
       );
 
-      // 1. Get ONLY the snapshots we need - first and last
-      // This fetches max 2 snapshots, not thousands!
-      const snapshots = await getAgentPortfolioSnapshots(
-        competitionId,
-        agentId,
-        2,
-      );
+      // 1. Get first and last snapshots efficiently
+      // Use the optimized method that fetches both in parallel
+      const { first: firstSnapshot, last: lastSnapshot } =
+        await getFirstAndLastSnapshots(competitionId, agentId);
 
-      if (snapshots.length === 0) {
+      if (!firstSnapshot || !lastSnapshot) {
         serviceLogger.warn(
           `[TWRCalculator] No snapshots found for agent ${agentId}, cannot calculate TWR`,
         );
         throw new Error("Insufficient data: No portfolio snapshots found");
-      }
-
-      // Since getAgentPortfolioSnapshots returns DESC order, last is first in array
-      const lastSnapshot = snapshots[0];
-      const firstSnapshot =
-        snapshots.length > 1 ? snapshots[snapshots.length - 1] : snapshots[0];
-
-      if (!firstSnapshot || !lastSnapshot) {
-        throw new Error("Insufficient data: No valid snapshots found");
       }
 
       const actualStartDate = startDate || new Date(firstSnapshot.timestamp);

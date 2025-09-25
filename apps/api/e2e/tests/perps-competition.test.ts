@@ -14,6 +14,7 @@ import {
   type ErrorResponse,
   type GetUserAgentsResponse,
   type GlobalLeaderboardResponse,
+  type LeaderboardResponse,
   type PerpsAccountResponse,
   type PerpsPositionsResponse,
   type StartCompetitionResponse,
@@ -1229,5 +1230,268 @@ describe("Perps Competition", () => {
       expect(errorResponse.status).toBe(403);
       expect(errorResponse.error).toContain("not registered");
     }
+  });
+
+  test("should calculate TWR and Calmar ratio with transfers", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with the 0x4444 wallet that has transfers configured
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "TWR Test Agent",
+        agentWalletAddress: "0x4444444444444444444444444444444444444444",
+      });
+
+    // Start perps competition with this agent
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `TWR/Calmar Test Competition ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait a bit to ensure transfers happen AFTER competition start
+    // Our mock transfers are timestamped -0.5 and -0.3 seconds from "now"
+    // We need to wait so "now" is after competition start
+    await wait(1000);
+
+    // Trigger sync from Symphony (simulating what the cron job does)
+    const services = new ServiceRegistry();
+
+    // First sync - creates initial snapshot at peak ($1700)
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait a bit to ensure time passes between snapshots
+    await wait(500);
+
+    // Second sync - creates snapshot at trough ($1200)
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait a bit more
+    await wait(500);
+
+    // Third sync - creates snapshot after partial recovery ($1550)
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for sync and calculations to complete
+    // Need extra time for read replica to catch up with risk metrics writes
+    await wait(1000);
+
+    // Get competition leaderboard - should include risk metrics
+    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+
+    // Type assertion since we've verified success
+    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+
+    // Find our agent in the leaderboard
+    const agentEntry = typedLeaderboard.leaderboard.find(
+      (entry) => entry.agentId === agent.id,
+    );
+    expect(agentEntry).toBeDefined();
+
+    // Verify risk metrics are present and calculated
+    expect(agentEntry?.hasRiskMetrics).toBe(true);
+    expect(agentEntry?.calmarRatio).not.toBeNull();
+    expect(agentEntry?.timeWeightedReturn).not.toBeNull();
+    expect(agentEntry?.maxDrawdown).not.toBeNull();
+
+    // TWR calculation:
+    // Portfolio goes from $1700 (first) → $1200 (trough) → $1550 (final)
+    // TWR = ($1550 / $1700) - 1 = -0.088 or -8.8%
+    expect(agentEntry?.timeWeightedReturn).toBeCloseTo(-0.088, 2);
+
+    // Max drawdown calculation:
+    // Peak is $1700, trough is $1200
+    // Drawdown = ($1200 / $1700) - 1 = -0.294 or -29.4%
+    expect(agentEntry?.maxDrawdown).toBeCloseTo(-0.294, 2);
+
+    // Calmar ratio = Annualized Return / |Max Drawdown|
+    // For periods < 1 day, the service doesn't annualize (returns period return as-is)
+    // So: Calmar = -0.088 / |−0.294| = -0.088 / 0.294 = -0.299
+    // Negative because we have a negative return
+    expect(agentEntry?.calmarRatio).toBeCloseTo(-0.299, 2);
+  });
+
+  test("should rank agents by Calmar ratio when available", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents - one with transfers (0x4444), others without
+    const { agent: agentWithTWR } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent With TWR",
+      agentWalletAddress: "0x4444444444444444444444444444444444444444",
+    });
+
+    const { agent: agentNoTWR1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Without TWR 1",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111",
+    });
+
+    const { agent: agentNoTWR2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Without TWR 2",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222",
+    });
+
+    // Start perps competition with all agents
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Calmar Ranking Test ${Date.now()}`,
+      agentIds: [agentWithTWR.id, agentNoTWR1.id, agentNoTWR2.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait to ensure transfers happen AFTER competition start
+    await wait(1000);
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+
+    // First sync - creates initial snapshot
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait a bit to ensure time passes between snapshots
+    await wait(100);
+
+    // Second sync - creates second snapshot (needed for TWR calculation!)
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    await wait(500);
+
+    // Get leaderboard
+    const leaderboardResponse = await adminClient.getCompetitionLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+
+    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+
+    // Agent with Calmar ratio should be ranked first
+    // (even if another agent has higher total equity)
+    const firstAgent = typedLeaderboard.leaderboard[0];
+    expect(firstAgent?.agentId).toBe(agentWithTWR.id);
+    expect(firstAgent?.hasRiskMetrics).toBe(true);
+    expect(firstAgent?.calmarRatio).not.toBeNull();
+
+    // Agents without Calmar should be ranked by total equity
+    const secondAgent = typedLeaderboard.leaderboard[1];
+    const thirdAgent = typedLeaderboard.leaderboard[2];
+
+    // 0x1111 has $1250 equity, 0x2222 has $950 equity
+    expect(secondAgent?.agentId).toBe(agentNoTWR1.id);
+    expect(secondAgent?.hasRiskMetrics).toBe(false);
+    expect(secondAgent?.calmarRatio).toBeNull();
+
+    expect(thirdAgent?.agentId).toBe(agentNoTWR2.id);
+    expect(thirdAgent?.hasRiskMetrics).toBe(false);
+    expect(thirdAgent?.calmarRatio).toBeNull();
+  });
+
+  test("should expose risk metrics in agent competitions endpoint", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with transfers
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Risk Metrics Test Agent",
+        agentWalletAddress: "0x4444444444444444444444444444444444444444",
+      });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Risk Metrics API Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Get agent competitions - should include risk metrics
+    const competitionsResponse = await agentClient.getAgentCompetitions(
+      agent.id,
+    );
+    expect(competitionsResponse.success).toBe(true);
+
+    // Type assertion
+    const typedResponse = competitionsResponse as {
+      success: true;
+      competitions: EnhancedCompetition[];
+      pagination: unknown;
+    };
+
+    // Find our perps competition
+    const perpsComp = typedResponse.competitions.find(
+      (c) => c.id === competition.id,
+    );
+    expect(perpsComp).toBeDefined();
+    expect(perpsComp?.type).toBe("perpetual_futures");
+
+    // Verify risk metrics are included
+    expect(perpsComp?.hasRiskMetrics).toBe(true);
+    expect(perpsComp?.calmarRatio).not.toBeNull();
+    expect(perpsComp?.timeWeightedReturn).not.toBeNull();
+    expect(perpsComp?.maxDrawdown).not.toBeNull();
+  });
+
+  test("should handle agents with no transfers (snapshots only)", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent without transfers (0x3333)
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "No Transfers Agent",
+        agentWalletAddress: "0x3333333333333333333333333333333333333333",
+      });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `No Transfers Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Get leaderboard
+    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+
+    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+    const agentEntry = typedLeaderboard.leaderboard.find(
+      (entry) => entry.agentId === agent.id,
+    );
+
+    // Agent should NOT have risk metrics (no transfers for TWR)
+    expect(agentEntry).toBeDefined();
+    expect(agentEntry?.hasRiskMetrics).toBe(false);
+    expect(agentEntry?.calmarRatio).toBeNull();
+    expect(agentEntry?.timeWeightedReturn).toBeNull();
+    expect(agentEntry?.maxDrawdown).toBeNull();
+
+    // Should still be ranked by total equity
+    expect(agentEntry?.portfolioValue).toBe(1100);
   });
 });

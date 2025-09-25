@@ -175,6 +175,18 @@ export const getCompetitionRiskMetricsLeaderboard =
     "getCompetitionRiskMetricsLeaderboard",
   );
 
+export const getRiskAdjustedLeaderboard = createTimedRepositoryFunction(
+  repository.getRiskAdjustedLeaderboard.bind(repository),
+  "PerpsRepository",
+  "getRiskAdjustedLeaderboard",
+);
+
+export const getBulkAgentRiskMetrics = createTimedRepositoryFunction(
+  repository.getBulkAgentRiskMetrics.bind(repository),
+  "PerpsRepository",
+  "getBulkAgentRiskMetrics",
+);
+
 export const saveRiskMetricsWithPeriods = createTimedRepositoryFunction(
   repository.saveRiskMetricsWithPeriods.bind(repository),
   "PerpsRepository",

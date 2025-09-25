@@ -139,6 +139,19 @@ export class CalmarRatioService {
         sequenceNumber: period.sequenceNumber,
       }));
 
+      // Only save metrics if we have transfers (meaningful risk data)
+      // Without transfers, we can't calculate meaningful TWR or Calmar ratio
+      if (twrResult.transferCount === 0) {
+        serviceLogger.info(
+          `[CalmarRatio] No transfers for agent ${agentId} - not saving risk metrics`,
+        );
+        // Return empty result - no metrics saved
+        return {
+          metrics: {} as SelectPerpsRiskMetrics,
+          periods: [],
+        };
+      }
+
       const result = await saveRiskMetricsWithPeriods(metricsData, periodsData);
 
       serviceLogger.info(

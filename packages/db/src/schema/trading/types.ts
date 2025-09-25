@@ -51,3 +51,16 @@ export type InsertPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferInsert;
 
 export type SelectPerpsTwrPeriod = typeof defs.perpsTwrPeriods.$inferSelect;
 export type InsertPerpsTwrPeriod = typeof defs.perpsTwrPeriods.$inferInsert;
+
+/**
+ * Risk-adjusted leaderboard entry combining account summary and risk metrics
+ */
+export interface RiskAdjustedLeaderboardEntry {
+  agentId: string;
+  totalEquity: string;
+  totalPnl: string | null;
+  calmarRatio: string | null;
+  timeWeightedReturn: string | null;
+  maxDrawdown: string | null;
+  hasRiskMetrics: boolean;
+}

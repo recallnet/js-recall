@@ -45,8 +45,8 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import {
   createPerpsCompetitionConfig,
-  getCompetitionLeaderboardSummaries,
   getPerpsCompetitionStats,
+  getRiskAdjustedLeaderboard,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
@@ -90,6 +90,11 @@ interface LeaderboardEntry {
   agentId: string;
   value: number; // Portfolio value in USD
   pnl: number; // Profit/Loss amount (0 if not calculated)
+  // Risk-adjusted metrics (optional, primarily for perps competitions)
+  calmarRatio?: number | null;
+  timeWeightedReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean; // Indicates if agent has risk metrics calculated
 }
 
 /**
@@ -106,6 +111,11 @@ type LeaderboardData = {
     portfolioValue: number;
     active: boolean;
     deactivationReason: string | null;
+    // Risk-adjusted metrics (primarily for perps competitions)
+    calmarRatio?: number | null;
+    timeWeightedReturn?: number | null;
+    maxDrawdown?: number | null;
+    hasRiskMetrics?: boolean;
   }>;
   inactiveAgents: Array<{
     agentId: string;
@@ -1000,6 +1010,9 @@ export class CompetitionService {
     const competitionAgents = agents.map((agent) => {
       const isActive = agent.status === "active";
       const leaderboardData = leaderboardMap.get(agent.id);
+      const leaderboardEntry = leaderboard.find(
+        (entry) => entry.agentId === agent.id,
+      );
       const score = leaderboardData?.score ?? 0;
       const rank = leaderboardData?.rank ?? 0;
       const voteCount = voteCountsMap.get(agent.id) ?? 0;
@@ -1026,6 +1039,11 @@ export class CompetitionService {
         change24h: metrics.change24h,
         change24hPercent: metrics.change24hPercent,
         voteCount,
+        // Risk metrics from leaderboard (perps competitions only)
+        calmarRatio: leaderboardEntry?.calmarRatio ?? null,
+        timeWeightedReturn: leaderboardEntry?.timeWeightedReturn ?? null,
+        maxDrawdown: leaderboardEntry?.maxDrawdown ?? null,
+        hasRiskMetrics: leaderboardEntry?.hasRiskMetrics ?? false,
       };
     });
 
@@ -1058,11 +1076,62 @@ export class CompetitionService {
       return [];
     }
 
+    // Check competition type to determine if we need risk metrics
+    const competition = await findById(competitionId);
+
+    if (competition?.type === "perpetual_futures") {
+      // For perps: Fetch risk-adjusted leaderboard which includes risk metrics
+      const riskAdjustedLeaderboard = await getRiskAdjustedLeaderboard(
+        competitionId,
+        500, // Reasonable limit
+        0,
+      );
+
+      // Create a map for quick lookups
+      const riskMetricsMap = new Map(
+        riskAdjustedLeaderboard.map((entry) => [
+          entry.agentId,
+          {
+            calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+            timeWeightedReturn: entry.timeWeightedReturn
+              ? Number(entry.timeWeightedReturn)
+              : null,
+            maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+            hasRiskMetrics: entry.hasRiskMetrics,
+          },
+        ]),
+      );
+
+      // Combine snapshot data with risk metrics
+      return snapshots
+        .map((snapshot) => {
+          const riskMetrics = riskMetricsMap.get(snapshot.agentId) || {
+            calmarRatio: null,
+            timeWeightedReturn: null,
+            maxDrawdown: null,
+            hasRiskMetrics: false,
+          };
+
+          return {
+            agentId: snapshot.agentId,
+            value: snapshot.totalValue,
+            pnl: 0, // PnL not available from snapshots alone
+            ...riskMetrics,
+          };
+        })
+        .sort((a, b) => b.value - a.value);
+    }
+
+    // For paper trading: Return without risk metrics
     return snapshots
       .map((snapshot) => ({
         agentId: snapshot.agentId,
         value: snapshot.totalValue,
         pnl: 0, // PnL not available from snapshots alone
+        calmarRatio: null,
+        timeWeightedReturn: null,
+        maxDrawdown: null,
+        hasRiskMetrics: false,
       }))
       .sort((a, b) => b.value - a.value);
   }
@@ -1079,14 +1148,29 @@ export class CompetitionService {
     const competition = await findById(competitionId);
 
     if (competition?.type === "perpetual_futures") {
-      // For perps: Use efficient single-query method to get latest account summaries
-      // Already sorted by totalEquity DESC and filtered to active agents only
-      const summaries = await getCompetitionLeaderboardSummaries(competitionId);
+      // For perps: Use a single-query method that combines risk metrics and equity
+      // This uses lateral joins to get everything in one DB query, already sorted correctly:
+      // 1. Agents with Calmar ratio (sorted by Calmar DESC)
+      // 2. Agents without Calmar ratio (sorted by equity DESC)
 
-      return summaries.map((summary) => ({
-        agentId: summary.agentId,
-        value: Number(summary.totalEquity) || 0,
-        pnl: Number(summary.totalPnl) || 0, // Perps have PnL data available
+      const riskAdjustedLeaderboard = await getRiskAdjustedLeaderboard(
+        competitionId,
+        500, // Reasonable limit - most competitions won't have more agents
+        0,
+      );
+
+      // Transform to LeaderboardEntry format, including risk metrics
+      return riskAdjustedLeaderboard.map((entry) => ({
+        agentId: entry.agentId,
+        value: Number(entry.totalEquity) || 0,
+        pnl: Number(entry.totalPnl) || 0,
+        // Include risk-adjusted metrics
+        calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+        timeWeightedReturn: entry.timeWeightedReturn
+          ? Number(entry.timeWeightedReturn)
+          : null,
+        maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+        hasRiskMetrics: entry.hasRiskMetrics,
       }));
     }
 
@@ -1101,6 +1185,11 @@ export class CompetitionService {
       agentId,
       value: portfolioValues.get(agentId) || 0,
       pnl: 0, // PnL not available without historical data
+      // Risk metrics not applicable for paper trading
+      calmarRatio: null,
+      timeWeightedReturn: null,
+      maxDrawdown: null,
+      hasRiskMetrics: false,
     }));
 
     // Sort by value descending
@@ -1135,6 +1224,11 @@ export class CompetitionService {
         agentId,
         value,
         pnl,
+        // Risk metrics not available for pending competitions
+        calmarRatio: null,
+        timeWeightedReturn: null,
+        maxDrawdown: null,
+        hasRiskMetrics: false,
       }));
   }
 
@@ -1219,7 +1313,14 @@ export class CompetitionService {
    * @returns Object containing active agents (with rankings) and inactive agents (with deactivation reasons)
    */
   async getLeaderboardWithInactiveAgents(competitionId: string): Promise<{
-    activeAgents: Array<{ agentId: string; value: number }>;
+    activeAgents: Array<{
+      agentId: string;
+      value: number;
+      calmarRatio?: number | null;
+      timeWeightedReturn?: number | null;
+      maxDrawdown?: number | null;
+      hasRiskMetrics?: boolean;
+    }>;
     inactiveAgents: Array<{
       agentId: string;
       value: number;
@@ -1291,6 +1392,10 @@ export class CompetitionService {
         activeAgents: activeLeaderboard.map((entry) => ({
           agentId: entry.agentId,
           value: entry.value,
+          calmarRatio: entry.calmarRatio,
+          timeWeightedReturn: entry.timeWeightedReturn,
+          maxDrawdown: entry.maxDrawdown,
+          hasRiskMetrics: entry.hasRiskMetrics,
         })),
         inactiveAgents,
       };
@@ -1995,6 +2100,11 @@ export class CompetitionService {
             portfolioValue: entry.value,
             active: true,
             deactivationReason: null,
+            // Include risk metrics if available
+            calmarRatio: entry.calmarRatio,
+            timeWeightedReturn: entry.timeWeightedReturn,
+            maxDrawdown: entry.maxDrawdown,
+            hasRiskMetrics: entry.hasRiskMetrics,
           };
         },
       );

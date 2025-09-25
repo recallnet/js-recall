@@ -368,6 +368,21 @@ export function configureAgentsRoutes(
    *                         type: number
    *                         description: "Agent's profit/loss percentage in this competition"
    *                         example: 5.01
+   *                       calmarRatio:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions
+   *                       timeWeightedReturn:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Time-weighted return accounting for deposits/withdrawals - only for perps competitions
+   *                       maxDrawdown:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Maximum observed loss from peak (negative value) - only for perps competitions
+   *                       hasRiskMetrics:
+   *                         type: boolean
+   *                         description: Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)
    *                       competitionType:
    *                         type: string
    *                         enum: ["trading", "perpetual_futures"]
