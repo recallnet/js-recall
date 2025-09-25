@@ -1,5 +1,3 @@
-import * as dnum from "dnum";
-
 import {
   Agent,
   AgentApiKeyResponse,
@@ -627,14 +625,11 @@ export class ApiClient {
     success: boolean;
     balance: number;
   }> {
-    const res = await this.request<{ success: boolean; balance: string }>(
+    const res = await this.request<{ success: boolean; balance: number }>(
       `/competitions/${competitionId}/boost`,
     );
 
-    return {
-      ...res,
-      balance: attoBoostStringToBoost(res.balance),
-    };
+    return res;
   }
 
   /**
@@ -649,18 +644,10 @@ export class ApiClient {
   }): Promise<{ success: boolean; boosts: Record<string, number> }> {
     const res = await this.request<{
       success: boolean;
-      boosts: Record<string, string>;
+      boosts: Record<string, number>;
     }>(`/competitions/${competitionId}/boosts`);
 
-    return {
-      ...res,
-      boosts: Object.fromEntries(
-        Object.entries(res.boosts).map(([key, value]) => [
-          key,
-          attoBoostStringToBoost(value),
-        ]),
-      ),
-    };
+    return res;
   }
 
   async getAgentBoostTotals({
@@ -670,18 +657,10 @@ export class ApiClient {
   }): Promise<{ success: boolean; boostTotals: Record<string, number> }> {
     const res = await this.request<{
       success: boolean;
-      boostTotals: Record<string, string>;
+      boostTotals: Record<string, number>;
     }>(`/competitions/${competitionId}/agents/boosts`);
 
-    return {
-      ...res,
-      boostTotals: Object.fromEntries(
-        Object.entries(res.boostTotals).map(([key, value]) => [
-          key,
-          attoBoostStringToBoost(value),
-        ]),
-      ),
-    };
+    return res;
   }
 
   /**
@@ -708,34 +687,17 @@ export class ApiClient {
     );
 
     const data = {
-      amount: boostToAttoBoostString(amount),
+      amount,
       idemKey,
     };
 
-    const res = await this.request<{ success: boolean; agentTotal: string }>(
+    const res = await this.request<{ success: boolean; agentTotal: number }>(
       `/competitions/${competitionId}/agents/${agentId}/boost`,
       { method: "POST", body: JSON.stringify(data) },
     );
 
-    return {
-      ...res,
-      agentTotal: attoBoostStringToBoost(res.agentTotal),
-    };
+    return res;
   }
-}
-
-const attoBoostDivisor = 10 ** 18;
-
-function attoBoostStringToBoost(attoBoost: string) {
-  const res = dnum.div(attoBoost, attoBoostDivisor, {
-    rounding: "ROUND_DOWN", // Always round down to avoid overestimating boost balance
-  });
-  return dnum.toNumber(res);
-}
-
-function boostToAttoBoostString(boost: number) {
-  const res = dnum.mul(dnum.from(boost), attoBoostDivisor);
-  return dnum.toString(res);
 }
 
 /**

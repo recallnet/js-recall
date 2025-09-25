@@ -5,6 +5,11 @@ import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { UserRepository } from "@recallnet/db/repositories/user";
 
+import {
+  attoValueToNumberValue,
+  valueToAttoBigInt,
+} from "./utils/atto-conversions.js";
+
 /**
  * Parameters for boosting an agent
  */
@@ -12,7 +17,7 @@ export type BoostAgentParams = {
   userId: string;
   competitionId: string;
   agentId: string;
-  amount: bigint;
+  amount: number;
   idemKey: Buffer;
 };
 
@@ -23,6 +28,7 @@ export enum BoostError {
   CompetitionMissingVotingDates,
   OutsideCompetitionBoostWindow,
   AlreadyClaimedBoost,
+  AlreadyBoostedAgent,
 }
 
 /**
@@ -33,14 +39,14 @@ export class BoostService {
   private boostRepository: BoostRepository;
   private competitionRepository: CompetitionRepository;
   private userRepository: UserRepository;
-  private nonStakeBoostAmount: bigint;
+  private nonStakeBoostAmount: number;
   private logger?: Logger;
 
   constructor(
     boostRepository: BoostRepository,
     competitionRepository: CompetitionRepository,
     userRepository: UserRepository,
-    nonStakeBoostAmount: bigint = 1000000000000000000000n,
+    nonStakeBoostAmount: number = 1000,
     logger?: Logger,
   ) {
     this.boostRepository = boostRepository;
@@ -56,17 +62,22 @@ export class BoostService {
         userId,
         wallet,
         competitionId,
-        amount: this.nonStakeBoostAmount,
+        amount: valueToAttoBigInt(this.nonStakeBoostAmount),
         idemKey: Buffer.from(`claim-${userId}-${competitionId}`),
         meta: { description: "Claim non-stake boost" },
       }),
       () => BoostError.RepositoryError as const,
-    ).andThen((result) => {
-      if (result.type === "noop") {
-        return errAsync(BoostError.AlreadyClaimedBoost as const);
-      }
-      return ok(result);
-    });
+    )
+      .andThen((result) => {
+        if (result.type === "noop") {
+          return errAsync(BoostError.AlreadyClaimedBoost as const);
+        }
+        return ok(result);
+      })
+      .map((result) => ({
+        ...result,
+        balanceAfter: attoValueToNumberValue(result.balanceAfter),
+      }));
   }
 
   /**
@@ -80,18 +91,20 @@ export class BoostService {
       // Get the user to validate they exist
       this.userRepository.findById(userId),
       () => BoostError.RepositoryError as const,
-    ).andThen((user) => {
-      if (!user) {
-        return errAsync(BoostError.UserNotFound as const);
-      }
-      return ResultAsync.fromPromise(
-        this.boostRepository.userBoostBalance({
-          userId: user.id,
-          competitionId,
-        }),
-        () => BoostError.RepositoryError as const,
-      );
-    });
+    )
+      .andThen((user) => {
+        if (!user) {
+          return errAsync(BoostError.UserNotFound as const);
+        }
+        return ResultAsync.fromPromise(
+          this.boostRepository.userBoostBalance({
+            userId: user.id,
+            competitionId,
+          }),
+          () => BoostError.RepositoryError as const,
+        );
+      })
+      .map((balance) => attoValueToNumberValue(balance));
   }
 
   /**
@@ -105,6 +118,13 @@ export class BoostService {
         competitionId,
       }),
       () => BoostError.RepositoryError as const,
+    ).map((totals) =>
+      Object.fromEntries(
+        Object.entries(totals).map(([key, value]) => [
+          key,
+          attoValueToNumberValue(value),
+        ]),
+      ),
     );
   }
 
@@ -121,6 +141,13 @@ export class BoostService {
         competitionId,
       }),
       () => BoostError.RepositoryError as const,
+    ).map((boosts) =>
+      Object.fromEntries(
+        Object.entries(boosts).map(([key, value]) => [
+          key,
+          attoValueToNumberValue(value),
+        ]),
+      ),
     );
   }
 
@@ -170,11 +197,22 @@ export class BoostService {
             wallet: user.walletAddress,
             agentId,
             competitionId,
-            amount,
+            amount: valueToAttoBigInt(amount),
             idemKey,
           }),
           () => BoostError.RepositoryError as const,
-        );
+        ).andThen((result) => {
+          if (result.type === "noop") {
+            return errAsync(BoostError.AlreadyBoostedAgent as const);
+          }
+          return ok({
+            ...result,
+            agentBoostTotal: {
+              ...result.agentBoostTotal,
+              total: attoValueToNumberValue(result.agentBoostTotal.total),
+            },
+          });
+        });
       });
   }
 }

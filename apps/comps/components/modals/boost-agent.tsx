@@ -24,7 +24,6 @@ import { Slider } from "@recallnet/ui2/components/slider";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { RankBadge } from "@/components/agents-table/rank-badge";
-import { valueToAttoBigInt } from "@/lib/atto-conversions";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { AgentCompetition } from "@/types";
 import { formatPercentage } from "@/utils/format";
@@ -133,7 +132,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
       competitionId,
       agentId: agent.id,
       idemKey: btoa(`${competitionId}-${agent.id}-${currentAgentBoostTotal}`),
-      amount: valueToAttoBigInt(boostAmount),
+      amount: boostAmount,
     });
   };
 

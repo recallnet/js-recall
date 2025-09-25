@@ -13,10 +13,9 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { useSession } from "@/hooks";
-import { attoValueToNumberValue } from "@/lib/atto-conversions";
 
 const nonStakeBoostAmount = process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT
-  ? BigInt(process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT)
+  ? Number(process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT)
   : undefined;
 
 const formattedNumber = new Intl.NumberFormat();
@@ -111,11 +110,7 @@ export const Navbar: React.FunctionComponent = () => {
             >
               <div className="flex flex-row items-center space-x-2 font-bold text-yellow-500">
                 <Zap className="size-4" />
-                <span>
-                  {formattedNumber.format(
-                    attoValueToNumberValue(nonStakeBoostAmount),
-                  )}
-                </span>
+                <span>{formattedNumber.format(nonStakeBoostAmount)}</span>
               </div>
             </Tooltip>
           )}

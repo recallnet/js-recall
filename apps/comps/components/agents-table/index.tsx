@@ -30,7 +30,6 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { Pagination } from "@/components/pagination/index";
 import { useSession } from "@/hooks/useSession";
 import { useVote } from "@/hooks/useVote";
-import { attoValueToNumberValue } from "@/lib/atto-conversions";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import {
   AgentCompetition,
@@ -94,7 +93,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     tanstackClient.boost.balance.queryOptions({
       input: { competitionId: competition.id },
       enabled: session.isAuthenticated,
-      select: (res) => attoValueToNumberValue(res),
     }),
   );
 
@@ -106,13 +104,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     tanstackClient.boost.userBoosts.queryOptions({
       input: { competitionId: competition.id },
       enabled: session.isAuthenticated,
-      select: (res) =>
-        Object.fromEntries(
-          Object.entries(res).map(([key, value]) => [
-            key,
-            attoValueToNumberValue(value),
-          ]),
-        ),
     }),
   );
   const {
@@ -122,13 +113,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   } = useQuery(
     tanstackClient.boost.agentBoostTotals.queryOptions({
       input: { competitionId: competition.id },
-      select: (res) =>
-        Object.fromEntries(
-          Object.entries(res).map(([key, value]) => [
-            key,
-            attoValueToNumberValue(value),
-          ]),
-        ),
     }),
   );
 
