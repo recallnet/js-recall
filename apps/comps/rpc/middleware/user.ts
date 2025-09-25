@@ -19,6 +19,8 @@ export const userMiddleware = base
       });
     }
 
+    // TODO: Update our context to contain the user service so we don't
+    // have to access the db directly in our handlers.
     const user = await context.db.query.users.findFirst({
       where: eq(schema.users.privyId, userId),
     });

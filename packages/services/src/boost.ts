@@ -32,6 +32,8 @@ export enum BoostError {
  */
 export class BoostService {
   private boostRepository: BoostRepository;
+  // TODO: Consider if we want to depend on the competition repository
+  // or the competition service. Likewise for user repository vs user service.
   private competitionRepository: CompetitionRepository;
   private userRepository: UserRepository;
   private nonStakeBoostAmount: bigint;

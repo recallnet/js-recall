@@ -131,6 +131,7 @@ class ServiceRegistry {
     this._userRepository = new UserRepository(db);
 
     // Initialize BoostService with its dependencies
+    // TODO: Consider the best practice for services depending on repositories and/or other services.
     this._boostService = new BoostService(
       this._boostRepository,
       this._competitionRepository,

@@ -12,8 +12,6 @@ import { router } from "@/rpc/router";
 
 const link = new RPCLink({
   url: `${getSiteUrl()}/rpc`,
-  headers: () => ({}),
-  // fetch: <-- provide fetch polyfill fetch if needed
   interceptors: [
     onError((error) => {
       console.error(error);

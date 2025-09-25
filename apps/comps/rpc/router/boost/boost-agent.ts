@@ -5,7 +5,6 @@ import { BoostError } from "@recallnet/services/boost";
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { assertNever } from "@/rpc/router/utils/assert-never";
-import { Database } from "@/rpc/types";
 
 export const boostAgent = base
   .use(authMiddleware)
@@ -14,7 +13,10 @@ export const boostAgent = base
       competitionId: z.string(),
       agentId: z.string().uuid(),
       amount: z.bigint().min(1n),
-      idemKey: z.string(),
+      idemKey: z
+        .string()
+        .base64()
+        .transform((s) => Buffer.from(s, "base64")),
     }),
   )
   .errors({
@@ -28,7 +30,7 @@ export const boostAgent = base
       competitionId: input.competitionId,
       agentId: input.agentId,
       amount: input.amount,
-      idemKey: Buffer.from(input.idemKey, "base64"),
+      idemKey: input.idemKey,
     });
     if (res.isErr()) {
       switch (res.error) {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { BoostError, type BoostService } from "@recallnet/services/boost";
+import { BoostError } from "@recallnet/services/boost";
 
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
