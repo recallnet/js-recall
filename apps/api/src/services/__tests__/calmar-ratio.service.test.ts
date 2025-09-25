@@ -215,7 +215,7 @@ describe("CalmarRatioService", () => {
       );
 
       mockTWRCalculator.calculateTWR.mockResolvedValueOnce(
-        createMockTWRResult(0.5, 0, 1), // 50% return
+        createMockTWRResult(0.5, 1, 2), // 50% return with transfers
       );
 
       vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValueOnce(
@@ -246,7 +246,7 @@ describe("CalmarRatioService", () => {
       );
 
       mockTWRCalculator.calculateTWR.mockResolvedValueOnce(
-        createMockTWRResult(-0.1, 0, 1), // -10% return
+        createMockTWRResult(-0.1, 1, 2), // -10% return with transfers
       );
 
       vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValueOnce(
@@ -279,7 +279,7 @@ describe("CalmarRatioService", () => {
       );
 
       mockTWRCalculator.calculateTWR.mockResolvedValueOnce(
-        createMockTWRResult(0.01, 0, 1), // 1% in 4 hours
+        createMockTWRResult(0.01, 1, 2), // 1% in 4 hours with transfers
       );
 
       vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValueOnce(
@@ -313,7 +313,7 @@ describe("CalmarRatioService", () => {
       );
 
       mockTWRCalculator.calculateTWR.mockResolvedValueOnce(
-        createMockTWRResult(0.1),
+        createMockTWRResult(0.1, 1, 2), // With transfers
       );
       vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValueOnce(
         -0.1,
@@ -402,7 +402,7 @@ describe("CalmarRatioService", () => {
       );
 
       mockTWRCalculator.calculateTWR.mockResolvedValueOnce(
-        createMockTWRResult(0.1),
+        createMockTWRResult(0.1, 1, 2), // With transfers
       );
 
       const error = new Error("Drawdown calculation failed");
@@ -494,7 +494,7 @@ describe("CalmarRatioService", () => {
       );
 
       mockTWRCalculator.calculateTWR.mockResolvedValueOnce(
-        createMockTWRResult(0, 0, 1), // 0% return (break-even)
+        createMockTWRResult(0, 1, 2), // 0% return (break-even) with transfers
       );
 
       vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValueOnce(
@@ -527,7 +527,7 @@ describe("CalmarRatioService", () => {
       );
 
       mockTWRCalculator.calculateTWR.mockResolvedValueOnce(
-        createMockTWRResult(0.1),
+        createMockTWRResult(0.1, 1), // With transfers
       );
 
       vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValueOnce(
@@ -542,6 +542,88 @@ describe("CalmarRatioService", () => {
       await expect(
         service.calculateAndSaveCalmarRatio(agentId, competitionId),
       ).rejects.toThrow(error);
+    });
+
+    it("should save metrics for agents without transfers using simple return", async () => {
+      const agentId = "agent-456";
+      const competitionId = "comp-123";
+
+      vi.mocked(competitionRepo.findById).mockResolvedValueOnce(
+        createMockCompetition(new Date("2025-01-20")),
+      );
+
+      // Return TWR with 0 transfers - agent just hodls
+      // TWR calculator returns simple return for agents without transfers
+      mockTWRCalculator.calculateTWR.mockResolvedValueOnce(
+        createMockTWRResult(0.15, 0, 1), // 15% simple return, no transfers
+      );
+
+      vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValueOnce(
+        -0.05, // 5% drawdown
+      );
+
+      vi.mocked(perpsRepo.saveRiskMetricsWithPeriods).mockResolvedValueOnce(
+        createMockSavedMetrics(),
+      );
+
+      const result = await service.calculateAndSaveCalmarRatio(
+        agentId,
+        competitionId,
+      );
+
+      // Should calculate max drawdown even without transfers
+      expect(competitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalled();
+
+      // Should save metrics with simple return
+      expect(perpsRepo.saveRiskMetricsWithPeriods).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timeWeightedReturn: "0.15000000",
+          transferCount: 0, // No transfers
+          periodCount: 1, // Single period for simple return
+        }),
+        expect.any(Array),
+      );
+
+      // Should return saved result
+      expect(result.metrics).toBeDefined();
+      expect(result.periods).toBeDefined();
+    });
+
+    it("should save metrics when there are transfers", async () => {
+      const agentId = "agent-456";
+      const competitionId = "comp-123";
+
+      vi.mocked(competitionRepo.findById).mockResolvedValueOnce(
+        createMockCompetition(new Date("2025-01-20")),
+      );
+
+      // Return TWR with transfers
+      mockTWRCalculator.calculateTWR.mockResolvedValueOnce(
+        createMockTWRResult(0.15, 2, 3), // 15% return, 2 transfers, 3 periods
+      );
+
+      vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValueOnce(
+        -0.1,
+      );
+
+      vi.mocked(perpsRepo.saveRiskMetricsWithPeriods).mockResolvedValueOnce(
+        createMockSavedMetrics(),
+      );
+
+      const result = await service.calculateAndSaveCalmarRatio(
+        agentId,
+        competitionId,
+      );
+
+      // Should calculate max drawdown
+      expect(competitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalled();
+
+      // Should save to database
+      expect(perpsRepo.saveRiskMetricsWithPeriods).toHaveBeenCalled();
+
+      // Should return saved result
+      expect(result.metrics).toBeDefined();
+      expect(result.periods).toBeDefined();
     });
   });
 });

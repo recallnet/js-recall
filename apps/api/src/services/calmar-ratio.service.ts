@@ -70,7 +70,10 @@ export class CalmarRatioService {
         `[CalmarRatio] Competition period: ${startDate.toISOString()} to ${endDate.toISOString()}`,
       );
 
-      // 2. Calculate TWR (already optimized - only 2 snapshots + transfers)
+      // 2. Calculate TWR (or simple return for agents without transfers)
+      // The TWR calculator handles both cases:
+      // - No transfers: Returns simple return (end/start - 1)
+      // - With transfers: Returns time-weighted return that neutralizes cash flows
       const twrResult = await this.twrCalculator.calculateTWR(
         agentId,
         competitionId,
@@ -79,10 +82,10 @@ export class CalmarRatioService {
       );
 
       serviceLogger.debug(
-        `[CalmarRatio] TWR calculated: ${(twrResult.timeWeightedReturn * 100).toFixed(4)}% with ${twrResult.periods.length} periods`,
+        `[CalmarRatio] TWR calculated: ${(twrResult.timeWeightedReturn * 100).toFixed(4)}% with ${twrResult.periods.length} periods (${twrResult.transferCount} transfers)`,
       );
 
-      // 3. Calculate Max Drawdown using SQL (no memory issues!)
+      // 3. Calculate Max Drawdown using SQL
       const maxDrawdown = await calculateMaxDrawdownSQL(
         agentId,
         competitionId,
@@ -138,19 +141,6 @@ export class CalmarRatioService {
         transferId: period.transferId,
         sequenceNumber: period.sequenceNumber,
       }));
-
-      // Only save metrics if we have transfers (meaningful risk data)
-      // Without transfers, we can't calculate meaningful TWR or Calmar ratio
-      if (twrResult.transferCount === 0) {
-        serviceLogger.info(
-          `[CalmarRatio] No transfers for agent ${agentId} - not saving risk metrics`,
-        );
-        // Return empty result - no metrics saved
-        return {
-          metrics: {} as SelectPerpsRiskMetrics,
-          periods: [],
-        };
-      }
 
       const result = await saveRiskMetricsWithPeriods(metricsData, periodsData);
 

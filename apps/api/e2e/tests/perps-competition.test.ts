@@ -1386,12 +1386,14 @@ describe("Perps Competition", () => {
 
     // 0x1111 has $1250 equity, 0x2222 has $950 equity
     expect(secondAgent?.agentId).toBe(agentNoTWR1.id);
-    expect(secondAgent?.hasRiskMetrics).toBe(false);
-    expect(secondAgent?.calmarRatio).toBeNull();
+    // Agent without transfers still has risk metrics (uses simple return)
+    expect(secondAgent?.hasRiskMetrics).toBe(true);
+    expect(secondAgent?.calmarRatio).not.toBeNull();
 
     expect(thirdAgent?.agentId).toBe(agentNoTWR2.id);
-    expect(thirdAgent?.hasRiskMetrics).toBe(false);
-    expect(thirdAgent?.calmarRatio).toBeNull();
+    // Agent without transfers still has risk metrics (uses simple return)
+    expect(thirdAgent?.hasRiskMetrics).toBe(true);
+    expect(thirdAgent?.calmarRatio).not.toBeNull();
   });
 
   test("should expose risk metrics in agent competitions endpoint", async () => {
@@ -1448,7 +1450,7 @@ describe("Perps Competition", () => {
     expect(perpsComp?.maxDrawdown).not.toBeNull();
   });
 
-  test("should handle agents with no transfers (snapshots only)", async () => {
+  test("should calculate risk metrics for agents without transfers using simple return", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
@@ -1484,12 +1486,12 @@ describe("Perps Competition", () => {
       (entry) => entry.agentId === agent.id,
     );
 
-    // Agent should NOT have risk metrics (no transfers for TWR)
+    // Agent should have risk metrics even without transfers (uses simple return)
     expect(agentEntry).toBeDefined();
-    expect(agentEntry?.hasRiskMetrics).toBe(false);
-    expect(agentEntry?.calmarRatio).toBeNull();
-    expect(agentEntry?.timeWeightedReturn).toBeNull();
-    expect(agentEntry?.maxDrawdown).toBeNull();
+    expect(agentEntry?.hasRiskMetrics).toBe(true);
+    expect(agentEntry?.calmarRatio).not.toBeNull();
+    expect(agentEntry?.timeWeightedReturn).not.toBeNull(); // Simple return
+    expect(agentEntry?.maxDrawdown).not.toBeNull();
 
     // Should still be ranked by total equity
     expect(agentEntry?.portfolioValue).toBe(1100);

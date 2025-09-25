@@ -70,9 +70,10 @@ describe("TWRCalculatorService", () => {
           createSnapshot(startDate, 1000),
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         const result = await service.calculateTWR(
@@ -101,9 +102,10 @@ describe("TWRCalculatorService", () => {
           createSnapshot(new Date("2024-01-01"), 1000),
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         const result = await service.calculateTWR("agent-1", "comp-1");
@@ -118,9 +120,10 @@ describe("TWRCalculatorService", () => {
           createSnapshot(new Date("2024-01-01"), 0), // Zero start
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         const result = await service.calculateTWR("agent-1", "comp-1");
@@ -135,9 +138,10 @@ describe("TWRCalculatorService", () => {
           createSnapshot(new Date("2024-01-01"), -500), // Negative (liquidated)
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         const result = await service.calculateTWR("agent-1", "comp-1");
@@ -147,11 +151,12 @@ describe("TWRCalculatorService", () => {
       });
 
       it("should handle single snapshot gracefully", async () => {
-        const snapshots = [createSnapshot(new Date("2024-01-01"), 1000)];
+        const snapshot = createSnapshot(new Date("2024-01-01"), 1000);
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshot,
+          last: snapshot, // Same snapshot for both
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         const result = await service.calculateTWR("agent-1", "comp-1");
@@ -161,9 +166,10 @@ describe("TWRCalculatorService", () => {
       });
 
       it("should throw when no snapshots exist", async () => {
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          [],
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: null,
+          last: null,
+        });
 
         await expect(service.calculateTWR("agent-1", "comp-1")).rejects.toThrow(
           "Insufficient data: No portfolio snapshots found",
@@ -192,9 +198,10 @@ describe("TWRCalculatorService", () => {
           createTransfer(transferDate, "deposit", 500, 1100, 1600),
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
@@ -247,9 +254,10 @@ describe("TWRCalculatorService", () => {
           createTransfer(transferDate, "withdraw", 1000, 2200, 1200),
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
@@ -282,9 +290,10 @@ describe("TWRCalculatorService", () => {
           createTransfer(transfer2Date, "withdraw", 100, 1300, 1200), // 4% gain then withdraw
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
@@ -320,9 +329,10 @@ describe("TWRCalculatorService", () => {
           createTransfer(new Date("2024-01-25"), "withdraw", 100, 1100, 1000), // After end
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
@@ -353,9 +363,10 @@ describe("TWRCalculatorService", () => {
           createTransfer(transferDate, "deposit", 200, 800, 1000), // Lost 20%, then deposit
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
@@ -387,9 +398,10 @@ describe("TWRCalculatorService", () => {
           createTransfer(transferDate, "deposit", 500, 0, 500), // Total loss, then deposit
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
@@ -422,9 +434,10 @@ describe("TWRCalculatorService", () => {
           createTransfer(new Date("2024-01-10"), "deposit", 100, 1050, 1150),
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
@@ -450,9 +463,10 @@ describe("TWRCalculatorService", () => {
           createSnapshot(new Date("2024-01-01"), 1e14), // 100 trillion
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         const result = await service.calculateTWR("agent-1", "comp-1");
@@ -467,9 +481,10 @@ describe("TWRCalculatorService", () => {
           createSnapshot(new Date("2024-01-01"), 0.00001), // 0.00001
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         const result = await service.calculateTWR("agent-1", "comp-1");
@@ -484,9 +499,10 @@ describe("TWRCalculatorService", () => {
           createSnapshot(new Date("2024-01-01"), 1000),
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         // No dates provided
@@ -531,9 +547,10 @@ describe("TWRCalculatorService", () => {
           ),
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
@@ -556,9 +573,10 @@ describe("TWRCalculatorService", () => {
           createSnapshot(new Date("2024-01-01"), 1000), // No change
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         const result = await service.calculateTWR("agent-1", "comp-1");
@@ -640,7 +658,7 @@ describe("TWRCalculatorService", () => {
 
     describe("error handling", () => {
       it("should propagate repository errors", async () => {
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockRejectedValue(
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockRejectedValue(
           new Error("Database connection failed"),
         );
 
@@ -650,16 +668,15 @@ describe("TWRCalculatorService", () => {
       });
 
       it("should handle invalid snapshot data gracefully", async () => {
-        const snapshots = [
-          {
-            ...createSnapshot(new Date("2024-01-31"), 1000),
-            totalValue: NaN, // Invalid value
-          },
-        ];
+        const invalidSnapshot = {
+          ...createSnapshot(new Date("2024-01-31"), 1000),
+          totalValue: NaN, // Invalid value
+        };
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: invalidSnapshot,
+          last: invalidSnapshot,
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         const result = await service.calculateTWR("agent-1", "comp-1");
@@ -687,9 +704,10 @@ describe("TWRCalculatorService", () => {
           },
         ];
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: snapshots[snapshots.length - 1] ?? null, // Oldest (snapshots are DESC order)
+          last: snapshots[0] ?? null, // Newest
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
@@ -707,32 +725,28 @@ describe("TWRCalculatorService", () => {
     });
 
     describe("performance characteristics", () => {
-      it("should only fetch 2 snapshots regardless of competition duration", async () => {
-        const snapshots = [
-          createSnapshot(new Date("2024-12-31"), 2000),
-          createSnapshot(new Date("2024-01-01"), 1000),
-        ];
+      it("should fetch first and last snapshots efficiently", async () => {
+        const firstSnapshot = createSnapshot(new Date("2024-01-01"), 1000);
+        const lastSnapshot = createSnapshot(new Date("2024-12-31"), 2000);
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: firstSnapshot,
+          last: lastSnapshot,
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue([]);
 
         await service.calculateTWR("agent-1", "comp-1");
 
-        // Should only request 2 snapshots (limit parameter)
-        expect(competitionRepo.getAgentPortfolioSnapshots).toHaveBeenCalledWith(
+        // Should use the optimized method to fetch boundary snapshots
+        expect(competitionRepo.getFirstAndLastSnapshots).toHaveBeenCalledWith(
           "comp-1",
           "agent-1",
-          2, // Limit of 2
         );
       });
 
       it("should handle large number of transfers efficiently", async () => {
-        const snapshots = [
-          createSnapshot(new Date("2024-01-31"), 2000),
-          createSnapshot(new Date("2024-01-01"), 1000),
-        ];
+        const firstSnapshot = createSnapshot(new Date("2024-01-01"), 1000);
+        const lastSnapshot = createSnapshot(new Date("2024-01-31"), 2000);
 
         // Create 100 transfers
         const transfers = Array.from({ length: 100 }, (_, i) =>
@@ -747,9 +761,10 @@ describe("TWRCalculatorService", () => {
           ),
         );
 
-        vi.mocked(competitionRepo.getAgentPortfolioSnapshots).mockResolvedValue(
-          snapshots,
-        );
+        vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+          first: firstSnapshot,
+          last: lastSnapshot,
+        });
         vi.mocked(perpsRepo.getAgentTransferHistory).mockResolvedValue(
           transfers,
         );
