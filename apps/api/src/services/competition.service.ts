@@ -1634,12 +1634,21 @@ export class CompetitionService {
         );
 
         if (oldType === "trading" && newType === "perpetual_futures") {
-          // Spot → Perps: Create perps config
+          // Spot → Perps: Create perps config (after checking for existing)
           // At this point we know perpsProvider exists because we validated above
           if (!perpsProvider) {
             throw new ApiError(
               500,
               "Internal error: perps provider missing despite validation",
+            );
+          }
+
+          // First, delete any existing perps config (defensive programming for data inconsistency)
+          // This handles the edge case where a "trading" competition somehow has perps config
+          const deleted = await deletePerpsCompetitionConfig(competitionId, tx);
+          if (deleted) {
+            serviceLogger.warn(
+              `[CompetitionService] Deleted unexpected existing perps config for trading competition ${competitionId}`,
             );
           }
 
