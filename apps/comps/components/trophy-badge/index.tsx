@@ -22,21 +22,55 @@ interface TrophyBadgeProps {
   size?: number;
 }
 
+// =================================================================
+// ONE PLACE TO SCALE & CONFIGURE
+// =================================================================
+const CONFIG = {
+  /** The default width of the badge in pixels. */
+  DEFAULT_SIZE: 64,
+  /** The thickness of the border on each side in pixels. */
+  BORDER_THICKNESS: 2,
+  /** The zoom level of the image inside the hexagon (1.0 = 100%, 1.1 = 110%). */
+  IMAGE_ZOOM: 1.2,
+  /** The aspect ratio factor to calculate height from width (55 / 64). */
+  ASPECT_RATIO_HEIGHT_FACTOR: 0.859375,
+};
+// =================================================================
+
 const rankColors: Record<number, string> = {
   1: "bg-trophy-first",
   2: "bg-trophy-second",
   3: "bg-trophy-third",
 };
 
+const getDimensions = (size: number | undefined) => {
+  const effectiveW = size || CONFIG.DEFAULT_SIZE;
+  const effectiveH = effectiveW * CONFIG.ASPECT_RATIO_HEIGHT_FACTOR;
+  const borderThickness = CONFIG.BORDER_THICKNESS;
+
+  const innerW = effectiveW - borderThickness * 2;
+  const innerH = effectiveH - borderThickness * 2;
+
+  return {
+    outerW: effectiveW,
+    outerH: effectiveH,
+    innerW: innerW,
+    innerH: innerH,
+    borderThickness: borderThickness,
+    imageZoom: CONFIG.IMAGE_ZOOM, // Pass the zoom level
+  };
+};
+
 export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy, size }) => {
   const { competitionId, rank, imageUrl, name } = trophy;
   const router = useRouter();
-
   const isTop3 = rank >= 1 && rank <= 3;
   const colorClass = rankColors[rank] || "bg-gray-700";
-
   const Icon =
     rank === 1 ? Trophy : rank <= 3 ? AwardIcon : () => <div className="w-4" />;
+
+  const { outerW, outerH, innerW, innerH, borderThickness, imageZoom } =
+    getDimensions(size);
 
   return (
     <>
@@ -62,11 +96,15 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy, size }) => {
         <div
           className="group relative cursor-pointer"
           onClick={() => router.push(`/competitions/${competitionId}`)}
+          style={{
+            height: outerH,
+            width: outerW,
+          }}
         >
           <Hexagon
             style={{
-              height: size || 64,
-              width: size || 64,
+              height: outerH,
+              width: outerW,
             }}
             className={cn(
               "absolute left-0 top-0 -z-10",
@@ -76,11 +114,11 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy, size }) => {
           />
           <Hexagon
             style={{
-              height: size ? size - 8 : 56,
-              width: size ? size - 8 : 56,
+              height: innerH,
+              width: innerW,
             }}
             className={cn(
-              "relative left-[4px] top-[4px]",
+              `relative left-[${borderThickness}px] top-[${borderThickness}px]`,
               "duration-330 transition-transform ease-in-out group-hover:scale-110",
             )}
           >
@@ -96,12 +134,14 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy, size }) => {
                 />
               </>
             )}
-
             <Image
               src={imageUrl}
               alt="competition"
               fill
               className="rotate-270 left-0 top-0 w-full object-cover"
+              style={{
+                transform: `scale(${imageZoom})`, // Dynamically set scale
+              }}
             />
           </Hexagon>
         </div>
