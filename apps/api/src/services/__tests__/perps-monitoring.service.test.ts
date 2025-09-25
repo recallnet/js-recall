@@ -52,8 +52,6 @@ describe("PerpsMonitoringService", () => {
     to: "0x123", // Will be matched case-insensitively
     timestamp: new Date("2024-01-15"), // After competition start
     txHash: "0xabc123",
-    equityBefore: 10000, // Account equity before transfer
-    equityAfter: 10150, // Account equity after transfer (increased by deposit amount)
   };
 
   const mockCompetitionConfig: SelectPerpsCompetitionConfig = {
@@ -197,14 +195,14 @@ describe("PerpsMonitoringService", () => {
         }
       });
 
-      it("should not detect transfers below the provided threshold", async () => {
+      it("should detect ALL transfers as violations regardless of threshold", async () => {
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        // Small transfer below threshold
+        // Small transfer below threshold - still a violation
         vi.mocked(
           mockProviderWithTransfers.getTransferHistory!,
         ).mockResolvedValue([
-          { ...sampleTransfer, amount: 50 }, // Below threshold (100)
+          { ...sampleTransfer, amount: 50 }, // Below threshold but still prohibited
         ]);
 
         const result = await service.monitorAgentsWithData(
@@ -213,12 +211,17 @@ describe("PerpsMonitoringService", () => {
           "comp-1",
           competitionStartDate,
           initialCapital,
-          selfFundingThreshold, // 100
+          selfFundingThreshold, // 100 - threshold doesn't matter for violations
         );
 
         expect(result.successful).toHaveLength(1);
-        expect(result.successful[0]?.alerts).toHaveLength(0);
-        expect(result.totalAlertsCreated).toBe(0);
+        expect(result.successful[0]?.alerts).toHaveLength(1); // Should detect violation
+        expect(result.totalAlertsCreated).toBe(1);
+
+        const alert = result.successful[0]?.alerts[0];
+        expect(alert?.note).toContain(
+          "Mid-competition transfers are PROHIBITED",
+        );
       });
 
       it("should handle zero threshold (flag any deposit)", async () => {
@@ -256,14 +259,14 @@ describe("PerpsMonitoringService", () => {
         }
       });
 
-      it("should handle high threshold values", async () => {
+      it("should detect transfers regardless of high threshold values", async () => {
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        // Transfer below high threshold
+        // Any transfer is now a violation
         vi.mocked(
           mockProviderWithTransfers.getTransferHistory!,
         ).mockResolvedValue([
-          { ...sampleTransfer, amount: 999 }, // Below threshold (1000)
+          { ...sampleTransfer, amount: 999 }, // Any amount is prohibited
         ]);
 
         const result = await service.monitorAgentsWithData(
@@ -272,11 +275,14 @@ describe("PerpsMonitoringService", () => {
           "comp-1",
           competitionStartDate,
           initialCapital,
-          1000, // High threshold
+          1000, // High threshold - doesn't matter for violations
         );
 
         expect(result.successful).toHaveLength(1);
-        expect(result.successful[0]?.alerts).toHaveLength(0);
+        expect(result.successful[0]?.alerts).toHaveLength(1); // Should detect violation
+        expect(result.successful[0]?.alerts[0]?.note).toContain(
+          "Mid-competition transfers are PROHIBITED",
+        );
       });
 
       it("should use pre-fetched account summaries when provided (production use case)", async () => {
@@ -445,8 +451,8 @@ describe("PerpsMonitoringService", () => {
       });
     });
 
-    describe("TWR transfer history saving", () => {
-      it("should save all transfers for TWR calculations", async () => {
+    describe("Transfer history saving for violation detection", () => {
+      it("should save all transfers for violation detection and audit", async () => {
         const transfers: Transfer[] = [
           {
             type: "deposit",
@@ -457,8 +463,6 @@ describe("PerpsMonitoringService", () => {
             timestamp: new Date("2024-01-15"),
             txHash: "0xabc",
             chainId: 42161,
-            equityBefore: 10000,
-            equityAfter: 10500,
           },
           {
             type: "withdraw", // Should save withdrawals too
@@ -469,8 +473,6 @@ describe("PerpsMonitoringService", () => {
             timestamp: new Date("2024-01-16"),
             txHash: "0xdef",
             chainId: 137,
-            equityBefore: 10500,
-            equityAfter: 10300,
           },
         ];
 
@@ -489,7 +491,7 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should save both deposits and withdrawals
+        // Should save both deposits and withdrawals for audit trail
         expect(perpsRepo.batchSaveTransferHistory).toHaveBeenCalledWith(
           expect.arrayContaining([
             expect.objectContaining({
@@ -502,8 +504,6 @@ describe("PerpsMonitoringService", () => {
               toAddress: "0x123",
               txHash: "0xabc",
               chainId: 42161,
-              equityBefore: "10000",
-              equityAfter: "10500",
               transferTimestamp: new Date("2024-01-15"),
             }),
             expect.objectContaining({
@@ -516,8 +516,6 @@ describe("PerpsMonitoringService", () => {
               toAddress: "0xExternal",
               txHash: "0xdef",
               chainId: 137,
-              equityBefore: "10500",
-              equityAfter: "10300",
               transferTimestamp: new Date("2024-01-16"),
             }),
           ]),
@@ -534,8 +532,6 @@ describe("PerpsMonitoringService", () => {
           timestamp: new Date("2024-01-15T10:00:00Z"),
           // No txHash
           chainId: 42161,
-          equityBefore: 10000,
-          equityAfter: 10100,
         };
 
         vi.mocked(
@@ -573,8 +569,6 @@ describe("PerpsMonitoringService", () => {
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
           // No chainId
-          equityBefore: 10000,
-          equityAfter: 10100,
         };
 
         vi.mocked(
@@ -602,7 +596,7 @@ describe("PerpsMonitoringService", () => {
         );
       });
 
-      it("should continue monitoring if TWR save fails", async () => {
+      it("should continue monitoring if transfer save fails", async () => {
         // Mock save to fail
         vi.mocked(perpsRepo.batchSaveTransferHistory).mockRejectedValueOnce(
           new Error("Database error"),
@@ -616,8 +610,6 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
-          equityBefore: 10000,
-          equityAfter: 10500,
         };
 
         vi.mocked(
@@ -635,7 +627,7 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should still detect self-funding even if TWR save failed
+        // Should still detect self-funding even if transfer save failed
         expect(result.totalAlertsCreated).toBe(1);
         expect(
           perpsRepo.batchCreatePerpsSelfFundingAlerts,
@@ -680,8 +672,7 @@ describe("PerpsMonitoringService", () => {
           to: "0x123", // Agent's wallet
           timestamp: new Date("2024-01-15"), // After competition start
           txHash: "0xabc",
-          equityBefore: 10000,
-          equityAfter: 10500, // Increased by deposit amount
+          // Increased by deposit amount
         };
 
         vi.mocked(
@@ -728,8 +719,6 @@ describe("PerpsMonitoringService", () => {
           to: "0X123", // Different case
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
-          equityBefore: 10000,
-          equityAfter: 10500,
         };
 
         vi.mocked(
@@ -760,8 +749,6 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2023-12-15"), // Before competition
           txHash: "0xabc",
-          equityBefore: 10000,
-          equityAfter: 10500,
         };
 
         vi.mocked(
@@ -784,17 +771,15 @@ describe("PerpsMonitoringService", () => {
         expect(result.successful).toHaveLength(1);
       });
 
-      it("should ignore withdrawals", async () => {
+      it("should detect withdrawals as violations", async () => {
         const withdrawal: Transfer = {
-          type: "withdraw", // Not a deposit
+          type: "withdraw", // Withdrawals are also violations
           amount: 500,
           asset: "USDC",
           from: "0x123",
           to: "0xExternal",
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
-          equityBefore: 10500,
-          equityAfter: 10000, // Decreased by withdrawal amount
         };
 
         vi.mocked(
@@ -812,8 +797,11 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        expect(result.totalAlertsCreated).toBe(0);
+        expect(result.totalAlertsCreated).toBe(1); // Withdrawals are now violations
         expect(result.successful).toHaveLength(1);
+        const alert = result.successful[0]?.alerts[0];
+        expect(alert?.note).toContain("withdrawal");
+        expect(alert?.note).toContain("PROHIBITED");
       });
 
       it("should sum multiple suspicious deposits", async () => {
@@ -826,8 +814,6 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date("2024-01-15"),
             txHash: "0xabc1",
-            equityBefore: 10000,
-            equityAfter: 10200,
           },
           {
             type: "deposit",
@@ -837,8 +823,6 @@ describe("PerpsMonitoringService", () => {
             to: "0x123",
             timestamp: new Date("2024-01-16"),
             txHash: "0xabc2",
-            equityBefore: 10200,
-            equityAfter: 10500,
           },
         ];
 
@@ -894,18 +878,16 @@ describe("PerpsMonitoringService", () => {
         expect(result.totalAlertsCreated).toBe(0);
       });
 
-      it("should ignore transfers exactly at threshold", async () => {
-        // Transfer exactly at threshold (competition config is 100)
+      it("should detect transfers at any amount including threshold", async () => {
+        // Transfer at any amount is a violation
         const exactThresholdTransfer: Transfer = {
           type: "deposit",
-          amount: 100, // Exactly at threshold
+          amount: 100, // Any amount is prohibited
           asset: "USDC",
           from: "0xExternal",
           to: "0x123",
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
-          equityBefore: 10000,
-          equityAfter: 10100,
         };
 
         vi.mocked(
@@ -923,8 +905,11 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should not create alert (threshold is >, not >=)
-        expect(result.totalAlertsCreated).toBe(0);
+        // Should create alert for any amount
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(result.successful[0]?.alerts[0]?.note).toContain(
+          "Mid-competition transfers are PROHIBITED",
+        );
       });
 
       it("should ignore transfers to different addresses", async () => {
@@ -936,8 +921,6 @@ describe("PerpsMonitoringService", () => {
           to: "0x999", // Different address
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
-          equityBefore: 10000,
-          equityAfter: 10500,
         };
 
         vi.mocked(
@@ -968,8 +951,6 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2024-01-01"), // Exactly at competition start
           txHash: "0xabc",
-          equityBefore: 10000,
-          equityAfter: 10500,
         };
 
         vi.mocked(
@@ -1006,8 +987,6 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
-          equityBefore: 10000,
-          equityAfter: 10000.01, // Tiny increase
         };
 
         vi.mocked(
@@ -1045,43 +1024,37 @@ describe("PerpsMonitoringService", () => {
         );
       });
 
-      it("should detect structuring - multiple small deposits that sum above threshold", async () => {
-        // Competition has threshold of 100
+      it("should detect multiple deposits as violations", async () => {
+        // All deposits are violations regardless of amount
         const smallDeposits: Transfer[] = [
           {
             type: "deposit",
-            amount: 30, // Under threshold
+            amount: 30, // Any amount is prohibited
             asset: "USDC",
             from: "0xExternal1",
             to: "0x123",
             timestamp: new Date("2024-01-15"),
             txHash: "0xabc1",
-            equityBefore: 10000,
-            equityAfter: 10030,
           },
           {
             type: "deposit",
-            amount: 40, // Under threshold
+            amount: 40, // Any amount is prohibited
             asset: "USDC",
             from: "0xExternal2",
             to: "0x123",
             timestamp: new Date("2024-01-16"),
             txHash: "0xabc2",
-            equityBefore: 10030,
-            equityAfter: 10070,
           },
           {
             type: "deposit",
-            amount: 50, // Under threshold
+            amount: 50, // Any amount is prohibited
             asset: "USDC",
             from: "0xExternal3",
             to: "0x123",
             timestamp: new Date("2024-01-17"),
             txHash: "0xabc3",
-            equityBefore: 10070,
-            equityAfter: 10120,
           },
-          // Total: 30 + 40 + 50 = 120, which exceeds threshold of 100
+          // Total: 30 + 40 + 50 = 120, all are violations
         ];
 
         vi.mocked(
@@ -1099,7 +1072,7 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should detect structuring attempt
+        // Should detect all deposits as violations
         expect(result.totalAlertsCreated).toBe(1);
         expect(
           perpsRepo.batchCreatePerpsSelfFundingAlerts,
@@ -1109,31 +1082,31 @@ describe("PerpsMonitoringService", () => {
               detectionMethod: "transfer_history",
               unexplainedAmount: "120",
               accountSnapshot: expect.objectContaining({
-                confidence: "medium", // Medium confidence for < 5 deposits
-                note: expect.stringContaining("Potential structuring"),
+                confidence: "high", // Always high confidence for violations
+                note: expect.stringMatching(
+                  /Mid-competition transfers are PROHIBITED.*3 deposit\(s\)/,
+                ),
               }),
             }),
           ]),
         );
       });
 
-      it("should have high confidence for many small deposits (likely structuring)", async () => {
-        // Many small deposits that individually are under threshold
+      it("should detect many deposits as violations", async () => {
+        // Many deposits - all are violations
         const manySmallDeposits: Transfer[] = Array.from(
           { length: 10 },
           (_, i) => ({
             type: "deposit" as const,
-            amount: 15, // Each under threshold of 100
+            amount: 15, // Any amount is prohibited
             asset: "USDC",
             from: `0xExternal${i}`,
             to: "0x123",
             timestamp: new Date(`2024-01-${10 + i}`),
             txHash: `0xabc${i}`,
-            equityBefore: 10000 + i * 15,
-            equityAfter: 10000 + (i + 1) * 15,
           }),
         );
-        // Total: 10 * 15 = 150, exceeds threshold
+        // Total: 10 * 15 = 150, all are violations
 
         vi.mocked(
           mockProviderWithTransfers.getTransferHistory!,
@@ -1150,7 +1123,7 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should detect with HIGH confidence due to many deposits
+        // Should detect all deposits as violations
         expect(result.totalAlertsCreated).toBe(1);
         expect(
           perpsRepo.batchCreatePerpsSelfFundingAlerts,
@@ -1160,9 +1133,9 @@ describe("PerpsMonitoringService", () => {
               detectionMethod: "transfer_history",
               unexplainedAmount: "150",
               accountSnapshot: expect.objectContaining({
-                confidence: "high", // High confidence for > 5 deposits
-                note: expect.stringContaining(
-                  "Potential structuring: 10 deposits",
+                confidence: "high", // High confidence for violations
+                note: expect.stringMatching(
+                  /Mid-competition transfers are PROHIBITED.*10 deposit\(s\)/,
                 ),
               }),
             }),
@@ -1170,30 +1143,26 @@ describe("PerpsMonitoringService", () => {
         );
       });
 
-      it("should still detect large individual deposits with high confidence", async () => {
-        // Mix of large and small deposits
+      it("should detect all deposits regardless of amount", async () => {
+        // Mix of large and small deposits - all are violations
         const mixedDeposits: Transfer[] = [
           {
             type: "deposit",
-            amount: 200, // Above threshold
+            amount: 200, // Any amount is prohibited
             asset: "USDC",
             from: "0xExternal1",
             to: "0x123",
             timestamp: new Date("2024-01-15"),
             txHash: "0xabc1",
-            equityBefore: 10000,
-            equityAfter: 10200,
           },
           {
             type: "deposit",
-            amount: 50, // Below threshold
+            amount: 50, // Any amount is prohibited
             asset: "USDC",
             from: "0xExternal2",
             to: "0x123",
             timestamp: new Date("2024-01-16"),
             txHash: "0xabc2",
-            equityBefore: 10200,
-            equityAfter: 10250,
           },
         ];
 
@@ -1212,7 +1181,7 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should detect with HIGH confidence due to large deposit
+        // Should detect all deposits as violations
         expect(result.totalAlertsCreated).toBe(1);
         expect(
           perpsRepo.batchCreatePerpsSelfFundingAlerts,
@@ -1222,8 +1191,10 @@ describe("PerpsMonitoringService", () => {
               detectionMethod: "transfer_history",
               unexplainedAmount: "250", // Total of all deposits
               accountSnapshot: expect.objectContaining({
-                confidence: "high", // High confidence for large deposits
-                note: expect.stringContaining("1 large deposit(s) exceeding"),
+                confidence: "high", // High confidence for violations
+                note: expect.stringMatching(
+                  /Mid-competition transfers are PROHIBITED.*2 deposit\(s\)/,
+                ),
               }),
             }),
           ]),
@@ -1567,8 +1538,6 @@ describe("PerpsMonitoringService", () => {
           to: "0x123",
           timestamp: new Date("2024-01-15"),
           txHash: "0xabc",
-          equityBefore: 10000,
-          equityAfter: 10300,
         };
         vi.mocked(
           mockProviderWithTransfers.getTransferHistory!,

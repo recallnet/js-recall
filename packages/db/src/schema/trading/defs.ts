@@ -421,7 +421,9 @@ export const perpsAccountSummaries = tradingComps.table(
 );
 
 /**
- * Transfer history for TWR calculations
+ * Transfer history for violation detection and admin audit
+ * NOTE: Mid-competition transfers are PROHIBITED - any transfer during
+ * an active competition is a violation that should trigger alerts
  */
 export const perpsTransferHistory = tradingComps.table(
   "perps_transfer_history",
@@ -436,14 +438,12 @@ export const perpsTransferHistory = tradingComps.table(
     type: varchar("type", { length: 20 }).notNull(), // 'deposit' | 'withdraw'
     amount: numeric("amount").notNull(),
     asset: varchar("asset", { length: 10 }).notNull(),
-    fromAddress: varchar("from_address", { length: 100 }).notNull(), // Required per API spec
-    toAddress: varchar("to_address", { length: 100 }).notNull(), // Required per API spec
-    txHash: varchar("tx_hash", { length: 100 }).notNull(), // Required per API spec
-    chainId: integer("chain_id").notNull(), // Required per API spec
+    fromAddress: varchar("from_address", { length: 100 }).notNull(),
+    toAddress: varchar("to_address", { length: 100 }).notNull(),
+    txHash: varchar("tx_hash", { length: 100 }).notNull(),
+    chainId: integer("chain_id").notNull(),
 
-    // Critical for TWR calculation
-    equityBefore: numeric("equity_before").notNull(),
-    equityAfter: numeric("equity_after").notNull(),
+    // Timestamp when transfer occurred
     transferTimestamp: timestamp("transfer_timestamp", {
       withTimezone: true,
     }).notNull(),
@@ -470,7 +470,8 @@ export const perpsTransferHistory = tradingComps.table(
 );
 
 /**
- * Risk metrics table for Calmar ratio and TWR
+ * Risk metrics table for Calmar ratio calculations
+ * Uses simple returns since mid-competition transfers are prohibited
  */
 export const perpsRiskMetrics = tradingComps.table(
   "perps_risk_metrics",
@@ -482,14 +483,12 @@ export const perpsRiskMetrics = tradingComps.table(
     competitionId: uuid("competition_id").notNull(),
 
     // Core metrics for Calmar calculation
-    timeWeightedReturn: numeric("time_weighted_return").notNull(),
+    simpleReturn: numeric("simple_return").notNull(), // (endValue/startValue) - 1
     calmarRatio: numeric("calmar_ratio").notNull(),
     annualizedReturn: numeric("annualized_return").notNull(),
     maxDrawdown: numeric("max_drawdown").notNull(),
 
-    // Summary statistics
-    transferCount: integer("transfer_count").notNull().default(0),
-    periodCount: integer("period_count").notNull().default(1),
+    // Note: transferCount and periodCount removed - transfers are violations
 
     // Metadata
     calculationTimestamp: timestamp("calculation_timestamp", {
@@ -511,39 +510,7 @@ export const perpsRiskMetrics = tradingComps.table(
   ],
 );
 
-/**
- * TWR period returns - normalized for proper querying and type safety
- */
-export const perpsTwrPeriods = tradingComps.table(
-  "perps_twr_periods",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    metricsId: uuid("metrics_id")
-      .notNull()
-      .references(() => perpsRiskMetrics.id, { onDelete: "cascade" }),
-
-    // Period boundaries
-    periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
-    periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
-
-    // Period performance
-    periodReturn: numeric("period_return").notNull(),
-    startingEquity: numeric("starting_equity").notNull(),
-    endingEquity: numeric("ending_equity").notNull(),
-
-    // Transfer that triggered this period (null for first period)
-    transferId: uuid("transfer_id").references(() => perpsTransferHistory.id, {
-      onDelete: "set null",
-    }),
-
-    // Ordering
-    sequenceNumber: integer("sequence_number").notNull(),
-  },
-  (table) => [
-    index("idx_twr_periods_metrics").on(table.metricsId),
-    index("idx_twr_periods_sequence").on(table.metricsId, table.sequenceNumber),
-  ],
-);
+// NOTE: The system uses simple returns since mid-competition transfers are prohibited
 
 export const perpsSelfFundingAlerts = tradingComps.table(
   "perps_self_funding_alerts",

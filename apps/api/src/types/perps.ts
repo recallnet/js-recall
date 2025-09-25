@@ -155,7 +155,7 @@ export interface PerpsPosition {
 }
 
 /**
- * USDC transfer record with equity snapshots for TWR calculation
+ * USDC transfer record for violation detection and audit
  */
 export interface Transfer {
   type: "deposit" | "withdraw";
@@ -166,10 +166,6 @@ export interface Transfer {
   timestamp: Date;
   txHash?: string;
   chainId?: number;
-
-  // Equity snapshots for TWR calculation
-  equityBefore: number;
-  equityAfter: number;
 }
 
 /**

@@ -92,7 +92,7 @@ interface LeaderboardEntry {
   pnl: number; // Profit/Loss amount (0 if not calculated)
   // Risk-adjusted metrics (optional, primarily for perps competitions)
   calmarRatio?: number | null;
-  timeWeightedReturn?: number | null;
+  simpleReturn?: number | null;
   maxDrawdown?: number | null;
   hasRiskMetrics?: boolean; // Indicates if agent has risk metrics calculated
 }
@@ -113,7 +113,7 @@ type LeaderboardData = {
     deactivationReason: string | null;
     // Risk-adjusted metrics (primarily for perps competitions)
     calmarRatio?: number | null;
-    timeWeightedReturn?: number | null;
+    simpleReturn?: number | null;
     maxDrawdown?: number | null;
     hasRiskMetrics?: boolean;
   }>;
@@ -327,6 +327,25 @@ type AgentCompetitionTradesData = {
     hasMore: boolean;
   };
 };
+
+/**
+ * Leaderboard with inactive agents data structure
+ */
+interface LeaderboardWithInactiveAgents {
+  activeAgents: Array<{
+    agentId: string;
+    value: number;
+    calmarRatio?: number | null;
+    simpleReturn?: number | null;
+    maxDrawdown?: number | null;
+    hasRiskMetrics?: boolean;
+  }>;
+  inactiveAgents: Array<{
+    agentId: string;
+    value: number;
+    deactivationReason: string;
+  }>;
+}
 
 /**
  * Basic competition info for unauthenticated users
@@ -1041,7 +1060,7 @@ export class CompetitionService {
         voteCount,
         // Risk metrics from leaderboard (perps competitions only)
         calmarRatio: leaderboardEntry?.calmarRatio ?? null,
-        timeWeightedReturn: leaderboardEntry?.timeWeightedReturn ?? null,
+        simpleReturn: leaderboardEntry?.simpleReturn ?? null,
         maxDrawdown: leaderboardEntry?.maxDrawdown ?? null,
         hasRiskMetrics: leaderboardEntry?.hasRiskMetrics ?? false,
       };
@@ -1093,8 +1112,8 @@ export class CompetitionService {
           entry.agentId,
           {
             calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
-            timeWeightedReturn: entry.timeWeightedReturn
-              ? Number(entry.timeWeightedReturn)
+            simpleReturn: entry.simpleReturn
+              ? Number(entry.simpleReturn)
               : null,
             maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
             hasRiskMetrics: entry.hasRiskMetrics,
@@ -1107,7 +1126,7 @@ export class CompetitionService {
         .map((snapshot) => {
           const riskMetrics = riskMetricsMap.get(snapshot.agentId) || {
             calmarRatio: null,
-            timeWeightedReturn: null,
+            simpleReturn: null,
             maxDrawdown: null,
             hasRiskMetrics: false,
           };
@@ -1129,7 +1148,7 @@ export class CompetitionService {
         value: snapshot.totalValue,
         pnl: 0, // PnL not available from snapshots alone
         calmarRatio: null,
-        timeWeightedReturn: null,
+        simpleReturn: null,
         maxDrawdown: null,
         hasRiskMetrics: false,
       }))
@@ -1166,9 +1185,7 @@ export class CompetitionService {
         pnl: Number(entry.totalPnl) || 0,
         // Include risk-adjusted metrics
         calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
-        timeWeightedReturn: entry.timeWeightedReturn
-          ? Number(entry.timeWeightedReturn)
-          : null,
+        simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
         maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
         hasRiskMetrics: entry.hasRiskMetrics,
       }));
@@ -1187,7 +1204,7 @@ export class CompetitionService {
       pnl: 0, // PnL not available without historical data
       // Risk metrics not applicable for paper trading
       calmarRatio: null,
-      timeWeightedReturn: null,
+      simpleReturn: null,
       maxDrawdown: null,
       hasRiskMetrics: false,
     }));
@@ -1226,7 +1243,7 @@ export class CompetitionService {
         pnl,
         // Risk metrics not available for pending competitions
         calmarRatio: null,
-        timeWeightedReturn: null,
+        simpleReturn: null,
         maxDrawdown: null,
         hasRiskMetrics: false,
       }));
@@ -1312,21 +1329,9 @@ export class CompetitionService {
    * @param competitionId The competition ID
    * @returns Object containing active agents (with rankings) and inactive agents (with deactivation reasons)
    */
-  async getLeaderboardWithInactiveAgents(competitionId: string): Promise<{
-    activeAgents: Array<{
-      agentId: string;
-      value: number;
-      calmarRatio?: number | null;
-      timeWeightedReturn?: number | null;
-      maxDrawdown?: number | null;
-      hasRiskMetrics?: boolean;
-    }>;
-    inactiveAgents: Array<{
-      agentId: string;
-      value: number;
-      deactivationReason: string;
-    }>;
-  }> {
+  async getLeaderboardWithInactiveAgents(
+    competitionId: string,
+  ): Promise<LeaderboardWithInactiveAgents> {
     try {
       // Get active leaderboard (already filtered to active agents only)
       const activeLeaderboard = await this.getLeaderboard(competitionId);
@@ -1393,7 +1398,7 @@ export class CompetitionService {
           agentId: entry.agentId,
           value: entry.value,
           calmarRatio: entry.calmarRatio,
-          timeWeightedReturn: entry.timeWeightedReturn,
+          simpleReturn: entry.simpleReturn,
           maxDrawdown: entry.maxDrawdown,
           hasRiskMetrics: entry.hasRiskMetrics,
         })),
@@ -2102,7 +2107,7 @@ export class CompetitionService {
             deactivationReason: null,
             // Include risk metrics if available
             calmarRatio: entry.calmarRatio,
-            timeWeightedReturn: entry.timeWeightedReturn,
+            simpleReturn: entry.simpleReturn,
             maxDrawdown: entry.maxDrawdown,
             hasRiskMetrics: entry.hasRiskMetrics,
           };

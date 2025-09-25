@@ -16,7 +16,7 @@ export class MockSymphonyServer {
   // Store mock data for different wallet addresses
   private mockData: Map<string, MockAgentData> = new Map();
 
-  // Track portfolio snapshots for TWR test wallet simulation
+  // Track portfolio snapshots for Calmar ratio test wallet simulation
   private snapshotIndex: Map<string, number> = new Map();
 
   constructor(port: number = 4567) {
@@ -125,14 +125,11 @@ export class MockSymphonyServer {
       transfers: [],
     });
 
-    // Pre-configured test wallet WITH transfers for TWR/Calmar testing
-    //
-    // The key is that TWR should calculate pure trading performance
-    // independent of deposits/withdrawals
-    //
-    // Portfolio snapshots will show: $1700 → $1200 → $1550
-    // With NO transfers, this would be -8.8% return
-    // With transfers, TWR should STILL show -8.8% by excluding their impact
+    // Pre-configured test wallet for Calmar testing (NO transfers allowed)
+    // Portfolio shows volatility: $1700 → $1200 → $1550
+    // Simple return: (1550/1700) - 1 = -8.8%
+    // Max drawdown: (1200/1700) - 1 = -29.4%
+    // Demonstrates risk-adjusted metrics without transfer complexity
     this.setAgentData("0x4444444444444444444444444444444444444444", {
       initialCapital: 1700,
       totalEquity: 1550,
@@ -144,31 +141,7 @@ export class MockSymphonyServer {
       totalRealizedPnl: -150,
       totalFeesPaid: 30,
       openPositions: [],
-      transfers: [
-        // Transfer happens between first and second snapshots
-        // Snapshot 1: $1700 (peak)
-        // Transfer: occurs when equity has dropped to $1400
-        // Snapshot 2: $1200 (trough)
-        // Snapshot 3: $1550 (recovery)
-        //
-        // This creates TWR periods:
-        // Period 1: $1700 → $1400 = -17.65% (before transfer)
-        // Deposit $1: $1400 → $1401
-        // Period 2: $1401 → $1550 = +10.64% (after transfer to recovery)
-        // Chain-linked: 0.8235 × 1.1064 = 0.9114 ≈ -8.86%
-        {
-          type: "deposit" as const,
-          amount: 1,
-          asset: "USDC",
-          from: "0xExternal",
-          to: "0x4444444444444444444444444444444444444444",
-          timestamp: "dynamic:-0.03", // Between first and second processPerpsCompetition
-          txHash: "0xtx_deposit_1",
-          chainId: 42161,
-          equityBefore: 1400,
-          equityAfter: 1401,
-        },
-      ],
+      transfers: [], // No transfers - prohibited during competition
     });
   }
 
@@ -224,18 +197,20 @@ export class MockSymphonyServer {
       const now = new Date().toISOString();
 
       // Return Symphony-formatted response
-      // For the TWR test wallet (0x4444...), simulate equity changes
-      // between calls to match our transfer history timeline
+      // For the volatility test wallet (0x4444...), simulate equity changes
+      // to demonstrate max drawdown and Calmar ratio calculations
       let currentEquity = data.totalEquity;
       const lowerAddress = userAddress.toLowerCase();
 
       // Debug logging
       if (lowerAddress.includes("4444")) {
-        this.logger.info(`[MockSymphony] TWR wallet ${lowerAddress} detected`);
+        this.logger.info(
+          `[MockSymphony] Calmar test wallet ${lowerAddress} detected`,
+        );
       }
 
       if (lowerAddress === "0x4444444444444444444444444444444444444444") {
-        // Track snapshot creation for TWR test wallet
+        // Track snapshot creation for Calmar ratio test wallet
         // The test makes 3 processPerpsCompetition calls, each making 2 API calls
         const callIdx = this.snapshotIndex.get(lowerAddress) || 0;
 
@@ -243,11 +218,11 @@ export class MockSymphonyServer {
         // This ensures consistent equity values regardless of setup calls
         const equityProgression = [
           1700,
-          1700, // Calls 1-2: First snapshot - PEAK (TWR test)
+          1700, // Calls 1-2: First snapshot - PEAK
           1200,
-          1200, // Calls 3-4: Second snapshot - TROUGH (TWR test)
+          1200, // Calls 3-4: Second snapshot - TROUGH (max drawdown)
           1550,
-          1550, // Calls 5-6: Third snapshot - RECOVERY (TWR test)
+          1550, // Calls 5-6: Third snapshot - RECOVERY
           1700,
           1700, // Calls 7-8: For subsequent tests
           1700,
@@ -272,7 +247,7 @@ export class MockSymphonyServer {
         else if (callIdx >= 4 && callIdx <= 5) phase = "recovery";
 
         this.logger.info(
-          `[MockSymphony] TWR wallet call #${callIdx + 1}, equity=$${currentEquity} (${phase})`,
+          `[MockSymphony] Calmar wallet call #${callIdx + 1}, equity=$${currentEquity} (${phase})`,
         );
       }
 
@@ -372,64 +347,7 @@ export class MockSymphonyServer {
         count: transfers.length,
         successful: transfers.map((_, i) => 42161 + i), // Mock chain IDs
         failed: [],
-        transfers: transfers.map((t, index) => {
-          // For mock data, simulate equity changes including trading P&L
-          const mockTransfer = t as MockTransfer & {
-            equityBefore?: number;
-            equityAfter?: number;
-          };
-
-          let equityBefore: number;
-          let equityAfter: number;
-
-          if (
-            mockTransfer.equityBefore !== undefined &&
-            mockTransfer.equityAfter !== undefined
-          ) {
-            // Use explicitly set values for testing specific scenarios
-            equityBefore = mockTransfer.equityBefore;
-            equityAfter = mockTransfer.equityAfter;
-          } else {
-            // FALLBACK: Simple calculation when explicit values not provided
-            // WARNING: This is NOT realistic for TWR testing! It's just a placeholder.
-            // Real TWR tests MUST provide explicit equityBefore/equityAfter that include trading P&L.
-            //
-            // The whole point of TWR is to separate trading performance from deposits/withdrawals.
-            // Symphony provides actual equity snapshots at transfer time, which capture trading gains/losses.
-            const currentAccountEquity = data.totalEquity;
-
-            // Simplified simulation - tests should always use explicit values
-
-            if (index === transfers.length - 1) {
-              // Most recent transfer - use current account state
-              if (t.type === "deposit") {
-                // Before this deposit, equity was less by the deposit amount
-                // BUT also account for any trading P&L since the deposit
-                equityBefore = currentAccountEquity - t.amount;
-                equityAfter = currentAccountEquity;
-              } else {
-                // Before this withdrawal, equity was more by the withdrawal amount
-                equityBefore = currentAccountEquity + t.amount;
-                equityAfter = currentAccountEquity;
-              }
-            } else {
-              // For older transfers, use a simple simulation
-              // In real tests, always use explicit equity values for accurate TWR testing
-              const baseEquity = data.initialCapital;
-
-              // Simulate some trading P&L (10% gain as example)
-              const tradingMultiplier = 1.1;
-
-              if (t.type === "deposit") {
-                equityBefore = baseEquity * tradingMultiplier;
-                equityAfter = equityBefore + t.amount;
-              } else {
-                equityBefore = baseEquity * tradingMultiplier;
-                equityAfter = equityBefore - t.amount;
-              }
-            }
-          }
-
+        transfers: transfers.map((t) => {
           // Calculate dynamic timestamps relative to "now" for test transfers
           let transferTimestamp: string;
           if (t.timestamp.startsWith("dynamic:")) {
@@ -445,10 +363,6 @@ export class MockSymphonyServer {
             transferTimestamp = t.timestamp;
           }
 
-          const timestamp = new Date(transferTimestamp);
-          const beforeTimestamp = new Date(timestamp.getTime() - 1000); // 1 second before
-          const afterTimestamp = new Date(timestamp.getTime() + 1000); // 1 second after
-
           return {
             type: t.type,
             amount: t.amount,
@@ -458,15 +372,7 @@ export class MockSymphonyServer {
             timestamp: transferTimestamp,
             txHash: t.txHash || `0xtx_${Date.now()}_${Math.random()}`,
             chainId: t.chainId || 42161, // Default to Arbitrum
-            // Add equity snapshots for TWR calculation
-            accountSnapshotBefore: {
-              totalEquity: equityBefore,
-              timestamp: beforeTimestamp.toISOString(),
-            },
-            accountSnapshotAfter: {
-              totalEquity: equityAfter,
-              timestamp: afterTimestamp.toISOString(),
-            },
+            // No equity snapshots - mid-competition transfers are now prohibited
           };
         }),
       });
@@ -538,20 +444,17 @@ export class MockSymphonyServer {
   }
 
   /**
-   * Add a transfer for an agent with equity snapshots for TWR calculations
+   * Add a transfer for an agent (for violation testing only)
    *
-   * IMPORTANT: For accurate TWR testing, always provide explicit equityBefore and equityAfter values!
-   * These represent the ACTUAL account equity at transfer time, including trading P&L.
+   * NOTE: Mid-competition transfers are now PROHIBITED by competition rules.
+   * This method should only be used to test violation detection.
    *
-   * Example for testing TWR with trading gains:
-   * - Initial capital: $1000
-   * - After trading, equity grows to $1200 (20% gain)
-   * - User deposits $500
-   * - equityBefore should be $1200 (includes trading gains)
-   * - equityAfter should be $1700 ($1200 + $500)
+   * Any transfer during an active competition should trigger:
+   * - Self-funding alert with severity: critical
+   * - Potential agent disqualification
    *
-   * The TWR calculation will correctly identify the 20% trading return,
-   * excluding the impact of the $500 deposit.
+   * The system uses simple returns
+   * are not allowed during competitions.
    */
   public addTransfer(walletAddress: string, transfer: MockTransfer): void {
     const data = this.getAgentData(walletAddress);
@@ -621,7 +524,5 @@ export interface MockTransfer {
   timestamp: string;
   txHash?: string;
   chainId?: number;
-  // Optional equity snapshots for testing TWR calculations
-  equityBefore?: number;
-  equityAfter?: number;
+  // Note: Mid-competition transfers are now prohibited by competition rules
 }

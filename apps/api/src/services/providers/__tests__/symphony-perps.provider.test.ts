@@ -115,14 +115,6 @@ describe("SymphonyPerpsProvider", () => {
         timestamp: "2025-01-14T10:00:00Z",
         txHash: "0xtxhash123",
         chainId: 42161,
-        accountSnapshotBefore: {
-          totalEquity: 500,
-          timestamp: "2025-01-14T09:59:59Z",
-        },
-        accountSnapshotAfter: {
-          totalEquity: 600,
-          timestamp: "2025-01-14T10:00:01Z",
-        },
       },
       {
         type: "withdraw",
@@ -133,14 +125,6 @@ describe("SymphonyPerpsProvider", () => {
         timestamp: "2025-01-13T10:00:00Z",
         txHash: "0xtxhash456",
         chainId: 137,
-        accountSnapshotBefore: {
-          totalEquity: 650,
-          timestamp: "2025-01-13T09:59:59Z",
-        },
-        accountSnapshotAfter: {
-          totalEquity: 600,
-          timestamp: "2025-01-13T10:00:01Z",
-        },
       },
     ],
   };
@@ -553,7 +537,7 @@ describe("SymphonyPerpsProvider", () => {
   });
 
   describe("getTransferHistory", () => {
-    it("should fetch and transform transfer history with equity snapshots", async () => {
+    it("should fetch and transform transfer history", async () => {
       const since = new Date("2025-01-10T00:00:00Z");
 
       mockAxiosInstance.get.mockResolvedValueOnce({
@@ -564,7 +548,7 @@ describe("SymphonyPerpsProvider", () => {
 
       expect(result).toHaveLength(2);
 
-      // First transfer (deposit) - equity should increase
+      // First transfer (deposit)
       expect(result[0]).toEqual({
         type: "deposit",
         amount: 100,
@@ -574,11 +558,9 @@ describe("SymphonyPerpsProvider", () => {
         timestamp: new Date("2025-01-14T10:00:00Z"),
         txHash: "0xtxhash123",
         chainId: 42161,
-        equityBefore: 500, // Maps from accountSnapshotBefore.totalEquity
-        equityAfter: 600, // Maps from accountSnapshotAfter.totalEquity
       });
 
-      // Second transfer (withdrawal) - equity should decrease
+      // Second transfer (withdrawal)
       expect(result[1]).toEqual({
         type: "withdraw",
         amount: 50,
@@ -588,8 +570,6 @@ describe("SymphonyPerpsProvider", () => {
         timestamp: new Date("2025-01-13T10:00:00Z"),
         txHash: "0xtxhash456",
         chainId: 137,
-        equityBefore: 650, // Maps from accountSnapshotBefore.totalEquity
-        equityAfter: 600, // Maps from accountSnapshotAfter.totalEquity
       });
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith("/utils/transfers", {
@@ -643,8 +623,8 @@ describe("SymphonyPerpsProvider", () => {
       expect(result).toEqual([]);
     });
 
-    it("should handle transfers with zero equity changes correctly", async () => {
-      const zeroEquityChangeResponse: SymphonyTransferResponse = {
+    it("should handle transfers with zero amounts correctly", async () => {
+      const zeroAmountResponse: SymphonyTransferResponse = {
         success: true,
         count: 1,
         successful: [42161],
@@ -659,20 +639,12 @@ describe("SymphonyPerpsProvider", () => {
             timestamp: "2025-01-14T10:00:00Z",
             txHash: "0xtest123",
             chainId: 42161,
-            accountSnapshotBefore: {
-              totalEquity: 500,
-              timestamp: "2025-01-14T09:59:59Z",
-            },
-            accountSnapshotAfter: {
-              totalEquity: 500, // No change in equity
-              timestamp: "2025-01-14T10:00:01Z",
-            },
           },
         ],
       };
 
       mockAxiosInstance.get.mockResolvedValueOnce({
-        data: zeroEquityChangeResponse,
+        data: zeroAmountResponse,
       });
 
       const result = await provider.getTransferHistory("0xtest123", new Date());
@@ -686,13 +658,11 @@ describe("SymphonyPerpsProvider", () => {
         timestamp: new Date("2025-01-14T10:00:00Z"),
         txHash: "0xtest123",
         chainId: 42161,
-        equityBefore: 500,
-        equityAfter: 500,
       });
     });
 
-    it("should handle transfers with negative equity correctly", async () => {
-      const negativeEquityResponse: SymphonyTransferResponse = {
+    it("should handle large withdrawals correctly", async () => {
+      const largeWithdrawalResponse: SymphonyTransferResponse = {
         success: true,
         count: 1,
         successful: [42161],
@@ -707,20 +677,12 @@ describe("SymphonyPerpsProvider", () => {
             timestamp: "2025-01-14T10:00:00Z",
             txHash: "0xwithdraw123",
             chainId: 42161,
-            accountSnapshotBefore: {
-              totalEquity: 100, // Low equity before withdrawal
-              timestamp: "2025-01-14T09:59:59Z",
-            },
-            accountSnapshotAfter: {
-              totalEquity: -900, // Negative equity after (liquidation scenario)
-              timestamp: "2025-01-14T10:00:01Z",
-            },
           },
         ],
       };
 
       mockAxiosInstance.get.mockResolvedValueOnce({
-        data: negativeEquityResponse,
+        data: largeWithdrawalResponse,
       });
 
       const result = await provider.getTransferHistory("0xtest123", new Date());
@@ -734,14 +696,12 @@ describe("SymphonyPerpsProvider", () => {
         timestamp: new Date("2025-01-14T10:00:00Z"),
         txHash: "0xwithdraw123",
         chainId: 42161,
-        equityBefore: 100,
-        equityAfter: -900,
       });
     });
 
-    it("should handle multiple rapid transfers for TWR calculations", async () => {
-      // Simulating multiple transfers in succession - important for TWR period calculation
-      const multipleRapidTransfersResponse: SymphonyTransferResponse = {
+    it("should handle multiple transfers for violation detection", async () => {
+      // Multiple transfers that would all be violations since transfers are now prohibited
+      const multipleTransfersResponse: SymphonyTransferResponse = {
         success: true,
         count: 3,
         successful: [42161, 42161, 42161],
@@ -756,14 +716,6 @@ describe("SymphonyPerpsProvider", () => {
             timestamp: "2025-01-14T10:00:00Z",
             txHash: "0xtx1",
             chainId: 42161,
-            accountSnapshotBefore: {
-              totalEquity: 1000,
-              timestamp: "2025-01-14T09:59:59Z",
-            },
-            accountSnapshotAfter: {
-              totalEquity: 1100,
-              timestamp: "2025-01-14T10:00:01Z",
-            },
           },
           {
             type: "deposit",
@@ -774,14 +726,6 @@ describe("SymphonyPerpsProvider", () => {
             timestamp: "2025-01-14T11:00:00Z", // 1 hour later
             txHash: "0xtx2",
             chainId: 42161,
-            accountSnapshotBefore: {
-              totalEquity: 1150, // Shows profit between transfers
-              timestamp: "2025-01-14T10:59:59Z",
-            },
-            accountSnapshotAfter: {
-              totalEquity: 1350,
-              timestamp: "2025-01-14T11:00:01Z",
-            },
           },
           {
             type: "withdraw",
@@ -792,37 +736,51 @@ describe("SymphonyPerpsProvider", () => {
             timestamp: "2025-01-14T12:00:00Z", // Another hour later
             txHash: "0xtx3",
             chainId: 42161,
-            accountSnapshotBefore: {
-              totalEquity: 1400, // More profit
-              timestamp: "2025-01-14T11:59:59Z",
-            },
-            accountSnapshotAfter: {
-              totalEquity: 1250,
-              timestamp: "2025-01-14T12:00:01Z",
-            },
           },
         ],
       };
 
       mockAxiosInstance.get.mockResolvedValueOnce({
-        data: multipleRapidTransfersResponse,
+        data: multipleTransfersResponse,
       });
 
       const result = await provider.getTransferHistory("0xtest123", new Date());
 
       expect(result).toHaveLength(3);
 
-      // Verify the equity tracking shows organic growth between transfers
-      expect(result[0]?.equityBefore).toBe(1000);
-      expect(result[0]?.equityAfter).toBe(1100);
+      // Verify all transfers are captured for violation detection
+      expect(result[0]).toEqual({
+        type: "deposit",
+        amount: 100,
+        asset: "USDC",
+        from: "0xfrom123",
+        to: "0xto456",
+        timestamp: new Date("2025-01-14T10:00:00Z"),
+        txHash: "0xtx1",
+        chainId: 42161,
+      });
 
-      // Between first and second transfer, equity grew from 1100 to 1150 (organic growth)
-      expect(result[1]?.equityBefore).toBe(1150);
-      expect(result[1]?.equityAfter).toBe(1350);
+      expect(result[1]).toEqual({
+        type: "deposit",
+        amount: 200,
+        asset: "USDC",
+        from: "0xfrom123",
+        to: "0xto456",
+        timestamp: new Date("2025-01-14T11:00:00Z"),
+        txHash: "0xtx2",
+        chainId: 42161,
+      });
 
-      // Between second and third transfer, equity grew from 1350 to 1400 (more organic growth)
-      expect(result[2]?.equityBefore).toBe(1400);
-      expect(result[2]?.equityAfter).toBe(1250);
+      expect(result[2]).toEqual({
+        type: "withdraw",
+        amount: 150,
+        asset: "USDC",
+        from: "0xto456",
+        to: "0xfrom123",
+        timestamp: new Date("2025-01-14T12:00:00Z"),
+        txHash: "0xtx3",
+        chainId: 42161,
+      });
     });
   });
 

@@ -372,10 +372,10 @@ export function configureAgentsRoutes(
    *                         type: number
    *                         nullable: true
    *                         description: Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions
-   *                       timeWeightedReturn:
+   *                       simpleReturn:
    *                         type: number
    *                         nullable: true
-   *                         description: Time-weighted return accounting for deposits/withdrawals - only for perps competitions
+   *                         description: Simple return (end value / start value - 1) - only for perps competitions
    *                       maxDrawdown:
    *                         type: number
    *                         nullable: true

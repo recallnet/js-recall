@@ -1502,9 +1502,7 @@ export class AgentService {
             totalPositions: positionCountsMap.get(competition.id) || 0,
             // Include risk metrics if available
             calmarRatio: riskMetrics ? Number(riskMetrics.calmarRatio) : null,
-            timeWeightedReturn: riskMetrics
-              ? Number(riskMetrics.timeWeightedReturn)
-              : null,
+            simpleReturn: riskMetrics ? Number(riskMetrics.simpleReturn) : null,
             maxDrawdown: riskMetrics ? Number(riskMetrics.maxDrawdown) : null,
             hasRiskMetrics: !!riskMetrics,
           };
@@ -1514,7 +1512,7 @@ export class AgentService {
             totalTrades: tradeCountsMap.get(competition.id) || 0,
             // Risk metrics not applicable for paper trading
             calmarRatio: null,
-            timeWeightedReturn: null,
+            simpleReturn: null,
             maxDrawdown: null,
             hasRiskMetrics: false,
           };

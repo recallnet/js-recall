@@ -396,7 +396,7 @@ export interface LeaderboardEntry {
   deactivationReason?: string;
   // Risk-adjusted metrics (primarily for perps competitions)
   calmarRatio?: number | null;
-  timeWeightedReturn?: number | null;
+  simpleReturn?: number | null;
   maxDrawdown?: number | null;
   hasRiskMetrics?: boolean;
 }
@@ -521,7 +521,7 @@ export interface CompetitionAgent {
   voteCount: number; // Number of votes this agent has received
   // Risk-adjusted metrics (primarily for perps competitions)
   calmarRatio?: number | null;
-  timeWeightedReturn?: number | null;
+  simpleReturn?: number | null;
   maxDrawdown?: number | null;
   hasRiskMetrics?: boolean;
 }
@@ -882,7 +882,7 @@ export interface EnhancedCompetition extends Competition {
   };
   // Risk-adjusted metrics (primarily for perps competitions)
   calmarRatio?: number | null;
-  timeWeightedReturn?: number | null;
+  simpleReturn?: number | null;
   maxDrawdown?: number | null;
   hasRiskMetrics?: boolean;
 }

@@ -1232,31 +1232,29 @@ describe("Perps Competition", () => {
     }
   });
 
-  test("should calculate TWR and Calmar ratio with transfers", async () => {
+  test("should calculate Calmar ratio using simple returns", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register agent with the 0x4444 wallet that has transfers configured
+    // Register agent with the 0x4444 wallet that demonstrates portfolio volatility
     const { agent, client: agentClient } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
-        agentName: "TWR Test Agent",
+        agentName: "Calmar Test Agent",
         agentWalletAddress: "0x4444444444444444444444444444444444444444",
       });
 
     // Start perps competition with this agent
     const response = await startPerpsTestCompetition({
       adminClient,
-      name: `TWR/Calmar Test Competition ${Date.now()}`,
+      name: `Calmar Ratio Test Competition ${Date.now()}`,
       agentIds: [agent.id],
     });
 
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    // Wait a bit to ensure transfers happen AFTER competition start
-    // Our mock transfers are timestamped -0.5 and -0.3 seconds from "now"
-    // We need to wait so "now" is after competition start
+    // Wait to ensure competition is fully started
     await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
@@ -1297,13 +1295,13 @@ describe("Perps Competition", () => {
     // Verify risk metrics are present and calculated
     expect(agentEntry?.hasRiskMetrics).toBe(true);
     expect(agentEntry?.calmarRatio).not.toBeNull();
-    expect(agentEntry?.timeWeightedReturn).not.toBeNull();
+    expect(agentEntry?.simpleReturn).not.toBeNull();
     expect(agentEntry?.maxDrawdown).not.toBeNull();
 
-    // TWR calculation:
+    // Simple return calculation:
     // Portfolio goes from $1700 (first) → $1200 (trough) → $1550 (final)
-    // TWR = ($1550 / $1700) - 1 = -0.088 or -8.8%
-    expect(agentEntry?.timeWeightedReturn).toBeCloseTo(-0.088, 2);
+    // Simple Return = ($1550 / $1700) - 1 = -0.088 or -8.8%
+    expect(agentEntry?.simpleReturn).toBeCloseTo(-0.088, 2);
 
     // Max drawdown calculation:
     // Peak is $1700, trough is $1200
@@ -1321,22 +1319,22 @@ describe("Perps Competition", () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register multiple agents - one with transfers (0x4444), others without
-    const { agent: agentWithTWR } = await registerUserAndAgentAndGetClient({
+    // Register multiple agents with different portfolio performance
+    const { agent: agentVolatile } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Agent With TWR",
+      agentName: "Agent With Volatility",
       agentWalletAddress: "0x4444444444444444444444444444444444444444",
     });
 
-    const { agent: agentNoTWR1 } = await registerUserAndAgentAndGetClient({
+    const { agent: agentPositive } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Agent Without TWR 1",
+      agentName: "Agent With Positive PnL",
       agentWalletAddress: "0x1111111111111111111111111111111111111111",
     });
 
-    const { agent: agentNoTWR2 } = await registerUserAndAgentAndGetClient({
+    const { agent: agentNegative } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Agent Without TWR 2",
+      agentName: "Agent With Negative PnL",
       agentWalletAddress: "0x2222222222222222222222222222222222222222",
     });
 
@@ -1344,7 +1342,7 @@ describe("Perps Competition", () => {
     const response = await startPerpsTestCompetition({
       adminClient,
       name: `Calmar Ranking Test ${Date.now()}`,
-      agentIds: [agentWithTWR.id, agentNoTWR1.id, agentNoTWR2.id],
+      agentIds: [agentVolatile.id, agentPositive.id, agentNegative.id],
     });
 
     expect(response.success).toBe(true);
@@ -1362,7 +1360,7 @@ describe("Perps Competition", () => {
     // Wait a bit to ensure time passes between snapshots
     await wait(100);
 
-    // Second sync - creates second snapshot (needed for TWR calculation!)
+    // Second sync - creates second snapshot (needed for simple return calculation)
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
 
     await wait(500);
@@ -1373,25 +1371,25 @@ describe("Perps Competition", () => {
 
     const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
 
-    // Agent with Calmar ratio should be ranked first
-    // (even if another agent has higher total equity)
+    // Agent with worst Calmar ratio (volatility) should be ranked first
+    // (negative Calmar due to losses and high drawdown)
     const firstAgent = typedLeaderboard.leaderboard[0];
-    expect(firstAgent?.agentId).toBe(agentWithTWR.id);
+    expect(firstAgent?.agentId).toBe(agentVolatile.id);
     expect(firstAgent?.hasRiskMetrics).toBe(true);
     expect(firstAgent?.calmarRatio).not.toBeNull();
 
-    // Agents without Calmar should be ranked by total equity
+    // Other agents ranked by their Calmar ratios
     const secondAgent = typedLeaderboard.leaderboard[1];
     const thirdAgent = typedLeaderboard.leaderboard[2];
 
-    // 0x1111 has $1250 equity, 0x2222 has $950 equity
-    expect(secondAgent?.agentId).toBe(agentNoTWR1.id);
-    // Agent without transfers still has risk metrics (uses simple return)
+    // 0x1111 has $1250 equity (positive PnL), 0x2222 has $950 equity (negative PnL)
+    expect(secondAgent?.agentId).toBe(agentPositive.id);
+    // All agents have risk metrics calculated using simple returns
     expect(secondAgent?.hasRiskMetrics).toBe(true);
     expect(secondAgent?.calmarRatio).not.toBeNull();
 
-    expect(thirdAgent?.agentId).toBe(agentNoTWR2.id);
-    // Agent without transfers still has risk metrics (uses simple return)
+    expect(thirdAgent?.agentId).toBe(agentNegative.id);
+    // All agents have risk metrics calculated using simple returns
     expect(thirdAgent?.hasRiskMetrics).toBe(true);
     expect(thirdAgent?.calmarRatio).not.toBeNull();
   });
@@ -1400,7 +1398,7 @@ describe("Perps Competition", () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register agent with transfers
+    // Register agent with volatile portfolio for risk metrics testing
     const { agent, client: agentClient } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -1446,26 +1444,26 @@ describe("Perps Competition", () => {
     // Verify risk metrics are included
     expect(perpsComp?.hasRiskMetrics).toBe(true);
     expect(perpsComp?.calmarRatio).not.toBeNull();
-    expect(perpsComp?.timeWeightedReturn).not.toBeNull();
+    expect(perpsComp?.simpleReturn).not.toBeNull();
     expect(perpsComp?.maxDrawdown).not.toBeNull();
   });
 
-  test("should calculate risk metrics for agents without transfers using simple return", async () => {
+  test("should calculate risk metrics using simple return for all agents", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register agent without transfers (0x3333)
+    // Register agent with flat performance (0x3333)
     const { agent, client: agentClient } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
-        agentName: "No Transfers Agent",
+        agentName: "Flat Performance Agent",
         agentWalletAddress: "0x3333333333333333333333333333333333333333",
       });
 
     // Start perps competition
     const response = await startPerpsTestCompetition({
       adminClient,
-      name: `No Transfers Test ${Date.now()}`,
+      name: `Simple Return Test ${Date.now()}`,
       agentIds: [agent.id],
     });
 
@@ -1486,14 +1484,14 @@ describe("Perps Competition", () => {
       (entry) => entry.agentId === agent.id,
     );
 
-    // Agent should have risk metrics even without transfers (uses simple return)
+    // Agent should have risk metrics calculated using simple return
     expect(agentEntry).toBeDefined();
     expect(agentEntry?.hasRiskMetrics).toBe(true);
     expect(agentEntry?.calmarRatio).not.toBeNull();
-    expect(agentEntry?.timeWeightedReturn).not.toBeNull(); // Simple return
+    expect(agentEntry?.simpleReturn).not.toBeNull(); // Simple return
     expect(agentEntry?.maxDrawdown).not.toBeNull();
 
-    // Should still be ranked by total equity
+    // Portfolio value should match mock data
     expect(agentEntry?.portfolioValue).toBe(1100);
   });
 });

@@ -162,10 +162,10 @@ export const upsertRiskMetrics = createTimedRepositoryFunction(
   "upsertRiskMetrics",
 );
 
-export const saveTwrPeriods = createTimedRepositoryFunction(
-  repository.saveTwrPeriods.bind(repository),
+export const saveRiskMetrics = createTimedRepositoryFunction(
+  repository.saveRiskMetrics.bind(repository),
   "PerpsRepository",
-  "saveTwrPeriods",
+  "saveRiskMetrics",
 );
 
 export const getCompetitionRiskMetricsLeaderboard =
@@ -185,10 +185,4 @@ export const getBulkAgentRiskMetrics = createTimedRepositoryFunction(
   repository.getBulkAgentRiskMetrics.bind(repository),
   "PerpsRepository",
   "getBulkAgentRiskMetrics",
-);
-
-export const saveRiskMetricsWithPeriods = createTimedRepositoryFunction(
-  repository.saveRiskMetricsWithPeriods.bind(repository),
-  "PerpsRepository",
-  "saveRiskMetricsWithPeriods",
 );

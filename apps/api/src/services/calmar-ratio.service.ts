@@ -3,44 +3,40 @@ import { Decimal } from "decimal.js";
 import type {
   InsertPerpsRiskMetrics,
   SelectPerpsRiskMetrics,
-  SelectPerpsTwrPeriod,
 } from "@recallnet/db/schema/trading/types";
 
 import {
   calculateMaxDrawdownSQL,
   findById as findCompetitionById,
+  getFirstAndLastSnapshots,
 } from "@/database/repositories/competition-repository.js";
-import { saveRiskMetricsWithPeriods } from "@/database/repositories/perps-repository.js";
+import { saveRiskMetrics } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { TWRCalculatorService } from "@/services/twr-calculator.service.js";
 
 /**
  * Result of calculating and saving risk metrics
  */
 export interface RiskMetricsResult {
   metrics: SelectPerpsRiskMetrics;
-  periods: SelectPerpsTwrPeriod[];
 }
 
 /**
  * Service for calculating Calmar Ratio and other risk metrics
  * Calmar Ratio = Annualized Return / Max Drawdown
+ *
+ * NOTE: Mid-competition transfers are now PROHIBITED
+ * This service uses simple returns since agents cannot add/withdraw funds during competitions
  */
 export class CalmarRatioService {
   private readonly DAYS_PER_YEAR = 365; // Calendar days for annualization
-  private readonly twrCalculator: TWRCalculatorService;
-
-  constructor() {
-    this.twrCalculator = new TWRCalculatorService();
-  }
 
   /**
    * Calculate and persist Calmar Ratio with all risk metrics
-   * Uses Time-Weighted Returns to neutralize deposit/withdrawal effects
+   * Uses simple returns: (endValue/startValue) - 1
    *
    * @param agentId Agent ID
    * @param competitionId Competition ID
-   * @returns Saved risk metrics with TWR periods
+   * @returns Saved risk metrics
    */
   async calculateAndSaveCalmarRatio(
     agentId: string,
@@ -70,19 +66,32 @@ export class CalmarRatioService {
         `[CalmarRatio] Competition period: ${startDate.toISOString()} to ${endDate.toISOString()}`,
       );
 
-      // 2. Calculate TWR (or simple return for agents without transfers)
-      // The TWR calculator handles both cases:
-      // - No transfers: Returns simple return (end/start - 1)
-      // - With transfers: Returns time-weighted return that neutralizes cash flows
-      const twrResult = await this.twrCalculator.calculateTWR(
-        agentId,
-        competitionId,
-        startDate,
-        endDate,
-      );
+      // 2. Calculate simple return from first and last portfolio snapshots
+      // Since transfers are prohibited, we can use simple return: (endValue/startValue) - 1
+      const { first: startSnapshot, last: endSnapshot } =
+        await getFirstAndLastSnapshots(competitionId, agentId);
+
+      if (!startSnapshot || !endSnapshot) {
+        serviceLogger.warn(
+          `[CalmarRatio] No portfolio snapshots found for agent ${agentId}`,
+        );
+        throw new Error("Insufficient data: No portfolio snapshots found");
+      }
+
+      const startValue = new Decimal(startSnapshot.totalValue);
+      const endValue = new Decimal(endSnapshot.totalValue);
+
+      if (startValue.isZero()) {
+        serviceLogger.warn(
+          `[CalmarRatio] Starting value is zero for agent ${agentId}`,
+        );
+        throw new Error("Invalid data: Starting portfolio value is zero");
+      }
+
+      const simpleReturn = endValue.minus(startValue).dividedBy(startValue);
 
       serviceLogger.debug(
-        `[CalmarRatio] TWR calculated: ${(twrResult.timeWeightedReturn * 100).toFixed(4)}% with ${twrResult.periods.length} periods (${twrResult.transferCount} transfers)`,
+        `[CalmarRatio] Simple return calculated: ${(simpleReturn.toNumber() * 100).toFixed(4)}% (${startValue.toFixed(2)} → ${endValue.toFixed(2)})`,
       );
 
       // 3. Calculate Max Drawdown using SQL
@@ -101,7 +110,7 @@ export class CalmarRatioService {
       const daysInPeriod =
         (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
       const annualizedReturn = this.annualizeReturn(
-        twrResult.timeWeightedReturn,
+        simpleReturn.toNumber(),
         daysInPeriod,
       );
 
@@ -116,39 +125,27 @@ export class CalmarRatioService {
       );
 
       serviceLogger.info(
-        `[CalmarRatio] Calculated metrics for agent ${agentId}: Calmar=${calmarRatio.toFixed(4)}, TWR=${(twrResult.timeWeightedReturn * 100).toFixed(2)}%, Drawdown=${(maxDrawdown * 100).toFixed(2)}%`,
+        `[CalmarRatio] Calculated metrics for agent ${agentId}: Calmar=${calmarRatio.toFixed(4)}, Return=${(simpleReturn.toNumber() * 100).toFixed(2)}%, Drawdown=${(maxDrawdown * 100).toFixed(2)}%`,
       );
 
-      // 6. Save everything atomically
+      // 6. Save risk metrics
       const metricsData: InsertPerpsRiskMetrics = {
         agentId,
         competitionId,
-        timeWeightedReturn: twrResult.timeWeightedReturn.toFixed(8),
+        simpleReturn: simpleReturn.toFixed(8),
         calmarRatio: calmarRatio.toFixed(8),
         annualizedReturn: annualizedReturn.toFixed(8),
         maxDrawdown: maxDrawdown.toFixed(8),
-        transferCount: twrResult.transferCount,
-        periodCount: twrResult.periods.length,
-        snapshotCount: twrResult.snapshotCount,
+        snapshotCount: 2, // We only use first and last snapshots
       };
 
-      const periodsData = twrResult.periods.map((period) => ({
-        periodStart: period.periodStart,
-        periodEnd: period.periodEnd,
-        periodReturn: period.periodReturn.toFixed(8),
-        startingEquity: period.startingEquity.toFixed(2),
-        endingEquity: period.endingEquity.toFixed(2),
-        transferId: period.transferId,
-        sequenceNumber: period.sequenceNumber,
-      }));
-
-      const result = await saveRiskMetricsWithPeriods(metricsData, periodsData);
+      const savedMetrics = await saveRiskMetrics(metricsData);
 
       serviceLogger.info(
-        `[CalmarRatio] Saved risk metrics and ${periodsData.length} TWR periods for agent ${agentId}`,
+        `[CalmarRatio] Saved risk metrics for agent ${agentId}`,
       );
 
-      return result;
+      return { metrics: savedMetrics };
     } catch (error) {
       serviceLogger.error(
         `[CalmarRatio] Error calculating Calmar Ratio for agent ${agentId}:`,

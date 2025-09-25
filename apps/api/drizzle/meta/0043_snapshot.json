@@ -1,5 +1,5 @@
 {
-  "id": "c60a9b75-7f39-4f6b-b48e-a04409690ab0",
+  "id": "6624cd21-e646-4b3a-8aa7-8f2525140cc0",
   "prevId": "5d83b2d4-3cc6-4e9b-b6df-938a0a9c644e",
   "version": "7",
   "dialect": "postgresql",
@@ -2907,8 +2907,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "time_weighted_return": {
-          "name": "time_weighted_return",
+        "simple_return": {
+          "name": "simple_return",
           "type": "numeric",
           "primaryKey": false,
           "notNull": true
@@ -2930,20 +2930,6 @@
           "type": "numeric",
           "primaryKey": false,
           "notNull": true
-        },
-        "transfer_count": {
-          "name": "transfer_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "period_count": {
-          "name": "period_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
         },
         "calculation_timestamp": {
           "name": "calculation_timestamp",
@@ -3268,18 +3254,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "equity_before": {
-          "name": "equity_before",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "equity_after": {
-          "name": "equity_after",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": true
-        },
         "transfer_timestamp": {
           "name": "transfer_timestamp",
           "type": "timestamp with time zone",
@@ -3378,132 +3352,6 @@
           "columns": ["tx_hash"]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "trading_comps.perps_twr_periods": {
-      "name": "perps_twr_periods",
-      "schema": "trading_comps",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "metrics_id": {
-          "name": "metrics_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "period_start": {
-          "name": "period_start",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "period_end": {
-          "name": "period_end",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "period_return": {
-          "name": "period_return",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "starting_equity": {
-          "name": "starting_equity",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "ending_equity": {
-          "name": "ending_equity",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "transfer_id": {
-          "name": "transfer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sequence_number": {
-          "name": "sequence_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "idx_twr_periods_metrics": {
-          "name": "idx_twr_periods_metrics",
-          "columns": [
-            {
-              "expression": "metrics_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_twr_periods_sequence": {
-          "name": "idx_twr_periods_sequence",
-          "columns": [
-            {
-              "expression": "metrics_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "sequence_number",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "perps_twr_periods_metrics_id_perps_risk_metrics_id_fk": {
-          "name": "perps_twr_periods_metrics_id_perps_risk_metrics_id_fk",
-          "tableFrom": "perps_twr_periods",
-          "tableTo": "perps_risk_metrics",
-          "schemaTo": "trading_comps",
-          "columnsFrom": ["metrics_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "perps_twr_periods_transfer_id_perps_transfer_history_id_fk": {
-          "name": "perps_twr_periods_transfer_id_perps_transfer_history_id_fk",
-          "tableFrom": "perps_twr_periods",
-          "tableTo": "perps_transfer_history",
-          "schemaTo": "trading_comps",
-          "columnsFrom": ["transfer_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

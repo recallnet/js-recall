@@ -1344,8 +1344,9 @@ export class CompetitionRepository {
   }
 
   /**
-   * Get first and last portfolio snapshots for TWR calculation
+   * Get first and last portfolio snapshots for simple return calculation
    * This is optimized to fetch only the boundary snapshots
+   * Used for calculating simple returns: (endValue/startValue) - 1
    * @param competitionId Competition ID
    * @param agentId Agent ID
    * @returns Object with first and last snapshots

@@ -19,7 +19,6 @@ import {
   perpsRiskMetrics,
   perpsSelfFundingAlerts,
   perpsTransferHistory,
-  perpsTwrPeriods,
 } from "../schema/trading/defs.js";
 import {
   InsertPerpetualPosition,
@@ -28,7 +27,6 @@ import {
   InsertPerpsRiskMetrics,
   InsertPerpsSelfFundingAlert,
   InsertPerpsTransferHistory,
-  InsertPerpsTwrPeriod,
   RiskAdjustedLeaderboardEntry,
   SelectPerpetualPosition,
   SelectPerpsAccountSummary,
@@ -36,7 +34,6 @@ import {
   SelectPerpsRiskMetrics,
   SelectPerpsSelfFundingAlert,
   SelectPerpsTransferHistory,
-  SelectPerpsTwrPeriod,
 } from "../schema/trading/types.js";
 import { Database, Transaction } from "../types.js";
 
@@ -796,7 +793,7 @@ export class PerpsRepository {
         .select({
           agentId: perpsRiskMetrics.agentId,
           calmarRatio: perpsRiskMetrics.calmarRatio,
-          timeWeightedReturn: perpsRiskMetrics.timeWeightedReturn,
+          simpleReturn: perpsRiskMetrics.simpleReturn,
           maxDrawdown: perpsRiskMetrics.maxDrawdown,
         })
         .from(perpsRiskMetrics)
@@ -816,7 +813,7 @@ export class PerpsRepository {
           totalEquity: latestSummarySubquery.totalEquity,
           totalPnl: latestSummarySubquery.totalPnl,
           calmarRatio: riskMetricsSubquery.calmarRatio,
-          timeWeightedReturn: riskMetricsSubquery.timeWeightedReturn,
+          simpleReturn: riskMetricsSubquery.simpleReturn,
           maxDrawdown: riskMetricsSubquery.maxDrawdown,
         })
         .from(activeAgents)
@@ -839,7 +836,7 @@ export class PerpsRepository {
           totalEquity: row.totalEquity || "0",
           totalPnl: row.totalPnl,
           calmarRatio: row.calmarRatio,
-          timeWeightedReturn: row.timeWeightedReturn,
+          simpleReturn: row.simpleReturn,
           maxDrawdown: row.maxDrawdown,
           hasRiskMetrics: row.calmarRatio !== null,
         }));
@@ -1136,8 +1133,9 @@ export class PerpsRepository {
   // =============================================================================
 
   /**
-   * Save transfer history with equity snapshots
-   * @param transfer Transfer data with equity snapshots
+   * Save transfer history for violation detection and audit
+   * NOTE: Mid-competition transfers are PROHIBITED
+   * @param transfer Transfer data
    * @param tx Optional transaction
    * @returns Created transfer record
    */
@@ -1212,12 +1210,11 @@ export class PerpsRepository {
    * NOTE: This method intentionally has NO LIMIT on results. While this could
    * theoretically cause memory issues with thousands of transfers, in practice:
    * 1. Competitions are typically 1 week long
-   * 2. Agents focus on trading, not constant self-funding
-   * 3. Even 100 transfers/day would only be 700 records (~100KB)
-   * 4. We need ALL transfers for accurate TWR calculation
+   * 2. Mid-competition transfers are violations - should be rare
+   * 3. Even 100 transfers would only be ~10KB
+   * 4. We need ALL transfers for violation detection and admin review
    *
-   * If this becomes an issue in production, consider implementing streaming
-   * or pagination with careful TWR period management.
+   * If this becomes an issue in production, consider implementing pagination.
    *
    * @param agentId Agent ID
    * @param competitionId Competition ID
@@ -1280,12 +1277,10 @@ export class PerpsRepository {
         .onConflictDoUpdate({
           target: [perpsRiskMetrics.agentId, perpsRiskMetrics.competitionId],
           set: {
-            timeWeightedReturn: metrics.timeWeightedReturn,
+            simpleReturn: metrics.simpleReturn,
             calmarRatio: metrics.calmarRatio,
             annualizedReturn: metrics.annualizedReturn,
             maxDrawdown: metrics.maxDrawdown,
-            transferCount: metrics.transferCount,
-            periodCount: metrics.periodCount,
             snapshotCount: metrics.snapshotCount,
             calculationTimestamp: sql`CURRENT_TIMESTAMP`,
           },
@@ -1303,63 +1298,6 @@ export class PerpsRepository {
       return result;
     } catch (error) {
       this.#logger.error("Error in upsertRiskMetrics:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Save TWR periods for risk metrics
-   * @param metricsId Risk metrics ID
-   * @param periods Array of TWR periods
-   * @param tx Optional transaction
-   * @returns Saved TWR periods
-   */
-  async saveTwrPeriods(
-    metricsId: string,
-    periods: Omit<InsertPerpsTwrPeriod, "id" | "metricsId">[],
-    tx?: Transaction,
-  ): Promise<SelectPerpsTwrPeriod[]> {
-    if (periods.length === 0) {
-      return [];
-    }
-
-    try {
-      const executor = tx || this.#db;
-
-      // Delete existing periods for this metrics ID
-      await executor
-        .delete(perpsTwrPeriods)
-        .where(eq(perpsTwrPeriods.metricsId, metricsId));
-
-      // Insert new periods in batches
-      const BATCH_SIZE = 500;
-      const allResults: SelectPerpsTwrPeriod[] = [];
-
-      // Map periods with metricsId
-      const periodsToInsert = periods.map((p) => ({
-        ...p,
-        metricsId,
-      }));
-
-      // Process in batches
-      for (let i = 0; i < periodsToInsert.length; i += BATCH_SIZE) {
-        const batch = periodsToInsert.slice(i, i + BATCH_SIZE);
-
-        const results = await executor
-          .insert(perpsTwrPeriods)
-          .values(batch)
-          .returning();
-
-        allResults.push(...results);
-      }
-
-      this.#logger.debug(
-        `[PerpsRepository] Saved ${allResults.length} TWR periods for metrics ${metricsId} in ${Math.ceil(periodsToInsert.length / BATCH_SIZE)} batches`,
-      );
-
-      return allResults;
-    } catch (error) {
-      this.#logger.error("Error in saveTwrPeriods:", error);
       throw error;
     }
   }
@@ -1390,12 +1328,10 @@ export class PerpsRepository {
           id: perpsRiskMetrics.id,
           agentId: perpsRiskMetrics.agentId,
           competitionId: perpsRiskMetrics.competitionId,
-          timeWeightedReturn: perpsRiskMetrics.timeWeightedReturn,
+          simpleReturn: perpsRiskMetrics.simpleReturn,
           calmarRatio: perpsRiskMetrics.calmarRatio,
           annualizedReturn: perpsRiskMetrics.annualizedReturn,
           maxDrawdown: perpsRiskMetrics.maxDrawdown,
-          transferCount: perpsRiskMetrics.transferCount,
-          periodCount: perpsRiskMetrics.periodCount,
           calculationTimestamp: perpsRiskMetrics.calculationTimestamp,
           snapshotCount: perpsRiskMetrics.snapshotCount,
           agent: {
@@ -1433,42 +1369,14 @@ export class PerpsRepository {
   }
 
   /**
-   * Atomic operation to save risk metrics with periods
-   * @param metrics Risk metrics
-   * @param periods TWR periods
-   * @returns Saved metrics and periods
+   * Save risk metrics for an agent
+   * @param metrics Risk metrics to save
+   * @returns Saved risk metrics
    */
-  async saveRiskMetricsWithPeriods(
+  async saveRiskMetrics(
     metrics: InsertPerpsRiskMetrics,
-    periods: Omit<InsertPerpsTwrPeriod, "id" | "metricsId">[],
-  ): Promise<{
-    metrics: SelectPerpsRiskMetrics;
-    periods: SelectPerpsTwrPeriod[];
-  }> {
-    return await this.#db.transaction(async (tx) => {
-      try {
-        // Save or update risk metrics
-        const savedMetrics = await this.upsertRiskMetrics(metrics, tx);
-
-        // Save TWR periods
-        const savedPeriods = await this.saveTwrPeriods(
-          savedMetrics.id,
-          periods,
-          tx,
-        );
-
-        return {
-          metrics: savedMetrics,
-          periods: savedPeriods,
-        };
-      } catch (error) {
-        this.#logger.error(
-          "Error in saveRiskMetricsWithPeriods transaction:",
-          error,
-        );
-        throw error;
-      }
-    });
+  ): Promise<SelectPerpsRiskMetrics> {
+    return this.upsertRiskMetrics(metrics);
   }
 
   /**
@@ -1496,7 +1404,7 @@ export class PerpsRepository {
           ),
         );
 
-      // Convert to Map for O(1) lookups
+      // Convert to Map
       const metricsMap = new Map<string, SelectPerpsRiskMetrics>();
       for (const metric of results) {
         metricsMap.set(metric.competitionId, metric);
