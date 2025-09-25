@@ -739,6 +739,32 @@ export class PerpsRepository {
   }
 
   // =============================================================================
+  // HELPER METHODS
+  // =============================================================================
+
+  /**
+   * Get active agents subquery for a competition
+   * Reusable subquery
+   * @param competitionId Competition ID to filter by
+   * @returns Subquery for active agents
+   * @private
+   */
+  private getActiveAgentsSubquery(competitionId: string) {
+    return this.#dbRead
+      .select({
+        agentId: competitionAgents.agentId,
+      })
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.status, "active"),
+        ),
+      )
+      .as("active_agents");
+  }
+
+  // =============================================================================
   // AGGREGATION QUERIES
   // =============================================================================
 
@@ -756,19 +782,8 @@ export class PerpsRepository {
     offset = 0,
   ): Promise<RiskAdjustedLeaderboardEntry[]> {
     try {
-      // Get active agents subquery (same pattern as below method)
-      const activeAgents = this.#dbRead
-        .select({
-          agentId: competitionAgents.agentId,
-        })
-        .from(competitionAgents)
-        .where(
-          and(
-            eq(competitionAgents.competitionId, competitionId),
-            eq(competitionAgents.status, "active"),
-          ),
-        )
-        .as("active_agents");
+      // Get active agents subquery
+      const activeAgents = this.getActiveAgentsSubquery(competitionId);
 
       // Latest summary subquery for lateral join
       const latestSummarySubquery = this.#dbRead
@@ -863,18 +878,7 @@ export class PerpsRepository {
   ): Promise<SelectPerpsAccountSummary[]> {
     try {
       // Get active agents first, then use lateral join to get their latest summaries
-      const activeAgents = this.#dbRead
-        .select({
-          agentId: competitionAgents.agentId,
-        })
-        .from(competitionAgents)
-        .where(
-          and(
-            eq(competitionAgents.competitionId, competitionId),
-            eq(competitionAgents.status, "active"),
-          ),
-        )
-        .as("active_agents");
+      const activeAgents = this.getActiveAgentsSubquery(competitionId);
 
       // Create subquery for lateral join - gets the latest summary for each agent
       const latestSummarySubquery = this.#dbRead
