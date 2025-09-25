@@ -4472,6 +4472,25 @@
                             "description": "Agent's profit/loss percentage in this competition",
                             "example": 5.01
                           },
+                          "calmarRatio": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions"
+                          },
+                          "timeWeightedReturn": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Time-weighted return accounting for deposits/withdrawals - only for perps competitions"
+                          },
+                          "maxDrawdown": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Maximum observed loss from peak (negative value) - only for perps competitions"
+                          },
+                          "hasRiskMetrics": {
+                            "type": "boolean",
+                            "description": "Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)"
+                          },
                           "competitionType": {
                             "type": "string",
                             "enum": ["trading", "perpetual_futures"],
@@ -5107,6 +5126,25 @@
                             "type": "string",
                             "nullable": true,
                             "description": "Always null for active agents"
+                          },
+                          "calmarRatio": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions"
+                          },
+                          "timeWeightedReturn": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Time-weighted return accounting for deposits/withdrawals - only for perps competitions"
+                          },
+                          "maxDrawdown": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Maximum observed loss from peak (negative value) - only for perps competitions"
+                          },
+                          "hasRiskMetrics": {
+                            "type": "boolean",
+                            "description": "Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)"
                           }
                         }
                       }
@@ -6088,6 +6126,25 @@
                           "voteCount": {
                             "type": "integer",
                             "description": "Number of votes this agent has received in the competition"
+                          },
+                          "calmarRatio": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions"
+                          },
+                          "timeWeightedReturn": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Time-weighted return accounting for deposits/withdrawals - only for perps competitions"
+                          },
+                          "maxDrawdown": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Maximum observed loss from peak (negative value) - only for perps competitions"
+                          },
+                          "hasRiskMetrics": {
+                            "type": "boolean",
+                            "description": "Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)"
                           }
                         }
                       }
@@ -7255,32 +7312,32 @@
                       "type": "object",
                       "description": "Status of individual services",
                       "properties": {
-                        "priceTracker": {
+                        "priceTrackerService": {
                           "type": "string",
                           "description": "Status of the price tracker service",
                           "example": "ok"
                         },
-                        "balanceManager": {
+                        "balanceService": {
                           "type": "string",
                           "description": "Status of the balance manager service",
                           "example": "ok"
                         },
-                        "tradeSimulator": {
+                        "tradeSimulatorService": {
                           "type": "string",
                           "description": "Status of the trade simulator service",
                           "example": "ok"
                         },
-                        "competitionManager": {
+                        "competitionService": {
                           "type": "string",
                           "description": "Status of the competition manager service",
                           "example": "ok"
                         },
-                        "userManager": {
+                        "userService": {
                           "type": "string",
                           "description": "Status of the user manager service",
                           "example": "ok"
                         },
-                        "agentManager": {
+                        "agentService": {
                           "type": "string",
                           "description": "Status of the agent manager service"
                         }
