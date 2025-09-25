@@ -549,11 +549,13 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should create fallback txHash
+        // Should create fallback txHash with agentId, timestamp, type, amount, index, and current time
         expect(perpsRepo.batchSaveTransferHistory).toHaveBeenCalledWith(
           expect.arrayContaining([
             expect.objectContaining({
-              txHash: "2024-01-15T10:00:00.000Z-deposit-100", // Fallback format
+              txHash: expect.stringMatching(
+                /^agent-1-2024-01-15T10:00:00\.000Z-deposit-100-0-\d+$/,
+              ), // Fallback format with unique components
             }),
           ]),
         );

@@ -557,7 +557,7 @@ export class PerpsMonitoringService {
     try {
       // Transform Transfer objects to InsertPerpsTransferHistory format
       const transferRecords: InsertPerpsTransferHistory[] = transfers.map(
-        (t) => ({
+        (t, index) => ({
           agentId,
           competitionId,
           type: t.type,
@@ -566,7 +566,8 @@ export class PerpsMonitoringService {
           fromAddress: t.from,
           toAddress: t.to,
           txHash:
-            t.txHash || `${t.timestamp.toISOString()}-${t.type}-${t.amount}`, // Fallback for missing txHash
+            t.txHash ||
+            `${agentId}-${t.timestamp.toISOString()}-${t.type}-${t.amount}-${index}-${Date.now()}`, // Unique fallback including agentId, index, and timestamp
           chainId: t.chainId || 0, // Default to 0 if not provided
           transferTimestamp: t.timestamp,
         }),
