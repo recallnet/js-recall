@@ -2,12 +2,6 @@
 
 import Image from "next/image";
 import React from "react";
-import {
-  FaDiscord,
-  //FaReddit,
-  FaYoutube,
-} from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
