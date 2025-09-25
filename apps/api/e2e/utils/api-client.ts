@@ -59,6 +59,7 @@ import {
   TradeResponse,
   TradingConstraints,
   UpcomingCompetitionsResponse,
+  UpdateCompetitionResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
   UserMetadata,
@@ -578,6 +579,63 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "create competition");
+    }
+  }
+
+  /**
+   * Update a competition (admin only)
+   */
+  async updateCompetition(
+    competitionId: string,
+    {
+      name,
+      description,
+      type,
+      externalUrl,
+      imageUrl,
+      votingStartDate,
+      votingEndDate,
+      tradingConstraints,
+      rewards,
+      perpsProvider,
+    }: {
+      name?: string;
+      description?: string;
+      type?: string;
+      externalUrl?: string;
+      imageUrl?: string;
+      votingStartDate?: string;
+      votingEndDate?: string;
+      tradingConstraints?: TradingConstraints;
+      rewards?: Record<number, number>;
+      perpsProvider?: {
+        provider: "symphony" | "hyperliquid";
+        initialCapital?: number;
+        selfFundingThreshold?: number;
+        apiUrl?: string;
+      };
+    },
+  ): Promise<UpdateCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competition/${competitionId}`,
+        {
+          name,
+          description,
+          type,
+          externalUrl,
+          imageUrl,
+          votingStartDate,
+          votingEndDate,
+          tradingConstraints,
+          rewards,
+          perpsProvider,
+        },
+      );
+
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update competition");
     }
   }
 

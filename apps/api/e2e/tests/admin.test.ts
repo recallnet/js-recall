@@ -20,8 +20,12 @@ import {
   AdminUsersListResponse,
   AgentProfileResponse,
   ApiResponse,
+  CompetitionAgentsResponse,
+  CompetitionDetailResponse,
+  CreateCompetitionResponse,
   ErrorResponse,
   LeaderboardResponse,
+  UpdateCompetitionResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
 import { generateRandomPrivyId } from "@/e2e/utils/privy.js";
@@ -2032,5 +2036,217 @@ describe("Admin API", () => {
     expect(rewards).toHaveLength(4);
     expect(rewards[0]?.reward).toBe(10000);
     expect(rewards[3]?.reward).toBe(1000);
+  });
+
+  test("should convert pending competition from spot trading to perps", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a spot trading competition
+    const createResponse = await adminClient.createCompetition({
+      name: "Competition To Convert to Perps",
+      description: "Test converting spot to perps",
+      type: "trading",
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Verify it's a trading competition
+    const detailsBeforeUpdate = await adminClient.getCompetition(competitionId);
+    expect(detailsBeforeUpdate.success).toBe(true);
+    expect(
+      (detailsBeforeUpdate as CompetitionDetailResponse).competition.type,
+    ).toBe("trading");
+
+    // Convert to perps type
+    const updateResponse = await adminClient.updateCompetition(competitionId, {
+      type: "perpetual_futures",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect((updateResponse as UpdateCompetitionResponse).competition.type).toBe(
+      "perpetual_futures",
+    );
+
+    // Verify the type has changed
+    const detailsAfterUpdate = await adminClient.getCompetition(competitionId);
+    expect(detailsAfterUpdate.success).toBe(true);
+    expect(
+      (detailsAfterUpdate as CompetitionDetailResponse).competition.type,
+    ).toBe("perpetual_futures");
+  });
+
+  test("should convert pending competition from perps to spot trading", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a perps competition
+    const createResponse = await createPerpsTestCompetition({
+      adminClient,
+      name: "Perps Competition To Convert to Spot",
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
+
+    // Verify it's a perps competition
+    const detailsBeforeUpdate = await adminClient.getCompetition(competitionId);
+    expect(detailsBeforeUpdate.success).toBe(true);
+    expect(
+      (detailsBeforeUpdate as CompetitionDetailResponse).competition.type,
+    ).toBe("perpetual_futures");
+
+    // Convert to spot trading type
+    const updateResponse = await adminClient.updateCompetition(competitionId, {
+      type: "trading",
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect((updateResponse as UpdateCompetitionResponse).competition.type).toBe(
+      "trading",
+    );
+
+    // Verify the type has changed
+    const detailsAfterUpdate = await adminClient.getCompetition(competitionId);
+    expect(detailsAfterUpdate.success).toBe(true);
+    expect(
+      (detailsAfterUpdate as CompetitionDetailResponse).competition.type,
+    ).toBe("trading");
+  });
+
+  test("should not allow converting active competition type", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create and start a spot trading competition
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent for Active Competition",
+    });
+
+    const startResponse = await startTestCompetition({
+      adminClient,
+      name: "Active Competition - No Type Change",
+      agentIds: [agent.id],
+    });
+
+    expect(startResponse.success).toBe(true);
+    const competitionId = startResponse.competition.id;
+
+    // Verify it's active
+    expect(startResponse.competition.status).toBe("active");
+
+    // Try to convert to perps (should fail)
+    const updateResponse = await adminClient.updateCompetition(competitionId, {
+      type: "perpetual_futures",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    // Should fail with appropriate error
+    expect(updateResponse.success).toBe(false);
+    expect((updateResponse as ErrorResponse).error).toContain(
+      "Cannot change competition type once it has started",
+    );
+  });
+
+  test("should require perpsProvider when converting to perpetual_futures", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a spot trading competition
+    const createResponse = await adminClient.createCompetition({
+      name: "Competition Missing PerpsProvider",
+      description: "Test missing perpsProvider validation",
+      type: "trading",
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Try to convert to perps without providing perpsProvider (should fail)
+    const updateResponse = await adminClient.updateCompetition(competitionId, {
+      type: "perpetual_futures",
+      // Intentionally not providing perpsProvider
+    });
+
+    // Should fail with validation error
+    expect(updateResponse.success).toBe(false);
+    expect((updateResponse as ErrorResponse).error).toContain("perpsProvider");
+  });
+
+  test("should allow type conversion for pending competition with registered agents", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 1 for Type Conversion",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 2 for Type Conversion",
+    });
+
+    // Create a pending competition
+    const createResponse = await adminClient.createCompetition({
+      name: "Pending Competition With Agents",
+      description: "Test type conversion with registered agents",
+      type: "trading",
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add agents to the competition
+    await adminClient.addAgentToCompetition(competitionId, agent1.id);
+    await adminClient.addAgentToCompetition(competitionId, agent2.id);
+
+    // Verify agents are registered
+    const agentsResponse =
+      await adminClient.getCompetitionAgents(competitionId);
+    expect(agentsResponse.success).toBe(true);
+    expect((agentsResponse as CompetitionAgentsResponse).agents).toHaveLength(
+      2,
+    );
+
+    // Convert to perps type (should succeed even with registered agents)
+    const updateResponse = await adminClient.updateCompetition(competitionId, {
+      type: "perpetual_futures",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 500,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect((updateResponse as UpdateCompetitionResponse).competition.type).toBe(
+      "perpetual_futures",
+    );
+
+    // Verify agents are still registered
+    const agentsAfterConversion =
+      await adminClient.getCompetitionAgents(competitionId);
+    expect(agentsAfterConversion.success).toBe(true);
+    expect(
+      (agentsAfterConversion as CompetitionAgentsResponse).agents,
+    ).toHaveLength(2);
   });
 });
