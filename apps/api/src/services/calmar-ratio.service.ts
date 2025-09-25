@@ -178,6 +178,12 @@ export class CalmarRatioService {
 
     const yearsInPeriod = daysInPeriod / this.DAYS_PER_YEAR;
 
+    // If period is exactly 1 year, return the period return directly
+    // This avoids pow() operation for the common case
+    if (Math.abs(yearsInPeriod - 1) < 0.0001) {
+      return periodReturn;
+    }
+
     // Use Decimal for precise calculation
     const onePlusReturn = new Decimal(1).plus(periodReturn);
     const exponent = new Decimal(1).div(yearsInPeriod);

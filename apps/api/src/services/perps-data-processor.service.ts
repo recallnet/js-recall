@@ -821,7 +821,13 @@ export class PerpsDataProcessor {
           batchFailures++;
 
           const agent = batch[idx];
-          const errorMsg = `Agent ${agent?.agentId}: ${result.reason?.message || "Unknown error"}`;
+          if (!agent) {
+            serviceLogger.error(
+              `[PerpsDataProcessor] Batch index mismatch at index ${idx}`,
+            );
+            return;
+          }
+          const errorMsg = `Agent ${agent.agentId}: ${result.reason?.message || "Unknown error"}`;
 
           // Only store first N errors to prevent memory issues
           if (results.errors.length < MAX_ERRORS_TO_STORE) {
