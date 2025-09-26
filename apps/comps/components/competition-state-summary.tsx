@@ -126,16 +126,16 @@ export const CompetitionStateSummary: React.FC<
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
 
       return {
-        text: "Voting closes in",
+        text: "Boosting closes in",
         color: "text-green-500",
         date: votingEndDate,
         showCountdown: isLessThan24Hours,
       };
     }
 
-    // 4. Voting is closed (grey)
+    // 4. Boosting is closed (grey)
     return {
-      text: "Voting is closed",
+      text: "Boosting is closed",
       color: "text-gray-500",
       date: null,
       showCountdown: false,
