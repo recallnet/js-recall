@@ -5,8 +5,8 @@ import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminSearchUsersAndAgentsResponse,
   AdminUsersListResponse,
-  Agent,
   AgentProfileResponse,
+  AgentResponse,
   CROSS_CHAIN_TRADING_TYPE,
   CreateCompetitionResponse,
   ErrorResponse,
@@ -729,9 +729,9 @@ describe("User API", () => {
     expect(page3Agents).toHaveLength(2);
 
     // Verify no overlap between pages by checking agent IDs
-    const page1Ids = page1Agents.map((a: Agent) => a.id);
-    const page2Ids = page2Agents.map((a: Agent) => a.id);
-    const page3Ids = page3Agents.map((a: Agent) => a.id);
+    const page1Ids = page1Agents.map((a: AgentResponse) => a.id);
+    const page2Ids = page2Agents.map((a: AgentResponse) => a.id);
+    const page3Ids = page3Agents.map((a: AgentResponse) => a.id);
 
     const allPageIds = [...page1Ids, ...page2Ids, ...page3Ids];
     const uniqueIds = new Set(allPageIds);
@@ -888,7 +888,7 @@ describe("User API", () => {
     expect(user1Response.success).toBe(true);
     const user1Agents = (user1Response as GetUserAgentsResponse).agents;
     expect(user1Agents).toHaveLength(3);
-    user1Agents.forEach((agent: Agent) => {
+    user1Agents.forEach((agent: AgentResponse) => {
       expect(agent.name).toMatch(/^User1 Agent/);
     });
 
@@ -897,7 +897,7 @@ describe("User API", () => {
     expect(user2Response.success).toBe(true);
     const user2Agents = (user2Response as GetUserAgentsResponse).agents;
     expect(user2Agents).toHaveLength(2);
-    user2Agents.forEach((agent: Agent) => {
+    user2Agents.forEach((agent: AgentResponse) => {
       expect(agent.name).toMatch(/^User2 Agent/);
     });
 
@@ -910,7 +910,7 @@ describe("User API", () => {
       user1PaginatedResponse as GetUserAgentsResponse
     ).agents;
     expect(user1PaginatedAgents).toHaveLength(2);
-    user1PaginatedAgents.forEach((agent: Agent) => {
+    user1PaginatedAgents.forEach((agent: AgentResponse) => {
       expect(agent.name).toMatch(/^User1 Agent/);
     });
   });
@@ -2789,7 +2789,7 @@ describe("User API", () => {
       "Echo Agent",
     ];
 
-    const createdAgents: Agent[] = [];
+    const createdAgents: AgentResponse[] = [];
     for (const name of agentNames) {
       const response = await createTestAgent(
         siweClient,
@@ -2797,7 +2797,7 @@ describe("User API", () => {
         `Description for ${name}`,
       );
       expect(response.success).toBe(true);
-      const agentResponse = response as { success: true; agent: Agent };
+      const agentResponse = response as { success: true; agent: AgentResponse };
       createdAgents.push(agentResponse.agent);
       // Small delay to ensure different timestamps
       await wait(10);
@@ -2984,7 +2984,8 @@ describe("User API", () => {
       "The first Agent for this user",
     );
     expect(agent1Response.success).toBe(true);
-    const agent1 = (agent1Response as { success: true; agent: Agent }).agent;
+    const agent1 = (agent1Response as { success: true; agent: AgentResponse })
+      .agent;
 
     const agent2Response = await createTestAgent(
       siweClient,
@@ -2992,7 +2993,8 @@ describe("User API", () => {
       "Agent that makes volatile trades",
     );
     expect(agent2Response.success).toBe(true);
-    const agent2 = (agent2Response as { success: true; agent: Agent }).agent;
+    const agent2 = (agent2Response as { success: true; agent: AgentResponse })
+      .agent;
 
     // Create agent clients for trading
     const agent1ApiKeyResponse = await siweClient.getUserAgentApiKey(agent1.id);
