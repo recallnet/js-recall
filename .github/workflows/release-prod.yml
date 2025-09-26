@@ -63,6 +63,9 @@ jobs:
         with:
           version: 9.12.3 # Note: matches exact version from root `package.json`
 
+      - name: Install Dependencies
+        run: pnpm install
+
       - name: Install Vercel CLI
         run: pnpm install --global vercel@latest
 
