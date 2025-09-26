@@ -36,13 +36,15 @@ export interface AgentStatus {
   };
 }
 
+export type CompetitionType = "trading" | "perpetual_futures";
+
 export interface Competition {
   id: string;
   name: string;
   description: string | null;
   externalUrl: string | null;
   imageUrl: string | null;
-  type: string;
+  type: CompetitionType;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType;
   startDate: string | null;
