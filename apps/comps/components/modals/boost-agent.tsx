@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
+import { valueToAttoBigInt } from "@recallnet/conversions/atto-conversions";
 import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
@@ -23,7 +25,7 @@ import { Slider } from "@recallnet/ui2/components/slider";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { RankBadge } from "@/components/agents-table/rank-badge";
-import { useBoostAgent } from "@/hooks/useBoost";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { AgentCompetition } from "@/types";
 import { formatPercentage } from "@/utils/format";
 
@@ -52,15 +54,28 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
   const [boostAmount, setBoostAmount] = useState<number>(availableBoost);
   const [error, setError] = useState<string | null>(null);
 
-  const { mutate: boostAgent, isPending: isBoosting } = useBoostAgent({
-    onSuccess: () => {
-      setStep("success");
-    },
-    onError: (error) => {
-      setError(error.message);
-      setStep("error");
-    },
-  });
+  const queryClient = useQueryClient();
+
+  const { mutate: boostAgent, isPending: isBoosting } = useMutation(
+    tanstackClient.boost.boostAgent.mutationOptions({
+      onSuccess: () => {
+        setStep("success");
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.boost.balance.key(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.boost.agentBoostTotals.key(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.boost.userBoosts.key(),
+        });
+      },
+      onError: (error) => {
+        setError(error.message);
+        setStep("error");
+      },
+    }),
+  );
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -117,8 +132,8 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
     boostAgent({
       competitionId,
       agentId: agent.id,
-      currentAgentBoostTotal,
-      amount: boostAmount,
+      idemKey: btoa(`${competitionId}-${agent.id}-${currentAgentBoostTotal}`),
+      amount: valueToAttoBigInt(boostAmount),
     });
   };
 

@@ -1,10 +1,14 @@
 import { Decimal } from "decimal.js";
 
-import { InsertPerpsSelfFundingAlert } from "@recallnet/db/schema/trading/types";
+import {
+  InsertPerpsSelfFundingAlert,
+  InsertPerpsTransferHistory,
+} from "@recallnet/db/schema/trading/types";
 
 import {
   batchCreatePerpsSelfFundingAlerts,
   batchGetAgentsSelfFundingAlerts,
+  batchSaveTransferHistory,
   getPerpsCompetitionConfig,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
@@ -310,6 +314,7 @@ export class PerpsMonitoringService {
   /**
    * Check transfer history for deposits after competition start
    * Detects both individual large deposits and cumulative small deposits (structuring)
+   * Also saves all transfers to database for violation detection
    */
   private async checkTransferHistory(
     walletAddress: string,
@@ -329,58 +334,65 @@ export class PerpsMonitoringService {
         competitionStartDate,
       );
 
-      // Get ALL deposits to this address after competition start
-      const allDeposits = transfers.filter(
+      // Save all transfers to database for violation detection and audit
+      // NOTE: Mid-competition transfers are now PROHIBITED
+      if (transfers.length > 0) {
+        await this.saveTransferHistory(transfers, agentId, competitionId);
+      }
+
+      // Get ALL transfers (deposits or withdrawals) after competition start
+      // These are ALL violations since mid-competition transfers are prohibited
+      const violatingTransfers = transfers.filter(
         (t) =>
-          t.type === "deposit" &&
-          t.to.toLowerCase() === walletAddress.toLowerCase() &&
-          t.timestamp > competitionStartDate,
+          new Date(t.timestamp) > competitionStartDate &&
+          (t.to.toLowerCase() === walletAddress.toLowerCase() || // deposits
+            t.from.toLowerCase() === walletAddress.toLowerCase()), // withdrawals
       );
 
-      if (allDeposits.length === 0) {
+      if (violatingTransfers.length === 0) {
         return null;
       }
 
-      // Calculate total deposited using Decimal for precision
-      const totalDeposited = allDeposits
+      // Separate deposits and withdrawals for reporting
+      const deposits = violatingTransfers.filter(
+        (t) =>
+          t.type === "deposit" &&
+          t.to.toLowerCase() === walletAddress.toLowerCase(),
+      );
+      const withdrawals = violatingTransfers.filter(
+        (t) =>
+          t.type === "withdraw" &&
+          t.from.toLowerCase() === walletAddress.toLowerCase(),
+      );
+
+      // Calculate totals using Decimal for precision
+      const totalDeposited = deposits
         .reduce((sum, t) => sum.plus(new Decimal(t.amount)), new Decimal(0))
         .toNumber();
 
-      // Check for violations:
-      // 1. Any single deposit exceeds threshold
-      // 2. Total of all deposits exceeds threshold (catches structuring)
-      const thresholdDecimal = new Decimal(threshold);
-      const largeDeposits = allDeposits.filter((t) =>
-        new Decimal(t.amount).greaterThan(thresholdDecimal),
-      );
-      const hasLargeDeposit = largeDeposits.length > 0;
-      const hasSuspiciousTotal = new Decimal(totalDeposited).greaterThan(
-        thresholdDecimal,
-      );
+      const totalWithdrawn = withdrawals
+        .reduce((sum, t) => sum.plus(new Decimal(t.amount)), new Decimal(0))
+        .toNumber();
 
-      if (!hasLargeDeposit && !hasSuspiciousTotal) {
-        return null;
+      // ALL mid-competition transfers are violations
+      // Determine severity based on amount for prioritization
+      const totalTransferred = totalDeposited + totalWithdrawn;
+
+      // Confidence is always high since transfers are explicitly prohibited
+      const confidence: "high" | "medium" | "low" = "high";
+
+      // Build detailed note about the violation
+      let note = `Mid-competition transfers are PROHIBITED. Found ${violatingTransfers.length} violation(s): `;
+      if (deposits.length > 0) {
+        note += `${deposits.length} deposit(s) totaling $${totalDeposited.toFixed(2)}`;
       }
-
-      // Determine confidence and description based on pattern
-      let confidence: "high" | "medium" | "low";
-      let note: string;
-
-      if (hasLargeDeposit) {
-        // Clear violation: individual deposit(s) exceed threshold
-        confidence = "high";
-        note = `Detected ${largeDeposits.length} large deposit(s) exceeding $${threshold} threshold, total: $${totalDeposited.toFixed(2)}`;
-      } else {
-        // Potential structuring: many small deposits that add up
-        const avgDepositSize = new Decimal(totalDeposited)
-          .dividedBy(allDeposits.length)
-          .toNumber();
-        confidence = allDeposits.length > 5 ? "high" : "medium"; // Higher confidence if many small deposits
-        note = `Potential structuring: ${allDeposits.length} deposits averaging $${avgDepositSize.toFixed(2)} each, totaling $${totalDeposited.toFixed(2)} (exceeds $${threshold} threshold)`;
+      if (withdrawals.length > 0) {
+        if (deposits.length > 0) note += " and ";
+        note += `${withdrawals.length} withdrawal(s) totaling $${totalWithdrawn.toFixed(2)}`;
       }
 
       serviceLogger.warn(
-        `[PerpsMonitoringService] Detected self-funding via transfers for agent ${agentId}: ${note}`,
+        `[PerpsMonitoringService] Transfer violation detected for agent ${agentId}: ${note}`,
       );
 
       return {
@@ -388,14 +400,14 @@ export class PerpsMonitoringService {
         competitionId,
         expectedEquity: accountSummary.initialCapital ?? 0,
         actualEquity: accountSummary.totalEquity,
-        unexplainedAmount: totalDeposited,
+        unexplainedAmount: totalTransferred,
         detectionMethod: "transfer_history",
         confidence,
         severity:
-          totalDeposited > this.config.criticalAmountThreshold
+          totalTransferred > this.config.criticalAmountThreshold
             ? "critical"
             : "warning",
-        evidence: allDeposits, // Include ALL deposits as evidence
+        evidence: violatingTransfers, // Include ALL transfers as evidence
         note,
         accountSnapshot: accountSummary,
       };
@@ -530,6 +542,50 @@ export class PerpsMonitoringService {
         error,
       );
       return false;
+    }
+  }
+
+  /**
+   * Save transfers to database for violation detection and admin audit
+   * NOTE: Mid-competition transfers are PROHIBITED
+   */
+  private async saveTransferHistory(
+    transfers: Transfer[],
+    agentId: string,
+    competitionId: string,
+  ): Promise<void> {
+    try {
+      // Transform Transfer objects to InsertPerpsTransferHistory format
+      const transferRecords: InsertPerpsTransferHistory[] = transfers.map(
+        (t, index) => ({
+          agentId,
+          competitionId,
+          type: t.type,
+          amount: t.amount.toString(),
+          asset: t.asset,
+          fromAddress: t.from,
+          toAddress: t.to,
+          txHash:
+            t.txHash ||
+            `${agentId}-${t.timestamp.toISOString()}-${t.type}-${t.amount}-${index}-${Date.now()}`, // Unique fallback including agentId, index, and timestamp
+          chainId: t.chainId || 0, // Default to 0 if not provided
+          transferTimestamp: t.timestamp,
+        }),
+      );
+
+      // Batch save all transfers
+      const saved = await batchSaveTransferHistory(transferRecords);
+
+      serviceLogger.info(
+        `[PerpsMonitoringService] Saved ${saved.length} transfers for violation detection (agent ${agentId} in competition ${competitionId})`,
+      );
+    } catch (error) {
+      // Log error but don't fail the monitoring process
+      // Primary goal is violation detection, saving is for audit trail
+      serviceLogger.error(
+        `[PerpsMonitoringService] Failed to save transfer history:`,
+        error,
+      );
     }
   }
 }

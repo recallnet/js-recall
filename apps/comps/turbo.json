@@ -19,7 +19,10 @@
         "SENTRY_AUTH_TOKEN",
         "SENTRY_ORG",
         "SENTRY_PROJECT",
-        "NEXT_RUNTIME"
+        "NEXT_RUNTIME",
+        "POSTGRES_URL",
+        "PRIVY_APP_SECRET",
+        "LOG_LEVEL"
       ]
     }
   }

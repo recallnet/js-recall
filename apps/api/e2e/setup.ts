@@ -25,7 +25,7 @@ const logFile = path.resolve(__dirname, "e2e-server.log");
 const testLogger = createLogger("E2E-Setup");
 
 // Mock Symphony server instance
-let mockSymphonyServer: MockSymphonyServer | null = null;
+export let mockSymphonyServer: MockSymphonyServer | null = null;
 
 // Function to log to both Pino logger and file
 const log = (message: string) => {

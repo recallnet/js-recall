@@ -1,3 +1,4 @@
+import { config } from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { SymphonyPerpsProvider } from "@/services/providers/perps/symphony-perps.provider.js";
 import { IPerpsDataProvider, PerpsProviderConfig } from "@/types/perps.js";
@@ -54,8 +55,9 @@ export class PerpsProviderFactory {
    * Create Symphony provider instance
    */
   private static createSymphonyProvider(apiUrl?: string): IPerpsDataProvider {
-    // Symphony provider constructor optionally takes an API URL
-    return new SymphonyPerpsProvider(apiUrl);
+    // Use API URL from competition config or fall back to global config
+    const symphonyApiUrl = apiUrl || config.symphony.apiUrl;
+    return new SymphonyPerpsProvider(symphonyApiUrl);
   }
 
   /**

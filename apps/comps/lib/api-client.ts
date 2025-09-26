@@ -1,4 +1,7 @@
-import * as dnum from "dnum";
+import {
+  attoValueToNumberValue,
+  valueToAttoString,
+} from "@recallnet/conversions/atto-conversions";
 
 import {
   Agent,
@@ -633,7 +636,7 @@ export class ApiClient {
 
     return {
       ...res,
-      balance: attoBoostStringToBoost(res.balance),
+      balance: attoValueToNumberValue(res.balance),
     };
   }
 
@@ -657,7 +660,7 @@ export class ApiClient {
       boosts: Object.fromEntries(
         Object.entries(res.boosts).map(([key, value]) => [
           key,
-          attoBoostStringToBoost(value),
+          attoValueToNumberValue(value),
         ]),
       ),
     };
@@ -678,7 +681,7 @@ export class ApiClient {
       boostTotals: Object.fromEntries(
         Object.entries(res.boostTotals).map(([key, value]) => [
           key,
-          attoBoostStringToBoost(value),
+          attoValueToNumberValue(value),
         ]),
       ),
     };
@@ -708,7 +711,7 @@ export class ApiClient {
     );
 
     const data = {
-      amount: boostToAttoBoostString(amount),
+      amount: valueToAttoString(amount),
       idemKey,
     };
 
@@ -719,23 +722,9 @@ export class ApiClient {
 
     return {
       ...res,
-      agentTotal: attoBoostStringToBoost(res.agentTotal),
+      agentTotal: attoValueToNumberValue(res.agentTotal),
     };
   }
-}
-
-const attoBoostDivisor = 10 ** 18;
-
-function attoBoostStringToBoost(attoBoost: string) {
-  const res = dnum.div(attoBoost, attoBoostDivisor, {
-    rounding: "ROUND_DOWN", // Always round down to avoid overestimating boost balance
-  });
-  return dnum.toNumber(res);
-}
-
-function boostToAttoBoostString(boost: number) {
-  const res = dnum.mul(dnum.from(boost), attoBoostDivisor);
-  return dnum.toString(res);
 }
 
 /**

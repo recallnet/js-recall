@@ -12,5 +12,11 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["comps", "api", "@recallnet/ui2", "@recallnet/db"]
+  "ignore": [
+    "comps",
+    "api",
+    "@recallnet/ui2",
+    "@recallnet/db",
+    "@recallnet/services"
+  ]
 }
