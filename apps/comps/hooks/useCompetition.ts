@@ -16,4 +16,6 @@ export const useCompetition = (id?: string) =>
       return (await apiClient.getCompetition(id)).competition;
     },
     enabled: !!id,
+    staleTime: 30 * 1000, // 30 seconds - shorter cache for real-time voting updates
+    refetchInterval: 60 * 1000, // Refetch every minute to keep data fresh
   });
