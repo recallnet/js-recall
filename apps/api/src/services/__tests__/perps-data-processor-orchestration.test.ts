@@ -658,6 +658,8 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     });
 
     it("should handle Calmar calculation failures gracefully", async () => {
+      vi.useFakeTimers();
+
       const mockCalculateAndSave = vi
         .fn()
         .mockRejectedValue(new Error("Database error"));
@@ -695,18 +697,25 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         failed: [],
       });
 
-      const result = await processor.processPerpsCompetition("comp-1");
+      // Run with fake timers to speed up retries
+      const resultPromise = processor.processPerpsCompetition("comp-1");
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
+
+      vi.useRealTimers();
 
       // Sync should succeed
       expect(result.syncResult.successful).toHaveLength(2);
 
       // Calmar calculation should fail for both agents
+      // With only 2 agents, the batch failure rate is 100% which triggers the alert
       expect(result.calmarRatioResult).toEqual({
         successful: 0,
         failed: 2,
         errors: [
           "Agent agent-1: Database error",
           "Agent agent-2: Database error",
+          "ALERT: High failure rate detected (100% of batches failing)",
         ],
       });
 
@@ -715,6 +724,8 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     });
 
     it("should handle partial Calmar calculation failures", async () => {
+      vi.useFakeTimers();
+
       // Mock to succeed for agent-1, fail for agent-2
       const mockCalculateAndSave = vi
         .fn()
@@ -761,7 +772,12 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         failed: [],
       });
 
-      const result = await processor.processPerpsCompetition("comp-1");
+      // Run with fake timers
+      const resultPromise = processor.processPerpsCompetition("comp-1");
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
+
+      vi.useRealTimers();
 
       // Should have mixed results
       expect(result.calmarRatioResult).toEqual({
@@ -798,7 +814,9 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       expect(result.calmarRatioResult).toBeUndefined();
     });
 
-    it("should trigger circuit breaker after 3 consecutive batch failures", async () => {
+    it("should monitor with circuit breaker alert but continue processing all agents", async () => {
+      vi.useFakeTimers();
+
       // Create 50 agents (5 batches of 10)
       const agents = Array.from({ length: 50 }, (_, i) => ({
         ...mockAgent,
@@ -838,24 +856,31 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         failed: [],
       });
 
-      const result = await processor.processPerpsCompetition("comp-1");
+      // Run with fake timers
+      const resultPromise = processor.processPerpsCompetition("comp-1");
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
 
-      // Circuit breaker should trigger after 30 attempts (3 batches)
-      // So only 30 calls should be made, not all 50
-      expect(mockCalculateAndSave).toHaveBeenCalledTimes(30);
+      vi.useRealTimers();
 
-      // All 50 should be marked as failed (30 attempted + 20 skipped)
+      // With the new approach: ALL agents should be attempted (with retries)
+      // Each agent gets 4 attempts (1 initial + 3 retries) = 200 total calls
+      expect(mockCalculateAndSave).toHaveBeenCalledTimes(200);
+
+      // All 50 should be marked as failed (all attempted but all failed)
       expect(result.calmarRatioResult?.failed).toBe(50);
       expect(result.calmarRatioResult?.successful).toBe(0);
 
-      // Should have circuit breaker message in errors
-      const hasCircuitBreakerMessage = result.calmarRatioResult?.errors?.some(
-        (e) => e.includes("Circuit breaker triggered"),
+      // Should have circuit breaker ALERT message in errors (not stop message)
+      const hasCircuitBreakerAlert = result.calmarRatioResult?.errors?.some(
+        (e) => e.includes("ALERT: High failure rate detected"),
       );
-      expect(hasCircuitBreakerMessage).toBe(true);
+      expect(hasCircuitBreakerAlert).toBe(true);
     });
 
     it("should cap error messages at 100 entries", async () => {
+      vi.useFakeTimers();
+
       // Create 150 agents
       const agents = Array.from({ length: 150 }, (_, i) => ({
         ...mockAgent,
@@ -905,7 +930,12 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         failed: [],
       });
 
-      const result = await processor.processPerpsCompetition("comp-1");
+      // Run with fake timers
+      const resultPromise = processor.processPerpsCompetition("comp-1");
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
+
+      vi.useRealTimers();
 
       // 135 should fail (9 out of 10 in each batch)
       expect(result.calmarRatioResult?.failed).toBe(135);

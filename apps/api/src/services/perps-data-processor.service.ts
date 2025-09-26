@@ -769,7 +769,7 @@ export class PerpsDataProcessor {
 
   /**
    * Calculate Calmar Ratios for all successful agents in a competition
-   * Processes in batches to avoid overloading the system
+   * Processes in batches with retry logic and circuit breaker monitoring
    * @param competitionId Competition ID
    * @param successfulAgents Agents that were successfully synced
    * @returns Summary of calculation results
@@ -789,32 +789,32 @@ export class PerpsDataProcessor {
       errors: [],
     };
 
-    // Process in batches to avoid overwhelming the system
+    // Configuration
     const BATCH_SIZE = 10;
     const MAX_ERRORS_TO_STORE = 100; // Cap errors array to prevent memory issues
-    const MAX_CONSECUTIVE_FAILURES = 3; // Circuit breaker threshold
+    const MAX_RETRIES = 3; // Max retries per agent (like portfolio snapshotter)
+    const CIRCUIT_BREAKER_THRESHOLD = 0.8; // Trigger at 80% failure rate
 
-    let consecutiveFailures = 0;
-    let systemicFailureDetected = false;
+    let totalBatches = 0;
+    let failedBatches = 0; // Batches with > 80% failure rate
 
     for (let i = 0; i < successfulAgents.length; i += BATCH_SIZE) {
       const batch = successfulAgents.slice(i, i + BATCH_SIZE);
+      totalBatches++;
 
-      // Use Promise.allSettled so one failure doesn't block others
-      const batchResults = await Promise.allSettled(
-        batch.map((agent) =>
-          calmarService.calculateAndSaveCalmarRatio(
-            agent.agentId,
-            competitionId,
-          ),
-        ),
+      // Process batch with retries for each agent
+      const batchResults = await this.processBatchWithRetries(
+        batch,
+        competitionId,
+        calmarService,
+        MAX_RETRIES,
       );
 
       // Count successes and failures in this batch
       let batchFailures = 0;
 
       batchResults.forEach((result, idx) => {
-        if (result.status === "fulfilled") {
+        if (result.success) {
           results.successful++;
         } else {
           results.failed++;
@@ -827,65 +827,61 @@ export class PerpsDataProcessor {
             );
             return;
           }
-          const errorMsg = `Agent ${agent.agentId}: ${result.reason?.message || "Unknown error"}`;
+          const errorMsg = `Agent ${agent.agentId}: ${result.error || "Unknown error"}`;
 
           // Only store first N errors to prevent memory issues
           if (results.errors.length < MAX_ERRORS_TO_STORE) {
             results.errors.push(errorMsg);
           } else if (results.errors.length === MAX_ERRORS_TO_STORE) {
             results.errors.push(
-              `... and ${successfulAgents.length - i} more errors`,
+              `... and ${successfulAgents.length - i - batch.length} more errors`,
             );
           }
-
-          // Log individual failures for debugging
-          serviceLogger.warn(
-            `[PerpsDataProcessor] Failed to calculate Calmar for ${agent?.agentId}: ${result.reason}`,
-          );
         }
       });
 
-      // Circuit breaker: Check if entire batch failed
+      // Circuit breaker monitoring (but don't stop processing)
       const batchFailureRate = batchFailures / batch.length;
-      if (batchFailureRate === 1) {
-        consecutiveFailures++;
+      if (batchFailureRate >= CIRCUIT_BREAKER_THRESHOLD) {
+        failedBatches++;
 
-        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          systemicFailureDetected = true;
-          const remainingAgents = successfulAgents.length - (i + BATCH_SIZE);
+        // Calculate overall failure rate
+        const overallFailureRate = failedBatches / totalBatches;
 
+        // Log warning if we're seeing systemic issues
+        if (overallFailureRate >= CIRCUIT_BREAKER_THRESHOLD) {
           serviceLogger.error(
-            `[PerpsDataProcessor] Circuit breaker triggered: ${consecutiveFailures} consecutive batch failures. ` +
-              `Stopping Calmar calculations. ${remainingAgents} agents skipped.`,
+            `[PerpsDataProcessor] Circuit breaker alert: ${failedBatches}/${totalBatches} batches ` +
+              `have ≥80% failure rate. Latest batch: ${batchFailures}/${batch.length} failed. ` +
+              `Continuing to process remaining ${successfulAgents.length - i - batch.length} agents.`,
           );
 
-          // Mark remaining agents as failed
-          results.failed += remainingAgents;
-
-          // Add circuit breaker message to errors
+          // Add alert to errors for visibility (but don't stop)
           if (results.errors.length < MAX_ERRORS_TO_STORE) {
             results.errors.push(
-              `Circuit breaker triggered after ${consecutiveFailures} consecutive batch failures. ` +
-                `${remainingAgents} agents skipped.`,
+              `ALERT: High failure rate detected (${Math.round(overallFailureRate * 100)}% of batches failing)`,
             );
           }
-
-          break; // Exit the loop
         }
-      } else {
-        // Reset counter if batch had any successes
-        consecutiveFailures = 0;
       }
 
       // Log batch progress
       if (
-        (i + BATCH_SIZE) % 50 === 0 ||
-        i + BATCH_SIZE >= successfulAgents.length
+        (i + batch.length) % 50 === 0 ||
+        i + batch.length >= successfulAgents.length
       ) {
         serviceLogger.info(
-          `[PerpsDataProcessor] Calmar calculation progress: ${i + BATCH_SIZE}/${successfulAgents.length} agents processed`,
+          `[PerpsDataProcessor] Calmar calculation progress: ${i + batch.length}/${successfulAgents.length} agents processed`,
         );
       }
+    }
+
+    // Log final summary
+    if (failedBatches > 0) {
+      serviceLogger.warn(
+        `[PerpsDataProcessor] Completed with degraded performance: ${failedBatches}/${totalBatches} batches had high failure rates. ` +
+          `Final: ${results.successful} successful, ${results.failed} failed`,
+      );
     }
 
     // Log if we hit the error cap
@@ -895,20 +891,83 @@ export class PerpsDataProcessor {
       );
     }
 
-    // Log if circuit breaker was triggered
-    if (systemicFailureDetected) {
-      serviceLogger.error(
-        `[PerpsDataProcessor] Calmar calculations halted due to systemic failures. ` +
-          `Successful: ${results.successful}, Failed: ${results.failed}`,
-      );
-    }
-
     // Only include errors field if there are actual errors
     return {
       successful: results.successful,
       failed: results.failed,
       ...(results.errors.length > 0 && { errors: results.errors }),
     };
+  }
+
+  /**
+   * Process a batch of agents with retry logic for each agent
+   * @param batch Batch of agents to process
+   * @param competitionId Competition ID
+   * @param calmarService Calmar ratio service instance
+   * @param maxRetries Maximum number of retries per agent
+   * @returns Array of results for each agent
+   */
+  private async processBatchWithRetries(
+    batch: SuccessfulAgentSync[],
+    competitionId: string,
+    calmarService: CalmarRatioService,
+    maxRetries: number,
+  ): Promise<Array<{ success: boolean; error?: string }>> {
+    return Promise.all(
+      batch.map(async (agent) => {
+        // Try up to maxRetries + 1 times (initial + retries)
+        for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+          try {
+            // Add exponential backoff for retries
+            if (attempt > 1) {
+              const backoffDelay = Math.min(
+                1000 * Math.pow(2, attempt - 2), // 1s, 2s, 4s
+                10000, // Max 10 seconds
+              );
+              serviceLogger.debug(
+                `[PerpsDataProcessor] Retrying Calmar calculation for agent ${agent.agentId} ` +
+                  `(attempt ${attempt}/${maxRetries + 1}) after ${backoffDelay}ms`,
+              );
+              await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+            }
+
+            await calmarService.calculateAndSaveCalmarRatio(
+              agent.agentId,
+              competitionId,
+            );
+
+            // Success! Log if it was a retry
+            if (attempt > 1) {
+              serviceLogger.info(
+                `[PerpsDataProcessor] Calmar calculation succeeded for agent ${agent.agentId} on attempt ${attempt}`,
+              );
+            }
+
+            return { success: true };
+          } catch (error) {
+            // Log the failure
+            const errorMsg =
+              error instanceof Error ? error.message : String(error);
+            serviceLogger.warn(
+              `[PerpsDataProcessor] Calmar calculation failed for agent ${agent.agentId} ` +
+                `(attempt ${attempt}/${maxRetries + 1}): ${errorMsg}`,
+            );
+
+            // If this was the last attempt, return failure
+            if (attempt === maxRetries + 1) {
+              serviceLogger.error(
+                `[PerpsDataProcessor] Calmar calculation failed for agent ${agent.agentId} after ${maxRetries + 1} attempts`,
+              );
+              return { success: false, error: errorMsg };
+            }
+            // Otherwise, continue to next attempt
+          }
+        }
+
+        // Should never reach here, but handle it defensively
+        return { success: false, error: "Max retries exhausted" };
+      }),
+    );
   }
 
   /**
