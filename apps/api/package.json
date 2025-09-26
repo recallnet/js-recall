@@ -59,6 +59,7 @@
     "generate": "pnpm generate-docs && prettier --write openapi",
     "allocate-rewards": "tsx scripts/allocate-rewards.ts",
     "cron:portfolio-snapshot": "tsx scripts/take-portfolio-snapshots.ts",
+    "run:indexer": "tsx scripts/indexer.ts",
     "cron:auto-end-competitions": "tsx scripts/auto-end-competitions.ts",
     "cron:portfolio-snapshot:run-once": "tsx scripts/take-portfolio-snapshots.ts --run-once",
     "cron:auto-end-competitions:run-once": "tsx scripts/auto-end-competitions.ts --run-once"
@@ -78,6 +79,7 @@
     "@recallnet/staking-contracts": "workspace:*",
     "@sentry/node": "^10.5.0",
     "@sentry/profiling-node": "^10.5.0",
+    "@types/decimal.js": "^7.4.3",
     "@types/express": "^4.17.17",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^18.15.0",
@@ -85,6 +87,7 @@
     "bcrypt": "^5.1.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "decimal.js": "^10.6.0",
     "dotenv": "^16.0.3",
     "drizzle-orm": "^0.43.1",
     "drizzle-zod": "^0.8.2",

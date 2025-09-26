@@ -19,6 +19,7 @@ import { CompetitionService } from "@/services/competition.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
+import { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
@@ -49,6 +50,7 @@ class ServiceRegistry {
   private _emailService: EmailService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
+  private _perpsDataProcessor: PerpsDataProcessor;
   private _boostService: BoostService;
   private readonly _competitionRepository: CompetitionRepository;
   private readonly _boostRepository: BoostRepository;
@@ -97,6 +99,8 @@ class ServiceRegistry {
     this._tradingConstraintsService = new TradingConstraintsService();
     // Initialize core reward service (no dependencies)
     this._competitionRewardService = new CompetitionRewardService();
+    // Initialize PerpsDataProcessor before CompetitionManager (as it's a dependency)
+    this._perpsDataProcessor = new PerpsDataProcessor();
 
     this._competitionService = new CompetitionService(
       this._balanceService,
@@ -108,6 +112,7 @@ class ServiceRegistry {
       this._voteService,
       this._tradingConstraintsService,
       this._competitionRewardService,
+      this._perpsDataProcessor,
     );
 
     // Initialize LeaderboardService with required dependencies
@@ -219,6 +224,10 @@ class ServiceRegistry {
     return this._competitionRewardService;
   }
 
+  get perpsDataProcessor(): PerpsDataProcessor {
+    return this._perpsDataProcessor;
+  }
+
   get indexingService(): IndexingService {
     return this._indexingService;
   }
@@ -254,6 +263,7 @@ export {
   ConfigurationService,
   EmailService,
   LeaderboardService,
+  PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
   ServiceRegistry,

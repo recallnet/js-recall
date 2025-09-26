@@ -59,6 +59,16 @@ export const RewardsSchema = z
   .optional();
 
 /**
+ * Perps provider configuration schema
+ */
+export const PerpsProviderSchema = z.object({
+  provider: z.enum(["symphony", "hyperliquid"]).default("symphony"),
+  initialCapital: z.number().positive().default(500), // Default $500 initial capital
+  selfFundingThreshold: z.number().min(0).default(0), // Default 0 (no self-funding allowed)
+  apiUrl: z.string().url().optional(),
+});
+
+/**
  * Admin create or update competition schema
  */
 export const AdminCreateCompetitionSchema = z
@@ -70,20 +80,39 @@ export const AdminCreateCompetitionSchema = z
     externalUrl: z.url().optional(),
     imageUrl: z.url().optional(),
     type: CompetitionTypeSchema.optional(),
-    startDate: z.iso.datetime().optional(),
-    endDate: z.iso.datetime().optional(),
-    votingStartDate: z.iso.datetime().optional(),
-    votingEndDate: z.iso.datetime().optional(),
-    joinStartDate: z.iso.datetime().optional(),
-    joinEndDate: z.iso.datetime().optional(),
+    startDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    endDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    votingStartDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    votingEndDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    joinStartDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    joinEndDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
     maxParticipants: z.number().int().min(1).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
+    perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
   })
   .refine(
     (data) => {
       if (data.joinStartDate && data.joinEndDate) {
-        return new Date(data.joinStartDate) <= new Date(data.joinEndDate);
+        return data.joinStartDate <= data.joinEndDate;
       }
       return true;
     },
@@ -116,14 +145,33 @@ export const AdminStartCompetitionSchema = z
     externalUrl: z.url().optional(),
     imageUrl: z.url().optional(),
     type: CompetitionTypeSchema.optional(),
-    startDate: z.iso.datetime().optional(),
-    endDate: z.iso.datetime().optional(),
-    votingStartDate: z.iso.datetime().optional(),
-    votingEndDate: z.iso.datetime().optional(),
-    joinStartDate: z.iso.datetime().optional(),
-    joinEndDate: z.iso.datetime().optional(),
+    startDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    endDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    votingStartDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    votingEndDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    joinStartDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
+    joinEndDate: z.iso
+      .datetime()
+      .transform((str) => new Date(str))
+      .optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
+    perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",

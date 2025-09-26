@@ -1,6 +1,6 @@
 import config from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
-import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
+import { DexScreenerProvider } from "@/services/providers/price/dexscreener.provider.js";
 import { PriceReport, PriceSource } from "@/types/index.js";
 import { BlockchainType, SpecificChain } from "@/types/index.js";
 

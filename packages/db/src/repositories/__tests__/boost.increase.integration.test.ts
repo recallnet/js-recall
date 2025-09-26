@@ -379,6 +379,32 @@ describe("BoostRepository.increase() Integration Tests", () => {
     });
   });
 
+  describe("amount validation", () => {
+    test("should throw error for negative amounts", async () => {
+      await expect(
+        repository.increase({
+          userId: testUserId,
+          wallet: testWallet,
+          competitionId: testCompetitionId,
+          amount: -100n, // Negative amount
+        }),
+      ).rejects.toThrow("amount must be non-negative");
+
+      // Verify no records were created
+      const balanceRecords = await db
+        .select()
+        .from(schema.boostBalances)
+        .where(
+          and(
+            eq(schema.boostBalances.userId, testUserId),
+            eq(schema.boostBalances.competitionId, testCompetitionId),
+          ),
+        );
+
+      expect(balanceRecords).toHaveLength(0);
+    });
+  });
+
   describe("database constraint validation", () => {
     test("should fail with non-existent user", async () => {
       const fakeUserId = "00000000-0000-0000-0000-000000000000";

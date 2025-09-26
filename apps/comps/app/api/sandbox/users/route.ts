@@ -1,34 +1,24 @@
 import { NextRequest } from "next/server";
 
-import {
-  extractSessionCookie,
-  mainApiRequest,
-  sandboxAdminRequest,
-} from "@/app/api/sandbox/_lib/sandbox-config";
+import { sandboxAdminRequest } from "@/app/api/sandbox/_lib/sandbox-config";
 import {
   createSuccessResponse,
   withErrorHandling,
 } from "@/app/api/sandbox/_lib/sandbox-response";
-import { AdminSearchResult, AdminUserResponse } from "@/types/admin";
-import { ProfileResponse } from "@/types/profile";
+import {
+  AdminCreateUserRequest,
+  AdminSearchResult,
+  AdminUserResponse,
+} from "@/types/admin";
 
 /**
  * POST /api/sandbox/users
- * Creates a user in the sandbox environment by:
- * 1. Fetching user profile from the base API using session cookie
- * 2. Checking if user already exists in sandbox
- * 3. Creating user in sandbox if not found
+ * Creates a user in the sandbox environment using provided user data
  */
 async function handleCreateUser(request: NextRequest) {
-  // Extract session cookie
-  const sessionCookie = extractSessionCookie(request);
+  // Get user data from request body
+  const userData: AdminCreateUserRequest = await request.json();
 
-  // Fetch user profile from the base API
-  const profileData = await mainApiRequest<ProfileResponse>(
-    "/user/profile",
-    sessionCookie,
-  );
-  const { user } = profileData;
   const {
     walletAddress,
     name,
@@ -37,7 +27,11 @@ async function handleCreateUser(request: NextRequest) {
     metadata,
     privyId,
     embeddedWalletAddress,
-  } = user;
+  } = userData;
+
+  if (!walletAddress || !email) {
+    throw new Error("Wallet address and email are required");
+  }
 
   // Check if user already exists in sandbox with wallet address
   const searchByWalletAddress = await sandboxAdminRequest<AdminSearchResult>(
@@ -66,12 +60,12 @@ async function handleCreateUser(request: NextRequest) {
   }
 
   // Create user in sandbox
-  const createUserPayload = {
+  const createUserPayload: AdminCreateUserRequest = {
     walletAddress,
     name,
     email,
-    userImageUrl: imageUrl || undefined,
-    userMetadata: metadata || undefined,
+    imageUrl,
+    metadata,
     privyId,
     embeddedWalletAddress,
   };

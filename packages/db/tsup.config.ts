@@ -14,6 +14,7 @@ export default defineConfig({
     "src/repositories/competition-rewards.ts",
     "src/repositories/competition.ts",
     "src/repositories/leaderboard.ts",
+    "src/repositories/perps.ts",
     "src/repositories/rewards.ts",
     "src/repositories/stakes.ts",
     "src/repositories/trade.ts",

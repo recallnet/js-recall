@@ -60,14 +60,14 @@ function ApiKeySection({ title, apiKey, description }: ApiKeySectionProps) {
  * <AgentCreated agent={agent} />
  */
 export function AgentCreated({ agent }: AgentCreatedProps) {
+  const { ready, backendUser } = useSession();
   const {
     mutation: unlockKeys,
     productionKey,
     sandboxKey,
     isLoadingKeys,
     isSandboxUnlocked,
-  } = useUnlockKeys(agent.handle, agent.id);
-  const { ready, backendUser } = useSession();
+  } = useUnlockKeys(agent.handle, agent.id, backendUser?.walletAddress);
 
   if (!ready) return null;
 

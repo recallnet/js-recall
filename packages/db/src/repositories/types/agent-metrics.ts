@@ -31,6 +31,12 @@ export interface RawAgentMetricsQueryResult {
     totalTrades: number;
   }>;
 
+  /** Position counts per agent (for perpetual futures competitions) */
+  positionCounts: Array<{
+    agentId: string;
+    totalPositions: number;
+  }>;
+
   /** Best placement data per agent */
   bestPlacements: Array<{
     agentId: string;

@@ -1,11 +1,7 @@
-import * as crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
-import * as fs from "fs";
-import * as path from "path";
 
 import { UpdateCompetition } from "@recallnet/db/schema/core/types";
 
-import { reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { generateHandleFromName } from "@/lib/handle-utils.js";
@@ -108,17 +104,6 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async setupAdmin(req: Request, res: Response, next: NextFunction) {
       try {
-        // Check if any admin already exists
-        const admins = await services.adminService.getAllAdmins();
-        const adminExists = admins.length > 0;
-
-        if (adminExists) {
-          throw new ApiError(
-            403,
-            "Admin setup is not allowed - an admin account already exists",
-          );
-        }
-
         // Validate request body using flatParse
         const result = flatParse(AdminSetupSchema, req.body);
         if (!result.success) {
@@ -127,84 +112,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         const { username, password, email } = result.data;
 
-        // Ensure that ROOT_ENCRYPTION_KEY exists in .env file
-        try {
-          // Find the correct .env file based on environment
-          const envFile =
-            process.env.NODE_ENV === "test" ? ".env.test" : ".env";
-          const envPath = path.resolve(process.cwd(), envFile);
-          adminLogger.info(`Checking for ${envFile} file at: ${envPath}`);
-
-          if (fs.existsSync(envPath)) {
-            const envContent = fs.readFileSync(envPath, "utf8");
-            const rootKeyPattern = /ROOT_ENCRYPTION_KEY=.*$/m;
-
-            // Check if ROOT_ENCRYPTION_KEY already exists and is not the default
-            const keyMatch = rootKeyPattern.exec(envContent);
-            let needsNewKey = true;
-
-            if (keyMatch) {
-              const currentValue = keyMatch[0].split("=")[1];
-              if (
-                currentValue &&
-                currentValue.length >= 32 &&
-                !currentValue.includes("default_encryption_key") &&
-                !currentValue.includes("your_") &&
-                !currentValue.includes("dev_") &&
-                !currentValue.includes("test_") &&
-                !currentValue.includes("replace_in_production")
-              ) {
-                // Key exists and seems to be a proper key already
-                adminLogger.info("ROOT_ENCRYPTION_KEY already exists in .env");
-                needsNewKey = false;
-              }
-            }
-
-            if (needsNewKey) {
-              // Generate a new secure encryption key
-              const newEncryptionKey = crypto.randomBytes(32).toString("hex");
-              adminLogger.info("Generated new ROOT_ENCRYPTION_KEY");
-
-              // Update the .env file
-              let updatedEnvContent = envContent;
-
-              if (keyMatch) {
-                // Replace existing key
-                updatedEnvContent = envContent.replace(
-                  rootKeyPattern,
-                  `ROOT_ENCRYPTION_KEY=${newEncryptionKey}`,
-                );
-              } else {
-                // Add new key
-                updatedEnvContent =
-                  envContent.trim() +
-                  `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
-              }
-
-              fs.writeFileSync(envPath, updatedEnvContent);
-              adminLogger.info(
-                `Updated ROOT_ENCRYPTION_KEY in ${envFile} file`,
-              );
-
-              // We need to update the process.env with the new key for it to be used immediately
-              process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
-
-              // Reload the configuration to pick up the new encryption key
-              reloadSecurityConfig();
-
-              adminLogger.info(
-                "✅ Configuration reloaded with new encryption key",
-              );
-            }
-          } else {
-            adminLogger.error(`${envFile} file not found at expected location`);
-          }
-        } catch (envError) {
-          adminLogger.error("Error updating ROOT_ENCRYPTION_KEY:", envError);
-          // Continue with admin setup even if the env update fails
-        }
-
-        // Setup the initial admin using AdminManager
+        // Setup the initial admin using AdminService
         const adminResult = await services.adminService.setupInitialAdmin(
           username,
           password,
@@ -530,6 +438,7 @@ export function makeAdminController(services: ServiceRegistry) {
           maxParticipants,
           tradingConstraints,
           rewards,
+          perpsProvider,
         } = result.data;
 
         // Create a new competition
@@ -553,6 +462,7 @@ export function makeAdminController(services: ServiceRegistry) {
             maxParticipants,
             tradingConstraints,
             rewards,
+            perpsProvider,
           },
         );
 
@@ -573,7 +483,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async startCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
+        // Validate request body
         const result = flatParse(AdminStartCompetitionSchema, req.body);
         if (!result.success) {
           throw new ApiError(400, `Invalid request format: ${result.error}`);
@@ -581,9 +491,11 @@ export function makeAdminController(services: ServiceRegistry) {
 
         const {
           competitionId,
+          agentIds,
+          tradingConstraints,
+          // Fields for creating new competition
           name,
           description,
-          agentIds,
           tradingType,
           sandboxMode,
           externalUrl,
@@ -595,128 +507,41 @@ export function makeAdminController(services: ServiceRegistry) {
           votingEndDate,
           joinStartDate,
           joinEndDate,
-          tradingConstraints,
           rewards,
+          perpsProvider,
         } = result.data;
 
-        // Validate that all provided agent IDs exist in the database and are active
-        const invalidAgentIds: string[] = [];
-        const validAgentIds: string[] = [];
-
-        for (const agentId of agentIds) {
-          const agent = await services.agentService.getAgent(agentId);
-
-          if (!agent) {
-            invalidAgentIds.push(agentId);
-            continue;
-          }
-
-          if (agent.status !== "active") {
-            invalidAgentIds.push(agentId);
-            continue;
-          }
-
-          validAgentIds.push(agentId);
-        }
-
-        // If there are invalid agent IDs, return an error with the list
-        if (invalidAgentIds.length > 0) {
-          throw new ApiError(
-            400,
-            `Cannot start competition: the following agent IDs are invalid or inactive: ${invalidAgentIds.join(", ")}`,
-          );
-        }
-
-        let finalAgentIds = [...validAgentIds]; // Start with validated agent IDs
-
-        // Get pre-registered agents from the database if we have a competitionId
-        if (competitionId) {
-          const competitionAgents =
-            await services.agentService.getAgentsForCompetition(competitionId, {
-              sort: "",
-              limit: 1000,
-              offset: 0,
-            });
-          const registeredAgents = competitionAgents.agents.map(
-            (agent) => agent.id,
-          );
-          // Combine with provided agentIds, removing duplicates
-          const combinedAgents = [
-            ...new Set([...finalAgentIds, ...registeredAgents]),
-          ];
-          finalAgentIds = combinedAgents;
-        }
-
-        // Now check if we have any agents to start the competition with
-        if (finalAgentIds.length === 0) {
-          throw new ApiError(
-            400,
-            "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
-          );
-        }
-
-        let competition;
-
-        // Check if we're starting an existing competition or creating a new one
-        if (competitionId) {
-          // Get the existing competition
-          competition =
-            await services.competitionService.getCompetition(competitionId);
-
-          if (!competition) {
-            throw new ApiError(404, "Competition not found");
-          }
-
-          // Verify competition is in PENDING state
-          if (competition.status !== "pending") {
-            throw new ApiError(
-              400,
-              `Competition is already in ${competition.status} state and cannot be started`,
-            );
-          }
-        } else {
-          // We need name to create a new competition
-          // Schema validation ensures either competitionId or name is provided
-
-          // Create a new competition
-          competition = await services.competitionService.createCompetition({
-            name: name!,
-            description,
-            tradingType,
-            sandboxMode,
-            externalUrl,
-            imageUrl,
-            type,
-            startDate: startDate ? new Date(startDate) : undefined,
-            endDate: endDate ? new Date(endDate) : undefined,
-            votingStartDate: votingStartDate
-              ? new Date(votingStartDate)
-              : undefined,
-            votingEndDate: votingEndDate ? new Date(votingEndDate) : undefined,
-            joinStartDate: joinStartDate ? new Date(joinStartDate) : undefined,
-            joinEndDate: joinEndDate ? new Date(joinEndDate) : undefined,
-            // Note: maxParticipants not available when starting new competition since this starting comps method has "dual" purpose actions
-            maxParticipants: undefined,
+        // Call service method with creation params only if no competitionId
+        const competition =
+          await services.competitionService.startOrCreateCompetition({
+            competitionId,
+            agentIds,
             tradingConstraints,
-            rewards,
+            creationParams: competitionId
+              ? undefined
+              : {
+                  name: name!,
+                  description,
+                  tradingType,
+                  sandboxMode,
+                  externalUrl,
+                  imageUrl,
+                  type,
+                  startDate,
+                  endDate,
+                  votingStartDate,
+                  votingEndDate,
+                  joinStartDate,
+                  joinEndDate,
+                  rewards,
+                  perpsProvider,
+                },
           });
-        }
-
-        // Start the competition
-        const startedCompetition =
-          await services.competitionService.startCompetition(
-            competition.id,
-            finalAgentIds,
-            tradingConstraints,
-          );
 
         // Return the started competition
         res.status(200).json({
           success: true,
-          competition: {
-            ...startedCompetition,
-            agentIds: finalAgentIds,
-          },
+          competition,
         });
       } catch (error) {
         next(error);

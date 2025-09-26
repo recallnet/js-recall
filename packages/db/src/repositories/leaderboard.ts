@@ -6,6 +6,7 @@ import {
   eq,
   inArray,
   min,
+  sql,
   sum,
 } from "drizzle-orm";
 import { Logger } from "pino";
@@ -19,6 +20,8 @@ import {
 } from "../schema/core/defs.js";
 import { agentScore } from "../schema/ranking/defs.js";
 import {
+  perpetualPositions,
+  perpsAccountSummaries,
   trades,
   tradingCompetitionsLeaderboard,
 } from "../schema/trading/defs.js";
@@ -119,6 +122,168 @@ export class LeaderboardRepository {
   }
 
   /**
+   * Get aggregated statistics across ALL competition types (global platform stats).
+   * Use this for the global leaderboard and platform-wide metrics.
+   * For type-specific stats, use getGlobalStats(type) instead.
+   * Aggregates stats from both paper trading and perpetual futures competitions.
+   * Only includes competitions with status 'ended'.
+   * @returns Object containing combined stats: totalTrades (paper), totalPositions (perps), combined volume, etc.
+   */
+  async getGlobalStatsAllTypes(): Promise<{
+    activeAgents: number;
+    totalTrades: number;
+    totalPositions: number;
+    totalVolume: number;
+    totalCompetitions: number;
+    totalVotes: number;
+    competitionIds: string[];
+  }> {
+    this.#logger.debug("getGlobalStatsAllTypes called");
+
+    // Get all ended competitions, separated by type
+    const allEndedCompetitions = await this.#dbRead
+      .select({ id: competitions.id, type: competitions.type })
+      .from(competitions)
+      .where(eq(competitions.status, "ended"));
+
+    if (allEndedCompetitions.length === 0) {
+      return {
+        activeAgents: 0,
+        totalTrades: 0,
+        totalPositions: 0,
+        totalVolume: 0,
+        totalCompetitions: 0,
+        totalVotes: 0,
+        competitionIds: [],
+      };
+    }
+
+    // Separate competition IDs by type
+    const paperTradingIds = allEndedCompetitions
+      .filter((c) => c.type === "trading")
+      .map((c) => c.id);
+    const perpsIds = allEndedCompetitions
+      .filter((c) => c.type === "perpetual_futures")
+      .map((c) => c.id);
+    const allCompetitionIds = allEndedCompetitions.map((c) => c.id);
+
+    // Run all queries in parallel
+    const [
+      tradeStats,
+      positionStats,
+      perpsVolumeStats,
+      voteStats,
+      activeAgentStats,
+    ] = await Promise.all([
+      // 1. Get trade stats for paper trading competitions only
+      paperTradingIds.length > 0
+        ? this.#dbRead
+            .select({
+              totalTrades: drizzleCount(trades.id),
+              totalVolume: sum(trades.tradeAmountUsd).mapWith(Number),
+            })
+            .from(trades)
+            .where(inArray(trades.competitionId, paperTradingIds))
+        : Promise.resolve([{ totalTrades: 0, totalVolume: 0 }]),
+
+      // 2. Get position stats for perps competitions only
+      perpsIds.length > 0
+        ? this.#dbRead
+            .select({
+              totalPositions: drizzleCount(perpetualPositions.id),
+            })
+            .from(perpetualPositions)
+            .where(inArray(perpetualPositions.competitionId, perpsIds))
+        : Promise.resolve([{ totalPositions: 0 }]),
+
+      // 3. Get aggregated volume stats for perps competitions
+      // Using lateral join for scalability - avoids materializing intermediate results
+      perpsIds.length > 0
+        ? (async () => {
+            // Get distinct agents from all perps competitions
+            const distinctAgents = this.#dbRead
+              .selectDistinct({
+                agentId: perpsAccountSummaries.agentId,
+              })
+              .from(perpsAccountSummaries)
+              .where(inArray(perpsAccountSummaries.competitionId, perpsIds))
+              .as("distinct_agents");
+
+            // Create subquery for lateral join - gets latest summary per agent
+            const latestSummarySubquery = this.#dbRead
+              .select({
+                totalVolume: perpsAccountSummaries.totalVolume,
+              })
+              .from(perpsAccountSummaries)
+              .where(
+                and(
+                  inArray(perpsAccountSummaries.competitionId, perpsIds),
+                  sql`${perpsAccountSummaries.agentId} = ${distinctAgents.agentId}`,
+                ),
+              )
+              .orderBy(desc(perpsAccountSummaries.timestamp))
+              .limit(1)
+              .as("latest_summary");
+
+            // Use leftJoinLateral to get latest summaries and aggregate
+            const result = await this.#dbRead
+              .select({
+                totalVolume: sum(latestSummarySubquery.totalVolume).mapWith(
+                  Number,
+                ),
+              })
+              .from(distinctAgents)
+              .leftJoinLateral(latestSummarySubquery, sql`true`);
+
+            return result;
+          })()
+        : Promise.resolve([{ totalVolume: 0 }]),
+
+      // 4. Get vote stats for all competitions
+      this.#dbRead
+        .select({
+          totalVotes: drizzleCount(votes.id),
+        })
+        .from(votes)
+        .where(inArray(votes.competitionId, allCompetitionIds)),
+
+      // 5. Get active agent count across all competitions
+      this.#dbRead
+        .select({
+          totalActiveAgents: countDistinct(competitionAgents.agentId),
+        })
+        .from(competitionAgents)
+        .where(
+          and(
+            inArray(competitionAgents.competitionId, allCompetitionIds),
+            eq(competitionAgents.status, "active"),
+          ),
+        ),
+    ]);
+
+    // Get the aggregated perps volume (already summed in the database)
+    const perpsVolume = perpsVolumeStats[0]?.totalVolume ?? 0;
+
+    // Combine volumes from both competition types
+    const totalVolume = (tradeStats[0]?.totalVolume ?? 0) + perpsVolume;
+
+    this.#logger.debug(
+      `Global stats: ${allEndedCompetitions.length} competitions, ` +
+        `${paperTradingIds.length} paper trading, ${perpsIds.length} perps`,
+    );
+
+    return {
+      activeAgents: activeAgentStats[0]?.totalActiveAgents ?? 0,
+      totalTrades: tradeStats[0]?.totalTrades ?? 0,
+      totalPositions: positionStats[0]?.totalPositions ?? 0,
+      totalVolume,
+      totalCompetitions: allEndedCompetitions.length,
+      totalVotes: voteStats[0]?.totalVotes ?? 0,
+      competitionIds: allCompetitionIds,
+    };
+  }
+
+  /**
    * Get bulk agent metrics for multiple agents using optimized queries
    * This replaces N+1 query patterns in attachAgentMetrics
    * Returns raw query results for processing in the service layer
@@ -135,6 +300,7 @@ export class LeaderboardRepository {
         competitionCounts: [],
         voteCounts: [],
         tradeCounts: [],
+        positionCounts: [],
         bestPlacements: [],
         bestPnls: [],
         totalRois: [],
@@ -199,6 +365,16 @@ export class LeaderboardRepository {
         .from(trades)
         .where(inArray(trades.agentId, agentIds))
         .groupBy(trades.agentId);
+
+      // Query 4b: Position counts (for perpetual futures competitions)
+      const positionCountsQuery = this.#dbRead
+        .select({
+          agentId: perpetualPositions.agentId,
+          totalPositions: drizzleCount(),
+        })
+        .from(perpetualPositions)
+        .where(inArray(perpetualPositions.agentId, agentIds))
+        .groupBy(perpetualPositions.agentId);
 
       // Query 5: Best placements - get the best rank for each agent
       const bestPlacementsSubquery = this.#dbRead
@@ -294,6 +470,7 @@ export class LeaderboardRepository {
         competitionCounts,
         voteCounts,
         tradeCounts,
+        positionCounts,
         bestPlacements,
         bestPnls,
         totalRois,
@@ -303,6 +480,7 @@ export class LeaderboardRepository {
         competitionCountsQuery,
         voteCountsQuery,
         tradeCountsQuery,
+        positionCountsQuery,
         bestPlacementsQuery,
         bestPnlQuery,
         totalRoiQuery,
@@ -319,6 +497,7 @@ export class LeaderboardRepository {
         competitionCounts,
         voteCounts,
         tradeCounts,
+        positionCounts,
         bestPlacements,
         bestPnls,
         totalRois,

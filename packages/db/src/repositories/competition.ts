@@ -1024,6 +1024,45 @@ export class CompetitionRepository {
   }
 
   /**
+   * Batch create multiple portfolio snapshots efficiently
+   * @param snapshots Array of portfolio snapshot data
+   * @returns Array of created snapshots
+   */
+  async batchCreatePortfolioSnapshots(
+    snapshots: InsertPortfolioSnapshot[],
+  ): Promise<SelectPortfolioSnapshot[]> {
+    if (snapshots.length === 0) {
+      return [];
+    }
+
+    try {
+      this.#logger.debug(
+        `[CompetitionRepository] Batch creating ${snapshots.length} portfolio snapshots`,
+      );
+
+      const now = new Date();
+      const results = await this.#db
+        .insert(portfolioSnapshots)
+        .values(
+          snapshots.map((snapshot) => ({
+            ...snapshot,
+            timestamp: snapshot.timestamp || now,
+          })),
+        )
+        .returning();
+
+      this.#logger.debug(
+        `[CompetitionRepository] Successfully created ${results.length} portfolio snapshots`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error("Error in batchCreatePortfolioSnapshots:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get latest portfolio snapshots for all active agents in a competition
    * @param competitionId Competition ID
    */

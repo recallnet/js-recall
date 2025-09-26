@@ -46,7 +46,7 @@ export default function CompetitionsPage() {
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
     useCompetitions({
       status: CompetitionStatus.Active,
-      sort: "-startDate",
+      sort: "startDate",
     });
 
   const {
@@ -54,7 +54,7 @@ export default function CompetitionsPage() {
     isLoading: isLoadingUpcomingCompetitions,
   } = useCompetitions({
     status: CompetitionStatus.Pending,
-    sort: "-startDate",
+    sort: "startDate",
   });
 
   const { data: endedCompetitions, isLoading: isLoadingEndedCompetitions } =
