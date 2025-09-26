@@ -241,6 +241,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const cacheKey = generateCacheKey(req, "list", {
           status,
           ...pagingParams,
+          // Include userId in cache key since response includes user-specific voting data
+          ...(userId && { userId }),
         });
 
         if (shouldCacheResponse) {
@@ -315,6 +317,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const shouldCacheResponse = checkShouldCacheResponse(req);
         const cacheKey = generateCacheKey(req, "byId", {
           competitionId,
+          // Include userId in cache key since response includes user-specific voting data
+          ...(userId && { userId }),
         });
 
         if (shouldCacheResponse) {
