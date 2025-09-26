@@ -109,13 +109,10 @@ export class CalmarRatioService {
       // 4. Annualize the return
       const daysInPeriod =
         (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-      const annualizedReturn = this.annualizeReturn(
-        simpleReturn.toNumber(),
-        daysInPeriod,
-      );
+      const annualizedReturn = this.annualizeReturn(simpleReturn, daysInPeriod);
 
       serviceLogger.debug(
-        `[CalmarRatio] Annualized return: ${(annualizedReturn * 100).toFixed(4)}% over ${daysInPeriod.toFixed(1)} days`,
+        `[CalmarRatio] Annualized return: ${(annualizedReturn.toNumber() * 100).toFixed(4)}% over ${daysInPeriod.toFixed(1)} days`,
       );
 
       // 5. Calculate Calmar Ratio
@@ -159,16 +156,19 @@ export class CalmarRatioService {
    * Annualize a return over a given period
    * Uses compound annualization formula: (1 + r)^(365/days) - 1
    *
-   * @param periodReturn The return for the period (as decimal)
+   * @param periodReturn The return for the period (as Decimal)
    * @param daysInPeriod Number of days in the period
-   * @returns Annualized return as decimal
+   * @returns Annualized return as Decimal
    */
-  private annualizeReturn(periodReturn: number, daysInPeriod: number): number {
+  private annualizeReturn(
+    periodReturn: Decimal,
+    daysInPeriod: number,
+  ): Decimal {
     if (daysInPeriod <= 0) {
       serviceLogger.warn(
         `[CalmarRatio] Invalid period length: ${daysInPeriod} days`,
       );
-      return 0;
+      return new Decimal(0);
     }
 
     // For very short periods (< 1 day), don't annualize
@@ -189,41 +189,41 @@ export class CalmarRatioService {
     const exponent = new Decimal(1).div(yearsInPeriod);
     const annualized = onePlusReturn.pow(exponent).minus(1);
 
-    return annualized.toNumber();
+    return annualized;
   }
 
   /**
    * Calculate Calmar Ratio with proper edge case handling
    * Calmar = Annualized Return / |Max Drawdown|
    *
-   * @param annualizedReturn Annualized return as decimal
+   * @param annualizedReturn Annualized return as Decimal
    * @param maxDrawdown Maximum drawdown as decimal (negative or 0)
-   * @returns Calmar ratio
+   * @returns Calmar ratio as Decimal
    */
   private computeCalmarRatio(
-    annualizedReturn: number,
+    annualizedReturn: Decimal,
     maxDrawdown: number,
-  ): number {
+  ): Decimal {
     // Handle edge cases
     if (maxDrawdown === 0) {
       // No drawdown
-      if (annualizedReturn > 0) {
+      if (annualizedReturn.greaterThan(0)) {
         // Positive return with no drawdown - cap at 100
         serviceLogger.debug(
           `[CalmarRatio] No drawdown with positive return, capping Calmar at 100`,
         );
-        return 100;
-      } else if (annualizedReturn < 0) {
+        return new Decimal(100);
+      } else if (annualizedReturn.lessThan(0)) {
         // Negative return with no drawdown - shouldn't happen but handle it
-        return -100;
+        return new Decimal(-100);
       } else {
         // Zero return, zero drawdown
-        return 0;
+        return new Decimal(0);
       }
     }
 
     // Normal case: divide return by absolute value of drawdown
     // Since drawdown is negative, we use Math.abs
-    return annualizedReturn / Math.abs(maxDrawdown);
+    return annualizedReturn.dividedBy(Math.abs(maxDrawdown));
   }
 }
