@@ -16,6 +16,9 @@ export class MockSymphonyServer {
   // Store mock data for different wallet addresses
   private mockData: Map<string, MockAgentData> = new Map();
 
+  // Track portfolio snapshots for Calmar ratio test wallet simulation
+  private snapshotIndex: Map<string, number> = new Map();
+
   constructor(port: number = 4567) {
     this.port = port;
     this.app = express();
@@ -121,6 +124,48 @@ export class MockSymphonyServer {
       openPositions: [],
       transfers: [],
     });
+
+    // Pre-configured test wallet for Calmar testing AND transfer violation testing
+    // Portfolio shows volatility: $1700 → $1200 → $1550
+    // Simple return: (1550/1700) - 1 = -8.8%
+    // Max drawdown: (1200/1700) - 1 = -29.4%
+    // Also includes test transfers for violation detection
+    this.setAgentData("0x4444444444444444444444444444444444444444", {
+      initialCapital: 1700,
+      totalEquity: 1550,
+      availableBalance: 1550,
+      marginUsed: 0,
+      totalVolume: 15000,
+      totalTrades: 25,
+      totalUnrealizedPnl: 0,
+      totalRealizedPnl: -150,
+      totalFeesPaid: 30,
+      openPositions: [],
+      transfers: [
+        // Test transfers for violation detection
+        // Using dynamic timestamps to occur after competition start
+        {
+          type: "deposit",
+          amount: 200,
+          asset: "USDC",
+          from: "0xdeadbeef111111111111111111111111111111111",
+          to: "0x4444444444444444444444444444444444444444",
+          timestamp: "dynamic:0.5", // 0.5 seconds after request (after competition start)
+          txHash: "0xtransfer_violation_deposit_1",
+          chainId: 42161,
+        },
+        {
+          type: "withdraw",
+          amount: 50,
+          asset: "USDC",
+          from: "0x4444444444444444444444444444444444444444",
+          to: "0xdeadbeef222222222222222222222222222222222",
+          timestamp: "dynamic:1.0", // 1 second after request (after competition start)
+          txHash: "0xtransfer_violation_withdraw_1",
+          chainId: 42161,
+        },
+      ],
+    });
   }
 
   /**
@@ -175,12 +220,66 @@ export class MockSymphonyServer {
       const now = new Date().toISOString();
 
       // Return Symphony-formatted response
+      // For the volatility test wallet (0x4444...), simulate equity changes
+      // to demonstrate max drawdown and Calmar ratio calculations
+      let currentEquity = data.totalEquity;
+      const lowerAddress = userAddress.toLowerCase();
+
+      // Debug logging
+      if (lowerAddress.includes("4444")) {
+        this.logger.info(
+          `[MockSymphony] Calmar test wallet ${lowerAddress} detected`,
+        );
+      }
+
+      if (lowerAddress === "0x4444444444444444444444444444444444444444") {
+        // Track snapshot creation for Calmar ratio test wallet
+        // The test makes 3 processPerpsCompetition calls, each making 2 API calls
+        const callIdx = this.snapshotIndex.get(lowerAddress) || 0;
+
+        // Simple progression: Return different values on each pair of calls
+        // This ensures consistent equity values regardless of setup calls
+        const equityProgression = [
+          1700,
+          1700, // Calls 1-2: First snapshot - PEAK
+          1200,
+          1200, // Calls 3-4: Second snapshot - TROUGH (max drawdown)
+          1550,
+          1550, // Calls 5-6: Third snapshot - RECOVERY
+          1700,
+          1700, // Calls 7-8: For subsequent tests
+          1700,
+          1700, // Calls 9-10: For subsequent tests
+          1700,
+          1700, // Calls 11-12: For subsequent tests
+          1700,
+          1700, // Calls 13+: Default for any additional tests
+        ];
+
+        currentEquity =
+          equityProgression[Math.min(callIdx, equityProgression.length - 1)] ??
+          1550;
+
+        // Increment counter for next call
+        this.snapshotIndex.set(lowerAddress, callIdx + 1);
+
+        // Determine phase for logging based on new progression
+        let phase = "other";
+        if (callIdx <= 1) phase = "peak";
+        else if (callIdx >= 2 && callIdx <= 3) phase = "trough";
+        else if (callIdx >= 4 && callIdx <= 5) phase = "recovery";
+
+        this.logger.info(
+          `[MockSymphony] Calmar wallet call #${callIdx + 1}, equity=$${currentEquity} (${phase})`,
+        );
+      }
+
       res.json({
         success: true,
         data: {
           userAddress,
           accountSummary: {
-            totalEquity: data.totalEquity,
+            totalEquity: currentEquity,
             initialCapital: data.initialCapital,
             totalUnrealizedPnl: data.totalUnrealizedPnl || 0,
             totalRealizedPnl: data.totalRealizedPnl || 0,
@@ -255,25 +354,50 @@ export class MockSymphonyServer {
       const sinceDate = since ? new Date(since) : new Date(0);
 
       // Filter transfers by date
-      const transfers = (data.transfers || []).filter(
-        (t) => new Date(t.timestamp) >= sinceDate,
-      );
+      const transfers = (data.transfers || []).filter((t) => {
+        let transferTimestamp: Date;
+        if (t.timestamp.startsWith("dynamic:")) {
+          const secondsOffset = parseFloat(t.timestamp.replace("dynamic:", ""));
+          transferTimestamp = new Date(Date.now() + secondsOffset * 1000);
+        } else {
+          transferTimestamp = new Date(t.timestamp);
+        }
+        return transferTimestamp >= sinceDate;
+      });
 
       res.json({
         success: true,
         count: transfers.length,
         successful: transfers.map((_, i) => 42161 + i), // Mock chain IDs
         failed: [],
-        transfers: transfers.map((t) => ({
-          type: t.type,
-          amount: t.amount,
-          asset: t.asset || "USDC",
-          from: t.from || walletAddress,
-          to: t.to || walletAddress,
-          timestamp: t.timestamp,
-          txHash: t.txHash || `0xtx_${Date.now()}_${Math.random()}`,
-          chainId: t.chainId || 42161, // Default to Arbitrum
-        })),
+        transfers: transfers.map((t) => {
+          // Calculate dynamic timestamps relative to "now" for test transfers
+          let transferTimestamp: string;
+          if (t.timestamp.startsWith("dynamic:")) {
+            // Dynamic timestamp - calculate relative to current time
+            // Format: "dynamic:-0.5" means 0.5 seconds ago
+            const secondsOffset = parseFloat(
+              t.timestamp.replace("dynamic:", ""),
+            );
+            transferTimestamp = new Date(
+              Date.now() + secondsOffset * 1000,
+            ).toISOString();
+          } else {
+            transferTimestamp = t.timestamp;
+          }
+
+          return {
+            type: t.type,
+            amount: t.amount,
+            asset: t.asset || "USDC",
+            from: t.from || walletAddress,
+            to: t.to || walletAddress,
+            timestamp: transferTimestamp,
+            txHash: t.txHash || `0xtx_${Date.now()}_${Math.random()}`,
+            chainId: t.chainId || 42161, // Default to Arbitrum
+            // No equity snapshots - mid-competition transfers are now prohibited
+          };
+        }),
       });
     });
 
@@ -343,7 +467,17 @@ export class MockSymphonyServer {
   }
 
   /**
-   * Add a transfer for an agent (for self-funding tests)
+   * Add a transfer for an agent (for violation testing only)
+   *
+   * NOTE: Mid-competition transfers are now PROHIBITED by competition rules.
+   * This method should only be used to test violation detection.
+   *
+   * Any transfer during an active competition should trigger:
+   * - Self-funding alert with severity: critical
+   * - Potential agent disqualification
+   *
+   * The system uses simple returns
+   * are not allowed during competitions.
    */
   public addTransfer(walletAddress: string, transfer: MockTransfer): void {
     const data = this.getAgentData(walletAddress);
@@ -366,6 +500,7 @@ export class MockSymphonyServer {
    */
   public reset(): void {
     this.mockData.clear();
+    this.snapshotIndex.clear(); // Reset the snapshot index between tests
     this.initializeDefaultMockData();
   }
 }
@@ -412,4 +547,5 @@ export interface MockTransfer {
   timestamp: string;
   txHash?: string;
   chainId?: number;
+  // Note: Mid-competition transfers are now prohibited by competition rules
 }

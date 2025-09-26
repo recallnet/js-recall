@@ -409,6 +409,9 @@ export const config = {
   watchlist: {
     chainalysisApiKey: process.env.CHAINALYSIS_API_KEY || "",
   },
+  symphony: {
+    apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
+  },
 };
 
 /**

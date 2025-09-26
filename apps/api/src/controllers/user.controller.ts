@@ -27,7 +27,7 @@ import {
  */
 export function makeUserController(
   services: ServiceRegistry,
-  boostMode: "no-stake" | "stake",
+  isStakeMode: boolean = false,
 ) {
   return {
     /**
@@ -150,12 +150,7 @@ export function makeUserController(
         });
 
         // Grant initial boost if applicable
-        if (boostMode === "no-stake") {
-          await services.boostAwardService.initNoStake(
-            linkedUser.id,
-            linkedUser.walletAddress,
-          );
-        } else {
+        if (isStakeMode) {
           await services.boostAwardService.initForStake(
             linkedUser.walletAddress,
           );
@@ -190,13 +185,6 @@ export function makeUserController(
           body: { name, handle, description, imageUrl, email, metadata },
         } = data;
 
-        // Verify the user exists
-        const user = await services.userService.getUser(userId);
-        if (!user) {
-          throw new ApiError(404, "User not found");
-        }
-
-        // Create the agent using AgentManager
         const agent = await services.agentService.createAgent({
           ownerId: userId,
           name,
@@ -206,10 +194,6 @@ export function makeUserController(
           metadata,
           email,
         });
-
-        if (!agent) {
-          throw new ApiError(500, "Failed to create agent");
-        }
 
         // Return the created agent (API key must be retrieved via separate endpoint)
         res.status(201).json({

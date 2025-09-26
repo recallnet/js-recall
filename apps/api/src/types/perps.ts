@@ -2,6 +2,84 @@
  * Perps Provider Types
  * Generic types for perpetual futures data providers
  */
+import type {
+  InsertPerpetualPosition,
+  InsertPerpsAccountSummary,
+  SelectPerpetualPosition,
+  SelectPerpsAccountSummary,
+} from "@recallnet/db/schema/trading/types";
+
+// =============================================================================
+// PERPS SYNC & PROCESSING TYPES
+// =============================================================================
+
+/**
+ * Data for reviewing a perps self-funding alert
+ */
+export interface PerpsSelfFundingAlertReview {
+  reviewed: boolean;
+  reviewedAt: Date;
+  reviewedBy: string;
+  actionTaken?: string;
+  reviewNote?: string;
+}
+
+/**
+ * Data for syncing a single agent's perps data
+ */
+export interface AgentPerpsSyncData {
+  agentId: string;
+  competitionId: string;
+  positions: InsertPerpetualPosition[];
+  accountSummary: InsertPerpsAccountSummary;
+}
+
+/**
+ * Result of syncing agent perps data
+ */
+export interface AgentPerpsSyncResult {
+  positions: SelectPerpetualPosition[];
+  summary: SelectPerpsAccountSummary;
+}
+
+/**
+ * Successfully synced agent data
+ */
+export interface SuccessfulAgentSync {
+  agentId: string;
+  positions: SelectPerpetualPosition[];
+  summary: SelectPerpsAccountSummary;
+}
+
+/**
+ * Failed agent sync
+ */
+export interface FailedAgentSync {
+  agentId: string;
+  error: Error;
+}
+
+/**
+ * Result of batch syncing multiple agents
+ */
+export interface BatchPerpsSyncResult {
+  successful: SuccessfulAgentSync[];
+  failed: FailedAgentSync[];
+}
+
+/**
+ * Statistics for a perps competition
+ */
+export interface PerpsCompetitionStats {
+  totalAgents: number;
+  totalPositions: number;
+  totalVolume: number;
+  averageEquity: number;
+}
+
+// =============================================================================
+// PERPS PROVIDER TYPES
+// =============================================================================
 
 /**
  * Generic perps account summary
@@ -77,7 +155,7 @@ export interface PerpsPosition {
 }
 
 /**
- * USDC transfer record for self-funding detection
+ * USDC transfer record for violation detection and audit
  */
 export interface Transfer {
   type: "deposit" | "withdraw";
@@ -171,4 +249,40 @@ export interface PerpsProcessingResult {
   positionsProcessed: number;
   summaryCreated: boolean;
   error?: string;
+}
+
+/**
+ * Result of Calmar Ratio calculations
+ */
+export interface CalmarRatioCalculationResult {
+  successful: number;
+  failed: number;
+  errors?: string[];
+}
+
+/**
+ * Result of monitoring self-funding violations
+ */
+export interface PerpsMonitoringResult {
+  successful: number;
+  failed: number;
+  alertsCreated: number;
+}
+
+/**
+ * Combined result of processing a perps competition
+ */
+export interface PerpsCompetitionProcessingResult {
+  syncResult: BatchPerpsSyncResult;
+  monitoringResult?: PerpsMonitoringResult;
+  calmarRatioResult?: CalmarRatioCalculationResult;
+  error?: string;
+}
+
+/**
+ * Extended batch sync result with account summaries
+ */
+export interface BatchPerpsSyncWithSummaries extends BatchPerpsSyncResult {
+  accountSummaries: Map<string, PerpsAccountSummary>;
+  agents: Array<{ agentId: string; walletAddress: string }>;
 }

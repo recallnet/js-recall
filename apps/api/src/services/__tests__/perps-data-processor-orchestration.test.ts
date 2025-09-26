@@ -10,6 +10,7 @@ import type {
 import * as agentRepo from "@/database/repositories/agent-repository.js";
 import * as competitionRepo from "@/database/repositories/competition-repository.js";
 import * as perpsRepo from "@/database/repositories/perps-repository.js";
+import { CalmarRatioService } from "@/services/calmar-ratio.service.js";
 import { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
 import { PerpsMonitoringService } from "@/services/perps-monitoring.service.js";
 import { PerpsProviderFactory } from "@/services/providers/perps-provider.factory.js";
@@ -25,6 +26,7 @@ vi.mock("@/database/repositories/competition-repository.js");
 vi.mock("@/database/repositories/perps-repository.js");
 vi.mock("@/services/perps-monitoring.service.js");
 vi.mock("@/services/providers/perps-provider.factory.js");
+vi.mock("@/services/calmar-ratio.service.js");
 vi.mock("@/lib/logger.js");
 
 describe("PerpsDataProcessor - processPerpsCompetition", () => {
@@ -595,6 +597,407 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
 
       // Should NOT run monitoring for invalid threshold
       expect(PerpsMonitoringService).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("calmar ratio calculation", () => {
+    it("should calculate Calmar ratios for active competitions", async () => {
+      const mockCalculateAndSave = vi.fn().mockResolvedValue({
+        metrics: { id: "metrics-1", calmarRatio: "1.5" },
+        periods: [],
+      });
+
+      vi.mocked(CalmarRatioService).mockImplementation(
+        () =>
+          ({
+            calculateAndSaveCalmarRatio: mockCalculateAndSave,
+          }) as unknown as CalmarRatioService,
+      );
+
+      vi.mocked(competitionRepo.findById).mockResolvedValue(sampleCompetition);
+      vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(competitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(agentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // Should calculate Calmar ratio for successful agents
+      expect(CalmarRatioService).toHaveBeenCalled();
+      expect(mockCalculateAndSave).toHaveBeenCalledWith("agent-1", "comp-1");
+      expect(result.calmarRatioResult).toEqual({
+        successful: 1,
+        failed: 0,
+        errors: undefined,
+      });
+    });
+
+    it("should not calculate Calmar ratios for ended competitions", async () => {
+      const endedCompetition = {
+        ...sampleCompetition,
+        status: "ended" as const,
+      };
+
+      vi.mocked(competitionRepo.findById).mockResolvedValue(endedCompetition);
+      vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(competitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(agentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // Should NOT calculate Calmar ratio for ended competitions
+      expect(CalmarRatioService).not.toHaveBeenCalled();
+      expect(result.calmarRatioResult).toBeUndefined();
+    });
+
+    it("should handle Calmar calculation failures gracefully", async () => {
+      vi.useFakeTimers();
+
+      const mockCalculateAndSave = vi
+        .fn()
+        .mockRejectedValue(new Error("Database error"));
+
+      vi.mocked(CalmarRatioService).mockImplementation(
+        () =>
+          ({
+            calculateAndSaveCalmarRatio: mockCalculateAndSave,
+          }) as unknown as CalmarRatioService,
+      );
+
+      vi.mocked(competitionRepo.findById).mockResolvedValue(sampleCompetition);
+      vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(competitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+        "agent-2",
+      ]);
+
+      const agent2: SelectAgent = {
+        ...mockAgent,
+        id: "agent-2",
+        walletAddress: "0x456",
+      };
+
+      vi.mocked(agentRepo.findByIds).mockResolvedValue([mockAgent, agent2]);
+
+      // Make both agents sync successfully
+      vi.mocked(perpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: [
+          { ...mockSyncResult, agentId: "agent-1" },
+          { ...mockSyncResult, agentId: "agent-2" },
+        ],
+        failed: [],
+      });
+
+      // Run with fake timers to speed up retries
+      const resultPromise = processor.processPerpsCompetition("comp-1");
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
+
+      vi.useRealTimers();
+
+      // Sync should succeed
+      expect(result.syncResult.successful).toHaveLength(2);
+
+      // Calmar calculation should fail for both agents
+      // With only 2 agents, the batch failure rate is 100% which triggers the systemic alert
+      expect(result.calmarRatioResult).toEqual({
+        successful: 0,
+        failed: 2,
+        errors: [
+          "Agent agent-1: Database error",
+          "Agent agent-2: Database error",
+          "SYSTEMIC ALERT: 100% of batches failing (threshold: 50%)",
+        ],
+      });
+
+      // Process should still complete successfully overall
+      expect(result.error).toBeUndefined();
+    });
+
+    it("should handle partial Calmar calculation failures", async () => {
+      vi.useFakeTimers();
+
+      // Mock to succeed for agent-1, fail for agent-2
+      const mockCalculateAndSave = vi
+        .fn()
+        .mockImplementation((agentId: string) => {
+          if (agentId === "agent-1") {
+            return Promise.resolve({
+              metrics: { id: "metrics-1", calmarRatio: "1.5" },
+              periods: [],
+            });
+          }
+          return Promise.reject(new Error("Agent-specific error"));
+        });
+
+      vi.mocked(CalmarRatioService).mockImplementation(
+        () =>
+          ({
+            calculateAndSaveCalmarRatio: mockCalculateAndSave,
+          }) as unknown as CalmarRatioService,
+      );
+
+      vi.mocked(competitionRepo.findById).mockResolvedValue(sampleCompetition);
+      vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(competitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+        "agent-2",
+      ]);
+
+      const agent2: SelectAgent = {
+        ...mockAgent,
+        id: "agent-2",
+        walletAddress: "0x456",
+      };
+
+      vi.mocked(agentRepo.findByIds).mockResolvedValue([mockAgent, agent2]);
+
+      // Make both agents sync successfully
+      vi.mocked(perpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: [
+          { ...mockSyncResult, agentId: "agent-1" },
+          { ...mockSyncResult, agentId: "agent-2" },
+        ],
+        failed: [],
+      });
+
+      // Run with fake timers
+      const resultPromise = processor.processPerpsCompetition("comp-1");
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
+
+      vi.useRealTimers();
+
+      // Should have mixed results
+      expect(result.calmarRatioResult).toEqual({
+        successful: 1,
+        failed: 1,
+        errors: ["Agent agent-2: Agent-specific error"],
+      });
+    });
+
+    it("should not calculate Calmar if no agents sync successfully", async () => {
+      vi.mocked(competitionRepo.findById).mockResolvedValue(sampleCompetition);
+      vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(competitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(agentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      // Mock sync to fail
+      mockProvider.getAccountSummary = vi
+        .fn()
+        .mockRejectedValue(new Error("Provider error"));
+
+      vi.mocked(perpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: [],
+        failed: [],
+      });
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // Should not calculate Calmar when no agents synced
+      expect(CalmarRatioService).not.toHaveBeenCalled();
+      expect(result.calmarRatioResult).toBeUndefined();
+    });
+
+    it("should monitor with circuit breaker alert but continue processing all agents", async () => {
+      vi.useFakeTimers();
+
+      // Create 50 agents (5 batches of 10)
+      const agents = Array.from({ length: 50 }, (_, i) => ({
+        ...mockAgent,
+        id: `agent-${i}`,
+        walletAddress: `0x${i.toString().padStart(40, "0")}`,
+      }));
+
+      const syncResults = agents.map((agent) => ({
+        ...mockSyncResult,
+        agentId: agent.id,
+      }));
+
+      // Mock all Calmar calculations to fail
+      const mockCalculateAndSave = vi
+        .fn()
+        .mockRejectedValue(new Error("Database down"));
+
+      vi.mocked(CalmarRatioService).mockImplementation(
+        () =>
+          ({
+            calculateAndSaveCalmarRatio: mockCalculateAndSave,
+          }) as unknown as CalmarRatioService,
+      );
+
+      vi.mocked(competitionRepo.findById).mockResolvedValue(sampleCompetition);
+      vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(competitionRepo.getCompetitionAgents).mockResolvedValue(
+        agents.map((a) => a.id),
+      );
+      vi.mocked(agentRepo.findByIds).mockResolvedValue(agents);
+
+      // All agents sync successfully
+      vi.mocked(perpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: syncResults,
+        failed: [],
+      });
+
+      // Run with fake timers
+      const resultPromise = processor.processPerpsCompetition("comp-1");
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
+
+      vi.useRealTimers();
+
+      // With the new approach: ALL agents should be attempted (with retries)
+      // Each agent gets 4 attempts (1 initial + 3 retries) = 200 total calls
+      expect(mockCalculateAndSave).toHaveBeenCalledTimes(200);
+
+      // All 50 should be marked as failed (all attempted but all failed)
+      expect(result.calmarRatioResult?.failed).toBe(50);
+      expect(result.calmarRatioResult?.successful).toBe(0);
+
+      // Should have systemic failure ALERT message in errors (not stop message)
+      const hasSystemicAlert = result.calmarRatioResult?.errors?.some((e) =>
+        e.includes("SYSTEMIC ALERT:"),
+      );
+      expect(hasSystemicAlert).toBe(true);
+    });
+
+    it("should cap error messages at 100 entries", async () => {
+      vi.useFakeTimers();
+
+      // Create 150 agents
+      const agents = Array.from({ length: 150 }, (_, i) => ({
+        ...mockAgent,
+        id: `agent-${i}`,
+        walletAddress: `0x${i.toString().padStart(40, "0")}`,
+      }));
+
+      const syncResults = agents.map((agent) => ({
+        ...mockSyncResult,
+        agentId: agent.id,
+      }));
+
+      // Mock Calmar to fail for all agents but with varying errors
+      const mockCalculateAndSave = vi
+        .fn()
+        .mockImplementation((agentId: string) => {
+          // Systemic alert won't trigger because we vary the error pattern
+          const index = parseInt(agentId.split("-")[1] || "0", 10);
+          // Fail 9 out of 10 in each batch (90% batch failure, but not all batches fail)
+          if (index % 10 === 0) {
+            return Promise.resolve({
+              metrics: { id: `metrics-${agentId}`, calmarRatio: "1.0" },
+              periods: [],
+            });
+          }
+          return Promise.reject(new Error(`Error for ${agentId}`));
+        });
+
+      vi.mocked(CalmarRatioService).mockImplementation(
+        () =>
+          ({
+            calculateAndSaveCalmarRatio: mockCalculateAndSave,
+          }) as unknown as CalmarRatioService,
+      );
+
+      vi.mocked(competitionRepo.findById).mockResolvedValue(sampleCompetition);
+      vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(competitionRepo.getCompetitionAgents).mockResolvedValue(
+        agents.map((a) => a.id),
+      );
+      vi.mocked(agentRepo.findByIds).mockResolvedValue(agents);
+
+      vi.mocked(perpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: syncResults,
+        failed: [],
+      });
+
+      // Run with fake timers
+      const resultPromise = processor.processPerpsCompetition("comp-1");
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
+
+      vi.useRealTimers();
+
+      // 135 should fail (9 out of 10 in each batch)
+      expect(result.calmarRatioResult?.failed).toBe(135);
+      expect(result.calmarRatioResult?.successful).toBe(15);
+
+      // Errors array should be capped at 101 (100 + summary message)
+      expect(result.calmarRatioResult?.errors?.length).toBeLessThanOrEqual(101);
+
+      // Should have summary message about remaining errors
+      const hasSummaryMessage = result.calmarRatioResult?.errors?.some((e) =>
+        e.includes("... and"),
+      );
+      expect(hasSummaryMessage).toBe(true);
+    });
+
+    it("should process large batches efficiently", async () => {
+      // Create 25 agents (3 batches: 10, 10, 5)
+      const agents = Array.from({ length: 25 }, (_, i) => ({
+        ...mockAgent,
+        id: `agent-${i}`,
+        walletAddress: `0x${i.toString().padStart(40, "0")}`,
+      }));
+
+      const syncResults = agents.map((agent) => ({
+        ...mockSyncResult,
+        agentId: agent.id,
+      }));
+
+      // Mock all to succeed
+      const mockCalculateAndSave = vi.fn().mockResolvedValue({
+        metrics: { id: "metrics-1", calmarRatio: "1.5" },
+        periods: [],
+      });
+
+      vi.mocked(CalmarRatioService).mockImplementation(
+        () =>
+          ({
+            calculateAndSaveCalmarRatio: mockCalculateAndSave,
+          }) as unknown as CalmarRatioService,
+      );
+
+      vi.mocked(competitionRepo.findById).mockResolvedValue(sampleCompetition);
+      vi.mocked(perpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(competitionRepo.getCompetitionAgents).mockResolvedValue(
+        agents.map((a) => a.id),
+      );
+      vi.mocked(agentRepo.findByIds).mockResolvedValue(agents);
+
+      vi.mocked(perpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: syncResults,
+        failed: [],
+      });
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // All should succeed
+      expect(mockCalculateAndSave).toHaveBeenCalledTimes(25);
+      expect(result.calmarRatioResult?.successful).toBe(25);
+      expect(result.calmarRatioResult?.failed).toBe(0);
+      expect(result.calmarRatioResult?.errors).toBeUndefined();
     });
   });
 });

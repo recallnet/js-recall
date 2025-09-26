@@ -8,13 +8,8 @@ import {
   competitionType,
 } from "@recallnet/db/schema/core/defs";
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
+import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
 import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
-import {
-  InsertPerpetualPosition,
-  InsertPerpsAccountSummary,
-  SelectPerpetualPosition,
-  SelectPerpsAccountSummary,
-} from "@recallnet/db/schema/trading/types";
 
 /**
  * Blockchain type enum
@@ -561,6 +556,58 @@ export const AgentPublicSchema = AgentSchema.omit({
 export type AgentPublic = z.infer<typeof AgentPublicSchema>;
 
 /**
+ * Runtime conversion helpers for database to API type conversion
+ * These functions convert null values to undefined for API compatibility
+ */
+
+/**
+ * Converts a database User object to API User format
+ * @param dbUser Database user object with null values
+ * @returns API user object with undefined values
+ */
+export function toApiUser(dbUser: SelectUser): User {
+  return {
+    id: dbUser.id,
+    walletAddress: dbUser.walletAddress,
+    embeddedWalletAddress: dbUser.embeddedWalletAddress ?? undefined,
+    walletLastVerifiedAt: dbUser.walletLastVerifiedAt ?? undefined,
+    name: dbUser.name ?? undefined,
+    email: dbUser.email ?? undefined,
+    isSubscribed: dbUser.isSubscribed,
+    privyId: dbUser.privyId ?? undefined,
+    imageUrl: dbUser.imageUrl ?? undefined,
+    metadata: dbUser.metadata ? (dbUser.metadata as UserMetadata) : undefined,
+    status: dbUser.status as ActorStatus,
+    createdAt: dbUser.createdAt,
+    updatedAt: dbUser.updatedAt,
+    lastLoginAt: dbUser.lastLoginAt ?? undefined,
+  };
+}
+
+/**
+ * Converts a database Agent object to API Agent format, *including* unencrypted API credentials.
+ * @param dbAgent Database agent object with null values
+ * @returns API agent object with undefined values
+ */
+export function toApiAgent(dbAgent: SelectAgent): Agent {
+  return {
+    id: dbAgent.id,
+    ownerId: dbAgent.ownerId,
+    walletAddress: dbAgent.walletAddress ?? undefined,
+    name: dbAgent.name,
+    handle: dbAgent.handle,
+    description: dbAgent.description ?? undefined,
+    imageUrl: dbAgent.imageUrl ?? undefined,
+    apiKey: dbAgent.apiKey,
+    metadata: dbAgent.metadata ? (dbAgent.metadata as UserMetadata) : undefined,
+    email: dbAgent.email ?? undefined,
+    status: dbAgent.status as ActorStatus,
+    createdAt: dbAgent.createdAt,
+    updatedAt: dbAgent.updatedAt,
+  };
+}
+
+/**
  * Trading Constraint Schema
  */
 export const TradingConstraintsSchema = z
@@ -1027,7 +1074,7 @@ export const AdminCreateAgentSchema = z.object({
     walletAddress: z.string().optional(),
     description: z.string().optional(),
     imageUrl: z.string().optional(),
-    metadata: z.nullish(AgentMetadataSchema),
+    metadata: AgentMetadataSchema.optional(),
   }),
 });
 
@@ -1120,63 +1167,6 @@ export const BestPlacementDbSchema = z.looseObject({
   total_agents: z.coerce.number(),
 });
 
-// =============================================================================
-// PERPS TYPES
-// =============================================================================
-
-/**
- * Data for reviewing a perps self-funding alert
- */
-export interface PerpsSelfFundingAlertReview {
-  reviewed: boolean;
-  reviewedAt: Date;
-  reviewedBy: string;
-  actionTaken?: string;
-  reviewNote?: string;
-}
-
-/**
- * Data for syncing a single agent's perps data
- */
-export interface AgentPerpsSyncData {
-  agentId: string;
-  competitionId: string;
-  positions: InsertPerpetualPosition[];
-  accountSummary: InsertPerpsAccountSummary;
-}
-
-/**
- * Result of syncing agent perps data
- */
-export interface AgentPerpsSyncResult {
-  positions: SelectPerpetualPosition[];
-  summary: SelectPerpsAccountSummary;
-}
-
-/**
- * Result of batch syncing multiple agents
- */
-export interface BatchPerpsSyncResult {
-  successful: Array<{
-    agentId: string;
-    positions: SelectPerpetualPosition[];
-    summary: SelectPerpsAccountSummary;
-  }>;
-  failed: Array<{
-    agentId: string;
-    error: Error;
-  }>;
-}
-
-/**
- * Statistics for a perps competition
- */
-export interface PerpsCompetitionStats {
-  totalAgents: number;
-  totalPositions: number;
-  totalVolume: number;
-  averageEquity: number;
-}
 /**
  * Privy identity token parameter schema
  */

@@ -8,23 +8,6 @@ import {
 import { useSession } from "@/hooks/useSession";
 import { apiClient } from "@/lib/api-client";
 
-export const useBoostBalance = (competitionId: string) => {
-  const { isAuthenticated } = useSession();
-  return useQuery({
-    queryKey: ["boostBalance", competitionId],
-    queryFn: async () => {
-      try {
-        const res = await apiClient.getBoostBalance({ competitionId });
-        if (!res.success) throw new Error("Error when fetching boost balance");
-        return res;
-      } catch (error) {
-        throw error;
-      }
-    },
-    enabled: isAuthenticated,
-  });
-};
-
 export const useBoosts = (competitionId: string) => {
   const { isAuthenticated } = useSession();
   return useQuery({

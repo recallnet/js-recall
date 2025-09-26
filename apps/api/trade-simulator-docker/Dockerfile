@@ -9,6 +9,8 @@ COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/typescript-config/package.json packages/typescript-config/
 COPY packages/db/package.json packages/db/
 COPY packages/staking-contracts/package.json packages/staking-contracts/
+COPY packages/services/package.json packages/services/
+COPY packages/conversions/package.json packages/conversions/
 COPY packages/rewards/package.json packages/rewards/
 COPY apps/api/package.json apps/api/
 
@@ -20,6 +22,8 @@ COPY . .
 RUN pnpm --filter=@recallnet/db build && \
     pnpm --filter=@recallnet/staking-contracts build && \
     pnpm --filter=@recallnet/rewards build && \
+    pnpm --filter=@recallnet/services build && \
+    pnpm --filter=@recallnet/conversions build && \
     pnpm --filter=api build
 
 FROM node:22-alpine
