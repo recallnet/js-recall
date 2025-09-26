@@ -3,6 +3,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import { BoostService } from "@recallnet/services/boost";
+import { UserService } from "@recallnet/services/user";
 
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
@@ -45,6 +46,7 @@ class ServiceRegistry {
   private _tradeSimulatorService: TradeSimulatorService;
   private _competitionService: CompetitionService;
   private _legacyUserService: LegacyUserService;
+  private _userService: UserService;
   private _agentService: AgentService;
   private _adminService: AdminService;
   private _configurationService: ConfigurationService;
@@ -138,6 +140,9 @@ class ServiceRegistry {
     );
     this._userRepository = new UserRepository(db, repositoryLogger);
 
+    // Initialize UserService
+    this._userService = new UserService(this._userRepository, serviceLogger);
+
     // Initialize BoostService with its dependencies
     // TODO: Consider the best practice for services depending on repositories and/or other services.
     this._boostService = new BoostService(
@@ -204,6 +209,10 @@ class ServiceRegistry {
 
   get legacyUserService(): LegacyUserService {
     return this._legacyUserService;
+  }
+
+  get userService(): UserService {
+    return this._userService;
   }
 
   get agentService(): AgentService {

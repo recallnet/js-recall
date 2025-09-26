@@ -16,6 +16,7 @@ import { cookies } from "next/headers";
 
 import { Database } from "@recallnet/db/types";
 import { BoostService } from "@recallnet/services/boost";
+import { UserService } from "@recallnet/services/user";
 
 /**
  * The base context object for RPC procedures. The properties included
@@ -24,7 +25,8 @@ import { BoostService } from "@recallnet/services/boost";
  * @property cookies - HTTP cookies from the request (Next.js)
  * @property privyClient - Privy authentication/session client
  * @property boostService - Service for boost-related operations
- * @property db - Database instance for data access
+ * @property userService - Service for user-related operations
+ * @property db - Database instance for data access TODO: Remove this
  *
  * Standard errors:
  *   - NOT_FOUND: Resource not found
@@ -36,6 +38,7 @@ export const base = os
     cookies: Awaited<ReturnType<typeof cookies>>;
     privyClient: PrivyClient;
     boostService: BoostService;
+    userService: UserService;
     db: Database;
   }>()
   .errors({

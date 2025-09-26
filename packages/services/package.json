@@ -17,6 +17,12 @@
         "types": "./dist/boost.d.ts",
         "default": "./dist/boost.js"
       }
+    },
+    "./user": {
+      "import": {
+        "types": "./dist/user.d.ts",
+        "default": "./dist/user.js"
+      }
     }
   },
   "files": [

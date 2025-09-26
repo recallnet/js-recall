@@ -1,4 +1,5 @@
 import { BoostService } from "@recallnet/services/boost";
+import { UserService } from "@recallnet/services/user";
 
 import {
   boostRepository,
@@ -18,4 +19,9 @@ export const boostService = new BoostService(
   userRepository,
   nonStakeBoostAmount,
   createLogger("BoostService"),
+);
+
+export const userService = new UserService(
+  userRepository,
+  createLogger("UserService"),
 );

@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
 
 import { db } from "@/lib/db";
 import { privyClient } from "@/lib/privy-client";
-import { boostService } from "@/lib/services";
+import { boostService, userService } from "@/lib/services";
 import { router } from "@/rpc/router/index";
 
 export async function createClient() {
@@ -17,6 +17,7 @@ export async function createClient() {
       db,
       privyClient,
       boostService,
+      userService,
     },
   });
 }

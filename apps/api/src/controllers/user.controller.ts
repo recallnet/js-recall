@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 
 import { userLogger } from "@/lib/logger.js";
 import { verifyPrivyUserHasLinkedWallet } from "@/lib/privy/verify.js";
+import { assertUnreachable } from "@/lib/typescript-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
@@ -45,16 +46,26 @@ export function makeUserController(
         const userId = data;
 
         // Get the user using the service
-        const user = await services.legacyUserService.getUser(userId);
+        const userResult = await services.userService.getUser(userId);
 
-        if (!user) {
-          throw new ApiError(404, "User not found");
+        if (userResult.isErr()) {
+          switch (userResult.error.type) {
+            case "UserNotFound":
+              throw new ApiError(404, "User not found");
+            case "RepositoryError":
+              throw new ApiError(
+                500,
+                `Database error: ${userResult.error.message}`,
+              );
+            default:
+              assertUnreachable(userResult.error);
+          }
         }
 
         // Return the user profile (excluding sensitive fields)
         res.status(200).json({
           success: true,
-          user,
+          user: userResult.value,
         });
       } catch (error) {
         next(error);

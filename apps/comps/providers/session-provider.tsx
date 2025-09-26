@@ -26,6 +26,7 @@ import {
 
 import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
+import { client } from "@/rpc/clients/client-side";
 import { User as BackendUser, UpdateProfileRequest } from "@/types";
 
 type Session = {
@@ -135,7 +136,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  // Query for BackendUser session data
+  // Query for BackendUser session data using RPC
   const {
     data: backendUser,
     isLoading: isFetchBackendUserLoading,
@@ -143,23 +144,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     error: fetchBackendUserError,
     refetch: refetchBackendUser,
   } = useQuery({
-    queryKey: ["user"],
-    queryFn: async () => {
-      const response = await apiClient.current.getProfile();
-      if (!response.success) {
-        throw new Error("Failed to fetch user");
-      }
-      return response.user;
-    },
+    queryKey: ["user", "profile"],
+    queryFn: () => client.user.profile(),
     enabled: authenticated && ready && isLoginToBackendSuccess,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-    // TODO: Use a client that has better error types that include status codes.
-    // retry: (failureCount, error) => {
-    //   // Don't retry on 401/403 errors
-    //   if (error?.status === 401 || error?.status === 403) return false;
-    //   return failureCount < 3;
-    // },
   });
 
   const {
