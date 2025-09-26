@@ -98,6 +98,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   } = useQuery(
     tanstackClient.boost.balance.queryOptions({
       input: { competitionId: competition.id },
+      initialData: undefined,
+      queryKey: [
+        ...tanstackClient.boost.balance.queryKey({
+          input: { competitionId: competition.id },
+        }),
+        session.user?.id ?? "unauthenticated",
+      ],
       enabled: session.isAuthenticated,
       select: (data) => attoValueToNumberValue(data),
     }),
@@ -110,6 +117,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   } = useQuery(
     tanstackClient.boost.userBoosts.queryOptions({
       input: { competitionId: competition.id },
+      initialData: undefined,
+      queryKey: [
+        ...tanstackClient.boost.userBoosts.queryKey({
+          input: { competitionId: competition.id },
+        }),
+        session.user?.id ?? "unauthenticated",
+      ],
       enabled: session.isAuthenticated,
       select: (data) =>
         Object.fromEntries(
@@ -524,7 +538,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </Button>
         )}
         {/* Available Boost Progress Bar */}
-        {showBoostBalance && (
+        {showBoostBalance && !showClaimBoost && (
           <div className="w-full md:w-1/2 lg:ml-8">
             <div className="rounded-2xl p-4">
               <div className="flex items-center gap-3">
