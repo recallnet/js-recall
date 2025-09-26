@@ -13,7 +13,6 @@ import { buildPaginationResponse } from "@/controllers/request-helpers.js";
 import { db } from "@/database/db.js";
 import { findByCompetition } from "@/database/repositories/agent-repository.js";
 import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
-import { resetAgentBalances } from "@/database/repositories/balance-repository.js";
 import {
   addAgentToCompetition,
   batchInsertLeaderboard,
@@ -707,18 +706,7 @@ export class CompetitionService {
 
     // Process all agent additions and activations
     for (const agentId of finalAgentIds) {
-      // Handle balances based on competition type
-      if (competition.type === "trading") {
-        // Paper trading: Reset to standard balances (5k USDC per chain)
-        await this.balanceService.resetAgentBalances(agentId);
-      } else if (competition.type === "perpetual_futures") {
-        // Perps: Clear all balances to prevent confusion
-        // Pass empty Map to delete all balances without creating new ones
-        await resetAgentBalances(agentId, new Map());
-        serviceLogger.debug(
-          `[CompetitionService] Cleared balances for perps agent ${agentId}`,
-        );
-      }
+      await this.balanceService.resetAgentBalances(agentId, competition.type);
 
       // Note: Agent validation already done above, so we know agent exists and is active
 

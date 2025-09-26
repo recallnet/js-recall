@@ -1388,7 +1388,10 @@ export function makeAdminController(services: ServiceRegistry) {
             `Resetting agent balance as part of applying sandbox mode logic for admin adding agent ${agentId} to competition ${competitionId}`,
           );
 
-          await services.balanceService.resetAgentBalances(agentId);
+          await services.balanceService.resetAgentBalances(
+            agentId,
+            competition.type,
+          );
         }
 
         // Add agent to competition using repository method
