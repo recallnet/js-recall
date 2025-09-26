@@ -9,6 +9,7 @@ import {
   resetAgentBalances,
 } from "@/database/repositories/balance-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
+import { assertUnreachable } from "@/lib/typescript-utils.js";
 import { CompetitionType, SpecificChain } from "@/types/index.js";
 
 /**
@@ -208,7 +209,10 @@ export class BalanceService {
   }
 
   /**
-   * Reset an agent's balances to initial values, based on the competition type
+   * Reset an agent's balances to initial values, based on the competition type.
+   *  Behavior by competition type:
+   * - "trading": Resets to standard paper trading balances (5k USDC per chain)
+   * - "perpetual_futures": Clears all balances (empty balance map)
    * @param agentId The agent ID
    * @param competitionType The competition type
    */
@@ -252,6 +256,8 @@ export class BalanceService {
             `[BalanceManager] Successfully cleared balances for perps agent ${agentId}`,
           );
           break;
+        default:
+          assertUnreachable(competitionType);
       }
     } catch (error) {
       serviceLogger.error(
