@@ -1214,8 +1214,6 @@ export class CompetitionService {
       );
 
       // Combine snapshot data with risk metrics
-      // CRITICAL: Use the order from riskAdjustedLeaderboard (already sorted by Calmar/equity)
-      // Do NOT re-sort by portfolio value!
       const orderedResults: LeaderboardEntry[] = [];
 
       // First, add all agents from riskAdjustedLeaderboard in their correct order
@@ -1277,10 +1275,6 @@ export class CompetitionService {
       );
 
       // Transform to LeaderboardEntry format, including risk metrics
-      // CRITICAL: The database query already returns data in the correct order:
-      // 1. Agents with Calmar ratio (sorted by Calmar DESC)
-      // 2. Agents without Calmar ratio (sorted by equity DESC)
-      // We MUST preserve this order and not re-sort!
       return riskAdjustedLeaderboard.map((entry) => ({
         agentId: entry.agentId,
         value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility

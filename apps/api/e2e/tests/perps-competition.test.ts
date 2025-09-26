@@ -1709,7 +1709,7 @@ describe("Perps Competition", () => {
 
     // Insert historical snapshots to simulate different performance patterns over a year
     await db.insert(portfolioSnapshots).values([
-      // Agent 1: Steady 10% annual growth, no drawdown → BEST Calmar = 10/0 = capped at 100
+      // Agent 1: Steady 10% total return over 365 days (annualized: 10%), no drawdown → BEST Calmar = 10/0 = capped at 100
       {
         agentId: agent1.id,
         competitionId: competition.id,
@@ -1729,7 +1729,7 @@ describe("Perps Competition", () => {
         timestamp: daysAgo(1),
       },
 
-      // Agent 2: -5% annual return → WORST Calmar (negative)
+      // Agent 2: -5% total return over 365 days (annualized: -5%) → WORST Calmar (negative)
       {
         agentId: agent2.id,
         competitionId: competition.id,
@@ -1749,7 +1749,7 @@ describe("Perps Competition", () => {
         timestamp: daysAgo(1),
       },
 
-      // Agent 3: 25% annual return but with 10.7% drawdown → MIDDLE Calmar ≈ 2.3
+      // Agent 3: 25% total return over 365 days (annualized: 25%) with 10.7% drawdown → MIDDLE Calmar ≈ 2.3
       // Goes 1000 → 1400 (peak) → 1250 (drawdown of 10.7%)
       {
         agentId: agent3.id,
@@ -1799,25 +1799,11 @@ describe("Perps Competition", () => {
     expect(agent2Entry).toBeDefined();
     expect(agent3Entry).toBeDefined();
 
-    // Log for debugging
-    console.log("Leaderboard rankings:");
-    typedResponse.leaderboard.forEach((entry: LeaderboardEntry) => {
-      const agentName =
-        entry.agentId === agent1.id
-          ? "Best Calmar - Steady Growth"
-          : entry.agentId === agent2.id
-            ? "Worst Calmar - Negative Return"
-            : "Middle Calmar - High Equity But Drawdown";
-      console.log(
-        `Rank ${entry.rank}: ${agentName} - Portfolio: $${entry.portfolioValue}, Calmar: ${entry.calmarRatio}`,
-      );
-    });
-
-    // CRITICAL ASSERTION: Verify ranking is by Calmar ratio, not portfolio value
-    // Expected outcomes based on our mock data:
-    // Agent 1 (Steady Growth): 10% return, 0% drawdown → Best Calmar
-    // Agent 2 (Negative Return): -5% return → Worst Calmar (negative)
-    // Agent 3 (High Equity): 25% return, 10.7% drawdown → Middle Calmar
+    // Verify ranking is by Calmar ratio, not portfolio value
+    // Expected outcomes based on our mock data (365 days of history):
+    // Agent 1 (Steady Growth): 10% total return, 0% drawdown → Best Calmar
+    // Agent 2 (Negative Return): -5% total return → Worst Calmar (negative)
+    // Agent 3 (High Equity): 25% total return, 10.7% drawdown → Middle Calmar
 
     // Agent 3 has the HIGHEST portfolio value ($1250) but should NOT be first!
     expect(agent3Entry?.portfolioValue).toBe(1250); // Highest portfolio
@@ -1831,63 +1817,43 @@ describe("Perps Competition", () => {
     expect(agent2Entry?.portfolioValue).toBe(950); // Lowest portfolio
     expect(agent2Entry?.rank).toBe(3); // And ranks LAST
 
-    if (agent1Entry && agent2Entry && agent3Entry) {
-      if (
-        agent1Entry.hasRiskMetrics &&
-        agent2Entry.hasRiskMetrics &&
-        agent3Entry.hasRiskMetrics
-      ) {
-        // All have risk metrics - should be ranked by Calmar ratio
-        const entries: LeaderboardEntry[] = [
-          agent1Entry,
-          agent2Entry,
-          agent3Entry,
-        ];
-        const calmarRanking = [...entries].sort(
-          (a, b) => (b.calmarRatio ?? -999999) - (a.calmarRatio ?? -999999),
-        );
+    // Verify all agents are defined (already checked above with toBeDefined)
+    expect(agent1Entry).toBeTruthy();
+    expect(agent2Entry).toBeTruthy();
+    expect(agent3Entry).toBeTruthy();
 
-        const actualRanking = [...entries].sort((a, b) => a.rank - b.rank);
-
-        // Rankings should match Calmar-based order, not portfolio value order
-        expect(actualRanking[0]?.agentId).toBe(calmarRanking[0]?.agentId);
-        expect(actualRanking[1]?.agentId).toBe(calmarRanking[1]?.agentId);
-        expect(actualRanking[2]?.agentId).toBe(calmarRanking[2]?.agentId);
-
-        // Verify this is different from portfolio value ranking
-        const portfolioRanking = [...entries].sort(
-          (a, b) => b.portfolioValue - a.portfolioValue,
-        );
-
-        // If Calmar ranking differs from portfolio ranking, verify we're using Calmar
-        if (calmarRanking[0]?.agentId !== portfolioRanking[0]?.agentId) {
-          expect(actualRanking[0]?.agentId).toBe(calmarRanking[0]?.agentId);
-          expect(actualRanking[0]?.agentId).not.toBe(
-            portfolioRanking[0]?.agentId,
-          );
-          console.log(
-            "✅ Confirmed: Ranking by Calmar ratio, not portfolio value",
-          );
-        }
-      } else {
-        // If no Calmar ratios, agents without should rank below those with
-        const withCalmar = [agent1Entry, agent2Entry, agent3Entry].filter(
-          (e) => e.hasRiskMetrics,
-        );
-        const withoutCalmar = [agent1Entry, agent2Entry, agent3Entry].filter(
-          (e) => !e.hasRiskMetrics,
-        );
-
-        if (withCalmar.length > 0 && withoutCalmar.length > 0) {
-          const worstWithCalmarRank = Math.max(
-            ...withCalmar.map((e) => e.rank),
-          );
-          const bestWithoutCalmarRank = Math.min(
-            ...withoutCalmar.map((e) => e.rank),
-          );
-          expect(worstWithCalmarRank).toBeLessThan(bestWithoutCalmarRank);
-        }
-      }
+    // TypeScript narrowing - we've verified they're defined
+    if (!agent1Entry || !agent2Entry || !agent3Entry) {
+      throw new Error("Agents not properly defined in leaderboard");
     }
+
+    // All agents should have risk metrics in this test
+    expect(agent1Entry.hasRiskMetrics).toBe(true);
+    expect(agent2Entry.hasRiskMetrics).toBe(true);
+    expect(agent3Entry.hasRiskMetrics).toBe(true);
+
+    // All have risk metrics - should be ranked by Calmar ratio
+    const entries: LeaderboardEntry[] = [agent1Entry, agent2Entry, agent3Entry];
+    const calmarRanking = [...entries].sort(
+      (a, b) => (b.calmarRatio ?? -999999) - (a.calmarRatio ?? -999999),
+    );
+
+    const actualRanking = [...entries].sort((a, b) => a.rank - b.rank);
+
+    // Rankings should match Calmar-based order, not portfolio value order
+    expect(actualRanking[0]?.agentId).toBe(calmarRanking[0]?.agentId);
+    expect(actualRanking[1]?.agentId).toBe(calmarRanking[1]?.agentId);
+    expect(actualRanking[2]?.agentId).toBe(calmarRanking[2]?.agentId);
+
+    // Verify this is different from portfolio value ranking
+    const portfolioRanking = [...entries].sort(
+      (a, b) => b.portfolioValue - a.portfolioValue,
+    );
+
+    // Verify that Calmar ranking is being used, not portfolio ranking
+    // The rankings should differ since Agent 3 has highest portfolio but not best Calmar
+    expect(calmarRanking[0]?.agentId).not.toBe(portfolioRanking[0]?.agentId);
+    expect(actualRanking[0]?.agentId).toBe(calmarRanking[0]?.agentId);
+    expect(actualRanking[0]?.agentId).not.toBe(portfolioRanking[0]?.agentId);
   });
 });
