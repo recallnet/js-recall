@@ -421,8 +421,97 @@ export const perpsAccountSummaries = tradingComps.table(
 );
 
 /**
- * Self-funding detection alerts for perps competitions
+ * Transfer history for violation detection and admin audit
+ * NOTE: Mid-competition transfers are PROHIBITED - any transfer during
+ * an active competition is a violation that should trigger alerts
  */
+export const perpsTransferHistory = tradingComps.table(
+  "perps_transfer_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id),
+    competitionId: uuid("competition_id").notNull(),
+
+    // Transfer details
+    type: varchar("type", { length: 20 }).notNull(), // 'deposit' | 'withdraw'
+    amount: numeric("amount").notNull(),
+    asset: varchar("asset", { length: 10 }).notNull(),
+    fromAddress: varchar("from_address", { length: 100 }).notNull(),
+    toAddress: varchar("to_address", { length: 100 }).notNull(),
+    txHash: varchar("tx_hash", { length: 100 }).notNull(),
+    chainId: integer("chain_id").notNull(),
+
+    // Timestamp when transfer occurred
+    transferTimestamp: timestamp("transfer_timestamp", {
+      withTimezone: true,
+    }).notNull(),
+
+    // Metadata
+    capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_perps_transfers_agent_comp").on(
+      table.agentId,
+      table.competitionId,
+    ),
+    index("idx_perps_transfers_timestamp").on(table.transferTimestamp),
+    // Compound index for efficient getAgentTransferHistory queries with since filter
+    // Covers: WHERE agent_id = ? AND competition_id = ? AND transfer_timestamp > ?
+    index("idx_perps_transfers_agent_comp_timestamp").on(
+      table.agentId,
+      table.competitionId,
+      table.transferTimestamp,
+    ),
+    // Unique constraint since txHash is always required per API spec
+    unique("idx_perps_transfers_tx_hash").on(table.txHash),
+  ],
+);
+
+/**
+ * Risk metrics table for Calmar ratio calculations
+ * Uses simple returns since mid-competition transfers are prohibited
+ */
+export const perpsRiskMetrics = tradingComps.table(
+  "perps_risk_metrics",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id),
+    competitionId: uuid("competition_id").notNull(),
+
+    // Core metrics for Calmar calculation
+    simpleReturn: numeric("simple_return").notNull(), // (endValue/startValue) - 1
+    calmarRatio: numeric("calmar_ratio").notNull(),
+    annualizedReturn: numeric("annualized_return").notNull(),
+    maxDrawdown: numeric("max_drawdown").notNull(),
+
+    // Note: transferCount and periodCount removed - transfers are violations
+
+    // Metadata
+    calculationTimestamp: timestamp("calculation_timestamp", {
+      withTimezone: true,
+    }).defaultNow(),
+    snapshotCount: integer("snapshot_count").notNull(),
+  },
+  (table) => [
+    // Unique constraint for upsert operations
+    unique("idx_perps_metrics_unique").on(table.agentId, table.competitionId),
+    index("idx_perps_metrics_agent_comp").on(
+      table.agentId,
+      table.competitionId,
+    ),
+    index("idx_perps_metrics_calmar").on(
+      table.competitionId,
+      table.calmarRatio.desc(),
+    ),
+  ],
+);
+
+// NOTE: The system uses simple returns since mid-competition transfers are prohibited
+
 export const perpsSelfFundingAlerts = tradingComps.table(
   "perps_self_funding_alerts",
   {

@@ -72,7 +72,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const session = useSession();
   const router = useRouter();
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const [sorting, setSorting] = useState<SortingState>([]);
+  // Default sort: Calmar Ratio for perps, rank for others
+  const [sorting, setSorting] = useState<SortingState>(
+    competition.type === "perpetual_futures"
+      ? [{ id: "calmarRatio", desc: true }]
+      : [{ id: "rank", desc: false }],
+  );
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     yourShare: session.ready && session.isAuthenticated,
   });
@@ -256,22 +261,92 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           className: "flex-1",
         },
       },
-      {
-        id: "portfolioValue",
-        accessorKey: "portfolioValue",
-        header: () => "Portfolio",
-        cell: ({ row }) => (
-          <span className="text-secondary-foreground font-semibold">
-            {row.original.portfolioValue.toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD",
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        ),
-        enableSorting: true,
-        size: 140,
-      },
+      // Show Calmar Ratio as primary metric for perps, Portfolio Value for others
+      ...(competition.type === "perpetual_futures"
+        ? [
+            {
+              id: "calmarRatio",
+              accessorKey: "calmarRatio",
+              header: () => "Calmar Ratio",
+              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+                <span className="text-secondary-foreground font-semibold">
+                  {row.original.calmarRatio !== null &&
+                  row.original.calmarRatio !== undefined
+                    ? row.original.calmarRatio.toFixed(2)
+                    : "-"}
+                </span>
+              ),
+              enableSorting: true,
+              size: 120,
+            },
+            {
+              id: "simpleReturn",
+              accessorKey: "simpleReturn",
+              header: () => (
+                <>
+                  <span className="hidden sm:inline">Return %</span>
+                  <span className="sm:hidden">Ret%</span>
+                </>
+              ),
+              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+                <span
+                  className={`font-semibold ${
+                    row.original.simpleReturn && row.original.simpleReturn > 0
+                      ? "text-green-400"
+                      : row.original.simpleReturn &&
+                          row.original.simpleReturn < 0
+                        ? "text-red-400"
+                        : "text-secondary-foreground"
+                  }`}
+                >
+                  {row.original.simpleReturn !== null &&
+                  row.original.simpleReturn !== undefined
+                    ? `${(row.original.simpleReturn * 100).toFixed(2)}%`
+                    : "-"}
+                </span>
+              ),
+              enableSorting: true,
+              size: 100,
+            },
+            {
+              id: "maxDrawdown",
+              accessorKey: "maxDrawdown",
+              header: () => (
+                <>
+                  <span className="hidden sm:inline">Max DD</span>
+                  <span className="sm:hidden">DD</span>
+                </>
+              ),
+              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+                <span className="font-semibold text-red-400">
+                  {row.original.maxDrawdown !== null &&
+                  row.original.maxDrawdown !== undefined
+                    ? `${Math.abs(row.original.maxDrawdown * 100).toFixed(2)}%`
+                    : "-"}
+                </span>
+              ),
+              enableSorting: true,
+              size: 100,
+            },
+          ]
+        : [
+            {
+              id: "portfolioValue",
+              accessorKey: "portfolioValue",
+              header: () => "Portfolio",
+              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+                <span className="text-secondary-foreground font-semibold">
+                  {row.original.portfolioValue.toLocaleString("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              ),
+              enableSorting: true,
+              size: 140,
+            },
+          ]),
 
       {
         id: "boostPool",

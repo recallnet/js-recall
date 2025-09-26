@@ -326,7 +326,7 @@
                   "type": {
                     "type": "string",
                     "description": "The type of competition",
-                    "enum": ["trading"],
+                    "enum": ["trading", "perpetual_futures"],
                     "default": "trading",
                     "example": "trading"
                   },
@@ -431,6 +431,34 @@
                       "2": 500,
                       "3": 250
                     }
+                  },
+                  "perpsProvider": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Configuration for perps provider (required when type is perpetual_futures)",
+                    "properties": {
+                      "provider": {
+                        "type": "string",
+                        "enum": ["symphony", "hyperliquid"],
+                        "description": "Provider for perps data",
+                        "example": "symphony"
+                      },
+                      "initialCapital": {
+                        "type": "number",
+                        "description": "Initial capital in USD",
+                        "example": 500
+                      },
+                      "selfFundingThreshold": {
+                        "type": "number",
+                        "description": "Threshold for self-funding detection in USD",
+                        "example": 0
+                      },
+                      "apiUrl": {
+                        "type": "string",
+                        "description": "Optional API URL override for the provider",
+                        "example": "https://api.symphony.com"
+                      }
+                    }
                   }
                 }
               }
@@ -490,7 +518,7 @@
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": ["trading", "perpetual_futures"],
                           "default": "trading",
                           "description": "The type of competition"
                         },
@@ -1048,7 +1076,7 @@
                   "type": {
                     "type": "string",
                     "description": "The type of competition",
-                    "enum": ["trading"],
+                    "enum": ["trading", "perpetual_futures"],
                     "example": "trading"
                   },
                   "externalUrl": {
@@ -1080,6 +1108,34 @@
                     "additionalProperties": {
                       "type": "number",
                       "description": "Reward amount for the given rank"
+                    }
+                  },
+                  "perpsProvider": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Configuration for perps provider (required when changing type to perpetual_futures)",
+                    "properties": {
+                      "provider": {
+                        "type": "string",
+                        "enum": ["symphony", "hyperliquid"],
+                        "description": "Provider for perps data",
+                        "example": "symphony"
+                      },
+                      "initialCapital": {
+                        "type": "number",
+                        "description": "Initial capital in USD",
+                        "example": 500
+                      },
+                      "selfFundingThreshold": {
+                        "type": "number",
+                        "description": "Threshold for self-funding detection in USD",
+                        "example": 0
+                      },
+                      "apiUrl": {
+                        "type": "string",
+                        "description": "Optional API URL override for the provider",
+                        "example": "https://api.symphony.com"
+                      }
                     }
                   }
                 }
@@ -1116,7 +1172,7 @@
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": ["trading", "perpetual_futures"],
                           "description": "The type of competition"
                         },
                         "externalUrl": {
@@ -1195,7 +1251,7 @@
             }
           },
           "400": {
-            "description": "Bad request - Missing competitionId, no valid fields provided, or attempting to update restricted fields (startDate, endDate, status)"
+            "description": "Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures"
           },
           "401": {
             "description": "Unauthorized - Admin authentication required"
@@ -1293,6 +1349,114 @@
           },
           "404": {
             "description": "Competition or agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/competition/{competitionId}/transfer-violations": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get transfer violations for a perps competition",
+        "description": "Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Competition ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer violations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "violations": {
+                      "type": "array",
+                      "description": "Array of agents with transfer violations (empty if no violations found)",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "agentId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "Agent ID"
+                          },
+                          "agentName": {
+                            "type": "string",
+                            "description": "Agent name"
+                          },
+                          "transferCount": {
+                            "type": "integer",
+                            "description": "Number of transfers made during competition",
+                            "minimum": 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Competition is not a perps competition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Competition is not a perpetual futures competition"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Competition not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Competition not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "description": "Server error"
@@ -4472,6 +4636,25 @@
                             "description": "Agent's profit/loss percentage in this competition",
                             "example": 5.01
                           },
+                          "calmarRatio": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions"
+                          },
+                          "simpleReturn": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Simple return (end value / start value - 1) - only for perps competitions"
+                          },
+                          "maxDrawdown": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Maximum observed loss from peak (negative value) - only for perps competitions"
+                          },
+                          "hasRiskMetrics": {
+                            "type": "boolean",
+                            "description": "Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)"
+                          },
                           "competitionType": {
                             "type": "string",
                             "enum": ["trading", "perpetual_futures"],
@@ -5107,6 +5290,25 @@
                             "type": "string",
                             "nullable": true,
                             "description": "Always null for active agents"
+                          },
+                          "calmarRatio": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions"
+                          },
+                          "simpleReturn": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Simple return (end value / start value - 1) - only for perps competitions"
+                          },
+                          "maxDrawdown": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Maximum observed loss from peak (negative value) - only for perps competitions"
+                          },
+                          "hasRiskMetrics": {
+                            "type": "boolean",
+                            "description": "Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)"
                           }
                         }
                       }
@@ -6088,6 +6290,25 @@
                           "voteCount": {
                             "type": "integer",
                             "description": "Number of votes this agent has received in the competition"
+                          },
+                          "calmarRatio": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions"
+                          },
+                          "simpleReturn": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Simple return (end value / start value - 1) - only for perps competitions"
+                          },
+                          "maxDrawdown": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Maximum observed loss from peak (negative value) - only for perps competitions"
+                          },
+                          "hasRiskMetrics": {
+                            "type": "boolean",
+                            "description": "Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)"
                           }
                         }
                       }
@@ -7255,32 +7476,32 @@
                       "type": "object",
                       "description": "Status of individual services",
                       "properties": {
-                        "priceTracker": {
+                        "priceTrackerService": {
                           "type": "string",
                           "description": "Status of the price tracker service",
                           "example": "ok"
                         },
-                        "balanceManager": {
+                        "balanceService": {
                           "type": "string",
                           "description": "Status of the balance manager service",
                           "example": "ok"
                         },
-                        "tradeSimulator": {
+                        "tradeSimulatorService": {
                           "type": "string",
                           "description": "Status of the trade simulator service",
                           "example": "ok"
                         },
-                        "competitionManager": {
+                        "competitionService": {
                           "type": "string",
                           "description": "Status of the competition manager service",
                           "example": "ok"
                         },
-                        "userManager": {
+                        "userService": {
                           "type": "string",
                           "description": "Status of the user manager service",
                           "example": "ok"
                         },
-                        "agentManager": {
+                        "agentService": {
                           "type": "string",
                           "description": "Status of the agent manager service"
                         }

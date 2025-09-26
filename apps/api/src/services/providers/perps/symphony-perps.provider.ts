@@ -95,6 +95,8 @@ export interface SymphonyTransfer {
   timestamp: string;
   txHash: string;
   chainId: number;
+  // Note: Equity snapshots not available from Symphony
+  // Competition rules prohibit mid-competition transfers
 }
 
 /**
@@ -130,7 +132,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
   constructor(apiUrl?: string) {
     // Use provided URL or fall back to config/environment
-    this.baseUrl = apiUrl || "https://api.symphony.finance";
+    this.baseUrl = apiUrl || "https://api.symphony.io";
 
     // Create axios instance with defaults
     this.axiosInstance = axios.create({
@@ -455,6 +457,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       }
 
       // Transform to generic transfer format
+      // Note: Mid-competition transfers are now prohibited by competition rules
       const transfers: Transfer[] = response.transfers.map((t) => ({
         type: t.type,
         amount: t.amount,
