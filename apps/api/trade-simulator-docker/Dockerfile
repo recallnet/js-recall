@@ -9,6 +9,8 @@ COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/typescript-config/package.json packages/typescript-config/
 COPY packages/db/package.json packages/db/
 COPY packages/staking-contracts/package.json packages/staking-contracts/
+COPY packages/services/package.json packages/services/
+COPY packages/conversions/package.json packages/conversions/
 COPY packages/rewards/package.json packages/rewards/
 COPY apps/api/package.json apps/api/
 
