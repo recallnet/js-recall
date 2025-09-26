@@ -1231,39 +1231,30 @@ export class CompetitionService {
         0,
       );
 
-      // Create a map for quick lookups
-      const riskMetricsMap = new Map(
-        riskAdjustedLeaderboard.map((entry) => [
-          entry.agentId,
-          {
-            calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
-            simpleReturn: entry.simpleReturn
-              ? Number(entry.simpleReturn)
-              : null,
-            maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
-            hasRiskMetrics: entry.hasRiskMetrics,
-          },
-        ]),
-      );
-
       // Combine snapshot data with risk metrics
-      return snapshots
-        .map((snapshot) => {
-          const riskMetrics = riskMetricsMap.get(snapshot.agentId) || {
-            calmarRatio: null,
-            simpleReturn: null,
-            maxDrawdown: null,
-            hasRiskMetrics: false,
-          };
+      const orderedResults: LeaderboardEntry[] = [];
 
-          return {
-            agentId: snapshot.agentId,
-            value: snapshot.totalValue,
-            pnl: 0, // PnL not available from snapshots alone
-            ...riskMetrics,
-          };
-        })
-        .sort((a, b) => b.value - a.value);
+      // Add all agents from riskAdjustedLeaderboard in their correct order
+      for (const entry of riskAdjustedLeaderboard) {
+        const snapshot = snapshots.find((s) => s.agentId === entry.agentId);
+
+        // Use snapshot value if available, otherwise use equity from risk-adjusted leaderboard
+        const portfolioValue = snapshot
+          ? snapshot.totalValue
+          : Number(entry.totalEquity) || 0;
+
+        orderedResults.push({
+          agentId: entry.agentId,
+          value: portfolioValue,
+          pnl: Number(entry.totalPnl) || 0, // Use PnL from risk-adjusted leaderboard
+          calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+          simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
+          maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+          hasRiskMetrics: entry.hasRiskMetrics,
+        });
+      }
+
+      return orderedResults;
     }
 
     // For paper trading: Return without risk metrics
@@ -1306,7 +1297,7 @@ export class CompetitionService {
       // Transform to LeaderboardEntry format, including risk metrics
       return riskAdjustedLeaderboard.map((entry) => ({
         agentId: entry.agentId,
-        value: Number(entry.totalEquity) || 0,
+        value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility
         pnl: Number(entry.totalPnl) || 0,
         // Include risk-adjusted metrics
         calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
