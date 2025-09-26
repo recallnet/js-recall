@@ -708,14 +708,14 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       expect(result.syncResult.successful).toHaveLength(2);
 
       // Calmar calculation should fail for both agents
-      // With only 2 agents, the batch failure rate is 100% which triggers the alert
+      // With only 2 agents, the batch failure rate is 100% which triggers the systemic alert
       expect(result.calmarRatioResult).toEqual({
         successful: 0,
         failed: 2,
         errors: [
           "Agent agent-1: Database error",
           "Agent agent-2: Database error",
-          "ALERT: High failure rate detected (100% of batches failing)",
+          "SYSTEMIC ALERT: 100% of batches failing (threshold: 50%)",
         ],
       });
 
@@ -871,11 +871,11 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       expect(result.calmarRatioResult?.failed).toBe(50);
       expect(result.calmarRatioResult?.successful).toBe(0);
 
-      // Should have circuit breaker ALERT message in errors (not stop message)
-      const hasCircuitBreakerAlert = result.calmarRatioResult?.errors?.some(
-        (e) => e.includes("ALERT: High failure rate detected"),
+      // Should have systemic failure ALERT message in errors (not stop message)
+      const hasSystemicAlert = result.calmarRatioResult?.errors?.some((e) =>
+        e.includes("SYSTEMIC ALERT:"),
       );
-      expect(hasCircuitBreakerAlert).toBe(true);
+      expect(hasSystemicAlert).toBe(true);
     });
 
     it("should cap error messages at 100 entries", async () => {
@@ -897,9 +897,9 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       const mockCalculateAndSave = vi
         .fn()
         .mockImplementation((agentId: string) => {
-          // Circuit breaker won't trigger because we vary the error pattern
+          // Systemic alert won't trigger because we vary the error pattern
           const index = parseInt(agentId.split("-")[1] || "0", 10);
-          // Fail 9 out of 10 in each batch so circuit breaker doesn't trigger
+          // Fail 9 out of 10 in each batch (90% batch failure, but not all batches fail)
           if (index % 10 === 0) {
             return Promise.resolve({
               metrics: { id: `metrics-${agentId}`, calmarRatio: "1.0" },

@@ -793,10 +793,13 @@ export class PerpsDataProcessor {
     const BATCH_SIZE = 10;
     const MAX_ERRORS_TO_STORE = 100; // Cap errors array to prevent memory issues
     const MAX_RETRIES = 3; // Max retries per agent (like portfolio snapshotter)
-    const CIRCUIT_BREAKER_THRESHOLD = 0.8; // Trigger at 80% failure rate
+
+    // Separate thresholds for different failure patterns
+    const BATCH_FAILURE_THRESHOLD = 0.8; // 80% - Individual batch concern
+    const SYSTEMIC_FAILURE_THRESHOLD = 0.5; // 50% - System-wide alert (industry standard)
 
     let totalBatches = 0;
-    let failedBatches = 0; // Batches with > 80% failure rate
+    let failedBatches = 0; // Batches with >= 80% failure rate
 
     for (let i = 0; i < successfulAgents.length; i += BATCH_SIZE) {
       const batch = successfulAgents.slice(i, i + BATCH_SIZE);
@@ -840,28 +843,35 @@ export class PerpsDataProcessor {
         }
       });
 
-      // Circuit breaker monitoring (but don't stop processing)
+      // Monitor for batch and systemic failures with different thresholds
       const batchFailureRate = batchFailures / batch.length;
-      if (batchFailureRate >= CIRCUIT_BREAKER_THRESHOLD) {
+
+      // Check if this individual batch has high failure rate
+      if (batchFailureRate >= BATCH_FAILURE_THRESHOLD) {
         failedBatches++;
 
-        // Calculate overall failure rate
-        const overallFailureRate = failedBatches / totalBatches;
+        serviceLogger.warn(
+          `[PerpsDataProcessor] Batch failure detected: ${batchFailures}/${batch.length} agents failed ` +
+            `(${Math.round(batchFailureRate * 100)}% failure rate)`,
+        );
+      }
 
-        // Log warning if we're seeing systemic issues
-        if (overallFailureRate >= CIRCUIT_BREAKER_THRESHOLD) {
-          serviceLogger.error(
-            `[PerpsDataProcessor] Circuit breaker alert: ${failedBatches}/${totalBatches} batches ` +
-              `have ≥80% failure rate. Latest batch: ${batchFailures}/${batch.length} failed. ` +
-              `Continuing to process remaining ${successfulAgents.length - i - batch.length} agents.`,
+      // Check for systemic failure across all batches (lower threshold)
+      const systemicFailureRate = failedBatches / totalBatches;
+      if (systemicFailureRate >= SYSTEMIC_FAILURE_THRESHOLD) {
+        serviceLogger.error(
+          `[PerpsDataProcessor] SYSTEMIC FAILURE DETECTED: ${Math.round(systemicFailureRate * 100)}% of batches ` +
+            `are failing (${failedBatches}/${totalBatches} batches with ≥${Math.round(BATCH_FAILURE_THRESHOLD * 100)}% failure). ` +
+            `Latest batch: ${batchFailures}/${batch.length} failed. ` +
+            `Continuing to process remaining ${successfulAgents.length - i - batch.length} agents.`,
+        );
+
+        // Add alert to errors for visibility (but don't stop)
+        if (results.errors.length < MAX_ERRORS_TO_STORE) {
+          results.errors.push(
+            `SYSTEMIC ALERT: ${Math.round(systemicFailureRate * 100)}% of batches failing ` +
+              `(threshold: ${Math.round(SYSTEMIC_FAILURE_THRESHOLD * 100)}%)`,
           );
-
-          // Add alert to errors for visibility (but don't stop)
-          if (results.errors.length < MAX_ERRORS_TO_STORE) {
-            results.errors.push(
-              `ALERT: High failure rate detected (${Math.round(overallFailureRate * 100)}% of batches failing)`,
-            );
-          }
         }
       }
 
@@ -878,8 +888,14 @@ export class PerpsDataProcessor {
 
     // Log final summary
     if (failedBatches > 0) {
-      serviceLogger.warn(
-        `[PerpsDataProcessor] Completed with degraded performance: ${failedBatches}/${totalBatches} batches had high failure rates. ` +
+      const finalSystemicRate = failedBatches / totalBatches;
+      const logLevel =
+        finalSystemicRate >= SYSTEMIC_FAILURE_THRESHOLD ? "error" : "warn";
+
+      serviceLogger[logLevel](
+        `[PerpsDataProcessor] Completed with degraded performance: ${failedBatches}/${totalBatches} batches ` +
+          `had ≥${Math.round(BATCH_FAILURE_THRESHOLD * 100)}% failure rate ` +
+          `(systemic rate: ${Math.round(finalSystemicRate * 100)}%). ` +
           `Final: ${results.successful} successful, ${results.failed} failed`,
       );
     }
