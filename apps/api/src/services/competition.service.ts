@@ -1216,22 +1216,24 @@ export class CompetitionService {
       // Combine snapshot data with risk metrics
       const orderedResults: LeaderboardEntry[] = [];
 
-      // First, add all agents from riskAdjustedLeaderboard in their correct order
+      // Add all agents from riskAdjustedLeaderboard in their correct order
       for (const entry of riskAdjustedLeaderboard) {
         const snapshot = snapshots.find((s) => s.agentId === entry.agentId);
-        if (snapshot) {
-          orderedResults.push({
-            agentId: entry.agentId,
-            value: snapshot.totalValue,
-            pnl: 0, // PnL not available from snapshots alone
-            calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
-            simpleReturn: entry.simpleReturn
-              ? Number(entry.simpleReturn)
-              : null,
-            maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
-            hasRiskMetrics: entry.hasRiskMetrics,
-          });
-        }
+
+        // Use snapshot value if available, otherwise use equity from risk-adjusted leaderboard
+        const portfolioValue = snapshot
+          ? snapshot.totalValue
+          : Number(entry.totalEquity) || 0;
+
+        orderedResults.push({
+          agentId: entry.agentId,
+          value: portfolioValue,
+          pnl: Number(entry.totalPnl) || 0, // Use PnL from risk-adjusted leaderboard
+          calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+          simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
+          maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+          hasRiskMetrics: entry.hasRiskMetrics,
+        });
       }
 
       return orderedResults;
