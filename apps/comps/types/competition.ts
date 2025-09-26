@@ -54,7 +54,7 @@ export interface Competition {
   stats: {
     totalTrades?: number; // Only for paper trading competitions
     totalAgents: number;
-    totalVolume: number;
+    totalVolume?: number; // May not be present for all competition types
     totalVotes: number;
     uniqueTokens?: number; // Only for paper trading competitions
     totalPositions?: number; // Only for perpetual futures competitions
@@ -81,6 +81,11 @@ export interface Competition {
     rank?: number;
     totalAgents?: number;
   };
+  // Risk metrics for perpetual futures competitions
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
   rewards?: {
     rank: number;
     reward: number;
