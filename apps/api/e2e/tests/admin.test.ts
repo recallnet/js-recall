@@ -708,6 +708,12 @@ describe("Admin API", () => {
     ).toBe(false);
     expect(nameSearchResult.results.agents.length).toBe(0);
 
+    // Verify that apiKey is not present in agent responses (sanitizeAgent function working)
+    agentNameSearchResult.results.agents.forEach((agent) => {
+      expect(agent).not.toHaveProperty("apiKey");
+      expect(agent).not.toHaveProperty("email");
+    });
+
     // TEST CASE 3: Search by email domain
     const emailSearchResult = (await adminClient.searchUsersAndAgents({
       user: {
@@ -767,6 +773,12 @@ describe("Admin API", () => {
         (a) => a.id === user3Result.agent!.id,
       ),
     ).toBe(true);
+
+    // Verify that apiKey is not present in agent responses (sanitizeAgent function working)
+    activeSearchResult.results.agents.forEach((agent) => {
+      expect(agent).not.toHaveProperty("apiKey");
+      expect(agent).not.toHaveProperty("email");
+    });
 
     // TEST CASE 5: Search by wallet address
     // Extract wallet address from the first user
@@ -841,6 +853,12 @@ describe("Admin API", () => {
     // because we filtered by user1's wallet address
     const foundAgentIds = joinQueryResult.results.agents.map((a) => a.id);
     expect(foundAgentIds).not.toContain(user3Result.agent!.id);
+
+    // Verify that apiKey is not present in agent responses (sanitizeAgent function working)
+    joinQueryResult.results.agents.forEach((agent) => {
+      expect(agent).not.toHaveProperty("apiKey");
+      expect(agent).not.toHaveProperty("email");
+    });
 
     // TEST CASE 7: search for user and agents with all possible filters
     const allFiltersResult = (await adminClient.searchUsersAndAgents({
