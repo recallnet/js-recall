@@ -41,7 +41,7 @@ export function makeAgentController(services: ServiceRegistry) {
         }
 
         // Get the owner user information
-        const owner = await services.userService.getUser(agent.ownerId);
+        const owner = await services.legacyUserService.getUser(agent.ownerId);
 
         if (!owner) {
           throw new ApiError(404, "Agent owner not found");
@@ -189,7 +189,7 @@ export function makeAgentController(services: ServiceRegistry) {
         }
 
         // Get the owner user information
-        const owner = await services.userService.getUser(agent.ownerId);
+        const owner = await services.legacyUserService.getUser(agent.ownerId);
 
         // Prepare owner info for public display (null if user not found)
         const ownerInfo = owner

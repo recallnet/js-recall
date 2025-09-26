@@ -3,7 +3,7 @@ import { MockedObject, beforeEach, describe, expect, it, vi } from "vitest";
 import { SelectUser } from "@recallnet/db/schema/core/types";
 
 import { EmailService } from "@/services/email.service.js";
-import { UserService } from "@/services/user.service.js";
+import { LegacyUserService } from "@/services/user.service.js";
 
 // Dependency mocks
 vi.mock("@/database/repositories/user-repository.js", () => ({
@@ -66,7 +66,7 @@ type MockEmailService = Partial<MockedObject<EmailService>>;
 
 describe("UserManager", () => {
   describe("watchlist integration", () => {
-    let userManager: UserService;
+    let userManager: LegacyUserService;
     let mockEmailService: MockEmailService;
 
     beforeEach(async () => {
@@ -95,7 +95,7 @@ describe("UserManager", () => {
       } as SelectUser);
 
       // @ts-expect-error - mockEmailService is a subset of the original services
-      userManager = new UserService(mockEmailService);
+      userManager = new LegacyUserService(mockEmailService);
     });
 
     describe("updateUser", () => {

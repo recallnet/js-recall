@@ -22,7 +22,7 @@ async function awardAllBoost() {
 
   const competitionManager = services.competitionService;
   const stakesRepository = services.stakesRepository;
-  const userManager = services.userService;
+  const userManager = services.legacyUserService;
   const boostAwardService = services.boostAwardService;
 
   try {

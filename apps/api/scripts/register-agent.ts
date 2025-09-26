@@ -171,7 +171,7 @@ async function registerAgent() {
 
     // Register the agent using the updated AgentManager service method
     const owner =
-      await services.userService.getUserByWalletAddress(walletAddress);
+      await services.legacyUserService.getUserByWalletAddress(walletAddress);
     if (!owner) {
       throw new Error("Owner not found");
     }

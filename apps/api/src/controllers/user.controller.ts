@@ -45,7 +45,7 @@ export function makeUserController(
         const userId = data;
 
         // Get the user using the service
-        const user = await services.userService.getUser(userId);
+        const user = await services.legacyUserService.getUser(userId);
 
         if (!user) {
           throw new ApiError(404, "User not found");
@@ -83,7 +83,7 @@ export function makeUserController(
         } = data;
 
         // Get the current user
-        const user = await services.userService.getUser(userId);
+        const user = await services.legacyUserService.getUser(userId);
         if (!user) {
           throw new ApiError(404, "User not found");
         }
@@ -97,7 +97,8 @@ export function makeUserController(
         };
 
         // Update the user using UserManager
-        const updatedUser = await services.userService.updateUser(updateData);
+        const updatedUser =
+          await services.legacyUserService.updateUser(updateData);
 
         if (!updatedUser) {
           throw new ApiError(500, "Failed to update user profile");
@@ -142,7 +143,7 @@ export function makeUserController(
 
         // Link the wallet
         const now = new Date();
-        const linkedUser = await services.userService.updateUser({
+        const linkedUser = await services.legacyUserService.updateUser({
           id: userId,
           walletAddress,
           walletLastVerifiedAt: now,
@@ -327,7 +328,7 @@ export function makeUserController(
         }
 
         // Check if user's email is verified (security layer)
-        const user = await services.userService.getUser(userId);
+        const user = await services.legacyUserService.getUser(userId);
         if (!user) {
           throw new ApiError(404, "User not found");
         }
@@ -488,7 +489,7 @@ export function makeUserController(
     async subscribe(req: Request, res: Response, next: NextFunction) {
       try {
         const userId = ensureUserId(req);
-        const user = await services.userService.getUser(userId);
+        const user = await services.legacyUserService.getUser(userId);
         if (!user) {
           throw new ApiError(404, "User not found");
         }
@@ -509,7 +510,7 @@ export function makeUserController(
         if (!result?.success) {
           throw new ApiError(502, "Failed to subscribe user to mailing list");
         }
-        const updatedUser = await services.userService.updateUser({
+        const updatedUser = await services.legacyUserService.updateUser({
           id: userId,
           isSubscribed: true,
         });
@@ -536,7 +537,7 @@ export function makeUserController(
     async unsubscribe(req: Request, res: Response, next: NextFunction) {
       try {
         const userId = ensureUserId(req);
-        const user = await services.userService.getUser(userId);
+        const user = await services.legacyUserService.getUser(userId);
         if (!user) {
           throw new ApiError(404, "User not found");
         }
@@ -560,7 +561,7 @@ export function makeUserController(
             "Failed to unsubscribe user from mailing list",
           );
         }
-        const updatedUser = await services.userService.updateUser({
+        const updatedUser = await services.legacyUserService.updateUser({
           id: userId,
           isSubscribed: false,
         });

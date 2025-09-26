@@ -9,7 +9,7 @@ import { SelectUser } from "@recallnet/db/schema/core/types";
 
 import { config } from "@/config/index.js";
 import { authLogger } from "@/lib/logger.js";
-import type { UserService } from "@/services/user.service.js";
+import type { LegacyUserService } from "@/services/user.service.js";
 
 import { PRIVY_ISSUER, PrivyUserInfo, extractPrivyUserInfo } from "./utils.js";
 
@@ -165,7 +165,7 @@ export async function verifyAndGetPrivyUserInfo(
  */
 export async function verifyPrivyIdentityTokenAndUpdateUser(
   idToken: string,
-  userService: UserService,
+  userService: LegacyUserService,
 ): Promise<SelectUser> {
   // Note: in the future, we can simply use `verifyIdentityToken` to get the `privyId`, which is
   // stored in the `users` table as `privyID`. But, since we need to account for legacy users, we

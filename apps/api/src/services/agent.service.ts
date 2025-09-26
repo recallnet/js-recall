@@ -60,7 +60,7 @@ import { AgentMetricsHelper } from "@/services/agent-metrics-helper.js";
 import { BalanceService } from "@/services/balance.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
-import type { UserService } from "@/services/user.service.js";
+import type { LegacyUserService } from "@/services/user.service.js";
 import type { AgentWithMetrics } from "@/types/agent-metrics.js";
 import {
   AgentCompetitionsParams,
@@ -101,13 +101,13 @@ export class AgentService {
   // Price tracker service for getting token prices
   private priceTrackerService: PriceTrackerService;
   // User service for validating user existence
-  private userService: UserService;
+  private userService: LegacyUserService;
 
   constructor(
     emailService: EmailService,
     balanceService: BalanceService,
     priceTrackerService: PriceTrackerService,
-    userService: UserService,
+    userService: LegacyUserService,
   ) {
     this.apiKeyCache = new Map();
     this.inactiveAgentsCache = new Map();

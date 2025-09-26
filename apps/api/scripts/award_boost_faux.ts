@@ -23,7 +23,7 @@ type Args = {
 async function awardBoostFaux(args: Args) {
   const startTime = Date.now();
   const competitionManager = services.competitionService;
-  const userManager = services.userService;
+  const userManager = services.legacyUserService;
   const boostAwardService = services.boostAwardService;
   logger.info("Starting award Boost task...");
   const competitionId = args.competitionId;

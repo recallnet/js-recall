@@ -6,7 +6,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { Database, Transaction } from "@recallnet/db/types";
 
-import type { UserService } from "@/services/user.service.js";
+import type { LegacyUserService } from "@/services/user.service.js";
 
 type StakePosition = {
   id: bigint;
@@ -35,7 +35,7 @@ export class BoostAwardService {
   readonly #competitionRepo: CompetitionRepository;
   readonly #boostRepository: BoostRepository;
   readonly #stakesRepository: StakesRepository;
-  readonly #userService: UserService;
+  readonly #userService: LegacyUserService;
   readonly #noStakeBoostAmount?: bigint;
 
   constructor(
@@ -43,7 +43,7 @@ export class BoostAwardService {
     competitionRepo: CompetitionRepository,
     boostRepository: BoostRepository,
     stakesRepository: StakesRepository,
-    userService: UserService,
+    userService: LegacyUserService,
     noStakeBoostAmount?: bigint,
   ) {
     this.#db = database;

@@ -30,7 +30,7 @@ import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AgentService } from "@/services/agent.service.js";
-import { UserService } from "@/services/user.service.js";
+import { LegacyUserService } from "@/services/user.service.js";
 import { AdminMetadata, SearchAdminsParams } from "@/types/index.js";
 
 /**
@@ -44,10 +44,10 @@ export class AdminService {
   private adminProfileCache: Map<string, SelectAdmin>; // adminId -> admin profile
 
   // Service dependencies
-  private userService: UserService;
+  private userService: LegacyUserService;
   private agentService: AgentService;
 
-  constructor(userService: UserService, agentService: AgentService) {
+  constructor(userService: LegacyUserService, agentService: AgentService) {
     this.apiKeyCache = new Map();
     this.adminProfileCache = new Map();
     this.userService = userService;

@@ -7,7 +7,7 @@ import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AdminService } from "@/services/admin.service.js";
 import { AgentService } from "@/services/agent.service.js";
-import { UserService } from "@/services/user.service.js";
+import { LegacyUserService } from "@/services/user.service.js";
 
 /**
  * Unified Authentication Middleware
@@ -25,7 +25,7 @@ import { UserService } from "@/services/user.service.js";
  */
 export const authMiddleware = (
   agentService: AgentService,
-  userService: UserService,
+  userService: LegacyUserService,
   adminService: AdminService,
 ) => {
   return async (req: Request, _: Response, next: NextFunction) => {

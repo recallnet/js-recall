@@ -5,7 +5,7 @@ import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
 import type { AdminService } from "@/services/admin.service.js";
 import type { AgentService } from "@/services/agent.service.js";
-import { UserService } from "@/services/user.service.js";
+import { LegacyUserService } from "@/services/user.service.js";
 
 /**
  * Optional Authentication Middleware
@@ -23,7 +23,7 @@ import { UserService } from "@/services/user.service.js";
  */
 export function optionalAuthMiddleware(
   agentService: AgentService,
-  userService: UserService,
+  userService: LegacyUserService,
   adminService: AdminService,
 ) {
   return async (req: Request, _: Response, next: NextFunction) => {

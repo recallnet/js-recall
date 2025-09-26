@@ -8,14 +8,14 @@ import { SelectCompetition, SelectUser } from "@recallnet/db/schema/core/types";
 import { Database, Transaction } from "@recallnet/db/types";
 
 import { BoostAwardService } from "@/services/boost-award.service.js";
-import { type UserService } from "@/services/user.service.js";
+import { type LegacyUserService } from "@/services/user.service.js";
 
 describe("BoostAwardService", () => {
   let mockDb: MockProxy<Database>;
   let mockCompetitionRepo: MockProxy<CompetitionRepository>;
   let mockBoostRepo: MockProxy<BoostRepository>;
   let mockStakesRepo: MockProxy<StakesRepository>;
-  let mockUserService: MockProxy<UserService>;
+  let mockUserService: MockProxy<LegacyUserService>;
   let service: BoostAwardService;
   let testUserId: string;
   let testWallet: string;
@@ -52,7 +52,7 @@ describe("BoostAwardService", () => {
     mockCompetitionRepo = mock<CompetitionRepository>();
     mockBoostRepo = mock<BoostRepository>();
     mockStakesRepo = mock<StakesRepository>();
-    mockUserService = mock<UserService>();
+    mockUserService = mock<LegacyUserService>();
 
     service = new BoostAwardService(
       mockDb,

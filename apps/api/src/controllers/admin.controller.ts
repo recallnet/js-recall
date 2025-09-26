@@ -483,7 +483,7 @@ export function makeAdminController(services: ServiceRegistry) {
           await services.competitionService.getLeaderboard(competitionId);
 
         // Get all users for agent owner names
-        const users = await services.userService.getAllUsers();
+        const users = await services.legacyUserService.getAllUsers();
 
         // Map agent IDs to owner names
         const userMap = new Map(
@@ -534,7 +534,7 @@ export function makeAdminController(services: ServiceRegistry) {
     async listAllUsers(req: Request, res: Response, next: NextFunction) {
       try {
         // Get all users (non-admin users only)
-        const users = await services.userService.getAllUsers();
+        const users = await services.legacyUserService.getAllUsers();
 
         // Format the response to match the expected structure
         const formattedUsers = users.map(toApiUser);
@@ -668,7 +668,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Search users if requested
         if (user) {
-          const users = await services.userService.searchUsers(user);
+          const users = await services.legacyUserService.searchUsers(user);
 
           results.users = users.map(toApiUser);
         }
@@ -1339,7 +1339,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // Check if agent owner's email is verified (security layer)
-        const owner = await services.userService.getUser(agent.ownerId);
+        const owner = await services.legacyUserService.getUser(agent.ownerId);
         if (!owner) {
           return res.status(404).json({
             success: false,

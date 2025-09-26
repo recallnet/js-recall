@@ -53,7 +53,7 @@ export function makeAuthController(services: ServiceRegistry) {
         const { id: userId, walletAddress } =
           await verifyPrivyIdentityTokenAndUpdateUser(
             identityToken,
-            services.userService,
+            services.legacyUserService,
           );
 
         authLogger.debug(

@@ -29,7 +29,7 @@ import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.se
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
-import { UserService } from "@/services/user.service.js";
+import { LegacyUserService } from "@/services/user.service.js";
 import { VoteService } from "@/services/vote.service.js";
 
 /**
@@ -44,7 +44,7 @@ class ServiceRegistry {
   private _priceTrackerService: PriceTrackerService;
   private _tradeSimulatorService: TradeSimulatorService;
   private _competitionService: CompetitionService;
-  private _userService: UserService;
+  private _legacyUserService: LegacyUserService;
   private _agentService: AgentService;
   private _adminService: AdminService;
   private _configurationService: ConfigurationService;
@@ -93,15 +93,15 @@ class ServiceRegistry {
     this._emailService = new EmailService();
 
     // Initialize user, agent, and admin services
-    this._userService = new UserService(this._emailService);
+    this._legacyUserService = new LegacyUserService(this._emailService);
     this._agentService = new AgentService(
       this._emailService,
       this._balanceService,
       this._priceTrackerService,
-      this._userService,
+      this._legacyUserService,
     );
     this._adminService = new AdminService(
-      this._userService,
+      this._legacyUserService,
       this._agentService,
     );
 
@@ -153,7 +153,7 @@ class ServiceRegistry {
       this._competitionRepository,
       this._boostRepository,
       this._stakesRepository,
-      this._userService,
+      this._legacyUserService,
       config.boost.noStakeBoostAmount,
     );
     this._eventProcessor = new EventProcessor(
@@ -202,8 +202,8 @@ class ServiceRegistry {
     return this._portfolioSnapshotterService;
   }
 
-  get userService(): UserService {
-    return this._userService;
+  get legacyUserService(): LegacyUserService {
+    return this._legacyUserService;
   }
 
   get agentService(): AgentService {
@@ -283,7 +283,7 @@ export {
   ServiceRegistry,
   TradeSimulatorService,
   TradingConstraintsService,
-  UserService,
+  LegacyUserService,
   VoteService,
 };
 

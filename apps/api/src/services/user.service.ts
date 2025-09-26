@@ -28,7 +28,7 @@ import { UserMetadata, UserSearchParams } from "@/types/index.js";
  * User Service
  * Manages user registration and profile management
  */
-export class UserService {
+export class LegacyUserService {
   // In-memory cache for user lookups by wallet address to avoid database lookups
   private userWalletCache: Map<string, string>; // walletAddress -> userId
   // Cache for user profiles by ID
