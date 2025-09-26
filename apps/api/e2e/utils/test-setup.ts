@@ -15,6 +15,7 @@ import path from "path";
 import client from "prom-client";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
+import { mockSymphonyServer } from "../setup.js";
 import { dbManager } from "./db-manager.js";
 import { clearPrivyLinkedWallets, setupPrivyTestEnvironment } from "./privy.js";
 
@@ -136,6 +137,11 @@ afterAll(async () => {
 beforeEach(async function () {
   // Ensure database is initialized
   await dbManager.initialize();
+
+  // Reset mock Symphony server call counter between tests
+  if (mockSymphonyServer) {
+    mockSymphonyServer.reset();
+  }
 });
 
 // After every test

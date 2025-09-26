@@ -74,7 +74,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <div className="ml-5 flex cursor-pointer items-center justify-between">
+          <div className="flex cursor-pointer items-center justify-between">
             <Avatar className="h-10 w-10">
               <AvatarImage
                 src={avatarUrl}

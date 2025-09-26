@@ -80,30 +80,12 @@ export const AdminCreateCompetitionSchema = z
     externalUrl: z.url().optional(),
     imageUrl: z.url().optional(),
     type: CompetitionTypeSchema.optional(),
-    startDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    endDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    votingStartDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    votingEndDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    joinStartDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    joinEndDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
+    startDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    endDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    votingStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    votingEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    joinStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    joinEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     maxParticipants: z.number().int().min(1).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
@@ -124,6 +106,8 @@ export const AdminCreateCompetitionSchema = z
 
 /**
  * Admin update competition schema (note: mostly the same as competition creation, but with optional name)
+ * Note: Validation for perpsProvider requirement when changing type to perpetual_futures
+ * is handled in the service layer, as it requires knowing the current competition type
  */
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
@@ -145,30 +129,12 @@ export const AdminStartCompetitionSchema = z
     externalUrl: z.url().optional(),
     imageUrl: z.url().optional(),
     type: CompetitionTypeSchema.optional(),
-    startDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    endDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    votingStartDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    votingEndDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    joinStartDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
-    joinEndDate: z.iso
-      .datetime()
-      .transform((str) => new Date(str))
-      .optional(),
+    startDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    endDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    votingStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    votingEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    joinStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    joinEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
@@ -321,4 +287,11 @@ export const AdminListAllAgentsQuerySchema = z.object({
     .default("-createdAt")
     .optional()
     .describe("Sort order (e.g., '-createdAt' for desc, 'name' for asc)"),
+});
+
+/**
+ * Admin get competition transfer violations params schema
+ */
+export const AdminGetCompetitionTransferViolationsParamsSchema = z.object({
+  competitionId: UuidSchema,
 });

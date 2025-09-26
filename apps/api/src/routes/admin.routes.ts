@@ -53,7 +53,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading]
+   *                 enum: [trading, perpetual_futures]
    *                 default: trading
    *                 example: trading
    *               externalUrl:
@@ -139,6 +139,28 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               perpsProvider:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Configuration for perps provider (required when type is perpetual_futures)
+   *                 properties:
+   *                   provider:
+   *                     type: string
+   *                     enum: [symphony, hyperliquid]
+   *                     description: Provider for perps data
+   *                     example: symphony
+   *                   initialCapital:
+   *                     type: number
+   *                     description: Initial capital in USD
+   *                     example: 500
+   *                   selfFundingThreshold:
+   *                     type: number
+   *                     description: Threshold for self-funding detection in USD
+   *                     example: 0
+   *                   apiUrl:
+   *                     type: string
+   *                     description: Optional API URL override for the provider
+   *                     example: https://api.symphony.com
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -183,7 +205,7 @@ export function configureAdminRoutes(
    *                       description: Whether sandbox mode is enabled for this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures]
    *                       default: trading
    *                       description: The type of competition
    *                     createdAt:
@@ -612,7 +634,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading]
+   *                 enum: [trading, perpetual_futures]
    *                 example: trading
    *               externalUrl:
    *                 type: string
@@ -639,6 +661,28 @@ export function configureAdminRoutes(
    *                 additionalProperties:
    *                   type: number
    *                   description: Reward amount for the given rank
+   *               perpsProvider:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Configuration for perps provider (required when changing type to perpetual_futures)
+   *                 properties:
+   *                   provider:
+   *                     type: string
+   *                     enum: [symphony, hyperliquid]
+   *                     description: Provider for perps data
+   *                     example: symphony
+   *                   initialCapital:
+   *                     type: number
+   *                     description: Initial capital in USD
+   *                     example: 500
+   *                   selfFundingThreshold:
+   *                     type: number
+   *                     description: Threshold for self-funding detection in USD
+   *                     example: 0
+   *                   apiUrl:
+   *                     type: string
+   *                     description: Optional API URL override for the provider
+   *                     example: https://api.symphony.com
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -664,7 +708,7 @@ export function configureAdminRoutes(
    *                       description: Competition description
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures]
    *                       description: The type of competition
    *                     externalUrl:
    *                       type: string
@@ -721,7 +765,7 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       description: Competition last update date
    *       400:
-   *         description: Bad request - Missing competitionId, no valid fields provided, or attempting to update restricted fields (startDate, endDate, status)
+   *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       404:
@@ -798,6 +842,86 @@ export function configureAdminRoutes(
   router.get(
     "/competition/:competitionId/snapshots",
     controller.getCompetitionSnapshots,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competition/{competitionId}/transfer-violations:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get transfer violations for a perps competition
+   *     description: Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Transfer violations retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 violations:
+   *                   type: array
+   *                   description: Array of agents with transfer violations (empty if no violations found)
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       agentId:
+   *                         type: string
+   *                         format: uuid
+   *                         description: Agent ID
+   *                       agentName:
+   *                         type: string
+   *                         description: Agent name
+   *                       transferCount:
+   *                         type: integer
+   *                         description: Number of transfers made during competition
+   *                         minimum: 1
+   *       400:
+   *         description: Competition is not a perps competition
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: Competition is not a perpetual futures competition
+   *       404:
+   *         description: Competition not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/competition/:competitionId/transfer-violations",
+    controller.getCompetitionTransferViolations,
   );
 
   /**

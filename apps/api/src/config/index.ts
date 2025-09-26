@@ -405,6 +405,9 @@ export const config = {
       ? BigInt(process.env.NO_STAKE_BOOST_AMOUNT)
       : undefined,
   },
+  symphony: {
+    apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
+  },
 };
 
 /**

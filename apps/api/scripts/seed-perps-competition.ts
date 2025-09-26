@@ -52,6 +52,7 @@ import {
 import {
   InsertPerpetualPosition,
   InsertPerpsAccountSummary,
+  InsertPerpsRiskMetrics,
   InsertPortfolioSnapshot,
 } from "@recallnet/db/schema/trading/types";
 
@@ -109,6 +110,13 @@ interface TestAgent {
     totalUnrealizedPnl: number;
     totalRealizedPnl: number;
   };
+  // Risk metrics for Calmar Ratio testing
+  riskMetrics: {
+    simpleReturn: number; // Decimal (0.15 = 15%)
+    maxDrawdown: number; // Negative decimal (-0.10 = -10%)
+    calmarRatio: number; // Can be positive, negative, or zero
+    hasRiskMetrics: boolean;
+  };
 }
 
 const testAgents: TestAgent[] = [
@@ -149,6 +157,13 @@ const testAgents: TestAgent[] = [
       totalUnrealizedPnl: 4726.5, // Strong positive
       totalRealizedPnl: -2400, // Some past losses
     },
+    // Excellent risk-adjusted performance
+    riskMetrics: {
+      simpleReturn: 0.2326, // 23.26% return
+      maxDrawdown: -0.045, // Only 4.5% drawdown
+      calmarRatio: 5.17, // Excellent Calmar Ratio
+      hasRiskMetrics: true,
+    },
   },
   {
     name: "Bear Market Trader",
@@ -187,6 +202,13 @@ const testAgents: TestAgent[] = [
       totalUnrealizedPnl: 1201.1, // Net positive from shorts
       totalRealizedPnl: -799, // Past losses
     },
+    // Good risk management with shorts
+    riskMetrics: {
+      simpleReturn: -0.08, // -8% return (started with 10k)
+      maxDrawdown: -0.12, // 12% drawdown
+      calmarRatio: -0.67, // Negative but manageable
+      hasRiskMetrics: true,
+    },
   },
   {
     name: "ETH Maximalist",
@@ -214,6 +236,13 @@ const testAgents: TestAgent[] = [
       totalTrades: 5,
       totalUnrealizedPnl: 2360,
       totalRealizedPnl: -733, // Some past losses
+    },
+    // Moderate performance with low drawdown
+    riskMetrics: {
+      simpleReturn: -0.037, // -3.7% return
+      maxDrawdown: -0.025, // Very small 2.5% drawdown
+      calmarRatio: -1.48, // Negative due to losses but low drawdown
+      hasRiskMetrics: true,
     },
   },
   {
@@ -253,6 +282,13 @@ const testAgents: TestAgent[] = [
       totalUnrealizedPnl: -69.7, // Small negative
       totalRealizedPnl: -500, // Conservative past performance
     },
+    // Conservative with minimal losses
+    riskMetrics: {
+      simpleReturn: -0.157, // -15.7% return
+      maxDrawdown: -0.18, // 18% drawdown
+      calmarRatio: -0.87, // Poor but not terrible
+      hasRiskMetrics: true,
+    },
   },
   {
     name: "Degen Trader",
@@ -290,6 +326,13 @@ const testAgents: TestAgent[] = [
       totalTrades: 25,
       totalUnrealizedPnl: -2260, // Big negative
       totalRealizedPnl: -3000, // Massive past losses
+    },
+    // Terrible performance, high risk
+    riskMetrics: {
+      simpleReturn: -0.726, // -72.6% return (catastrophic)
+      maxDrawdown: -0.75, // 75% drawdown
+      calmarRatio: -0.97, // Very poor Calmar
+      hasRiskMetrics: true,
     },
   },
 ];
@@ -701,6 +744,35 @@ async function seedPerpsCompetition(): Promise<void> {
       );
     });
 
+    // Step 5: Seed risk metrics (Calmar Ratio, Simple Return, Max Drawdown)
+    console.log(
+      `\n${colors.blue}Step 5: Seeding risk metrics for Calmar Ratio testing...${colors.reset}`,
+    );
+
+    for (let i = 0; i < createdAgentIds.length; i++) {
+      const agentId = createdAgentIds[i]!;
+      const testData = testAgents[i]!;
+
+      // Only seed if agent has risk metrics defined
+      if (testData.riskMetrics.hasRiskMetrics) {
+        const riskMetrics: InsertPerpsRiskMetrics = {
+          agentId,
+          competitionId,
+          simpleReturn: testData.riskMetrics.simpleReturn.toFixed(8),
+          maxDrawdown: testData.riskMetrics.maxDrawdown.toFixed(8),
+          calmarRatio: testData.riskMetrics.calmarRatio.toFixed(8),
+          annualizedReturn: (testData.riskMetrics.simpleReturn * 52).toFixed(8), // Rough annualization for 1 week
+          snapshotCount: 2, // We're using simple first/last snapshots
+          calculationTimestamp: now,
+        };
+
+        await perpsRepository.saveRiskMetrics(riskMetrics);
+        console.log(
+          `${colors.green}  ✓ Created risk metrics for ${testData.name}: Calmar=${testData.riskMetrics.calmarRatio.toFixed(2)}${colors.reset}`,
+        );
+      }
+    }
+
     // Display results
     console.log(
       `\n${colors.cyan}========================================${colors.reset}`,
@@ -734,6 +806,17 @@ async function seedPerpsCompetition(): Promise<void> {
       console.log(
         `     Unrealized PnL: $${testData.accountSummary.totalUnrealizedPnl.toLocaleString()}`,
       );
+      if (testData.riskMetrics.hasRiskMetrics) {
+        console.log(
+          `     Calmar Ratio: ${testData.riskMetrics.calmarRatio.toFixed(2)}`,
+        );
+        console.log(
+          `     Simple Return: ${(testData.riskMetrics.simpleReturn * 100).toFixed(2)}%`,
+        );
+        console.log(
+          `     Max Drawdown: ${(Math.abs(testData.riskMetrics.maxDrawdown) * 100).toFixed(2)}%`,
+        );
+      }
     }
 
     console.log(`\n${colors.green}Next Steps:${colors.reset}`);

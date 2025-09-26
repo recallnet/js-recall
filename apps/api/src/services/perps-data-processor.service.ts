@@ -22,18 +22,21 @@ import {
   syncAgentPerpsData,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
+import { CalmarRatioService } from "@/services/calmar-ratio.service.js";
 import { PerpsMonitoringService } from "@/services/perps-monitoring.service.js";
 import { PerpsProviderFactory } from "@/services/providers/perps-provider.factory.js";
 import type {
   AgentPerpsSyncResult,
   BatchPerpsSyncResult,
-  PerpsCompetitionStats,
-} from "@/types/index.js";
-import type {
+  BatchPerpsSyncWithSummaries,
+  CalmarRatioCalculationResult,
   IPerpsDataProvider,
   PerpsAccountSummary,
+  PerpsCompetitionProcessingResult,
+  PerpsCompetitionStats,
   PerpsPosition,
   PerpsProviderConfig,
+  SuccessfulAgentSync,
 } from "@/types/perps.js";
 
 // Configure Decimal.js for financial calculations
@@ -274,12 +277,7 @@ export class PerpsDataProcessor {
     agents: Array<{ agentId: string; walletAddress: string }>,
     competitionId: string,
     provider: IPerpsDataProvider,
-  ): Promise<
-    BatchPerpsSyncResult & {
-      accountSummaries: Map<string, PerpsAccountSummary>;
-      agents: Array<{ agentId: string; walletAddress: string }>;
-    }
-  > {
+  ): Promise<BatchPerpsSyncWithSummaries> {
     if (!provider) {
       throw new Error("[PerpsDataProcessor] Provider is required");
     }
@@ -481,12 +479,7 @@ export class PerpsDataProcessor {
   async processCompetitionAgents(
     competitionId: string,
     provider: IPerpsDataProvider,
-  ): Promise<
-    BatchPerpsSyncResult & {
-      accountSummaries: Map<string, PerpsAccountSummary>;
-      agents: Array<{ agentId: string; walletAddress: string }>;
-    }
-  > {
+  ): Promise<BatchPerpsSyncWithSummaries> {
     if (!provider) {
       throw new Error("[PerpsDataProcessor] Provider is required");
     }
@@ -568,15 +561,9 @@ export class PerpsDataProcessor {
    * @param competitionId Competition ID
    * @returns Combined results from sync and monitoring
    */
-  async processPerpsCompetition(competitionId: string): Promise<{
-    syncResult: BatchPerpsSyncResult;
-    monitoringResult?: {
-      successful: number;
-      failed: number;
-      alertsCreated: number;
-    };
-    error?: string;
-  }> {
+  async processPerpsCompetition(
+    competitionId: string,
+  ): Promise<PerpsCompetitionProcessingResult> {
     let syncResult: BatchPerpsSyncResult = { successful: [], failed: [] };
 
     try {
@@ -722,9 +709,40 @@ export class PerpsDataProcessor {
         );
       }
 
+      // 5. Calculate Calmar Ratio for ranking (only for active competitions with successful agents)
+      let calmarRatioResult;
+      if (competition.status === "active" && syncResult.successful.length > 0) {
+        try {
+          serviceLogger.info(
+            `[PerpsDataProcessor] Calculating Calmar Ratios for ${syncResult.successful.length} agents`,
+          );
+
+          calmarRatioResult = await this.calculateCalmarRatiosForCompetition(
+            competitionId,
+            syncResult.successful,
+          );
+
+          serviceLogger.info(
+            `[PerpsDataProcessor] Calmar Ratio calculations complete: ${calmarRatioResult.successful} successful, ${calmarRatioResult.failed} failed`,
+          );
+        } catch (error) {
+          serviceLogger.error(
+            `[PerpsDataProcessor] Error calculating Calmar Ratios:`,
+            error,
+          );
+          // Don't fail the entire process if Calmar calculation fails
+          calmarRatioResult = {
+            successful: 0,
+            failed: syncResult.successful.length,
+            errors: [error instanceof Error ? error.message : "Unknown error"],
+          };
+        }
+      }
+
       return {
         syncResult,
         monitoringResult,
+        calmarRatioResult,
       };
     } catch (error) {
       serviceLogger.error(
@@ -747,6 +765,225 @@ export class PerpsDataProcessor {
    */
   private shouldRunMonitoring(threshold: number | null): boolean {
     return threshold !== null && !isNaN(threshold) && threshold >= 0;
+  }
+
+  /**
+   * Calculate Calmar Ratios for all successful agents in a competition
+   * Processes in batches with retry logic and circuit breaker monitoring
+   * @param competitionId Competition ID
+   * @param successfulAgents Agents that were successfully synced
+   * @returns Summary of calculation results
+   */
+  private async calculateCalmarRatiosForCompetition(
+    competitionId: string,
+    successfulAgents: SuccessfulAgentSync[],
+  ): Promise<CalmarRatioCalculationResult> {
+    if (successfulAgents.length === 0) {
+      return { successful: 0, failed: 0 };
+    }
+
+    const calmarService = new CalmarRatioService();
+    const results: Required<CalmarRatioCalculationResult> = {
+      successful: 0,
+      failed: 0,
+      errors: [],
+    };
+
+    // Configuration
+    const BATCH_SIZE = 10;
+    const MAX_ERRORS_TO_STORE = 100; // Cap errors array to prevent memory issues
+    const MAX_RETRIES = 3; // Max retries per agent (like portfolio snapshotter)
+
+    // Separate thresholds for different failure patterns
+    const BATCH_FAILURE_THRESHOLD = 0.8; // 80% - Individual batch concern
+    const SYSTEMIC_FAILURE_THRESHOLD = 0.5; // 50% - System-wide alert (industry standard)
+
+    let totalBatches = 0;
+    let failedBatches = 0; // Batches with >= 80% failure rate
+
+    for (let i = 0; i < successfulAgents.length; i += BATCH_SIZE) {
+      const batch = successfulAgents.slice(i, i + BATCH_SIZE);
+      totalBatches++;
+
+      // Process batch with retries for each agent
+      const batchResults = await this.processBatchWithRetries(
+        batch,
+        competitionId,
+        calmarService,
+        MAX_RETRIES,
+      );
+
+      // Count successes and failures in this batch
+      let batchFailures = 0;
+
+      batchResults.forEach((result, idx) => {
+        if (result.success) {
+          results.successful++;
+        } else {
+          results.failed++;
+          batchFailures++;
+
+          const agent = batch[idx];
+          if (!agent) {
+            serviceLogger.error(
+              `[PerpsDataProcessor] Batch index mismatch at index ${idx}`,
+            );
+            return;
+          }
+          const errorMsg = `Agent ${agent.agentId}: ${result.error || "Unknown error"}`;
+
+          // Only store first N errors to prevent memory issues
+          if (results.errors.length < MAX_ERRORS_TO_STORE) {
+            results.errors.push(errorMsg);
+          } else if (results.errors.length === MAX_ERRORS_TO_STORE) {
+            results.errors.push(
+              `... and ${successfulAgents.length - i - batch.length} more errors`,
+            );
+          }
+        }
+      });
+
+      // Monitor for batch and systemic failures with different thresholds
+      const batchFailureRate = batchFailures / batch.length;
+
+      // Check if this individual batch has high failure rate
+      if (batchFailureRate >= BATCH_FAILURE_THRESHOLD) {
+        failedBatches++;
+
+        serviceLogger.warn(
+          `[PerpsDataProcessor] Batch failure detected: ${batchFailures}/${batch.length} agents failed ` +
+            `(${Math.round(batchFailureRate * 100)}% failure rate)`,
+        );
+      }
+
+      // Check for systemic failure across all batches (lower threshold)
+      const systemicFailureRate = failedBatches / totalBatches;
+      if (systemicFailureRate >= SYSTEMIC_FAILURE_THRESHOLD) {
+        serviceLogger.error(
+          `[PerpsDataProcessor] SYSTEMIC FAILURE DETECTED: ${Math.round(systemicFailureRate * 100)}% of batches ` +
+            `are failing (${failedBatches}/${totalBatches} batches with ≥${Math.round(BATCH_FAILURE_THRESHOLD * 100)}% failure). ` +
+            `Latest batch: ${batchFailures}/${batch.length} failed. ` +
+            `Continuing to process remaining ${successfulAgents.length - i - batch.length} agents.`,
+        );
+
+        // Add alert to errors for visibility (but don't stop)
+        if (results.errors.length < MAX_ERRORS_TO_STORE) {
+          results.errors.push(
+            `SYSTEMIC ALERT: ${Math.round(systemicFailureRate * 100)}% of batches failing ` +
+              `(threshold: ${Math.round(SYSTEMIC_FAILURE_THRESHOLD * 100)}%)`,
+          );
+        }
+      }
+
+      // Log batch progress
+      if (
+        (i + batch.length) % 50 === 0 ||
+        i + batch.length >= successfulAgents.length
+      ) {
+        serviceLogger.info(
+          `[PerpsDataProcessor] Calmar calculation progress: ${i + batch.length}/${successfulAgents.length} agents processed`,
+        );
+      }
+    }
+
+    // Log final summary
+    if (failedBatches > 0) {
+      const finalSystemicRate = failedBatches / totalBatches;
+      const logLevel =
+        finalSystemicRate >= SYSTEMIC_FAILURE_THRESHOLD ? "error" : "warn";
+
+      serviceLogger[logLevel](
+        `[PerpsDataProcessor] Completed with degraded performance: ${failedBatches}/${totalBatches} batches ` +
+          `had ≥${Math.round(BATCH_FAILURE_THRESHOLD * 100)}% failure rate ` +
+          `(systemic rate: ${Math.round(finalSystemicRate * 100)}%). ` +
+          `Final: ${results.successful} successful, ${results.failed} failed`,
+      );
+    }
+
+    // Log if we hit the error cap
+    if (results.errors.length > MAX_ERRORS_TO_STORE) {
+      serviceLogger.warn(
+        `[PerpsDataProcessor] Error array capped at ${MAX_ERRORS_TO_STORE} entries. Total failures: ${results.failed}`,
+      );
+    }
+
+    // Only include errors field if there are actual errors
+    return {
+      successful: results.successful,
+      failed: results.failed,
+      ...(results.errors.length > 0 && { errors: results.errors }),
+    };
+  }
+
+  /**
+   * Process a batch of agents with retry logic for each agent
+   * @param batch Batch of agents to process
+   * @param competitionId Competition ID
+   * @param calmarService Calmar ratio service instance
+   * @param maxRetries Maximum number of retries per agent
+   * @returns Array of results for each agent
+   */
+  private async processBatchWithRetries(
+    batch: SuccessfulAgentSync[],
+    competitionId: string,
+    calmarService: CalmarRatioService,
+    maxRetries: number,
+  ): Promise<Array<{ success: boolean; error?: string }>> {
+    return Promise.all(
+      batch.map(async (agent) => {
+        // Try up to maxRetries + 1 times (initial + retries)
+        for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+          try {
+            // Add exponential backoff for retries
+            if (attempt > 1) {
+              const backoffDelay = Math.min(
+                1000 * Math.pow(2, attempt - 2), // 1s, 2s, 4s
+                10000, // Max 10 seconds
+              );
+              serviceLogger.debug(
+                `[PerpsDataProcessor] Retrying Calmar calculation for agent ${agent.agentId} ` +
+                  `(attempt ${attempt}/${maxRetries + 1}) after ${backoffDelay}ms`,
+              );
+              await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+            }
+
+            await calmarService.calculateAndSaveCalmarRatio(
+              agent.agentId,
+              competitionId,
+            );
+
+            // Success! Log if it was a retry
+            if (attempt > 1) {
+              serviceLogger.info(
+                `[PerpsDataProcessor] Calmar calculation succeeded for agent ${agent.agentId} on attempt ${attempt}`,
+              );
+            }
+
+            return { success: true };
+          } catch (error) {
+            // Log the failure
+            const errorMsg =
+              error instanceof Error ? error.message : String(error);
+            serviceLogger.warn(
+              `[PerpsDataProcessor] Calmar calculation failed for agent ${agent.agentId} ` +
+                `(attempt ${attempt}/${maxRetries + 1}): ${errorMsg}`,
+            );
+
+            // If this was the last attempt, return failure
+            if (attempt === maxRetries + 1) {
+              serviceLogger.error(
+                `[PerpsDataProcessor] Calmar calculation failed for agent ${agent.agentId} after ${maxRetries + 1} attempts`,
+              );
+              return { success: false, error: errorMsg };
+            }
+            // Otherwise, continue to next attempt
+          }
+        }
+
+        // Should never reach here, but handle it defensively
+        return { success: false, error: "Max retries exhausted" };
+      }),
+    );
   }
 
   /**

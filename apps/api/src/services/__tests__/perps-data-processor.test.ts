@@ -6,7 +6,7 @@ import * as agentRepo from "@/database/repositories/agent-repository.js";
 import * as competitionRepo from "@/database/repositories/competition-repository.js";
 import * as perpsRepo from "@/database/repositories/perps-repository.js";
 import { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
-import type { AgentPerpsSyncData } from "@/types/index.js";
+import type { AgentPerpsSyncData } from "@/types/perps.js";
 import type {
   IPerpsDataProvider,
   PerpsAccountSummary,

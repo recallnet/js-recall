@@ -177,10 +177,13 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               <CellTitle>Volume</CellTitle>
               <span className="font-bold">
                 $
-                {competition.stats.totalVolume.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {(competition.stats.totalVolume ?? 0).toLocaleString(
+                  undefined,
+                  {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  },
+                )}
               </span>
             </div>
             <div className="flex flex-col items-start justify-center gap-2 p-4 sm:p-[25px]">
