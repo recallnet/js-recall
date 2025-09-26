@@ -114,12 +114,12 @@ describe("CalmarRatioService", () => {
         agentId,
       );
 
-      // Verify max drawdown calculation
+      // Verify max drawdown calculation uses snapshot dates for consistency
       expect(competitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
         agentId,
         competitionId,
-        competition.startDate,
-        competition.endDate,
+        snapshots.first?.timestamp,
+        snapshots.last?.timestamp,
       );
 
       // Verify metrics were saved
@@ -195,9 +195,23 @@ describe("CalmarRatioService", () => {
       vi.mocked(competitionRepo.findById).mockResolvedValue(
         createMockCompetition(startDate, endDate),
       );
-      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue(
-        createMockSnapshots(1000, 1010), // 1% return in 4 hours
-      );
+      // Create custom snapshots with 4-hour gap for this test
+      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+        first: {
+          id: 1,
+          agentId: "agent-456",
+          competitionId: "comp-123",
+          totalValue: 1000,
+          timestamp: new Date("2025-01-20T10:00:00Z"),
+        },
+        last: {
+          id: 2,
+          agentId: "agent-456",
+          competitionId: "comp-123",
+          totalValue: 1010,
+          timestamp: new Date("2025-01-20T14:00:00Z"), // 4 hours later
+        },
+      });
       vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValue(
         -0.005,
       ); // 0.5% drawdown
@@ -216,7 +230,7 @@ describe("CalmarRatioService", () => {
       );
     });
 
-    it("should use current time if competition has no end date", async () => {
+    it("should use snapshot dates for calculations even if competition has no end date", async () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
       const startDate = new Date("2025-01-20");
@@ -224,8 +238,10 @@ describe("CalmarRatioService", () => {
       vi.mocked(competitionRepo.findById).mockResolvedValue(
         createMockCompetition(startDate), // No end date
       );
+
+      const mockSnapshots = createMockSnapshots(1000, 1100); // 10% return
       vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue(
-        createMockSnapshots(1000, 1100), // 10% return
+        mockSnapshots,
       );
       vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValue(
         -0.05,
@@ -234,26 +250,16 @@ describe("CalmarRatioService", () => {
         createMockSavedMetrics(),
       );
 
-      const beforeCall = new Date();
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
-      const afterCall = new Date();
 
-      // Verify max drawdown was called with a date between beforeCall and afterCall
+      // Verify max drawdown was called with snapshot dates for consistency
+      // This ensures return and drawdown are calculated over the same time period
       expect(competitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
         agentId,
         competitionId,
-        startDate,
-        expect.any(Date),
+        mockSnapshots.first?.timestamp, // Use first snapshot date
+        mockSnapshots.last?.timestamp, // Use last snapshot date
       );
-
-      // Get the actual date passed
-      const callArgs = vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mock
-        .calls[0];
-      const endDateUsed = callArgs?.[3] as Date;
-      expect(endDateUsed.getTime()).toBeGreaterThanOrEqual(
-        beforeCall.getTime(),
-      );
-      expect(endDateUsed.getTime()).toBeLessThanOrEqual(afterCall.getTime());
     });
 
     it("should throw error if competition not found", async () => {

@@ -95,11 +95,13 @@ export class CalmarRatioService {
       );
 
       // 3. Calculate Max Drawdown using SQL
+      // Use the same time period as the return calculation (snapshot dates, not competition dates)
+      // This ensures consistent risk metrics over the same time window
       const maxDrawdown = await calculateMaxDrawdownSQL(
         agentId,
         competitionId,
-        startDate,
-        endDate,
+        startSnapshot.timestamp, // Use first snapshot date
+        endSnapshot.timestamp, // Use last snapshot date
       );
 
       serviceLogger.debug(
@@ -107,8 +109,10 @@ export class CalmarRatioService {
       );
 
       // 4. Annualize the return
+      // Use the actual snapshot period for accurate annualization
       const daysInPeriod =
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        (endSnapshot.timestamp.getTime() - startSnapshot.timestamp.getTime()) /
+        (1000 * 60 * 60 * 24);
       const annualizedReturn = this.annualizeReturn(simpleReturn, daysInPeriod);
 
       serviceLogger.debug(
