@@ -405,6 +405,10 @@ export const config = {
       ? BigInt(process.env.NO_STAKE_BOOST_AMOUNT)
       : undefined,
   },
+  // Chainalysis API key
+  watchlist: {
+    chainalysisApiKey: process.env.CHAINALYSIS_API_KEY || "",
+  },
   symphony: {
     apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
   },
