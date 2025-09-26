@@ -238,14 +238,23 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Check cache
         const shouldCacheResponse = checkShouldCacheResponse(req);
-        const cacheKey = generateCacheKey(req, "list", {
-          status,
-          ...pagingParams,
-        });
+        // Build a stable, explicit set of key params to avoid accidental collisions
+        // Include userId when present since the response embeds user-specific voting info
+        const keyParams: Record<string, unknown> = {
+          status: status ?? null,
+          sort: pagingParams.sort,
+          limit: pagingParams.limit,
+          offset: pagingParams.offset,
+          ...(userId ? { userId } : {}),
+        };
+        const cacheKey = generateCacheKey(req, "list", keyParams);
 
         if (shouldCacheResponse) {
           const cached = caches.list.get(cacheKey);
           if (cached) {
+            competitionLogger.debug(
+              `[Competition] cache hit: list key=${cacheKey}`,
+            );
             res.status(200).json(cached);
             return;
           }
@@ -260,6 +269,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         // Cache the result
         if (shouldCacheResponse) {
+          competitionLogger.debug(
+            `[Competition] cache set: list key=${cacheKey}`,
+          );
           caches.list.set(cacheKey, result);
         }
 
