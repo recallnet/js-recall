@@ -30,10 +30,16 @@ export interface RawAgentMetricsQueryResult {
     totalVotes: number;
   }>;
 
-  /** Trade counts per agent */
+  /** Trade counts per agent (paper trading) */
   tradeCounts: Array<{
     agentId: string;
     totalTrades: number;
+  }>;
+
+  /** Position counts per agent (perpetual futures) */
+  positionCounts: Array<{
+    agentId: string;
+    totalPositions: number;
   }>;
 
   /** Best placement data per agent */
@@ -80,6 +86,7 @@ export interface AgentMetricsData {
   completedCompetitions: number;
   totalVotes: number;
   totalTrades: number;
+  totalPositions: number;
   bestPlacement: {
     competitionId: string;
     rank: number;

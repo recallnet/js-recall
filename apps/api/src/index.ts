@@ -154,7 +154,10 @@ const docsController = makeDocsController();
 const healthController = makeHealthController();
 const priceController = makePriceController(services);
 const tradeController = makeTradeController(services);
-const userController = makeUserController(services);
+const userController = makeUserController(
+  services,
+  config.boost.noStakeBoostAmount ? "no-stake" : "stake",
+);
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
 const voteController = makeVoteController(services);
@@ -227,10 +230,6 @@ if (config.sentry?.enabled) {
 // Apply error handler
 app.use(errorHandler);
 
-// Start blockchain indexing, if enabled
-const indexingService = services.indexingService;
-indexingService.start();
-
 // Start HTTP server
 const mainServer = app.listen(PORT, "0.0.0.0", () => {
   apiLogger.info(`\n========================================`);
@@ -254,8 +253,6 @@ const gracefulShutdown = async (signal: string) => {
   apiLogger.info(
     `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
   );
-
-  await indexingService.close();
 
   // Close both servers
   mainServer.close(async () => {

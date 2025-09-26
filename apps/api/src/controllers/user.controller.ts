@@ -25,7 +25,10 @@ import {
  * Handles user-specific operations with SIWE session authentication
  * Sets req.userId from authenticated session
  */
-export function makeUserController(services: ServiceRegistry) {
+export function makeUserController(
+  services: ServiceRegistry,
+  boostMode: "no-stake" | "stake",
+) {
   return {
     /**
      * Get profile for the authenticated user
@@ -146,6 +149,18 @@ export function makeUserController(services: ServiceRegistry) {
           updatedAt: now,
         });
 
+        // Grant initial boost if applicable
+        if (boostMode === "no-stake") {
+          await services.boostAwardService.initNoStake(
+            linkedUser.id,
+            linkedUser.walletAddress,
+          );
+        } else {
+          await services.boostAwardService.initForStake(
+            linkedUser.walletAddress,
+          );
+        }
+
         res.status(200).json({
           success: true,
           user: linkedUser,
@@ -175,13 +190,6 @@ export function makeUserController(services: ServiceRegistry) {
           body: { name, handle, description, imageUrl, email, metadata },
         } = data;
 
-        // Verify the user exists
-        const user = await services.userService.getUser(userId);
-        if (!user) {
-          throw new ApiError(404, "User not found");
-        }
-
-        // Create the agent using AgentManager
         const agent = await services.agentService.createAgent({
           ownerId: userId,
           name,
@@ -191,10 +199,6 @@ export function makeUserController(services: ServiceRegistry) {
           metadata,
           email,
         });
-
-        if (!agent) {
-          throw new ApiError(500, "Failed to create agent");
-        }
 
         // Return the created agent (API key must be retrieved via separate endpoint)
         res.status(201).json({

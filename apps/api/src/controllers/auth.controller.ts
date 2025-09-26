@@ -1,10 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 
+import { checkUserUniqueConstraintViolation } from "@/lib/error-utils.js";
 import { authLogger } from "@/lib/logger.js";
 import { verifyPrivyIdentityTokenAndUpdateUser } from "@/lib/privy/verify.js";
 import { ServiceRegistry } from "@/services/index.js";
-
-import { checkUserUniqueConstraintViolation } from "./request-helpers.js";
 
 export function makeAuthController(services: ServiceRegistry) {
   /**

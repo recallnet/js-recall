@@ -1,22 +1,20 @@
-import * as crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
-import * as fs from "fs";
-import * as path from "path";
 
 import { UpdateCompetition } from "@recallnet/db/schema/core/types";
 
-import { reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
-import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
 import {
   ActorStatus,
   AdminCreateAgentSchema,
+  Agent,
+  AgentPublic,
   User,
-  UserMetadata,
+  toApiAgent,
+  toApiUser,
 } from "@/types/index.js";
 
 import {
@@ -44,30 +42,9 @@ import {
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
 } from "./admin.schema.js";
-import {
-  checkUserUniqueConstraintViolation,
-  parseAdminSearchQuery,
-} from "./request-helpers.js";
+import { parseAdminSearchQuery } from "./request-helpers.js";
 
 // TODO: need user deactivation logic
-
-// TODO: unify interfaces since these enforce "null" values vs `@/types/index.js` that uses undefined
-// Also, types aren't really used anywhere else, so we should probably remove them?
-interface Agent {
-  id: string;
-  ownerId: string;
-  walletAddress: string | null;
-  name: string;
-  handle: string;
-  description: string | null;
-  imageUrl: string | null;
-  apiKey: string;
-  metadata: unknown;
-  email: string | null;
-  status: ActorStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 interface AdminUserRegistrationResponse {
   success: boolean;
@@ -84,7 +61,7 @@ interface AdminAgentRegistrationResponse {
 
 interface AdminSearchResults {
   users: User[];
-  agents: Omit<Agent, "apiKey">[];
+  agents: AgentPublic[];
 }
 
 export interface AdminSearchUsersAndAgentsResponse {
@@ -108,17 +85,6 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async setupAdmin(req: Request, res: Response, next: NextFunction) {
       try {
-        // Check if any admin already exists
-        const admins = await services.adminService.getAllAdmins();
-        const adminExists = admins.length > 0;
-
-        if (adminExists) {
-          throw new ApiError(
-            403,
-            "Admin setup is not allowed - an admin account already exists",
-          );
-        }
-
         // Validate request body using flatParse
         const result = flatParse(AdminSetupSchema, req.body);
         if (!result.success) {
@@ -127,84 +93,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
         const { username, password, email } = result.data;
 
-        // Ensure that ROOT_ENCRYPTION_KEY exists in .env file
-        try {
-          // Find the correct .env file based on environment
-          const envFile =
-            process.env.NODE_ENV === "test" ? ".env.test" : ".env";
-          const envPath = path.resolve(process.cwd(), envFile);
-          adminLogger.info(`Checking for ${envFile} file at: ${envPath}`);
-
-          if (fs.existsSync(envPath)) {
-            const envContent = fs.readFileSync(envPath, "utf8");
-            const rootKeyPattern = /ROOT_ENCRYPTION_KEY=.*$/m;
-
-            // Check if ROOT_ENCRYPTION_KEY already exists and is not the default
-            const keyMatch = rootKeyPattern.exec(envContent);
-            let needsNewKey = true;
-
-            if (keyMatch) {
-              const currentValue = keyMatch[0].split("=")[1];
-              if (
-                currentValue &&
-                currentValue.length >= 32 &&
-                !currentValue.includes("default_encryption_key") &&
-                !currentValue.includes("your_") &&
-                !currentValue.includes("dev_") &&
-                !currentValue.includes("test_") &&
-                !currentValue.includes("replace_in_production")
-              ) {
-                // Key exists and seems to be a proper key already
-                adminLogger.info("ROOT_ENCRYPTION_KEY already exists in .env");
-                needsNewKey = false;
-              }
-            }
-
-            if (needsNewKey) {
-              // Generate a new secure encryption key
-              const newEncryptionKey = crypto.randomBytes(32).toString("hex");
-              adminLogger.info("Generated new ROOT_ENCRYPTION_KEY");
-
-              // Update the .env file
-              let updatedEnvContent = envContent;
-
-              if (keyMatch) {
-                // Replace existing key
-                updatedEnvContent = envContent.replace(
-                  rootKeyPattern,
-                  `ROOT_ENCRYPTION_KEY=${newEncryptionKey}`,
-                );
-              } else {
-                // Add new key
-                updatedEnvContent =
-                  envContent.trim() +
-                  `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
-              }
-
-              fs.writeFileSync(envPath, updatedEnvContent);
-              adminLogger.info(
-                `Updated ROOT_ENCRYPTION_KEY in ${envFile} file`,
-              );
-
-              // We need to update the process.env with the new key for it to be used immediately
-              process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
-
-              // Reload the configuration to pick up the new encryption key
-              reloadSecurityConfig();
-
-              adminLogger.info(
-                "✅ Configuration reloaded with new encryption key",
-              );
-            }
-          } else {
-            adminLogger.error(`${envFile} file not found at expected location`);
-          }
-        } catch (envError) {
-          adminLogger.error("Error updating ROOT_ENCRYPTION_KEY:", envError);
-          // Continue with admin setup even if the env update fails
-        }
-
-        // Setup the initial admin using AdminManager
+        // Setup the initial admin using AdminService
         const adminResult = await services.adminService.setupInitialAdmin(
           username,
           password,
@@ -245,154 +134,31 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        const {
-          walletAddress,
-          embeddedWalletAddress,
-          privyId,
-          name,
-          email,
-          userImageUrl,
-          userMetadata,
-          agentName,
-          agentHandle,
-          agentDescription,
-          agentImageUrl,
-          agentMetadata,
-          agentWalletAddress,
-        } = result.data;
+        // Delegate business logic to service
+        const { user, agent, agentError } =
+          await services.adminService.registerUserAndAgent(result.data);
 
-        try {
-          // Create the user
-          const user = await services.userService.registerUser(
-            walletAddress,
-            name,
-            email,
-            userImageUrl,
-            userMetadata,
-            privyId,
-            embeddedWalletAddress,
-          );
-
-          let agent = null;
-
-          // If agent details are provided, create an agent for this user
-          if (agentName) {
-            try {
-              agent = await services.agentService.createAgent({
-                ownerId: user.id,
-                name: agentName,
-                handle: agentHandle ?? generateHandleFromName(agentName), // Auto-generate from name
-                description: agentDescription,
-                imageUrl: agentImageUrl,
-                metadata: agentMetadata,
-                walletAddress: agentWalletAddress,
-              });
-            } catch (agentError) {
-              adminLogger.error("Error creating agent for user:", agentError);
-              // If agent creation fails, we still return the user but note the agent error
-              return res.status(201).json({
-                success: true,
-                user: {
-                  id: user.id,
-                  walletAddress: user.walletAddress,
-                  walletLastVerifiedAt: user.walletLastVerifiedAt,
-                  embeddedWalletAddress: user.embeddedWalletAddress,
-                  name: user.name,
-                  email: user.email,
-                  isSubscribed: user.isSubscribed,
-                  privyId: user.privyId,
-                  imageUrl: user.imageUrl,
-                  metadata: user.metadata,
-                  status: user.status,
-                  createdAt: user.createdAt,
-                  updatedAt: user.updatedAt,
-                  lastLoginAt: user.lastLoginAt,
-                },
-                agentError:
-                  agentError instanceof Error
-                    ? agentError.message
-                    : "Failed to create agent",
-              });
-            }
-          }
-
-          // Return success with created user and agent
-          const response: AdminUserRegistrationResponse = {
+        // Handle case where agent creation failed but user was created successfully
+        if (agentError) {
+          return res.status(201).json({
             success: true,
-            user: {
-              id: user.id,
-              name: user.name ?? undefined,
-              email: user.email ?? undefined,
-              isSubscribed: user.isSubscribed,
-              privyId: user.privyId ?? undefined,
-              walletAddress: user.walletAddress,
-              embeddedWalletAddress: user.embeddedWalletAddress ?? "",
-              walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
-              imageUrl: user.imageUrl ?? undefined,
-              metadata: user.metadata
-                ? (user.metadata as UserMetadata)
-                : undefined,
-              status: user.status as ActorStatus,
-              createdAt: user.createdAt,
-              updatedAt: user.updatedAt,
-              lastLoginAt: user.lastLoginAt ?? undefined,
-            },
-          };
-
-          if (agent) {
-            response.agent = {
-              id: agent.id,
-              ownerId: agent.ownerId,
-              walletAddress: agent.walletAddress,
-              name: agent.name,
-              handle: agent.handle ?? generateHandleFromName(agent.name),
-              description: agent.description,
-              imageUrl: agent.imageUrl,
-              apiKey: agent.apiKey,
-              metadata: agent.metadata,
-              status: agent.status as ActorStatus,
-              email: agent.email,
-              createdAt: agent.createdAt,
-              updatedAt: agent.updatedAt,
-            };
-          }
-
-          return res.status(201).json(response);
-        } catch (error) {
-          adminLogger.error("Error registering user:", error);
-
-          // Check if this is an invalid wallet address error
-          if (
-            error instanceof Error &&
-            (error.message.includes("Wallet address is required") ||
-              error.message.includes("Invalid Ethereum address"))
-          ) {
-            return res.status(400).json({
-              success: false,
-              error: error.message,
-            });
-          }
-
-          // Unique constraint violations → 409 Conflict with friendly message
-          const violatedField = checkUserUniqueConstraintViolation(error);
-          if (violatedField) {
-            return res.status(409).json({
-              success: false,
-              error: `A user with this ${violatedField} already exists`,
-            });
-          }
-
-          // Handle other errors
-          return res.status(500).json({
-            success: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Unknown error registering user",
+            user: toApiUser(user),
+            agentError,
           });
         }
+
+        // Return success with created user and agent
+        const response: AdminUserRegistrationResponse = {
+          success: true,
+          user: toApiUser(user),
+        };
+
+        if (agent) {
+          response.agent = toApiAgent(agent);
+        }
+
+        return res.status(201).json(response);
       } catch (error) {
-        adminLogger.error("Uncaught error in registerUser:", error);
         next(error);
       }
     },
@@ -410,92 +176,20 @@ export function makeAdminController(services: ServiceRegistry) {
           throw new ApiError(400, `Invalid request format: ${result.error}`);
         }
         const { user, agent } = result.data;
-        const { id: userId, walletAddress: userWalletAddress } = user;
-        const {
-          name,
-          handle,
-          email,
-          walletAddress: agentWalletAddress,
-          description,
-          imageUrl,
-          metadata,
-        } = agent;
 
-        // Check if a user with this wallet address already exists
-        const existingUser = userWalletAddress
-          ? await services.userService.getUserByWalletAddress(userWalletAddress)
-          : userId
-            ? await services.userService.getUser(userId)
-            : undefined;
+        // Create agent using service method that handles user resolution
+        const createdAgent = await services.agentService.createAgentForOwner(
+          { userId: user.id, walletAddress: user.walletAddress },
+          agent,
+        );
 
-        if (!existingUser) {
-          const errorMessage = `User '${userWalletAddress ? userWalletAddress : userId}' does not exist`;
-          adminLogger.warn("User not found error:", errorMessage);
-          return res.status(404).json({
-            success: false,
-            error: errorMessage,
-          });
-        }
+        const response: AdminAgentRegistrationResponse = {
+          success: true,
+          agent: toApiAgent(createdAgent),
+        };
 
-        try {
-          // Create the agent
-          const agent = await services.agentService.createAgent({
-            ownerId: existingUser.id,
-            name,
-            handle: handle ?? generateHandleFromName(name),
-            description,
-            email,
-            imageUrl,
-            metadata: metadata ?? undefined,
-            walletAddress: agentWalletAddress,
-          });
-
-          const response: AdminAgentRegistrationResponse = {
-            success: true,
-            agent: {
-              ...agent,
-              handle: agent.handle,
-            },
-          };
-
-          return res.status(201).json(response);
-        } catch (error) {
-          adminLogger.error("Error registering agent:", error);
-
-          // Check if this is a duplicate wallet address error that somehow got here
-          if (
-            error instanceof Error &&
-            error.message.includes("already exists")
-          ) {
-            return res.status(409).json({
-              success: false,
-              error: error.message,
-            });
-          }
-
-          // Check if this is an invalid wallet address error
-          if (
-            error instanceof Error &&
-            (error.message.includes("Wallet address is required") ||
-              error.message.includes("Invalid Ethereum address"))
-          ) {
-            return res.status(400).json({
-              success: false,
-              error: error.message,
-            });
-          }
-
-          // Handle other errors
-          return res.status(500).json({
-            success: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Unknown error registering agent",
-          });
-        }
+        return res.status(201).json(response);
       } catch (error) {
-        adminLogger.error("Uncaught error in registerUser:", error);
         next(error);
       }
     },
@@ -530,6 +224,7 @@ export function makeAdminController(services: ServiceRegistry) {
           maxParticipants,
           tradingConstraints,
           rewards,
+          perpsProvider,
         } = result.data;
 
         // Create a new competition
@@ -553,6 +248,7 @@ export function makeAdminController(services: ServiceRegistry) {
             maxParticipants,
             tradingConstraints,
             rewards,
+            perpsProvider,
           },
         );
 
@@ -573,7 +269,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async startCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
+        // Validate request body
         const result = flatParse(AdminStartCompetitionSchema, req.body);
         if (!result.success) {
           throw new ApiError(400, `Invalid request format: ${result.error}`);
@@ -581,9 +277,11 @@ export function makeAdminController(services: ServiceRegistry) {
 
         const {
           competitionId,
+          agentIds,
+          tradingConstraints,
+          // Fields for creating new competition
           name,
           description,
-          agentIds,
           tradingType,
           sandboxMode,
           externalUrl,
@@ -595,128 +293,41 @@ export function makeAdminController(services: ServiceRegistry) {
           votingEndDate,
           joinStartDate,
           joinEndDate,
-          tradingConstraints,
           rewards,
+          perpsProvider,
         } = result.data;
 
-        // Validate that all provided agent IDs exist in the database and are active
-        const invalidAgentIds: string[] = [];
-        const validAgentIds: string[] = [];
-
-        for (const agentId of agentIds) {
-          const agent = await services.agentService.getAgent(agentId);
-
-          if (!agent) {
-            invalidAgentIds.push(agentId);
-            continue;
-          }
-
-          if (agent.status !== "active") {
-            invalidAgentIds.push(agentId);
-            continue;
-          }
-
-          validAgentIds.push(agentId);
-        }
-
-        // If there are invalid agent IDs, return an error with the list
-        if (invalidAgentIds.length > 0) {
-          throw new ApiError(
-            400,
-            `Cannot start competition: the following agent IDs are invalid or inactive: ${invalidAgentIds.join(", ")}`,
-          );
-        }
-
-        let finalAgentIds = [...validAgentIds]; // Start with validated agent IDs
-
-        // Get pre-registered agents from the database if we have a competitionId
-        if (competitionId) {
-          const competitionAgents =
-            await services.agentService.getAgentsForCompetition(competitionId, {
-              sort: "",
-              limit: 1000,
-              offset: 0,
-            });
-          const registeredAgents = competitionAgents.agents.map(
-            (agent) => agent.id,
-          );
-          // Combine with provided agentIds, removing duplicates
-          const combinedAgents = [
-            ...new Set([...finalAgentIds, ...registeredAgents]),
-          ];
-          finalAgentIds = combinedAgents;
-        }
-
-        // Now check if we have any agents to start the competition with
-        if (finalAgentIds.length === 0) {
-          throw new ApiError(
-            400,
-            "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
-          );
-        }
-
-        let competition;
-
-        // Check if we're starting an existing competition or creating a new one
-        if (competitionId) {
-          // Get the existing competition
-          competition =
-            await services.competitionService.getCompetition(competitionId);
-
-          if (!competition) {
-            throw new ApiError(404, "Competition not found");
-          }
-
-          // Verify competition is in PENDING state
-          if (competition.status !== "pending") {
-            throw new ApiError(
-              400,
-              `Competition is already in ${competition.status} state and cannot be started`,
-            );
-          }
-        } else {
-          // We need name to create a new competition
-          // Schema validation ensures either competitionId or name is provided
-
-          // Create a new competition
-          competition = await services.competitionService.createCompetition({
-            name: name!,
-            description,
-            tradingType,
-            sandboxMode,
-            externalUrl,
-            imageUrl,
-            type,
-            startDate: startDate ? new Date(startDate) : undefined,
-            endDate: endDate ? new Date(endDate) : undefined,
-            votingStartDate: votingStartDate
-              ? new Date(votingStartDate)
-              : undefined,
-            votingEndDate: votingEndDate ? new Date(votingEndDate) : undefined,
-            joinStartDate: joinStartDate ? new Date(joinStartDate) : undefined,
-            joinEndDate: joinEndDate ? new Date(joinEndDate) : undefined,
-            // Note: maxParticipants not available when starting new competition since this starting comps method has "dual" purpose actions
-            maxParticipants: undefined,
+        // Call service method with creation params only if no competitionId
+        const competition =
+          await services.competitionService.startOrCreateCompetition({
+            competitionId,
+            agentIds,
             tradingConstraints,
-            rewards,
+            creationParams: competitionId
+              ? undefined
+              : {
+                  name: name!,
+                  description,
+                  tradingType,
+                  sandboxMode,
+                  externalUrl,
+                  imageUrl,
+                  type,
+                  startDate,
+                  endDate,
+                  votingStartDate,
+                  votingEndDate,
+                  joinStartDate,
+                  joinEndDate,
+                  rewards,
+                  perpsProvider,
+                },
           });
-        }
-
-        // Start the competition
-        const startedCompetition =
-          await services.competitionService.startCompetition(
-            competition.id,
-            finalAgentIds,
-            tradingConstraints,
-          );
 
         // Return the started competition
         res.status(200).json({
           success: true,
-          competition: {
-            ...startedCompetition,
-            agentIds: finalAgentIds,
-          },
+          competition,
         });
       } catch (error) {
         next(error);
@@ -921,22 +532,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const users = await services.userService.getAllUsers();
 
         // Format the response to match the expected structure
-        const formattedUsers = users.map((user) => ({
-          id: user.id,
-          walletAddress: user.walletAddress,
-          walletLastVerifiedAt: user.walletLastVerifiedAt,
-          embeddedWalletAddress: user.embeddedWalletAddress,
-          name: user.name,
-          email: user.email,
-          isSubscribed: user.isSubscribed,
-          privyId: user.privyId,
-          status: user.status,
-          imageUrl: user.imageUrl,
-          metadata: user.metadata,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          lastLoginAt: user.lastLoginAt,
-        }));
+        const formattedUsers = users.map(toApiUser);
 
         // Return the users
         res.status(200).json({
@@ -1069,44 +665,12 @@ export function makeAdminController(services: ServiceRegistry) {
         if (user) {
           const users = await services.userService.searchUsers(user);
 
-          results.users = users.map((user) => ({
-            id: user.id,
-            walletAddress: user.walletAddress,
-            walletLastVerifiedAt: user.walletLastVerifiedAt ?? undefined,
-            name: user.name ?? undefined,
-            email: user.email ?? undefined,
-            isSubscribed: user.isSubscribed,
-            privyId: user.privyId ?? undefined,
-            embeddedWalletAddress: user.embeddedWalletAddress ?? undefined,
-            status: user.status,
-            imageUrl: user.imageUrl ?? undefined,
-            metadata: user.metadata
-              ? (user.metadata as UserMetadata)
-              : undefined,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-            lastLoginAt: user.lastLoginAt ?? undefined,
-          }));
+          results.users = users.map(toApiUser);
         }
 
         // Search agents if requested
         if (agent) {
-          const agents = await services.agentService.searchAgents(agent);
-
-          results.agents = agents.map((agent) => ({
-            id: agent.id,
-            ownerId: agent.ownerId,
-            walletAddress: agent.walletAddress,
-            name: agent.name,
-            handle: agent.handle,
-            description: agent.description,
-            status: agent.status,
-            imageUrl: agent.imageUrl,
-            metadata: agent.metadata,
-            email: agent.email,
-            createdAt: agent.createdAt,
-            updatedAt: agent.updatedAt,
-          }));
+          results.agents = await services.agentService.searchAgents(agent);
         }
 
         if (join) {
@@ -1165,20 +729,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const totalCount = await services.agentService.countAgents();
 
         // Format the agents for the response
-        const formattedAgents = agents.map((agent) => ({
-          id: agent.id,
-          ownerId: agent.ownerId,
-          walletAddress: agent.walletAddress,
-          name: agent.name,
-          handle: agent.handle,
-          email: agent.email,
-          description: agent.description,
-          status: agent.status,
-          imageUrl: agent.imageUrl,
-          metadata: agent.metadata,
-          createdAt: agent.createdAt,
-          updatedAt: agent.updatedAt,
-        }));
+        const formattedAgents = agents.map(toApiAgent);
 
         // Return the agents with pagination metadata
         res.status(200).json({

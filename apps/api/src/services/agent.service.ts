@@ -43,15 +43,18 @@ import {
   getBulkBoundedSnapshots,
 } from "@/database/repositories/competition-repository.js";
 import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
+import { countBulkAgentPositionsInCompetitions } from "@/database/repositories/perps-repository.js";
 import { countBulkAgentTradesInCompetitions } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
 import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
+import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AgentMetricsHelper } from "@/services/agent-metrics-helper.js";
 import { BalanceService } from "@/services/balance.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
+import type { UserService } from "@/services/user.service.js";
 import type { AgentWithMetrics } from "@/types/agent-metrics.js";
 import {
   AgentCompetitionsParams,
@@ -91,17 +94,21 @@ export class AgentService {
   private balanceService: BalanceService;
   // Price tracker service for getting token prices
   private priceTrackerService: PriceTrackerService;
+  // User service for validating user existence
+  private userService: UserService;
 
   constructor(
     emailService: EmailService,
     balanceService: BalanceService,
     priceTrackerService: PriceTrackerService,
+    userService: UserService,
   ) {
     this.apiKeyCache = new Map();
     this.inactiveAgentsCache = new Map();
     this.emailService = emailService;
     this.balanceService = balanceService;
     this.priceTrackerService = priceTrackerService;
+    this.userService = userService;
   }
 
   /**
@@ -114,7 +121,7 @@ export class AgentService {
    * @param metadata Optional agent metadata
    * @param email Optional email address
    * @param walletAddress Optional Ethereum wallet address
-   * @returns The created agent with API credentials
+   * @returns The created agent with unencrypted API credentials for display to admin
    */
   async createAgent({
     ownerId,
@@ -134,11 +141,18 @@ export class AgentService {
     metadata?: AgentMetadata;
     email?: string;
     walletAddress?: string;
-  }) {
+  }): Promise<SelectAgent> {
     try {
+      // Validate that the user exists
+      const user = await this.userService.getUser(ownerId);
+      if (!user) {
+        throw new ApiError(404, `User '${ownerId}' does not exist`);
+      }
+
       // Validate wallet address if provided
       if (walletAddress && !this.isValidEthereumAddress(walletAddress)) {
-        throw new Error(
+        throw new ApiError(
+          400,
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
       }
@@ -227,6 +241,57 @@ export class AgentService {
         `Failed to create agent: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  /**
+   * Create a new agent for an owner identified by either user ID or wallet address.
+   * If the owner is not provided, the agent will be created for the user with the provided wallet address.
+   * @param ownerIdentifier Object containing either userId or walletAddress
+   * @param agentData Agent creation data
+   * @returns The created agent with unencrypted API key
+   * @throws {ApiError} With appropriate HTTP status code and message
+   */
+  async createAgentForOwner(
+    ownerIdentifier: { userId?: string; walletAddress?: string },
+    agentData: {
+      name: string;
+      handle?: string;
+      description?: string;
+      imageUrl?: string;
+      metadata?: AgentMetadata;
+      email?: string;
+      walletAddress?: string;
+    },
+  ): Promise<SelectAgent> {
+    // Resolve owner identifier to user ID
+    let ownerId: string;
+    if (ownerIdentifier.userId) {
+      ownerId = ownerIdentifier.userId;
+    } else if (ownerIdentifier.walletAddress) {
+      const user = await this.userService.getUserByWalletAddress(
+        ownerIdentifier.walletAddress,
+      );
+      if (!user) {
+        throw new ApiError(
+          404,
+          `User with wallet address '${ownerIdentifier.walletAddress}' does not exist`,
+        );
+      }
+      ownerId = user.id;
+    } else {
+      throw new ApiError(400, "Must provide either user ID or wallet address");
+    }
+
+    return this.createAgent({
+      ownerId,
+      name: agentData.name,
+      handle: agentData.handle || generateHandleFromName(agentData.name),
+      description: agentData.description,
+      imageUrl: agentData.imageUrl,
+      metadata: agentData.metadata,
+      email: agentData.email,
+      walletAddress: agentData.walletAddress,
+    });
   }
 
   /**
@@ -816,7 +881,7 @@ export class AgentService {
    * @param searchParams Parameters to search by (name, ownerId, status)
    * @returns Array of agents matching the search criteria
    */
-  async searchAgents(searchParams: AgentSearchParams) {
+  async searchAgents(searchParams: AgentSearchParams): Promise<AgentPublic[]> {
     try {
       serviceLogger.debug(
         `[AgentManager] Searching for agents with params:`,
@@ -829,7 +894,7 @@ export class AgentService {
       serviceLogger.debug(
         `[AgentManager] Found ${agents.length} agents matching search criteria`,
       );
-      return agents;
+      return agents.map(this.sanitizeAgent.bind(this));
     } catch (error) {
       serviceLogger.error("[AgentManager] Error searching agents:", error);
       return [];
@@ -1253,7 +1318,7 @@ export class AgentService {
   }: {
     filter?: string;
     pagingParams: PagingParams;
-  }) {
+  }): Promise<SelectAgent[]> {
     if (filter?.length === 42) {
       return findByWallet({ walletAddress: filter, pagingParams });
     }
@@ -1319,7 +1384,6 @@ export class AgentService {
 
   /**
    * Attach agent metrics to multiple agents efficiently using bulk queries
-   * This replaces the N+1 query pattern of calling attachAgentMetrics in a loop
    *
    * @param sanitizedAgents Array of sanitized agents to attach metrics to
    * @returns Array of agents with attached metrics
@@ -1429,20 +1493,36 @@ export class AgentService {
     try {
       const competitionIds = competitions.map((comp) => comp.id);
 
-      // Fetch all data in bulk with just 3 queries
-      const [snapshotsMap, tradeCountsMap, rankingsMap] = await Promise.all([
-        getBulkBoundedSnapshots(agentId, competitionIds),
-        countBulkAgentTradesInCompetitions(agentId, competitionIds),
-        getAgentRankingsInCompetitions(agentId, competitionIds),
-      ]);
+      // Separate competitions by type for optimized queries
+      const paperTradingCompetitions = competitions.filter(
+        (comp) => comp.type === "trading",
+      );
+      const perpsCompetitions = competitions.filter(
+        (comp) => comp.type === "perpetual_futures",
+      );
 
-      // Map results back to competitions
+      const paperTradingIds = paperTradingCompetitions.map((comp) => comp.id);
+      const perpsIds = perpsCompetitions.map((comp) => comp.id);
+
+      // Fetch data in parallel - only fetch what's needed for each type
+      const [snapshotsMap, tradeCountsMap, positionCountsMap, rankingsMap] =
+        await Promise.all([
+          getBulkBoundedSnapshots(agentId, competitionIds),
+          paperTradingIds.length > 0
+            ? countBulkAgentTradesInCompetitions(agentId, paperTradingIds)
+            : Promise.resolve(new Map<string, number>()),
+          perpsIds.length > 0
+            ? countBulkAgentPositionsInCompetitions(agentId, perpsIds)
+            : Promise.resolve(new Map<string, number>()),
+          getAgentRankingsInCompetitions(agentId, competitionIds),
+        ]);
+
+      // Map results back to competitions with type-aware metrics
       return competitions.map((competition) => {
         const snapshots = snapshotsMap.get(competition.id);
-        const tradeCount = tradeCountsMap.get(competition.id) || 0;
         const bestPlacement = rankingsMap.get(competition.id);
 
-        // Calculate PnL from snapshots
+        // Calculate PnL from snapshots (works for both types)
         let portfolioValue = 0;
         let pnl = 0;
         let pnlPercent = 0;
@@ -1454,14 +1534,28 @@ export class AgentService {
           pnlPercent = startingValue > 0 ? (pnl / startingValue) * 100 : 0;
         }
 
-        return {
+        // Build response with appropriate metrics based on competition type
+        const baseMetrics = {
           ...competition,
           portfolioValue,
           pnl,
           pnlPercent,
-          totalTrades: tradeCount,
           bestPlacement,
+          competitionType: competition.type, // Always include type for client awareness
         };
+
+        // Add type-specific metrics
+        if (competition.type === "perpetual_futures") {
+          return {
+            ...baseMetrics,
+            totalPositions: positionCountsMap.get(competition.id) || 0,
+          };
+        } else {
+          return {
+            ...baseMetrics,
+            totalTrades: tradeCountsMap.get(competition.id) || 0,
+          };
+        }
       });
     } catch (error) {
       serviceLogger.error(

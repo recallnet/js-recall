@@ -19,6 +19,7 @@ import type { BalanceService } from "@/services/balance.service.js";
 import type { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import { CompetitionService } from "@/services/competition.service.js";
 import type { ConfigurationService } from "@/services/configuration.service.js";
+import type { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
 import type { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import type { TradingConstraintsService } from "@/services/trading-constraints.service.js";
@@ -164,6 +165,9 @@ describe("CompetitionService", () => {
       mockCompetition,
     );
 
+    // Create mock for PerpsDataProcessor (not used in these tests - only for perps competitions)
+    const mockPerpsDataProcessor = {} as unknown as PerpsDataProcessor;
+
     // Create competition manager instance with all mocked dependencies
     competitionService = new CompetitionService(
       mockBalanceService,
@@ -175,6 +179,7 @@ describe("CompetitionService", () => {
       mockVoteService,
       mockTradingConstraintsService as unknown as TradingConstraintsService,
       mockCompetitionRewardService as unknown as CompetitionRewardService,
+      mockPerpsDataProcessor,
     );
   });
 

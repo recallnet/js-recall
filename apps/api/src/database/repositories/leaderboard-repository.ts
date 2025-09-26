@@ -4,15 +4,11 @@ import { dbRead } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
 import { createTimedRepositoryFunction } from "@/lib/repository-timing.js";
 
-/**
- * Leaderboard Repository
- * Handles database operations for leaderboards
- */
 const repository = new LeaderboardRepository(dbRead, repositoryLogger);
 
-// ----------------------------------------------------------------------------
+// =============================================================================
 // EXPORTED REPOSITORY FUNCTIONS WITH TIMING
-// ----------------------------------------------------------------------------
+// =============================================================================
 
 /**
  * All repository functions wrapped with timing and metrics
@@ -23,6 +19,12 @@ export const getGlobalStats = createTimedRepositoryFunction(
   repository.getGlobalStats.bind(repository),
   "LeaderboardRepository",
   "getGlobalStats",
+);
+
+export const getGlobalStatsAllTypes = createTimedRepositoryFunction(
+  repository.getGlobalStatsAllTypes.bind(repository),
+  "LeaderboardRepository",
+  "getGlobalStatsAllTypes",
 );
 
 export const getBulkAgentMetrics = createTimedRepositoryFunction(

@@ -19,17 +19,20 @@ import { CompetitionVotingBanner } from "@/components/competition-voting-banner"
 import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
+import { PositionsTable } from "@/components/positions-table";
 import { TimelineChart } from "@/components/timeline-chart/index";
 import { TradesTable } from "@/components/trades-table";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
 import { useSession } from "@/hooks/useSession";
 
 const LIMIT_AGENTS_PER_PAGE = 10;
 const LIMIT_TRADES_PER_PAGE = 10;
+const LIMIT_POSITIONS_PER_PAGE = 10;
 const COST_TO_COMPETE = 300;
 
 export default function CompetitionPage({
@@ -46,6 +49,7 @@ export default function CompetitionPage({
   const [agentsSort, setAgentsSort] = React.useState("");
   const [agentsOffset, setAgentsOffset] = React.useState(0);
   const [tradesOffset, setTradesOffset] = React.useState(0);
+  const [positionsOffset, setPositionsOffset] = React.useState(0);
   const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
   const {
@@ -63,14 +67,36 @@ export default function CompetitionPage({
     offset: agentsOffset,
     limit: LIMIT_AGENTS_PER_PAGE,
   });
+  // Determine if we're in a perps competition
+  const isPerpsCompetition = competition?.type === "perpetual_futures";
+
+  // Use appropriate hook based on competition type
+  // Note: both hooks will be called, but only one will actually fetch data based on enabled condition
   const {
     data: tradesData,
     isLoading: isLoadingTrades,
     error: tradesError,
-  } = useCompetitionTrades(id, {
-    offset: tradesOffset,
-    limit: LIMIT_TRADES_PER_PAGE,
-  });
+  } = useCompetitionTrades(
+    id,
+    {
+      offset: tradesOffset,
+      limit: LIMIT_TRADES_PER_PAGE,
+    },
+    !isPerpsCompetition, // enabled only for non-perps competitions
+  );
+
+  const {
+    data: positionsData,
+    isLoading: isLoadingPositions,
+    error: positionsError,
+  } = useCompetitionPerpsPositions(
+    id,
+    {
+      offset: positionsOffset,
+      limit: LIMIT_POSITIONS_PER_PAGE,
+    },
+    isPerpsCompetition, // enabled only for perps competitions
+  );
 
   const handleAgentsPageChange = (page: number) => {
     setAgentsOffset(LIMIT_AGENTS_PER_PAGE * (page - 1));
@@ -80,8 +106,20 @@ export default function CompetitionPage({
     setTradesOffset(LIMIT_TRADES_PER_PAGE * (page - 1));
   };
 
-  const isLoading = isLoadingCompetition || isLoadingAgents || isLoadingTrades;
-  const queryError = competitionError ?? agentsError ?? tradesError;
+  const handlePositionsPageChange = (page: number) => {
+    setPositionsOffset(LIMIT_POSITIONS_PER_PAGE * (page - 1));
+  };
+
+  const isLoading =
+    isLoadingCompetition ||
+    isLoadingAgents ||
+    (!isPerpsCompetition && isLoadingTrades) ||
+    (isPerpsCompetition && isLoadingPositions);
+  const queryError =
+    competitionError ??
+    agentsError ??
+    (!isPerpsCompetition && tradesError) ??
+    (isPerpsCompetition && positionsError);
 
   React.useEffect(() => {
     handleAgentsPageChange(1);
@@ -228,19 +266,35 @@ export default function CompetitionPage({
         />
       ) : null}
 
-      <TradesTable
-        trades={tradesData?.trades || []}
-        pagination={
-          tradesData?.pagination || {
-            total: 0,
-            limit: LIMIT_TRADES_PER_PAGE,
-            offset: tradesOffset,
-            hasMore: false,
+      {isPerpsCompetition ? (
+        <PositionsTable
+          positions={positionsData?.positions || []}
+          pagination={
+            positionsData?.pagination || {
+              total: 0,
+              limit: LIMIT_POSITIONS_PER_PAGE,
+              offset: positionsOffset,
+              hasMore: false,
+            }
           }
-        }
-        onPageChange={handleTradesPageChange}
-        showSignInMessage={!isAuthenticated}
-      />
+          onPageChange={handlePositionsPageChange}
+          showSignInMessage={!isAuthenticated}
+        />
+      ) : (
+        <TradesTable
+          trades={tradesData?.trades || []}
+          pagination={
+            tradesData?.pagination || {
+              total: 0,
+              limit: LIMIT_TRADES_PER_PAGE,
+              offset: tradesOffset,
+              hasMore: false,
+            }
+          }
+          onPageChange={handleTradesPageChange}
+          showSignInMessage={!isAuthenticated}
+        />
+      )}
 
       {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">

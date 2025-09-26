@@ -3443,8 +3443,8 @@
     },
     "/api/agent/balances": {
       "get": {
-        "summary": "Get agent balances",
-        "description": "Retrieve all token balances with current prices for the authenticated agent",
+        "summary": "Get agent balances (Paper Trading Only)",
+        "description": "Retrieve all token balances with current prices for the authenticated agent. Only available during paper trading competitions.",
         "tags": ["Agent"],
         "security": [
           {
@@ -3510,6 +3510,26 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request - Endpoint not available for perpetual futures competitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "This endpoint is not available for perpetual futures competitions. Use GET /api/agent/perps/account for account summary."
+                    }
+                  }
+                }
+              }
+            }
+          },
           "401": {
             "description": "Agent not authenticated"
           },
@@ -3521,8 +3541,8 @@
     },
     "/api/agent/trades": {
       "get": {
-        "summary": "Get agent trade history",
-        "description": "Retrieve the trading history for the authenticated agent",
+        "summary": "Get agent trade history (Paper Trading Only)",
+        "description": "Retrieve the trading history for the authenticated agent. Only available during paper trading competitions.",
         "tags": ["Agent"],
         "security": [
           {
@@ -3644,6 +3664,26 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request - Endpoint not available for perpetual futures competitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "This endpoint is not available for perpetual futures competitions. Use GET /api/agent/perps/positions for current positions."
+                    }
+                  }
+                }
+              }
+            }
+          },
           "401": {
             "description": "Agent not authenticated"
           },
@@ -3687,6 +3727,273 @@
           },
           "401": {
             "description": "Agent not authenticated"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/agent/perps/positions": {
+      "get": {
+        "summary": "Get perps positions for the authenticated agent",
+        "description": "Returns current perpetual futures positions for the authenticated agent in the active competition",
+        "tags": ["Agent", "Perpetual Futures"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Positions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "agentId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "competitionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "positions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "agentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "competitionId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "positionId": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Provider-specific position ID"
+                          },
+                          "marketId": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Market identifier"
+                          },
+                          "marketSymbol": {
+                            "type": "string",
+                            "nullable": true,
+                            "example": "BTC"
+                          },
+                          "asset": {
+                            "type": "string",
+                            "description": "Asset symbol",
+                            "example": "BTC"
+                          },
+                          "isLong": {
+                            "type": "boolean",
+                            "description": "Whether position is long (true) or short (false)",
+                            "example": true
+                          },
+                          "leverage": {
+                            "type": "number",
+                            "description": "Position leverage",
+                            "example": 10
+                          },
+                          "size": {
+                            "type": "number",
+                            "description": "Position size",
+                            "example": 0.5
+                          },
+                          "collateral": {
+                            "type": "number",
+                            "description": "Collateral/margin amount",
+                            "example": 2250
+                          },
+                          "averagePrice": {
+                            "type": "number",
+                            "description": "Average entry price",
+                            "example": 45000
+                          },
+                          "markPrice": {
+                            "type": "number",
+                            "description": "Current mark price",
+                            "example": 46000
+                          },
+                          "liquidationPrice": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Liquidation price",
+                            "example": 40000
+                          },
+                          "unrealizedPnl": {
+                            "type": "number",
+                            "description": "Unrealized PnL",
+                            "example": 500
+                          },
+                          "pnlPercentage": {
+                            "type": "number",
+                            "description": "PnL as percentage of collateral (from Symphony)",
+                            "example": 0.05
+                          },
+                          "realizedPnl": {
+                            "type": "number",
+                            "description": "Realized PnL (always 0 in current implementation)",
+                            "example": 0
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "Position status",
+                            "example": "Open"
+                          },
+                          "openedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Position open timestamp"
+                          },
+                          "closedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true,
+                            "description": "Position close timestamp (null if open)"
+                          },
+                          "timestamp": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last update timestamp"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a perpetual futures competition"
+          },
+          "401": {
+            "description": "Agent not authenticated"
+          },
+          "403": {
+            "description": "Agent not registered in competition"
+          },
+          "404": {
+            "description": "No active competition found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/agent/perps/account": {
+      "get": {
+        "summary": "Get perps account summary for the authenticated agent",
+        "description": "Returns the perpetual futures account summary including equity, PnL, and statistics",
+        "tags": ["Agent", "Perpetual Futures"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account summary retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "agentId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "competitionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "account": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "agentId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "competitionId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "accountId": {
+                          "type": "string",
+                          "description": "Provider-specific account ID"
+                        },
+                        "totalEquity": {
+                          "type": "string",
+                          "example": "520.50"
+                        },
+                        "availableBalance": {
+                          "type": "string",
+                          "example": "300.00"
+                        },
+                        "marginUsed": {
+                          "type": "string",
+                          "example": "220.50"
+                        },
+                        "totalPnl": {
+                          "type": "string",
+                          "example": "20.50"
+                        },
+                        "totalVolume": {
+                          "type": "string",
+                          "example": "15000.00"
+                        },
+                        "openPositions": {
+                          "type": "integer",
+                          "example": 3
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a perpetual futures competition"
+          },
+          "401": {
+            "description": "Agent not authenticated"
+          },
+          "403": {
+            "description": "Agent not registered in competition"
+          },
+          "404": {
+            "description": "No active competition found"
           },
           "500": {
             "description": "Internal server error"
@@ -3913,7 +4220,12 @@
                               "type": "integer"
                             },
                             "totalTrades": {
-                              "type": "integer"
+                              "type": "integer",
+                              "description": "Total number of trades across all paper trading competitions"
+                            },
+                            "totalPositions": {
+                              "type": "integer",
+                              "description": "Total number of positions across all perpetual futures competitions"
                             },
                             "totalVotes": {
                               "type": "integer"
@@ -4160,10 +4472,20 @@
                             "description": "Agent's profit/loss percentage in this competition",
                             "example": 5.01
                           },
+                          "competitionType": {
+                            "type": "string",
+                            "enum": ["trading", "perpetual_futures"],
+                            "description": "Type of competition determining which metrics are available"
+                          },
                           "totalTrades": {
                             "type": "integer",
-                            "description": "Total number of trades made by agent in this competition",
+                            "description": "Total number of trades made by agent (only for paper trading competitions)",
                             "example": 15
+                          },
+                          "totalPositions": {
+                            "type": "integer",
+                            "description": "Total number of positions held by agent (only for perpetual futures competitions)",
+                            "example": 3
                           },
                           "bestPlacement": {
                             "type": "object",
@@ -5417,10 +5739,20 @@
                         },
                         "stats": {
                           "type": "object",
+                          "description": "Competition statistics (fields vary by competition type)",
                           "properties": {
+                            "competitionType": {
+                              "type": "string",
+                              "enum": ["trading", "perpetual_futures"],
+                              "description": "Type of competition determining which metrics are available"
+                            },
                             "totalTrades": {
                               "type": "number",
-                              "description": "Total number of trades"
+                              "description": "Total number of trades (only for paper trading competitions)"
+                            },
+                            "totalPositions": {
+                              "type": "number",
+                              "description": "Total number of positions (only for perpetual futures competitions)"
                             },
                             "totalAgents": {
                               "type": "number",
@@ -5428,7 +5760,7 @@
                             },
                             "totalVolume": {
                               "type": "number",
-                              "description": "Total volume of trades in USD"
+                              "description": "Total volume in USD"
                             },
                             "totalVotes": {
                               "type": "integer",
@@ -5436,7 +5768,11 @@
                             },
                             "uniqueTokens": {
                               "type": "number",
-                              "description": "Total number of unique tokens traded"
+                              "description": "Total number of unique tokens traded (only for paper trading competitions)"
+                            },
+                            "averageEquity": {
+                              "type": "number",
+                              "description": "Average equity across all agents (only for perpetual futures competitions)"
                             }
                           }
                         },
@@ -6042,8 +6378,8 @@
     "/api/competitions/{competitionId}/trades": {
       "get": {
         "tags": ["Competition"],
-        "summary": "Get trades for a competition",
-        "description": "Get all trades for a specific competition",
+        "summary": "Get trades for a competition (Paper Trading Only)",
+        "description": "Get all trades for a specific competition. Only available for paper trading competitions.",
         "security": [
           {
             "BearerAuth": []
@@ -6108,7 +6444,24 @@
             }
           },
           "400": {
-            "description": "Bad request - Invalid competition ID format"
+            "description": "Bad request - Invalid competition ID format or endpoint not available for perpetual futures competitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "This endpoint is not available for perpetual futures competitions. Use GET /api/competitions/{id}/perps/all-positions for perps positions."
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized - Missing or invalid authentication"
@@ -6125,8 +6478,8 @@
     "/api/competitions/{competitionId}/agents/{agentId}/trades": {
       "get": {
         "tags": ["Competition"],
-        "summary": "Get trades for an agent in a competition",
-        "description": "Get all trades for a specific agent in a specific competition",
+        "summary": "Get trades for an agent in a competition (Paper Trading Only)",
+        "description": "Get all trades for a specific agent in a specific competition. Only available for paper trading competitions.",
         "security": [
           {
             "BearerAuth": []
@@ -6200,13 +6553,624 @@
             }
           },
           "400": {
-            "description": "Bad request - Invalid ID format"
+            "description": "Bad request - Invalid ID format or endpoint not available for perpetual futures competitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "This endpoint is not available for perpetual futures competitions. Use GET /api/competitions/{id}/agents/{agentId}/perps/positions for agent positions."
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized - Missing or invalid authentication"
           },
           "404": {
             "description": "Competition or agent not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/competitions/{competitionId}/agents/{agentId}/perps/positions": {
+      "get": {
+        "tags": ["Competitions"],
+        "summary": "Get perps positions for an agent in a competition",
+        "description": "Returns the current perpetual futures positions for a specific agent in a specific competition.\nThis endpoint is only available for perpetual futures competitions.\n",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Competition ID"
+          },
+          {
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Agent ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved perps positions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "competitionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "agentId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "positions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "agentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "competitionId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "positionId": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Provider-specific position ID"
+                          },
+                          "marketId": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Market identifier"
+                          },
+                          "marketSymbol": {
+                            "type": "string",
+                            "nullable": true,
+                            "example": "BTC"
+                          },
+                          "asset": {
+                            "type": "string",
+                            "description": "Asset symbol",
+                            "example": "BTC"
+                          },
+                          "isLong": {
+                            "type": "boolean",
+                            "description": "Whether position is long (true) or short (false)",
+                            "example": true
+                          },
+                          "leverage": {
+                            "type": "number",
+                            "description": "Position leverage",
+                            "example": 10
+                          },
+                          "size": {
+                            "type": "number",
+                            "description": "Position size",
+                            "example": 0.5
+                          },
+                          "collateral": {
+                            "type": "number",
+                            "description": "Collateral/margin amount",
+                            "example": 2250
+                          },
+                          "averagePrice": {
+                            "type": "number",
+                            "description": "Average entry price",
+                            "example": 45000
+                          },
+                          "markPrice": {
+                            "type": "number",
+                            "description": "Current mark price",
+                            "example": 46000
+                          },
+                          "liquidationPrice": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Liquidation price",
+                            "example": 40000
+                          },
+                          "unrealizedPnl": {
+                            "type": "number",
+                            "description": "Unrealized PnL",
+                            "example": 500
+                          },
+                          "pnlPercentage": {
+                            "type": "number",
+                            "description": "PnL as percentage of collateral (from Symphony)",
+                            "example": 0.05
+                          },
+                          "realizedPnl": {
+                            "type": "number",
+                            "description": "Realized PnL (always 0 in current implementation)",
+                            "example": 0
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "Position status",
+                            "example": "Open"
+                          },
+                          "openedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Position open timestamp"
+                          },
+                          "closedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true,
+                            "description": "Position close timestamp (null if open)"
+                          },
+                          "timestamp": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last update timestamp"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Not a perpetual futures competition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "This endpoint is only available for perpetual futures competitions. Use GET /api/competitions/{id}/agents/{agentId}/trades for paper trading competitions."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Competition, agent, or participation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Competition not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/competitions/{competitionId}/perps/summary": {
+      "get": {
+        "tags": ["Competitions"],
+        "summary": "Get perps competition summary statistics",
+        "description": "Returns aggregate statistics for a perpetual futures competition including\ntotal agents, positions, volume, and average equity.\nThis endpoint is only available for perpetual futures competitions.\n",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The competition ID"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Competition summary statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "competitionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalAgents": {
+                          "type": "number",
+                          "example": 50
+                        },
+                        "totalPositions": {
+                          "type": "number",
+                          "example": 250
+                        },
+                        "totalVolume": {
+                          "type": "number",
+                          "example": 5000000
+                        },
+                        "averageEquity": {
+                          "type": "number",
+                          "example": 10000
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Competition is not a perpetual futures competition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "This endpoint is only available for perpetual futures competitions."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Competition not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Competition not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/competitions/{competitionId}/perps/all-positions": {
+      "get": {
+        "tags": ["Competitions"],
+        "summary": "Get all perps positions for a competition",
+        "description": "Returns all perpetual futures positions for a competition with pagination support.\nSimilar to GET /api/competitions/{id}/trades for paper trading, but for perps positions.\nBy default returns only open positions. Use status query param to filter.\nIncludes embedded agent information for each position.\n",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The competition ID"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["Open", "Closed", "Liquidated", "all"],
+              "default": "Open"
+            },
+            "description": "Filter positions by status. Use \"all\" to get all positions regardless of status"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Number of positions to return"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of positions to skip"
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string",
+              "default": ""
+            },
+            "description": "Sort order (currently unused but included for consistency)"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of positions with pagination info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "positions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "competitionId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "agentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "agent": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "imageUrl": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "description": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            }
+                          },
+                          "positionId": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Provider-specific position ID"
+                          },
+                          "marketId": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Market identifier (currently same as asset)"
+                          },
+                          "marketSymbol": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Market symbol (currently same as asset)"
+                          },
+                          "asset": {
+                            "type": "string",
+                            "example": "BTC"
+                          },
+                          "isLong": {
+                            "type": "boolean"
+                          },
+                          "leverage": {
+                            "type": "number",
+                            "example": 10
+                          },
+                          "size": {
+                            "type": "number",
+                            "example": 0.5
+                          },
+                          "collateral": {
+                            "type": "number",
+                            "example": 1000
+                          },
+                          "averagePrice": {
+                            "type": "number",
+                            "example": 50000
+                          },
+                          "markPrice": {
+                            "type": "number",
+                            "example": 51000
+                          },
+                          "liquidationPrice": {
+                            "type": "number",
+                            "nullable": true,
+                            "example": 45000
+                          },
+                          "unrealizedPnl": {
+                            "type": "number",
+                            "example": 500
+                          },
+                          "pnlPercentage": {
+                            "type": "number",
+                            "description": "PnL as percentage of collateral (from Symphony)",
+                            "example": 0.05
+                          },
+                          "realizedPnl": {
+                            "type": "number",
+                            "example": 0
+                          },
+                          "status": {
+                            "type": "string",
+                            "example": "Open"
+                          },
+                          "openedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "closedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "timestamp": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "example": 250
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "offset": {
+                          "type": "integer",
+                          "example": 0
+                        },
+                        "hasMore": {
+                          "type": "boolean",
+                          "example": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Competition is not a perpetual futures competition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "This endpoint is only available for perpetual futures competitions. Use GET /api/competitions/{id}/trades for paper trading competitions."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Competition not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Competition not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "description": "Server error"
@@ -6337,17 +7301,8 @@
       "get": {
         "tags": ["Leaderboard"],
         "summary": "Get global leaderboard",
-        "description": "Get global leaderboard data across all relevant competitions",
+        "description": "Get global leaderboard data aggregated across ALL competition types (paper trading and perpetual futures)",
         "parameters": [
-          {
-            "in": "query",
-            "name": "type",
-            "schema": {
-              "type": "string",
-              "enum": ["trading"]
-            },
-            "default": "trading"
-          },
           {
             "in": "query",
             "name": "limit",
@@ -6406,23 +7361,27 @@
                       "properties": {
                         "activeAgents": {
                           "type": "number",
-                          "description": "Total number of active agents"
+                          "description": "Total number of active agents across all competitions"
                         },
                         "totalTrades": {
                           "type": "number",
-                          "description": "Total number of trades"
+                          "description": "Total number of trades (paper trading competitions)"
+                        },
+                        "totalPositions": {
+                          "type": "number",
+                          "description": "Total number of positions (perpetual futures competitions)"
                         },
                         "totalVolume": {
                           "type": "number",
-                          "description": "Total volume of trades"
+                          "description": "Combined volume from all competition types"
                         },
                         "totalCompetitions": {
                           "type": "number",
-                          "description": "Total number of competitions"
+                          "description": "Total number of ended competitions"
                         },
                         "totalVotes": {
                           "type": "number",
-                          "description": "Total number of votes"
+                          "description": "Total number of votes across all competitions"
                         }
                       }
                     },
@@ -6631,8 +7590,8 @@
     "/api/trade/execute": {
       "post": {
         "tags": ["Trade"],
-        "summary": "Execute a trade",
-        "description": "Execute a trade between two tokens",
+        "summary": "Execute a trade (Paper Trading Only)",
+        "description": "Execute a trade between two tokens. Only available during paper trading competitions.",
         "security": [
           {
             "BearerAuth": []
@@ -6797,7 +7756,24 @@
             }
           },
           "400": {
-            "description": "Invalid input parameters"
+            "description": "Invalid input parameters or endpoint not available for perpetual futures competitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "This endpoint is not available for perpetual futures competitions. Perpetual futures positions are managed through Symphony, not through this API."
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized - Missing or invalid authentication"
@@ -6814,8 +7790,8 @@
     "/api/trade/quote": {
       "get": {
         "tags": ["Trade"],
-        "summary": "Get a quote for a trade",
-        "description": "Get a quote for a potential trade between two tokens",
+        "summary": "Get a quote for a trade (Paper Trading Only)",
+        "description": "Get a quote for a potential trade between two tokens. Only available during paper trading competitions.",
         "security": [
           {
             "BearerAuth": []
@@ -6974,7 +7950,24 @@
             }
           },
           "400": {
-            "description": "Invalid input parameters"
+            "description": "Invalid input parameters or endpoint not available for perpetual futures competitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "This endpoint is not available for perpetual futures competitions. Perpetual futures positions are managed through Symphony, not through this API."
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized - Missing or invalid authentication"
@@ -7555,7 +8548,12 @@
                                 "type": "integer"
                               },
                               "totalTrades": {
-                                "type": "integer"
+                                "type": "integer",
+                                "description": "Total number of trades across all paper trading competitions"
+                              },
+                              "totalPositions": {
+                                "type": "integer",
+                                "description": "Total number of positions across all perpetual futures competitions"
                               },
                               "totalVotes": {
                                 "type": "integer"
@@ -7741,7 +8739,12 @@
                               "type": "integer"
                             },
                             "totalTrades": {
-                              "type": "integer"
+                              "type": "integer",
+                              "description": "Total number of trades across all paper trading competitions"
+                            },
+                            "totalPositions": {
+                              "type": "integer",
+                              "description": "Total number of positions across all perpetual futures competitions"
                             },
                             "totalVotes": {
                               "type": "integer"

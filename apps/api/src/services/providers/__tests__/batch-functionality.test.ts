@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { BlockchainType } from "@/types/index.js";
 
-import { DexScreenerProvider } from "../dexscreener.provider.js";
 import { MultiChainProvider } from "../multi-chain.provider.js";
+import { DexScreenerProvider } from "../price/dexscreener.provider.js";
 
 // Set timeout for all tests in this file to 15 seconds
 vi.setConfig({ testTimeout: 15_000 });

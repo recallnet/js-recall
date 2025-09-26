@@ -7,8 +7,10 @@ import {
   count as drizzleCount,
   eq,
   getTableColumns,
+  gt,
   inArray,
   isNotNull,
+  lt,
   lte,
   or,
   sql,
@@ -974,6 +976,26 @@ export class CompetitionRepository {
     }
   }
 
+  async findVotingOpen(tx?: Transaction) {
+    try {
+      const now = new Date();
+      const executor = tx || this.#db;
+      const result = await executor
+        .select()
+        .from(competitions)
+        .where(
+          and(
+            lt(competitions.votingStartDate, now),
+            gt(competitions.votingEndDate, now),
+          ),
+        );
+      return result;
+    } catch (error) {
+      this.#logger.error("Error in findVotingOpen:", error);
+      throw error;
+    }
+  }
+
   /**
    * Create a portfolio snapshot
    * @param snapshot Portfolio snapshot data
@@ -997,6 +1019,45 @@ export class CompetitionRepository {
       return result;
     } catch (error) {
       this.#logger.error("Error in createPortfolioSnapshot:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch create multiple portfolio snapshots efficiently
+   * @param snapshots Array of portfolio snapshot data
+   * @returns Array of created snapshots
+   */
+  async batchCreatePortfolioSnapshots(
+    snapshots: InsertPortfolioSnapshot[],
+  ): Promise<SelectPortfolioSnapshot[]> {
+    if (snapshots.length === 0) {
+      return [];
+    }
+
+    try {
+      this.#logger.debug(
+        `[CompetitionRepository] Batch creating ${snapshots.length} portfolio snapshots`,
+      );
+
+      const now = new Date();
+      const results = await this.#db
+        .insert(portfolioSnapshots)
+        .values(
+          snapshots.map((snapshot) => ({
+            ...snapshot,
+            timestamp: snapshot.timestamp || now,
+          })),
+        )
+        .returning();
+
+      this.#logger.debug(
+        `[CompetitionRepository] Successfully created ${results.length} portfolio snapshots`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error("Error in batchCreatePortfolioSnapshots:", error);
       throw error;
     }
   }

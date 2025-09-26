@@ -17,7 +17,7 @@ import { EXEMPT_TOKENS, calculateSlippage } from "@/lib/trade-utils.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { BalanceService } from "@/services/balance.service.js";
 import { PortfolioSnapshotterService } from "@/services/index.js";
-import { DexScreenerProvider } from "@/services/providers/dexscreener.provider.js";
+import { DexScreenerProvider } from "@/services/providers/price/dexscreener.provider.js";
 import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
 
 import { PriceTrackerService } from "./price-tracker.service.js";

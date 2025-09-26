@@ -49,6 +49,10 @@ export class AgentMetricsHelper {
       rawResults.tradeCounts.map((row) => [row.agentId, row.totalTrades]),
     );
 
+    const positionCountsMap = new Map(
+      rawResults.positionCounts.map((row) => [row.agentId, row.totalPositions]),
+    );
+
     const bestPlacementMap = new Map(
       rawResults.bestPlacements.map((row) => [
         row.agentId,
@@ -113,6 +117,7 @@ export class AgentMetricsHelper {
         completedCompetitions: competitionCountsMap.get(agentId) ?? 0,
         totalVotes: voteCountsMap.get(agentId) ?? 0,
         totalTrades: tradeCountsMap.get(agentId) ?? 0,
+        totalPositions: positionCountsMap.get(agentId) ?? 0,
         bestPlacement: bestPlacementMap.get(agentId) ?? null,
         bestPnl: bestPnlMap.get(agentId)?.pnl ?? null,
         totalRoi: totalRoiMap.get(agentId) ?? null,
@@ -161,6 +166,7 @@ export class AgentMetricsHelper {
       completedCompetitions: metrics.completedCompetitions,
       totalVotes: metrics.totalVotes,
       totalTrades: metrics.totalTrades,
+      totalPositions: metrics.totalPositions,
       bestPlacement: metrics.bestPlacement ?? undefined,
       rank: metrics.globalRank ?? undefined,
       score: metrics.globalScore ?? undefined,
@@ -204,6 +210,7 @@ export class AgentMetricsHelper {
       completedCompetitions: 0,
       totalVotes: 0,
       totalTrades: 0,
+      totalPositions: 0,
       bestPlacement: null,
       bestPnl: null,
       totalRoi: null,

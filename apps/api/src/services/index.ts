@@ -1,11 +1,13 @@
 import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
 
-import { db } from "@/database/db.js";
+import config from "@/config/index.js";
+import { db, dbRead } from "@/database/db.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
-import { StakesRepository } from "@/indexing/stakes.repository.js";
-import { indexingLogger } from "@/lib/logger.js";
+import { indexingLogger, repositoryLogger } from "@/lib/logger.js";
 import { AdminService } from "@/services/admin.service.js";
 import { AgentService } from "@/services/agent.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
@@ -17,6 +19,7 @@ import { CompetitionService } from "@/services/competition.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { LeaderboardService } from "@/services/leaderboard.service.js";
+import { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
@@ -47,7 +50,9 @@ class ServiceRegistry {
   private _emailService: EmailService;
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
+  private _perpsDataProcessor: PerpsDataProcessor;
   private _boostService: BoostService;
+  private readonly _competitionRepository: CompetitionRepository;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
   private readonly _indexingService: IndexingService;
@@ -87,13 +92,19 @@ class ServiceRegistry {
       this._emailService,
       this._balanceService,
       this._priceTrackerService,
+      this._userService,
     );
-    this._adminService = new AdminService();
+    this._adminService = new AdminService(
+      this._userService,
+      this._agentService,
+    );
 
     // Initialize trading constraints service (no dependencies)
     this._tradingConstraintsService = new TradingConstraintsService();
     // Initialize core reward service (no dependencies)
     this._competitionRewardService = new CompetitionRewardService();
+    // Initialize PerpsDataProcessor before CompetitionManager (as it's a dependency)
+    this._perpsDataProcessor = new PerpsDataProcessor();
 
     this._competitionService = new CompetitionService(
       this._balanceService,
@@ -105,6 +116,7 @@ class ServiceRegistry {
       this._voteService,
       this._tradingConstraintsService,
       this._competitionRewardService,
+      this._perpsDataProcessor,
     );
 
     // Initialize LeaderboardService with required dependencies
@@ -113,6 +125,11 @@ class ServiceRegistry {
     this._stakesRepository = new StakesRepository(db);
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
+    this._competitionRepository = new CompetitionRepository(
+      db,
+      dbRead,
+      repositoryLogger,
+    );
 
     // Initialize BoostService with its dependencies
     this._boostService = new BoostService(
@@ -122,8 +139,12 @@ class ServiceRegistry {
     );
 
     this._boostAwardService = new BoostAwardService(
+      db,
+      this._competitionRepository,
       this._boostRepository,
+      this._stakesRepository,
       this._userService,
+      config.boost.noStakeBoostAmount,
     );
     this._eventProcessor = new EventProcessor(
       db,
@@ -207,6 +228,10 @@ class ServiceRegistry {
     return this._competitionRewardService;
   }
 
+  get perpsDataProcessor(): PerpsDataProcessor {
+    return this._perpsDataProcessor;
+  }
+
   get indexingService(): IndexingService {
     return this._indexingService;
   }
@@ -242,6 +267,7 @@ export {
   ConfigurationService,
   EmailService,
   LeaderboardService,
+  PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
   ServiceRegistry,

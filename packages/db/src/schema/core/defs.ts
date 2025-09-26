@@ -40,7 +40,10 @@ export const competitionStatus = pgEnum("competition_status", [
 /**
  * Defines the possible types for competitions.
  */
-export const competitionType = pgEnum("competition_type", ["trading"]);
+export const competitionType = pgEnum("competition_type", [
+  "trading",
+  "perpetual_futures",
+]);
 
 /**
  * Defines the possible statuses for agents within competitions.

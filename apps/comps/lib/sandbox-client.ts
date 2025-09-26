@@ -7,7 +7,10 @@ import {
 import {
   AdminAgentKeyResponse,
   AdminAgentUpdateResponse,
+  AdminCreateAgentRequest,
   AdminCreateAgentResponse,
+  AdminCreateUserRequest,
+  AdminUpdateAgentRequest,
   AdminUserResponse,
 } from "@/types/admin";
 
@@ -19,15 +22,19 @@ const SANDBOX_PROXY_BASE = "/api/sandbox";
 export class SandboxClient {
   /**
    * Create a user in the sandbox environment
+   * @param userData - User data including wallet address, email, etc.
    * @returns User creation response
    */
-  async createUser(): Promise<AdminUserResponse> {
+  async createUser(
+    userData: AdminCreateUserRequest,
+  ): Promise<AdminUserResponse> {
     const response = await fetch(`${SANDBOX_PROXY_BASE}/users`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include", // Include cookies for authentication
+      body: JSON.stringify(userData),
     });
 
     if (!response.ok) {
@@ -40,24 +47,19 @@ export class SandboxClient {
 
   /**
    * Create an agent in the sandbox environment
-   * @param agentData - Agent creation data
+   * @param data - User and agent creation data
    * @returns Agent creation response
    */
-  async createAgent(agentData: {
-    name: string;
-    handle: string;
-    description?: string;
-    imageUrl?: string;
-    email?: string;
-    metadata?: Record<string, unknown>;
-  }): Promise<AdminCreateAgentResponse> {
+  async createAgent(
+    data: AdminCreateAgentRequest,
+  ): Promise<AdminCreateAgentResponse> {
     const response = await fetch(`${SANDBOX_PROXY_BASE}/agents`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include", // Include cookies for authentication
-      body: JSON.stringify(agentData),
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) {
@@ -100,24 +102,19 @@ export class SandboxClient {
    * @returns Agent API key response
    */
   async updateAgent(
-    agentId: string,
-    agentData: {
-      name?: string;
-      handle?: string;
-      description?: string;
-      imageUrl?: string;
-      email?: string;
-      metadata?: Record<string, unknown>;
-    },
+    data: AdminUpdateAgentRequest,
   ): Promise<AdminAgentUpdateResponse> {
-    const response = await fetch(`${SANDBOX_PROXY_BASE}/agents/${agentId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${SANDBOX_PROXY_BASE}/agents/${data.agentId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
+        body: JSON.stringify(data.params),
       },
-      credentials: "include", // Include cookies for authentication
-      body: JSON.stringify(agentData),
-    });
+    );
 
     if (!response.ok) {
       const error = await response.json();
