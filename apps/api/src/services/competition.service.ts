@@ -1213,39 +1213,30 @@ export class CompetitionService {
         0,
       );
 
-      // Create a map for quick lookups
-      const riskMetricsMap = new Map(
-        riskAdjustedLeaderboard.map((entry) => [
-          entry.agentId,
-          {
+      // Combine snapshot data with risk metrics
+      // CRITICAL: Use the order from riskAdjustedLeaderboard (already sorted by Calmar/equity)
+      // Do NOT re-sort by portfolio value!
+      const orderedResults: LeaderboardEntry[] = [];
+
+      // First, add all agents from riskAdjustedLeaderboard in their correct order
+      for (const entry of riskAdjustedLeaderboard) {
+        const snapshot = snapshots.find((s) => s.agentId === entry.agentId);
+        if (snapshot) {
+          orderedResults.push({
+            agentId: entry.agentId,
+            value: snapshot.totalValue,
+            pnl: 0, // PnL not available from snapshots alone
             calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
             simpleReturn: entry.simpleReturn
               ? Number(entry.simpleReturn)
               : null,
             maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
             hasRiskMetrics: entry.hasRiskMetrics,
-          },
-        ]),
-      );
+          });
+        }
+      }
 
-      // Combine snapshot data with risk metrics
-      return snapshots
-        .map((snapshot) => {
-          const riskMetrics = riskMetricsMap.get(snapshot.agentId) || {
-            calmarRatio: null,
-            simpleReturn: null,
-            maxDrawdown: null,
-            hasRiskMetrics: false,
-          };
-
-          return {
-            agentId: snapshot.agentId,
-            value: snapshot.totalValue,
-            pnl: 0, // PnL not available from snapshots alone
-            ...riskMetrics,
-          };
-        })
-        .sort((a, b) => b.value - a.value);
+      return orderedResults;
     }
 
     // For paper trading: Return without risk metrics
@@ -1286,9 +1277,13 @@ export class CompetitionService {
       );
 
       // Transform to LeaderboardEntry format, including risk metrics
+      // CRITICAL: The database query already returns data in the correct order:
+      // 1. Agents with Calmar ratio (sorted by Calmar DESC)
+      // 2. Agents without Calmar ratio (sorted by equity DESC)
+      // We MUST preserve this order and not re-sort!
       return riskAdjustedLeaderboard.map((entry) => ({
         agentId: entry.agentId,
-        value: Number(entry.totalEquity) || 0,
+        value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility
         pnl: Number(entry.totalPnl) || 0,
         // Include risk-adjusted metrics
         calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,

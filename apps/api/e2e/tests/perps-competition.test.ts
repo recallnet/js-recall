@@ -1,7 +1,10 @@
 import { randomUUID } from "crypto";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
+
 import config from "@/config/index.js";
+import { db } from "@/database/db.js";
 import {
   type AdminCompetitionTransferViolationsResponse,
   type AgentCompetitionsResponse,
@@ -15,6 +18,7 @@ import {
   type ErrorResponse,
   type GetUserAgentsResponse,
   type GlobalLeaderboardResponse,
+  type LeaderboardEntry,
   type LeaderboardResponse,
   type PerpsAccountResponse,
   type PerpsPositionsResponse,
@@ -1652,5 +1656,238 @@ describe("Perps Competition", () => {
     const errorResponse = violationsResponse as ErrorResponse;
     expect(errorResponse.status).toBe(404);
     expect(errorResponse.error).toContain("not found");
+  });
+
+  test("should rank agents by Calmar ratio, NOT portfolio value", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register three agents with different expected outcomes:
+    // Agent 1: Best Calmar (steady 20% growth, no drawdown)
+    // Agent 2: Worst Calmar (negative return)
+    // Agent 3: Middle Calmar (high return but with drawdown)
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Best Calmar - Steady Growth",
+      agentWalletAddress: "0x3333333333333333333333333333333333333333", // Final: $1100
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Worst Calmar - Negative Return",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222", // Final: $950
+    });
+
+    const { agent: agent3 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Middle Calmar - High Equity But Drawdown",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111", // Final: $1250 (HIGHEST!)
+    });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Calmar Ratio Ranking Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id, agent3.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Take initial snapshot to establish starting values
+    const services = new ServiceRegistry();
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competition.id,
+    );
+    await wait(100);
+
+    // Create historical snapshots with REAL time gaps for proper Calmar calculation
+    // Using 365 days of history to avoid crazy annualization effects
+    const now = new Date();
+    const daysAgo = (days: number) =>
+      new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    // Insert historical snapshots to simulate different performance patterns over a year
+    await db.insert(portfolioSnapshots).values([
+      // Agent 1: Steady 10% annual growth, no drawdown → BEST Calmar = 10/0 = capped at 100
+      {
+        agentId: agent1.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: daysAgo(365),
+      },
+      {
+        agentId: agent1.id,
+        competitionId: competition.id,
+        totalValue: 1050,
+        timestamp: daysAgo(180),
+      },
+      {
+        agentId: agent1.id,
+        competitionId: competition.id,
+        totalValue: 1100,
+        timestamp: daysAgo(1),
+      },
+
+      // Agent 2: -5% annual return → WORST Calmar (negative)
+      {
+        agentId: agent2.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: daysAgo(365),
+      },
+      {
+        agentId: agent2.id,
+        competitionId: competition.id,
+        totalValue: 980,
+        timestamp: daysAgo(180),
+      },
+      {
+        agentId: agent2.id,
+        competitionId: competition.id,
+        totalValue: 950,
+        timestamp: daysAgo(1),
+      },
+
+      // Agent 3: 25% annual return but with 10.7% drawdown → MIDDLE Calmar ≈ 2.3
+      // Goes 1000 → 1400 (peak) → 1250 (drawdown of 10.7%)
+      {
+        agentId: agent3.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: daysAgo(365),
+      },
+      {
+        agentId: agent3.id,
+        competitionId: competition.id,
+        totalValue: 1400,
+        timestamp: daysAgo(180),
+      },
+      {
+        agentId: agent3.id,
+        competitionId: competition.id,
+        totalValue: 1250,
+        timestamp: daysAgo(1),
+      },
+    ]);
+
+    // Process to calculate Calmar ratios with the historical data
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(1000);
+
+    // Get the leaderboard as admin (uses active competition)
+    const leaderboardResponse = await adminClient.getCompetitionLeaderboard();
+
+    expect(leaderboardResponse.success).toBe(true);
+    const typedResponse = leaderboardResponse as LeaderboardResponse;
+
+    // Verify we have all agents
+    expect(typedResponse.leaderboard).toHaveLength(3);
+
+    // Find each agent in the leaderboard
+    const agent1Entry = typedResponse.leaderboard.find(
+      (e: LeaderboardEntry) => e.agentId === agent1.id,
+    );
+    const agent2Entry = typedResponse.leaderboard.find(
+      (e: LeaderboardEntry) => e.agentId === agent2.id,
+    );
+    const agent3Entry = typedResponse.leaderboard.find(
+      (e: LeaderboardEntry) => e.agentId === agent3.id,
+    );
+
+    expect(agent1Entry).toBeDefined();
+    expect(agent2Entry).toBeDefined();
+    expect(agent3Entry).toBeDefined();
+
+    // Log for debugging
+    console.log("Leaderboard rankings:");
+    typedResponse.leaderboard.forEach((entry: LeaderboardEntry) => {
+      const agentName =
+        entry.agentId === agent1.id
+          ? "Best Calmar - Steady Growth"
+          : entry.agentId === agent2.id
+            ? "Worst Calmar - Negative Return"
+            : "Middle Calmar - High Equity But Drawdown";
+      console.log(
+        `Rank ${entry.rank}: ${agentName} - Portfolio: $${entry.portfolioValue}, Calmar: ${entry.calmarRatio}`,
+      );
+    });
+
+    // CRITICAL ASSERTION: Verify ranking is by Calmar ratio, not portfolio value
+    // Expected outcomes based on our mock data:
+    // Agent 1 (Steady Growth): 10% return, 0% drawdown → Best Calmar
+    // Agent 2 (Negative Return): -5% return → Worst Calmar (negative)
+    // Agent 3 (High Equity): 25% return, 10.7% drawdown → Middle Calmar
+
+    // Agent 3 has the HIGHEST portfolio value ($1250) but should NOT be first!
+    expect(agent3Entry?.portfolioValue).toBe(1250); // Highest portfolio
+    expect(agent3Entry?.rank).not.toBe(1); // But NOT rank 1
+
+    // Agent 1 should rank first despite lower portfolio value
+    expect(agent1Entry?.portfolioValue).toBe(1100); // Lower than agent 3
+    expect(agent1Entry?.rank).toBe(1); // But ranks FIRST
+
+    // Agent 2 should rank last
+    expect(agent2Entry?.portfolioValue).toBe(950); // Lowest portfolio
+    expect(agent2Entry?.rank).toBe(3); // And ranks LAST
+
+    if (agent1Entry && agent2Entry && agent3Entry) {
+      if (
+        agent1Entry.hasRiskMetrics &&
+        agent2Entry.hasRiskMetrics &&
+        agent3Entry.hasRiskMetrics
+      ) {
+        // All have risk metrics - should be ranked by Calmar ratio
+        const entries: LeaderboardEntry[] = [
+          agent1Entry,
+          agent2Entry,
+          agent3Entry,
+        ];
+        const calmarRanking = [...entries].sort(
+          (a, b) => (b.calmarRatio ?? -999999) - (a.calmarRatio ?? -999999),
+        );
+
+        const actualRanking = [...entries].sort((a, b) => a.rank - b.rank);
+
+        // Rankings should match Calmar-based order, not portfolio value order
+        expect(actualRanking[0]?.agentId).toBe(calmarRanking[0]?.agentId);
+        expect(actualRanking[1]?.agentId).toBe(calmarRanking[1]?.agentId);
+        expect(actualRanking[2]?.agentId).toBe(calmarRanking[2]?.agentId);
+
+        // Verify this is different from portfolio value ranking
+        const portfolioRanking = [...entries].sort(
+          (a, b) => b.portfolioValue - a.portfolioValue,
+        );
+
+        // If Calmar ranking differs from portfolio ranking, verify we're using Calmar
+        if (calmarRanking[0]?.agentId !== portfolioRanking[0]?.agentId) {
+          expect(actualRanking[0]?.agentId).toBe(calmarRanking[0]?.agentId);
+          expect(actualRanking[0]?.agentId).not.toBe(
+            portfolioRanking[0]?.agentId,
+          );
+          console.log(
+            "✅ Confirmed: Ranking by Calmar ratio, not portfolio value",
+          );
+        }
+      } else {
+        // If no Calmar ratios, agents without should rank below those with
+        const withCalmar = [agent1Entry, agent2Entry, agent3Entry].filter(
+          (e) => e.hasRiskMetrics,
+        );
+        const withoutCalmar = [agent1Entry, agent2Entry, agent3Entry].filter(
+          (e) => !e.hasRiskMetrics,
+        );
+
+        if (withCalmar.length > 0 && withoutCalmar.length > 0) {
+          const worstWithCalmarRank = Math.max(
+            ...withCalmar.map((e) => e.rank),
+          );
+          const bestWithoutCalmarRank = Math.min(
+            ...withoutCalmar.map((e) => e.rank),
+          );
+          expect(worstWithCalmarRank).toBeLessThan(bestWithoutCalmarRank);
+        }
+      }
+    }
   });
 });
