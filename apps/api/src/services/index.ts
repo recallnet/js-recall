@@ -27,6 +27,7 @@ import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
+import { SimulatedTradeExecutionService } from "@/services/simulated-trade-execution.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserService } from "@/services/user.service.js";
@@ -43,6 +44,7 @@ class ServiceRegistry {
   private _balanceService: BalanceService;
   private _priceTrackerService: PriceTrackerService;
   private _tradeSimulatorService: TradeSimulatorService;
+  private _simulatedTradeExecutionService: SimulatedTradeExecutionService;
   private _competitionService: CompetitionService;
   private _userService: UserService;
   private _agentService: AgentService;
@@ -77,7 +79,6 @@ class ServiceRegistry {
     this._tradeSimulatorService = new TradeSimulatorService(
       this._balanceService,
       this._priceTrackerService,
-      this._portfolioSnapshotterService,
     );
 
     // Configuration service for dynamic settings
@@ -123,6 +124,14 @@ class ServiceRegistry {
       this._tradingConstraintsService,
       this._competitionRewardService,
       this._perpsDataProcessor,
+    );
+
+    // Initialize simulated trade execution service with its dependencies
+    this._simulatedTradeExecutionService = new SimulatedTradeExecutionService(
+      this._competitionService,
+      this._tradeSimulatorService,
+      this._balanceService,
+      this._priceTrackerService,
     );
 
     // Initialize LeaderboardService with required dependencies
@@ -188,6 +197,10 @@ class ServiceRegistry {
 
   get tradeSimulatorService(): TradeSimulatorService {
     return this._tradeSimulatorService;
+  }
+
+  get simulatedTradeExecutionService(): SimulatedTradeExecutionService {
+    return this._simulatedTradeExecutionService;
   }
 
   get competitionService(): CompetitionService {
@@ -281,6 +294,7 @@ export {
   PortfolioSnapshotterService,
   PriceTrackerService,
   ServiceRegistry,
+  SimulatedTradeExecutionService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,

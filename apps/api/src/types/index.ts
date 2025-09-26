@@ -19,8 +19,10 @@ export enum BlockchainType {
   EVM = "evm",
 }
 
-// Zod schema for SpecificChain validation
-export const SpecificChainSchema = z.enum([
+/**
+ * Array of supported specific chain names
+ */
+export const SPECIFIC_CHAIN_NAMES = [
   "eth",
   "polygon",
   "bsc",
@@ -33,7 +35,10 @@ export const SpecificChainSchema = z.enum([
   "scroll",
   "mantle",
   "svm",
-]);
+] as const;
+
+// Zod schema for SpecificChain validation
+export const SpecificChainSchema = z.enum(SPECIFIC_CHAIN_NAMES);
 
 // Type derived from the Zod schema
 export type SpecificChain = z.infer<typeof SpecificChainSchema>;
