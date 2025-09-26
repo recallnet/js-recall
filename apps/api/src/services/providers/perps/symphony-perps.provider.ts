@@ -190,7 +190,10 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       // If we get any response from the server (not 5xx), it's healthy
       return response.status < 500;
     } catch (error) {
-      serviceLogger.warn(`[SymphonyProvider] Health check failed: ${error}`);
+      serviceLogger.warn(
+        { error: error instanceof Error ? error.message : String(error) },
+        `[SymphonyProvider] Health check failed`,
+      );
       return false;
     }
   }
@@ -254,7 +257,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         {
           walletAddress: maskedAddress,
         },
-        `[SymphonyProvider] Fetching account summary `,
+        `[SymphonyProvider] Fetching account summary`,
       );
 
       const data = await this.fetchPositionData(walletAddress);
