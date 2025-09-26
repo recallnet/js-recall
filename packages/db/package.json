@@ -372,6 +372,7 @@
   "dependencies": {
     "drizzle-orm": "^0.43.1",
     "drizzle-zod": "^0.8.2",
+    "neverthrow": "^8.2.0",
     "pino": "^9.7.0",
     "zod": "^3.25.17"
   },

@@ -156,7 +156,7 @@ const priceController = makePriceController(services);
 const tradeController = makeTradeController(services);
 const userController = makeUserController(
   services,
-  config.boost.noStakeBoostAmount ? "no-stake" : "stake",
+  config.boost.noStakeBoostAmount ? false : true,
 );
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
