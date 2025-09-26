@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { BoostError } from "@recallnet/services/boost";
-
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { assertNever } from "@/rpc/router/utils/assert-never";
@@ -15,11 +13,11 @@ export const balance = base
       input.competitionId,
     );
     if (res.isErr()) {
-      switch (res.error) {
-        case BoostError.UserNotFound:
+      switch (res.error.type) {
+        case "UserNotFound":
           throw errors.NOT_FOUND();
-        case BoostError.RepositoryError:
-          throw errors.INTERNAL();
+        case "RepositoryError":
+          throw errors.INTERNAL({ message: res.error.message });
         default:
           assertNever(res.error);
       }

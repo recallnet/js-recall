@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { BoostError } from "@recallnet/services/boost";
-
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { assertNever } from "@/rpc/router/utils/assert-never";
@@ -25,10 +23,10 @@ export const claimBoost = base
       input.competitionId,
     );
     if (res.isErr()) {
-      switch (res.error) {
-        case BoostError.RepositoryError:
-          throw errors.INTERNAL();
-        case BoostError.AlreadyClaimedBoost:
+      switch (res.error.type) {
+        case "RepositoryError":
+          throw errors.INTERNAL({ message: res.error.message });
+        case "AlreadyClaimedBoost":
           throw errors.BOOST_ALREADY_CLAIMED();
         default:
           assertNever(res.error);

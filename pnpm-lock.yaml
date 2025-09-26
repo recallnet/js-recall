@@ -372,6 +372,9 @@ importers:
       pino:
         specifier: ^9.7.0
         version: 9.7.0
+      pino-pretty:
+        specifier: ^13.0.0
+        version: 13.0.0
       posthog-js:
         specifier: ^1.257.0
         version: 1.257.0

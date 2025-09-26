@@ -5,6 +5,8 @@ import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { UserRepository } from "@recallnet/db/repositories/user";
 
+import { errorToMessage } from "./utils/error-to-message.js";
+
 /**
  * Parameters for boosting an agent
  */
@@ -15,16 +17,6 @@ export type BoostAgentParams = {
   amount: bigint;
   idemKey: Buffer;
 };
-
-export enum BoostError {
-  UserNotFound,
-  RepositoryError,
-  CompetitionNotFound,
-  CompetitionMissingVotingDates,
-  OutsideCompetitionBoostWindow,
-  AlreadyClaimedBoost,
-  AlreadyBoostedAgent,
-}
 
 /**
  * Boost Service
@@ -53,7 +45,7 @@ export class BoostService {
     this.logger = logger;
   }
 
-  async claimBoost(userId: string, wallet: string, competitionId: string) {
+  claimBoost(userId: string, wallet: string, competitionId: string) {
     return ResultAsync.fromPromise(
       this.boostRepository.increase({
         userId,
@@ -63,10 +55,14 @@ export class BoostService {
         idemKey: Buffer.from(`claim-${userId}-${competitionId}`),
         meta: { description: "Claim non-stake boost" },
       }),
-      () => BoostError.RepositoryError as const,
+      (err) =>
+        ({
+          type: "RepositoryError",
+          message: errorToMessage(err),
+        }) as const,
     ).andThen((result) => {
       if (result.type === "noop") {
-        return errAsync(BoostError.AlreadyClaimedBoost as const);
+        return errAsync({ type: "AlreadyClaimedBoost" } as const);
       }
       return ok(result);
     });
@@ -78,21 +74,29 @@ export class BoostService {
    * @param competitionId The competition ID
    * @returns A result containing the user's boost balance or an error
    */
-  async getUserBoostBalance(userId: string, competitionId: string) {
+  getUserBoostBalance(userId: string, competitionId: string) {
     return ResultAsync.fromPromise(
       // Get the user to validate they exist
       this.userRepository.findById(userId),
-      () => BoostError.RepositoryError as const,
+      (err) =>
+        ({
+          type: "RepositoryError",
+          message: errorToMessage(err),
+        }) as const,
     ).andThen((user) => {
       if (!user) {
-        return errAsync(BoostError.UserNotFound as const);
+        return errAsync({ type: "UserNotFound" } as const);
       }
       return ResultAsync.fromPromise(
         this.boostRepository.userBoostBalance({
           userId: user.id,
           competitionId,
         }),
-        () => BoostError.RepositoryError as const,
+        (err) =>
+          ({
+            type: "RepositoryError",
+            message: errorToMessage(err),
+          }) as const,
       );
     });
   }
@@ -102,12 +106,16 @@ export class BoostService {
    * @param competitionId The competition ID
    * @returns A result containing a map of agent IDs to their boost totals or an error
    */
-  async getAgentBoostTotals(competitionId: string) {
+  getAgentBoostTotals(competitionId: string) {
     return ResultAsync.fromPromise(
       this.boostRepository.agentBoostTotals({
         competitionId,
       }),
-      () => BoostError.RepositoryError as const,
+      (err) =>
+        ({
+          type: "RepositoryError",
+          message: errorToMessage(err),
+        }) as const,
     );
   }
 
@@ -117,13 +125,17 @@ export class BoostService {
    * @param competitionId The competition ID
    * @returns A result containing a map of agent IDs to boost amounts or an error
    */
-  async getUserBoosts(userId: string, competitionId: string) {
+  getUserBoosts(userId: string, competitionId: string) {
     return ResultAsync.fromPromise(
       this.boostRepository.userBoosts({
         userId,
         competitionId,
       }),
-      () => BoostError.RepositoryError as const,
+      (err) =>
+        ({
+          type: "RepositoryError",
+          message: errorToMessage(err),
+        }) as const,
     );
   }
 
@@ -132,31 +144,41 @@ export class BoostService {
    * @param params The boost parameters
    * @returns The result of the boost operation
    */
-  async boostAgent(params: BoostAgentParams) {
+  boostAgent(params: BoostAgentParams) {
     const { userId, competitionId, agentId, amount, idemKey } = params;
     return ResultAsync.fromPromise(
       this.userRepository.findById(userId),
-      () => BoostError.RepositoryError as const,
+      (err) =>
+        ({
+          type: "RepositoryError",
+          message: errorToMessage(err),
+        }) as const,
     )
       .andThen((user) => {
         if (!user) {
-          return errAsync(BoostError.UserNotFound as const);
+          return errAsync({ type: "UserNotFound" } as const);
         }
         return ResultAsync.fromPromise(
           this.competitionRepository.findById(competitionId),
-          () => BoostError.RepositoryError as const,
+          (err) =>
+            ({
+              type: "RepositoryError",
+              message: errorToMessage(err),
+            }) as const,
         ).map((competition) => ({ user, competition }));
       })
       .andThen(({ user, competition }) => {
         if (!competition) {
-          return errAsync(BoostError.CompetitionNotFound as const);
+          return errAsync({ type: "CompetitionNotFound" } as const);
         }
         // Validate voting dates are set
         if (
           competition.votingStartDate == null ||
           competition.votingEndDate == null
         ) {
-          return errAsync(BoostError.CompetitionMissingVotingDates as const);
+          return errAsync({
+            type: "CompetitionMissingVotingDates",
+          } as const);
         }
         // Validate we're within the voting time window
         const now = new Date();
@@ -165,7 +187,9 @@ export class BoostService {
             competition.votingStartDate < now && now < competition.votingEndDate
           )
         ) {
-          return errAsync(BoostError.OutsideCompetitionBoostWindow as const);
+          return errAsync({
+            type: "OutsideCompetitionBoostWindow",
+          } as const);
         }
         return ResultAsync.fromPromise(
           this.boostRepository.boostAgent({
@@ -176,10 +200,14 @@ export class BoostService {
             amount,
             idemKey,
           }),
-          () => BoostError.RepositoryError as const,
+          (err) =>
+            ({
+              type: "RepositoryError",
+              message: errorToMessage(err),
+            }) as const,
         ).andThen((result) => {
           if (result.type === "noop") {
-            return errAsync(BoostError.AlreadyBoostedAgent as const);
+            return errAsync({ type: "AlreadyBoostedAgent" } as const);
           }
           return ok(result);
         });

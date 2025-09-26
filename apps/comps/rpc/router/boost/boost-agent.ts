@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { BoostError } from "@recallnet/services/boost";
-
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { assertNever } from "@/rpc/router/utils/assert-never";
@@ -33,18 +31,18 @@ export const boostAgent = base
       idemKey: input.idemKey,
     });
     if (res.isErr()) {
-      switch (res.error) {
-        case BoostError.RepositoryError:
-          throw errors.INTERNAL();
-        case BoostError.UserNotFound:
+      switch (res.error.type) {
+        case "RepositoryError":
+          throw errors.INTERNAL({ message: res.error.message });
+        case "UserNotFound":
           throw errors.NOT_FOUND();
-        case BoostError.CompetitionNotFound:
+        case "CompetitionNotFound":
           throw errors.NOT_FOUND();
-        case BoostError.CompetitionMissingVotingDates:
+        case "CompetitionMissingVotingDates":
           throw errors.COMPETITION_MISSING_VOTING_DATES();
-        case BoostError.OutsideCompetitionBoostWindow:
+        case "OutsideCompetitionBoostWindow":
           throw errors.OUTSIDE_BOOST_WINDOW();
-        case BoostError.AlreadyBoostedAgent:
+        case "AlreadyBoostedAgent":
           throw errors.ALREADY_BOOSTED_AGENT();
         default:
           assertNever(res.error);
