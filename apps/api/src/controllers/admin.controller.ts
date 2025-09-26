@@ -3,8 +3,6 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { UpdateCompetition } from "@recallnet/db/schema/core/types";
-
 import { reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
@@ -804,7 +802,7 @@ export function makeAdminController(services: ServiceRegistry) {
           perpsProvider,
           ...competitionUpdates
         } = bodyResult.data;
-        const updates = competitionUpdates as UpdateCompetition;
+        const updates = competitionUpdates;
 
         // Check if there are any updates to apply
         if (
