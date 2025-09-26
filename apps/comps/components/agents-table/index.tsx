@@ -155,11 +155,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   }, [boostBalance, userBoosts, competition]);
 
   const showBoostBalance = useMemo(() => {
-    return (
-      boostBalance !== undefined &&
-      boostBalance > 0 &&
-      competition.openForBoosting
-    );
+    return boostBalance !== undefined && competition.openForBoosting;
   }, [boostBalance, competition]);
 
   const page =
