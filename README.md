@@ -30,8 +30,6 @@ js-recall/
 │   └── comps/              # Competitions web application
 ├── packages/              # Shared packages
 │   ├── address-utils/      # Address manipulation utilities
-│   ├── api-mcp/            # MCP integration package
-│   ├── api-sdk/            # Auto-generated API client
 │   ├── db/                 # Database schema definitions
 │   ├── fonts/              # Shared font resources
 │   ├── staking-contracts/  # Staking contract interfaces
@@ -88,12 +86,6 @@ Each package in the monorepo has its own specific usage instructions. Here's a q
   ```
 
 ### Core Packages
-
-- **API SDK** (`@recallnet/api-sdk`): Auto-generated API client
-
-  ```typescript
-  import { Client } from "@recallnet/api-sdk";
-  ```
 
 - **UI Library** (`@recallnet/ui2`): Modern UI components
   ```typescript

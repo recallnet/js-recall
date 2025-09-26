@@ -59,6 +59,7 @@
     "generate": "pnpm generate-docs && prettier --write openapi",
     "allocate-rewards": "tsx scripts/allocate-rewards.ts",
     "cron:portfolio-snapshot": "tsx scripts/take-portfolio-snapshots.ts",
+    "run:indexer": "tsx scripts/indexer.ts",
     "cron:auto-end-competitions": "tsx scripts/auto-end-competitions.ts",
     "cron:portfolio-snapshot:run-once": "tsx scripts/take-portfolio-snapshots.ts --run-once",
     "cron:auto-end-competitions:run-once": "tsx scripts/auto-end-competitions.ts --run-once"
@@ -74,7 +75,9 @@
   "dependencies": {
     "@envio-dev/hypersync-client": "^0.6.5",
     "@privy-io/server-auth": "^1.31.0",
+    "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
+    "@recallnet/services": "workspace:*",
     "@recallnet/staking-contracts": "workspace:*",
     "@sentry/node": "^10.5.0",
     "@sentry/profiling-node": "^10.5.0",

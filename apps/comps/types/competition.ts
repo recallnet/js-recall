@@ -60,6 +60,7 @@ export interface Competition {
     totalPositions?: number; // Only for perpetual futures competitions
     averageEquity?: number; // Only for perpetual futures competitions
   };
+  openForBoosting: boolean;
   votingEnabled: boolean;
   votingStartDate: string | null;
   votingEndDate: string | null;

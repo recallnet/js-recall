@@ -1,9 +1,16 @@
 import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-import { InsertAdmin, SelectAdmin } from "@recallnet/db/schema/core/types";
+import {
+  InsertAdmin,
+  SelectAdmin,
+  SelectAgent,
+  SelectUser,
+} from "@recallnet/db/schema/core/types";
 
-import { config } from "@/config/index.js";
+import { config, reloadSecurityConfig } from "@/config/index.js";
 import {
   count,
   create,
@@ -18,7 +25,12 @@ import {
   updateLastLogin,
   updatePassword,
 } from "@/database/repositories/admin-repository.js";
+import { checkUserUniqueConstraintViolation } from "@/lib/error-utils.js";
+import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
+import { ApiError } from "@/middleware/errorHandler.js";
+import { AgentService } from "@/services/agent.service.js";
+import { UserService } from "@/services/user.service.js";
 import { AdminMetadata, SearchAdminsParams } from "@/types/index.js";
 
 /**
@@ -31,9 +43,139 @@ export class AdminService {
   // Cache for admin profiles by ID
   private adminProfileCache: Map<string, SelectAdmin>; // adminId -> admin profile
 
-  constructor() {
+  // Service dependencies
+  private userService: UserService;
+  private agentService: AgentService;
+
+  constructor(userService: UserService, agentService: AgentService) {
     this.apiKeyCache = new Map();
     this.adminProfileCache = new Map();
+    this.userService = userService;
+    this.agentService = agentService;
+  }
+
+  /**
+   * Ensures ROOT_ENCRYPTION_KEY exists in .env file, generating one if needed
+   */
+  private async ensureRootEncryptionKey(): Promise<void> {
+    try {
+      // Find the correct .env file based on environment
+      const envFile = process.env.NODE_ENV === "test" ? ".env.test" : ".env";
+      const envPath = path.resolve(process.cwd(), envFile);
+      serviceLogger.info(`Checking for ${envFile} file at: ${envPath}`);
+
+      if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, "utf8");
+        const rootKeyPattern = /ROOT_ENCRYPTION_KEY=.*$/m;
+
+        // Check if ROOT_ENCRYPTION_KEY already exists and is not the default
+        const keyMatch = rootKeyPattern.exec(envContent);
+        let needsNewKey = true;
+
+        if (keyMatch) {
+          const currentValue = keyMatch[0].split("=")[1];
+          if (
+            currentValue &&
+            currentValue.length >= 32 &&
+            !currentValue.includes("default_encryption_key") &&
+            !currentValue.includes("your_") &&
+            !currentValue.includes("dev_") &&
+            !currentValue.includes("test_") &&
+            !currentValue.includes("replace_in_production")
+          ) {
+            // Key exists and seems to be a proper key already
+            serviceLogger.info("ROOT_ENCRYPTION_KEY already exists in .env");
+            needsNewKey = false;
+          }
+        }
+
+        if (needsNewKey) {
+          // Generate a new secure encryption key
+          const newEncryptionKey = crypto.randomBytes(32).toString("hex");
+          serviceLogger.info("Generated new ROOT_ENCRYPTION_KEY");
+
+          // Update the .env file
+          let updatedEnvContent = envContent;
+
+          if (keyMatch) {
+            // Replace existing key
+            updatedEnvContent = envContent.replace(
+              rootKeyPattern,
+              `ROOT_ENCRYPTION_KEY=${newEncryptionKey}`,
+            );
+          } else {
+            // Add new key
+            updatedEnvContent =
+              envContent.trim() +
+              `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
+          }
+
+          fs.writeFileSync(envPath, updatedEnvContent);
+          serviceLogger.info(`Updated ROOT_ENCRYPTION_KEY in ${envFile} file`);
+
+          // We need to update the process.env with the new key for it to be used immediately
+          process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
+
+          // Reload the configuration to pick up the new encryption key
+          reloadSecurityConfig();
+
+          serviceLogger.info(
+            "✅ Configuration reloaded with new encryption key",
+          );
+        }
+      } else {
+        serviceLogger.error(`${envFile} file not found at expected location`);
+      }
+    } catch (envError) {
+      serviceLogger.error("Error updating ROOT_ENCRYPTION_KEY:", envError);
+      // Continue with admin setup even if the env update fails
+    }
+  }
+
+  /**
+   * Creates admin record and stores it in database with cache updates
+   */
+  private async createAndStoreAdmin(
+    username: string,
+    password: string,
+    email: string,
+    name?: string,
+  ): Promise<{ admin: SelectAdmin; apiKey: string }> {
+    // Generate admin ID
+    const id = uuidv4();
+
+    // Hash password
+    const passwordHash = await this.hashPassword(password);
+
+    // Generate API key
+    const apiKey = this.generateApiKey();
+    const encryptedApiKey = this.encryptApiKey(apiKey);
+
+    // Create admin record
+    const admin: InsertAdmin = {
+      id,
+      username: username.toLowerCase(),
+      email: email.toLowerCase(),
+      passwordHash,
+      apiKey: encryptedApiKey,
+      name,
+      status: "active",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Store in database
+    const savedAdmin = await create(admin);
+
+    // Update cache
+    this.apiKeyCache.set(apiKey, id);
+    this.adminProfileCache.set(id, savedAdmin);
+
+    serviceLogger.debug(
+      `[AdminManager] Setup initial admin: ${username} (${id})`,
+    );
+
+    return { admin: savedAdmin, apiKey };
   }
 
   /**
@@ -52,52 +194,23 @@ export class AdminService {
   ) {
     try {
       // Check if any admin already exists
-      const existingAdmins = await findAll();
+      const existingAdmins = await this.getAllAdmins();
       if (existingAdmins.length > 0) {
-        throw new Error("Admin setup not allowed - admin already exists");
+        throw new ApiError(
+          403,
+          "Admin setup is not allowed - an admin account already exists",
+        );
       }
 
-      // Validate inputs
-      if (!username || !password || !email) {
-        throw new Error("Username, password, and email are required");
-      }
+      // Ensure ROOT_ENCRYPTION_KEY exists in .env file
+      await this.ensureRootEncryptionKey();
 
-      if (password.length < 8) {
-        throw new Error("Password must be at least 8 characters long");
-      }
-
-      // Generate admin ID
-      const id = uuidv4();
-
-      // Hash password
-      const passwordHash = await this.hashPassword(password);
-
-      // Generate API key
-      const apiKey = this.generateApiKey();
-      const encryptedApiKey = this.encryptApiKey(apiKey);
-
-      // Create admin record
-      const admin: InsertAdmin = {
-        id,
-        username: username.toLowerCase(),
-        email: email.toLowerCase(),
-        passwordHash,
-        apiKey: encryptedApiKey,
+      // Create and store the admin
+      const { admin: savedAdmin, apiKey } = await this.createAndStoreAdmin(
+        username,
+        password,
+        email,
         name,
-        status: "active",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      // Store in database
-      const savedAdmin = await create(admin);
-
-      // Update cache
-      this.apiKeyCache.set(apiKey, id);
-      this.adminProfileCache.set(id, savedAdmin);
-
-      serviceLogger.debug(
-        `[AdminManager] Setup initial admin: ${username} (${id})`,
       );
 
       // Return admin with unencrypted API key
@@ -760,6 +873,119 @@ export class AdminService {
     } catch (error) {
       serviceLogger.error("[AdminManager] Health check failed:", error);
       return false;
+    }
+  }
+
+  /**
+   * Register a new user and optionally create their first agent
+   * @param userData User registration data
+   * @returns Result object with user and optionally agent data
+   * @throws {ApiError} With appropriate HTTP status code and message
+   */
+  async registerUserAndAgent(userData: {
+    walletAddress: string;
+    embeddedWalletAddress?: string;
+    privyId?: string;
+    name?: string;
+    email?: string;
+    userImageUrl?: string;
+    userMetadata?: Record<string, unknown>;
+    agentName?: string;
+    agentHandle?: string;
+    agentDescription?: string;
+    agentImageUrl?: string;
+    agentMetadata?: Record<string, unknown>;
+    agentWalletAddress?: string;
+  }): Promise<{
+    user: SelectUser;
+    agent?: SelectAgent;
+    agentError?: string;
+  }> {
+    try {
+      const {
+        walletAddress,
+        embeddedWalletAddress,
+        privyId,
+        name,
+        email,
+        userImageUrl,
+        userMetadata,
+        agentName,
+        agentHandle,
+        agentDescription,
+        agentImageUrl,
+        agentMetadata,
+        agentWalletAddress,
+      } = userData;
+
+      // Create the user
+      const user = await this.userService.registerUser(
+        walletAddress,
+        name,
+        email,
+        userImageUrl,
+        userMetadata,
+        privyId,
+        embeddedWalletAddress,
+      );
+
+      let agent: SelectAgent | undefined = undefined;
+      let agentError: string | undefined;
+
+      // If agent details are provided, create an agent for this user
+      if (agentName) {
+        try {
+          agent = await this.agentService.createAgent({
+            ownerId: user.id,
+            name: agentName,
+            handle: agentHandle ?? generateHandleFromName(agentName), // Auto-generate from name
+            description: agentDescription,
+            imageUrl: agentImageUrl,
+            metadata: agentMetadata,
+            walletAddress: agentWalletAddress,
+          });
+        } catch (error) {
+          serviceLogger.error("Error creating agent for user:", error);
+          // If agent creation fails, we still return the user but note the agent error
+          agentError =
+            error instanceof Error ? error.message : "Failed to create agent";
+        }
+      }
+
+      return {
+        user,
+        agent,
+        agentError,
+      };
+    } catch (error) {
+      serviceLogger.error("[AdminManager] Error registering user:", error);
+
+      if (error instanceof Error) {
+        // Check for invalid wallet address errors
+        if (
+          error.message.includes("Wallet address is required") ||
+          error.message.includes("Invalid Ethereum address")
+        ) {
+          throw new ApiError(400, error.message);
+        }
+
+        // Check for unique constraint violations
+        const constraintError = checkUserUniqueConstraintViolation(error);
+        if (constraintError) {
+          throw new ApiError(
+            409,
+            `A user with this ${constraintError} already exists`,
+          );
+        }
+      }
+
+      // For any other errors, wrap them as internal server errors
+      throw new ApiError(
+        500,
+        error instanceof Error
+          ? error.message
+          : "Unknown error registering user",
+      );
     }
   }
 

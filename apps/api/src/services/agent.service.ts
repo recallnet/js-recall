@@ -53,12 +53,14 @@ import {
 import { countBulkAgentTradesInCompetitions } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
 import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
+import { generateHandleFromName } from "@/lib/handle-utils.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { ApiError } from "@/middleware/errorHandler.js";
 import { AgentMetricsHelper } from "@/services/agent-metrics-helper.js";
 import { BalanceService } from "@/services/balance.service.js";
 import { EmailService } from "@/services/email.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
+import type { UserService } from "@/services/user.service.js";
 import type { AgentWithMetrics } from "@/types/agent-metrics.js";
 import {
   AgentCompetitionsParams,
@@ -98,17 +100,21 @@ export class AgentService {
   private balanceService: BalanceService;
   // Price tracker service for getting token prices
   private priceTrackerService: PriceTrackerService;
+  // User service for validating user existence
+  private userService: UserService;
 
   constructor(
     emailService: EmailService,
     balanceService: BalanceService,
     priceTrackerService: PriceTrackerService,
+    userService: UserService,
   ) {
     this.apiKeyCache = new Map();
     this.inactiveAgentsCache = new Map();
     this.emailService = emailService;
     this.balanceService = balanceService;
     this.priceTrackerService = priceTrackerService;
+    this.userService = userService;
   }
 
   /**
@@ -121,7 +127,7 @@ export class AgentService {
    * @param metadata Optional agent metadata
    * @param email Optional email address
    * @param walletAddress Optional Ethereum wallet address
-   * @returns The created agent with API credentials
+   * @returns The created agent with unencrypted API credentials for display to admin
    */
   async createAgent({
     ownerId,
@@ -141,11 +147,18 @@ export class AgentService {
     metadata?: AgentMetadata;
     email?: string;
     walletAddress?: string;
-  }) {
+  }): Promise<SelectAgent> {
     try {
+      // Validate that the user exists
+      const user = await this.userService.getUser(ownerId);
+      if (!user) {
+        throw new ApiError(404, `User '${ownerId}' does not exist`);
+      }
+
       // Validate wallet address if provided
       if (walletAddress && !this.isValidEthereumAddress(walletAddress)) {
-        throw new Error(
+        throw new ApiError(
+          400,
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
       }
@@ -234,6 +247,57 @@ export class AgentService {
         `Failed to create agent: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  /**
+   * Create a new agent for an owner identified by either user ID or wallet address.
+   * If the owner is not provided, the agent will be created for the user with the provided wallet address.
+   * @param ownerIdentifier Object containing either userId or walletAddress
+   * @param agentData Agent creation data
+   * @returns The created agent with unencrypted API key
+   * @throws {ApiError} With appropriate HTTP status code and message
+   */
+  async createAgentForOwner(
+    ownerIdentifier: { userId?: string; walletAddress?: string },
+    agentData: {
+      name: string;
+      handle?: string;
+      description?: string;
+      imageUrl?: string;
+      metadata?: AgentMetadata;
+      email?: string;
+      walletAddress?: string;
+    },
+  ): Promise<SelectAgent> {
+    // Resolve owner identifier to user ID
+    let ownerId: string;
+    if (ownerIdentifier.userId) {
+      ownerId = ownerIdentifier.userId;
+    } else if (ownerIdentifier.walletAddress) {
+      const user = await this.userService.getUserByWalletAddress(
+        ownerIdentifier.walletAddress,
+      );
+      if (!user) {
+        throw new ApiError(
+          404,
+          `User with wallet address '${ownerIdentifier.walletAddress}' does not exist`,
+        );
+      }
+      ownerId = user.id;
+    } else {
+      throw new ApiError(400, "Must provide either user ID or wallet address");
+    }
+
+    return this.createAgent({
+      ownerId,
+      name: agentData.name,
+      handle: agentData.handle || generateHandleFromName(agentData.name),
+      description: agentData.description,
+      imageUrl: agentData.imageUrl,
+      metadata: agentData.metadata,
+      email: agentData.email,
+      walletAddress: agentData.walletAddress,
+    });
   }
 
   /**
@@ -823,7 +887,7 @@ export class AgentService {
    * @param searchParams Parameters to search by (name, ownerId, status)
    * @returns Array of agents matching the search criteria
    */
-  async searchAgents(searchParams: AgentSearchParams) {
+  async searchAgents(searchParams: AgentSearchParams): Promise<AgentPublic[]> {
     try {
       serviceLogger.debug(
         `[AgentManager] Searching for agents with params:`,
@@ -836,7 +900,7 @@ export class AgentService {
       serviceLogger.debug(
         `[AgentManager] Found ${agents.length} agents matching search criteria`,
       );
-      return agents;
+      return agents.map(this.sanitizeAgent.bind(this));
     } catch (error) {
       serviceLogger.error("[AgentManager] Error searching agents:", error);
       return [];
@@ -1260,7 +1324,7 @@ export class AgentService {
   }: {
     filter?: string;
     pagingParams: PagingParams;
-  }) {
+  }): Promise<SelectAgent[]> {
     if (filter?.length === 42) {
       return findByWallet({ walletAddress: filter, pagingParams });
     }
