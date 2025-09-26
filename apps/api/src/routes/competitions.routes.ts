@@ -318,6 +318,21 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         nullable: true
    *                         description: Always null for active agents
+   *                       calmarRatio:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions
+   *                       simpleReturn:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Simple return (end value / start value - 1) - only for perps competitions
+   *                       maxDrawdown:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Maximum observed loss from peak (negative value) - only for perps competitions
+   *                       hasRiskMetrics:
+   *                         type: boolean
+   *                         description: Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)
    *                 inactiveAgents:
    *                   type: array
    *                   description: List of agents not actively participating in this competition (excluded from ranking)
@@ -1074,6 +1089,21 @@ export function configureCompetitionsRoutes(
    *                       voteCount:
    *                         type: integer
    *                         description: Number of votes this agent has received in the competition
+   *                       calmarRatio:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions
+   *                       simpleReturn:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Simple return (end value / start value - 1) - only for perps competitions
+   *                       maxDrawdown:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Maximum observed loss from peak (negative value) - only for perps competitions
+   *                       hasRiskMetrics:
+   *                         type: boolean
+   *                         description: Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata

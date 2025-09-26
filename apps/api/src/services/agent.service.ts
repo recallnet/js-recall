@@ -9,7 +9,10 @@ import {
   SelectAgent,
   SelectCompetition,
 } from "@recallnet/db/schema/core/types";
-import type { SelectBalance } from "@recallnet/db/schema/trading/types";
+import type {
+  SelectBalance,
+  SelectPerpsRiskMetrics,
+} from "@recallnet/db/schema/trading/types";
 
 import { config } from "@/config/index.js";
 import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";
@@ -43,7 +46,10 @@ import {
   getBulkBoundedSnapshots,
 } from "@/database/repositories/competition-repository.js";
 import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
-import { countBulkAgentPositionsInCompetitions } from "@/database/repositories/perps-repository.js";
+import {
+  countBulkAgentPositionsInCompetitions,
+  getBulkAgentRiskMetrics,
+} from "@/database/repositories/perps-repository.js";
 import { countBulkAgentTradesInCompetitions } from "@/database/repositories/trade-repository.js";
 import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
 import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
@@ -1505,17 +1511,25 @@ export class AgentService {
       const perpsIds = perpsCompetitions.map((comp) => comp.id);
 
       // Fetch data in parallel - only fetch what's needed for each type
-      const [snapshotsMap, tradeCountsMap, positionCountsMap, rankingsMap] =
-        await Promise.all([
-          getBulkBoundedSnapshots(agentId, competitionIds),
-          paperTradingIds.length > 0
-            ? countBulkAgentTradesInCompetitions(agentId, paperTradingIds)
-            : Promise.resolve(new Map<string, number>()),
-          perpsIds.length > 0
-            ? countBulkAgentPositionsInCompetitions(agentId, perpsIds)
-            : Promise.resolve(new Map<string, number>()),
-          getAgentRankingsInCompetitions(agentId, competitionIds),
-        ]);
+      const [
+        snapshotsMap,
+        tradeCountsMap,
+        positionCountsMap,
+        rankingsMap,
+        riskMetricsMap,
+      ] = await Promise.all([
+        getBulkBoundedSnapshots(agentId, competitionIds),
+        paperTradingIds.length > 0
+          ? countBulkAgentTradesInCompetitions(agentId, paperTradingIds)
+          : Promise.resolve(new Map<string, number>()),
+        perpsIds.length > 0
+          ? countBulkAgentPositionsInCompetitions(agentId, perpsIds)
+          : Promise.resolve(new Map<string, number>()),
+        getAgentRankingsInCompetitions(agentId, competitionIds),
+        perpsIds.length > 0
+          ? getBulkAgentRiskMetrics(agentId, perpsIds)
+          : Promise.resolve(new Map<string, SelectPerpsRiskMetrics>()),
+      ]);
 
       // Map results back to competitions with type-aware metrics
       return competitions.map((competition) => {
@@ -1546,14 +1560,25 @@ export class AgentService {
 
         // Add type-specific metrics
         if (competition.type === "perpetual_futures") {
+          const riskMetrics = riskMetricsMap.get(competition.id);
           return {
             ...baseMetrics,
             totalPositions: positionCountsMap.get(competition.id) || 0,
+            // Include risk metrics if available
+            calmarRatio: riskMetrics ? Number(riskMetrics.calmarRatio) : null,
+            simpleReturn: riskMetrics ? Number(riskMetrics.simpleReturn) : null,
+            maxDrawdown: riskMetrics ? Number(riskMetrics.maxDrawdown) : null,
+            hasRiskMetrics: !!riskMetrics,
           };
         } else {
           return {
             ...baseMetrics,
             totalTrades: tradeCountsMap.get(competition.id) || 0,
+            // Risk metrics not applicable for paper trading
+            calmarRatio: null,
+            simpleReturn: null,
+            maxDrawdown: null,
+            hasRiskMetrics: false,
           };
         }
       });

@@ -161,7 +161,7 @@ describe("SymphonyPerpsProvider", () => {
   describe("constructor", () => {
     it("should initialize with default URL from config", () => {
       expect(axios.create).toHaveBeenCalledWith({
-        baseURL: "https://api.symphony.finance",
+        baseURL: "https://api.symphony.io",
         timeout: 30000,
         headers: {
           "Content-Type": "application/json",
@@ -537,7 +537,7 @@ describe("SymphonyPerpsProvider", () => {
   });
 
   describe("getTransferHistory", () => {
-    it("should fetch and transform transfer history successfully", async () => {
+    it("should fetch and transform transfer history", async () => {
       const since = new Date("2025-01-10T00:00:00Z");
 
       mockAxiosInstance.get.mockResolvedValueOnce({
@@ -547,6 +547,8 @@ describe("SymphonyPerpsProvider", () => {
       const result = await provider.getTransferHistory("0xtest123", since);
 
       expect(result).toHaveLength(2);
+
+      // First transfer (deposit)
       expect(result[0]).toEqual({
         type: "deposit",
         amount: 100,
@@ -556,6 +558,18 @@ describe("SymphonyPerpsProvider", () => {
         timestamp: new Date("2025-01-14T10:00:00Z"),
         txHash: "0xtxhash123",
         chainId: 42161,
+      });
+
+      // Second transfer (withdrawal)
+      expect(result[1]).toEqual({
+        type: "withdraw",
+        amount: 50,
+        asset: "USDC",
+        from: "0xto456",
+        to: "0xfrom123",
+        timestamp: new Date("2025-01-13T10:00:00Z"),
+        txHash: "0xtxhash456",
+        chainId: 137,
       });
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith("/utils/transfers", {
@@ -607,6 +621,166 @@ describe("SymphonyPerpsProvider", () => {
       const result = await provider.getTransferHistory("0xtest123", new Date());
 
       expect(result).toEqual([]);
+    });
+
+    it("should handle transfers with zero amounts correctly", async () => {
+      const zeroAmountResponse: SymphonyTransferResponse = {
+        success: true,
+        count: 1,
+        successful: [42161],
+        failed: [],
+        transfers: [
+          {
+            type: "deposit",
+            amount: 0, // Zero amount deposit (e.g., test transaction)
+            asset: "USDC",
+            from: "0xfrom123",
+            to: "0xto456",
+            timestamp: "2025-01-14T10:00:00Z",
+            txHash: "0xtest123",
+            chainId: 42161,
+          },
+        ],
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: zeroAmountResponse,
+      });
+
+      const result = await provider.getTransferHistory("0xtest123", new Date());
+
+      expect(result[0]).toEqual({
+        type: "deposit",
+        amount: 0,
+        asset: "USDC",
+        from: "0xfrom123",
+        to: "0xto456",
+        timestamp: new Date("2025-01-14T10:00:00Z"),
+        txHash: "0xtest123",
+        chainId: 42161,
+      });
+    });
+
+    it("should handle large withdrawals correctly", async () => {
+      const largeWithdrawalResponse: SymphonyTransferResponse = {
+        success: true,
+        count: 1,
+        successful: [42161],
+        failed: [],
+        transfers: [
+          {
+            type: "withdraw",
+            amount: 1000,
+            asset: "USDC",
+            from: "0xto456",
+            to: "0xfrom123",
+            timestamp: "2025-01-14T10:00:00Z",
+            txHash: "0xwithdraw123",
+            chainId: 42161,
+          },
+        ],
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: largeWithdrawalResponse,
+      });
+
+      const result = await provider.getTransferHistory("0xtest123", new Date());
+
+      expect(result[0]).toEqual({
+        type: "withdraw",
+        amount: 1000,
+        asset: "USDC",
+        from: "0xto456",
+        to: "0xfrom123",
+        timestamp: new Date("2025-01-14T10:00:00Z"),
+        txHash: "0xwithdraw123",
+        chainId: 42161,
+      });
+    });
+
+    it("should handle multiple transfers for violation detection", async () => {
+      // Multiple transfers that would all be violations since transfers are now prohibited
+      const multipleTransfersResponse: SymphonyTransferResponse = {
+        success: true,
+        count: 3,
+        successful: [42161, 42161, 42161],
+        failed: [],
+        transfers: [
+          {
+            type: "deposit",
+            amount: 100,
+            asset: "USDC",
+            from: "0xfrom123",
+            to: "0xto456",
+            timestamp: "2025-01-14T10:00:00Z",
+            txHash: "0xtx1",
+            chainId: 42161,
+          },
+          {
+            type: "deposit",
+            amount: 200,
+            asset: "USDC",
+            from: "0xfrom123",
+            to: "0xto456",
+            timestamp: "2025-01-14T11:00:00Z", // 1 hour later
+            txHash: "0xtx2",
+            chainId: 42161,
+          },
+          {
+            type: "withdraw",
+            amount: 150,
+            asset: "USDC",
+            from: "0xto456",
+            to: "0xfrom123",
+            timestamp: "2025-01-14T12:00:00Z", // Another hour later
+            txHash: "0xtx3",
+            chainId: 42161,
+          },
+        ],
+      };
+
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: multipleTransfersResponse,
+      });
+
+      const result = await provider.getTransferHistory("0xtest123", new Date());
+
+      expect(result).toHaveLength(3);
+
+      // Verify all transfers are captured for violation detection
+      expect(result[0]).toEqual({
+        type: "deposit",
+        amount: 100,
+        asset: "USDC",
+        from: "0xfrom123",
+        to: "0xto456",
+        timestamp: new Date("2025-01-14T10:00:00Z"),
+        txHash: "0xtx1",
+        chainId: 42161,
+      });
+
+      expect(result[1]).toEqual({
+        type: "deposit",
+        amount: 200,
+        asset: "USDC",
+        from: "0xfrom123",
+        to: "0xto456",
+        timestamp: new Date("2025-01-14T11:00:00Z"),
+        txHash: "0xtx2",
+        chainId: 42161,
+      });
+
+      expect(result[2]).toEqual({
+        type: "withdraw",
+        amount: 150,
+        asset: "USDC",
+        from: "0xto456",
+        to: "0xfrom123",
+        timestamp: new Date("2025-01-14T12:00:00Z"),
+        txHash: "0xtx3",
+        chainId: 42161,
+      });
     });
   });
 

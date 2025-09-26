@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import config from "@/config/index.js";
 import {
+  type AdminCompetitionTransferViolationsResponse,
   type AgentCompetitionsResponse,
   type AgentPerpsPositionsResponse,
   type AgentProfileResponse,
@@ -14,6 +15,7 @@ import {
   type ErrorResponse,
   type GetUserAgentsResponse,
   type GlobalLeaderboardResponse,
+  type LeaderboardResponse,
   type PerpsAccountResponse,
   type PerpsPositionsResponse,
   type StartCompetitionResponse,
@@ -1229,5 +1231,426 @@ describe("Perps Competition", () => {
       expect(errorResponse.status).toBe(403);
       expect(errorResponse.error).toContain("not registered");
     }
+  });
+
+  test("should calculate Calmar ratio using simple returns", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with the 0x4444 wallet that demonstrates portfolio volatility
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Calmar Test Agent",
+        agentWalletAddress: "0x4444444444444444444444444444444444444444",
+      });
+
+    // Start perps competition with this agent
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Calmar Ratio Test Competition ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait to ensure competition is fully started
+    await wait(1000);
+
+    // Trigger sync from Symphony (simulating what the cron job does)
+    const services = new ServiceRegistry();
+
+    // First sync - creates initial snapshot at peak ($1700)
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait a bit to ensure time passes between snapshots
+    await wait(500);
+
+    // Second sync - creates snapshot at trough ($1200)
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait a bit more
+    await wait(500);
+
+    // Third sync - creates snapshot after partial recovery ($1550)
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for sync and calculations to complete
+    // Need extra time for read replica to catch up with risk metrics writes
+    await wait(1000);
+
+    // Get competition leaderboard - should include risk metrics
+    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+
+    // Type assertion since we've verified success
+    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+
+    // Find our agent in the leaderboard
+    const agentEntry = typedLeaderboard.leaderboard.find(
+      (entry) => entry.agentId === agent.id,
+    );
+    expect(agentEntry).toBeDefined();
+
+    // Verify risk metrics are present and calculated
+    expect(agentEntry?.hasRiskMetrics).toBe(true);
+    expect(agentEntry?.calmarRatio).not.toBeNull();
+    expect(agentEntry?.simpleReturn).not.toBeNull();
+    expect(agentEntry?.maxDrawdown).not.toBeNull();
+
+    // Simple return calculation:
+    // Portfolio goes from $1700 (first) → $1200 (trough) → $1550 (final)
+    // Simple Return = ($1550 / $1700) - 1 = -0.088 or -8.8%
+    expect(agentEntry?.simpleReturn).toBeCloseTo(-0.088, 2);
+
+    // Max drawdown calculation:
+    // Peak is $1700, trough is $1200
+    // Drawdown = ($1200 / $1700) - 1 = -0.294 or -29.4%
+    expect(agentEntry?.maxDrawdown).toBeCloseTo(-0.294, 2);
+
+    // Calmar ratio = Annualized Return / |Max Drawdown|
+    // For periods < 1 day, the service doesn't annualize (returns period return as-is)
+    // So: Calmar = -0.088 / |−0.294| = -0.088 / 0.294 = -0.299
+    // Negative because we have a negative return
+    expect(agentEntry?.calmarRatio).toBeCloseTo(-0.299, 2);
+  });
+
+  test("should rank agents by Calmar ratio when available", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents with different portfolio performance
+    const { agent: agentVolatile } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent With Volatility",
+      agentWalletAddress: "0x4444444444444444444444444444444444444444",
+    });
+
+    const { agent: agentPositive } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent With Positive PnL",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111",
+    });
+
+    const { agent: agentNegative } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent With Negative PnL",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222",
+    });
+
+    // Start perps competition with all agents
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Calmar Ranking Test ${Date.now()}`,
+      agentIds: [agentVolatile.id, agentPositive.id, agentNegative.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait to ensure transfers happen AFTER competition start
+    await wait(1000);
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+
+    // First sync - creates initial snapshot
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait a bit to ensure time passes between snapshots
+    await wait(100);
+
+    // Second sync - creates second snapshot (needed for simple return calculation)
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    await wait(500);
+
+    // Get leaderboard
+    const leaderboardResponse = await adminClient.getCompetitionLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+
+    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+
+    // Agent with worst Calmar ratio (volatility) should be ranked first
+    // (negative Calmar due to losses and high drawdown)
+    const firstAgent = typedLeaderboard.leaderboard[0];
+    expect(firstAgent?.agentId).toBe(agentVolatile.id);
+    expect(firstAgent?.hasRiskMetrics).toBe(true);
+    expect(firstAgent?.calmarRatio).not.toBeNull();
+
+    // Other agents ranked by their Calmar ratios
+    const secondAgent = typedLeaderboard.leaderboard[1];
+    const thirdAgent = typedLeaderboard.leaderboard[2];
+
+    // 0x1111 has $1250 equity (positive PnL), 0x2222 has $950 equity (negative PnL)
+    expect(secondAgent?.agentId).toBe(agentPositive.id);
+    // All agents have risk metrics calculated using simple returns
+    expect(secondAgent?.hasRiskMetrics).toBe(true);
+    expect(secondAgent?.calmarRatio).not.toBeNull();
+
+    expect(thirdAgent?.agentId).toBe(agentNegative.id);
+    // All agents have risk metrics calculated using simple returns
+    expect(thirdAgent?.hasRiskMetrics).toBe(true);
+    expect(thirdAgent?.calmarRatio).not.toBeNull();
+  });
+
+  test("should expose risk metrics in agent competitions endpoint", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with volatile portfolio for risk metrics testing
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Risk Metrics Test Agent",
+        agentWalletAddress: "0x4444444444444444444444444444444444444444",
+      });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Risk Metrics API Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Get agent competitions - should include risk metrics
+    const competitionsResponse = await agentClient.getAgentCompetitions(
+      agent.id,
+    );
+    expect(competitionsResponse.success).toBe(true);
+
+    // Type assertion
+    const typedResponse = competitionsResponse as {
+      success: true;
+      competitions: EnhancedCompetition[];
+      pagination: unknown;
+    };
+
+    // Find our perps competition
+    const perpsComp = typedResponse.competitions.find(
+      (c) => c.id === competition.id,
+    );
+    expect(perpsComp).toBeDefined();
+    expect(perpsComp?.type).toBe("perpetual_futures");
+
+    // Verify risk metrics are included
+    expect(perpsComp?.hasRiskMetrics).toBe(true);
+    expect(perpsComp?.calmarRatio).not.toBeNull();
+    expect(perpsComp?.simpleReturn).not.toBeNull();
+    expect(perpsComp?.maxDrawdown).not.toBeNull();
+  });
+
+  test("should calculate risk metrics using simple return for all agents", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with flat performance (0x3333)
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Flat Performance Agent",
+        agentWalletAddress: "0x3333333333333333333333333333333333333333",
+      });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Simple Return Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Get leaderboard
+    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+
+    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+    const agentEntry = typedLeaderboard.leaderboard.find(
+      (entry) => entry.agentId === agent.id,
+    );
+
+    // Agent should have risk metrics calculated using simple return
+    expect(agentEntry).toBeDefined();
+    expect(agentEntry?.hasRiskMetrics).toBe(true);
+    expect(agentEntry?.calmarRatio).not.toBeNull();
+    expect(agentEntry?.simpleReturn).not.toBeNull(); // Simple return
+    expect(agentEntry?.maxDrawdown).not.toBeNull();
+
+    // Portfolio value should match mock data
+    expect(agentEntry?.portfolioValue).toBe(1100);
+  });
+
+  test("should detect and report competition transfer violations via admin endpoint", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with specific wallets
+    // 0x4444 has transfers configured in mock Symphony server
+    const { agent: agentWithTransfers } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent With Transfer Violations",
+        agentWalletAddress: "0x4444444444444444444444444444444444444444",
+      });
+
+    // 0x1111 has no transfers configured
+    const { agent: agentNoTransfers } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Without Transfers",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111",
+    });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Transfer Violation Detection Test ${Date.now()}`,
+      agentIds: [agentWithTransfers.id, agentNoTransfers.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait to ensure competition is fully started
+    await wait(1000);
+
+    // Trigger sync to process transfers
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for processing to complete
+    await wait(500);
+
+    // Call the admin endpoint to check for transfer violations
+    const violationsResponse =
+      await adminClient.getCompetitionTransferViolations(competition.id);
+
+    expect(violationsResponse.success).toBe(true);
+
+    // Type assertion since we've verified success
+    const typedViolationsResponse =
+      violationsResponse as AdminCompetitionTransferViolationsResponse;
+
+    // Should only include agents with transfers (violations)
+    // 0x4444 has transfers configured in mock server
+    expect(typedViolationsResponse.violations).toHaveLength(1);
+
+    const violation = typedViolationsResponse.violations[0];
+    expect(violation).toBeDefined();
+    expect(violation?.agentId).toBe(agentWithTransfers.id);
+    expect(violation?.agentName).toBe("Agent With Transfer Violations");
+    expect(violation?.transferCount).toBeGreaterThan(0);
+
+    // Agent without transfers should NOT be in the response
+    const noTransferViolation = typedViolationsResponse.violations.find(
+      (v) => v.agentId === agentNoTransfers.id,
+    );
+    expect(noTransferViolation).toBeUndefined();
+  });
+
+  test("should return empty array when no transfer violations exist", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents that don't have transfers in mock data
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Clean Agent 1",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Clean Agent 2",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222",
+    });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `No Violations Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Check for violations - should be empty
+    const violationsResponse =
+      await adminClient.getCompetitionTransferViolations(competition.id);
+
+    expect(violationsResponse.success).toBe(true);
+
+    const typedViolationsResponse =
+      violationsResponse as AdminCompetitionTransferViolationsResponse;
+    expect(typedViolationsResponse.violations).toHaveLength(0);
+  });
+
+  test("should return 400 for non-perps competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Paper Trading Agent for Violation Test",
+    });
+
+    // Start a PAPER TRADING competition (not perps)
+    const response = await startTestCompetition({
+      adminClient,
+      name: `Paper Trading Competition ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Try to get transfer violations for paper trading competition
+    const violationsResponse =
+      await adminClient.getCompetitionTransferViolations(competition.id);
+
+    expect(violationsResponse.success).toBe(false);
+    const errorResponse = violationsResponse as ErrorResponse;
+    expect(errorResponse.status).toBe(400);
+    expect(errorResponse.error).toContain(
+      "not a perpetual futures competition",
+    );
+  });
+
+  test("should return 404 for non-existent competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const fakeCompetitionId = randomUUID();
+
+    // Try to get transfer violations for non-existent competition
+    const violationsResponse =
+      await adminClient.getCompetitionTransferViolations(fakeCompetitionId);
+
+    expect(violationsResponse.success).toBe(false);
+    const errorResponse = violationsResponse as ErrorResponse;
+    expect(errorResponse.status).toBe(404);
+    expect(errorResponse.error).toContain("not found");
   });
 });
