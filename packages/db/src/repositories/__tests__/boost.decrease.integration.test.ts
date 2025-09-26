@@ -339,6 +339,58 @@ describe("BoostRepository.decrease() Integration Tests", () => {
         }),
       ).rejects.toThrow("Can not decrease balance of non-existent wallet");
     });
+
+    test("should throw error for zero amount", async () => {
+      // Setup: Give user some balance so wallet exists
+      await repository.increase({
+        userId: testUserId,
+        wallet: testWallet,
+        competitionId: testCompetitionId,
+        amount: 100n,
+      });
+
+      expect(() =>
+        repository.decrease({
+          userId: testUserId,
+          wallet: testWallet,
+          competitionId: testCompetitionId,
+          amount: 0n, // Zero amount not allowed
+        }),
+      ).toThrow("amount must be positive");
+
+      // Verify balance remains unchanged
+      const balance = await repository.userBoostBalance({
+        userId: testUserId,
+        competitionId: testCompetitionId,
+      });
+      expect(balance).toBe(100n);
+    });
+
+    test("should throw error for negative amount", async () => {
+      // Setup: Give user some balance so wallet exists
+      await repository.increase({
+        userId: testUserId,
+        wallet: testWallet,
+        competitionId: testCompetitionId,
+        amount: 100n,
+      });
+
+      expect(() =>
+        repository.decrease({
+          userId: testUserId,
+          wallet: testWallet,
+          competitionId: testCompetitionId,
+          amount: -50n, // Negative amount not allowed
+        }),
+      ).toThrow("amount must be positive");
+
+      // Verify balance remains unchanged
+      const balance = await repository.userBoostBalance({
+        userId: testUserId,
+        competitionId: testCompetitionId,
+      });
+      expect(balance).toBe(100n);
+    });
   });
 
   describe("idempotency with real database", () => {
