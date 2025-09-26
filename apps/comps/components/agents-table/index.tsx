@@ -98,7 +98,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   } = useQuery(
     tanstackClient.boost.balance.queryOptions({
       input: { competitionId: competition.id },
-      initialData: undefined,
       queryKey: [
         ...tanstackClient.boost.balance.queryKey({
           input: { competitionId: competition.id },
@@ -117,7 +116,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   } = useQuery(
     tanstackClient.boost.userBoosts.queryOptions({
       input: { competitionId: competition.id },
-      initialData: undefined,
       queryKey: [
         ...tanstackClient.boost.userBoosts.queryKey({
           input: { competitionId: competition.id },
