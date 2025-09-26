@@ -49,6 +49,7 @@ import {
   getCompetitionTransferViolationCounts,
   getPerpsCompetitionStats,
   getRiskAdjustedLeaderboard,
+  updatePerpsCompetitionConfig,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
@@ -1679,6 +1680,41 @@ export class CompetitionService {
           await deletePerpsCompetitionConfig(competitionId, tx);
           serviceLogger.debug(
             `[CompetitionService] Deleted perps config for converted competition ${competitionId}`,
+          );
+        }
+      } else if (
+        existingCompetition.type === "perpetual_futures" &&
+        perpsProvider
+      ) {
+        // Update perps config for existing perps competition
+        serviceLogger.info(
+          `[CompetitionService] Updating perps config for competition ${competitionId}`,
+        );
+
+        const updatedConfig = await updatePerpsCompetitionConfig(
+          competitionId,
+          {
+            dataSourceConfig: {
+              type: "external_api" as const,
+              provider: perpsProvider.provider,
+              apiUrl: perpsProvider.apiUrl,
+            },
+            initialCapital: perpsProvider.initialCapital.toString(),
+            selfFundingThresholdUsd:
+              perpsProvider.selfFundingThreshold.toString(),
+          },
+          tx,
+        );
+
+        if (!updatedConfig) {
+          serviceLogger.warn(
+            `[CompetitionService] No perps config found to update for competition ${competitionId}`,
+          );
+        } else {
+          serviceLogger.debug(
+            `[CompetitionService] Updated perps config for competition ${competitionId}: ` +
+              `threshold=${perpsProvider.selfFundingThreshold}, ` +
+              `capital=${perpsProvider.initialCapital}`,
           );
         }
       }

@@ -147,6 +147,44 @@ export class PerpsRepository {
   }
 
   /**
+   * Update perps competition configuration
+   * @param competitionId Competition ID
+   * @param updates Partial config updates
+   * @param tx Optional transaction
+   * @returns Updated configuration or null if not found
+   */
+  async updatePerpsCompetitionConfig(
+    competitionId: string,
+    updates: Partial<
+      Omit<InsertPerpsCompetitionConfig, "competitionId" | "createdAt">
+    >,
+    tx?: Transaction,
+  ): Promise<SelectPerpsCompetitionConfig | null> {
+    try {
+      const executor = tx || this.#db;
+      const [result] = await executor
+        .update(perpsCompetitionConfig)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(eq(perpsCompetitionConfig.competitionId, competitionId))
+        .returning();
+
+      if (result) {
+        this.#logger.debug(
+          `[PerpsRepository] Updated perps config for competition ${competitionId}`,
+        );
+      }
+
+      return result || null;
+    } catch (error) {
+      this.#logger.error("Error in updatePerpsCompetitionConfig:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete perps competition configuration
    * @param competitionId Competition ID
    * @param tx Optional transaction

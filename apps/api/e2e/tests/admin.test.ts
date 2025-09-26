@@ -1754,6 +1754,54 @@ describe("Admin API", () => {
     );
   });
 
+  test("should update perpsProvider settings for existing perps competition", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // First create a perps competition directly
+    const createResponse = (await client.createCompetition({
+      name: "Existing Perps Competition",
+      description: "Competition to test perpsProvider updates",
+      type: "perpetual_futures",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 100,
+        apiUrl: "http://localhost:4567",
+      },
+    })) as CreateCompetitionResponse;
+
+    expect(createResponse.success).toBe(true);
+    expect(createResponse.competition).toBeDefined();
+    const competitionId = createResponse.competition.id;
+
+    // Verify initial settings
+    expect(createResponse.competition.type).toBe("perpetual_futures");
+
+    // Update the perpsProvider settings
+    const updateResponse = (await client.updateCompetition(competitionId, {
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 2000,
+        selfFundingThreshold: 500, // Changed from 100 to 500
+        apiUrl: "http://localhost:4567",
+      },
+    })) as UpdateCompetitionResponse;
+
+    // This should now succeed with our fix
+    expect(updateResponse.success).toBe(true);
+    expect(updateResponse.competition).toBeDefined();
+    // Verify the competition type remains perpetual_futures
+    expect(updateResponse.competition.type).toBe("perpetual_futures");
+    // Name and description should remain unchanged
+    expect(updateResponse.competition.name).toBe("Existing Perps Competition");
+    expect(updateResponse.competition.description).toBe(
+      "Competition to test perpsProvider updates",
+    );
+
+    // For now, the test verifies the update doesn't throw an error
+  });
+
   test("should start a perps competition with agents", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
