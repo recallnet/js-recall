@@ -876,13 +876,13 @@ export class CompetitionService {
    * @param competitionId The competition ID
    * @param totalAgents Total number of agents in the competition
    * @param tx Database transaction
-   * @returns Number of leaderboard entries that were saved
+   * @returns The enriched leaderboard array that was processed
    */
   private async calculateAndPersistFinalLeaderboard(
     competitionId: string,
     totalAgents: number,
     tx: DatabaseTransaction,
-  ): Promise<number> {
+  ): Promise<LeaderboardEntry[]> {
     // Get the leaderboard (calculated from final snapshots)
     const leaderboard = await this.getLeaderboard(competitionId);
 
@@ -917,15 +917,23 @@ export class CompetitionService {
       await batchInsertLeaderboard(enrichedEntries, tx);
     }
 
-    return enrichedEntries.length;
+    // Map enriched entries back to LeaderboardEntry format for return
+    return enrichedEntries.map((entry) => ({
+      agentId: entry.agentId,
+      value: entry.score, // Convert score back to value for LeaderboardEntry
+      pnl: entry.pnl,
+    }));
   }
 
   /**
    * End a competition
    * @param competitionId The competition ID
-   * @returns The updated competition
+   * @returns The updated competition and final leaderboard
    */
-  async endCompetition(competitionId: string) {
+  async endCompetition(competitionId: string): Promise<{
+    competition: SelectCompetition;
+    leaderboard: LeaderboardEntry[];
+  }> {
     // Mark as ending (active -> ending) - this returns the competition object
     let competition = await markCompetitionAsEnding(competitionId);
 
@@ -935,7 +943,9 @@ export class CompetitionService {
         throw new Error(`Competition not found: ${competitionId}`);
       }
       if (current.status === "ended") {
-        return current; // Already ended
+        // Competition already ended, get the leaderboard and return
+        const leaderboard = await this.getLeaderboard(competitionId);
+        return { competition: current, leaderboard };
       }
       if (current.status !== "ending") {
         throw new Error(
@@ -992,8 +1002,8 @@ export class CompetitionService {
     await this.configurationService.loadCompetitionSettings();
 
     // Final transaction to persist results
-    const { competition: finalCompetition, leaderboardCount } =
-      await db.transaction(async (tx) => {
+    const { competition: finalCompetition, leaderboard } = await db.transaction(
+      async (tx) => {
         // Mark as ended. This is our guard against concurrent execution - if another process is
         // ending the same competition in parallel, only one will manage to mark it as ended, and
         // the other one's transaction will fail.
@@ -1005,7 +1015,7 @@ export class CompetitionService {
         }
 
         // Calculate final leaderboard, enrich with PnL data, and persist to database
-        const leaderboardCount = await this.calculateAndPersistFinalLeaderboard(
+        const leaderboard = await this.calculateAndPersistFinalLeaderboard(
           competitionId,
           competitionAgents.length,
           tx,
@@ -1017,16 +1027,24 @@ export class CompetitionService {
           tx,
         );
 
-        return { competition: updated, leaderboardCount };
-      });
+        // Assign winners to rewards
+        await this.competitionRewardService.assignWinnersToRewards(
+          competitionId,
+          leaderboard,
+          tx,
+        );
+
+        return { competition: updated, leaderboard };
+      },
+    );
 
     // Log success only after transaction has committed
     serviceLogger.debug(
       `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ` +
-        `${competitionAgents.length} agents, ${leaderboardCount} leaderboard entries`,
+        `${competitionAgents.length} agents, ${leaderboard.length} leaderboard entries`,
     );
 
-    return finalCompetition;
+    return { competition: finalCompetition, leaderboard };
   }
 
   /**
