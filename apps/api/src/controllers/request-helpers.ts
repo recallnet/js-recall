@@ -184,40 +184,6 @@ export function parseAdminSearchQuery(
 }
 
 /**
- * Check if the error is a unique constraint violation
- * @param error The error to check
- * @returns The constraint if it is a unique constraint violation, undefined otherwise
- */
-export function checkUniqueConstraintViolation(error: unknown) {
-  const e = error as {
-    code?: string;
-    constraint?: string;
-    message?: string;
-  };
-  if (e?.code === "23505") {
-    return e.constraint;
-  }
-}
-
-/**
- * Check if the error is a unique constraint violation for a user
- * @param error The error to check
- * @returns The constraint if it is a unique constraint violation, undefined otherwise
- */
-export function checkUserUniqueConstraintViolation(error: unknown) {
-  const constraint = checkUniqueConstraintViolation(error);
-  if (constraint) {
-    return constraint.includes("wallet")
-      ? "walletAddress"
-      : constraint.includes("email")
-        ? "email"
-        : constraint.includes("privy")
-          ? "privyId"
-          : "unique value";
-  }
-}
-
-/**
  * Check if the request is public or from a user (not agent or admin)
  * @param req Express request
  * @returns True if the request is public or from a user, false otherwise
