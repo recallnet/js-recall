@@ -29,7 +29,7 @@ const VoteButton: React.FC<VoteButtonProps> = ({
           size="lg"
           className={cn("w-full uppercase", className)}
         >
-          Vote
+          Boost
         </Button>
       </Link>
     );
@@ -42,7 +42,7 @@ const VoteButton: React.FC<VoteButtonProps> = ({
       className={cn("w-full uppercase", className)}
       disabled
     >
-      Vote
+      Boost
     </Button>
   );
 };
@@ -54,7 +54,7 @@ export interface CompetitionActionsProps {
 }
 
 /**
- * Centralised component that renders the Vote / Join / See Results buttons for a competition
+ * Centralised component that renders the Boost / Join / See Results buttons for a competition
  * according to the current status. This prevents duplicated conditional logic across views.
  */
 export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
