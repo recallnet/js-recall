@@ -63,7 +63,7 @@ export function getCompetitionStateConfig(
       //  comp is ended.
       return {
         subTitle: "Boosts are counted!",
-        description: "Competition ended and the votes are counted...",
+        description: "Competition ended and the boosts are counted...",
         variant: "gray",
         untilTime: null,
         phase: null,
