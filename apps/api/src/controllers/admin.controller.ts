@@ -3,8 +3,6 @@ import { NextFunction, Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 
-import { UpdateCompetition } from "@recallnet/db/schema/core/types";
-
 import { reloadSecurityConfig } from "@/config/index.js";
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
@@ -797,16 +795,21 @@ export function makeAdminController(services: ServiceRegistry) {
           );
         }
 
-        // Extract rewards and tradingConstraints from the validated data
-        const { rewards, tradingConstraints, ...competitionUpdates } =
-          bodyResult.data;
-        const updates = competitionUpdates as UpdateCompetition;
+        // Extract rewards, tradingConstraints, and perpsProvider from the validated data
+        const {
+          rewards,
+          tradingConstraints,
+          perpsProvider,
+          ...competitionUpdates
+        } = bodyResult.data;
+        const updates = competitionUpdates;
 
         // Check if there are any updates to apply
         if (
           Object.keys(updates).length === 0 &&
           !rewards &&
-          !tradingConstraints
+          !tradingConstraints &&
+          !perpsProvider
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -818,6 +821,7 @@ export function makeAdminController(services: ServiceRegistry) {
             updates,
             tradingConstraints,
             rewards,
+            perpsProvider,
           );
 
         // Return the updated competition

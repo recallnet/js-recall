@@ -80,12 +80,12 @@ export const AdminCreateCompetitionSchema = z
     externalUrl: z.url().optional(),
     imageUrl: z.url().optional(),
     type: CompetitionTypeSchema.optional(),
-    startDate: z.iso.datetime().optional(),
-    endDate: z.iso.datetime().optional(),
-    votingStartDate: z.iso.datetime().optional(),
-    votingEndDate: z.iso.datetime().optional(),
-    joinStartDate: z.iso.datetime().optional(),
-    joinEndDate: z.iso.datetime().optional(),
+    startDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    endDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    votingStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    votingEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    joinStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    joinEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     maxParticipants: z.number().int().min(1).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
@@ -94,7 +94,7 @@ export const AdminCreateCompetitionSchema = z
   .refine(
     (data) => {
       if (data.joinStartDate && data.joinEndDate) {
-        return new Date(data.joinStartDate) <= new Date(data.joinEndDate);
+        return data.joinStartDate <= data.joinEndDate;
       }
       return true;
     },
@@ -106,6 +106,8 @@ export const AdminCreateCompetitionSchema = z
 
 /**
  * Admin update competition schema (note: mostly the same as competition creation, but with optional name)
+ * Note: Validation for perpsProvider requirement when changing type to perpetual_futures
+ * is handled in the service layer, as it requires knowing the current competition type
  */
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
@@ -127,12 +129,12 @@ export const AdminStartCompetitionSchema = z
     externalUrl: z.url().optional(),
     imageUrl: z.url().optional(),
     type: CompetitionTypeSchema.optional(),
-    startDate: z.iso.datetime().optional(),
-    endDate: z.iso.datetime().optional(),
-    votingStartDate: z.iso.datetime().optional(),
-    votingEndDate: z.iso.datetime().optional(),
-    joinStartDate: z.iso.datetime().optional(),
-    joinEndDate: z.iso.datetime().optional(),
+    startDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    endDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    votingStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    votingEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    joinStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    joinEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions

@@ -53,7 +53,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading]
+   *                 enum: [trading, perpetual_futures]
    *                 default: trading
    *                 example: trading
    *               externalUrl:
@@ -139,6 +139,28 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               perpsProvider:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Configuration for perps provider (required when type is perpetual_futures)
+   *                 properties:
+   *                   provider:
+   *                     type: string
+   *                     enum: [symphony, hyperliquid]
+   *                     description: Provider for perps data
+   *                     example: symphony
+   *                   initialCapital:
+   *                     type: number
+   *                     description: Initial capital in USD
+   *                     example: 500
+   *                   selfFundingThreshold:
+   *                     type: number
+   *                     description: Threshold for self-funding detection in USD
+   *                     example: 0
+   *                   apiUrl:
+   *                     type: string
+   *                     description: Optional API URL override for the provider
+   *                     example: https://api.symphony.com
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -183,7 +205,7 @@ export function configureAdminRoutes(
    *                       description: Whether sandbox mode is enabled for this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures]
    *                       default: trading
    *                       description: The type of competition
    *                     createdAt:
@@ -612,7 +634,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading]
+   *                 enum: [trading, perpetual_futures]
    *                 example: trading
    *               externalUrl:
    *                 type: string
@@ -639,6 +661,28 @@ export function configureAdminRoutes(
    *                 additionalProperties:
    *                   type: number
    *                   description: Reward amount for the given rank
+   *               perpsProvider:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Configuration for perps provider (required when changing type to perpetual_futures)
+   *                 properties:
+   *                   provider:
+   *                     type: string
+   *                     enum: [symphony, hyperliquid]
+   *                     description: Provider for perps data
+   *                     example: symphony
+   *                   initialCapital:
+   *                     type: number
+   *                     description: Initial capital in USD
+   *                     example: 500
+   *                   selfFundingThreshold:
+   *                     type: number
+   *                     description: Threshold for self-funding detection in USD
+   *                     example: 0
+   *                   apiUrl:
+   *                     type: string
+   *                     description: Optional API URL override for the provider
+   *                     example: https://api.symphony.com
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -664,7 +708,7 @@ export function configureAdminRoutes(
    *                       description: Competition description
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures]
    *                       description: The type of competition
    *                     externalUrl:
    *                       type: string
@@ -721,7 +765,7 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       description: Competition last update date
    *       400:
-   *         description: Bad request - Missing competitionId, no valid fields provided, or attempting to update restricted fields (startDate, endDate, status)
+   *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       404:

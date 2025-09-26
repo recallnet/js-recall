@@ -432,6 +432,16 @@ export interface CreateCompetitionResponse extends ApiResponse {
   competition: Competition;
 }
 
+// Admin response for updating a competition
+export interface UpdateCompetitionResponse extends ApiResponse {
+  success: true;
+  competition: Competition;
+  rewards?: Array<{
+    rank: number;
+    reward: number;
+  }>;
+}
+
 // Admin response for starting a competition
 export interface StartCompetitionResponse extends ApiResponse {
   success: true;
