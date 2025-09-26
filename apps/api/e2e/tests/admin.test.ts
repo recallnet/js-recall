@@ -34,6 +34,7 @@ import {
   ADMIN_EMAIL,
   createPerpsTestCompetition,
   createTestClient,
+  createTestCompetition,
   generateRandomEthAddress,
   generateTestHandle,
   getAdminApiKey,
@@ -1711,6 +1712,46 @@ describe("Admin API", () => {
     expect(response.competition.name).toBe("Test Perps Competition");
     expect(response.competition.type).toBe("perpetual_futures");
     expect(response.competition.status).toBe("pending");
+  });
+
+  test("should update competition with only perpsProvider field", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // First create a regular trading competition using the helper
+    const createResponse = await createTestCompetition({
+      adminClient: client,
+      name: "Test Competition for Type Change",
+      description: "Competition to test perpsProvider-only update",
+      type: "trading",
+    });
+
+    expect(createResponse.success).toBe(true);
+    expect(createResponse.competition).toBeDefined();
+    const competitionId = createResponse.competition.id;
+
+    // Update ONLY the perpsProvider field to convert to perps competition
+    const updateResponse = (await client.updateCompetition(competitionId, {
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    })) as UpdateCompetitionResponse;
+
+    // This should succeed now with the fix
+    expect(updateResponse.success).toBe(true);
+    expect(updateResponse.competition).toBeDefined();
+    // Verify the competition type was changed to perpetual_futures
+    expect(updateResponse.competition.type).toBe("perpetual_futures");
+    // Name and description should remain unchanged
+    expect(updateResponse.competition.name).toBe(
+      "Test Competition for Type Change",
+    );
+    expect(updateResponse.competition.description).toBe(
+      "Competition to test perpsProvider-only update",
+    );
   });
 
   test("should start a perps competition with agents", async () => {

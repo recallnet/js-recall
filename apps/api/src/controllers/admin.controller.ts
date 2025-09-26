@@ -810,7 +810,8 @@ export function makeAdminController(services: ServiceRegistry) {
         if (
           Object.keys(updates).length === 0 &&
           !rewards &&
-          !tradingConstraints
+          !tradingConstraints &&
+          !perpsProvider
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }

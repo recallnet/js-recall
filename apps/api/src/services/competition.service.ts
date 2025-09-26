@@ -458,8 +458,8 @@ export class CompetitionService {
     rewards?: Record<number, number>;
     perpsProvider?: {
       provider: "symphony" | "hyperliquid";
-      initialCapital?: number;
-      selfFundingThreshold?: number;
+      initialCapital: number; // Required - Zod default ensures this is set
+      selfFundingThreshold: number; // Required - Zod default ensures this is set
       apiUrl?: string;
     };
   }) {
@@ -509,9 +509,9 @@ export class CompetitionService {
             provider: perpsProvider.provider,
             apiUrl: perpsProvider.apiUrl,
           },
-          initialCapital: perpsProvider.initialCapital?.toString() ?? "500.00",
+          initialCapital: perpsProvider.initialCapital.toString(),
           selfFundingThresholdUsd:
-            perpsProvider.selfFundingThreshold?.toString() ?? "0.00",
+            perpsProvider.selfFundingThreshold.toString(),
         };
 
         await createPerpsCompetitionConfig(perpsConfig, tx);
@@ -1586,8 +1586,8 @@ export class CompetitionService {
     rewards?: Record<number, number>,
     perpsProvider?: {
       provider: "symphony" | "hyperliquid";
-      initialCapital?: number;
-      selfFundingThreshold?: number;
+      initialCapital: number; // Required - Zod default ensures this is set
+      selfFundingThreshold: number; // Required - Zod default ensures this is set
       apiUrl?: string;
     },
   ): Promise<{
@@ -1598,6 +1598,11 @@ export class CompetitionService {
     const existingCompetition = await findById(competitionId);
     if (!existingCompetition) {
       throw new Error(`Competition not found: ${competitionId}`);
+    }
+
+    // If perpsProvider is provided but type is not, auto-set type to perpetual_futures
+    if (perpsProvider && !updates.type) {
+      updates.type = "perpetual_futures";
     }
 
     // Check if type is being changed
@@ -1660,10 +1665,9 @@ export class CompetitionService {
               provider: perpsProvider.provider,
               apiUrl: perpsProvider.apiUrl,
             },
-            initialCapital:
-              perpsProvider.initialCapital?.toString() ?? "500.00",
+            initialCapital: perpsProvider.initialCapital.toString(),
             selfFundingThresholdUsd:
-              perpsProvider.selfFundingThreshold?.toString() ?? "0.00",
+              perpsProvider.selfFundingThreshold.toString(),
           };
 
           await createPerpsCompetitionConfig(perpsConfig, tx);
