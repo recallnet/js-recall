@@ -147,7 +147,14 @@ export default function CompetitionPage({
 
   // Helper function to determine if voting is actually available
   const isVotingAvailable = () => {
+    // For authenticated users, trust server validation
+    if (competition.userVotingInfo) {
+      return competition.userVotingInfo.canVote ?? false;
+    }
+
+    // For unauthenticated users, check client-side
     if (!competition.votingEnabled) return false;
+    if (competition.status === "ended") return false;
 
     const now = new Date();
     const votingStart = competition.votingStartDate
