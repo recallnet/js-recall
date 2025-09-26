@@ -1261,39 +1261,50 @@ export class PerpsRepository {
   }
 
   /**
-   * Get transfer violation counts for all agents in a competition
-   * Uses SQL aggregation for scalability - returns only agents with transfers
+   * Get transfer violation counts for all agents in a competition with agent names
+   * Uses SQL aggregation with JOIN for efficiency - single query instead of N+1
    * @param competitionId Competition ID
    * @param startDate Competition start date (only count transfers after this)
-   * @returns Array of agents with transfer counts (only includes agents with violations)
+   * @returns Array of agents with transfer counts and names (only includes agents with violations)
    */
   async getCompetitionTransferViolationCounts(
     competitionId: string,
     startDate: Date,
-  ): Promise<Array<{ agentId: string; transferCount: number }>> {
+  ): Promise<
+    Array<{ agentId: string; agentName: string; transferCount: number }>
+  > {
     try {
-      // Use SQL GROUP BY and COUNT for efficient aggregation
+      // Use SQL GROUP BY and COUNT with agent JOIN for aggregation
       // Only returns agents who have transfers (violations)
       const results = await this.#dbRead
         .select({
           agentId: perpsTransferHistory.agentId,
+          agentName: agents.name,
           transferCount: drizzleCount(perpsTransferHistory.id),
         })
         .from(perpsTransferHistory)
+        .leftJoin(agents, eq(perpsTransferHistory.agentId, agents.id))
         .where(
           and(
             eq(perpsTransferHistory.competitionId, competitionId),
             gt(perpsTransferHistory.transferTimestamp, startDate), // Only transfers after competition start
           ),
         )
-        .groupBy(perpsTransferHistory.agentId)
+        .groupBy(perpsTransferHistory.agentId, agents.name)
         .orderBy(desc(drizzleCount(perpsTransferHistory.id))); // Order by most violations first
 
+      // Map results to ensure non-null agent names
+      const mappedResults = results.map((row) => ({
+        agentId: row.agentId,
+        agentName: row.agentName ?? "Unknown Agent",
+        transferCount: row.transferCount,
+      }));
+
       this.#logger.debug(
-        `[PerpsRepository] Found ${results.length} agents with transfer violations in competition ${competitionId}`,
+        `[PerpsRepository] Found ${mappedResults.length} agents with transfer violations in competition ${competitionId}`,
       );
 
-      return results;
+      return mappedResults;
     } catch (error) {
       this.#logger.error(
         "Error in getCompetitionTransferViolationCounts:",

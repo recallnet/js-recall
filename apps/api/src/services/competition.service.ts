@@ -3031,29 +3031,16 @@ export class CompetitionService {
         return [];
       }
 
-      // 2. Get transfer violation counts from repository (SQL aggregation)
-      const violationCounts = await getCompetitionTransferViolationCounts(
+      // 2. Get transfer violation counts with agent names from repository
+      const results = await getCompetitionTransferViolationCounts(
         competitionId,
         competition.startDate,
       );
 
-      // 3. Enrich with agent names (batch fetch)
-      if (violationCounts.length === 0) {
+      // Results already include agentName
+      if (results.length === 0) {
         return [];
       }
-
-      const agentIds = violationCounts.map((v) => v.agentId);
-      const agents = await this.agentService.getAgentsByIds(agentIds);
-
-      // Create a map for quick lookup
-      const agentMap = new Map(agents.map((agent) => [agent.id, agent.name]));
-
-      // 4. Combine data and return
-      const results = violationCounts.map((violation) => ({
-        agentId: violation.agentId,
-        agentName: agentMap.get(violation.agentId) ?? "Unknown Agent",
-        transferCount: violation.transferCount,
-      }));
 
       serviceLogger.info(
         `[CompetitionService] Found ${results.length} agents with transfer violations in competition ${competitionId}`,
