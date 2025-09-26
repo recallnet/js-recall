@@ -92,7 +92,7 @@ class ServiceRegistry {
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
 
-    // Initialize user and agent services (require email service)
+    // Initialize user, agent, and admin services
     this._userService = new UserService(this._emailService);
     this._agentService = new AgentService(
       this._emailService,
