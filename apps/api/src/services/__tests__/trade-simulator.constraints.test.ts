@@ -12,12 +12,15 @@ import {
 import { config } from "@/config/index.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
+import { SimulatedTradeExecutionService } from "@/services/simulated-trade-execution.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { BlockchainType, PriceReport } from "@/types/index.js";
 
 // Mock dependencies for unit tests
-vi.mock("@/services/balance-manager.service.js");
+vi.mock("@/services/balance.service.js");
+vi.mock("@/services/competition.service.js");
 vi.mock("@/services/price-tracker.service.js");
+vi.mock("@/services/trade-simulator.service.js");
 vi.mock("@/services/index.js");
 vi.mock("@/database/repositories/trade-repository.js", () => ({
   create: vi.fn(),
@@ -43,15 +46,15 @@ const DEFAULT_CONSTRAINTS = {
   minimumFdvUsd: MINIMUM_FDV_USD,
 };
 
-describe("TradeSimulatorService - Trading Constraints", () => {
+describe("SimulatedTradeExecutionService - Trading Constraints", () => {
   describe("Unit Tests", () => {
-    let tradeSimulator: TradeSimulatorService;
+    let tradeExecutor: SimulatedTradeExecutionService;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let mockBalanceManager: any;
+    let mockBalanceService: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mockCompetitionService: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let mockPriceTracker: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let mockPortfolioSnapshotter: any;
 
     // Mock constraints used across all tests
     const mockConstraints = {
@@ -63,10 +66,14 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
     beforeEach(() => {
       // Create mock implementations
-      mockBalanceManager = {
+      mockBalanceService = {
         getBalance: vi.fn(),
-        subtractAmount: vi.fn(),
-        addAmount: vi.fn(),
+        setBalanceCache: vi.fn(),
+      };
+
+      mockCompetitionService = {
+        getCompetition: vi.fn(),
+        isAgentActiveInCompetition: vi.fn(),
       };
 
       mockPriceTracker = {
@@ -74,15 +81,16 @@ describe("TradeSimulatorService - Trading Constraints", () => {
         getPrice: vi.fn(),
       };
 
-      mockPortfolioSnapshotter = {
-        takePortfolioSnapshotForAgent: vi.fn(),
+      const mockTradeSimulatorService = {
+        calculatePortfolioValue: vi.fn(),
       };
 
-      // Create TradeSimulator instance with mocked dependencies
-      tradeSimulator = new TradeSimulatorService(
-        mockBalanceManager,
+      // Create SimulatedTradeExecutionService instance with mocked dependencies
+      tradeExecutor = new SimulatedTradeExecutionService(
+        mockCompetitionService,
+        mockTradeSimulatorService as unknown as TradeSimulatorService,
+        mockBalanceService,
         mockPriceTracker,
-        mockPortfolioSnapshotter,
       );
     });
 
@@ -104,7 +112,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
         // Access private method using type assertion
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             validPriceData,
             "VALID_TOKEN",
             mockConstraints,
@@ -128,7 +136,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             youngPairData,
             "YOUNG_TOKEN",
             mockConstraints,
@@ -152,7 +160,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             noPairTimeData,
             "NOTIME_TOKEN",
             mockConstraints,
@@ -176,7 +184,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             lowVolumeData,
             "LOWVOL_TOKEN",
             mockConstraints,
@@ -200,7 +208,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             noVolumeData,
             "NOVOL_TOKEN",
             DEFAULT_CONSTRAINTS,
@@ -224,7 +232,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             lowLiquidityData,
             "NOLIQ_TOKEN",
             mockConstraints,
@@ -256,7 +264,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             noLiquidityData,
             "LOWLIQ_TOKEN",
             mockConstraints,
@@ -280,7 +288,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             lowFdvData,
             "LOWFDV_TOKEN",
             mockConstraints,
@@ -304,7 +312,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             noFdvData,
             "NOFDV_TOKEN",
             mockConstraints,
@@ -329,7 +337,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             boundaryData,
             "BOUNDARY_TOKEN",
             mockConstraints,
@@ -353,7 +361,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             zeroData,
             "ZERO_TOKEN",
             mockConstraints,
@@ -378,7 +386,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             nullVolumeData,
             "NULLVOL_TOKEN",
             mockConstraints,
@@ -402,7 +410,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             solTokenData,
             "SOL_TOKEN",
             mockConstraints,
@@ -426,7 +434,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         expect(() =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (tradeSimulator as any).validateTradingConstraints(
+          (tradeExecutor as any).validateTradingConstraints(
             usdcTokenData,
             "USDC_TOKEN",
             mockConstraints,
@@ -438,7 +446,7 @@ describe("TradeSimulatorService - Trading Constraints", () => {
     describe("executeTrade - constraint integration", () => {
       it("should reject trade for token with insufficient constraints", async () => {
         // Mock balance and price data
-        mockBalanceManager.getBalance.mockResolvedValue(1000);
+        mockBalanceService.getBalance.mockResolvedValue(1000);
         mockPriceTracker.determineChain.mockReturnValue(BlockchainType.EVM);
 
         const validFromPrice: PriceReport = {
@@ -471,21 +479,31 @@ describe("TradeSimulatorService - Trading Constraints", () => {
           .mockResolvedValueOnce(validFromPrice)
           .mockResolvedValueOnce(invalidToPrice);
 
+        // Mock competition service responses
+        mockCompetitionService.getCompetition.mockResolvedValue({
+          id: "comp-1",
+          name: "Test Competition",
+          endDate: null,
+        });
+        mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(
+          true,
+        );
+
         await expect(
-          tradeSimulator.executeTrade(
-            uuidv4(),
-            uuidv4(),
-            "0x1111111111111111111111111111111111111111",
-            "0x2222222222222222222222222222222222222222",
-            100,
-            "Test trade",
-          ),
+          tradeExecutor.executeTrade({
+            agentId: uuidv4(),
+            competitionId: uuidv4(),
+            fromToken: "0x1111111111111111111111111111111111111111",
+            toToken: "0x2222222222222222222222222222222222222222",
+            fromAmount: 100,
+            reason: "Test trade",
+          }),
         ).rejects.toThrow("Token pair is too young");
       });
 
       it("should skip constraints for burn tokens (price = 0)", async () => {
         // Mock balance and price data
-        mockBalanceManager.getBalance.mockResolvedValue(1000);
+        mockBalanceService.getBalance.mockResolvedValue(1000);
         mockPriceTracker.determineChain.mockReturnValue(BlockchainType.EVM);
 
         const validFromPrice: PriceReport = {
@@ -520,15 +538,25 @@ describe("TradeSimulatorService - Trading Constraints", () => {
 
         // For burn tokens, constraints should be skipped, but the trade may still fail due to mocking limitations
         // The important thing is that constraints are skipped for burn tokens
+        // Mock competition service responses
+        mockCompetitionService.getCompetition.mockResolvedValue({
+          id: "comp-1",
+          name: "Test Competition",
+          endDate: null,
+        });
+        mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(
+          true,
+        );
+
         try {
-          await tradeSimulator.executeTrade(
-            uuidv4(),
-            uuidv4(),
-            "0x1111111111111111111111111111111111111111",
-            "0x0000000000000000000000000000000000000000",
-            100,
-            "Burn trade",
-          );
+          await tradeExecutor.executeTrade({
+            agentId: uuidv4(),
+            competitionId: uuidv4(),
+            fromToken: "0x1111111111111111111111111111111111111111",
+            toToken: "0x0000000000000000000000000000000000000000",
+            fromAmount: 100,
+            reason: "Burn trade",
+          });
           throw Error("trade should fail");
         } catch (error) {
           // The error should not be related to constraints validation
