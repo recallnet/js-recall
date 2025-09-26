@@ -37,14 +37,14 @@ export class BoostService {
   private competitionRepository: CompetitionRepository;
   private userRepository: UserRepository;
   private nonStakeBoostAmount: bigint;
-  private logger?: Logger;
+  private logger: Logger;
 
   constructor(
     boostRepository: BoostRepository,
     competitionRepository: CompetitionRepository,
     userRepository: UserRepository,
     nonStakeBoostAmount: bigint = 1000000000000000000000n,
-    logger?: Logger,
+    logger: Logger,
   ) {
     this.boostRepository = boostRepository;
     this.competitionRepository = competitionRepository;

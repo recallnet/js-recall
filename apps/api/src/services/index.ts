@@ -9,7 +9,11 @@ import { db, dbRead } from "@/database/db.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
-import { indexingLogger, repositoryLogger } from "@/lib/logger.js";
+import {
+  indexingLogger,
+  repositoryLogger,
+  serviceLogger,
+} from "@/lib/logger.js";
 import { AdminService } from "@/services/admin.service.js";
 import { AgentService } from "@/services/agent.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
@@ -128,7 +132,7 @@ class ServiceRegistry {
       dbRead,
       repositoryLogger,
     );
-    this._userRepository = new UserRepository(db);
+    this._userRepository = new UserRepository(db, repositoryLogger);
 
     // Initialize BoostService with its dependencies
     // TODO: Consider the best practice for services depending on repositories and/or other services.
@@ -137,6 +141,7 @@ class ServiceRegistry {
       this._competitionRepository,
       this._userRepository,
       config.boost.noStakeBoostAmount,
+      serviceLogger,
     );
 
     this._boostAwardService = new BoostAwardService(

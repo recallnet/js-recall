@@ -15,9 +15,9 @@ import { PartialExcept } from "./util/types.js";
  */
 export class UserRepository {
   readonly #db: Database;
-  readonly #logger?: Logger;
+  readonly #logger: Logger;
 
-  constructor(database: Database, logger?: Logger) {
+  constructor(database: Database, logger: Logger) {
     this.#db = database;
     this.#logger = logger;
   }
@@ -72,7 +72,7 @@ export class UserRepository {
       }
       return row;
     } catch (error) {
-      this.#logger?.error("[UserRepository] Error in create:", error);
+      this.#logger.error("[UserRepository] Error in create:", error);
       throw error;
     }
   }
@@ -84,7 +84,7 @@ export class UserRepository {
     try {
       return await this.#db.select().from(users);
     } catch (error) {
-      this.#logger?.error("[UserRepository] Error in findAll:", error);
+      this.#logger.error("[UserRepository] Error in findAll:", error);
       throw error;
     }
   }
@@ -101,7 +101,7 @@ export class UserRepository {
         .where(eq(users.id, id));
       return result;
     } catch (error) {
-      this.#logger?.error("[UserRepository] Error in findById:", error);
+      this.#logger.error("[UserRepository] Error in findById:", error);
       throw error;
     }
   }
@@ -122,7 +122,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      this.#logger?.error(
+      this.#logger.error(
         "[UserRepository] Error in findByWalletAddress:",
         error,
       );
@@ -148,7 +148,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      this.#logger?.error(
+      this.#logger.error(
         "[UserRepository] Error in findDuplicateByWalletAddress:",
         error,
       );
@@ -169,7 +169,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      this.#logger?.error("[UserRepository] Error in findByEmail:", error);
+      this.#logger.error("[UserRepository] Error in findByEmail:", error);
       throw error;
     }
   }
@@ -187,7 +187,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      this.#logger?.error("[UserRepository] Error in findByPrivyId:", error);
+      this.#logger.error("[UserRepository] Error in findByPrivyId:", error);
       throw error;
     }
   }
@@ -225,7 +225,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      this.#logger?.error("[UserRepository] Error in update:", error);
+      this.#logger.error("[UserRepository] Error in update:", error);
       throw error;
     }
   }
@@ -246,7 +246,7 @@ export class UserRepository {
 
       return !!result;
     } catch (error) {
-      this.#logger?.error("[UserRepository] Error in delete:", error);
+      this.#logger.error("[UserRepository] Error in delete:", error);
       throw error;
     }
   }
@@ -292,7 +292,7 @@ export class UserRepository {
         .from(users)
         .where(and(...conditions));
     } catch (error) {
-      this.#logger?.error("[UserRepository] Error in searchUsers:", error);
+      this.#logger.error("[UserRepository] Error in searchUsers:", error);
       throw error;
     }
   }
@@ -307,7 +307,7 @@ export class UserRepository {
         .from(users);
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger?.error("[UserRepository] Error in count:", error);
+      this.#logger.error("[UserRepository] Error in count:", error);
       throw error;
     }
   }
