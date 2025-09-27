@@ -1,21 +1,23 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 
+import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import {
   InsertCompetitionReward,
   SelectCompetitionReward,
 } from "@recallnet/db/schema/core/types";
-
-import { db } from "@/database/db.js";
-import * as competitionRewardsRepository from "@/database/repositories/competition-rewards-repository.js";
-
-// Type for database transaction
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+import { Transaction } from "@recallnet/db/types";
 
 /**
  * CompetitionRewardService
  * Service for managing rewards in the competition rewards schema
  */
 export class CompetitionRewardService {
+  private competitionRewardsRepo: CompetitionRewardsRepository;
+
+  constructor(competitionRewardsRepo: CompetitionRewardsRepository) {
+    this.competitionRewardsRepo = competitionRewardsRepo;
+  }
+
   /**
    * Assign winners to rewards for a competition
    * @param competitionId The competition ID
@@ -26,7 +28,7 @@ export class CompetitionRewardService {
     competitionId: string,
     leaderboard: { agentId: string; value: number }[],
   ): Promise<void> {
-    await competitionRewardsRepository.assignWinnersToRewards(
+    await this.competitionRewardsRepo.assignWinnersToRewards(
       competitionId,
       leaderboard,
     );
@@ -42,17 +44,17 @@ export class CompetitionRewardService {
   async createRewards(
     competitionId: string,
     rewards: Record<number, number>,
-    tx?: DatabaseTransaction,
+    tx?: Transaction,
   ): Promise<SelectCompetitionReward[]> {
     const rewardsData: InsertCompetitionReward[] = Object.entries(rewards).map(
       ([rank, reward]) => ({
-        id: uuidv4(),
+        id: randomUUID(),
         competitionId,
         rank: Number(rank),
         reward,
       }),
     );
-    return competitionRewardsRepository.createRewards(rewardsData, tx);
+    return this.competitionRewardsRepo.createRewards(rewardsData, tx);
   }
 
   /**
@@ -65,7 +67,7 @@ export class CompetitionRewardService {
     competitionId: string,
     rank: number,
   ): Promise<SelectCompetitionReward | undefined> {
-    return competitionRewardsRepository.findRewardByCompetitionAndRank(
+    return this.competitionRewardsRepo.findRewardByCompetitionAndRank(
       competitionId,
       rank,
     );
@@ -79,7 +81,7 @@ export class CompetitionRewardService {
   async getRewardsByCompetition(
     competitionId: string,
   ): Promise<SelectCompetitionReward[]> {
-    return competitionRewardsRepository.findRewardsByCompetition(competitionId);
+    return this.competitionRewardsRepo.findRewardsByCompetition(competitionId);
   }
 
   /**
@@ -88,7 +90,7 @@ export class CompetitionRewardService {
    * @returns Array of reward records
    */
   async getRewardsByAgent(agentId: string): Promise<SelectCompetitionReward[]> {
-    return competitionRewardsRepository.findRewardsByAgent(agentId);
+    return this.competitionRewardsRepo.findRewardsByAgent(agentId);
   }
 
   /**
@@ -101,7 +103,7 @@ export class CompetitionRewardService {
     id: string,
     update: Partial<InsertCompetitionReward>,
   ): Promise<SelectCompetitionReward | undefined> {
-    return competitionRewardsRepository.updateReward(id, update);
+    return this.competitionRewardsRepo.updateReward(id, update);
   }
 
   /**
@@ -110,7 +112,7 @@ export class CompetitionRewardService {
    * @returns True if deleted, false otherwise
    */
   async deleteReward(id: string): Promise<boolean> {
-    return competitionRewardsRepository.deleteReward(id);
+    return this.competitionRewardsRepo.deleteReward(id);
   }
 
   /**
@@ -119,7 +121,7 @@ export class CompetitionRewardService {
    * @returns True if deleted, false otherwise
    */
   async deleteRewardsByCompetition(competitionId: string): Promise<boolean> {
-    return competitionRewardsRepository.deleteRewardsByCompetition(
+    return this.competitionRewardsRepo.deleteRewardsByCompetition(
       competitionId,
     );
   }
@@ -134,9 +136,9 @@ export class CompetitionRewardService {
   async replaceRewards(
     competitionId: string,
     rewards: Record<number, number>,
-    tx?: DatabaseTransaction,
+    tx?: Transaction,
   ): Promise<SelectCompetitionReward[]> {
-    await competitionRewardsRepository.deleteRewardsByCompetition(
+    await this.competitionRewardsRepo.deleteRewardsByCompetition(
       competitionId,
       tx,
     );
@@ -160,7 +162,7 @@ export class CompetitionRewardService {
 
     // Get all rewards for these competitions
     const allRewards =
-      await competitionRewardsRepository.findRewardsByCompetitions(
+      await this.competitionRewardsRepo.findRewardsByCompetitions(
         competitionIds,
       );
 

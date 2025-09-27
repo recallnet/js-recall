@@ -49,7 +49,6 @@ import {
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
-import { ApiError } from "@/middleware/errorHandler.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import {
   AgentRankService,
@@ -74,6 +73,8 @@ import {
   AgentDbSortFields,
   AgentQueryParams,
 } from "@/types/sort/agent.js";
+
+import { ApiError } from "./types/index.js";
 
 /**
  * Parameters for creating a new competition

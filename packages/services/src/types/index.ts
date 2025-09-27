@@ -12,6 +12,20 @@ import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
 import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
 
 /**
+ * Custom error class with HTTP status code
+ */
+export class ApiError extends Error {
+  statusCode: number;
+
+  constructor(statusCode: number, message: string) {
+    super(message);
+    this.statusCode = statusCode;
+    this.name = this.constructor.name;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+/**
  * Blockchain type enum
  */
 export enum BlockchainType {

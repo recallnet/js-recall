@@ -3,8 +3,8 @@ import type {
   AgentPublic,
   AgentWithMetrics,
   RawAgentMetricsQueryResult,
-} from "@/types/agent-metrics.js";
-import type { AgentMetadata, AgentStats, AgentTrophy } from "@/types/index.js";
+} from "./types/agent-metrics.js";
+import type { AgentMetadata, AgentStats, AgentTrophy } from "./types/index.js";
 
 /**
  * Helper class for transforming and processing agent metrics

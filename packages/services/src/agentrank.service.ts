@@ -1,16 +1,29 @@
 import { Rating, rate, rating } from "openskill";
+import { Logger } from "pino";
 
+import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import type { Transaction as DatabaseTransaction } from "@recallnet/db/types";
-
-import * as agentScoreRepo from "@/database/repositories/agentscore-repository.js";
-import * as competitionRepo from "@/database/repositories/competition-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
 
 /**
  * Agent Rank Service
  * Manages agent ranking calculations and updates
  */
 export class AgentRankService {
+  private agentScoreRepo: AgentScoreRepository;
+  private competitionRepo: CompetitionRepository;
+  private logger: Logger;
+
+  constructor(
+    agentScoreRepo: AgentScoreRepository,
+    competitionRepo: CompetitionRepository,
+    logger: Logger,
+  ) {
+    this.agentScoreRepo = agentScoreRepo;
+    this.competitionRepo = competitionRepo;
+    this.logger = logger;
+  }
+
   /**
    * Update agent ranks when a competition ends
    * @param competitionId The ID of the competition that ended
@@ -21,15 +34,16 @@ export class AgentRankService {
     competitionId: string,
     tx?: DatabaseTransaction,
   ): Promise<void> {
-    serviceLogger.debug(
+    this.logger.debug(
       `[AgentRankService] Updating agent ranks for ended competition: ${competitionId}`,
     );
 
     try {
-      const leaderboard = await competitionRepo.findLeaderboardByCompetition(
-        competitionId,
-        tx,
-      );
+      const leaderboard =
+        await this.competitionRepo.findLeaderboardByCompetition(
+          competitionId,
+          tx,
+        );
       if (!leaderboard || leaderboard.length === 0) {
         console.warn(
           `[AgentRankService] No leaderboard entries found for competition ${competitionId}`,
@@ -37,7 +51,7 @@ export class AgentRankService {
         return;
       }
 
-      const currentRanks = await agentScoreRepo.getAllAgentRanks();
+      const currentRanks = await this.agentScoreRepo.getAllAgentRanks();
 
       const ratings: Record<string, Rating> = {};
 
@@ -75,17 +89,17 @@ export class AgentRankService {
         };
       });
 
-      const updatedRanks = await agentScoreRepo.batchUpdateAgentRanks(
+      const updatedRanks = await this.agentScoreRepo.batchUpdateAgentRanks(
         batchUpdateData,
         competitionId,
         tx,
       );
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentRankService] Successfully updated ranks for ${updatedRanks.length} agents from competition ${competitionId}`,
       );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentRankService] Error updating agent ranks for competition ${competitionId}:`,
         error,
       );

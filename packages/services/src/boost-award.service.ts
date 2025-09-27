@@ -6,7 +6,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { Database, Transaction } from "@recallnet/db/types";
 
-import type { UserService } from "@/services/user.service.js";
+import type { UserService } from "./user.service.js";
 
 type StakePosition = {
   id: bigint;

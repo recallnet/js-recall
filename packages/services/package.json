@@ -35,13 +35,19 @@
   "dependencies": {
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
+    "decimal.js": "^10.6.0",
     "neverthrow": "^8.2.0",
-    "pino": "^9.7.0"
+    "openskill": "^4.1.0",
+    "pg": "^8.10.0",
+    "pino": "^9.7.0",
+    "siwe": "^3.0.0",
+    "viem": "^2.37.8"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.4",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",

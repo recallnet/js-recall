@@ -1,16 +1,10 @@
+import { Logger } from "pino";
+
+import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import type { SelectBalance } from "@recallnet/db/schema/trading/types";
 
-import { config } from "@/config/index.js";
-import {
-  count,
-  getAgentBalances,
-  getAgentsBulkBalances,
-  getBalance,
-  resetAgentBalances,
-} from "@/database/repositories/balance-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { assertUnreachable } from "@/lib/typescript-utils.js";
-import { CompetitionType, SpecificChain } from "@/types/index.js";
+import { assertUnreachable } from "./lib/typescript-utils.js";
+import { CompetitionType, SpecificChain } from "./types/index.js";
 
 /**
  * Balance Service
@@ -19,9 +13,22 @@ import { CompetitionType, SpecificChain } from "@/types/index.js";
 export class BalanceService {
   // Cache of agentId -> Map of tokenAddress -> balance
   private balanceCache: Map<string, Map<string, number>>;
+  private balanceRepo: BalanceRepository;
+  private specificChainBalances: Record<SpecificChain, Record<string, number>>;
+  private specificChainTokens: Record<SpecificChain, Record<string, string>>;
+  private logger: Logger;
 
-  constructor() {
+  constructor(
+    balanceRepo: BalanceRepository,
+    specificChainBalances: Record<SpecificChain, Record<string, number>>,
+    specificChainTokens: Record<SpecificChain, Record<string, string>>,
+    logger: Logger,
+  ) {
     this.balanceCache = new Map();
+    this.balanceRepo = balanceRepo;
+    this.specificChainBalances = specificChainBalances;
+    this.specificChainTokens = specificChainTokens;
+    this.logger = logger;
   }
 
   /**
@@ -48,48 +55,42 @@ export class BalanceService {
   private addSpecificChainTokensToBalances(
     balances: Map<string, { amount: number; symbol: string }>,
   ): void {
-    const specificChainBalances = config.specificChainBalances;
-    const specificChainTokens = config.specificChainTokens;
-
-    if (!specificChainBalances || !specificChainTokens) {
-      console.warn(`[BalanceManager] No specific chain configuration found`);
-      return;
-    }
-
     // Process each specific chain that we have balances for
-    Object.entries(specificChainBalances).forEach(([chain, tokenBalances]) => {
-      const specificChain = chain as SpecificChain;
+    Object.entries(this.specificChainBalances).forEach(
+      ([chain, tokenBalances]) => {
+        const specificChain = chain as SpecificChain;
 
-      // Only process chains that we have token configurations for
-      if (
-        specificChain === "eth" ||
-        specificChain === "polygon" ||
-        specificChain === "base" ||
-        specificChain === "svm" ||
-        specificChain === "optimism" ||
-        specificChain === "arbitrum"
-      ) {
-        // Type-safe access to the chain tokens
-        const chainTokens = specificChainTokens[specificChain];
+        // Only process chains that we have token configurations for
+        if (
+          specificChain === "eth" ||
+          specificChain === "polygon" ||
+          specificChain === "base" ||
+          specificChain === "svm" ||
+          specificChain === "optimism" ||
+          specificChain === "arbitrum"
+        ) {
+          // Type-safe access to the chain tokens
+          const chainTokens = this.specificChainTokens[specificChain];
 
-        // Add each configured token for this specific chain
-        Object.entries(tokenBalances).forEach(([symbol, amount]) => {
-          // Type assertion for the symbol access
-          const tokenAddress = chainTokens[symbol as keyof typeof chainTokens];
+          // Add each configured token for this specific chain
+          Object.entries(tokenBalances).forEach(([symbol, amount]) => {
+            // Type assertion for the symbol access
+            const tokenAddress = chainTokens?.[symbol];
 
-          if (tokenAddress && amount > 0) {
-            serviceLogger.debug(
-              `[BalanceManager] Setting initial balance for specific chain ${chain} ${symbol}: ${amount}`,
-            );
-            balances.set(tokenAddress, { amount, symbol });
-          }
-        });
-      } else {
-        console.warn(
-          `[BalanceManager] No token configuration found for specific chain: ${chain}`,
-        );
-      }
-    });
+            if (tokenAddress && amount > 0) {
+              this.logger.debug(
+                `[BalanceManager] Setting initial balance for specific chain ${chain} ${symbol}: ${amount}`,
+              );
+              balances.set(tokenAddress, { amount, symbol });
+            }
+          });
+        } else {
+          console.warn(
+            `[BalanceManager] No token configuration found for specific chain: ${chain}`,
+          );
+        }
+      },
+    );
   }
 
   /**
@@ -107,7 +108,7 @@ export class BalanceService {
       }
 
       // Get from database
-      const balance = await getBalance(agentId, tokenAddress);
+      const balance = await this.balanceRepo.getBalance(agentId, tokenAddress);
 
       // If balance exists, update cache
       if (balance) {
@@ -120,7 +121,7 @@ export class BalanceService {
 
       return 0;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[BalanceManager] Error getting balance for agent ${agentId}, token ${tokenAddress}:`,
         error,
       );
@@ -136,7 +137,7 @@ export class BalanceService {
   async getAllBalances(agentId: string): Promise<SelectBalance[]> {
     try {
       // Get from database
-      const balances = await getAgentBalances(agentId);
+      const balances = await this.balanceRepo.getAgentBalances(agentId);
 
       // Update cache
       const balanceMap = new Map<string, number>();
@@ -147,7 +148,7 @@ export class BalanceService {
 
       return balances;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[BalanceManager] Error getting all balances for agent ${agentId}:`,
         error,
       );
@@ -166,12 +167,12 @@ export class BalanceService {
         return [];
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[BalanceManager] Getting bulk balances for ${agentIds.length} agents`,
       );
 
       // Get all balances from database in one query
-      const balances = await getAgentsBulkBalances(agentIds);
+      const balances = await this.balanceRepo.getAgentsBulkBalances(agentIds);
 
       // Update cache for all agents
       const agentBalanceMap = new Map<string, Map<string, number>>();
@@ -194,13 +195,13 @@ export class BalanceService {
         this.balanceCache.set(agentId, balanceMap);
       });
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[BalanceManager] Successfully retrieved ${balances.length} balances for ${agentIds.length} agents`,
       );
 
       return balances;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[BalanceManager] Error getting bulk balances for ${agentIds.length} agents:`,
         error,
       );
@@ -221,7 +222,7 @@ export class BalanceService {
     competitionType: CompetitionType,
   ): Promise<void> {
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[BalanceManager] Resetting balances for agent ${agentId}`,
       );
 
@@ -236,7 +237,7 @@ export class BalanceService {
       }
 
       // Reset in database
-      await resetAgentBalances(agentId, initialBalances);
+      await this.balanceRepo.resetAgentBalances(agentId, initialBalances);
 
       // Update cache
       const balanceMap = new Map<string, number>();
@@ -247,12 +248,12 @@ export class BalanceService {
 
       switch (competitionType) {
         case "trading":
-          serviceLogger.debug(
+          this.logger.debug(
             `[BalanceManager] Successfully reset paper trading balances for agent ${agentId}`,
           );
           break;
         case "perpetual_futures":
-          serviceLogger.debug(
+          this.logger.debug(
             `[BalanceManager] Successfully cleared balances for perps agent ${agentId}`,
           );
           break;
@@ -260,7 +261,7 @@ export class BalanceService {
           assertUnreachable(competitionType);
       }
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[BalanceManager] Error resetting balances for agent ${agentId}:`,
         error,
       );
@@ -291,10 +292,10 @@ export class BalanceService {
   async isHealthy(): Promise<boolean> {
     try {
       // Simple check to see if we can connect to the database
-      await count();
+      await this.balanceRepo.count();
       return true;
     } catch (error) {
-      serviceLogger.error("[BalanceManager] Health check failed:", error);
+      this.logger.error("[BalanceManager] Health check failed:", error);
       return false;
     }
   }

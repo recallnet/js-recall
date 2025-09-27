@@ -1,9 +1,16 @@
 import * as crypto from "crypto";
 import { DatabaseError } from "pg";
+import { Logger } from "pino";
 import { generateNonce } from "siwe";
-import { v4 as uuidv4 } from "uuid";
 import { recoverMessageAddress } from "viem";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
+import { UserRepository } from "@recallnet/db/repositories/user";
 import {
   InsertAgent,
   SelectAgent,
@@ -14,54 +21,14 @@ import type {
   SelectPerpsRiskMetrics,
 } from "@recallnet/db/schema/trading/types";
 
-import { config } from "@/config/index.js";
-import * as agentNonceRepo from "@/database/repositories/agent-nonce-repository.js";
-import {
-  count,
-  countByName,
-  countByWallet,
-  create,
-  deactivateAgent,
-  deleteAgent,
-  findAgentCompetitions,
-  findAll,
-  findByApiKeyHash,
-  findByCompetition,
-  findById,
-  findByIds,
-  findByName,
-  findByOwnerId,
-  findByWallet,
-  findUserAgentCompetitions,
-  getBulkAgentTrophies,
-  reactivateAgent,
-  searchAgents,
-  update,
-} from "@/database/repositories/agent-repository.js";
-import {
-  findBestPlacementForAgent,
-  getAgentRankingsInCompetitions,
-  getBoundedSnapshots,
-  getBulkAgentCompetitionRankings,
-  getBulkBoundedSnapshots,
-} from "@/database/repositories/competition-repository.js";
-import { getBulkAgentMetrics } from "@/database/repositories/leaderboard-repository.js";
-import {
-  countBulkAgentPositionsInCompetitions,
-  getBulkAgentRiskMetrics,
-} from "@/database/repositories/perps-repository.js";
-import { countBulkAgentTradesInCompetitions } from "@/database/repositories/trade-repository.js";
-import { findByWalletAddress as findUserByWalletAddress } from "@/database/repositories/user-repository.js";
-import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
-import { generateHandleFromName } from "@/lib/handle-utils.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { AgentMetricsHelper } from "@/services/agent-metrics-helper.js";
-import { BalanceService } from "@/services/balance.service.js";
-import { EmailService } from "@/services/email.service.js";
-import { PriceTrackerService } from "@/services/price-tracker.service.js";
-import type { UserService } from "@/services/user.service.js";
-import type { AgentWithMetrics } from "@/types/agent-metrics.js";
+import { AgentMetricsHelper } from "./agent-metrics-helper.js";
+import { BalanceService } from "./balance.service.js";
+import { EmailService } from "./email.service.js";
+import { decryptApiKey, hashApiKey } from "./lib/api-key-utils.js";
+import { generateHandleFromName } from "./lib/handle-utils.js";
+import { PriceTrackerService } from "./price-tracker.service.js";
+import type { AgentWithMetrics } from "./types/agent-metrics.js";
+import { ApiError } from "./types/index.js";
 import {
   AgentCompetitionsParams,
   AgentMetadata,
@@ -72,8 +39,9 @@ import {
   EnhancedCompetition,
   PagingParams,
   PagingParamsSchema,
-} from "@/types/index.js";
-import { AgentQueryParams } from "@/types/sort/agent.js";
+} from "./types/index.js";
+import { AgentQueryParams } from "./types/sort/agent.js";
+import type { UserService } from "./user.service.js";
 
 /**
  * Enhanced balance with price data and chain information
@@ -103,11 +71,35 @@ export class AgentService {
   // User service for validating user existence
   private userService: UserService;
 
+  private agentRepository: AgentRepository;
+  private agentNonceRepository: AgentNonceRepository;
+  private competitionRepository: CompetitionRepository;
+  private leaderboardRepository: LeaderboardRepository;
+  private perpsRepository: PerpsRepository;
+  private tradeRepository: TradeRepository;
+  private userRepository: UserRepository;
+
+  private rootEncryptionKey: string;
+
+  private apiDomain: string;
+
+  private logger: Logger;
+
   constructor(
     emailService: EmailService,
     balanceService: BalanceService,
     priceTrackerService: PriceTrackerService,
     userService: UserService,
+    agentRepository: AgentRepository,
+    agentNonceRepository: AgentNonceRepository,
+    competitionRepository: CompetitionRepository,
+    leaderboardRepository: LeaderboardRepository,
+    perpsRepository: PerpsRepository,
+    tradeRepository: TradeRepository,
+    userRepository: UserRepository,
+    rootEncryptionKey: string,
+    apiDomain: string,
+    logger: Logger,
   ) {
     this.apiKeyCache = new Map();
     this.inactiveAgentsCache = new Map();
@@ -115,6 +107,16 @@ export class AgentService {
     this.balanceService = balanceService;
     this.priceTrackerService = priceTrackerService;
     this.userService = userService;
+    this.agentRepository = agentRepository;
+    this.agentNonceRepository = agentNonceRepository;
+    this.competitionRepository = competitionRepository;
+    this.leaderboardRepository = leaderboardRepository;
+    this.perpsRepository = perpsRepository;
+    this.tradeRepository = tradeRepository;
+    this.userRepository = userRepository;
+    this.rootEncryptionKey = rootEncryptionKey;
+    this.apiDomain = apiDomain;
+    this.logger = logger;
   }
 
   /**
@@ -164,7 +166,7 @@ export class AgentService {
       }
 
       // Generate agent ID
-      const id = uuidv4();
+      const id = crypto.randomUUID();
 
       // Generate API key (longer, more secure format)
       const apiKey = this.generateApiKey();
@@ -195,7 +197,7 @@ export class AgentService {
       // Store in database
       let savedAgent;
       try {
-        savedAgent = await create(agent);
+        savedAgent = await this.agentRepository.create(agent);
       } catch (error) {
         if (error instanceof DatabaseError) {
           // Check for unique constraint violations
@@ -229,7 +231,7 @@ export class AgentService {
         key: apiKey,
       });
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Created agent: ${name} (${id}) for owner ${ownerId}`,
       );
 
@@ -239,7 +241,7 @@ export class AgentService {
         apiKey, // Return unencrypted key
       };
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error creating agent:", error);
+      this.logger.error("[AgentManager] Error creating agent:", error);
       if (error instanceof ApiError) {
         throw error;
       }
@@ -316,9 +318,9 @@ export class AgentService {
    */
   async getAgent(agentId: string) {
     try {
-      return await findById(agentId);
+      return await this.agentRepository.findById(agentId);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error retrieving agent ${agentId}:`,
         error,
       );
@@ -333,9 +335,9 @@ export class AgentService {
    */
   async getAgentsByOwner(ownerId: string, pagingParams: PagingParams) {
     try {
-      return await findByOwnerId(ownerId, pagingParams);
+      return await this.agentRepository.findByOwnerId(ownerId, pagingParams);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error retrieving agents for owner ${ownerId}:`,
         error,
       );
@@ -350,13 +352,14 @@ export class AgentService {
    */
   async getAgentBestPlacement(agentId: string) {
     try {
-      const bestPlacement = await findBestPlacementForAgent(agentId);
+      const bestPlacement =
+        await this.competitionRepository.findBestPlacementForAgent(agentId);
       if (!bestPlacement) {
         return null;
       }
       return bestPlacement;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error retrieving agent rank for ${agentId}:`,
         error,
       );
@@ -374,9 +377,9 @@ export class AgentService {
       if (agentIds.length === 0) {
         return [];
       }
-      return await findByIds(agentIds);
+      return await this.agentRepository.findByIds(agentIds);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         "[AgentManager] Error retrieving agents by IDs:",
         error,
       );
@@ -446,7 +449,7 @@ export class AgentService {
 
       // Use hash-based lookup for O(1) performance
       const apiKeyHash = hashApiKey(apiKey);
-      const agent = await findByApiKeyHash(apiKeyHash);
+      const agent = await this.agentRepository.findByApiKeyHash(apiKeyHash);
 
       if (!agent) {
         return null;
@@ -457,7 +460,7 @@ export class AgentService {
 
       return agent.id;
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error validating API key:", error);
+      this.logger.error("[AgentManager] Error validating API key:", error);
       throw error; // Re-throw to allow middleware to handle it
     }
   }
@@ -473,7 +476,7 @@ export class AgentService {
 
     // Combine with a prefix and separator underscore for readability
     const key = `${segment1}_${segment2}`;
-    serviceLogger.debug(
+    this.logger.debug(
       `[AgentManager] Generated API key with length: ${key.length}`,
     );
     return key;
@@ -486,7 +489,7 @@ export class AgentService {
    */
   public encryptApiKey(key: string): string {
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Encrypting API key with length: ${key.length}`,
       );
       const algorithm = "aes-256-cbc";
@@ -495,7 +498,7 @@ export class AgentService {
       // Create a consistently-sized key from the root encryption key
       const cryptoKey = crypto
         .createHash("sha256")
-        .update(String(config.security.rootEncryptionKey))
+        .update(String(this.rootEncryptionKey))
         .digest();
 
       const cipher = crypto.createCipheriv(algorithm, cryptoKey, iv);
@@ -504,12 +507,12 @@ export class AgentService {
 
       // Return the IV and encrypted data together, clearly separated
       const result = `${iv.toString("hex")}:${encrypted}`;
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Encrypted key length: ${result.length}`,
       );
       return result;
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error encrypting API key:", error);
+      this.logger.error("[AgentManager] Error encrypting API key:", error);
       throw new Error("Failed to encrypt API key");
     }
   }
@@ -533,7 +536,7 @@ export class AgentService {
   }> {
     try {
       // Get the agent
-      const agent = await findById(agentId);
+      const agent = await this.agentRepository.findById(agentId);
 
       if (!agent) {
         return {
@@ -547,7 +550,7 @@ export class AgentService {
         // Decrypt the API key using shared utility
         const apiKey = decryptApiKey(
           agent.apiKey,
-          String(config.security.rootEncryptionKey),
+          String(this.rootEncryptionKey),
         );
         return {
           success: true,
@@ -559,7 +562,7 @@ export class AgentService {
           },
         };
       } catch (decryptError) {
-        serviceLogger.error(
+        this.logger.error(
           `[AgentManager] Error decrypting API key for agent ${agentId}:`,
           decryptError,
         );
@@ -570,7 +573,7 @@ export class AgentService {
         };
       }
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error retrieving decrypted API key for agent ${agentId}:`,
         error,
       );
@@ -587,10 +590,10 @@ export class AgentService {
    */
   async isHealthy() {
     try {
-      const res = await count();
+      const res = await this.agentRepository.count();
       return res >= 0;
     } catch (error) {
-      serviceLogger.error("[AgentManager] Health check failed:", error);
+      this.logger.error("[AgentManager] Health check failed:", error);
       return false;
     }
   }
@@ -603,10 +606,10 @@ export class AgentService {
   async deleteAgent(agentId: string) {
     try {
       // Get the agent to find its API key
-      const agent = await findById(agentId);
+      const agent = await this.agentRepository.findById(agentId);
 
       if (!agent) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[AgentManager] Agent not found for deletion: ${agentId}`,
         );
         return false;
@@ -624,21 +627,21 @@ export class AgentService {
       }
 
       // Delete the agent from the database
-      const deleted = await deleteAgent(agentId);
+      const deleted = await this.agentRepository.deleteAgent(agentId);
 
       if (deleted) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[AgentManager] Successfully deleted agent: ${agent.name} (${agentId})`,
         );
       } else {
-        serviceLogger.debug(
+        this.logger.debug(
           `[AgentManager] Failed to delete agent: ${agent.name} (${agentId})`,
         );
       }
 
       return deleted;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error deleting agent ${agentId}:`,
         error,
       );
@@ -656,15 +659,18 @@ export class AgentService {
    */
   async deactivateAgent(agentId: string, reason: string) {
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Deactivating agent: ${agentId}, Reason: ${reason}`,
       );
 
       // Call repository to deactivate the agent
-      const deactivatedAgent = await deactivateAgent(agentId, reason);
+      const deactivatedAgent = await this.agentRepository.deactivateAgent(
+        agentId,
+        reason,
+      );
 
       if (!deactivatedAgent) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[AgentManager] Agent not found for deactivation: ${agentId}`,
         );
         return null;
@@ -676,13 +682,13 @@ export class AgentService {
         date: deactivatedAgent.deactivationDate || new Date(),
       });
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Successfully deactivated agent: ${deactivatedAgent.name} (${agentId})`,
       );
 
       return deactivatedAgent;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error deactivating agent ${agentId}:`,
         error,
       );
@@ -699,13 +705,14 @@ export class AgentService {
    */
   async reactivateAgent(agentId: string) {
     try {
-      serviceLogger.debug(`[AgentManager] Reactivating agent: ${agentId}`);
+      this.logger.debug(`[AgentManager] Reactivating agent: ${agentId}`);
 
       // Call repository to reactivate the agent
-      const reactivatedAgent = await reactivateAgent(agentId);
+      const reactivatedAgent =
+        await this.agentRepository.reactivateAgent(agentId);
 
       if (!reactivatedAgent) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[AgentManager] Agent not found for reactivation: ${agentId}`,
         );
         return null;
@@ -714,13 +721,13 @@ export class AgentService {
       // Remove from inactive cache
       this.inactiveAgentsCache.delete(agentId);
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Successfully reactivated agent: ${reactivatedAgent.name} (${agentId})`,
       );
 
       return reactivatedAgent;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error reactivating agent ${agentId}:`,
         error,
       );
@@ -737,14 +744,14 @@ export class AgentService {
    */
   async updateAgent(agent: InsertAgent) {
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Updating agent: ${agent.id} (${agent.name})`,
       );
 
       // Check if agent exists
-      const existingAgent = await findById(agent.id);
+      const existingAgent = await this.agentRepository.findById(agent.id);
       if (!existingAgent) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[AgentManager] Agent not found for update: ${agent.id}`,
         );
         return undefined;
@@ -756,9 +763,9 @@ export class AgentService {
       // Save to database
       let updatedAgent;
       try {
-        updatedAgent = await update(agent);
+        updatedAgent = await this.agentRepository.update(agent);
         if (!updatedAgent) {
-          serviceLogger.debug(
+          this.logger.debug(
             `[AgentManager] Failed to update agent: ${agent.id}`,
           );
           return undefined;
@@ -790,7 +797,7 @@ export class AgentService {
         throw error;
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Successfully updated agent: ${updatedAgent.name} (${agent.id})`,
       );
       return updatedAgent;
@@ -800,7 +807,7 @@ export class AgentService {
         throw error;
       }
 
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error updating agent ${agent.id}:`,
         error,
       );
@@ -817,12 +824,12 @@ export class AgentService {
    */
   async resetApiKey(agentId: string) {
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Resetting API key for agent: ${agentId}`,
       );
 
       // Get the agent
-      const agent = await findById(agentId);
+      const agent = await this.agentRepository.findById(agentId);
       if (!agent) {
         throw new Error(`Agent with ID ${agentId} not found`);
       }
@@ -842,7 +849,7 @@ export class AgentService {
       agent.updatedAt = new Date();
 
       // Save the updated agent to the database
-      const updatedAgent = await update(agent);
+      const updatedAgent = await this.agentRepository.update(agent);
       if (!updatedAgent) {
         throw new Error(`Failed to update API key for agent ${agentId}`);
       }
@@ -861,7 +868,7 @@ export class AgentService {
         key: newApiKey,
       });
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Successfully reset API key for agent: ${agentId}`,
       );
 
@@ -874,7 +881,7 @@ export class AgentService {
         },
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error resetting API key for agent ${agentId}:`,
         error,
       );
@@ -889,20 +896,20 @@ export class AgentService {
    */
   async searchAgents(searchParams: AgentSearchParams): Promise<AgentPublic[]> {
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Searching for agents with params:`,
         searchParams,
       );
 
       // Get matching agents from repository
-      const agents = await searchAgents(searchParams);
+      const agents = await this.agentRepository.searchAgents(searchParams);
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Found ${agents.length} agents matching search criteria`,
       );
       return agents.map(this.sanitizeAgent.bind(this));
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error searching agents:", error);
+      this.logger.error("[AgentManager] Error searching agents:", error);
       return [];
     }
   }
@@ -918,20 +925,23 @@ export class AgentService {
     params: AgentQueryParams,
   ) {
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Retrieving agents for competition ${competitionId} with params:`,
         params,
       );
 
       // Get agents from repository
-      const { agents, total } = await findByCompetition(competitionId, params);
+      const { agents, total } = await this.agentRepository.findByCompetition(
+        competitionId,
+        params,
+      );
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Found ${agents.length} agents for competition ${competitionId}`,
       );
       return { agents, total };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error retrieving agents for competition ${competitionId}:`,
         error,
       );
@@ -955,13 +965,16 @@ export class AgentService {
         ...filters,
         ...paging,
       };
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Retrieving competitions for agent ${agentId} with params:`,
         params,
       );
 
       // Get competitions from repository
-      const results = await findAgentCompetitions(agentId, params);
+      const results = await this.agentRepository.findAgentCompetitions(
+        agentId,
+        params,
+      );
 
       // Filter out null competitions and ensure required fields are present
       const validCompetitions = results.competitions.filter(
@@ -988,7 +1001,7 @@ export class AgentService {
         finalCompetitions = finalCompetitions.slice(startIndex, endIndex);
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Found ${results.total} competitions for agent ${agentId}`,
       );
       return {
@@ -996,7 +1009,7 @@ export class AgentService {
         total: results.total,
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error retrieving competitions for agent ${agentId}:`,
         error,
       );
@@ -1015,7 +1028,7 @@ export class AgentService {
     params: AgentCompetitionsParams,
   ) {
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Retrieving competitions for user ${userId} agents with params:`,
         params,
       );
@@ -1062,7 +1075,7 @@ export class AgentService {
       const agentIds = userAgents.map((agent) => agent.id);
 
       if (agentIds.length === 0) {
-        serviceLogger.debug(`[AgentManager] User ${userId} has no agents`);
+        this.logger.debug(`[AgentManager] User ${userId} has no agents`);
         return { competitions: [], total: 0 };
       }
 
@@ -1073,7 +1086,7 @@ export class AgentService {
       };
 
       // Use optimized repository method that handles both database and computed sorting efficiently
-      const results = await findUserAgentCompetitions(
+      const results = await this.agentRepository.findUserAgentCompetitions(
         agentIds,
         competitionParams,
       );
@@ -1140,10 +1153,11 @@ export class AgentService {
             // TODO: here we have a lookup that happens if we need computed
             // sort and inside a loop over all competitions and if we need
             // a "RankFallback". We might want to refactor this logic.
-            const bulkRankings = await getBulkAgentCompetitionRankings(
-              comp.id,
-              agentIds,
-            );
+            const bulkRankings =
+              await this.competitionRepository.getBulkAgentCompetitionRankings(
+                comp.id,
+                agentIds,
+              );
 
             // Apply bulk ranking results
             for (const { agent } of agentsNeedingRankFallback) {
@@ -1254,10 +1268,11 @@ export class AgentService {
           const agentIds = agentsNeedingRankFallback.map(
             ({ agent }) => agent.id,
           );
-          const bulkRankings = await getBulkAgentCompetitionRankings(
-            compId,
-            agentIds,
-          );
+          const bulkRankings =
+            await this.competitionRepository.getBulkAgentCompetitionRankings(
+              compId,
+              agentIds,
+            );
 
           // Apply bulk ranking results
           for (const { agent } of agentsNeedingRankFallback) {
@@ -1286,7 +1301,7 @@ export class AgentService {
         );
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AgentManager] Found ${results.total} competitions containing agents owned by user ${userId}`,
       );
 
@@ -1300,7 +1315,7 @@ export class AgentService {
         competitions: sortedCompetitions,
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error retrieving competitions for user ${userId} agents:`,
         error,
       );
@@ -1326,13 +1341,16 @@ export class AgentService {
     pagingParams: PagingParams;
   }): Promise<SelectAgent[]> {
     if (filter?.length === 42) {
-      return findByWallet({ walletAddress: filter, pagingParams });
+      return this.agentRepository.findByWallet({
+        walletAddress: filter,
+        pagingParams,
+      });
     }
     if (typeof filter === "string" && filter.length > 0) {
-      return findByName({ name: filter, pagingParams });
+      return this.agentRepository.findByName({ name: filter, pagingParams });
     }
 
-    return findAll(pagingParams);
+    return this.agentRepository.findAll(pagingParams);
   }
 
   /**
@@ -1342,13 +1360,13 @@ export class AgentService {
    */
   async countAgents(filter?: string) {
     if (filter?.length === 42) {
-      return countByWallet(filter);
+      return this.agentRepository.countByWallet(filter);
     }
     if (filter?.length) {
-      return countByName(filter);
+      return this.agentRepository.countByName(filter);
     }
 
-    return count();
+    return this.agentRepository.count();
   }
 
   /**
@@ -1371,7 +1389,7 @@ export class AgentService {
   async attachAgentMetrics(
     sanitizedAgent: AgentPublic,
   ): Promise<AgentWithMetrics> {
-    serviceLogger.debug(
+    this.logger.debug(
       `[AgentManager] Attaching metrics for single agent ${sanitizedAgent.id}`,
     );
 
@@ -1401,7 +1419,7 @@ export class AgentService {
       return [];
     }
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[AgentManager] Attaching bulk metrics for ${sanitizedAgents.length} agents`,
     );
 
@@ -1410,8 +1428,8 @@ export class AgentService {
 
       // Get raw metrics and trophies in parallel
       const [rawMetrics, bulkTrophies] = await Promise.all([
-        getBulkAgentMetrics(agentIds),
-        getBulkAgentTrophies(agentIds),
+        this.leaderboardRepository.getBulkAgentMetrics(agentIds),
+        this.agentRepository.getBulkAgentTrophies(agentIds),
       ]);
 
       // Transform raw metrics using the helper
@@ -1435,7 +1453,7 @@ export class AgentService {
           AgentMetricsHelper.createEmptyMetrics(agent.id);
         const trophies = trophiesMap.get(agent.id) || [];
 
-        serviceLogger.debug(
+        this.logger.debug(
           `[AgentManager] Using bulk trophies: ${trophies.length} trophies for agent ${agent.id}`,
         );
 
@@ -1446,7 +1464,7 @@ export class AgentService {
         );
       });
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         "[AgentManager] Error in attachBulkAgentMetrics:",
         error,
       );
@@ -1457,7 +1475,10 @@ export class AgentService {
 
   async getAgentPerformanceForComp(agentId: string, competitionId: string) {
     // Get oldest and newest snapshots for agent in competition
-    const agentSnapshots = await getBoundedSnapshots(competitionId, agentId);
+    const agentSnapshots = await this.competitionRepository.getBoundedSnapshots(
+      competitionId,
+      agentId,
+    );
     const latestSnapshot = agentSnapshots?.newest; // Already ordered by timestamp desc
     const portfolioValue = latestSnapshot
       ? Number(latestSnapshot.totalValue)
@@ -1518,16 +1539,28 @@ export class AgentService {
         rankingsMap,
         riskMetricsMap,
       ] = await Promise.all([
-        getBulkBoundedSnapshots(agentId, competitionIds),
+        this.competitionRepository.getBulkBoundedSnapshots(
+          agentId,
+          competitionIds,
+        ),
         paperTradingIds.length > 0
-          ? countBulkAgentTradesInCompetitions(agentId, paperTradingIds)
+          ? this.tradeRepository.countBulkAgentTradesInCompetitions(
+              agentId,
+              paperTradingIds,
+            )
           : Promise.resolve(new Map<string, number>()),
         perpsIds.length > 0
-          ? countBulkAgentPositionsInCompetitions(agentId, perpsIds)
+          ? this.perpsRepository.countBulkAgentPositionsInCompetitions(
+              agentId,
+              perpsIds,
+            )
           : Promise.resolve(new Map<string, number>()),
-        getAgentRankingsInCompetitions(agentId, competitionIds),
+        this.competitionRepository.getAgentRankingsInCompetitions(
+          agentId,
+          competitionIds,
+        ),
         perpsIds.length > 0
-          ? getBulkAgentRiskMetrics(agentId, perpsIds)
+          ? this.perpsRepository.getBulkAgentRiskMetrics(agentId, perpsIds)
           : Promise.resolve(new Map<string, SelectPerpsRiskMetrics>()),
       ]);
 
@@ -1583,7 +1616,7 @@ export class AgentService {
         }
       });
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error attaching bulk competition metrics for agent ${agentId}:`,
         error,
       );
@@ -1767,7 +1800,7 @@ export class AgentService {
       const { timestamp, domain, purpose, nonce } = parseResult;
 
       // Validate message content using config
-      if (domain !== config.api.domain) {
+      if (domain !== this.apiDomain) {
         return { success: false, error: "Invalid domain" };
       }
 
@@ -1822,7 +1855,7 @@ export class AgentService {
           })
         ).toLowerCase();
       } catch (error) {
-        serviceLogger.error(
+        this.logger.error(
           "[AgentManager] Error recovering wallet address:",
           error,
         );
@@ -1830,7 +1863,8 @@ export class AgentService {
       }
 
       // Check cross-table uniqueness
-      const existingUser = await findUserByWalletAddress(walletAddress);
+      const existingUser =
+        await this.userRepository.findByWalletAddress(walletAddress);
       if (existingUser) {
         return {
           success: false,
@@ -1838,7 +1872,7 @@ export class AgentService {
         };
       }
 
-      const existingAgents = await findByWallet({
+      const existingAgents = await this.agentRepository.findByWallet({
         walletAddress,
         pagingParams: { limit: 1, offset: 0, sort: "createdAt" },
       });
@@ -1870,7 +1904,7 @@ export class AgentService {
 
       return { success: true, walletAddress };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         "[AgentManager] Error in verifyWalletOwnership:",
         error,
       );
@@ -1924,7 +1958,7 @@ export class AgentService {
         nonce,
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         "[AgentManager] Error parsing verification message:",
         error,
       );
@@ -1950,11 +1984,11 @@ export class AgentService {
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
       // Clean up any existing nonces for this agent to keep table clean
-      await agentNonceRepo.deleteByAgentId(agentId);
+      await this.agentNonceRepository.deleteByAgentId(agentId);
 
       // Store in database
-      await agentNonceRepo.create({
-        id: uuidv4(),
+      await this.agentNonceRepository.create({
+        id: crypto.randomUUID(),
         agentId,
         nonce,
         expiresAt,
@@ -1962,7 +1996,7 @@ export class AgentService {
 
       return { success: true, nonce };
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error generating nonce:", error);
+      this.logger.error("[AgentManager] Error generating nonce:", error);
       return { success: false, error: "Failed to generate nonce" };
     }
   }
@@ -1982,7 +2016,7 @@ export class AgentService {
   }> {
     try {
       // Find the nonce
-      const nonceRecord = await agentNonceRepo.findByNonce(nonce);
+      const nonceRecord = await this.agentNonceRepository.findByNonce(nonce);
 
       if (!nonceRecord) {
         return { success: false, error: "Invalid nonce" };
@@ -2004,11 +2038,11 @@ export class AgentService {
       }
 
       // Mark nonce as used
-      await agentNonceRepo.markAsUsed(nonce);
+      await this.agentNonceRepository.markAsUsed(nonce);
 
       return { success: true };
     } catch (error) {
-      serviceLogger.error("[AgentManager] Error validating nonce:", error);
+      this.logger.error("[AgentManager] Error validating nonce:", error);
       return { success: false, error: "Failed to validate nonce" };
     }
   }
@@ -2019,9 +2053,9 @@ export class AgentService {
    */
   async cleanupExpiredNonces(): Promise<number> {
     try {
-      return await agentNonceRepo.deleteExpired();
+      return await this.agentNonceRepository.deleteExpired();
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         "[AgentManager] Error cleaning up expired nonces:",
         error,
       );
@@ -2074,7 +2108,7 @@ export class AgentService {
 
       return enhancedBalances;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AgentManager] Error getting enhanced balances for agent ${agentId}:`,
         error,
       );

@@ -1,8 +1,9 @@
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import { v4 as uuidv4 } from "uuid";
+import { Logger } from "pino";
 
+import { AdminRepository } from "@recallnet/db/repositories/admin";
 import {
   InsertAdmin,
   SelectAdmin,
@@ -10,28 +11,12 @@ import {
   SelectUser,
 } from "@recallnet/db/schema/core/types";
 
-import { config, reloadSecurityConfig } from "@/config/index.js";
-import {
-  count,
-  create,
-  deleteAdmin,
-  findAll,
-  findByEmail,
-  findById,
-  findByUsername,
-  searchAdmins,
-  setApiKey,
-  update,
-  updateLastLogin,
-  updatePassword,
-} from "@/database/repositories/admin-repository.js";
-import { checkUserUniqueConstraintViolation } from "@/lib/error-utils.js";
-import { generateHandleFromName } from "@/lib/handle-utils.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { AgentService } from "@/services/agent.service.js";
-import { UserService } from "@/services/user.service.js";
-import { AdminMetadata, SearchAdminsParams } from "@/types/index.js";
+import { AgentService } from "./agent.service.js";
+import { checkUserUniqueConstraintViolation } from "./lib/error-utils.js";
+import { generateHandleFromName } from "./lib/handle-utils.js";
+import { ApiError } from "./types/index.js";
+import { AdminMetadata, SearchAdminsParams } from "./types/index.js";
+import { UserService } from "./user.service.js";
 
 /**
  * Admin Service
@@ -43,15 +28,30 @@ export class AdminService {
   // Cache for admin profiles by ID
   private adminProfileCache: Map<string, SelectAdmin>; // adminId -> admin profile
 
+  private adminRepository: AdminRepository;
+
   // Service dependencies
   private userService: UserService;
   private agentService: AgentService;
 
-  constructor(userService: UserService, agentService: AgentService) {
+  private rootEncryptionKey: string;
+
+  private logger: Logger;
+
+  constructor(
+    adminRepository: AdminRepository,
+    userService: UserService,
+    agentService: AgentService,
+    rootEncryptionKey: string,
+    logger: Logger,
+  ) {
     this.apiKeyCache = new Map();
     this.adminProfileCache = new Map();
+    this.adminRepository = adminRepository;
     this.userService = userService;
     this.agentService = agentService;
+    this.rootEncryptionKey = rootEncryptionKey;
+    this.logger = logger;
   }
 
   /**
@@ -62,7 +62,7 @@ export class AdminService {
       // Find the correct .env file based on environment
       const envFile = process.env.NODE_ENV === "test" ? ".env.test" : ".env";
       const envPath = path.resolve(process.cwd(), envFile);
-      serviceLogger.info(`Checking for ${envFile} file at: ${envPath}`);
+      this.logger.info(`Checking for ${envFile} file at: ${envPath}`);
 
       if (fs.existsSync(envPath)) {
         const envContent = fs.readFileSync(envPath, "utf8");
@@ -84,7 +84,7 @@ export class AdminService {
             !currentValue.includes("replace_in_production")
           ) {
             // Key exists and seems to be a proper key already
-            serviceLogger.info("ROOT_ENCRYPTION_KEY already exists in .env");
+            this.logger.info("ROOT_ENCRYPTION_KEY already exists in .env");
             needsNewKey = false;
           }
         }
@@ -92,7 +92,7 @@ export class AdminService {
         if (needsNewKey) {
           // Generate a new secure encryption key
           const newEncryptionKey = crypto.randomBytes(32).toString("hex");
-          serviceLogger.info("Generated new ROOT_ENCRYPTION_KEY");
+          this.logger.info("Generated new ROOT_ENCRYPTION_KEY");
 
           // Update the .env file
           let updatedEnvContent = envContent;
@@ -111,23 +111,21 @@ export class AdminService {
           }
 
           fs.writeFileSync(envPath, updatedEnvContent);
-          serviceLogger.info(`Updated ROOT_ENCRYPTION_KEY in ${envFile} file`);
+          this.logger.info(`Updated ROOT_ENCRYPTION_KEY in ${envFile} file`);
 
           // We need to update the process.env with the new key for it to be used immediately
           process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
 
           // Reload the configuration to pick up the new encryption key
-          reloadSecurityConfig();
+          this.rootEncryptionKey = newEncryptionKey;
 
-          serviceLogger.info(
-            "✅ Configuration reloaded with new encryption key",
-          );
+          this.logger.info("✅ Configuration reloaded with new encryption key");
         }
       } else {
-        serviceLogger.error(`${envFile} file not found at expected location`);
+        this.logger.error(`${envFile} file not found at expected location`);
       }
     } catch (envError) {
-      serviceLogger.error("Error updating ROOT_ENCRYPTION_KEY:", envError);
+      this.logger.error("Error updating ROOT_ENCRYPTION_KEY:", envError);
       // Continue with admin setup even if the env update fails
     }
   }
@@ -142,7 +140,7 @@ export class AdminService {
     name?: string,
   ): Promise<{ admin: SelectAdmin; apiKey: string }> {
     // Generate admin ID
-    const id = uuidv4();
+    const id = crypto.randomUUID();
 
     // Hash password
     const passwordHash = await this.hashPassword(password);
@@ -165,13 +163,13 @@ export class AdminService {
     };
 
     // Store in database
-    const savedAdmin = await create(admin);
+    const savedAdmin = await this.adminRepository.create(admin);
 
     // Update cache
     this.apiKeyCache.set(apiKey, id);
     this.adminProfileCache.set(id, savedAdmin);
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[AdminManager] Setup initial admin: ${username} (${id})`,
     );
 
@@ -220,14 +218,14 @@ export class AdminService {
       };
     } catch (error) {
       if (error instanceof Error) {
-        serviceLogger.error(
+        this.logger.error(
           "[AdminManager] Error setting up initial admin:",
           error,
         );
         throw error;
       }
 
-      serviceLogger.error(
+      this.logger.error(
         "[AdminManager] Unknown error setting up admin:",
         error,
       );
@@ -260,19 +258,23 @@ export class AdminService {
       }
 
       // Check for existing username
-      const existingByUsername = await findByUsername(username.toLowerCase());
+      const existingByUsername = await this.adminRepository.findByUsername(
+        username.toLowerCase(),
+      );
       if (existingByUsername) {
         throw new Error(`Admin with username ${username} already exists`);
       }
 
       // Check for existing email
-      const existingByEmail = await findByEmail(email.toLowerCase());
+      const existingByEmail = await this.adminRepository.findByEmail(
+        email.toLowerCase(),
+      );
       if (existingByEmail) {
         throw new Error(`Admin with email ${email} already exists`);
       }
 
       // Generate admin ID
-      const id = uuidv4();
+      const id = crypto.randomUUID();
 
       // Hash password
       const passwordHash = await this.hashPassword(password);
@@ -291,24 +293,21 @@ export class AdminService {
       };
 
       // Store in database
-      const savedAdmin = await create(admin);
+      const savedAdmin = await this.adminRepository.create(admin);
 
       // Update cache
       this.adminProfileCache.set(id, savedAdmin);
 
-      serviceLogger.debug(`[AdminManager] Created admin: ${username} (${id})`);
+      this.logger.debug(`[AdminManager] Created admin: ${username} (${id})`);
 
       return savedAdmin;
     } catch (error) {
       if (error instanceof Error) {
-        serviceLogger.error("[AdminManager] Error creating admin:", error);
+        this.logger.error("[AdminManager] Error creating admin:", error);
         throw error;
       }
 
-      serviceLogger.error(
-        "[AdminManager] Unknown error creating admin:",
-        error,
-      );
+      this.logger.error("[AdminManager] Unknown error creating admin:", error);
       throw new Error(`Failed to create admin: ${error}`);
     }
   }
@@ -327,7 +326,7 @@ export class AdminService {
       }
 
       // Get from database
-      const admin = await findById(adminId);
+      const admin = await this.adminRepository.findById(adminId);
 
       // Update cache if found
       if (admin) {
@@ -337,7 +336,7 @@ export class AdminService {
 
       return null;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error retrieving admin ${adminId}:`,
         error,
       );
@@ -351,7 +350,7 @@ export class AdminService {
    */
   async getAllAdmins(): Promise<SelectAdmin[]> {
     try {
-      const admins = await findAll();
+      const admins = await this.adminRepository.findAll();
 
       // Update cache with all admins
       admins.forEach((admin) => {
@@ -360,7 +359,7 @@ export class AdminService {
 
       return admins;
     } catch (error) {
-      serviceLogger.error("[AdminManager] Error retrieving all admins:", error);
+      this.logger.error("[AdminManager] Error retrieving all admins:", error);
       return [];
     }
   }
@@ -375,7 +374,7 @@ export class AdminService {
   ): Promise<SelectAdmin> {
     try {
       const now = new Date();
-      const updatedAdmin = await update({
+      const updatedAdmin = await this.adminRepository.update({
         ...admin,
         updatedAt: now,
       });
@@ -383,10 +382,10 @@ export class AdminService {
       // Update cache
       this.adminProfileCache.set(admin.id, updatedAdmin);
 
-      serviceLogger.debug(`[AdminManager] Updated admin: ${admin.id}`);
+      this.logger.debug(`[AdminManager] Updated admin: ${admin.id}`);
       return updatedAdmin;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error updating admin ${admin.id}:`,
         error,
       );
@@ -404,10 +403,10 @@ export class AdminService {
   async deleteAdmin(adminId: string) {
     try {
       // Get admin first for cache cleanup
-      const admin = await findById(adminId);
+      const admin = await this.adminRepository.findById(adminId);
 
       // Delete from database
-      const deleted = await deleteAdmin(adminId);
+      const deleted = await this.adminRepository.deleteAdmin(adminId);
 
       if (deleted && admin) {
         // Clean up cache
@@ -423,18 +422,16 @@ export class AdminService {
           }
         }
 
-        serviceLogger.debug(
+        this.logger.debug(
           `[AdminManager] Successfully deleted admin: ${admin.username} (${adminId})`,
         );
       } else {
-        serviceLogger.debug(
-          `[AdminManager] Failed to delete admin: ${adminId}`,
-        );
+        this.logger.debug(`[AdminManager] Failed to delete admin: ${adminId}`);
       }
 
       return deleted;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error deleting admin ${adminId}:`,
         error,
       );
@@ -455,7 +452,9 @@ export class AdminService {
     password: string,
   ): Promise<string | null> {
     try {
-      const admin = await findByUsername(username.toLowerCase());
+      const admin = await this.adminRepository.findByUsername(
+        username.toLowerCase(),
+      );
       if (!admin || admin.status !== "active") {
         return null;
       }
@@ -473,7 +472,7 @@ export class AdminService {
 
       return admin.id;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error authenticating admin ${username}:`,
         error,
       );
@@ -499,7 +498,7 @@ export class AdminService {
       }
 
       // If not in cache, search all admins
-      const admins = await findAll();
+      const admins = await this.adminRepository.findAll();
 
       for (const admin of admins) {
         if (admin.apiKey && admin.status === "active") {
@@ -516,7 +515,7 @@ export class AdminService {
               return admin.id;
             }
           } catch (decryptError) {
-            serviceLogger.error(
+            this.logger.error(
               `[AdminManager] Error decrypting API key for admin ${admin.id}:`,
               decryptError,
             );
@@ -528,7 +527,7 @@ export class AdminService {
 
       return null;
     } catch (error) {
-      serviceLogger.error("[AdminManager] Error validating API key:", error);
+      this.logger.error("[AdminManager] Error validating API key:", error);
       return null;
     }
   }
@@ -544,17 +543,17 @@ export class AdminService {
       const encryptedApiKey = this.encryptApiKey(apiKey);
 
       // Update admin with new API key
-      await setApiKey(adminId, encryptedApiKey);
+      await this.adminRepository.setApiKey(adminId, encryptedApiKey);
 
       // Update cache
       this.apiKeyCache.set(apiKey, adminId);
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AdminManager] Generated new API key for admin: ${adminId}`,
       );
       return apiKey;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error generating API key for admin ${adminId}:`,
         error,
       );
@@ -582,7 +581,7 @@ export class AdminService {
       // Generate new API key
       return await this.generateApiKeyForAdmin(adminId);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error resetting API key for admin ${adminId}:`,
         error,
       );
@@ -605,7 +604,7 @@ export class AdminService {
         .toString("hex");
       return `${salt}:${hash}`;
     } catch (error) {
-      serviceLogger.error("[AdminManager] Error hashing password:", error);
+      this.logger.error("[AdminManager] Error hashing password:", error);
       throw new Error("Failed to hash password");
     }
   }
@@ -622,13 +621,13 @@ export class AdminService {
       }
 
       const passwordHash = await this.hashPassword(newPassword);
-      await updatePassword(adminId, passwordHash);
+      await this.adminRepository.updatePassword(adminId, passwordHash);
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AdminManager] Updated password for admin: ${adminId}`,
       );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error updating password for admin ${adminId}:`,
         error,
       );
@@ -646,7 +645,7 @@ export class AdminService {
    */
   async validatePassword(adminId: string, password: string): Promise<boolean> {
     try {
-      const admin = await findById(adminId);
+      const admin = await this.adminRepository.findById(adminId);
       if (!admin || !admin.passwordHash) {
         return false;
       }
@@ -661,7 +660,7 @@ export class AdminService {
         .toString("hex");
       return testHash === hash;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error validating password for admin ${adminId}:`,
         error,
       );
@@ -675,9 +674,9 @@ export class AdminService {
    */
   async updateLastLogin(adminId: string): Promise<void> {
     try {
-      await updateLastLogin(adminId);
+      await this.adminRepository.updateLastLogin(adminId);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error updating last login for admin ${adminId}:`,
         error,
       );
@@ -695,7 +694,7 @@ export class AdminService {
       const admin = await this.getAdmin(adminId);
       return admin?.status === "active";
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error checking admin status ${adminId}:`,
         error,
       );
@@ -710,7 +709,7 @@ export class AdminService {
    */
   async suspendAdmin(adminId: string, reason: string): Promise<void> {
     try {
-      await update({
+      await this.adminRepository.update({
         id: adminId,
         status: "suspended",
         metadata: { suspensionReason: reason, suspensionDate: new Date() },
@@ -720,11 +719,11 @@ export class AdminService {
       // Remove from cache
       this.adminProfileCache.delete(adminId);
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[AdminManager] Suspended admin: ${adminId}, reason: ${reason}`,
       );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error suspending admin ${adminId}:`,
         error,
       );
@@ -740,7 +739,7 @@ export class AdminService {
    */
   async reactivateAdmin(adminId: string): Promise<void> {
     try {
-      await update({
+      await this.adminRepository.update({
         id: adminId,
         status: "active",
         metadata: { reactivationDate: new Date() },
@@ -750,9 +749,9 @@ export class AdminService {
       // Remove from cache to force refresh
       this.adminProfileCache.delete(adminId);
 
-      serviceLogger.debug(`[AdminManager] Reactivated admin: ${adminId}`);
+      this.logger.debug(`[AdminManager] Reactivated admin: ${adminId}`);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[AdminManager] Error reactivating admin ${adminId}:`,
         error,
       );
@@ -769,9 +768,9 @@ export class AdminService {
    */
   async searchAdmins(searchParams: SearchAdminsParams) {
     try {
-      return await searchAdmins(searchParams);
+      return await this.adminRepository.searchAdmins(searchParams);
     } catch (error) {
-      serviceLogger.error("[AdminManager] Error searching admins:", error);
+      this.logger.error("[AdminManager] Error searching admins:", error);
       return [];
     }
   }
@@ -787,7 +786,7 @@ export class AdminService {
 
     // Combine with a prefix and separator underscore for readability
     const key = `${segment1}_${segment2}`;
-    serviceLogger.debug(
+    this.logger.debug(
       `[AdminManager] Generated API key with length: ${key.length}`,
     );
     return key;
@@ -800,7 +799,7 @@ export class AdminService {
    */
   private encryptApiKey(key: string): string {
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[AdminManager] Encrypting API key with length: ${key.length}`,
       );
       const algorithm = "aes-256-cbc";
@@ -809,7 +808,7 @@ export class AdminService {
       // Create a consistently-sized key from the root encryption key
       const cryptoKey = crypto
         .createHash("sha256")
-        .update(String(config.security.rootEncryptionKey))
+        .update(String(this.rootEncryptionKey))
         .digest();
 
       const cipher = crypto.createCipheriv(algorithm, cryptoKey, iv);
@@ -818,12 +817,12 @@ export class AdminService {
 
       // Return the IV and encrypted data together, clearly separated
       const result = `${iv.toString("hex")}:${encrypted}`;
-      serviceLogger.debug(
+      this.logger.debug(
         `[AdminManager] Encrypted key length: ${result.length}`,
       );
       return result;
     } catch (error) {
-      serviceLogger.error("[AdminManager] Error encrypting API key:", error);
+      this.logger.error("[AdminManager] Error encrypting API key:", error);
       throw new Error("Failed to encrypt API key");
     }
   }
@@ -848,7 +847,7 @@ export class AdminService {
       // Create a consistently-sized key from the root encryption key
       const cryptoKey = crypto
         .createHash("sha256")
-        .update(String(config.security.rootEncryptionKey))
+        .update(String(this.rootEncryptionKey))
         .digest();
 
       const decipher = crypto.createDecipheriv(algorithm, cryptoKey, iv);
@@ -857,7 +856,7 @@ export class AdminService {
 
       return decrypted;
     } catch (error) {
-      serviceLogger.error("[AdminManager] Error decrypting API key:", error);
+      this.logger.error("[AdminManager] Error decrypting API key:", error);
       throw error;
     }
   }
@@ -868,10 +867,10 @@ export class AdminService {
    */
   async isHealthy(): Promise<boolean> {
     try {
-      const res = await count();
+      const res = await this.adminRepository.count();
       return res >= 0;
     } catch (error) {
-      serviceLogger.error("[AdminManager] Health check failed:", error);
+      this.logger.error("[AdminManager] Health check failed:", error);
       return false;
     }
   }
@@ -945,7 +944,7 @@ export class AdminService {
             walletAddress: agentWalletAddress,
           });
         } catch (error) {
-          serviceLogger.error("Error creating agent for user:", error);
+          this.logger.error("Error creating agent for user:", error);
           // If agent creation fails, we still return the user but note the agent error
           agentError =
             error instanceof Error ? error.message : "Failed to create agent";
@@ -958,7 +957,7 @@ export class AdminService {
         agentError,
       };
     } catch (error) {
-      serviceLogger.error("[AdminManager] Error registering user:", error);
+      this.logger.error("[AdminManager] Error registering user:", error);
 
       if (error instanceof Error) {
         // Check for invalid wallet address errors
@@ -995,7 +994,7 @@ export class AdminService {
   clearCache(): void {
     this.apiKeyCache.clear();
     this.adminProfileCache.clear();
-    serviceLogger.debug("[AdminManager] All caches cleared");
+    this.logger.debug("[AdminManager] All caches cleared");
   }
 
   /**

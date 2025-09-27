@@ -1,17 +1,12 @@
 import { Decimal } from "decimal.js";
+import { Logger } from "pino";
 
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import type {
   InsertPerpsRiskMetrics,
   SelectPerpsRiskMetrics,
 } from "@recallnet/db/schema/trading/types";
-
-import {
-  calculateMaxDrawdownSQL,
-  findById as findCompetitionById,
-  getFirstAndLastSnapshots,
-} from "@/database/repositories/competition-repository.js";
-import { saveRiskMetrics } from "@/database/repositories/perps-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
 
 /**
  * Result of calculating and saving risk metrics
@@ -30,6 +25,20 @@ export interface RiskMetricsResult {
 export class CalmarRatioService {
   private readonly DAYS_PER_YEAR = 365; // Calendar days for annualization
 
+  private competitionRepo: CompetitionRepository;
+  private perpsRepo: PerpsRepository;
+  private logger: Logger;
+
+  constructor(
+    competitionRepo: CompetitionRepository,
+    perpsRepo: PerpsRepository,
+    logger: Logger,
+  ) {
+    this.competitionRepo = competitionRepo;
+    this.perpsRepo = perpsRepo;
+    this.logger = logger;
+  }
+
   /**
    * Calculate and persist Calmar Ratio with all risk metrics
    * Uses simple returns: (endValue/startValue) - 1
@@ -43,12 +52,12 @@ export class CalmarRatioService {
     competitionId: string,
   ): Promise<RiskMetricsResult> {
     try {
-      serviceLogger.info(
+      this.logger.info(
         `[CalmarRatio] Calculating Calmar Ratio for agent ${agentId} in competition ${competitionId}`,
       );
 
       // 1. Get competition dates
-      const competition = await findCompetitionById(competitionId);
+      const competition = await this.competitionRepo.findById(competitionId);
       if (!competition) {
         throw new Error(`Competition ${competitionId} not found`);
       }
@@ -62,17 +71,20 @@ export class CalmarRatioService {
         ? new Date(competition.endDate)
         : new Date();
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[CalmarRatio] Competition period: ${startDate.toISOString()} to ${endDate.toISOString()}`,
       );
 
       // 2. Calculate simple return from first and last portfolio snapshots
       // Since transfers are prohibited, we can use simple return: (endValue/startValue) - 1
       const { first: startSnapshot, last: endSnapshot } =
-        await getFirstAndLastSnapshots(competitionId, agentId);
+        await this.competitionRepo.getFirstAndLastSnapshots(
+          competitionId,
+          agentId,
+        );
 
       if (!startSnapshot || !endSnapshot) {
-        serviceLogger.warn(
+        this.logger.warn(
           `[CalmarRatio] No portfolio snapshots found for agent ${agentId}`,
         );
         throw new Error("Insufficient data: No portfolio snapshots found");
@@ -82,7 +94,7 @@ export class CalmarRatioService {
       const endValue = new Decimal(endSnapshot.totalValue);
 
       if (startValue.isZero()) {
-        serviceLogger.warn(
+        this.logger.warn(
           `[CalmarRatio] Starting value is zero for agent ${agentId}`,
         );
         throw new Error("Invalid data: Starting portfolio value is zero");
@@ -90,21 +102,21 @@ export class CalmarRatioService {
 
       const simpleReturn = endValue.minus(startValue).dividedBy(startValue);
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[CalmarRatio] Simple return calculated: ${(simpleReturn.toNumber() * 100).toFixed(4)}% (${startValue.toFixed(2)} → ${endValue.toFixed(2)})`,
       );
 
       // 3. Calculate Max Drawdown using SQL
       // Use the same time period as the return calculation (snapshot dates, not competition dates)
       // This ensures consistent risk metrics over the same time window
-      const maxDrawdown = await calculateMaxDrawdownSQL(
+      const maxDrawdown = await this.competitionRepo.calculateMaxDrawdownSQL(
         agentId,
         competitionId,
         startSnapshot.timestamp, // Use first snapshot date
         endSnapshot.timestamp, // Use last snapshot date
       );
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[CalmarRatio] Max drawdown calculated: ${(maxDrawdown * 100).toFixed(4)}%`,
       );
 
@@ -115,7 +127,7 @@ export class CalmarRatioService {
         (1000 * 60 * 60 * 24);
       const annualizedReturn = this.annualizeReturn(simpleReturn, daysInPeriod);
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[CalmarRatio] Annualized return: ${(annualizedReturn.toNumber() * 100).toFixed(4)}% over ${daysInPeriod.toFixed(1)} days`,
       );
 
@@ -125,7 +137,7 @@ export class CalmarRatioService {
         maxDrawdown,
       );
 
-      serviceLogger.info(
+      this.logger.info(
         `[CalmarRatio] Calculated metrics for agent ${agentId}: Calmar=${calmarRatio.toFixed(4)}, Return=${(simpleReturn.toNumber() * 100).toFixed(2)}%, Drawdown=${(maxDrawdown * 100).toFixed(2)}%`,
       );
 
@@ -140,15 +152,13 @@ export class CalmarRatioService {
         snapshotCount: 2, // We only use first and last snapshots
       };
 
-      const savedMetrics = await saveRiskMetrics(metricsData);
+      const savedMetrics = await this.perpsRepo.saveRiskMetrics(metricsData);
 
-      serviceLogger.info(
-        `[CalmarRatio] Saved risk metrics for agent ${agentId}`,
-      );
+      this.logger.info(`[CalmarRatio] Saved risk metrics for agent ${agentId}`);
 
       return { metrics: savedMetrics };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CalmarRatio] Error calculating Calmar Ratio for agent ${agentId}:`,
         error,
       );
@@ -169,7 +179,7 @@ export class CalmarRatioService {
     daysInPeriod: number,
   ): Decimal {
     if (daysInPeriod <= 0) {
-      serviceLogger.warn(
+      this.logger.warn(
         `[CalmarRatio] Invalid period length: ${daysInPeriod} days`,
       );
       return new Decimal(0);
@@ -213,7 +223,7 @@ export class CalmarRatioService {
       // No drawdown
       if (annualizedReturn.greaterThan(0)) {
         // Positive return with no drawdown - cap at 100
-        serviceLogger.debug(
+        this.logger.debug(
           `[CalmarRatio] No drawdown with positive return, capping Calmar at 100`,
         );
         return new Decimal(100);
