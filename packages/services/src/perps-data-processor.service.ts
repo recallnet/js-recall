@@ -1,30 +1,17 @@
 import { Decimal } from "decimal.js";
+import { Logger } from "pino";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import type {
   InsertPerpetualPosition,
   InsertPerpsAccountSummary,
 } from "@recallnet/db/schema/trading/types";
 
-import { findByIds as findAgentsByIds } from "@/database/repositories/agent-repository.js";
-import {
-  batchCreatePortfolioSnapshots,
-  createPortfolioSnapshot,
-  findById as findCompetitionById,
-  getCompetitionAgents,
-} from "@/database/repositories/competition-repository.js";
-import {
-  batchSyncAgentsPerpsData,
-  getCompetitionPerpsPositions,
-  getLatestPerpsAccountSummary,
-  getPerpsCompetitionConfig,
-  getPerpsCompetitionStats,
-  getPerpsPositions,
-  syncAgentPerpsData,
-} from "@/database/repositories/perps-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { CalmarRatioService } from "@/services/calmar-ratio.service.js";
-import { PerpsMonitoringService } from "@/services/perps-monitoring.service.js";
-import { PerpsProviderFactory } from "@/services/providers/perps-provider.factory.js";
+import { CalmarRatioService } from "./calmar-ratio.service.js";
+import { PerpsMonitoringService } from "./perps-monitoring.service.js";
+import { PerpsProviderFactory } from "./providers/perps-provider.factory.js";
 import type {
   AgentPerpsSyncResult,
   BatchPerpsSyncResult,
@@ -37,7 +24,7 @@ import type {
   PerpsPosition,
   PerpsProviderConfig,
   SuccessfulAgentSync,
-} from "@/types/perps.js";
+} from "./types/perps.js";
 
 // Configure Decimal.js for financial calculations
 // Setting precision and rounding mode as suggested in the GitHub comment
@@ -55,8 +42,24 @@ Decimal.set({
  * Orchestrates fetching data from providers and storing in database
  */
 export class PerpsDataProcessor {
-  constructor() {
-    // No initialization needed
+  private calmarRatioService: CalmarRatioService;
+  private agentRepo: AgentRepository;
+  private competitionRepo: CompetitionRepository;
+  private perpsRepo: PerpsRepository;
+  private logger: Logger;
+
+  constructor(
+    calmarRatioService: CalmarRatioService,
+    agentRepo: AgentRepository,
+    competitionRepo: CompetitionRepository,
+    perpsRepo: PerpsRepository,
+    logger: Logger,
+  ) {
+    this.calmarRatioService = calmarRatioService;
+    this.agentRepo = agentRepo;
+    this.competitionRepo = competitionRepo;
+    this.perpsRepo = perpsRepo;
+    this.logger = logger;
   }
 
   /**
@@ -145,7 +148,7 @@ export class PerpsDataProcessor {
       return decimal.toFixed();
     } catch (error) {
       // If Decimal.js can't handle it, log and return null
-      serviceLogger.warn(
+      this.logger.warn(
         `[PerpsDataProcessor] Failed to convert number to string: ${value}`,
         error,
       );
@@ -207,7 +210,7 @@ export class PerpsDataProcessor {
     const startTime = Date.now();
 
     try {
-      serviceLogger.info(
+      this.logger.info(
         `[PerpsDataProcessor] Processing agent ${agentId} for competition ${competitionId}`,
       );
 
@@ -228,7 +231,7 @@ export class PerpsDataProcessor {
       );
 
       // 4. Store everything in a transaction
-      const syncResult = await syncAgentPerpsData(
+      const syncResult = await this.perpsRepo.syncAgentPerpsData(
         agentId,
         competitionId,
         dbPositions,
@@ -241,7 +244,7 @@ export class PerpsDataProcessor {
         accountSummary.totalEquity != null && !isNaN(accountSummary.totalEquity)
           ? accountSummary.totalEquity
           : 0;
-      await createPortfolioSnapshot({
+      await this.competitionRepo.createPortfolioSnapshot({
         agentId,
         competitionId,
         timestamp: new Date(),
@@ -250,7 +253,7 @@ export class PerpsDataProcessor {
 
       const processingTime = Date.now() - startTime;
 
-      serviceLogger.info(
+      this.logger.info(
         `[PerpsDataProcessor] Processed agent ${agentId}: ` +
           `equity=$${accountSummary.totalEquity?.toFixed(2) ?? "N/A"}, ` +
           `positions=${positions.length}, ` +
@@ -259,7 +262,7 @@ export class PerpsDataProcessor {
 
       return syncResult;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsDataProcessor] Error processing agent ${agentId}: ${error}`,
       );
       throw error;
@@ -284,7 +287,7 @@ export class PerpsDataProcessor {
 
     const startTime = Date.now();
 
-    serviceLogger.info(
+    this.logger.info(
       `[PerpsDataProcessor] Starting batch processing for ${agents.length} agents`,
     );
 
@@ -300,7 +303,7 @@ export class PerpsDataProcessor {
       for (let i = 0; i < agents.length; i += PROVIDER_BATCH_SIZE) {
         const batch = agents.slice(i, i + PROVIDER_BATCH_SIZE);
 
-        serviceLogger.debug(
+        this.logger.debug(
           `[PerpsDataProcessor] Processing batch ${Math.floor(i / PROVIDER_BATCH_SIZE) + 1}/${Math.ceil(agents.length / PROVIDER_BATCH_SIZE)} ` +
             `(agents ${i + 1}-${Math.min(i + batch.length, agents.length)} of ${agents.length})`,
         );
@@ -363,7 +366,7 @@ export class PerpsDataProcessor {
 
             fetchFailures.push({ agentId: agent.agentId, error });
 
-            serviceLogger.error(
+            this.logger.error(
               `[PerpsDataProcessor] Failed to fetch data for agent ${agent.agentId}: ${error.message}`,
             );
           }
@@ -392,7 +395,8 @@ export class PerpsDataProcessor {
       }
 
       // Batch sync all agent data
-      const batchResult = await batchSyncAgentsPerpsData(syncDataForDb);
+      const batchResult =
+        await this.perpsRepo.batchSyncAgentsPerpsData(syncDataForDb);
 
       // Prepare portfolio snapshots for successful syncs
       const now = new Date();
@@ -422,12 +426,14 @@ export class PerpsDataProcessor {
       // Batch create all portfolio snapshots at once
       if (snapshotsToCreate.length > 0) {
         try {
-          await batchCreatePortfolioSnapshots(snapshotsToCreate);
-          serviceLogger.debug(
+          await this.competitionRepo.batchCreatePortfolioSnapshots(
+            snapshotsToCreate,
+          );
+          this.logger.debug(
             `[PerpsDataProcessor] Created ${snapshotsToCreate.length} portfolio snapshots`,
           );
         } catch (error) {
-          serviceLogger.warn(
+          this.logger.warn(
             `[PerpsDataProcessor] Failed to create portfolio snapshots: ${error}`,
           );
           // Continue processing - snapshot failures shouldn't fail the entire batch
@@ -439,7 +445,7 @@ export class PerpsDataProcessor {
       // Merge fetch failures with sync failures for complete error reporting
       const allFailures = [...fetchFailures, ...batchResult.failed];
 
-      serviceLogger.info(
+      this.logger.info(
         `[PerpsDataProcessor] Batch processing completed: ` +
           `${batchResult.successful.length} successful, ` +
           `${allFailures.length} failed (${fetchFailures.length} fetch, ${batchResult.failed.length} sync), ` +
@@ -453,7 +459,7 @@ export class PerpsDataProcessor {
         agents,
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsDataProcessor] Batch processing failed: ${error}`,
       );
 
@@ -484,15 +490,16 @@ export class PerpsDataProcessor {
       throw new Error("[PerpsDataProcessor] Provider is required");
     }
 
-    serviceLogger.info(
+    this.logger.info(
       `[PerpsDataProcessor] Processing all agents for competition ${competitionId}`,
     );
 
     // Get competition agents
-    const agentIds = await getCompetitionAgents(competitionId);
+    const agentIds =
+      await this.competitionRepo.getCompetitionAgents(competitionId);
 
     if (agentIds.length === 0) {
-      serviceLogger.info(
+      this.logger.info(
         `[PerpsDataProcessor] No agents found for competition ${competitionId}`,
       );
 
@@ -505,7 +512,7 @@ export class PerpsDataProcessor {
     }
 
     // Fetch agent details
-    const agents = await findAgentsByIds(agentIds);
+    const agents = await this.agentRepo.findByIds(agentIds);
 
     // Filter out agents without wallet addresses and map to required format
     const agentData = agents
@@ -520,7 +527,7 @@ export class PerpsDataProcessor {
 
     if (agentData.length < agents.length) {
       const missingCount = agents.length - agentData.length;
-      serviceLogger.warn(
+      this.logger.warn(
         `[PerpsDataProcessor] ${missingCount} agents have no wallet address and will be skipped`,
       );
     }
@@ -534,7 +541,7 @@ export class PerpsDataProcessor {
    * @returns Competition configuration or null if not found
    */
   async getCompetitionConfig(competitionId: string) {
-    return getPerpsCompetitionConfig(competitionId);
+    return this.perpsRepo.getPerpsCompetitionConfig(competitionId);
   }
 
   /**
@@ -543,10 +550,10 @@ export class PerpsDataProcessor {
    * @returns True if competition is configured for perps
    */
   async isPerpsCompetition(competitionId: string): Promise<boolean> {
-    const competition = await findCompetitionById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
 
     if (!competition) {
-      serviceLogger.warn(
+      this.logger.warn(
         `[PerpsDataProcessor] Competition ${competitionId} not found`,
       );
       return false;
@@ -572,8 +579,8 @@ export class PerpsDataProcessor {
       // If either the competition or config is missing/fails, the entire process
       // should stop - there's no value in partial data at this level.
       const [competition, perpsConfig] = await Promise.all([
-        findCompetitionById(competitionId),
-        getPerpsCompetitionConfig(competitionId),
+        this.competitionRepo.findById(competitionId),
+        this.perpsRepo.getPerpsCompetitionConfig(competitionId),
       ]);
 
       if (!competition) {
@@ -608,7 +615,7 @@ export class PerpsDataProcessor {
         competitionStartDate = competition.startDate; // Now safely non-null
 
         if (competitionStartDate > new Date()) {
-          serviceLogger.warn(
+          this.logger.warn(
             `[PerpsDataProcessor] Competition ${competitionId} hasn't started yet (starts ${competitionStartDate.toISOString()})`,
           );
           // Skip processing for competitions that haven't started
@@ -638,7 +645,7 @@ export class PerpsDataProcessor {
         perpsConfig.dataSourceConfig,
       );
 
-      serviceLogger.info(
+      this.logger.info(
         `[PerpsDataProcessor] Processing perps competition ${competitionId} with provider ${provider.getName()}`,
       );
 
@@ -651,7 +658,7 @@ export class PerpsDataProcessor {
       syncResult = result;
       const { accountSummaries, agents } = result;
 
-      serviceLogger.info(
+      this.logger.info(
         `[PerpsDataProcessor] Data sync complete: ${syncResult.successful.length} successful, ${syncResult.failed.length} failed`,
       );
 
@@ -663,7 +670,7 @@ export class PerpsDataProcessor {
         this.shouldRunMonitoring(earlyThreshold) &&
         syncResult.successful.length > 0
       ) {
-        serviceLogger.info(
+        this.logger.info(
           `[PerpsDataProcessor] Running self-funding monitoring for competition ${competitionId}`,
         );
 
@@ -704,7 +711,7 @@ export class PerpsDataProcessor {
           alertsCreated: monitorResult.totalAlertsCreated,
         };
 
-        serviceLogger.info(
+        this.logger.info(
           `[PerpsDataProcessor] Monitoring complete: ${monitoringResult.alertsCreated} alerts created`,
         );
       }
@@ -713,7 +720,7 @@ export class PerpsDataProcessor {
       let calmarRatioResult;
       if (competition.status === "active" && syncResult.successful.length > 0) {
         try {
-          serviceLogger.info(
+          this.logger.info(
             `[PerpsDataProcessor] Calculating Calmar Ratios for ${syncResult.successful.length} agents`,
           );
 
@@ -722,11 +729,11 @@ export class PerpsDataProcessor {
             syncResult.successful,
           );
 
-          serviceLogger.info(
+          this.logger.info(
             `[PerpsDataProcessor] Calmar Ratio calculations complete: ${calmarRatioResult.successful} successful, ${calmarRatioResult.failed} failed`,
           );
         } catch (error) {
-          serviceLogger.error(
+          this.logger.error(
             `[PerpsDataProcessor] Error calculating Calmar Ratios:`,
             error,
           );
@@ -745,7 +752,7 @@ export class PerpsDataProcessor {
         calmarRatioResult,
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsDataProcessor] Error processing perps competition ${competitionId}:`,
         error,
       );
@@ -782,7 +789,6 @@ export class PerpsDataProcessor {
       return { successful: 0, failed: 0 };
     }
 
-    const calmarService = new CalmarRatioService();
     const results: Required<CalmarRatioCalculationResult> = {
       successful: 0,
       failed: 0,
@@ -809,7 +815,6 @@ export class PerpsDataProcessor {
       const batchResults = await this.processBatchWithRetries(
         batch,
         competitionId,
-        calmarService,
         MAX_RETRIES,
       );
 
@@ -825,7 +830,7 @@ export class PerpsDataProcessor {
 
           const agent = batch[idx];
           if (!agent) {
-            serviceLogger.error(
+            this.logger.error(
               `[PerpsDataProcessor] Batch index mismatch at index ${idx}`,
             );
             return;
@@ -850,7 +855,7 @@ export class PerpsDataProcessor {
       if (batchFailureRate >= BATCH_FAILURE_THRESHOLD) {
         failedBatches++;
 
-        serviceLogger.warn(
+        this.logger.warn(
           `[PerpsDataProcessor] Batch failure detected: ${batchFailures}/${batch.length} agents failed ` +
             `(${Math.round(batchFailureRate * 100)}% failure rate)`,
         );
@@ -859,7 +864,7 @@ export class PerpsDataProcessor {
       // Check for systemic failure across all batches (lower threshold)
       const systemicFailureRate = failedBatches / totalBatches;
       if (systemicFailureRate >= SYSTEMIC_FAILURE_THRESHOLD) {
-        serviceLogger.error(
+        this.logger.error(
           `[PerpsDataProcessor] SYSTEMIC FAILURE DETECTED: ${Math.round(systemicFailureRate * 100)}% of batches ` +
             `are failing (${failedBatches}/${totalBatches} batches with ≥${Math.round(BATCH_FAILURE_THRESHOLD * 100)}% failure). ` +
             `Latest batch: ${batchFailures}/${batch.length} failed. ` +
@@ -880,7 +885,7 @@ export class PerpsDataProcessor {
         (i + batch.length) % 50 === 0 ||
         i + batch.length >= successfulAgents.length
       ) {
-        serviceLogger.info(
+        this.logger.info(
           `[PerpsDataProcessor] Calmar calculation progress: ${i + batch.length}/${successfulAgents.length} agents processed`,
         );
       }
@@ -892,7 +897,7 @@ export class PerpsDataProcessor {
       const logLevel =
         finalSystemicRate >= SYSTEMIC_FAILURE_THRESHOLD ? "error" : "warn";
 
-      serviceLogger[logLevel](
+      this.logger[logLevel](
         `[PerpsDataProcessor] Completed with degraded performance: ${failedBatches}/${totalBatches} batches ` +
           `had ≥${Math.round(BATCH_FAILURE_THRESHOLD * 100)}% failure rate ` +
           `(systemic rate: ${Math.round(finalSystemicRate * 100)}%). ` +
@@ -902,7 +907,7 @@ export class PerpsDataProcessor {
 
     // Log if we hit the error cap
     if (results.errors.length > MAX_ERRORS_TO_STORE) {
-      serviceLogger.warn(
+      this.logger.warn(
         `[PerpsDataProcessor] Error array capped at ${MAX_ERRORS_TO_STORE} entries. Total failures: ${results.failed}`,
       );
     }
@@ -926,7 +931,6 @@ export class PerpsDataProcessor {
   private async processBatchWithRetries(
     batch: SuccessfulAgentSync[],
     competitionId: string,
-    calmarService: CalmarRatioService,
     maxRetries: number,
   ): Promise<Array<{ success: boolean; error?: string }>> {
     return Promise.all(
@@ -940,21 +944,21 @@ export class PerpsDataProcessor {
                 1000 * Math.pow(2, attempt - 2), // 1s, 2s, 4s
                 10000, // Max 10 seconds
               );
-              serviceLogger.debug(
+              this.logger.debug(
                 `[PerpsDataProcessor] Retrying Calmar calculation for agent ${agent.agentId} ` +
                   `(attempt ${attempt}/${maxRetries + 1}) after ${backoffDelay}ms`,
               );
               await new Promise((resolve) => setTimeout(resolve, backoffDelay));
             }
 
-            await calmarService.calculateAndSaveCalmarRatio(
+            await this.calmarRatioService.calculateAndSaveCalmarRatio(
               agent.agentId,
               competitionId,
             );
 
             // Success! Log if it was a retry
             if (attempt > 1) {
-              serviceLogger.info(
+              this.logger.info(
                 `[PerpsDataProcessor] Calmar calculation succeeded for agent ${agent.agentId} on attempt ${attempt}`,
               );
             }
@@ -964,14 +968,14 @@ export class PerpsDataProcessor {
             // Log the failure
             const errorMsg =
               error instanceof Error ? error.message : String(error);
-            serviceLogger.warn(
+            this.logger.warn(
               `[PerpsDataProcessor] Calmar calculation failed for agent ${agent.agentId} ` +
                 `(attempt ${attempt}/${maxRetries + 1}): ${errorMsg}`,
             );
 
             // If this was the last attempt, return failure
             if (attempt === maxRetries + 1) {
-              serviceLogger.error(
+              this.logger.error(
                 `[PerpsDataProcessor] Calmar calculation failed for agent ${agent.agentId} after ${maxRetries + 1} attempts`,
               );
               return { success: false, error: errorMsg };
@@ -995,9 +999,9 @@ export class PerpsDataProcessor {
     competitionId: string,
   ): Promise<PerpsCompetitionStats> {
     try {
-      return await getPerpsCompetitionStats(competitionId);
+      return await this.perpsRepo.getPerpsCompetitionStats(competitionId);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsDataProcessor] Error getting competition stats for ${competitionId}:`,
         error,
       );
@@ -1018,9 +1022,13 @@ export class PerpsDataProcessor {
     status?: string,
   ) {
     try {
-      return await getPerpsPositions(agentId, competitionId, status);
+      return await this.perpsRepo.getPerpsPositions(
+        agentId,
+        competitionId,
+        status,
+      );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsDataProcessor] Error getting positions for agent ${agentId}:`,
         error,
       );
@@ -1036,9 +1044,12 @@ export class PerpsDataProcessor {
    */
   async getAgentAccountSummary(agentId: string, competitionId: string) {
     try {
-      return await getLatestPerpsAccountSummary(agentId, competitionId);
+      return await this.perpsRepo.getLatestPerpsAccountSummary(
+        agentId,
+        competitionId,
+      );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsDataProcessor] Error getting account summary for agent ${agentId}:`,
         error,
       );
@@ -1062,14 +1073,14 @@ export class PerpsDataProcessor {
     statusFilter?: string,
   ) {
     try {
-      return await getCompetitionPerpsPositions(
+      return await this.perpsRepo.getCompetitionPerpsPositions(
         competitionId,
         limit,
         offset,
         statusFilter,
       );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsDataProcessor] Error getting competition positions for ${competitionId}:`,
         error,
       );

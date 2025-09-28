@@ -1,22 +1,17 @@
 import { Decimal } from "decimal.js";
+import { Logger } from "pino";
 
+import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import {
   InsertPerpsSelfFundingAlert,
   InsertPerpsTransferHistory,
 } from "@recallnet/db/schema/trading/types";
 
 import {
-  batchCreatePerpsSelfFundingAlerts,
-  batchGetAgentsSelfFundingAlerts,
-  batchSaveTransferHistory,
-  getPerpsCompetitionConfig,
-} from "@/database/repositories/perps-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
-import {
   IPerpsDataProvider,
   PerpsAccountSummary,
   Transfer,
-} from "@/types/perps.js";
+} from "./types/perps.js";
 
 /**
  * Alert creation data with detection details
@@ -60,6 +55,8 @@ interface AgentMonitoringResult {
  * Implements both transfer history and balance reconciliation detection methods
  */
 export class PerpsMonitoringService {
+  private perpsRepo: PerpsRepository;
+  private logger: Logger;
   // Default thresholds (in USD)
   // Competition rules: NO external deposits allowed during competition
   private static readonly DEFAULT_TRANSFER_THRESHOLD = 0; // Any deposit > $0 is suspicious
@@ -70,8 +67,13 @@ export class PerpsMonitoringService {
 
   constructor(
     private readonly provider: IPerpsDataProvider,
+    perpsRepo: PerpsRepository,
+    logger: Logger,
     config?: Partial<MonitoringConfig>,
   ) {
+    this.perpsRepo = perpsRepo;
+    this.logger = logger;
+
     // Initialize with defaults, allow overrides
     this.config = {
       transferThreshold:
@@ -85,7 +87,7 @@ export class PerpsMonitoringService {
         PerpsMonitoringService.DEFAULT_CRITICAL_THRESHOLD,
     };
 
-    serviceLogger.info(
+    this.logger.info(
       `[PerpsMonitoringService] Initialized with provider: ${provider.getName()}`,
       this.config,
     );
@@ -118,7 +120,7 @@ export class PerpsMonitoringService {
       return { successful: [], failed: [], totalAlertsCreated: 0 };
     }
 
-    serviceLogger.info(
+    this.logger.info(
       `[PerpsMonitoringService] Starting monitoring for ${agents.length} agents in competition ${competitionId}`,
     );
 
@@ -155,7 +157,7 @@ export class PerpsMonitoringService {
     results.forEach((result, index) => {
       const agent = agents[index];
       if (!agent) {
-        serviceLogger.error(
+        this.logger.error(
           `[PerpsMonitoringService] Unexpected missing agent at index ${index}`,
         );
         return;
@@ -182,21 +184,21 @@ export class PerpsMonitoringService {
     let totalAlertsCreated = 0;
     if (alertsToCreate.length > 0) {
       try {
-        await batchCreatePerpsSelfFundingAlerts(alertsToCreate);
+        await this.perpsRepo.batchCreatePerpsSelfFundingAlerts(alertsToCreate);
         totalAlertsCreated = alertsToCreate.length;
 
-        serviceLogger.warn(
+        this.logger.warn(
           `[PerpsMonitoringService] Created ${totalAlertsCreated} self-funding alerts`,
         );
       } catch (error) {
-        serviceLogger.error(
+        this.logger.error(
           `[PerpsMonitoringService] Failed to create alerts:`,
           error,
         );
       }
     }
 
-    serviceLogger.info(
+    this.logger.info(
       `[PerpsMonitoringService] Monitoring complete: ${successful.length} successful, ${failed.length} failed, ${totalAlertsCreated} alerts created`,
     );
 
@@ -212,7 +214,7 @@ export class PerpsMonitoringService {
   ): Promise<Map<string, Array<{ reviewed: boolean | null }>>> {
     try {
       // Batch method to fetch all alerts efficiently
-      const alertsMap = await batchGetAgentsSelfFundingAlerts(
+      const alertsMap = await this.perpsRepo.batchGetAgentsSelfFundingAlerts(
         agentIds,
         competitionId,
       );
@@ -221,7 +223,7 @@ export class PerpsMonitoringService {
       // which is compatible since SelectPerpsSelfFundingAlert includes reviewed field
       return alertsMap;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsMonitoringService] Failed to batch fetch alerts:`,
         error,
       );
@@ -254,7 +256,7 @@ export class PerpsMonitoringService {
       // Skip if we already have unreviewed alerts (treat null as unreviewed)
       const hasUnreviewedAlerts = existingAlerts.some((a) => !a.reviewed);
       if (hasUnreviewedAlerts) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[PerpsMonitoringService] Agent ${agent.agentId} already has unreviewed alerts, skipping`,
         );
         return { ...agent, alerts: [] };
@@ -268,7 +270,7 @@ export class PerpsMonitoringService {
         (await this.provider.getAccountSummary(agent.walletAddress));
 
       if (preFetchedSummary) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[PerpsMonitoringService] Using pre-fetched account summary for agent ${agent.agentId}`,
         );
       }
@@ -303,7 +305,7 @@ export class PerpsMonitoringService {
 
       return { ...agent, alerts };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsMonitoringService] Error monitoring agent ${agent.agentId}:`,
         error,
       );
@@ -391,7 +393,7 @@ export class PerpsMonitoringService {
         note += `${withdrawals.length} withdrawal(s) totaling $${totalWithdrawn.toFixed(2)}`;
       }
 
-      serviceLogger.warn(
+      this.logger.warn(
         `[PerpsMonitoringService] Transfer violation detected for agent ${agentId}: ${note}`,
       );
 
@@ -412,7 +414,7 @@ export class PerpsMonitoringService {
         accountSnapshot: accountSummary,
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsMonitoringService] Error checking transfer history:`,
         error,
       );
@@ -462,7 +464,7 @@ export class PerpsMonitoringService {
       return null;
     }
 
-    serviceLogger.warn(
+    this.logger.warn(
       `[PerpsMonitoringService] Balance reconciliation discrepancy for agent ${agentId}: ` +
         `Expected: $${expectedEquity.toFixed(2)}, Actual: $${totalEquity.toFixed(2)}, ` +
         `Unexplained: $${unexplainedAmount.toFixed(2)}`,
@@ -519,9 +521,10 @@ export class PerpsMonitoringService {
    */
   async shouldMonitorCompetition(competitionId: string): Promise<boolean> {
     try {
-      const config = await getPerpsCompetitionConfig(competitionId);
+      const config =
+        await this.perpsRepo.getPerpsCompetitionConfig(competitionId);
       if (!config) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[PerpsMonitoringService] No perps config found for competition ${competitionId}`,
         );
         return false;
@@ -537,7 +540,7 @@ export class PerpsMonitoringService {
       // Monitor if threshold is a valid number >= 0 (0 means any deposit is flagged)
       return !isNaN(threshold) && threshold >= 0;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsMonitoringService] Error checking competition config:`,
         error,
       );
@@ -574,15 +577,16 @@ export class PerpsMonitoringService {
       );
 
       // Batch save all transfers
-      const saved = await batchSaveTransferHistory(transferRecords);
+      const saved =
+        await this.perpsRepo.batchSaveTransferHistory(transferRecords);
 
-      serviceLogger.info(
+      this.logger.info(
         `[PerpsMonitoringService] Saved ${saved.length} transfers for violation detection (agent ${agentId} in competition ${competitionId})`,
       );
     } catch (error) {
       // Log error but don't fail the monitoring process
       // Primary goal is violation detection, saving is for audit trail
-      serviceLogger.error(
+      this.logger.error(
         `[PerpsMonitoringService] Failed to save transfer history:`,
         error,
       );

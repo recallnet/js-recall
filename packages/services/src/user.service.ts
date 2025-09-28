@@ -1,28 +1,15 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
+import { Logger } from "pino";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { UserRepository } from "@recallnet/db/repositories/user";
+import { VoteRepository } from "@recallnet/db/repositories/vote";
 import { InsertUser, SelectUser } from "@recallnet/db/schema/core/types";
-import { Transaction } from "@recallnet/db/types";
+import { Database, Transaction } from "@recallnet/db/types";
 
-import { db } from "@/database/db.js";
-import { updateAgentsOwner } from "@/database/repositories/agent-repository.js";
-import {
-  count,
-  create,
-  deleteUser,
-  findAll,
-  findByEmail,
-  findById,
-  findByPrivyId,
-  findByWalletAddress,
-  findDuplicateByWalletAddress,
-  searchUsers,
-  update,
-} from "@/database/repositories/user-repository.js";
-import { updateVotesOwner } from "@/database/repositories/vote-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { WalletWatchlist } from "@/lib/watchlist.js";
-import { EmailService } from "@/services/email.service.js";
-import { UserMetadata, UserSearchParams } from "@/types/index.js";
+import { EmailService } from "./email.service.js";
+import { WalletWatchlist } from "./lib/watchlist.js";
+import { UserMetadata, UserSearchParams } from "./types/index.js";
 
 /**
  * User Service
@@ -35,11 +22,28 @@ export class UserService {
   private userProfileCache: Map<string, SelectUser>; // userId -> user profile
   // Email service for sending verification emails
   private emailService: EmailService;
+  private agentRepo: AgentRepository;
+  private userRepo: UserRepository;
+  private voteRepo: VoteRepository;
+  private db: Database;
+  private logger: Logger;
 
-  constructor(emailService: EmailService) {
+  constructor(
+    emailService: EmailService,
+    agentRepo: AgentRepository,
+    userRepo: UserRepository,
+    voteRepo: VoteRepository,
+    db: Database,
+    logger: Logger,
+  ) {
     this.userWalletCache = new Map();
     this.userProfileCache = new Map();
     this.emailService = emailService;
+    this.agentRepo = agentRepo;
+    this.userRepo = userRepo;
+    this.voteRepo = voteRepo;
+    this.db = db;
+    this.logger = logger;
   }
 
   /**
@@ -94,7 +98,7 @@ export class UserService {
       // Create user record with subscription status
       // Note: the `newUserId` could be different than the `savedUserId` because registering a new
       // user will update on conflict—so the `id` will be original `user.id` in the database.
-      const newUserId = uuidv4();
+      const newUserId = randomUUID();
       const user: InsertUser = {
         id: newUserId,
         walletAddress: normalizedWalletAddress,
@@ -111,7 +115,7 @@ export class UserService {
       };
 
       // Store in database
-      let savedUser = await create(user);
+      let savedUser = await this.userRepo.create(user);
       const savedUserId = savedUser.id;
 
       // Attempt to subscribe to the email list after persistence
@@ -128,17 +132,20 @@ export class UserService {
           savedUser.isSubscribed !== true
         ) {
           // Persist subscription status to DB
-          savedUser = await update({ id: savedUserId, isSubscribed: true });
+          savedUser = await this.userRepo.update({
+            id: savedUserId,
+            isSubscribed: true,
+          });
         } else if (
           emailSubscriptionResult &&
           !emailSubscriptionResult.success
         ) {
-          serviceLogger.error(
+          this.logger.error(
             `[UserManager] Error subscribing user ${savedUser.id} to email list: ${emailSubscriptionResult.error}`,
           );
         }
       } catch (subErr) {
-        serviceLogger.error(
+        this.logger.error(
           `[UserManager] Unexpected error during email subscription for ${savedUser.id}:`,
           subErr,
         );
@@ -148,21 +155,18 @@ export class UserService {
       this.userWalletCache.set(normalizedWalletAddress, savedUserId);
       this.userProfileCache.set(savedUserId, savedUser);
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[UserManager] Registered user: ${name || "Unknown"} (${savedUserId}) with wallet ${normalizedWalletAddress}`,
       );
 
       return savedUser;
     } catch (error) {
       if (error instanceof Error) {
-        serviceLogger.error("[UserManager] Error registering user:", error);
+        this.logger.error("[UserManager] Error registering user:", error);
         throw error;
       }
 
-      serviceLogger.error(
-        "[UserManager] Unknown error registering user:",
-        error,
-      );
+      this.logger.error("[UserManager] Unknown error registering user:", error);
       throw new Error(`Failed to register user: ${error}`);
     }
   }
@@ -181,7 +185,7 @@ export class UserService {
       }
 
       // Get from database
-      const user = await findById(userId);
+      const user = await this.userRepo.findById(userId);
 
       // Update cache if found
       if (user) {
@@ -192,7 +196,7 @@ export class UserService {
 
       return null;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[UserManager] Error retrieving user ${userId}:`,
         error,
       );
@@ -206,7 +210,7 @@ export class UserService {
    */
   async getAllUsers(): Promise<SelectUser[]> {
     try {
-      const users = await findAll();
+      const users = await this.userRepo.findAll();
 
       // Update cache with all users
       users.forEach((user) => {
@@ -216,7 +220,7 @@ export class UserService {
 
       return users;
     } catch (error) {
-      serviceLogger.error("[UserManager] Error retrieving all users:", error);
+      this.logger.error("[UserManager] Error retrieving all users:", error);
       return [];
     }
   }
@@ -255,16 +259,27 @@ export class UserService {
 
       // Check if another account exists with this wallet address
       const duplicateAccount = user.walletAddress
-        ? await findDuplicateByWalletAddress(user.walletAddress, user.id)
+        ? await this.userRepo.findDuplicateByWalletAddress(
+            user.walletAddress,
+            user.id,
+          )
         : undefined;
 
-      const updatedUser = await db.transaction(async (tx) => {
+      const updatedUser = await this.db.transaction(async (tx) => {
         if (duplicateAccount) {
-          await updateAgentsOwner(duplicateAccount.id, user.id, tx);
-          await updateVotesOwner(duplicateAccount.id, user.id, tx);
+          await this.agentRepo.updateAgentsOwner(
+            duplicateAccount.id,
+            user.id,
+            tx,
+          );
+          await this.voteRepo.updateVotesOwner(
+            duplicateAccount.id,
+            user.id,
+            tx,
+          );
           await this.deleteUser(duplicateAccount.id, tx);
         }
-        const updatedUser = await update({ ...user }, tx);
+        const updatedUser = await this.userRepo.update({ ...user }, tx);
         return updatedUser;
       });
 
@@ -274,13 +289,10 @@ export class UserService {
         this.userWalletCache.set(updatedUser.walletAddress, user.id);
       }
 
-      serviceLogger.debug(`[UserManager] Updated user: ${user.id}`);
+      this.logger.debug(`[UserManager] Updated user: ${user.id}`);
       return updatedUser;
     } catch (error) {
-      serviceLogger.error(
-        `[UserManager] Error updating user ${user.id}:`,
-        error,
-      );
+      this.logger.error(`[UserManager] Error updating user ${user.id}:`, error);
       throw new Error(
         `Failed to update user: ${error instanceof Error ? error.message : error}`,
       );
@@ -295,29 +307,26 @@ export class UserService {
   async deleteUser(userId: string, tx?: Transaction): Promise<boolean> {
     try {
       // Get user first to find wallet address for cache cleanup
-      const user = await findById(userId);
+      const user = await this.userRepo.findById(userId);
 
       // Delete from database
-      const deleted = await deleteUser(userId, tx);
+      const deleted = await this.userRepo.deleteUser(userId, tx);
 
       if (deleted && user) {
         // Clean up cache
         this.userProfileCache.delete(userId);
         this.userWalletCache.delete(user.walletAddress);
 
-        serviceLogger.debug(
+        this.logger.debug(
           `[UserManager] Successfully deleted user: ${user.name || "Unknown"} (${userId})`,
         );
       } else {
-        serviceLogger.debug(`[UserManager] Failed to delete user: ${userId}`);
+        this.logger.debug(`[UserManager] Failed to delete user: ${userId}`);
       }
 
       return deleted;
     } catch (error) {
-      serviceLogger.error(
-        `[UserManager] Error deleting user ${userId}:`,
-        error,
-      );
+      this.logger.error(`[UserManager] Error deleting user ${userId}:`, error);
       throw new Error(
         `Failed to delete user: ${error instanceof Error ? error.message : error}`,
       );
@@ -345,7 +354,9 @@ export class UserService {
       }
 
       // Get from database
-      const user = await findByWalletAddress(normalizedWalletAddress);
+      const user = await this.userRepo.findByWalletAddress(
+        normalizedWalletAddress,
+      );
 
       // Update cache if found
       if (user) {
@@ -356,7 +367,7 @@ export class UserService {
 
       return null;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[UserManager] Error retrieving user by wallet address ${walletAddress}:`,
         error,
       );
@@ -373,7 +384,7 @@ export class UserService {
     try {
       // Note: We don't cache by Privy ID yet as this is a new feature
       // and we expect most lookups to be by user ID or wallet address
-      const user = await findByPrivyId(privyId);
+      const user = await this.userRepo.findByPrivyId(privyId);
 
       // Update profile cache if found
       if (user) {
@@ -384,7 +395,7 @@ export class UserService {
 
       return null;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[UserManager] Error retrieving user by Privy ID ${privyId}:`,
         error,
       );
@@ -399,7 +410,7 @@ export class UserService {
    */
   async getUserByEmail(email: string): Promise<SelectUser | null> {
     try {
-      const user = await findByEmail(email);
+      const user = await this.userRepo.findByEmail(email);
 
       // Update cache if found
       if (user) {
@@ -410,7 +421,7 @@ export class UserService {
 
       return null;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[UserManager] Error retrieving user by email ${email}:`,
         error,
       );
@@ -425,7 +436,7 @@ export class UserService {
    */
   async searchUsers(searchParams: UserSearchParams): Promise<SelectUser[]> {
     try {
-      const users = await searchUsers(searchParams);
+      const users = await this.userRepo.searchUsers(searchParams);
 
       // Update cache with found users
       users.forEach((user) => {
@@ -435,7 +446,7 @@ export class UserService {
 
       return users;
     } catch (error) {
-      serviceLogger.error("[UserManager] Error searching users:", error);
+      this.logger.error("[UserManager] Error searching users:", error);
       return [];
     }
   }
@@ -446,10 +457,10 @@ export class UserService {
    */
   async isHealthy(): Promise<boolean> {
     try {
-      const res = await count();
+      const res = await this.userRepo.count();
       return res >= 0;
     } catch (error) {
-      serviceLogger.error("[UserManager] Health check failed:", error);
+      this.logger.error("[UserManager] Health check failed:", error);
       return false;
     }
   }
@@ -460,7 +471,7 @@ export class UserService {
   clearCache(): void {
     this.userWalletCache.clear();
     this.userProfileCache.clear();
-    serviceLogger.debug("[UserManager] All caches cleared");
+    this.logger.debug("[UserManager] All caches cleared");
   }
 
   /**

@@ -1,80 +1,46 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
+import { Logger } from "pino";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import {
   SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@recallnet/db/schema/core/types";
 import { SelectTrade } from "@recallnet/db/schema/trading/types";
-import type { Transaction as DatabaseTransaction } from "@recallnet/db/types";
+import type {
+  Database,
+  Transaction as DatabaseTransaction,
+} from "@recallnet/db/types";
 
-import { config } from "@/config/index.js";
-import { buildPaginationResponse } from "@/controllers/request-helpers.js";
-import { db } from "@/database/db.js";
-import { findByCompetition } from "@/database/repositories/agent-repository.js";
-import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
-import {
-  addAgentToCompetition,
-  batchInsertLeaderboard,
-  create as createCompetition,
-  findActive,
-  findAll,
-  findById,
-  findByStatus,
-  findCompetitionsNeedingEnding,
-  findLeaderboardByTradingComp,
-  get24hSnapshots,
-  getAgentCompetitionRecord,
-  getAllCompetitionAgents,
-  getBatchVoteCounts,
-  getBulkAgentCompetitionRecords,
-  getBulkLatestPortfolioSnapshots,
-  getCompetitionAgents,
-  getEnrichedCompetitions,
-  getLatestPortfolioSnapshots,
-  isAgentActiveInCompetition,
-  markCompetitionAsEnded,
-  markCompetitionAsEnding,
-  updateAgentCompetitionStatus,
-  update as updateCompetition,
-  updateOne,
-} from "@/database/repositories/competition-repository.js";
-import {
-  createPerpsCompetitionConfig,
-  deletePerpsCompetitionConfig,
-  getCompetitionTransferViolationCounts,
-  getPerpsCompetitionStats,
-  getRiskAdjustedLeaderboard,
-  updatePerpsCompetitionConfig,
-} from "@/database/repositories/perps-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
-import { CompetitionRewardService } from "@/services/competition-reward.service.js";
-import {
-  AgentRankService,
-  AgentService,
-  BalanceService,
-  ConfigurationService,
-  PerpsDataProcessor,
-  PortfolioSnapshotterService,
-  TradeSimulatorService,
-  TradingConstraintsService,
-  VoteService,
-} from "@/services/index.js";
+import { AgentService } from "./agent.service.js";
+import { AgentRankService } from "./agentrank.service.js";
+import { BalanceService } from "./balance.service.js";
+import { CompetitionRewardService } from "./competition-reward.service.js";
+import { ConfigurationService } from "./configuration.service.js";
+import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
+import { PerpsDataProcessor } from "./perps-data-processor.service.js";
+import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
+import { TradeSimulatorService } from "./trade-simulator.service.js";
+import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
   CompetitionAgentStatus,
   CompetitionStatus,
   CompetitionType,
   CrossChainTradingType,
   PagingParams,
-} from "@/types/index.js";
+  SpecificChain,
+} from "./types/index.js";
+import { ApiError } from "./types/index.js";
 import {
   AgentComputedSortFields,
   AgentDbSortFields,
   AgentQueryParams,
-} from "@/types/sort/agent.js";
-
-import { ApiError } from "./types/index.js";
+} from "./types/sort/agent.js";
+import { VoteService } from "./vote.service.js";
 
 /**
  * Parameters for creating a new competition
@@ -294,12 +260,7 @@ type CompetitionAgentsData = {
     score: number | null;
     voteCount: number;
   }>;
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
+  total: number;
 };
 
 /**
@@ -348,12 +309,7 @@ type CompetitionTradesData = {
   success: boolean;
   trades: TradeWithAgent[];
   competition: SelectCompetition;
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
+  total: number;
 };
 
 /**
@@ -362,12 +318,7 @@ type CompetitionTradesData = {
 type AgentCompetitionTradesData = {
   success: boolean;
   trades: SelectTrade[]; // Agent trades use basic SelectTrade format
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
+  total: number;
 };
 
 /**
@@ -401,6 +352,14 @@ type BasicCompetitionInfo = {
   startDate?: Date;
 };
 
+interface Config {
+  specificChainBalances: Record<SpecificChain, Record<string, number>>;
+  maxTradePercentage: number;
+  rateLimitingMaxRequests: number;
+  rateLimitingWindowMs: number;
+  evmChains: SpecificChain[];
+}
+
 /**
  * Competition Service
  * Manages trading competitions with agent-based participation
@@ -416,6 +375,13 @@ export class CompetitionService {
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
   private perpsDataProcessor: PerpsDataProcessor;
+  private agentRepo: AgentRepository;
+  private agentScoreRepo: AgentScoreRepository;
+  private perpsRepo: PerpsRepository;
+  private competitionRepo: CompetitionRepository;
+  private db: Database;
+  private config: Config;
+  private logger: Logger;
 
   constructor(
     balanceService: BalanceService,
@@ -428,6 +394,13 @@ export class CompetitionService {
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
     perpsDataProcessor: PerpsDataProcessor,
+    agentRepo: AgentRepository,
+    agentScoreRepo: AgentScoreRepository,
+    perpsRepo: PerpsRepository,
+    competitionRepo: CompetitionRepository,
+    db: Database,
+    config: Config,
+    logger: Logger,
   ) {
     this.balanceService = balanceService;
     this.tradeSimulatorService = tradeSimulatorService;
@@ -439,6 +412,13 @@ export class CompetitionService {
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
     this.perpsDataProcessor = perpsDataProcessor;
+    this.agentRepo = agentRepo;
+    this.agentScoreRepo = agentScoreRepo;
+    this.perpsRepo = perpsRepo;
+    this.competitionRepo = competitionRepo;
+    this.db = db;
+    this.config = config;
+    this.logger = logger;
   }
 
   /**
@@ -480,9 +460,9 @@ export class CompetitionService {
     rewards,
     perpsProvider,
   }: CreateCompetitionParams) {
-    const id = uuidv4();
+    const id = randomUUID();
 
-    const competition: Parameters<typeof createCompetition>[0] = {
+    const competition: Parameters<typeof this.competitionRepo.create>[0] = {
       id,
       name,
       description,
@@ -504,9 +484,9 @@ export class CompetitionService {
     };
 
     // Execute all operations in a single transaction
-    const result = await db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       // Create the competition
-      await createCompetition(competition, tx);
+      await this.competitionRepo.create(competition, tx);
 
       // Create perps competition config if it's a perps competition
       if (type === "perpetual_futures") {
@@ -531,8 +511,8 @@ export class CompetitionService {
             perpsProvider.selfFundingThreshold.toString(),
         };
 
-        await createPerpsCompetitionConfig(perpsConfig, tx);
-        serviceLogger.debug(
+        await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
+        this.logger.debug(
           `[CompetitionService] Created perps config for competition ${id}: ${JSON.stringify(perpsConfig)}`,
         );
       }
@@ -544,7 +524,7 @@ export class CompetitionService {
           rewards,
           tx,
         );
-        serviceLogger.debug(
+        this.logger.debug(
           `[CompetitionManager] Created rewards for competition ${id}: ${JSON.stringify(
             createdRewards,
           )}`,
@@ -560,7 +540,7 @@ export class CompetitionService {
           },
           tx,
         );
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionManager] Created trading constraints for competition ${id}`,
       );
 
@@ -571,7 +551,7 @@ export class CompetitionService {
       };
     });
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}, type: ${type}}`,
     );
 
@@ -596,7 +576,7 @@ export class CompetitionService {
    * @returns The competition or null if not found
    */
   async getCompetition(competitionId: string) {
-    return findById(competitionId);
+    return this.competitionRepo.findById(competitionId);
   }
 
   /**
@@ -604,7 +584,7 @@ export class CompetitionService {
    * @returns Array of all competitions
    */
   async getAllCompetitions() {
-    return findAll();
+    return this.competitionRepo.findAll();
   }
 
   /**
@@ -667,7 +647,7 @@ export class CompetitionService {
     agentIds: string[],
     tradingConstraints?: TradingConstraintsInput,
   ): Promise<StartedCompetitionResult> {
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
     if (!competition) {
       throw new Error(`Competition not found: ${competitionId}`);
     }
@@ -678,7 +658,7 @@ export class CompetitionService {
       );
     }
 
-    const activeCompetition = await findActive();
+    const activeCompetition = await this.competitionRepo.findActive();
     if (activeCompetition) {
       throw new Error(
         `Another competition is already active: ${activeCompetition.id}`,
@@ -713,7 +693,10 @@ export class CompetitionService {
 
       // Register agent in the competition (automatically sets status to 'active')
       try {
-        await addAgentToCompetition(competitionId, agentId);
+        await this.competitionRepo.addAgentToCompetition(
+          competitionId,
+          agentId,
+        );
       } catch (error) {
         // If participant limit error, provide a more helpful error message
         if (
@@ -727,7 +710,7 @@ export class CompetitionService {
         throw error;
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionManager] Agent ${agentId} ready for competition`,
       );
     }
@@ -742,7 +725,7 @@ export class CompetitionService {
         competitionId,
         tradingConstraints,
       );
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionManager] Updating trading constraints for competition ${competitionId}`,
       );
     } else if (!existingConstraints) {
@@ -760,18 +743,18 @@ export class CompetitionService {
     // Different approach based on competition type:
     if (competition.type === "trading") {
       // Paper trading: Use portfolio snapshotter with reset balances
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionService] Taking initial paper trading portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
       );
       await this.portfolioSnapshotterService.takePortfolioSnapshots(
         competitionId,
       );
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionService] Initial paper trading portfolio snapshots completed`,
       );
     } else if (competition.type === "perpetual_futures") {
       // Perps: Sync from Symphony to get initial $500 balance state
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionService] Syncing initial perps data from Symphony for ${agentIds.length} agents (competition still pending)`,
       );
 
@@ -782,14 +765,14 @@ export class CompetitionService {
       const failedCount = result.syncResult.failed.length;
       const totalCount = successCount + failedCount;
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionService] Initial perps sync completed: ${successCount}/${totalCount} agents synced successfully`,
       );
 
       if (failedCount > 0) {
         // Log which agents failed but don't throw - some agents may not have Symphony accounts yet
         const failedAgentIds = result.syncResult.failed.map((f) => f.agentId);
-        serviceLogger.warn(
+        this.logger.warn(
           `[CompetitionService] Failed to sync ${failedCount} out of ${totalCount} agents during competition start: ${failedAgentIds.join(", ")}`,
         );
       }
@@ -799,23 +782,23 @@ export class CompetitionService {
 
     // NOW update the competition status to active
     // This opens trading and price endpoint access to agents
-    const finalCompetition = await updateCompetition({
+    const finalCompetition = await this.competitionRepo.update({
       id: competitionId,
       status: "active",
       startDate: new Date(),
       updatedAt: new Date(),
     });
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
     );
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
     );
 
     // Reload competition-specific configuration settings
     await this.configurationService.loadCompetitionSettings();
-    serviceLogger.debug(`[CompetitionManager] Reloaded configuration settings`);
+    this.logger.debug(`[CompetitionManager] Reloaded configuration settings`);
 
     return {
       ...finalCompetition,
@@ -915,7 +898,7 @@ export class CompetitionService {
 
     // Persist to database
     if (enrichedEntries.length > 0) {
-      await batchInsertLeaderboard(enrichedEntries, tx);
+      await this.competitionRepo.batchInsertLeaderboard(enrichedEntries, tx);
     }
 
     return enrichedEntries.length;
@@ -928,10 +911,11 @@ export class CompetitionService {
    */
   async endCompetition(competitionId: string) {
     // Mark as ending (active -> ending) - this returns the competition object
-    let competition = await markCompetitionAsEnding(competitionId);
+    let competition =
+      await this.competitionRepo.markCompetitionAsEnding(competitionId);
 
     if (!competition) {
-      const current = await findById(competitionId);
+      const current = await this.competitionRepo.findById(competitionId);
       if (!current) {
         throw new Error(`Competition not found: ${competitionId}`);
       }
@@ -948,7 +932,7 @@ export class CompetitionService {
       competition = current;
     }
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Marked competition as ending: ${competitionId}`,
     );
 
@@ -960,7 +944,7 @@ export class CompetitionService {
         competitionId,
         true,
       );
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionService] Final paper trading portfolio snapshots completed`,
       );
     } else if (competition.type === "perpetual_futures") {
@@ -971,34 +955,38 @@ export class CompetitionService {
       const successCount = result.syncResult.successful.length;
       const failedCount = result.syncResult.failed.length;
       const totalCount = successCount + failedCount;
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionService] Final perps sync completed: ${successCount}/${totalCount} agents synced successfully`,
       );
       if (failedCount > 0) {
         // Log warning but don't fail the competition ending
-        serviceLogger.warn(
+        this.logger.warn(
           `[CompetitionService] Failed to sync final data for ${failedCount} out of ${totalCount} agents in ending competition`,
         );
       }
     } else {
-      serviceLogger.warn(
+      this.logger.warn(
         `[CompetitionService] Unknown competition type ${competition.type} - skipping final snapshot`,
       );
     }
 
     // Get agents in the competition (outside transaction - they won't change)
-    const competitionAgents = await getCompetitionAgents(competitionId);
+    const competitionAgents =
+      await this.competitionRepo.getCompetitionAgents(competitionId);
 
     // Reload configuration settings (revert to environment defaults)
     await this.configurationService.loadCompetitionSettings();
 
     // Final transaction to persist results
     const { competition: finalCompetition, leaderboardCount } =
-      await db.transaction(async (tx) => {
+      await this.db.transaction(async (tx) => {
         // Mark as ended. This is our guard against concurrent execution - if another process is
         // ending the same competition in parallel, only one will manage to mark it as ended, and
         // the other one's transaction will fail.
-        const updated = await markCompetitionAsEnded(competitionId, tx);
+        const updated = await this.competitionRepo.markCompetitionAsEnded(
+          competitionId,
+          tx,
+        );
         if (!updated) {
           throw new Error(
             "Competition was already ended or not in ending state",
@@ -1022,7 +1010,7 @@ export class CompetitionService {
       });
 
     // Log success only after transaction has committed
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ` +
         `${competitionAgents.length} agents, ${leaderboardCount} leaderboard entries`,
     );
@@ -1036,7 +1024,7 @@ export class CompetitionService {
    * @returns True if the competition is active
    */
   async isCompetitionActive(competitionId: string) {
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
     return competition?.status === "active";
   }
 
@@ -1045,7 +1033,7 @@ export class CompetitionService {
    * @returns The active competition or null if none
    */
   async getActiveCompetition() {
-    return findActive();
+    return this.competitionRepo.findActive();
   }
 
   /**
@@ -1056,7 +1044,7 @@ export class CompetitionService {
   async isActiveCompetitionType(
     type: "trading" | "perpetual_futures",
   ): Promise<boolean> {
-    const activeCompetition = await findActive();
+    const activeCompetition = await this.competitionRepo.findActive();
     return activeCompetition?.type === type;
   }
 
@@ -1070,7 +1058,7 @@ export class CompetitionService {
     competitionId: string,
     type: "trading" | "perpetual_futures",
   ): Promise<{ exists: boolean; isType: boolean }> {
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
     return {
       exists: !!competition,
       isType: competition?.type === type,
@@ -1097,7 +1085,7 @@ export class CompetitionService {
       sort: dbSort,
     };
     const isComputedSort = computedSort !== undefined;
-    const { agents, total } = await findByCompetition(
+    const { agents, total } = await this.agentRepo.findByCompetition(
       competitionId,
       dbQueryParams,
       isComputedSort,
@@ -1198,21 +1186,23 @@ export class CompetitionService {
   private async calculateLeaderboardFromSnapshots(
     competitionId: string,
   ): Promise<LeaderboardEntry[]> {
-    const snapshots = await getLatestPortfolioSnapshots(competitionId);
+    const snapshots =
+      await this.competitionRepo.getLatestPortfolioSnapshots(competitionId);
     if (snapshots.length === 0) {
       return [];
     }
 
     // Check competition type to determine if we need risk metrics
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
 
     if (competition?.type === "perpetual_futures") {
       // For perps: Fetch risk-adjusted leaderboard which includes risk metrics
-      const riskAdjustedLeaderboard = await getRiskAdjustedLeaderboard(
-        competitionId,
-        500, // Reasonable limit
-        0,
-      );
+      const riskAdjustedLeaderboard =
+        await this.perpsRepo.getRiskAdjustedLeaderboard(
+          competitionId,
+          500, // Reasonable limit
+          0,
+        );
 
       // Create a map for quick lookups
       const riskMetricsMap = new Map(
@@ -1272,7 +1262,7 @@ export class CompetitionService {
     competitionId: string,
   ): Promise<LeaderboardEntry[]> {
     // Check competition type to determine data source
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
 
     if (competition?.type === "perpetual_futures") {
       // For perps: Use a single-query method that combines risk metrics and equity
@@ -1280,11 +1270,12 @@ export class CompetitionService {
       // 1. Agents with Calmar ratio (sorted by Calmar DESC)
       // 2. Agents without Calmar ratio (sorted by equity DESC)
 
-      const riskAdjustedLeaderboard = await getRiskAdjustedLeaderboard(
-        competitionId,
-        500, // Reasonable limit - most competitions won't have more agents
-        0,
-      );
+      const riskAdjustedLeaderboard =
+        await this.perpsRepo.getRiskAdjustedLeaderboard(
+          competitionId,
+          500, // Reasonable limit - most competitions won't have more agents
+          0,
+        );
 
       // Transform to LeaderboardEntry format, including risk metrics
       return riskAdjustedLeaderboard.map((entry) => ({
@@ -1300,7 +1291,8 @@ export class CompetitionService {
     }
 
     // For paper trading: Use existing balance-based calculation
-    const agents = await getCompetitionAgents(competitionId);
+    const agents =
+      await this.competitionRepo.getCompetitionAgents(competitionId);
 
     // Use bulk portfolio value calculation
     const portfolioValues =
@@ -1329,8 +1321,10 @@ export class CompetitionService {
   private async calculatePendingCompetitionLeaderboard(
     competitionId: string,
   ): Promise<LeaderboardEntry[]> {
-    const agents = await getCompetitionAgents(competitionId);
-    const globalLeaderboard = await getAllAgentRanks(agents);
+    const agents =
+      await this.competitionRepo.getCompetitionAgents(competitionId);
+    const globalLeaderboard =
+      await this.agentScoreRepo.getAllAgentRanks(agents);
 
     // Create map of agent IDs to their global rank scores
     const globalLeaderboardMap = new Map(
@@ -1371,9 +1365,9 @@ export class CompetitionService {
    */
   async getLeaderboard(competitionId: string): Promise<LeaderboardEntry[]> {
     try {
-      const competition = await findById(competitionId);
+      const competition = await this.competitionRepo.findById(competitionId);
       if (!competition) {
-        serviceLogger.warn(
+        this.logger.warn(
           `[CompetitionManager] Competition ${competitionId} not found`,
         );
         return [];
@@ -1388,12 +1382,14 @@ export class CompetitionService {
         case "ended": {
           // Try saved leaderboard first
           const savedLeaderboard =
-            await findLeaderboardByTradingComp(competitionId);
+            await this.competitionRepo.findLeaderboardByTradingComp(
+              competitionId,
+            );
           if (savedLeaderboard.length > 0) {
             return savedLeaderboard;
           }
 
-          serviceLogger.debug(
+          this.logger.debug(
             `[CompetitionManager] No saved leaderboard found for ended competition ${competitionId}, calculating from snapshots`,
           );
           // Fall through to calculate from snapshots
@@ -1408,7 +1404,7 @@ export class CompetitionService {
             return snapshotLeaderboard;
           }
 
-          serviceLogger.debug(
+          this.logger.debug(
             `[CompetitionManager] No snapshots found for competition ${competitionId}, calculating from live portfolio values`,
           );
           // Fallback to live calculation
@@ -1418,13 +1414,13 @@ export class CompetitionService {
         }
 
         default:
-          serviceLogger.warn(
+          this.logger.warn(
             `[CompetitionManager] Unknown competition status: ${competition.status}`,
           );
           return [];
       }
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionManager] Error getting leaderboard for competition ${competitionId}:`,
         error,
       );
@@ -1466,8 +1462,14 @@ export class CompetitionService {
       if (inactiveAgentIds.length > 0) {
         // 🚀 BULK OPERATIONS: Fetch all inactive agent data
         const [competitionRecords, latestSnapshots] = await Promise.all([
-          getBulkAgentCompetitionRecords(competitionId, inactiveAgentIds),
-          getBulkLatestPortfolioSnapshots(competitionId, inactiveAgentIds),
+          this.competitionRepo.getBulkAgentCompetitionRecords(
+            competitionId,
+            inactiveAgentIds,
+          ),
+          this.competitionRepo.getBulkLatestPortfolioSnapshots(
+            competitionId,
+            inactiveAgentIds,
+          ),
         ]);
 
         // Create lookup maps for efficient data joining
@@ -1496,7 +1498,7 @@ export class CompetitionService {
           };
         });
 
-        serviceLogger.debug(
+        this.logger.debug(
           `[CompetitionManager] Successfully retrieved ${inactiveAgents.length} inactive agents using bulk operations`,
         );
       }
@@ -1513,7 +1515,7 @@ export class CompetitionService {
         inactiveAgents,
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionManager] Error getting leaderboard with inactive agents for competition ${competitionId}:`,
         error,
       );
@@ -1553,16 +1555,14 @@ export class CompetitionService {
       return new Map();
     }
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Calculating bulk metrics for ${agentIds.length} agents in competition ${competitionId}`,
     );
 
     try {
       // Get only the snapshots we need for metrics calculation
-      const { earliestSnapshots, snapshots24hAgo } = await get24hSnapshots(
-        competitionId,
-        agentIds,
-      );
+      const { earliestSnapshots, snapshots24hAgo } =
+        await this.competitionRepo.get24hSnapshots(competitionId, agentIds);
 
       // Create maps for efficient lookup
       const earliestSnapshotsMap = new Map(
@@ -1612,12 +1612,12 @@ export class CompetitionService {
         });
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionManager] Successfully calculated bulk metrics for ${agentIds.length} agents`,
       );
       return metricsMap;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionManager] Error in calculateBulkAgentMetrics:`,
         error,
       );
@@ -1636,10 +1636,10 @@ export class CompetitionService {
   async isHealthy() {
     try {
       // Simple check to see if we can connect to the database
-      await findAll();
+      await this.competitionRepo.findAll();
       return true;
     } catch (error) {
-      serviceLogger.error("[CompetitionManager] Health check failed:", error);
+      this.logger.error("[CompetitionManager] Health check failed:", error);
       return false;
     }
   }
@@ -1650,7 +1650,7 @@ export class CompetitionService {
    * TODO(stbrody): add caching
    */
   async getUpcomingCompetitions() {
-    return findByStatus({
+    return this.competitionRepo.findByStatus({
       status: "pending",
       params: {
         sort: "",
@@ -1670,7 +1670,7 @@ export class CompetitionService {
     status: CompetitionStatus | undefined,
     pagingParams: PagingParams,
   ) {
-    return await findByStatus({
+    return await this.competitionRepo.findByStatus({
       status,
       params: pagingParams,
     });
@@ -1701,7 +1701,8 @@ export class CompetitionService {
     updatedRewards: SelectCompetitionReward[];
   }> {
     // Get the existing competition
-    const existingCompetition = await findById(competitionId);
+    const existingCompetition =
+      await this.competitionRepo.findById(competitionId);
     if (!existingCompetition) {
       throw new Error(`Competition not found: ${competitionId}`);
     }
@@ -1734,13 +1735,13 @@ export class CompetitionService {
     }
 
     // Execute all updates in a single transaction
-    const result = await db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       // Handle type conversion if needed
       if (isTypeChanging && updates.type) {
         const oldType = existingCompetition.type;
         const newType = updates.type;
 
-        serviceLogger.info(
+        this.logger.info(
           `[CompetitionService] Converting competition ${competitionId} from ${oldType} to ${newType}`,
         );
 
@@ -1756,9 +1757,12 @@ export class CompetitionService {
 
           // First, delete any existing perps config (defensive programming for data inconsistency)
           // This handles the edge case where a "trading" competition somehow has perps config
-          const deleted = await deletePerpsCompetitionConfig(competitionId, tx);
+          const deleted = await this.perpsRepo.deletePerpsCompetitionConfig(
+            competitionId,
+            tx,
+          );
           if (deleted) {
-            serviceLogger.warn(
+            this.logger.warn(
               `[CompetitionService] Deleted unexpected existing perps config for trading competition ${competitionId}`,
             );
           }
@@ -1776,14 +1780,14 @@ export class CompetitionService {
               perpsProvider.selfFundingThreshold.toString(),
           };
 
-          await createPerpsCompetitionConfig(perpsConfig, tx);
-          serviceLogger.debug(
+          await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
+          this.logger.debug(
             `[CompetitionService] Created perps config for converted competition ${competitionId}`,
           );
         } else if (oldType === "perpetual_futures" && newType === "trading") {
           // Perps → Spot: Delete perps config using repository method
-          await deletePerpsCompetitionConfig(competitionId, tx);
-          serviceLogger.debug(
+          await this.perpsRepo.deletePerpsCompetitionConfig(competitionId, tx);
+          this.logger.debug(
             `[CompetitionService] Deleted perps config for converted competition ${competitionId}`,
           );
         }
@@ -1792,11 +1796,11 @@ export class CompetitionService {
         perpsProvider
       ) {
         // Update perps config for existing perps competition
-        serviceLogger.info(
+        this.logger.info(
           `[CompetitionService] Updating perps config for competition ${competitionId}`,
         );
 
-        const updatedConfig = await updatePerpsCompetitionConfig(
+        const updatedConfig = await this.perpsRepo.updatePerpsCompetitionConfig(
           competitionId,
           {
             dataSourceConfig: {
@@ -1812,11 +1816,11 @@ export class CompetitionService {
         );
 
         if (!updatedConfig) {
-          serviceLogger.warn(
+          this.logger.warn(
             `[CompetitionService] No perps config found to update for competition ${competitionId}`,
           );
         } else {
-          serviceLogger.debug(
+          this.logger.debug(
             `[CompetitionService] Updated perps config for competition ${competitionId}: ` +
               `threshold=${perpsProvider.selfFundingThreshold}, ` +
               `capital=${perpsProvider.initialCapital}`,
@@ -1825,7 +1829,11 @@ export class CompetitionService {
       }
 
       // Update the competition
-      const updatedCompetition = await updateOne(competitionId, updates, tx);
+      const updatedCompetition = await this.competitionRepo.updateOne(
+        competitionId,
+        updates,
+        tx,
+      );
 
       // Update trading constraints if provided
       if (tradingConstraints) {
@@ -1849,7 +1857,7 @@ export class CompetitionService {
       return { competition: updatedCompetition, updatedRewards };
     });
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionService] Updated competition: ${competitionId}`,
     );
 
@@ -1872,7 +1880,7 @@ export class CompetitionService {
     userId?: string,
     authenticatedAgentId?: string,
   ): Promise<void> {
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Join competition request: agent ${agentId} to competition ${competitionId}`,
     );
 
@@ -1911,7 +1919,7 @@ export class CompetitionService {
     }
 
     // Check if competition exists
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
     if (!competition) {
       throw new ApiError(404, `Competition not found: ${competitionId}`);
     }
@@ -1947,10 +1955,11 @@ export class CompetitionService {
     }
 
     // Check if agent is already actively registered
-    const isAlreadyActive = await isAgentActiveInCompetition(
-      competitionId,
-      agentId,
-    );
+    const isAlreadyActive =
+      await this.competitionRepo.isAgentActiveInCompetition(
+        competitionId,
+        agentId,
+      );
     if (isAlreadyActive) {
       throw new ApiError(
         403,
@@ -1961,7 +1970,7 @@ export class CompetitionService {
     // Atomically add agent to competition with participant limit check
     // This prevents race conditions when multiple agents try to join simultaneously
     try {
-      await addAgentToCompetition(competitionId, agentId);
+      await this.competitionRepo.addAgentToCompetition(competitionId, agentId);
     } catch (error) {
       // Convert repository error to appropriate API error
       if (
@@ -1973,7 +1982,7 @@ export class CompetitionService {
       throw error;
     }
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId} for user ${validatedUserId}`,
     );
   }
@@ -1991,7 +2000,7 @@ export class CompetitionService {
     userId?: string,
     authenticatedAgentId?: string,
   ): Promise<void> {
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Leave competition request: agent ${agentId} from competition ${competitionId}`,
     );
 
@@ -2030,7 +2039,7 @@ export class CompetitionService {
     }
 
     // Check if competition exists
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
     if (!competition) {
       throw new ApiError(404, `Competition not found: ${competitionId}`);
     }
@@ -2052,29 +2061,29 @@ export class CompetitionService {
       );
     } else if (competition.status === "active") {
       // During active competition: mark agent as withdrawn from this competition
-      await updateAgentCompetitionStatus(
+      await this.competitionRepo.updateAgentCompetitionStatus(
         competitionId,
         agentId,
         "withdrawn",
         `Withdrew from competition ${competition.name}`,
       );
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionManager] Marked agent ${agentId} as withdrawn from active competition ${competitionId}`,
       );
     } else if (competition.status === "pending") {
       // During pending competition: mark as withdrawn (preserving history)
-      await updateAgentCompetitionStatus(
+      await this.competitionRepo.updateAgentCompetitionStatus(
         competitionId,
         agentId,
         "withdrawn",
         `Withdrew from competition ${competition.name} before it started`,
       );
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionManager] Marked agent ${agentId} as left from pending competition ${competitionId}`,
       );
     }
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Successfully processed leave request for agent ${agentId} from competition ${competitionId} for user ${validatedUserId}`,
     );
   }
@@ -2090,7 +2099,10 @@ export class CompetitionService {
     agentId: string,
   ): Promise<boolean> {
     // Use the repository method to check if agent has any record in the competition
-    const record = await getAgentCompetitionRecord(competitionId, agentId);
+    const record = await this.competitionRepo.getAgentCompetitionRecord(
+      competitionId,
+      agentId,
+    );
     return record !== null;
   }
 
@@ -2115,20 +2127,20 @@ export class CompetitionService {
     }
 
     // Get competition details
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
     if (!competition) {
       throw new Error("Competition not found");
     }
 
     // Update agent status in competition to 'disqualified'
-    await updateAgentCompetitionStatus(
+    await this.competitionRepo.updateAgentCompetitionStatus(
       competitionId,
       agentId,
       "disqualified",
       reason || "Disqualified by admin",
     );
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Admin removed agent ${agentId} from competition ${competitionId}`,
     );
   }
@@ -2152,20 +2164,20 @@ export class CompetitionService {
     }
 
     // Get competition details
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
     if (!competition) {
       throw new Error("Competition not found");
     }
 
     // Update agent status in competition to 'active'
-    await updateAgentCompetitionStatus(
+    await this.competitionRepo.updateAgentCompetitionStatus(
       competitionId,
       agentId,
       "active",
       "Reactivated by admin",
     );
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[CompetitionManager] Admin reactivated agent ${agentId} in competition ${competitionId}`,
     );
   }
@@ -2180,7 +2192,10 @@ export class CompetitionService {
     competitionId: string,
     agentId: string,
   ): Promise<boolean> {
-    return await isAgentActiveInCompetition(competitionId, agentId);
+    return await this.competitionRepo.isAgentActiveInCompetition(
+      competitionId,
+      agentId,
+    );
   }
 
   /**
@@ -2199,7 +2214,10 @@ export class CompetitionService {
     createdAt: Date;
     updatedAt: Date;
   } | null> {
-    return await getAgentCompetitionRecord(competitionId, agentId);
+    return await this.competitionRepo.getAgentCompetitionRecord(
+      competitionId,
+      agentId,
+    );
   }
 
   /**
@@ -2209,7 +2227,7 @@ export class CompetitionService {
    * @returns Array of agent IDs
    */
   async getAllCompetitionAgents(competitionId: string): Promise<string[]> {
-    return await getAllCompetitionAgents(competitionId);
+    return await this.competitionRepo.getAllCompetitionAgents(competitionId);
   }
 
   /**
@@ -2217,39 +2235,38 @@ export class CompetitionService {
    */
   async processCompetitionEndDateChecks(): Promise<void> {
     try {
-      const competitionsToEnd = await findCompetitionsNeedingEnding();
+      const competitionsToEnd =
+        await this.competitionRepo.findCompetitionsNeedingEnding();
 
       if (competitionsToEnd.length === 0) {
-        serviceLogger.debug(
-          "[CompetitionManager] No competitions ready to end",
-        );
+        this.logger.debug("[CompetitionManager] No competitions ready to end");
         return;
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionManager] Found ${competitionsToEnd.length} competitions ready to end`,
       );
 
       for (const competition of competitionsToEnd) {
         try {
-          serviceLogger.debug(
+          this.logger.debug(
             `[CompetitionManager] Auto-ending competition: ${competition.name} (${competition.id}) - scheduled end: ${competition.endDate!.toISOString()} - status: ${competition.status}`,
           );
 
           await this.endCompetition(competition.id);
 
-          serviceLogger.debug(
+          this.logger.debug(
             `[CompetitionManager] Successfully auto-ended competition: ${competition.name} (${competition.id})`,
           );
         } catch (error) {
-          serviceLogger.error(
+          this.logger.error(
             `[CompetitionManager] Error auto-ending competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
           );
           // Continue processing other competitions even if one fails
         }
       }
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
       );
       throw error;
@@ -2287,7 +2304,7 @@ export class CompetitionService {
       // Authentication and Authorization
       if (params.isAdmin) {
         // Admin access: Log and proceed
-        serviceLogger.debug(
+        this.logger.debug(
           `Admin accessing leaderboard for competition ${competitionId}.`,
         );
       } else {
@@ -2368,7 +2385,7 @@ export class CompetitionService {
 
       return result;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting leaderboard with authorization:`,
         error,
       );
@@ -2399,7 +2416,7 @@ export class CompetitionService {
 
       // If no active competition, return null status
       if (!activeCompetition) {
-        serviceLogger.debug("[CompetitionService] No active competition found");
+        this.logger.debug("[CompetitionService] No active competition found");
         return {
           success: true,
           active: false,
@@ -2408,13 +2425,13 @@ export class CompetitionService {
         };
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionService] Found active competition: ${activeCompetition.id}`,
       );
 
       // If admin, return full status
       if (isAdmin) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[CompetitionService] Admin ${agentId} accessing competition status`,
         );
         return {
@@ -2450,7 +2467,7 @@ export class CompetitionService {
 
       // If agent is not actively participating, return limited info
       if (!isAgentActiveInCompetitionResult) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[CompetitionService] Agent ${agentId} is not in competition ${activeCompetition.id}`,
         );
 
@@ -2467,7 +2484,7 @@ export class CompetitionService {
       }
 
       // Agent is participating
-      serviceLogger.debug(
+      this.logger.debug(
         `[CompetitionService] Agent ${agentId} is participating in competition ${activeCompetition.id}`,
       );
 
@@ -2479,7 +2496,7 @@ export class CompetitionService {
         participating: true,
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting competition status:`,
         error,
       );
@@ -2510,7 +2527,7 @@ export class CompetitionService {
       // Authentication and Authorization
       if (params.isAdmin) {
         // Admin access: Log and proceed
-        serviceLogger.debug(
+        this.logger.debug(
           `Admin accessing rules for competition ${activeCompetition.id}.`,
         );
       } else {
@@ -2544,10 +2561,10 @@ export class CompetitionService {
       const initialBalanceDescriptions = [];
 
       // Chain-specific balances
-      for (const chain of Object.keys(config.specificChainBalances)) {
+      for (const chain of Object.keys(this.config.specificChainBalances)) {
         const chainBalances =
-          config.specificChainBalances[
-            chain as keyof typeof config.specificChainBalances
+          this.config.specificChainBalances[
+            chain as keyof typeof this.config.specificChainBalances
           ];
         const tokenItems = [];
 
@@ -2582,7 +2599,7 @@ export class CompetitionService {
         "Trading is only allowed for tokens with valid price data",
         `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
         "Minimum trade amount: 0.000001 tokens",
-        `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
+        `Maximum single trade: ${this.config.maxTradePercentage}% of agent's total portfolio value`,
         "No shorting allowed (trades limited to available balance)",
         "Slippage is applied to all trades based on trade size",
         `Cross-chain trading type: ${activeCompetition.crossChainTradingType}`,
@@ -2601,7 +2618,7 @@ export class CompetitionService {
       }
 
       const rateLimits = [
-        `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
+        `${this.config.rateLimitingMaxRequests} requests per ${this.config.rateLimitingWindowMs / 1000} seconds per endpoint`,
         "100 requests per minute for trade operations",
         "300 requests per minute for price queries",
         "30 requests per minute for balance/portfolio checks",
@@ -2611,7 +2628,7 @@ export class CompetitionService {
 
       const availableChains = {
         svm: true,
-        evm: config.evmChains,
+        evm: this.config.evmChains,
       };
 
       const slippageFormula =
@@ -2634,7 +2651,7 @@ export class CompetitionService {
 
       return result;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting competition rules:`,
         error,
       );
@@ -2659,11 +2676,11 @@ export class CompetitionService {
       }
 
       if (isAdmin) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[CompetitionService] Admin ${agentId} requesting upcoming competitions`,
         );
       } else {
-        serviceLogger.debug(
+        this.logger.debug(
           `[CompetitionService] Agent ${agentId} requesting upcoming competitions`,
         );
       }
@@ -2673,7 +2690,7 @@ export class CompetitionService {
 
       return result.competitions;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting upcoming competitions with auth:`,
         error,
       );
@@ -2707,8 +2724,11 @@ export class CompetitionService {
 
         // Fetch all data in parallel with batch queries
         const [enrichmentData, voteCountsMap] = await Promise.all([
-          getEnrichedCompetitions(params.userId, competitionIds),
-          getBatchVoteCounts(competitionIds),
+          this.competitionRepo.getEnrichedCompetitions(
+            params.userId,
+            competitionIds,
+          ),
+          this.competitionRepo.getBatchVoteCounts(competitionIds),
         ]);
 
         // Create lookup maps for efficient access
@@ -2773,7 +2793,7 @@ export class CompetitionService {
 
       return result;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting enriched competitions:`,
         error,
       );
@@ -2869,7 +2889,7 @@ export class CompetitionService {
 
       if (competition.type === "perpetual_futures") {
         // For perps competitions, get perps-specific stats
-        const perpsStatsData = await getPerpsCompetitionStats(
+        const perpsStatsData = await this.perpsRepo.getPerpsCompetitionStats(
           params.competitionId,
         );
         stats = {
@@ -2913,7 +2933,7 @@ export class CompetitionService {
 
       return result;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting competition by ID with auth:`,
         error,
       );
@@ -2954,16 +2974,12 @@ export class CompetitionService {
         registeredParticipants: competition.registeredParticipants,
         maxParticipants: competition.maxParticipants,
         agents,
-        pagination: buildPaginationResponse(
-          total,
-          params.queryParams.limit,
-          params.queryParams.offset,
-        ),
+        total,
       };
 
       return result;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting competition agents with auth:`,
         error,
       );
@@ -3028,7 +3044,7 @@ export class CompetitionService {
 
       return result;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting competition timeline with auth:`,
         error,
       );
@@ -3061,10 +3077,10 @@ export class CompetitionService {
       const initialBalanceDescriptions = [];
 
       // Chain-specific balances
-      for (const chain of Object.keys(config.specificChainBalances)) {
+      for (const chain of Object.keys(this.config.specificChainBalances)) {
         const chainBalances =
-          config.specificChainBalances[
-            chain as keyof typeof config.specificChainBalances
+          this.config.specificChainBalances[
+            chain as keyof typeof this.config.specificChainBalances
           ];
         const tokenItems = [];
 
@@ -3093,7 +3109,7 @@ export class CompetitionService {
         "Trading is only allowed for tokens with valid price data",
         `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
         "Minimum trade amount: 0.000001 tokens",
-        `Maximum single trade: ${config.maxTradePercentage}% of agent's total portfolio value`,
+        `Maximum single trade: ${this.config.maxTradePercentage}% of agent's total portfolio value`,
         "No shorting allowed (trades limited to available balance)",
         "Slippage is applied to all trades based on trade size",
         `Cross-chain trading type: ${competition.crossChainTradingType}`,
@@ -3112,7 +3128,7 @@ export class CompetitionService {
       }
 
       const rateLimits = [
-        `${config.rateLimiting.maxRequests} requests per ${config.rateLimiting.windowMs / 1000} seconds per endpoint`,
+        `${this.config.rateLimitingMaxRequests} requests per ${this.config.rateLimitingWindowMs / 1000} seconds per endpoint`,
         "100 requests per minute for trade operations",
         "300 requests per minute for price queries",
         "30 requests per minute for balance/portfolio checks",
@@ -3122,7 +3138,7 @@ export class CompetitionService {
 
       const availableChains = {
         svm: true,
-        evm: config.evmChains,
+        evm: this.config.evmChains,
       };
 
       const slippageFormula =
@@ -3145,7 +3161,7 @@ export class CompetitionService {
 
       return result;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting competition rules with auth:`,
         error,
       );
@@ -3181,16 +3197,12 @@ export class CompetitionService {
         success: true,
         trades,
         competition,
-        pagination: buildPaginationResponse(
-          total,
-          params.pagingParams.limit,
-          params.pagingParams.offset,
-        ),
+        total,
       };
 
       return result;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting competition trades with auth:`,
         error,
       );
@@ -3233,16 +3245,12 @@ export class CompetitionService {
       const result = {
         success: true,
         trades,
-        pagination: buildPaginationResponse(
-          total,
-          params.pagingParams.limit,
-          params.pagingParams.offset,
-        ),
+        total,
       };
 
       return result;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting agent competition trades with auth:`,
         error,
       );
@@ -3283,23 +3291,24 @@ export class CompetitionService {
       }
 
       // 2. Get transfer violation counts with agent names from repository
-      const results = await getCompetitionTransferViolationCounts(
-        competitionId,
-        competition.startDate,
-      );
+      const results =
+        await this.perpsRepo.getCompetitionTransferViolationCounts(
+          competitionId,
+          competition.startDate,
+        );
 
       // Results already include agentName
       if (results.length === 0) {
         return [];
       }
 
-      serviceLogger.info(
+      this.logger.info(
         `[CompetitionService] Found ${results.length} agents with transfer violations in competition ${competitionId}`,
       );
 
       return results;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[CompetitionService] Error getting competition transfer violations:`,
         error,
       );

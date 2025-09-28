@@ -1,24 +1,26 @@
-import {
-  getGlobalStats,
-  getGlobalStatsAllTypes,
-  getOptimizedGlobalAgentMetrics,
-} from "@/database/repositories/leaderboard-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
+import { Logger } from "pino";
+
+import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+
 import {
   AgentMetadata,
   CompetitionType,
   LeaderboardAgent,
   LeaderboardParams,
-} from "@/types/index.js";
-
-import { AgentService } from "./agent.service.js";
+} from "./types/index.js";
 
 /**
  * Leaderboard Service
  * Handles global leaderboard data with sorting and pagination across all competitions
  */
 export class LeaderboardService {
-  constructor(private agentService: AgentService) {}
+  private leaderboardRepo: LeaderboardRepository;
+  private logger: Logger;
+
+  constructor(leaderboardRepo: LeaderboardRepository, logger: Logger) {
+    this.leaderboardRepo = leaderboardRepo;
+    this.logger = logger;
+  }
 
   /**
    * Get global leaderboard data with sorting and pagination
@@ -28,7 +30,7 @@ export class LeaderboardService {
   async getGlobalLeaderboardWithSorting(params: LeaderboardParams) {
     try {
       // Get global stats across all competition types
-      const stats = await getGlobalStatsAllTypes();
+      const stats = await this.leaderboardRepo.getGlobalStatsAllTypes();
       if (stats.competitionIds.length === 0) {
         return this.emptyLeaderboardResponse(params);
       }
@@ -64,7 +66,7 @@ export class LeaderboardService {
         },
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         "[LeaderboardService] Failed to get global leaderboard:",
         error,
       );
@@ -79,7 +81,8 @@ export class LeaderboardService {
    * @returns Array of agent metrics with all required data
    */
   private async getOptimizedGlobalMetrics(): Promise<LeaderboardAgent[]> {
-    const agentMetrics = await getOptimizedGlobalAgentMetrics();
+    const agentMetrics =
+      await this.leaderboardRepo.getOptimizedGlobalAgentMetrics();
 
     return agentMetrics.map((agent) => ({
       rank: 0, // Will be set during sorting
@@ -216,7 +219,7 @@ export class LeaderboardService {
    * @returns Basic global stats
    */
   async getGlobalStats(type: CompetitionType) {
-    serviceLogger.debug("[LeaderboardService] getGlobalStats for type:", type);
-    return await getGlobalStats(type);
+    this.logger.debug("[LeaderboardService] getGlobalStats for type:", type);
+    return await this.leaderboardRepo.getGlobalStats(type);
   }
 }

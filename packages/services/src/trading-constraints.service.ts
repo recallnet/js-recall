@@ -1,20 +1,9 @@
+import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 import {
   InsertTradingConstraints,
   SelectTradingConstraints,
 } from "@recallnet/db/schema/trading/types";
-
-import { config } from "@/config/index.js";
-import { db } from "@/database/db.js";
-import {
-  create,
-  deleteConstraints as deleteConstraintsRepo,
-  findByCompetitionId,
-  update,
-  upsert,
-} from "@/database/repositories/trading-constraints-repository.js";
-
-// Type for database transaction
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+import { Transaction } from "@recallnet/db/types";
 
 export interface TradingConstraintsInput {
   competitionId: string;
@@ -29,6 +18,26 @@ export interface TradingConstraintsInput {
  * Service for managing trading constraints
  */
 export class TradingConstraintsService {
+  private tradingConstraintsRepo: TradingConstraintsRepository;
+  private defaultMinimumPairAgeHours: number;
+  private defaultMinimum24hVolumeUsd: number;
+  private defaultMinimumLiquidityUsd: number;
+  private defaultMinimumFdvUsd: number;
+
+  constructor(
+    tradingConstraintsRepo: TradingConstraintsRepository,
+    defaultMinimumPairAgeHours: number,
+    defaultMinimum24hVolumeUsd: number,
+    defaultMinimumLiquidityUsd: number,
+    defaultMinimumFdvUsd: number,
+  ) {
+    this.tradingConstraintsRepo = tradingConstraintsRepo;
+    this.defaultMinimumPairAgeHours = defaultMinimumPairAgeHours;
+    this.defaultMinimum24hVolumeUsd = defaultMinimum24hVolumeUsd;
+    this.defaultMinimumLiquidityUsd = defaultMinimumLiquidityUsd;
+    this.defaultMinimumFdvUsd = defaultMinimumFdvUsd;
+  }
+
   /**
    * Creates trading constraints for a competition
    * @param input The trading constraints input
@@ -37,25 +46,21 @@ export class TradingConstraintsService {
    */
   async createConstraints(
     input: TradingConstraintsInput,
-    tx?: DatabaseTransaction,
+    tx?: Transaction,
   ): Promise<SelectTradingConstraints | undefined> {
     const constraintsData: InsertTradingConstraints = {
       competitionId: input.competitionId,
       minimumPairAgeHours:
-        input.minimumPairAgeHours ??
-        config.tradingConstraints.defaultMinimumPairAgeHours,
+        input.minimumPairAgeHours ?? this.defaultMinimumPairAgeHours,
       minimum24hVolumeUsd:
-        input.minimum24hVolumeUsd ??
-        config.tradingConstraints.defaultMinimum24hVolumeUsd,
+        input.minimum24hVolumeUsd ?? this.defaultMinimum24hVolumeUsd,
       minimumLiquidityUsd:
-        input.minimumLiquidityUsd ??
-        config.tradingConstraints.defaultMinimumLiquidityUsd,
-      minimumFdvUsd:
-        input.minimumFdvUsd ?? config.tradingConstraints.defaultMinimumFdvUsd,
+        input.minimumLiquidityUsd ?? this.defaultMinimumLiquidityUsd,
+      minimumFdvUsd: input.minimumFdvUsd ?? this.defaultMinimumFdvUsd,
       minTradesPerDay: input.minTradesPerDay ?? null,
     };
 
-    return await create(constraintsData, tx);
+    return await this.tradingConstraintsRepo.create(constraintsData, tx);
   }
 
   /**
@@ -64,7 +69,7 @@ export class TradingConstraintsService {
   async getConstraints(
     competitionId: string,
   ): Promise<SelectTradingConstraints | null> {
-    return await findByCompetitionId(competitionId);
+    return await this.tradingConstraintsRepo.findByCompetitionId(competitionId);
   }
 
   /**
@@ -73,7 +78,7 @@ export class TradingConstraintsService {
   async updateConstraints(
     competitionId: string,
     input: Partial<TradingConstraintsInput>,
-    tx?: DatabaseTransaction,
+    tx?: Transaction,
   ): Promise<SelectTradingConstraints> {
     const updateData: Partial<InsertTradingConstraints> = {};
 
@@ -93,7 +98,11 @@ export class TradingConstraintsService {
       updateData.minTradesPerDay = input.minTradesPerDay;
     }
 
-    const result = await update(competitionId, updateData, tx);
+    const result = await this.tradingConstraintsRepo.update(
+      competitionId,
+      updateData,
+      tx,
+    );
     if (!result) {
       throw new Error(
         `Failed to update trading constraints for competition ${competitionId}`,
@@ -106,7 +115,7 @@ export class TradingConstraintsService {
    * Deletes trading constraints for a competition
    */
   async deleteConstraints(competitionId: string): Promise<boolean> {
-    return await deleteConstraintsRepo(competitionId);
+    return await this.tradingConstraintsRepo.delete(competitionId);
   }
 
   /**
@@ -118,20 +127,16 @@ export class TradingConstraintsService {
     const constraintsData: InsertTradingConstraints = {
       competitionId: input.competitionId,
       minimumPairAgeHours:
-        input.minimumPairAgeHours ??
-        config.tradingConstraints.defaultMinimumPairAgeHours,
+        input.minimumPairAgeHours ?? this.defaultMinimumPairAgeHours,
       minimum24hVolumeUsd:
-        input.minimum24hVolumeUsd ??
-        config.tradingConstraints.defaultMinimum24hVolumeUsd,
+        input.minimum24hVolumeUsd ?? this.defaultMinimum24hVolumeUsd,
       minimumLiquidityUsd:
-        input.minimumLiquidityUsd ??
-        config.tradingConstraints.defaultMinimumLiquidityUsd,
-      minimumFdvUsd:
-        input.minimumFdvUsd ?? config.tradingConstraints.defaultMinimumFdvUsd,
+        input.minimumLiquidityUsd ?? this.defaultMinimumLiquidityUsd,
+      minimumFdvUsd: input.minimumFdvUsd ?? this.defaultMinimumFdvUsd,
       minTradesPerDay: input.minTradesPerDay ?? null,
     };
 
-    const result = await upsert(constraintsData);
+    const result = await this.tradingConstraintsRepo.upsert(constraintsData);
     if (!result) {
       throw new Error(
         `Failed to upsert trading constraints for competition ${input.competitionId}`,
@@ -163,10 +168,10 @@ export class TradingConstraintsService {
     }
 
     return {
-      minimumPairAgeHours: config.tradingConstraints.defaultMinimumPairAgeHours,
-      minimum24hVolumeUsd: config.tradingConstraints.defaultMinimum24hVolumeUsd,
-      minimumLiquidityUsd: config.tradingConstraints.defaultMinimumLiquidityUsd,
-      minimumFdvUsd: config.tradingConstraints.defaultMinimumFdvUsd,
+      minimumPairAgeHours: this.defaultMinimumPairAgeHours,
+      minimum24hVolumeUsd: this.defaultMinimum24hVolumeUsd,
+      minimumLiquidityUsd: this.defaultMinimumLiquidityUsd,
+      minimumFdvUsd: this.defaultMinimumFdvUsd,
       minTradesPerDay: null,
     };
   }

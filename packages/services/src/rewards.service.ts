@@ -1,45 +1,32 @@
 import { MerkleTree } from "merkletreejs";
+import { Logger } from "pino";
 import { Hex, encodePacked, hexToBytes, keccak256 } from "viem";
 
+import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/voting/defs";
 import { InsertReward } from "@recallnet/db/schema/voting/types";
+import { Database } from "@recallnet/db/types";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
-
-import { config } from "@/config/index.js";
-import { db } from "@/database/db.js";
-import {
-  getRewardsByCompetition,
-  getRewardsTreeByCompetition,
-  insertRewards,
-} from "@/database/repositories/rewards-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
 
 /**
  * Service for handling reward-related operations
  */
 export class RewardsService {
-  private rewardsAllocator: RewardsAllocator | null = null;
+  private rewardsRepo: RewardsRepository;
+  private rewardsAllocator: RewardsAllocator;
+  private db: Database;
+  private logger: Logger;
 
-  constructor(rewardsAllocator?: RewardsAllocator) {
-    if (rewardsAllocator) {
-      this.rewardsAllocator = rewardsAllocator;
-    } else {
-      const { allocatorPrivateKey, contractAddress, rpcProvider } =
-        config.rewards;
-
-      if (!allocatorPrivateKey || !contractAddress || !rpcProvider) {
-        serviceLogger.warn(
-          "[RewardsService] Rewards configuration incomplete. RewardsAllocator will not be initialized.",
-        );
-        return;
-      }
-
-      this.rewardsAllocator = new RewardsAllocator(
-        allocatorPrivateKey as Hex,
-        rpcProvider,
-        contractAddress as Hex,
-      );
-    }
+  constructor(
+    rewardsRepo: RewardsRepository,
+    rewardsAllocator: RewardsAllocator,
+    db: Database,
+    logger: Logger,
+  ) {
+    this.rewardsRepo = rewardsRepo;
+    this.rewardsAllocator = rewardsAllocator;
+    this.db = db;
+    this.logger = logger;
   }
 
   /**
@@ -48,9 +35,9 @@ export class RewardsService {
   public async calculateRewards(): Promise<void> {
     try {
       const rewards = await this.calculate();
-      await insertRewards(rewards);
+      await this.rewardsRepo.insertRewards(rewards);
     } catch (error) {
-      serviceLogger.error("[RewardsService] Error in calculateRewards:", error);
+      this.logger.error("[RewardsService] Error in calculateRewards:", error);
       throw error;
     }
   }
@@ -74,7 +61,8 @@ export class RewardsService {
     tokenAddress: Hex,
     startTimestamp: number,
   ): Promise<void> {
-    const rewards = await getRewardsByCompetition(competitionId);
+    const rewards =
+      await this.rewardsRepo.getRewardsByCompetition(competitionId);
 
     // Build Merkle tree if we have rewards
     if (rewards.length == 0) {
@@ -128,8 +116,8 @@ export class RewardsService {
 
     const rootHash = merkleTree.getHexRoot();
 
-    await db.transaction(async (tx) => {
-      serviceLogger.info(
+    await this.db.transaction(async (tx) => {
+      this.logger.info(
         `[RewardsService] Publishing root hash ${rootHash} to blockchain for competition ${competitionId}`,
       );
 
@@ -140,7 +128,7 @@ export class RewardsService {
         startTimestamp,
       );
 
-      serviceLogger.info(
+      this.logger.info(
         `[RewardsService] Successfully published root hash to blockchain. Transaction: ${result.transactionHash}`,
       );
 
@@ -153,7 +141,7 @@ export class RewardsService {
       });
     });
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[RewardsService] Built Merkle tree for competition ${competitionId} with ${treeNodes.length} nodes and root hash: ${rootHash}`,
     );
   }
@@ -174,7 +162,8 @@ export class RewardsService {
     try {
       const leafHash = createLeafNode(address, amount);
 
-      const tree = await getRewardsTreeByCompetition(competitionId);
+      const tree =
+        await this.rewardsRepo.getRewardsTreeByCompetition(competitionId);
 
       const treeNodes: { [level: number]: { [idx: number]: Uint8Array } } = {};
       for (const { level, idx, hash } of tree) {
@@ -223,7 +212,7 @@ export class RewardsService {
 
       return proof;
     } catch (error) {
-      serviceLogger.error("[RewardsService] Error in retrieveProof:", error);
+      this.logger.error("[RewardsService] Error in retrieveProof:", error);
       throw error;
     }
   }

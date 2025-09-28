@@ -1,34 +1,24 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
+import { Logger } from "pino";
 
+import { TradeRepository } from "@recallnet/db/repositories/trade";
+import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 import { InsertTrade, SelectTrade } from "@recallnet/db/schema/trading/types";
 
-import { config, features } from "@/config/index.js";
-import {
-  count,
-  createTradeWithBalances,
-  getAgentTrades,
-  getAgentTradesInCompetition,
-  getCompetitionTradeMetrics,
-  getCompetitionTrades,
-} from "@/database/repositories/trade-repository.js";
-import { findByCompetitionId } from "@/database/repositories/trading-constraints-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { EXEMPT_TOKENS, calculateSlippage } from "@/lib/trade-utils.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { BalanceService } from "@/services/balance.service.js";
-import { PortfolioSnapshotterService } from "@/services/index.js";
-import { DexScreenerProvider } from "@/services/providers/price/dexscreener.provider.js";
-import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
-
+import { BalanceService } from "./balance.service.js";
+import { EXEMPT_TOKENS, calculateSlippage } from "./lib/trade-utils.js";
+import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
+import { DexScreenerProvider } from "./providers/price/dexscreener.provider.js";
+import {
+  ApiError,
+  BlockchainType,
+  CrossChainTradingType,
+  PriceReport,
+  SpecificChain,
+} from "./types/index.js";
 
 const MIN_TRADE_AMOUNT = 0.000001;
-
-// Result types inferred from repository functions to ensure consistency
-type CompetitionTradesResult = Awaited<ReturnType<typeof getCompetitionTrades>>;
-type AgentTradesInCompetitionResult = Awaited<
-  ReturnType<typeof getAgentTradesInCompetition>
->;
 
 // Interface for trading constraints
 interface TradingConstraints {
@@ -53,28 +43,49 @@ interface ChainOptions {
 export class TradeSimulatorService {
   private balanceService: BalanceService;
   private priceTrackerService: PriceTrackerService;
+  private tradeRepo: TradeRepository;
+  private tradingConstraintsRepo: TradingConstraintsRepository;
   // Cache of recent trades for performance (agentId -> trades)
   private tradeCache: Map<string, SelectTrade[]>;
   // Maximum trade percentage of portfolio value
   private maxTradePercentage: number;
-  private portfolioSnapshotterService: PortfolioSnapshotterService;
+  private defaultMinimumPairAgeHours: number;
+  private defaultMinimum24hVolumeUsd: number;
+  private defaultMinimumLiquidityUsd: number;
+  private defaultMinimumFdvUsd: number;
+  private crossChainTradingType: CrossChainTradingType;
   private dexScreenerProvider: DexScreenerProvider;
   // Cache of trading constraints per competition
   private constraintsCache: Map<string, TradingConstraints>;
+  private logger: Logger;
 
   constructor(
     balanceService: BalanceService,
     priceTrackerService: PriceTrackerService,
-    portfolioSnapshotterService: PortfolioSnapshotterService,
+    tradeRepo: TradeRepository,
+    tradingConstraintsRepo: TradingConstraintsRepository,
+    maxTradePercentage: number,
+    defaultMinimumPairAgeHours: number,
+    defaultMinimum24hVolumeUsd: number,
+    defaultMinimumLiquidityUsd: number,
+    defaultMinimumFdvUsd: number,
+    crossChainTradingType: CrossChainTradingType,
+    logger: Logger,
   ) {
     this.balanceService = balanceService;
     this.priceTrackerService = priceTrackerService;
-    this.portfolioSnapshotterService = portfolioSnapshotterService;
+    this.tradeRepo = tradeRepo;
+    this.tradingConstraintsRepo = tradingConstraintsRepo;
+    this.maxTradePercentage = maxTradePercentage;
+    this.defaultMinimumPairAgeHours = defaultMinimumPairAgeHours;
+    this.defaultMinimum24hVolumeUsd = defaultMinimum24hVolumeUsd;
+    this.defaultMinimumLiquidityUsd = defaultMinimumLiquidityUsd;
+    this.defaultMinimumFdvUsd = defaultMinimumFdvUsd;
+    this.crossChainTradingType = crossChainTradingType;
+    this.logger = logger;
     this.dexScreenerProvider = new DexScreenerProvider();
     this.tradeCache = new Map();
     this.constraintsCache = new Map();
-    // Get the maximum trade percentage from config
-    this.maxTradePercentage = config.maxTradePercentage;
   }
 
   /**
@@ -100,7 +111,7 @@ export class TradeSimulatorService {
     chainOptions?: ChainOptions,
   ): Promise<SelectTrade> {
     try {
-      serviceLogger.debug(`\n[TradeSimulator] Starting trade execution:
+      this.logger.debug(`\n[TradeSimulator] Starting trade execution:
                 Agent: ${agentId}
                 Competition: ${competitionId}
                 From Token: ${fromToken}
@@ -176,7 +187,7 @@ export class TradeSimulatorService {
       );
 
       // Log trade summary
-      serviceLogger.debug(`[TradeSimulator] Trade executed successfully:
+      this.logger.debug(`[TradeSimulator] Trade executed successfully:
                 Trade ID: ${result.trade.id}
                 Agent: ${agentId}
                 Competition: ${competitionId}
@@ -196,7 +207,7 @@ export class TradeSimulatorService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error during trade";
-      serviceLogger.error(
+      this.logger.error(
         `[TradeSimulator] Trade execution failed:`,
         errorMessage,
       );
@@ -227,7 +238,7 @@ export class TradeSimulatorService {
   ): void {
     // Validate minimum trade amount
     if (fromAmount < MIN_TRADE_AMOUNT) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Trade amount too small: ${fromAmount}`,
       );
       throw new ApiError(400, "Trade amount too small (minimum: 0.000001)");
@@ -235,13 +246,13 @@ export class TradeSimulatorService {
 
     // Validate reason is provided
     if (!reason) {
-      serviceLogger.debug(`[TradeSimulator] Trade reason is required`);
+      this.logger.debug(`[TradeSimulator] Trade reason is required`);
       throw new ApiError(400, "Trade reason is required");
     }
 
     // Prevent trading between identical tokens
     if (fromToken === toToken) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Cannot trade between identical tokens: ${fromToken}`,
       );
       throw new ApiError(400, "Cannot trade between identical tokens");
@@ -271,7 +282,11 @@ export class TradeSimulatorService {
       }
 
       // Get from database
-      const trades = await getAgentTrades(agentId, limit, offset);
+      const trades = await this.tradeRepo.getAgentTrades(
+        agentId,
+        limit,
+        offset,
+      );
 
       // Update cache if fetching recent trades
       if (!offset && (!limit || limit <= 100)) {
@@ -280,10 +295,7 @@ export class TradeSimulatorService {
 
       return trades;
     } catch (error) {
-      serviceLogger.error(
-        `[TradeSimulator] Error getting agent trades:`,
-        error,
-      );
+      this.logger.error(`[TradeSimulator] Error getting agent trades:`, error);
       return [];
     }
   }
@@ -299,11 +311,15 @@ export class TradeSimulatorService {
     competitionId: string,
     limit?: number,
     offset?: number,
-  ): Promise<CompetitionTradesResult> {
+  ) {
     try {
-      return await getCompetitionTrades(competitionId, limit, offset);
+      return await this.tradeRepo.getCompetitionTrades(
+        competitionId,
+        limit,
+        offset,
+      );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[TradeSimulator] Error getting competition trades:`,
         error,
       );
@@ -322,9 +338,9 @@ export class TradeSimulatorService {
     uniqueTokens: number;
   }> {
     try {
-      return await getCompetitionTradeMetrics(competitionId);
+      return await this.tradeRepo.getCompetitionTradeMetrics(competitionId);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[TradeSimulator] Error getting competition trade metrics:`,
         error,
       );
@@ -345,16 +361,16 @@ export class TradeSimulatorService {
     agentId: string,
     limit?: number,
     offset?: number,
-  ): Promise<AgentTradesInCompetitionResult> {
+  ) {
     try {
-      return await getAgentTradesInCompetition(
+      return await this.tradeRepo.getAgentTradesInCompetition(
         competitionId,
         agentId,
         limit,
         offset,
       );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[TradeSimulator] Error getting agent trades in competition:`,
         error,
       );
@@ -391,7 +407,7 @@ export class TradeSimulatorService {
   async calculateBulkPortfolioValues(
     agentIds: string[],
   ): Promise<Map<string, number>> {
-    serviceLogger.debug(
+    this.logger.debug(
       `[TradeSimulator] Calculating bulk portfolio values for ${agentIds.length} agents`,
     );
 
@@ -429,19 +445,19 @@ export class TradeSimulatorService {
         }
       });
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Successfully calculated ${portfolioValues.size} portfolio values using ${uniqueTokens.length} unique tokens`,
       );
 
       return portfolioValues;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[TradeSimulator] Error calculating bulk portfolio values:`,
         error,
       );
 
       // Fallback to individual calculations
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Falling back to individual portfolio calculations`,
       );
       for (const agentId of agentIds) {
@@ -449,7 +465,7 @@ export class TradeSimulatorService {
           const value = await this.calculatePortfolioValue(agentId);
           portfolioValues.set(agentId, value);
         } catch (agentError) {
-          serviceLogger.error(
+          this.logger.error(
             `[TradeSimulator] Error calculating portfolio for agent ${agentId}:`,
             agentError,
           );
@@ -468,10 +484,10 @@ export class TradeSimulatorService {
   async isHealthy() {
     try {
       // Simple check to see if we can connect to the database
-      await count();
+      await this.tradeRepo.count();
       return true;
     } catch (error) {
-      serviceLogger.error("[TradeSimulator] Health check failed:", error);
+      this.logger.error("[TradeSimulator] Health check failed:", error);
       return false;
     }
   }
@@ -490,7 +506,8 @@ export class TradeSimulatorService {
     }
 
     // Try to get from database
-    const dbConstraints = await findByCompetitionId(competitionId);
+    const dbConstraints =
+      await this.tradingConstraintsRepo.findByCompetitionId(competitionId);
 
     let constraints: TradingConstraints;
     if (dbConstraints) {
@@ -503,13 +520,10 @@ export class TradeSimulatorService {
     } else {
       // Fall back to default values
       constraints = {
-        minimumPairAgeHours:
-          config.tradingConstraints.defaultMinimumPairAgeHours,
-        minimum24hVolumeUsd:
-          config.tradingConstraints.defaultMinimum24hVolumeUsd,
-        minimumLiquidityUsd:
-          config.tradingConstraints.defaultMinimumLiquidityUsd,
-        minimumFdvUsd: config.tradingConstraints.defaultMinimumFdvUsd,
+        minimumPairAgeHours: this.defaultMinimumPairAgeHours,
+        minimum24hVolumeUsd: this.defaultMinimum24hVolumeUsd,
+        minimumLiquidityUsd: this.defaultMinimumLiquidityUsd,
+        minimumFdvUsd: this.defaultMinimumFdvUsd,
       };
     }
 
@@ -549,7 +563,7 @@ export class TradeSimulatorService {
     );
 
     if (isStablecoin) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] All trading constraints exempted for stablecoin: ${tokenAddress}`,
       );
       return;
@@ -557,7 +571,7 @@ export class TradeSimulatorService {
 
     const isExemptToken = EXEMPT_TOKENS.has(priceData.token);
     if (isExemptToken) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Constraint check exempted for major token: ${tokenAddress} (${priceData.specificChain})`,
       );
       return;
@@ -576,7 +590,8 @@ export class TradeSimulatorService {
     this.validateFdvConstraint(priceData, constraints);
 
     const isExemptFromFdvLogging = EXEMPT_TOKENS.has(priceData.token);
-    serviceLogger.debug(`[TradeSimulator] Trading constraints validated for ${tokenAddress}:
+    this.logger
+      .debug(`[TradeSimulator] Trading constraints validated for ${tokenAddress}:
       Pair Age: ${priceData.pairCreatedAt ? ((Date.now() - priceData.pairCreatedAt) / (1000 * 60 * 60)).toFixed(2) : "N/A"} hours
       24h Volume: $${priceData.volume?.h24?.toLocaleString() || "N/A"}
       Liquidity: $${priceData.liquidity?.usd?.toLocaleString() || "N/A"}
@@ -601,7 +616,7 @@ export class TradeSimulatorService {
       throw new ApiError(400, `Cannot get token FDV`);
     }
     if (priceData.fdv < constraints.minimumFdvUsd) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Insufficient FDV: $${priceData.fdv.toLocaleString()} (minimum: $${constraints.minimumFdvUsd.toLocaleString()})`,
       );
       throw new ApiError(
@@ -635,7 +650,7 @@ export class TradeSimulatorService {
     const pairAgeHours =
       (currentTime - priceData.pairCreatedAt) / (1000 * 60 * 60);
     if (pairAgeHours < constraints.minimumPairAgeHours) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Pair too young: ${pairAgeHours.toFixed(2)} hours (minimum: ${constraints.minimumPairAgeHours} hours)`,
       );
       throw new ApiError(
@@ -662,7 +677,7 @@ export class TradeSimulatorService {
       throw new ApiError(400, `Cannot get token 24h volume data`);
     }
     if (priceData.volume.h24 < constraints.minimum24hVolumeUsd) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Insufficient 24h volume: $${priceData.volume.h24.toLocaleString()} (minimum: $${constraints.minimum24hVolumeUsd.toLocaleString()})`,
       );
       throw new ApiError(
@@ -689,7 +704,7 @@ export class TradeSimulatorService {
       throw new ApiError(400, `Cannot get token liquidity`);
     }
     if (priceData.liquidity.usd < constraints.minimumLiquidityUsd) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Insufficient liquidity: $${priceData.liquidity.usd.toLocaleString()} (minimum: $${constraints.minimumLiquidityUsd.toLocaleString()})`,
       );
       throw new ApiError(
@@ -706,10 +721,10 @@ export class TradeSimulatorService {
    */
   private validateCrossChainTrading(chainInfo: ChainOptions): void {
     if (
-      features.CROSS_CHAIN_TRADING_TYPE === "disallowXParent" &&
+      this.crossChainTradingType === "disallowXParent" &&
       chainInfo.fromChain !== chainInfo.toChain
     ) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Cross-parent chain trading is disabled. Cannot trade between ${chainInfo.fromChain} and ${chainInfo.toChain}`,
       );
       throw new ApiError(
@@ -719,13 +734,13 @@ export class TradeSimulatorService {
     }
 
     if (
-      features.CROSS_CHAIN_TRADING_TYPE === "disallowAll" &&
+      this.crossChainTradingType === "disallowAll" &&
       (chainInfo.fromChain !== chainInfo.toChain ||
         (chainInfo.fromSpecificChain &&
           chainInfo.toSpecificChain &&
           chainInfo.fromSpecificChain !== chainInfo.toSpecificChain))
     ) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Cross-chain trading is disabled. Cannot trade between ${chainInfo.fromChain}(${chainInfo.fromSpecificChain || "none"}) and ${chainInfo.toChain}(${chainInfo.toSpecificChain || "none"})`,
       );
       throw new ApiError(
@@ -756,12 +771,12 @@ export class TradeSimulatorService {
     if (chainOptions?.fromChain) {
       fromChain = chainOptions.fromChain;
       fromSpecificChain = chainOptions.fromSpecificChain;
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Using provided chain for fromToken: ${fromChain}, specificChain: ${fromSpecificChain || "none"}`,
       );
     } else {
       fromChain = this.priceTrackerService.determineChain(fromToken);
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Detected chain for fromToken: ${fromChain}`,
       );
     }
@@ -769,7 +784,7 @@ export class TradeSimulatorService {
     // assign the specific chain if provided
     if (chainOptions?.fromSpecificChain) {
       fromSpecificChain = chainOptions.fromSpecificChain;
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Using provided specific chain for fromToken: ${fromSpecificChain}`,
       );
     }
@@ -778,12 +793,12 @@ export class TradeSimulatorService {
     if (chainOptions?.toChain) {
       toChain = chainOptions.toChain;
       toSpecificChain = chainOptions.toSpecificChain;
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Using provided chain for toToken: ${toChain}, specificChain: ${toSpecificChain || "none"}`,
       );
     } else {
       toChain = this.priceTrackerService.determineChain(toToken);
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Detected chain for toToken: ${toChain}`,
       );
     }
@@ -791,7 +806,7 @@ export class TradeSimulatorService {
     // assign the specific chain if provided
     if (chainOptions?.toSpecificChain) {
       toSpecificChain = chainOptions.toSpecificChain;
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Using provided specific chain for toToken: ${toSpecificChain}`,
       );
     }
@@ -832,11 +847,11 @@ export class TradeSimulatorService {
       chainInfo.toSpecificChain,
     );
 
-    serviceLogger.debug("[TradeSimulator] Got prices:");
-    serviceLogger.debug(
+    this.logger.debug("[TradeSimulator] Got prices:");
+    this.logger.debug(
       `  From Token (${fromToken}): ${JSON.stringify(fromPrice, null, 4)} (${chainInfo.fromChain})`,
     );
-    serviceLogger.debug(
+    this.logger.debug(
       `  To Token (${toToken}): ${JSON.stringify(toPrice, null, 4)} (${chainInfo.toChain})`,
     );
 
@@ -846,7 +861,7 @@ export class TradeSimulatorService {
       fromPrice.price == null ||
       toPrice.price == null
     ) {
-      serviceLogger.debug(`[TradeSimulator] Missing price data:
+      this.logger.debug(`[TradeSimulator] Missing price data:
             From Token Price: ${fromPrice ? fromPrice.price : "null"}
             To Token Price: ${toPrice ? toPrice.price : "null"}
         `);
@@ -861,7 +876,7 @@ export class TradeSimulatorService {
     }
 
     if (!(fromPrice.specificChain !== null && toPrice.specificChain !== null)) {
-      serviceLogger.debug(`[TradeSimulator] Missing specific chain data:
+      this.logger.debug(`[TradeSimulator] Missing specific chain data:
             From Token Specific Chain: ${fromPrice.specificChain}
             To Token Specific Chain: ${toPrice.specificChain}
         `);
@@ -888,12 +903,12 @@ export class TradeSimulatorService {
     currentBalance: number,
   ): Promise<void> {
     // Validate balances
-    serviceLogger.debug(
+    this.logger.debug(
       `[TradeSimulator] Current balance of ${fromToken}: ${currentBalance}`,
     );
 
     if (currentBalance < fromAmount) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Insufficient balance: ${currentBalance} < ${fromAmount}`,
       );
       throw new ApiError(400, "Insufficient balance");
@@ -903,12 +918,12 @@ export class TradeSimulatorService {
     const portfolioValue = await this.calculatePortfolioValue(agentId);
     // TODO: maxTradePercentage should probably be a setting per comp.
     const maxTradeValue = portfolioValue * (this.maxTradePercentage / 100);
-    serviceLogger.debug(
+    this.logger.debug(
       `[TradeSimulator] Portfolio value: $${portfolioValue}, Max trade value: $${maxTradeValue}, Attempted trade value: $${fromValueUSD}`,
     );
 
     if (fromValueUSD > maxTradeValue) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Trade exceeds maximum size: $${fromValueUSD} > $${maxTradeValue} (${this.maxTradePercentage}% of portfolio)`,
       );
       throw new ApiError(
@@ -944,7 +959,8 @@ export class TradeSimulatorService {
       toAmount = 0;
       exchangeRate = 0;
       effectiveFromValueUSD = fromValueUSD; // For accounting purposes, record the full USD value burned
-      serviceLogger.debug(`[TradeSimulator] Burn transaction detected - tokens will be burned (toAmount = 0):
+      this.logger
+        .debug(`[TradeSimulator] Burn transaction detected - tokens will be burned (toAmount = 0):
           From Token (${fromToken}):
           - Amount: ${fromAmount}
           - USD Value: $${fromValueUSD.toFixed(6)}
@@ -964,7 +980,7 @@ export class TradeSimulatorService {
       effectiveFromValueUSD = calculatedEffectiveValue;
       toAmount = effectiveFromValueUSD / toPrice;
       exchangeRate = toAmount / fromAmount;
-      serviceLogger.debug(`[TradeSimulator] Trade calculation details:
+      this.logger.debug(`[TradeSimulator] Trade calculation details:
           From Token (${fromToken}):
           - Amount: ${fromAmount}
           - USD Value: $${fromValueUSD.toFixed(6)}
@@ -1018,7 +1034,7 @@ export class TradeSimulatorService {
   }> {
     // Create trade record with atomic balance updates
     const trade: InsertTrade = {
-      id: uuidv4(),
+      id: randomUUID(),
       timestamp: new Date(),
       fromToken,
       toToken,
@@ -1040,7 +1056,7 @@ export class TradeSimulatorService {
     };
 
     // Execute the trade atomically (updates balances and creates trade record in one transaction)
-    const result = await createTradeWithBalances(trade);
+    const result = await this.tradeRepo.createTradeWithBalances(trade);
 
     // Update balance cache with absolute values from the database
     this.balanceService.setBalanceCache(

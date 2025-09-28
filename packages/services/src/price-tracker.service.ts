@@ -1,14 +1,13 @@
 import { LRUCache } from "lru-cache";
+import { Logger } from "pino";
 
-import { config } from "@/config/index.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
+import { MultiChainProvider } from "./providers/multi-chain.provider.js";
 import {
   BlockchainType,
   PriceReport,
   PriceSource,
   SpecificChain,
-} from "@/types/index.js";
+} from "./types/index.js";
 
 /**
  * Price Tracker Service
@@ -25,21 +24,25 @@ export class PriceTrackerService {
   // Track which chain a token belongs to for quicker lookups
   private readonly chainToTokenCache: LRUCache<string, SpecificChain>;
 
-  constructor() {
+  private logger: Logger;
+
+  constructor(maxCacheSize: number, priceTTLMs: number, logger: Logger) {
+    this.logger = logger;
+
     // Initialize LRU caches
     this.tokenPriceCache = new LRUCache<string, PriceReport>({
-      max: config.priceTracker.maxCacheSize,
-      ttl: config.priceTracker.priceTTLMs,
+      max: maxCacheSize,
+      ttl: priceTTLMs,
     });
 
     this.chainToTokenCache = new LRUCache<string, SpecificChain>({
-      max: config.priceTracker.maxCacheSize,
+      max: maxCacheSize,
       // No TTL - chain mappings are permanent
     });
 
     // Initialize only the MultiChainProvider
     this.multiChainProvider = new MultiChainProvider();
-    serviceLogger.debug(
+    this.logger.debug(
       "[PriceTracker] Initialized MultiChainProvider for all token price fetching",
     );
 
@@ -51,11 +54,11 @@ export class PriceTrackerService {
       this.providers.push(this.multiChainProvider);
     }
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[PriceTracker] Initialized with ${this.providers.length} providers`,
     );
     this.providers.forEach((p) =>
-      serviceLogger.debug(`[PriceTracker] Loaded provider: ${p.getName()}`),
+      this.logger.debug(`[PriceTracker] Loaded provider: ${p.getName()}`),
     );
   }
 
@@ -92,7 +95,7 @@ export class PriceTrackerService {
     blockchainType?: BlockchainType,
     specificChain?: SpecificChain,
   ): Promise<PriceReport | null> {
-    serviceLogger.debug(
+    this.logger.debug(
       `[PriceTracker] Getting price for token: ${tokenAddress}`,
     );
 
@@ -104,7 +107,7 @@ export class PriceTrackerService {
       specificChain = "svm";
     }
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[PriceTracker] ${blockchainType ? "Using provided" : "Detected"} token ${tokenAddress} on chain: ${tokenChain}`,
     );
 
@@ -132,7 +135,7 @@ export class PriceTrackerService {
   async getBulkPrices(
     tokenAddresses: string[],
   ): Promise<Map<string, PriceReport | null>> {
-    serviceLogger.debug(
+    this.logger.debug(
       `[PriceTracker] Getting bulk prices for ${tokenAddresses.length} tokens`,
     );
 
@@ -176,7 +179,7 @@ export class PriceTrackerService {
       (v) => v !== null,
     ).length;
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[PriceTracker] Bulk price retrieval complete: ${successfulPrices}/${tokenAddresses.length} tokens ` +
         `(${cacheHits} cache hits, ${tokensNeedingAPI.length} API requests)`,
     );
@@ -198,7 +201,7 @@ export class PriceTrackerService {
         // Cache in memory
         this.setCachedPrice(priceReport);
 
-        serviceLogger.debug(
+        this.logger.debug(
           `[PriceTracker] Got price from batch API for ${tokenAddress}: $${priceReport.price}`,
         );
       }
@@ -222,7 +225,7 @@ export class PriceTrackerService {
           );
           return price !== null;
         } catch (error) {
-          serviceLogger.error(
+          this.logger.error(
             "[PriceTracker] Health check failed on price fetch:",
             error,
           );
@@ -232,7 +235,7 @@ export class PriceTrackerService {
 
       return false;
     } catch (error) {
-      serviceLogger.error("[PriceTracker] Health check failed:", error);
+      this.logger.error("[PriceTracker] Health check failed:", error);
       return false;
     }
   }
@@ -269,7 +272,7 @@ export class PriceTrackerService {
     const cached = this.tokenPriceCache.get(cacheKey);
 
     if (cached) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[PriceTracker] Using cached price for ${normalizedAddress} on ${chainToLookup}: $${cached.price}`,
       );
       return cached;
@@ -295,7 +298,7 @@ export class PriceTrackerService {
       this.chainToTokenCache.set(normalizedAddress, priceReport.specificChain);
     }
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[PriceTracker] Cached price for ${normalizedAddress} on ${priceReport.specificChain}: $${priceReport.price}`,
     );
   }
@@ -318,7 +321,7 @@ export class PriceTrackerService {
     // Try cached chain if available (optimization)
     const cachedChain = this.getCachedChain(tokenAddress);
     if (cachedChain) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[PriceTracker] Using cached chain ${cachedChain} for token ${tokenAddress}`,
       );
       return cachedChain;
@@ -341,7 +344,7 @@ export class PriceTrackerService {
     specificChain?: SpecificChain,
   ): Promise<PriceReport | null> {
     if (!this.multiChainProvider) {
-      serviceLogger.error(`[PriceTracker] No MultiChainProvider available`);
+      this.logger.error(`[PriceTracker] No MultiChainProvider available`);
       return null;
     }
 
@@ -350,7 +353,7 @@ export class PriceTrackerService {
         ? `specific chain ${specificChain}`
         : "multi-chain search";
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[PriceTracker] Fetching live price from API for token ${tokenAddress} using ${apiType}`,
       );
 
@@ -361,13 +364,13 @@ export class PriceTrackerService {
       );
 
       if (!priceResult) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[PriceTracker] No price available from API for ${tokenAddress}`,
         );
         return null;
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[PriceTracker] Got price $${priceResult.price} from live API (chain: ${priceResult.specificChain})`,
       );
 
@@ -376,7 +379,7 @@ export class PriceTrackerService {
 
       return priceResult;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PriceTracker] Error fetching price from API:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -440,11 +443,11 @@ export class PriceTrackerService {
           }
         }
 
-        serviceLogger.debug(
+        this.logger.debug(
           `[PriceTracker] Cached chain ${cachedChain}: ${successfulTokens.size} hits from ${tokens.length} tokens`,
         );
       } catch (error) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[PriceTracker] Error with cached chain ${cachedChain}, tokens will fallback to multi-chain search:`,
           error instanceof Error ? error.message : "Unknown error",
         );
@@ -469,7 +472,7 @@ export class PriceTrackerService {
     }
 
     try {
-      serviceLogger.debug(
+      this.logger.debug(
         `[PriceTracker] Fetching ${remainingTokens.length} tokens via batch API`,
       );
 
@@ -500,7 +503,7 @@ export class PriceTrackerService {
         await this.processBatchResults(svmResults, resultMap);
       }
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[PriceTracker] Error in batch API processing:`,
         error instanceof Error ? error.message : "Unknown error",
       );

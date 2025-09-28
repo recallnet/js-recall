@@ -14,23 +14,24 @@ import {
   repositoryLogger,
   serviceLogger,
 } from "@/lib/logger.js";
-import { AdminService } from "@/services/admin.service.js";
-import { AgentService } from "@/services/agent.service.js";
-import { AgentRankService } from "@/services/agentrank.service.js";
-import { BalanceService } from "@/services/balance.service.js";
-import { BoostAwardService } from "@/services/boost-award.service.js";
-import { CompetitionRewardService } from "@/services/competition-reward.service.js";
-import { CompetitionService } from "@/services/competition.service.js";
-import { ConfigurationService } from "@/services/configuration.service.js";
-import { EmailService } from "@/services/email.service.js";
-import { LeaderboardService } from "@/services/leaderboard.service.js";
-import { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
-import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
-import { PriceTrackerService } from "@/services/price-tracker.service.js";
-import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
-import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
-import { UserService } from "@/services/user.service.js";
-import { VoteService } from "@/services/vote.service.js";
+
+import { AdminService } from "./admin.service.js";
+import { AgentService } from "./agent.service.js";
+import { AgentRankService } from "./agentrank.service.js";
+import { BalanceService } from "./balance.service.js";
+import { BoostAwardService } from "./boost-award.service.js";
+import { CompetitionRewardService } from "./competition-reward.service.js";
+import { CompetitionService } from "./competition.service.js";
+import { ConfigurationService } from "./configuration.service.js";
+import { EmailService } from "./email.service.js";
+import { LeaderboardService } from "./leaderboard.service.js";
+import { PerpsDataProcessor } from "./perps-data-processor.service.js";
+import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
+import { PriceTrackerService } from "./price-tracker.service.js";
+import { TradeSimulatorService } from "./trade-simulator.service.js";
+import { TradingConstraintsService } from "./trading-constraints.service.js";
+import { UserService } from "./user.service.js";
+import { VoteService } from "./vote.service.js";
 
 /**
  * Service Registry

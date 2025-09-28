@@ -35,13 +35,17 @@
   "dependencies": {
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
+    "@recallnet/staking-contracts": "workspace:*",
     "decimal.js": "^10.6.0",
+    "lru-cache": "^11.1.0",
+    "merkletreejs": "^0.5.2",
     "neverthrow": "^8.2.0",
     "openskill": "^4.1.0",
     "pg": "^8.10.0",
     "pino": "^9.7.0",
     "siwe": "^3.0.0",
-    "viem": "^2.37.8"
+    "viem": "^2.37.8",
+    "zod": "^3.25.17"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",

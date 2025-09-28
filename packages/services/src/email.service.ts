@@ -1,5 +1,4 @@
-import { config } from "@/config/index.js";
-import { serviceLogger } from "@/lib/logger.js";
+import { Logger } from "pino";
 
 /**
  * Metadata for where the user came from (stored in the Loops mailing list)
@@ -39,20 +38,27 @@ export class EmailService {
   private readonly apiKey: string;
   private readonly mailingListId: string;
   private readonly baseUrl: string;
+  private readonly logger: Logger;
 
-  constructor() {
-    this.apiKey = config.email.apiKey;
-    this.mailingListId = config.email.mailingListId;
-    this.baseUrl = config.email.baseUrl;
+  constructor(
+    apiKey: string,
+    mailingListId: string,
+    baseUrl: string,
+    logger: Logger,
+  ) {
+    this.apiKey = apiKey;
+    this.mailingListId = mailingListId;
+    this.baseUrl = baseUrl;
+    this.logger = logger;
 
     if (!this.apiKey) {
-      serviceLogger.warn("[EmailService] LOOPS_API_KEY not configured");
+      this.logger.warn("[EmailService] LOOPS_API_KEY not configured");
     }
     if (!this.mailingListId) {
-      serviceLogger.warn("[EmailService] LOOPS_MAILING_LIST_ID not configured");
+      this.logger.warn("[EmailService] LOOPS_MAILING_LIST_ID not configured");
     }
     if (!this.baseUrl) {
-      serviceLogger.warn("[EmailService] LOOPS_BASE_URL not configured");
+      this.logger.warn("[EmailService] LOOPS_BASE_URL not configured");
     }
   }
 
@@ -69,12 +75,12 @@ export class EmailService {
     },
   ): Promise<{ success: boolean; error?: string } | null> {
     if (!this.isConfigured()) {
-      serviceLogger.warn(
+      this.logger.warn(
         "[EmailService] Loops configuration missing - API key or mailing list ID not provided",
       );
       return null;
     }
-    serviceLogger.debug(
+    this.logger.debug(
       `[EmailService] Subscribing user ${email} to mailing list ${this.mailingListId}`,
     );
 
@@ -92,7 +98,7 @@ export class EmailService {
 
       return await this.updateContact(payload);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[EmailService] Error subscribing user ${email}:`,
         error,
       );
@@ -115,12 +121,12 @@ export class EmailService {
     email: string,
   ): Promise<{ success: boolean; error?: string } | null> {
     if (!this.isConfigured()) {
-      serviceLogger.warn(
+      this.logger.warn(
         "[EmailService] Loops configuration missing - API key or mailing list ID not provided",
       );
       return null;
     }
-    serviceLogger.debug(
+    this.logger.debug(
       `[EmailService] Unsubscribing user from mailing list: ${email}`,
     );
 
@@ -137,7 +143,7 @@ export class EmailService {
 
       return await this.updateContact(payload);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[EmailService] Error unsubscribing user ${email}:`,
         error,
       );
@@ -172,12 +178,12 @@ export class EmailService {
       const data: LoopsResponse = await response.json();
 
       if (!data.success) {
-        serviceLogger.error("[EmailService] Update contact failed:", data);
+        this.logger.error("[EmailService] Update contact failed:", data);
         throw new Error(data.message || `Loops API error: ${response.status}`);
       }
       return { success: true };
     } catch (error) {
-      serviceLogger.error("[EmailService] Error updating contact:", error);
+      this.logger.error("[EmailService] Error updating contact:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Network error",

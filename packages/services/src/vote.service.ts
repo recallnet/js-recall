@@ -1,35 +1,44 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
+import { Logger } from "pino";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { VoteRepository } from "@recallnet/db/repositories/vote";
 import {
   InsertVote,
   SelectCompetition,
   SelectVote,
 } from "@recallnet/db/schema/core/types";
 
-import { findById as findAgentById } from "@/database/repositories/agent-repository.js";
-import { isAgentActiveInCompetition } from "@/database/repositories/competition-repository.js";
-import { findById as findCompetitionById } from "@/database/repositories/competition-repository.js";
-import {
-  countVotesByAgent,
-  createVote,
-  findVotesByUser,
-  getUserVoteForCompetition,
-  getVoteCountsByCompetition,
-  hasUserVotedInCompetition,
-} from "@/database/repositories/vote-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
 import {
   CompetitionVotingStatus,
   UserVoteInfo,
   VOTE_ERROR_TYPES,
   VoteError,
-} from "@/types/index.js";
+} from "./types/index.js";
 
 /**
  * Vote Service
  * Manages non-staking votes for competition agents with business logic validation
  */
 export class VoteService {
+  private agentRepo: AgentRepository;
+  private competitionRepo: CompetitionRepository;
+  private voteRepo: VoteRepository;
+  private logger: Logger;
+
+  constructor(
+    agentRepo: AgentRepository,
+    competitionRepo: CompetitionRepository,
+    voteRepo: VoteRepository,
+    logger: Logger,
+  ) {
+    this.agentRepo = agentRepo;
+    this.competitionRepo = competitionRepo;
+    this.voteRepo = voteRepo;
+    this.logger = logger;
+  }
+
   /**
    * Cast a vote for an agent in a competition
    * @param userId The user casting the vote
@@ -49,7 +58,7 @@ export class VoteService {
 
       // Create the vote
       const voteData: InsertVote = {
-        id: uuidv4(),
+        id: randomUUID(),
         userId,
         agentId,
         competitionId,
@@ -57,15 +66,15 @@ export class VoteService {
         updatedAt: new Date(),
       };
 
-      const vote = await createVote(voteData);
+      const vote = await this.voteRepo.createVote(voteData);
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[VoteManager] User ${userId} successfully voted for agent ${agentId} in competition ${competitionId}`,
       );
 
       return vote;
     } catch (error) {
-      serviceLogger.error("[VoteManager] Error in castVote:", error);
+      this.logger.error("[VoteManager] Error in castVote:", error);
       throw error;
     }
   }
@@ -81,9 +90,9 @@ export class VoteService {
     competitionId?: string,
   ): Promise<SelectVote[]> {
     try {
-      return await findVotesByUser(userId, competitionId);
+      return await this.voteRepo.findVotesByUser(userId, competitionId);
     } catch (error) {
-      serviceLogger.error("[VoteManager] Error in getUserVotes:", error);
+      this.logger.error("[VoteManager] Error in getUserVotes:", error);
       throw error;
     }
   }
@@ -97,7 +106,8 @@ export class VoteService {
     competitionId: string,
   ): Promise<Map<string, number>> {
     try {
-      const voteCounts = await getVoteCountsByCompetition(competitionId);
+      const voteCounts =
+        await this.voteRepo.getVoteCountsByCompetition(competitionId);
       const voteMap = new Map<string, number>();
 
       for (const { agentId, voteCount } of voteCounts) {
@@ -106,7 +116,7 @@ export class VoteService {
 
       return voteMap;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         "[VoteManager] Error in getVoteCountsByCompetition:",
         error,
       );
@@ -127,10 +137,13 @@ export class VoteService {
     competitionId: string,
   ): Promise<boolean> {
     try {
-      const userVote = await getUserVoteForCompetition(userId, competitionId);
+      const userVote = await this.voteRepo.getUserVoteForCompetition(
+        userId,
+        competitionId,
+      );
       return userVote?.agentId === agentId;
     } catch (error) {
-      serviceLogger.error("[VoteManager] Error in hasUserVoted:", error);
+      this.logger.error("[VoteManager] Error in hasUserVoted:", error);
       throw error;
     }
   }
@@ -146,10 +159,13 @@ export class VoteService {
     competitionId: string,
   ): Promise<SelectVote | null> {
     try {
-      const vote = await getUserVoteForCompetition(userId, competitionId);
+      const vote = await this.voteRepo.getUserVoteForCompetition(
+        userId,
+        competitionId,
+      );
       return vote || null;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         "[VoteManager] Error in getUserVoteForCompetition:",
         error,
       );
@@ -169,7 +185,7 @@ export class VoteService {
   ): Promise<CompetitionVotingStatus> {
     try {
       // Get competition to check status
-      const competition = await findCompetitionById(competitionId);
+      const competition = await this.competitionRepo.findById(competitionId);
       if (!competition) {
         return {
           canVote: false,
@@ -179,7 +195,10 @@ export class VoteService {
       }
 
       // Check if user has already voted
-      const userVote = await getUserVoteForCompetition(userId, competitionId);
+      const userVote = await this.voteRepo.getUserVoteForCompetition(
+        userId,
+        competitionId,
+      );
       const hasVoted = !!userVote;
 
       // Check if voting is allowed based on competition status
@@ -216,7 +235,7 @@ export class VoteService {
         info: userVoteInfo,
       };
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         "[VoteManager] Error in getCompetitionVotingState:",
         error,
       );
@@ -235,9 +254,9 @@ export class VoteService {
     competitionId: string,
   ): Promise<number> {
     try {
-      return await countVotesByAgent(agentId, competitionId);
+      return await this.voteRepo.countVotesByAgent(agentId, competitionId);
     } catch (error) {
-      serviceLogger.error("[VoteManager] Error in getAgentVoteCount:", error);
+      this.logger.error("[VoteManager] Error in getAgentVoteCount:", error);
       throw error;
     }
   }
@@ -255,7 +274,7 @@ export class VoteService {
     competitionId: string,
   ): Promise<void> {
     // Check if competition exists
-    const competition = await findCompetitionById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
     if (!competition) {
       const error = new Error("Competition not found") as VoteError;
       error.type = VOTE_ERROR_TYPES.COMPETITION_NOT_FOUND;
@@ -264,7 +283,7 @@ export class VoteService {
     }
 
     // Check if agent exists
-    const agent = await findAgentById(agentId);
+    const agent = await this.agentRepo.findById(agentId);
     if (!agent) {
       const error = new Error("Agent not found") as VoteError;
       error.type = VOTE_ERROR_TYPES.AGENT_NOT_FOUND;
@@ -273,10 +292,11 @@ export class VoteService {
     }
 
     // Check if agent is actively participating in the competition
-    const agentActiveInCompetition = await isAgentActiveInCompetition(
-      competitionId,
-      agentId,
-    );
+    const agentActiveInCompetition =
+      await this.competitionRepo.isAgentActiveInCompetition(
+        competitionId,
+        agentId,
+      );
     if (!agentActiveInCompetition) {
       const error = new Error(
         "Agent is not actively participating in this competition",
@@ -306,7 +326,10 @@ export class VoteService {
     }
 
     // Check if user has already voted in this competition (for any agent)
-    const hasVoted = await hasUserVotedInCompetition(userId, competitionId);
+    const hasVoted = await this.voteRepo.hasUserVotedInCompetition(
+      userId,
+      competitionId,
+    );
     if (hasVoted) {
       const error = new Error(
         "You have already voted in this competition",

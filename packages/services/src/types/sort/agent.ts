@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import { makeSortFieldSchema } from "@/lib/sort.js";
-
+import { makeSortFieldSchema } from "../../lib/sort.js";
 import { PagingSchema } from "./shared.js";
 
 /**

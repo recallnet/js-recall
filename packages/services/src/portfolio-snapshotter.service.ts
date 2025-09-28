@@ -1,15 +1,10 @@
-import {
-  createPortfolioSnapshot,
-  findAll,
-  findById,
-  getAgentPortfolioSnapshots,
-  getAgentPortfolioTimeline,
-  getCompetitionAgents,
-} from "@/database/repositories/competition-repository.js";
-import { repositoryLogger } from "@/lib/logger.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { BalanceService, PriceTrackerService } from "@/services/index.js";
-import { PriceReport } from "@/types/index.js";
+import { Logger } from "pino";
+
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+
+import { BalanceService } from "./balance.service.js";
+import { PriceTrackerService } from "./price-tracker.service.js";
+import { PriceReport } from "./types/index.js";
 
 /**
  * Portfolio Snapshotter Service
@@ -18,13 +13,19 @@ import { PriceReport } from "@/types/index.js";
 export class PortfolioSnapshotterService {
   private balanceService: BalanceService;
   private priceTrackerService: PriceTrackerService;
+  private competitionRepo: CompetitionRepository;
+  private logger: Logger;
 
   constructor(
     balanceService: BalanceService,
     priceTrackerService: PriceTrackerService,
+    competitionRepo: CompetitionRepository,
+    logger: Logger,
   ) {
     this.balanceService = balanceService;
     this.priceTrackerService = priceTrackerService;
+    this.competitionRepo = competitionRepo;
+    this.logger = logger;
   }
 
   /**
@@ -51,12 +52,12 @@ export class PortfolioSnapshotterService {
     force: boolean = false,
     maxRetries: number = 3,
   ): Promise<void> {
-    repositoryLogger.debug(
+    this.logger.debug(
       `[PortfolioSnapshotter] Taking portfolio snapshot for agent ${agentId} in competition ${competitionId}`,
     );
 
     // Check if competition exists and if end date has passed
-    const competition = await findById(competitionId);
+    const competition = await this.competitionRepo.findById(competitionId);
     if (!competition) {
       throw new Error(`Competition with ID ${competitionId} not found`);
     }
@@ -64,13 +65,13 @@ export class PortfolioSnapshotterService {
     const now = new Date();
     if (competition.endDate && now > competition.endDate) {
       if (!force) {
-        repositoryLogger.debug(
+        this.logger.debug(
           `[PortfolioSnapshotter] Competition ${competitionId} has ended (end date: ${competition.endDate.toISOString()}, current time: ${timestamp.toISOString()}). Skipping portfolio snapshot for agent ${agentId}`,
         );
         return;
       }
       // Competition has ended but we're forcing the snapshot
-      repositoryLogger.debug(
+      this.logger.debug(
         `[PortfolioSnapshotter] Competition ${competitionId} has ended, but taking final snapshot anyway (forced) for agent ${agentId}`,
       );
     }
@@ -79,7 +80,7 @@ export class PortfolioSnapshotterService {
 
     // Skip if no balances
     if (balances.length === 0) {
-      repositoryLogger.debug(
+      this.logger.debug(
         `[PortfolioSnapshotter] No balances found for agent ${agentId}, skipping snapshot`,
       );
       return;
@@ -100,7 +101,7 @@ export class PortfolioSnapshotterService {
     if (hasFailures) {
       // We have incomplete price data - skip snapshot creation
       // Detailed error logging already done in fetchPricesWithRetries
-      repositoryLogger.warn(
+      this.logger.warn(
         `[PortfolioSnapshotter] Skipping snapshot creation for agent ${agentId} due to incomplete price data.`,
       );
       return;
@@ -110,7 +111,7 @@ export class PortfolioSnapshotterService {
     const totalValue = this.calculatePortfolioValue(balances, priceMap);
 
     // All prices fetched successfully - create accurate snapshot
-    await createPortfolioSnapshot({
+    await this.competitionRepo.createPortfolioSnapshot({
       agentId,
       competitionId,
       timestamp,
@@ -120,7 +121,7 @@ export class PortfolioSnapshotterService {
     // Count non-zero balances for logging
     const nonZeroBalances = balances.filter((b) => b.amount > 0).length;
 
-    repositoryLogger.debug(
+    this.logger.debug(
       `[PortfolioSnapshotter] Completed portfolio snapshot for agent ${agentId} with calculated total value $${totalValue.toFixed(2)}. ` +
         `All ${nonZeroBalances} token prices fetched successfully.`,
     );
@@ -132,12 +133,13 @@ export class PortfolioSnapshotterService {
    * @param force Optional flag to force snapshots even if competition has ended
    */
   async takePortfolioSnapshots(competitionId: string, force: boolean = false) {
-    repositoryLogger.debug(
+    this.logger.debug(
       `[PortfolioSnapshotter] Taking portfolio snapshots for competition ${competitionId}${force ? " (forced)" : ""}`,
     );
 
     const startTime = Date.now();
-    const agents = await getCompetitionAgents(competitionId);
+    const agents =
+      await this.competitionRepo.getCompetitionAgents(competitionId);
     const timestamp = new Date();
 
     for (const agentId of agents) {
@@ -152,7 +154,7 @@ export class PortfolioSnapshotterService {
     const endTime = Date.now();
     const duration = endTime - startTime;
 
-    repositoryLogger.debug(
+    this.logger.debug(
       `[PortfolioSnapshotter] Completed portfolio snapshots for competition ${competitionId} in ${duration}ms (${Math.round(duration / 1000)}s)`,
     );
   }
@@ -169,7 +171,7 @@ export class PortfolioSnapshotterService {
     agentId: string,
     limit?: number,
   ) {
-    const snapshots = await getAgentPortfolioSnapshots(
+    const snapshots = await this.competitionRepo.getAgentPortfolioSnapshots(
       competitionId,
       agentId,
       limit,
@@ -185,7 +187,10 @@ export class PortfolioSnapshotterService {
    * @returns Array of portfolio timelines per agent
    */
   async getAgentPortfolioTimeline(competitionId: string, bucket: number = 30) {
-    return await getAgentPortfolioTimeline(competitionId, bucket);
+    return await this.competitionRepo.getAgentPortfolioTimeline(
+      competitionId,
+      bucket,
+    );
   }
 
   /**
@@ -195,10 +200,10 @@ export class PortfolioSnapshotterService {
   async isHealthy() {
     try {
       // Simple check to see if we can connect to the database
-      await findAll();
+      await this.competitionRepo.findAll();
       return true;
     } catch (error) {
-      serviceLogger.error("[PortfolioSnapshotter] Health check failed:", error);
+      this.logger.error("[PortfolioSnapshotter] Health check failed:", error);
       return false;
     }
   }
@@ -230,7 +235,7 @@ export class PortfolioSnapshotterService {
           1000 * Math.pow(2, attemptNumber - 2),
           10000,
         ); // Max 10 seconds
-        repositoryLogger.debug(
+        this.logger.debug(
           `[PortfolioSnapshotter] Retry attempt ${attemptNumber}/${maxRetries + 1} for agent ${agentId} after ${backoffDelay}ms delay`,
         );
         await new Promise((resolve) => setTimeout(resolve, backoffDelay));
@@ -255,14 +260,14 @@ export class PortfolioSnapshotterService {
 
       // If we have all prices already, we're done
       if (tokensNeedingPrices.length === 0) {
-        repositoryLogger.debug(
+        this.logger.debug(
           `[PortfolioSnapshotter] All prices already fetched for agent ${agentId}`,
         );
         break;
       }
 
       // Step 2: Try batch pricing for tokens that need prices
-      repositoryLogger.debug(
+      this.logger.debug(
         `[PortfolioSnapshotter] Fetching prices for ${tokensNeedingPrices.length} tokens (attempt ${attemptNumber}/${maxRetries + 1})`,
       );
       const newPrices =
@@ -286,7 +291,7 @@ export class PortfolioSnapshotterService {
       );
 
       if (allPricesFetched) {
-        repositoryLogger.debug(
+        this.logger.debug(
           `[PortfolioSnapshotter] All prices fetched successfully for agent ${agentId} on attempt ${attemptNumber}`,
         );
         break;
@@ -308,7 +313,7 @@ export class PortfolioSnapshotterService {
             failedCount++;
           }
         }
-        repositoryLogger.error(
+        this.logger.error(
           `[PortfolioSnapshotter] Failed to fetch prices for ${failedCount} tokens after ${maxRetries + 1} attempts for agent ${agentId}. ` +
             `Missing prices for: ${missingTokenDetails.join(", ")}`,
         );
@@ -318,7 +323,7 @@ export class PortfolioSnapshotterService {
           (balance) =>
             balance.amount > 0 && priceMap.get(balance.tokenAddress) === null,
         ).length;
-        repositoryLogger.debug(
+        this.logger.debug(
           `[PortfolioSnapshotter] ${failedCount} tokens still missing prices for agent ${agentId}, will retry entire batch`,
         );
       }
