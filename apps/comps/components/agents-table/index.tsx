@@ -72,12 +72,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const session = useSession();
   const router = useRouter();
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  // Default sort: Calmar Ratio for perps, rank for others
-  const [sorting, setSorting] = useState<SortingState>(
-    competition.type === "perpetual_futures"
-      ? [{ id: "calmarRatio", desc: true }]
-      : [{ id: "rank", desc: false }],
-  );
+  // Default sort: Always sort by rank (backend handles Calmar-based ordering for perps)
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "rank", desc: false },
+  ]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     yourShare: session.ready && session.isAuthenticated,
   });
