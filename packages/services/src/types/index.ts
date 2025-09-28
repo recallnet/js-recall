@@ -51,6 +51,10 @@ export const SpecificChainSchema = z.enum([
 // Type derived from the Zod schema
 export type SpecificChain = z.infer<typeof SpecificChainSchema>;
 
+export type SpecificChainTokens = Partial<
+  Record<SpecificChain, Record<string, string>>
+>;
+
 // Mapping from SpecificChain to BlockchainType
 export const chainTypeMapping: Record<SpecificChain, BlockchainType> = {
   eth: BlockchainType.EVM,

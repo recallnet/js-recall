@@ -54,6 +54,7 @@
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
     "@types/pg": "^8.15.4",
+    "dotenv": "^16.0.3",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",

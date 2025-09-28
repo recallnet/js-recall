@@ -15,6 +15,7 @@ import {
   CrossChainTradingType,
   PriceReport,
   SpecificChain,
+  SpecificChainTokens,
 } from "./types/index.js";
 
 const MIN_TRADE_AMOUNT = 0.000001;
@@ -53,7 +54,7 @@ export class TradeSimulatorService {
   private defaultMinimumLiquidityUsd: number;
   private defaultMinimumFdvUsd: number;
   private crossChainTradingType: CrossChainTradingType;
-  private specificChainTokens: Record<SpecificChain, Record<string, string>>;
+  private specificChainTokens: SpecificChainTokens;
   private dexScreenerProvider: DexScreenerProvider;
   // Cache of trading constraints per competition
   private constraintsCache: Map<string, TradingConstraints>;
@@ -70,7 +71,7 @@ export class TradeSimulatorService {
     defaultMinimumLiquidityUsd: number,
     defaultMinimumFdvUsd: number,
     crossChainTradingType: CrossChainTradingType,
-    specificChainTokens: Record<SpecificChain, Record<string, string>>,
+    specificChainTokens: SpecificChainTokens,
     logger: Logger,
   ) {
     this.balanceService = balanceService;

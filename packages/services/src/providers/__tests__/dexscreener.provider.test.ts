@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DexScreenerProvider } from "@/services/providers/price/dexscreener.provider.js";
-import { BlockchainType } from "@/types/index.js";
+import { BlockchainType, SpecificChain } from "../../types/index.js";
+import { DexScreenerProvider } from "../price/dexscreener.provider.js";
 
 // Load environment variables
 dotenv.config();
@@ -10,30 +10,38 @@ dotenv.config();
 // Set timeout for all tests in this file to 30 seconds
 vi.setConfig({ testTimeout: 30_000 });
 
-// Test tokens
-const solanaTokens = {
-  SOL: "So11111111111111111111111111111111111111112",
-  USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  BONK: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-};
-
-const ethereumTokens = {
-  ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
-  USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
-  SHIB: "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE",
-};
-
-const baseTokens = {
-  ETH: "0x4200000000000000000000000000000000000006", // WETH on Base
-  USDC: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
-};
-
 describe("DexScreenerProvider", () => {
   let provider: DexScreenerProvider;
 
+  // Mock specificChainTokens for the constructor
+  const specificChainTokens = {
+    eth: {
+      eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
+      usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
+      usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
+      shib: "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE",
+    },
+    base: {
+      eth: "0x4200000000000000000000000000000000000006", // WETH on Base
+      usdc: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
+    },
+    svm: {
+      sol: "So11111111111111111111111111111111111111112",
+      usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      bonk: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    },
+  };
+
+  // Mock logger for the constructor
+  const mockLogger = {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  } as any;
+
   beforeEach(() => {
-    provider = new DexScreenerProvider();
+    provider = new DexScreenerProvider(specificChainTokens, mockLogger);
   });
 
   describe("Basic functionality", () => {
@@ -45,7 +53,7 @@ describe("DexScreenerProvider", () => {
   describe("Solana token price fetching", () => {
     it("should fetch SOL price", async () => {
       const priceReport = await provider.getPrice(
-        solanaTokens.SOL,
+        specificChainTokens.svm.sol,
         BlockchainType.SVM,
         "svm",
       );
@@ -57,7 +65,7 @@ describe("DexScreenerProvider", () => {
 
     it("should fetch USDC price", async () => {
       const priceReport = await provider.getPrice(
-        solanaTokens.USDC,
+        specificChainTokens.svm.usdc,
         BlockchainType.SVM,
         "svm",
       );
@@ -72,7 +80,7 @@ describe("DexScreenerProvider", () => {
   describe("Ethereum token price fetching", () => {
     it("should fetch ETH price", async () => {
       const priceReport = await provider.getPrice(
-        ethereumTokens.ETH,
+        specificChainTokens.eth.eth,
         BlockchainType.EVM,
         "eth",
       );
@@ -84,7 +92,7 @@ describe("DexScreenerProvider", () => {
 
     it("should fetch USDC price", async () => {
       const priceReport = await provider.getPrice(
-        ethereumTokens.USDC,
+        specificChainTokens.eth.usdc,
         BlockchainType.EVM,
         "eth",
       );
@@ -97,7 +105,7 @@ describe("DexScreenerProvider", () => {
 
     it("should fetch ETH price above $1000 on Ethereum mainnet", async () => {
       const priceReport = await provider.getPrice(
-        ethereumTokens.ETH,
+        specificChainTokens.eth.eth,
         BlockchainType.EVM,
         "eth",
       );
@@ -109,7 +117,7 @@ describe("DexScreenerProvider", () => {
 
     it("should fetch USDT price close to $1 on Ethereum mainnet", async () => {
       const priceReport = await provider.getPrice(
-        ethereumTokens.USDT,
+        specificChainTokens.eth.usdt,
         BlockchainType.EVM,
         "eth",
       );
@@ -124,7 +132,7 @@ describe("DexScreenerProvider", () => {
   describe("Base token price fetching", () => {
     it("should fetch ETH on Base", async () => {
       const priceReport = await provider.getPrice(
-        baseTokens.ETH,
+        specificChainTokens.base.eth,
         BlockchainType.EVM,
         "base",
       );
@@ -136,7 +144,7 @@ describe("DexScreenerProvider", () => {
 
     it("should fetch USDC on Base", async () => {
       const priceReport = await provider.getPrice(
-        baseTokens.USDC,
+        specificChainTokens.base.usdc,
         BlockchainType.EVM,
         "base",
       );
@@ -150,12 +158,12 @@ describe("DexScreenerProvider", () => {
 
   describe("Chain detection", () => {
     it("should detect Solana addresses correctly", async () => {
-      const chain = provider.determineChain(solanaTokens.SOL);
+      const chain = provider.determineChain(specificChainTokens.svm.sol);
       expect(chain).toBe(BlockchainType.SVM);
     });
 
     it("should detect Ethereum addresses correctly", async () => {
-      const chain = provider.determineChain(ethereumTokens.ETH);
+      const chain = provider.determineChain(specificChainTokens.eth.eth);
       expect(chain).toBe(BlockchainType.EVM);
     });
   });

@@ -5,6 +5,7 @@ import {
   PriceReport,
   PriceSource,
   SpecificChain,
+  SpecificChainTokens,
 } from "../types/index.js";
 import { DexScreenerProvider } from "./price/dexscreener.provider.js";
 
@@ -22,7 +23,7 @@ export class MultiChainProvider implements PriceSource {
 
   constructor(
     defaultChains: SpecificChain[],
-    specificChainTokens: Record<SpecificChain, Record<string, string>>,
+    specificChainTokens: SpecificChainTokens,
     logger: Logger,
   ) {
     this.defaultChains = defaultChains;

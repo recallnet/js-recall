@@ -2,7 +2,7 @@
  * Trade utility functions
  * Shared logic for trade-related calculations
  */
-import { SpecificChain } from "../types/index.js";
+import { SpecificChain, SpecificChainTokens } from "../types/index.js";
 
 /**
  * Result of slippage calculation
@@ -74,9 +74,7 @@ export function calculateSlippage(fromValueUSD: number): SlippageResult {
  * Major tokens exempt from trading constraint requirements (native tokens, established assets)
  * Populated from all token addresses configured in the system
  */
-export const EXEMPT_TOKENS = (
-  specificChainTokens: Record<SpecificChain, Record<string, string>>,
-) =>
+export const EXEMPT_TOKENS = (specificChainTokens: SpecificChainTokens) =>
   new Set([
     // Collect all token addresses from all chains in config
     ...Object.values(specificChainTokens).flatMap((chainTokens) =>

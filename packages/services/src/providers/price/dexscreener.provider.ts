@@ -8,6 +8,7 @@ import {
   PriceReport,
   PriceSource,
   SpecificChain,
+  SpecificChainTokens,
 } from "../../types/index.js";
 
 /**
@@ -20,13 +21,10 @@ export class DexScreenerProvider implements PriceSource {
   private readonly MIN_REQUEST_INTERVAL = 100;
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
-  private specificChainTokens: Record<SpecificChain, Record<string, string>>;
+  private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
 
-  constructor(
-    specificChainTokens: Record<SpecificChain, Record<string, string>>,
-    logger: Logger,
-  ) {
+  constructor(specificChainTokens: SpecificChainTokens, logger: Logger) {
     this.specificChainTokens = specificChainTokens;
     this.logger = logger;
   }
@@ -100,8 +98,8 @@ export class DexScreenerProvider implements PriceSource {
 
     const normalizedAddress = tokenAddress.toLowerCase();
     return (
-      normalizedAddress === chainTokens.usdc?.toLowerCase() ||
-      normalizedAddress === chainTokens.usdt?.toLowerCase()
+      normalizedAddress === chainTokens?.usdc?.toLowerCase() ||
+      normalizedAddress === chainTokens?.usdt?.toLowerCase()
     );
   }
 
@@ -124,22 +122,22 @@ export class DexScreenerProvider implements PriceSource {
 
     // If token is USDC, pair it with USDT
     if (
-      normalizedAddress === chainTokens.usdc?.toLowerCase() &&
-      chainTokens.usdt
+      normalizedAddress === chainTokens?.usdc?.toLowerCase() &&
+      chainTokens?.usdt
     ) {
       return `${chainTokens.usdc},${chainTokens.usdt}`;
     }
 
     // If token is USDT, pair it with USDC
     if (
-      normalizedAddress === chainTokens.usdt?.toLowerCase() &&
+      normalizedAddress === chainTokens?.usdt?.toLowerCase() &&
       chainTokens.usdc
     ) {
       return `${chainTokens.usdt},${chainTokens.usdc}`;
     }
 
     // For other tokens, pair with USDC
-    return `${tokenAddress},${chainTokens.usdc}`;
+    return `${tokenAddress},${chainTokens?.usdc}`;
   }
 
   /**
@@ -246,10 +244,10 @@ export class DexScreenerProvider implements PriceSource {
                 if (ourTokenIsQuote) {
                   const pairedWithUsdc =
                     pair.baseToken?.address?.toLowerCase() ===
-                    chainTokens.usdc?.toLowerCase();
+                    chainTokens?.usdc?.toLowerCase();
                   const pairedWithUsdt =
                     pair.baseToken?.address?.toLowerCase() ===
-                    chainTokens.usdt?.toLowerCase();
+                    chainTokens?.usdt?.toLowerCase();
                   return pairedWithUsdc || pairedWithUsdt;
                 }
 

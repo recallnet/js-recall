@@ -4,7 +4,11 @@ import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import type { SelectBalance } from "@recallnet/db/schema/trading/types";
 
 import { assertUnreachable } from "./lib/typescript-utils.js";
-import { CompetitionType, SpecificChain } from "./types/index.js";
+import {
+  CompetitionType,
+  SpecificChain,
+  SpecificChainTokens,
+} from "./types/index.js";
 
 /**
  * Balance Service
@@ -15,13 +19,13 @@ export class BalanceService {
   private balanceCache: Map<string, Map<string, number>>;
   private balanceRepo: BalanceRepository;
   private specificChainBalances: Record<SpecificChain, Record<string, number>>;
-  private specificChainTokens: Record<SpecificChain, Record<string, string>>;
+  private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
 
   constructor(
     balanceRepo: BalanceRepository,
     specificChainBalances: Record<SpecificChain, Record<string, number>>,
-    specificChainTokens: Record<SpecificChain, Record<string, string>>,
+    specificChainTokens: SpecificChainTokens,
     logger: Logger,
   ) {
     this.balanceCache = new Map();
