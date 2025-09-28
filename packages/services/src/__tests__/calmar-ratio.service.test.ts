@@ -1,18 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Logger } from "pino";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MockProxy, mock, mockReset } from "vitest-mock-extended";
 
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import type { SelectPerpsRiskMetrics } from "@recallnet/db/schema/trading/types";
 
-import * as competitionRepo from "@/database/repositories/competition-repository.js";
-import * as perpsRepo from "@/database/repositories/perps-repository.js";
-import { CalmarRatioService } from "@/services/calmar-ratio.service.js";
-
-// Mock dependencies
-vi.mock("@/database/repositories/competition-repository.js");
-vi.mock("@/database/repositories/perps-repository.js");
-vi.mock("@/lib/logger.js");
+import { CalmarRatioService } from "../calmar-ratio.service.js";
 
 describe("CalmarRatioService", () => {
   let service: CalmarRatioService;
+  let mockCompetitionRepo: MockProxy<CompetitionRepository>;
+  let mockPerpsRepo: MockProxy<PerpsRepository>;
+  let mockLogger: MockProxy<Logger>;
 
   // Helper to create mock competition with all required fields
   const createMockCompetition = (
@@ -75,7 +75,21 @@ describe("CalmarRatioService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    service = new CalmarRatioService();
+    mockCompetitionRepo = mock<CompetitionRepository>();
+    mockPerpsRepo = mock<PerpsRepository>();
+    mockLogger = mock<Logger>();
+
+    service = new CalmarRatioService(
+      mockCompetitionRepo,
+      mockPerpsRepo,
+      mockLogger,
+    );
+  });
+
+  afterEach(() => {
+    mockReset(mockCompetitionRepo);
+    mockReset(mockPerpsRepo);
+    mockReset(mockLogger);
   });
 
   describe("calculateAndSaveCalmarRatio", () => {
@@ -90,14 +104,12 @@ describe("CalmarRatioService", () => {
       const maxDrawdown = -0.2; // 20% drawdown
       const savedMetrics = createMockSavedMetrics();
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(competition);
-      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue(
-        snapshots,
-      );
-      vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValue(
+      mockCompetitionRepo.findById.mockResolvedValue(competition);
+      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(snapshots);
+      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(
         maxDrawdown,
       );
-      vi.mocked(perpsRepo.saveRiskMetrics).mockResolvedValue(savedMetrics);
+      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(savedMetrics);
 
       const result = await service.calculateAndSaveCalmarRatio(
         agentId,
@@ -109,13 +121,13 @@ describe("CalmarRatioService", () => {
       expect(result.metrics.calmarRatio).toBe("3.00000000");
 
       // Verify snapshots were fetched
-      expect(competitionRepo.getFirstAndLastSnapshots).toHaveBeenCalledWith(
+      expect(mockCompetitionRepo.getFirstAndLastSnapshots).toHaveBeenCalledWith(
         competitionId,
         agentId,
       );
 
       // Verify max drawdown calculation uses snapshot dates for consistency
-      expect(competitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
+      expect(mockCompetitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
         agentId,
         competitionId,
         snapshots.first?.timestamp,
@@ -123,7 +135,7 @@ describe("CalmarRatioService", () => {
       );
 
       // Verify metrics were saved
-      expect(perpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
+      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
         expect.objectContaining({
           agentId,
           competitionId,
@@ -140,21 +152,19 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(
+      mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue(
+      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 1500), // 50% return
       );
-      vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValue(0); // No drawdown
-      vi.mocked(perpsRepo.saveRiskMetrics).mockResolvedValue(
-        createMockSavedMetrics(),
-      );
+      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown
+      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
 
       // Calmar should be capped at 100 when there's no drawdown
-      expect(perpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
+      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
         expect.objectContaining({
           calmarRatio: "100.00000000",
         }),
@@ -165,21 +175,19 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(
+      mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue(
+      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 900), // -10% return
       );
-      vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValue(0); // No drawdown (weird but possible)
-      vi.mocked(perpsRepo.saveRiskMetrics).mockResolvedValue(
-        createMockSavedMetrics(),
-      );
+      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown (weird but possible)
+      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
 
       // Should cap at -100 for negative return with no drawdown
-      expect(perpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
+      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
         expect.objectContaining({
           calmarRatio: "-100.00000000",
         }),
@@ -192,11 +200,11 @@ describe("CalmarRatioService", () => {
       const startDate = new Date("2025-01-20T10:00:00Z");
       const endDate = new Date("2025-01-20T14:00:00Z"); // 4 hours
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(
+      mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(startDate, endDate),
       );
       // Create custom snapshots with 4-hour gap for this test
-      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue({
         first: {
           id: 1,
           agentId: "agent-456",
@@ -212,17 +220,13 @@ describe("CalmarRatioService", () => {
           timestamp: new Date("2025-01-20T14:00:00Z"), // 4 hours later
         },
       });
-      vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValue(
-        -0.005,
-      ); // 0.5% drawdown
-      vi.mocked(perpsRepo.saveRiskMetrics).mockResolvedValue(
-        createMockSavedMetrics(),
-      );
+      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.005); // 0.5% drawdown
+      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
 
       // For very short periods (< 1 day), return should NOT be annualized
-      expect(perpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
+      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
         expect.objectContaining({
           simpleReturn: "0.01000000",
           annualizedReturn: "0.01000000", // Not annualized for < 1 day
@@ -235,26 +239,22 @@ describe("CalmarRatioService", () => {
       const competitionId = "comp-123";
       const startDate = new Date("2025-01-20");
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(
+      mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(startDate), // No end date
       );
 
       const mockSnapshots = createMockSnapshots(1000, 1100); // 10% return
-      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue(
+      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         mockSnapshots,
       );
-      vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValue(
-        -0.05,
-      );
-      vi.mocked(perpsRepo.saveRiskMetrics).mockResolvedValue(
-        createMockSavedMetrics(),
-      );
+      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.05);
+      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
 
       // Verify max drawdown was called with snapshot dates for consistency
       // This ensures return and drawdown are calculated over the same time period
-      expect(competitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
+      expect(mockCompetitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
         agentId,
         competitionId,
         mockSnapshots.first?.timestamp, // Use first snapshot date
@@ -266,21 +266,23 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(undefined);
+      mockCompetitionRepo.findById.mockResolvedValue(undefined);
 
       await expect(
         service.calculateAndSaveCalmarRatio(agentId, competitionId),
       ).rejects.toThrow(`Competition ${competitionId} not found`);
 
-      expect(competitionRepo.getFirstAndLastSnapshots).not.toHaveBeenCalled();
-      expect(perpsRepo.saveRiskMetrics).not.toHaveBeenCalled();
+      expect(
+        mockCompetitionRepo.getFirstAndLastSnapshots,
+      ).not.toHaveBeenCalled();
+      expect(mockPerpsRepo.saveRiskMetrics).not.toHaveBeenCalled();
     });
 
     it("should throw error if competition not started", async () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(
+      mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(null), // No start date
       );
 
@@ -293,10 +295,10 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(
+      mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue({
+      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue({
         first: null,
         last: null,
       });
@@ -310,10 +312,10 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(
+      mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue(
+      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(0, 1000), // Starting value is 0
       );
 
@@ -326,23 +328,19 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      vi.mocked(competitionRepo.findById).mockResolvedValue(
+      mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      vi.mocked(competitionRepo.getFirstAndLastSnapshots).mockResolvedValue(
+      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 800), // -20% return
       );
-      vi.mocked(competitionRepo.calculateMaxDrawdownSQL).mockResolvedValue(
-        -0.25,
-      ); // 25% drawdown
-      vi.mocked(perpsRepo.saveRiskMetrics).mockResolvedValue(
-        createMockSavedMetrics(),
-      );
+      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.25); // 25% drawdown
+      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
 
       // Verify negative Calmar ratio
-      expect(perpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
+      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
         expect.objectContaining({
           simpleReturn: "-0.20000000",
           // Calmar should be negative when return is negative
