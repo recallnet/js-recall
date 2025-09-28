@@ -1,13 +1,13 @@
 import * as Sentry from "@sentry/node";
 import axios, { AxiosInstance } from "axios";
+import { Logger } from "pino";
 
-import { serviceLogger } from "@/lib/logger.js";
 import {
   IPerpsDataProvider,
   PerpsAccountSummary,
   PerpsPosition,
   Transfer,
-} from "@/types/perps.js";
+} from "../../types/perps.js";
 
 /**
  * Symphony API response types
@@ -129,8 +129,10 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   private readonly RETRY_DELAY = 1000; // 1 second
   private readonly REQUEST_TIMEOUT = 30000; // 30 seconds
   private readonly SAMPLING_RATE = 0.01; // 1% of requests for both Sentry and raw data storage
+  private logger: Logger;
 
-  constructor(apiUrl?: string) {
+  constructor(logger: Logger, apiUrl?: string) {
+    this.logger = logger;
     // Use provided URL or fall back to config/environment
     this.baseUrl = apiUrl || "https://api.symphony.io";
 
@@ -143,7 +145,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       },
     });
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[SymphonyProvider] Initialized with base URL: ${this.baseUrl}`,
     );
   }
@@ -190,7 +192,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       // If we get any response from the server (not 5xx), it's healthy
       return response.status < 500;
     } catch (error) {
-      serviceLogger.warn(
+      this.logger.warn(
         { error: error instanceof Error ? error.message : String(error) },
         `[SymphonyProvider] Health check failed`,
       );
@@ -253,7 +255,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     try {
       await this.enforceRateLimit();
 
-      serviceLogger.debug(
+      this.logger.debug(
         {
           walletAddress: maskedAddress,
         },
@@ -284,7 +286,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       );
 
       if (missingFields.length > 0) {
-        serviceLogger.warn(
+        this.logger.warn(
           `[SymphonyProvider] Missing critical fields for ${this.maskWalletAddress(walletAddress)}: ${missingFields.join(", ")}. Using 0 as default.`,
         );
       }
@@ -343,7 +345,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         });
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[SymphonyProvider] Fetched account summary for ${maskedAddress} in ${Date.now() - startTime}ms`,
       );
 
@@ -358,7 +360,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         },
       });
 
-      serviceLogger.error(
+      this.logger.error(
         {
           walletAddress: maskedAddress,
           error: error instanceof Error ? error.message : String(error),
@@ -389,7 +391,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     try {
       await this.enforceRateLimit();
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[SymphonyProvider] Fetching positions for ${maskedAddress}`,
       );
 
@@ -399,7 +401,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       // To get closed/liquidated positions, we'd need a different endpoint or historical data
       const positions = this.transformPositions(data.openPositions, "Open");
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[SymphonyProvider] Fetched ${positions.length} open positions for ${maskedAddress} in ${Date.now() - startTime}ms`,
       );
 
@@ -414,7 +416,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         },
       });
 
-      serviceLogger.error(
+      this.logger.error(
         {
           walletAddress: maskedAddress,
           error: error instanceof Error ? error.message : String(error),
@@ -449,7 +451,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     try {
       await this.enforceRateLimit();
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[SymphonyProvider] Fetching transfers for ${maskedAddress} since ${since.toISOString()}`,
       );
 
@@ -462,7 +464,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       );
 
       if (!response.success) {
-        serviceLogger.warn(
+        this.logger.warn(
           `[SymphonyProvider] Transfer fetch unsuccessful for ${maskedAddress}`,
         );
         return [];
@@ -481,7 +483,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         chainId: t.chainId,
       }));
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[SymphonyProvider] Fetched ${transfers.length} transfers for ${maskedAddress} in ${Date.now() - startTime}ms`,
       );
 
@@ -497,7 +499,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         },
       });
 
-      serviceLogger.error(
+      this.logger.error(
         {
           walletAddress: maskedAddress,
           error: error instanceof Error ? error.message : String(error),
@@ -568,7 +570,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
               | SymphonyErrorResponse
               | undefined;
             if (errorData?.status === "error") {
-              serviceLogger.error(
+              this.logger.error(
                 {
                   status,
                   error: errorData.error.message,
@@ -577,7 +579,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
                 `[SymphonyProvider] Client error (${status})`,
               );
             } else {
-              serviceLogger.error(
+              this.logger.error(
                 {
                   status,
                   data: error.response?.data,
@@ -588,7 +590,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
             throw error;
           }
 
-          serviceLogger.warn(
+          this.logger.warn(
             {
               message: error.message,
               status: error.response?.status,
@@ -600,9 +602,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
         if (attempt < this.MAX_RETRIES) {
           const delay = this.RETRY_DELAY * attempt;
-          serviceLogger.debug(
-            `[SymphonyProvider] Retrying after ${delay}ms...`,
-          );
+          this.logger.debug(`[SymphonyProvider] Retrying after ${delay}ms...`);
           await this.delay(delay);
         }
       }
@@ -680,7 +680,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
-      serviceLogger.warn(
+      this.logger.warn(
         `[SymphonyProvider] Invalid date format for ${fieldName}: ${dateStr}`,
       );
       return undefined;

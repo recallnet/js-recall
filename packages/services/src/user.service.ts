@@ -25,6 +25,7 @@ export class UserService {
   private agentRepo: AgentRepository;
   private userRepo: UserRepository;
   private voteRepo: VoteRepository;
+  private walletWatchlist: WalletWatchlist;
   private db: Database;
   private logger: Logger;
 
@@ -33,6 +34,7 @@ export class UserService {
     agentRepo: AgentRepository,
     userRepo: UserRepository,
     voteRepo: VoteRepository,
+    walletWatchlist: WalletWatchlist,
     db: Database,
     logger: Logger,
   ) {
@@ -42,6 +44,7 @@ export class UserService {
     this.agentRepo = agentRepo;
     this.userRepo = userRepo;
     this.voteRepo = voteRepo;
+    this.walletWatchlist = walletWatchlist;
     this.db = db;
     this.logger = logger;
   }
@@ -246,8 +249,7 @@ export class UserService {
         user.walletAddress !== currentUser.walletAddress
       ) {
         // Note: this could happen if, e.g., a user tries to link a custom wallet to their account
-        const watchlist = new WalletWatchlist();
-        const isSanctioned = await watchlist.isAddressSanctioned(
+        const isSanctioned = await this.walletWatchlist.isAddressSanctioned(
           user.walletAddress,
         );
         if (isSanctioned) {

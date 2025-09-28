@@ -1,9 +1,12 @@
 import axios from "axios";
+import { Logger } from "pino";
 
-import config from "@/config/index.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { PriceSource } from "@/types/index.js";
-import { BlockchainType, PriceReport, SpecificChain } from "@/types/index.js";
+import {
+  BlockchainType,
+  PriceReport,
+  PriceSource,
+  SpecificChain,
+} from "../../types/index.js";
 
 /**
  * Noves price provider implementation
@@ -25,10 +28,17 @@ export class NovesProvider implements PriceSource {
   private readonly MIN_REQUEST_INTERVAL = 100;
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
-  private readonly supportedChains: SpecificChain[] = config.evmChains;
+  private readonly supportedChains: SpecificChain[];
+  private logger: Logger;
 
-  constructor(private apiKey: string) {
+  constructor(
+    private apiKey: string,
+    supportedChains: SpecificChain[],
+    logger: Logger,
+  ) {
     this.cache = new Map();
+    this.supportedChains = supportedChains;
+    this.logger = logger;
   }
 
   getName(): string {
@@ -102,7 +112,7 @@ export class NovesProvider implements PriceSource {
   async determineSpecificEVMChain(
     tokenAddress: string,
   ): Promise<{ specificChain: SpecificChain; price: number } | null> {
-    serviceLogger.debug(
+    this.logger.debug(
       `[NovesProvider] Determining specific chain for EVM token: ${tokenAddress}`,
     );
 
@@ -112,7 +122,7 @@ export class NovesProvider implements PriceSource {
         await this.enforceRateLimit();
 
         const url = `${this.API_BASE}/evm/${chain}/price/${tokenAddress}`;
-        serviceLogger.debug(
+        this.logger.debug(
           `[NovesProvider] Trying to find token on chain: ${chain}, URL: ${url}`,
         );
 
@@ -124,7 +134,7 @@ export class NovesProvider implements PriceSource {
           timeout: 10000,
         });
 
-        serviceLogger.debug(
+        this.logger.debug(
           `[NovesProvider] Response for ${chain}: ${JSON.stringify(response.data)}`,
         );
 
@@ -138,26 +148,26 @@ export class NovesProvider implements PriceSource {
           ) {
             const price = parseFloat(response.data.price.amount);
             if (!isNaN(price)) {
-              serviceLogger.debug(
+              this.logger.debug(
                 `[NovesProvider] Found token on chain ${chain} with price: $${price}`,
               );
               return { specificChain: chain, price };
             } else {
-              serviceLogger.debug(
+              this.logger.debug(
                 `[NovesProvider] Invalid price amount for token on chain ${chain}: ${response.data.price.amount}`,
               );
             }
           } else if (response.data.priceStatus === "inProgress") {
-            serviceLogger.debug(
+            this.logger.debug(
               `[NovesProvider] Price calculation in progress for ${chain}`,
             );
           } else {
-            serviceLogger.debug(
+            this.logger.debug(
               `[NovesProvider] Invalid or missing price data for ${chain}: ${JSON.stringify(response.data.price)}`,
             );
           }
         } else {
-          serviceLogger.debug(
+          this.logger.debug(
             `[NovesProvider] Unexpected response format for ${chain}`,
           );
         }
@@ -168,11 +178,11 @@ export class NovesProvider implements PriceSource {
           error.response &&
           (error.response.status === 401 || error.response.status === 404)
         ) {
-          serviceLogger.debug(
+          this.logger.debug(
             `[NovesProvider] Token not found on ${chain} chain (${error.response.status})`,
           );
         } else {
-          serviceLogger.error(
+          this.logger.error(
             `[NovesProvider] Error checking chain ${chain}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -180,7 +190,7 @@ export class NovesProvider implements PriceSource {
       }
     }
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[NovesProvider] Could not find token ${tokenAddress} on any supported EVM chain`,
     );
     return null;
@@ -210,7 +220,7 @@ export class NovesProvider implements PriceSource {
       // Check cache first
       const cachedResult = this.getCachedPrice(normalizedAddress, tokenChain);
       if (cachedResult !== null) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[NovesProvider] Using cached price for ${normalizedAddress} on ${tokenChain} (${cachedResult.specificChain || "unknown"}): $${cachedResult.price}`,
         );
         return {
@@ -223,7 +233,7 @@ export class NovesProvider implements PriceSource {
         };
       }
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[NovesProvider] Getting price for ${normalizedAddress} on ${tokenChain}`,
       );
 
@@ -291,7 +301,7 @@ export class NovesProvider implements PriceSource {
       // If we couldn't find the token on any chain, return null
       return null;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[NovesProvider] Error fetching price for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );
@@ -312,7 +322,7 @@ export class NovesProvider implements PriceSource {
     try {
       await this.enforceRateLimit();
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[NovesProvider] Trying specific chain endpoint: ${url}`,
       );
 
@@ -324,7 +334,7 @@ export class NovesProvider implements PriceSource {
         timeout: 10000,
       });
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[NovesProvider] Specific chain response for ${chain}: ${JSON.stringify(response.data)}`,
       );
 
@@ -338,29 +348,29 @@ export class NovesProvider implements PriceSource {
         ) {
           const price = parseFloat(response.data.price.amount);
           if (!isNaN(price)) {
-            serviceLogger.debug(
+            this.logger.debug(
               `[NovesProvider] Found price on specific chain ${chain}: $${price}`,
             );
             return price;
           } else {
-            serviceLogger.debug(
+            this.logger.debug(
               `[NovesProvider] Invalid price amount on specific chain ${chain}: ${response.data.price.amount}`,
             );
             return null;
           }
         } else if (response.data.priceStatus === "inProgress") {
-          serviceLogger.debug(
+          this.logger.debug(
             `[NovesProvider] Price calculation in progress for specific chain ${chain}`,
           );
           return null;
         } else {
-          serviceLogger.debug(
+          this.logger.debug(
             `[NovesProvider] Invalid or missing price data for specific chain ${chain}: ${JSON.stringify(response.data.price)}`,
           );
           return null;
         }
       } else {
-        serviceLogger.debug(
+        this.logger.debug(
           `[NovesProvider] Unexpected response format for specific chain ${chain}`,
         );
         return null;
@@ -371,12 +381,12 @@ export class NovesProvider implements PriceSource {
         error.response &&
         error.response.status >= 400
       ) {
-        serviceLogger.debug(
+        this.logger.debug(
           `[NovesProvider] Token ${tokenAddress} not found on ${chain} chain: ${error.response.status}`,
         );
         return null;
       }
-      serviceLogger.debug(
+      this.logger.debug(
         `[NovesProvider] Error querying ${chain}: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
@@ -394,8 +404,8 @@ export class NovesProvider implements PriceSource {
       try {
         await this.enforceRateLimit();
 
-        serviceLogger.debug(`[NovesProvider] Debug: Requesting from ${url}`);
-        serviceLogger.debug(
+        this.logger.debug(`[NovesProvider] Debug: Requesting from ${url}`);
+        this.logger.debug(
           `[NovesProvider] Attempt ${attempt}/${this.MAX_RETRIES} to fetch Solana token price`,
         );
 
@@ -407,7 +417,7 @@ export class NovesProvider implements PriceSource {
           timeout: 10000, // Increase timeout to 10 seconds
         });
 
-        serviceLogger.debug(
+        this.logger.debug(
           `[NovesProvider] Solana response: ${JSON.stringify(response.data)}`,
         );
 
@@ -421,12 +431,12 @@ export class NovesProvider implements PriceSource {
           ) {
             const price = parseFloat(response.data.price.amount);
             if (!isNaN(price)) {
-              serviceLogger.debug(
+              this.logger.debug(
                 `[NovesProvider] Successfully fetched price for Solana token ${tokenAddress}: $${price}`,
               );
               return price;
             } else {
-              serviceLogger.debug(
+              this.logger.debug(
                 `[NovesProvider] Invalid price amount for Solana token ${tokenAddress}: ${response.data.price.amount}`,
               );
               if (attempt === this.MAX_RETRIES) return null;
@@ -434,14 +444,14 @@ export class NovesProvider implements PriceSource {
               continue;
             }
           } else if (response.data.priceStatus === "inProgress") {
-            serviceLogger.debug(
+            this.logger.debug(
               `[NovesProvider] Price calculation in progress for Solana token ${tokenAddress}`,
             );
             if (attempt === this.MAX_RETRIES) return null;
             await this.delay(this.RETRY_DELAY * attempt);
             continue;
           } else {
-            serviceLogger.debug(
+            this.logger.debug(
               `[NovesProvider] Invalid or missing price data for Solana token ${tokenAddress}: ${JSON.stringify(response.data.price)}`,
             );
             if (attempt === this.MAX_RETRIES) return null;
@@ -449,7 +459,7 @@ export class NovesProvider implements PriceSource {
             continue;
           }
         } else {
-          serviceLogger.debug(
+          this.logger.debug(
             `[NovesProvider] Unexpected response format for Solana token ${tokenAddress}`,
           );
           if (attempt === this.MAX_RETRIES) return null;
@@ -463,18 +473,18 @@ export class NovesProvider implements PriceSource {
             error.response &&
             error.response.status >= 400
           ) {
-            serviceLogger.debug(
+            this.logger.debug(
               `[NovesProvider] API error for Solana token ${tokenAddress}: ${error.response.status}`,
             );
             return null;
           }
           throw error;
         }
-        serviceLogger.debug(
+        this.logger.debug(
           `[NovesProvider] Attempt ${attempt} failed, retrying after delay...`,
         );
         if (axios.isAxiosError(error)) {
-          serviceLogger.error(`[NovesProvider] Axios error details:`, {
+          this.logger.error(`[NovesProvider] Axios error details:`, {
             message: error.message,
             code: error.code,
             status: error.response?.status,

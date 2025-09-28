@@ -1,17 +1,18 @@
-import { config } from "@/config/index.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { SymphonyPerpsProvider } from "@/services/providers/perps/symphony-perps.provider.js";
-import { IPerpsDataProvider, PerpsProviderConfig } from "@/types/perps.js";
+import { Logger } from "pino";
+
+import { IPerpsDataProvider, PerpsProviderConfig } from "../types/perps.js";
+import { SymphonyPerpsProvider } from "./perps/symphony-perps.provider.js";
 
 /**
  * Factory for creating perps data providers based on configuration
  */
 export class PerpsProviderFactory {
+  static logger: Logger;
   /**
    * Create a perps data provider based on the configuration
    */
   static createProvider(config: PerpsProviderConfig): IPerpsDataProvider {
-    serviceLogger.info(
+    PerpsProviderFactory.logger.info(
       `[PerpsProviderFactory] Creating provider of type: ${config.type}, provider: ${config.provider}`,
     );
 
@@ -55,9 +56,7 @@ export class PerpsProviderFactory {
    * Create Symphony provider instance
    */
   private static createSymphonyProvider(apiUrl?: string): IPerpsDataProvider {
-    // Use API URL from competition config or fall back to global config
-    const symphonyApiUrl = apiUrl || config.symphony.apiUrl;
-    return new SymphonyPerpsProvider(symphonyApiUrl);
+    return new SymphonyPerpsProvider(PerpsProviderFactory.logger, apiUrl);
   }
 
   /**
@@ -69,7 +68,7 @@ export class PerpsProviderFactory {
     try {
       // Check if provider has health check method
       if (!provider.isHealthy) {
-        serviceLogger.debug(
+        PerpsProviderFactory.logger.debug(
           `[PerpsProviderFactory] Provider ${provider.getName()} does not implement health check`,
         );
         return true; // Assume healthy if no health check available
@@ -77,18 +76,18 @@ export class PerpsProviderFactory {
 
       const isHealthy = await provider.isHealthy();
       if (!isHealthy) {
-        serviceLogger.warn(
+        PerpsProviderFactory.logger.warn(
           `[PerpsProviderFactory] Provider ${provider.getName()} health check failed`,
         );
         return false;
       }
 
-      serviceLogger.debug(
+      PerpsProviderFactory.logger.debug(
         `[PerpsProviderFactory] Provider ${provider.getName()} is healthy`,
       );
       return true;
     } catch (error) {
-      serviceLogger.error(
+      PerpsProviderFactory.logger.error(
         `[PerpsProviderFactory] Provider validation error: ${error}`,
       );
       return false;

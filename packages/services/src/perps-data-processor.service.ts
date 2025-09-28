@@ -674,7 +674,11 @@ export class PerpsDataProcessor {
           `[PerpsDataProcessor] Running self-funding monitoring for competition ${competitionId}`,
         );
 
-        const monitoring = new PerpsMonitoringService(provider);
+        const monitoring = new PerpsMonitoringService(
+          provider,
+          this.perpsRepo,
+          this.logger,
+        );
 
         // Use agents from the result instead of fetching again
         const successfulAgentIds = new Set(

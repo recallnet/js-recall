@@ -71,6 +71,7 @@ try {
 const services = new ServiceRegistry();
 
 // Load competition-specific configuration settings
+// TODO: Provide callback
 await services.configurationService.loadCompetitionSettings();
 apiLogger.info("Competition-specific configuration settings loaded");
 

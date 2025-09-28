@@ -1,4 +1,3 @@
-import { Request } from "express";
 import { z } from "zod/v4";
 
 import {
@@ -495,22 +494,6 @@ export interface PortfolioValue {
 export interface ApiAuth {
   agentId: string;
   key: string;
-}
-
-/**
- * Extended Request interface for authenticated requests
- */
-export interface AuthenticatedRequest extends Request {
-  privyToken?: string;
-  agentId?: string;
-  userId?: string;
-  adminId?: string;
-  wallet?: string;
-  isAdmin?: boolean;
-  admin?: {
-    id: string;
-    name: string;
-  };
 }
 
 /**

@@ -36,6 +36,8 @@
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
     "@recallnet/staking-contracts": "workspace:*",
+    "@sentry/node": "^10.5.0",
+    "axios": "^1.6.0",
     "decimal.js": "^10.6.0",
     "lru-cache": "^11.1.0",
     "merkletreejs": "^0.5.2",

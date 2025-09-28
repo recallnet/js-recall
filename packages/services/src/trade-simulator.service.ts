@@ -7,7 +7,6 @@ import { InsertTrade, SelectTrade } from "@recallnet/db/schema/trading/types";
 
 import { BalanceService } from "./balance.service.js";
 import { EXEMPT_TOKENS, calculateSlippage } from "./lib/trade-utils.js";
-import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import { DexScreenerProvider } from "./providers/price/dexscreener.provider.js";
 import {
@@ -54,6 +53,7 @@ export class TradeSimulatorService {
   private defaultMinimumLiquidityUsd: number;
   private defaultMinimumFdvUsd: number;
   private crossChainTradingType: CrossChainTradingType;
+  private specificChainTokens: Record<SpecificChain, Record<string, string>>;
   private dexScreenerProvider: DexScreenerProvider;
   // Cache of trading constraints per competition
   private constraintsCache: Map<string, TradingConstraints>;
@@ -70,6 +70,7 @@ export class TradeSimulatorService {
     defaultMinimumLiquidityUsd: number,
     defaultMinimumFdvUsd: number,
     crossChainTradingType: CrossChainTradingType,
+    specificChainTokens: Record<SpecificChain, Record<string, string>>,
     logger: Logger,
   ) {
     this.balanceService = balanceService;
@@ -82,8 +83,12 @@ export class TradeSimulatorService {
     this.defaultMinimumLiquidityUsd = defaultMinimumLiquidityUsd;
     this.defaultMinimumFdvUsd = defaultMinimumFdvUsd;
     this.crossChainTradingType = crossChainTradingType;
+    this.specificChainTokens = specificChainTokens;
     this.logger = logger;
-    this.dexScreenerProvider = new DexScreenerProvider();
+    this.dexScreenerProvider = new DexScreenerProvider(
+      specificChainTokens,
+      logger,
+    );
     this.tradeCache = new Map();
     this.constraintsCache = new Map();
   }
@@ -569,7 +574,9 @@ export class TradeSimulatorService {
       return;
     }
 
-    const isExemptToken = EXEMPT_TOKENS.has(priceData.token);
+    const isExemptToken = EXEMPT_TOKENS(this.specificChainTokens).has(
+      priceData.token,
+    );
     if (isExemptToken) {
       this.logger.debug(
         `[TradeSimulator] Constraint check exempted for major token: ${tokenAddress} (${priceData.specificChain})`,
@@ -589,7 +596,9 @@ export class TradeSimulatorService {
     // Check FDV constraint - exempt major tokens
     this.validateFdvConstraint(priceData, constraints);
 
-    const isExemptFromFdvLogging = EXEMPT_TOKENS.has(priceData.token);
+    const isExemptFromFdvLogging = EXEMPT_TOKENS(this.specificChainTokens).has(
+      priceData.token,
+    );
     this.logger
       .debug(`[TradeSimulator] Trading constraints validated for ${tokenAddress}:
       Pair Age: ${priceData.pairCreatedAt ? ((Date.now() - priceData.pairCreatedAt) / (1000 * 60 * 60)).toFixed(2) : "N/A"} hours

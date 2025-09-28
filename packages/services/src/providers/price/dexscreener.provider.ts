@@ -1,10 +1,14 @@
 import axios from "axios";
+import { Logger } from "pino";
 
-import config from "@/config/index.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { PriceReport, PriceSource } from "@/types/index.js";
-import { BlockchainType, SpecificChain } from "@/types/index.js";
-import { DexScreenerResponse, DexScreenerTokenInfo } from "@/types/index.js";
+import {
+  BlockchainType,
+  DexScreenerResponse,
+  DexScreenerTokenInfo,
+  PriceReport,
+  PriceSource,
+  SpecificChain,
+} from "../../types/index.js";
 
 /**
  * DexScreener price provider implementation
@@ -16,6 +20,16 @@ export class DexScreenerProvider implements PriceSource {
   private readonly MIN_REQUEST_INTERVAL = 100;
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
+  private specificChainTokens: Record<SpecificChain, Record<string, string>>;
+  private logger: Logger;
+
+  constructor(
+    specificChainTokens: Record<SpecificChain, Record<string, string>>,
+    logger: Logger,
+  ) {
+    this.specificChainTokens = specificChainTokens;
+    this.logger = logger;
+  }
 
   // Mapping for DexScreener specific chain names
   private readonly chainMapping: Record<SpecificChain, string> = {
@@ -77,11 +91,11 @@ export class DexScreenerProvider implements PriceSource {
     specificChain: SpecificChain,
   ): boolean {
     // Check if this specific chain exists in our config
-    if (!(specificChain in config.specificChainTokens)) return false;
+    if (!(specificChain in this.specificChainTokens)) return false;
 
     const chainTokens =
-      config.specificChainTokens[
-        specificChain as keyof typeof config.specificChainTokens
+      this.specificChainTokens[
+        specificChain as keyof typeof this.specificChainTokens
       ];
 
     const normalizedAddress = tokenAddress.toLowerCase();
@@ -99,11 +113,11 @@ export class DexScreenerProvider implements PriceSource {
     specificChain: SpecificChain,
   ): string | null {
     // Check if this specific chain exists in our config
-    if (!(specificChain in config.specificChainTokens)) return null;
+    if (!(specificChain in this.specificChainTokens)) return null;
 
     const chainTokens =
-      config.specificChainTokens[
-        specificChain as keyof typeof config.specificChainTokens
+      this.specificChainTokens[
+        specificChain as keyof typeof this.specificChainTokens
       ];
 
     const normalizedAddress = tokenAddress.toLowerCase();
@@ -144,7 +158,7 @@ export class DexScreenerProvider implements PriceSource {
     const pairTokens = this.getBestPairForPrice(tokenAddress, specificChain);
 
     if (!pairTokens) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[DexScreenerProvider] Could not determine a suitable token pair for ${tokenAddress} on ${dexScreenerChain}`,
       );
       return null;
@@ -152,7 +166,7 @@ export class DexScreenerProvider implements PriceSource {
 
     // Construct the URL with the token pair
     const url = `${this.API_BASE}/${dexScreenerChain}/${pairTokens}`;
-    serviceLogger.debug(`[DexScreenerProvider] Fetching price from: ${url}`);
+    this.logger.debug(`[DexScreenerProvider] Fetching price from: ${url}`);
 
     let retries = 0;
     while (retries <= this.MAX_RETRIES) {
@@ -185,7 +199,7 @@ export class DexScreenerProvider implements PriceSource {
             );
 
             if (tokenAsPair) {
-              serviceLogger.debug(
+              this.logger.debug(
                 `[DexScreenerProvider] Found price for ${tokenAddress} as base token: $${tokenAsPair.priceUsd}`,
               );
               return {
@@ -204,8 +218,8 @@ export class DexScreenerProvider implements PriceSource {
           } else {
             // For stablecoins, we need more careful handling
             const chainTokens =
-              config.specificChainTokens[
-                specificChain as keyof typeof config.specificChainTokens
+              this.specificChainTokens[
+                specificChain as keyof typeof this.specificChainTokens
               ];
 
             // Find the best pair for stablecoin pricing
@@ -249,7 +263,7 @@ export class DexScreenerProvider implements PriceSource {
               });
 
             if (stablecoinPairs.length > 1) {
-              serviceLogger.debug(
+              this.logger.debug(
                 `[DexScreenerProvider] Using stablecoin ${tokenAddress} price: $${stablecoinPairs[0]?.priceUsd} (chosen over price: $${stablecoinPairs[1]?.priceUsd})`,
               );
             }
@@ -264,7 +278,7 @@ export class DexScreenerProvider implements PriceSource {
 
               if (ourTokenIsBase) {
                 // If our token is the base token, use the price directly
-                serviceLogger.debug(
+                this.logger.debug(
                   `[DexScreenerProvider] Found stablecoin ${tokenAddress} as base token: $${stablecoinPair.priceUsd}`,
                 );
                 return {
@@ -282,7 +296,7 @@ export class DexScreenerProvider implements PriceSource {
               } else {
                 // For stablecoins that are quote tokens, we need to calculate the inverse price
                 // Most stablecoin/stablecoin pairs are approximately 1:1
-                serviceLogger.debug(
+                this.logger.debug(
                   `[DexScreenerProvider] Found stablecoin ${tokenAddress} as quote token paired with another stablecoin`,
                 );
 
@@ -323,18 +337,18 @@ export class DexScreenerProvider implements PriceSource {
           }
 
           // If we couldn't find a suitable pair, log and return null
-          serviceLogger.debug(
+          this.logger.debug(
             `[DexScreenerProvider] No suitable pairs found for ${tokenAddress} on ${dexScreenerChain}`,
           );
         }
 
         // If no valid price found in response
-        serviceLogger.debug(
+        this.logger.debug(
           `[DexScreenerProvider] No valid price found for ${tokenAddress}`,
         );
         return null;
       } catch (error) {
-        serviceLogger.error(
+        this.logger.error(
           `Error fetching price from DexScreener for ${tokenAddress} on ${dexScreenerChain}:`,
           error,
         );
@@ -348,7 +362,7 @@ export class DexScreenerProvider implements PriceSource {
     }
 
     // If all retries failed
-    serviceLogger.debug(
+    this.logger.debug(
       `[DexScreenerProvider] No reliable price found for ${tokenAddress} after ${this.MAX_RETRIES} retries`,
     );
     return null;
@@ -388,7 +402,7 @@ export class DexScreenerProvider implements PriceSource {
 
     // Handle burn addresses - always return price of 0
     if (this.isBurnAddress(tokenAddress)) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[DexScreenerProvider] Burn address detected: ${tokenAddress}, returning price of 0`,
       );
 
@@ -479,7 +493,7 @@ export class DexScreenerProvider implements PriceSource {
     });
 
     if (nullTokens.length > 0) {
-      serviceLogger.debug(
+      this.logger.debug(
         `[DexScreenerProvider] Retrying ${nullTokens.length} tokens individually after batch processing`,
       );
 
@@ -501,16 +515,16 @@ export class DexScreenerProvider implements PriceSource {
               liquidity: individualResult.liquidity,
               fdv: individualResult.fdv,
             });
-            serviceLogger.debug(
+            this.logger.debug(
               `[DexScreenerProvider] Individual retry successful for ${tokenAddress}: $${individualResult.price} (${individualResult.symbol})`,
             );
           } else {
-            serviceLogger.debug(
+            this.logger.debug(
               `[DexScreenerProvider] Individual retry failed for ${tokenAddress}`,
             );
           }
         } catch (error) {
-          serviceLogger.error(
+          this.logger.error(
             `[DexScreenerProvider] Error during individual retry for ${tokenAddress}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
@@ -585,10 +599,10 @@ export class DexScreenerProvider implements PriceSource {
       .join(",");
     const url = `${this.API_BASE}/${dexScreenerChain}/${addressesParam}`;
 
-    serviceLogger.debug(
+    this.logger.debug(
       `[DexScreenerProvider] Fetching batch prices from: ${url}`,
     );
-    serviceLogger.debug(
+    this.logger.debug(
       `[DexScreenerProvider] Batch size: ${addressesToFetch.length} tokens`,
     );
 
@@ -618,18 +632,18 @@ export class DexScreenerProvider implements PriceSource {
 
             if (tokenPrice) {
               results.set(originalAddr, tokenPrice);
-              serviceLogger.debug(
+              this.logger.debug(
                 `[DexScreenerProvider] Found batch price for ${originalAddr}: $${tokenPrice.price} (${tokenPrice.symbol})`,
               );
             } else {
               results.set(originalAddr, null);
-              serviceLogger.debug(
+              this.logger.debug(
                 `[DexScreenerProvider] No price found for ${originalAddr} in batch response`,
               );
             }
           }
         } else {
-          serviceLogger.debug(
+          this.logger.debug(
             `[DexScreenerProvider] No data returned for batch request: ${url}`,
           );
           // Set all addresses to null when no data returned
@@ -640,7 +654,7 @@ export class DexScreenerProvider implements PriceSource {
 
         return results;
       } catch (error) {
-        serviceLogger.error(
+        this.logger.error(
           `[DexScreenerProvider] Error fetching batch prices (attempt ${retries + 1}):`,
           error instanceof Error ? error.message : "Unknown error",
         );
@@ -652,7 +666,7 @@ export class DexScreenerProvider implements PriceSource {
       }
     }
 
-    serviceLogger.error(
+    this.logger.error(
       `[DexScreenerProvider] Failed to fetch batch prices after ${this.MAX_RETRIES} retries`,
     );
 

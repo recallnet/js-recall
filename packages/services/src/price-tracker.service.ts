@@ -26,9 +26,12 @@ export class PriceTrackerService {
 
   private logger: Logger;
 
-  constructor(maxCacheSize: number, priceTTLMs: number, logger: Logger) {
-    this.logger = logger;
-
+  constructor(
+    multiChainProvider: MultiChainProvider,
+    maxCacheSize: number,
+    priceTTLMs: number,
+    logger: Logger,
+  ) {
     // Initialize LRU caches
     this.tokenPriceCache = new LRUCache<string, PriceReport>({
       max: maxCacheSize,
@@ -41,10 +44,8 @@ export class PriceTrackerService {
     });
 
     // Initialize only the MultiChainProvider
-    this.multiChainProvider = new MultiChainProvider();
-    this.logger.debug(
-      "[PriceTracker] Initialized MultiChainProvider for all token price fetching",
-    );
+    this.multiChainProvider = multiChainProvider;
+    this.logger = logger;
 
     // Set up providers (now just MultiChainProvider)
     this.providers = [];

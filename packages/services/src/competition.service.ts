@@ -358,6 +358,7 @@ interface Config {
   rateLimitingMaxRequests: number;
   rateLimitingWindowMs: number;
   evmChains: SpecificChain[];
+  onLoadCompetitionSettings: (activeCompetition?: SelectCompetition) => void;
 }
 
 /**
@@ -797,7 +798,9 @@ export class CompetitionService {
     );
 
     // Reload competition-specific configuration settings
-    await this.configurationService.loadCompetitionSettings();
+    await this.configurationService.loadCompetitionSettings(
+      this.config.onLoadCompetitionSettings,
+    );
     this.logger.debug(`[CompetitionManager] Reloaded configuration settings`);
 
     return {
@@ -975,7 +978,9 @@ export class CompetitionService {
       await this.competitionRepo.getCompetitionAgents(competitionId);
 
     // Reload configuration settings (revert to environment defaults)
-    await this.configurationService.loadCompetitionSettings();
+    await this.configurationService.loadCompetitionSettings(
+      this.config.onLoadCompetitionSettings,
+    );
 
     // Final transaction to persist results
     const { competition: finalCompetition, leaderboardCount } =

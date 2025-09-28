@@ -2,7 +2,7 @@
  * Trade utility functions
  * Shared logic for trade-related calculations
  */
-import { config } from "../config/index.js";
+import { SpecificChain } from "../types/index.js";
 
 /**
  * Result of slippage calculation
@@ -74,11 +74,14 @@ export function calculateSlippage(fromValueUSD: number): SlippageResult {
  * Major tokens exempt from trading constraint requirements (native tokens, established assets)
  * Populated from all token addresses configured in the system
  */
-export const EXEMPT_TOKENS = new Set([
-  // Collect all token addresses from all chains in config
-  ...Object.values(config.specificChainTokens).flatMap((chainTokens) =>
-    Object.values(chainTokens),
-  ),
-  // Add the zero address for native EVM tokens
-  "0x0000000000000000000000000000000000000000", // Ethereum, etc...
-]);
+export const EXEMPT_TOKENS = (
+  specificChainTokens: Record<SpecificChain, Record<string, string>>,
+) =>
+  new Set([
+    // Collect all token addresses from all chains in config
+    ...Object.values(specificChainTokens).flatMap((chainTokens) =>
+      Object.values(chainTokens),
+    ),
+    // Add the zero address for native EVM tokens
+    "0x0000000000000000000000000000000000000000", // Ethereum, etc...
+  ]);

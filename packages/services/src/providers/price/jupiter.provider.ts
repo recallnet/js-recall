@@ -1,8 +1,7 @@
 import axios from "axios";
+import { Logger } from "pino";
 
-import { serviceLogger } from "@/lib/logger.js";
-import { PriceSource } from "@/types/index.js";
-import { BlockchainType, PriceReport } from "@/types/index.js";
+import { BlockchainType, PriceReport, PriceSource } from "../../types/index.js";
 
 /**
  * Jupiter price provider implementation
@@ -19,9 +18,11 @@ export class JupiterProvider implements PriceSource {
   private readonly MIN_REQUEST_INTERVAL = 100;
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
+  private logger: Logger;
 
-  constructor() {
+  constructor(logger: Logger) {
     this.cache = new Map();
+    this.logger = logger;
   }
 
   getName(): string {
@@ -76,7 +77,7 @@ export class JupiterProvider implements PriceSource {
       // Check cache first
       const cachedPrice = this.getCachedPrice(tokenAddress);
       if (cachedPrice !== null && cachedPrice.confidence === "high") {
-        serviceLogger.debug(
+        this.logger.debug(
           `[JupiterProvider] Using cached price for ${tokenAddress}: $${cachedPrice.price}`,
         );
         return {
@@ -89,20 +90,18 @@ export class JupiterProvider implements PriceSource {
         };
       }
 
-      serviceLogger.debug(
-        `[JupiterProvider] Getting price for ${tokenAddress}`,
-      );
+      this.logger.debug(`[JupiterProvider] Getting price for ${tokenAddress}`);
 
       for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
         try {
           await this.enforceRateLimit();
 
           const url = `${this.API_BASE}?ids=${tokenAddress}&showExtraInfo=true`;
-          serviceLogger.debug(
+          this.logger.debug(
             `[JupiterProvider] Debug: Full URL being used: ${url}`,
           );
 
-          serviceLogger.debug(
+          this.logger.debug(
             `[JupiterProvider] Attempt ${attempt}/${this.MAX_RETRIES} to fetch price for ${tokenAddress}`,
           );
 
@@ -114,12 +113,12 @@ export class JupiterProvider implements PriceSource {
             },
           });
 
-          serviceLogger.debug(
+          this.logger.debug(
             `[JupiterProvider] Received response status: ${response.status}`,
           );
 
           if (!response.data?.data?.[tokenAddress]) {
-            serviceLogger.debug(
+            this.logger.debug(
               `[JupiterProvider] No price data found for token: ${tokenAddress}`,
             );
             if (attempt === this.MAX_RETRIES) return null;
@@ -130,7 +129,7 @@ export class JupiterProvider implements PriceSource {
           const tokenData = response.data.data[tokenAddress];
           const price = parseFloat(tokenData.price);
           if (isNaN(price)) {
-            serviceLogger.debug(
+            this.logger.debug(
               `[JupiterProvider] Invalid price format for token: ${tokenAddress}`,
             );
             return null;
@@ -142,7 +141,7 @@ export class JupiterProvider implements PriceSource {
           }
 
           this.setCachedPrice(tokenAddress, price, confidence);
-          serviceLogger.debug(
+          this.logger.debug(
             `[JupiterProvider] Successfully fetched price for ${tokenAddress}: $${price}`,
           );
 
@@ -158,11 +157,11 @@ export class JupiterProvider implements PriceSource {
           if (attempt === this.MAX_RETRIES) {
             throw error;
           }
-          serviceLogger.debug(
+          this.logger.debug(
             `[JupiterProvider] Attempt ${attempt} failed, retrying after delay...`,
           );
           if (axios.isAxiosError(error)) {
-            serviceLogger.error(`[JupiterProvider] Axios error details:`, {
+            this.logger.error(`[JupiterProvider] Axios error details:`, {
               message: error.message,
               code: error.code,
               status: error.response?.status,
@@ -174,7 +173,7 @@ export class JupiterProvider implements PriceSource {
       }
       return null;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[JupiterProvider] Error fetching price for ${tokenAddress}:`,
         error instanceof Error ? error.message : "Unknown error",
       );

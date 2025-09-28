@@ -650,6 +650,12 @@ importers:
       '@recallnet/staking-contracts':
         specifier: workspace:*
         version: link:../staking-contracts
+      '@sentry/node':
+        specifier: ^10.5.0
+        version: 10.10.0
+      axios:
+        specifier: ^1.6.0
+        version: 1.9.0
       decimal.js:
         specifier: ^10.6.0
         version: 10.6.0

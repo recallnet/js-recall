@@ -1,14 +1,12 @@
-import { config } from "@/config/index.js";
-import { createLogger } from "@/lib/logger.js";
+import { Logger } from "pino";
+
 import {
   DEFAULT_RETRY_CONFIG,
   NonRetryableError,
   RetryConfig,
   RetryableError,
   withRetry,
-} from "@/lib/retry-helper.js";
-
-const logger = createLogger("Watchlist");
+} from "./retry-helper.js";
 
 /**
  * Category of the identification. Only "sanctions" designates a sanctioned address, and other
@@ -51,13 +49,19 @@ export class WalletWatchlist {
   private readonly apiKey: string;
   private readonly baseUrl = "https://public.chainalysis.com/api/v1/address";
   private readonly requestTimeout = 10_000;
+  private logger: Logger;
 
-  constructor(readonly retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG) {
-    this.apiKey = config.watchlist.chainalysisApiKey;
+  constructor(
+    apiKey: string,
+    logger: Logger,
+    readonly retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG,
+  ) {
+    this.apiKey = apiKey;
+    this.logger = logger;
     this.retryConfig = retryConfig;
 
     if (!this.apiKey) {
-      logger.warn(
+      this.logger.warn(
         "CHAINALYSIS_API_KEY not configured - watchlist checks will be skipped",
       );
     }
@@ -73,7 +77,7 @@ export class WalletWatchlist {
     try {
       // Skip check if API key not configured (fail-safe - only exception)
       if (!this.isConfigured()) {
-        logger.debug(
+        this.logger.debug(
           {
             address,
           },
@@ -84,7 +88,7 @@ export class WalletWatchlist {
 
       // Normalize address (Chainalysis API is case-sensitive)
       const normalizedAddress = address.toLowerCase();
-      logger.debug(
+      this.logger.debug(
         {
           address: normalizedAddress,
         },
@@ -112,7 +116,7 @@ export class WalletWatchlist {
           // Handle API errors
           if (!response.ok) {
             const errorMessage = `Chainalysis API error: ${response.statusText}`;
-            logger.error(
+            this.logger.error(
               {
                 address: normalizedAddress,
                 status: response.status,
@@ -136,7 +140,7 @@ export class WalletWatchlist {
           const isSanctioned =
             data.identifications?.some(checkIsSanctioned) ?? false;
           if (isSanctioned) {
-            logger.warn(
+            this.logger.warn(
               {
                 address: normalizedAddress,
                 identifications: data.identifications.filter(checkIsSanctioned),
@@ -152,7 +156,7 @@ export class WalletWatchlist {
       }, this.retryConfig);
     } catch (error) {
       // Fail closed: Do not allow access in case of network errors, timeouts, etc.
-      logger.error(
+      this.logger.error(
         {
           address,
           error,
