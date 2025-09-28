@@ -14,6 +14,7 @@ const sslConfig = () => {
       rejectUnauthorized: true,
     };
   }
+  return false;
 };
 
 const pool = new Pool({
