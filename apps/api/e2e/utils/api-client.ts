@@ -8,6 +8,7 @@ import {
   AdminAddAgentToCompetitionResponse,
   AdminAgentResponse,
   AdminAgentsListResponse,
+  AdminCompetitionTransferViolationsResponse,
   AdminReactivateAgentInCompetitionResponse,
   AdminRemoveAgentFromCompetitionResponse,
   AdminSearchParams,
@@ -58,6 +59,7 @@ import {
   TradeResponse,
   TradingConstraints,
   UpcomingCompetitionsResponse,
+  UpdateCompetitionResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
   UserMetadata,
@@ -581,6 +583,63 @@ export class ApiClient {
   }
 
   /**
+   * Update a competition (admin only)
+   */
+  async updateCompetition(
+    competitionId: string,
+    {
+      name,
+      description,
+      type,
+      externalUrl,
+      imageUrl,
+      votingStartDate,
+      votingEndDate,
+      tradingConstraints,
+      rewards,
+      perpsProvider,
+    }: {
+      name?: string;
+      description?: string;
+      type?: string;
+      externalUrl?: string;
+      imageUrl?: string;
+      votingStartDate?: string;
+      votingEndDate?: string;
+      tradingConstraints?: TradingConstraints;
+      rewards?: Record<number, number>;
+      perpsProvider?: {
+        provider: "symphony" | "hyperliquid";
+        initialCapital?: number;
+        selfFundingThreshold?: number;
+        apiUrl?: string;
+      };
+    },
+  ): Promise<UpdateCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competition/${competitionId}`,
+        {
+          name,
+          description,
+          type,
+          externalUrl,
+          imageUrl,
+          votingStartDate,
+          votingEndDate,
+          tradingConstraints,
+          rewards,
+          perpsProvider,
+        },
+      );
+
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update competition");
+    }
+  }
+
+  /**
    * Start an existing competition with agents
    */
   async startExistingCompetition({
@@ -931,6 +990,24 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "add agent to competition");
+    }
+  }
+
+  /**
+   * Get competition transfer violations (admin only)
+   * @param competitionId ID of the competition
+   * @returns Transfer violations for agents in the competition
+   */
+  async getCompetitionTransferViolations(
+    competitionId: string,
+  ): Promise<AdminCompetitionTransferViolationsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/competition/${competitionId}/transfer-violations`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get competition transfer violations");
     }
   }
 

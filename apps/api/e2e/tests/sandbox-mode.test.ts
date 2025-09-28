@@ -3,9 +3,12 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AdminAgentResponse,
+  BalancesResponse,
   CompetitionAgentsResponse,
   CompetitionStatusResponse,
   ErrorResponse,
+  PerpsAccountResponse,
+  PerpsPositionsResponse,
   SnapshotResponse,
   StartCompetitionResponse,
   UserRegistrationResponse,
@@ -16,6 +19,7 @@ import {
   generateRandomEthAddress,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
+  startPerpsTestCompetition,
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
@@ -416,6 +420,161 @@ describe("Sandbox Mode", () => {
       const agentIds = competitionAgents.agents.map((a) => a.id);
       expect(agentIds).toContain(dummyAgent!.id);
       expect(agentIds).toContain(agent.id);
+    });
+
+    test("should reset balances to trading amounts when adding agent to trading competition", async () => {
+      // Create an agent that will be added to the trading competition
+      const testAgent = await adminClient.registerUser({
+        walletAddress: generateRandomEthAddress(),
+        name: "Trading Balance Test User",
+        email: "trading-balance-test@example.com",
+        agentName: "Trading Balance Test Agent",
+        agentDescription: "Agent for testing trading balance reset",
+        agentWalletAddress: generateRandomEthAddress(),
+      });
+      expect(testAgent.success).toBe(true);
+      const agent = (testAgent as UserRegistrationResponse).agent;
+      expect(agent).toBeDefined();
+
+      // Create a client with the agent's API key for making authenticated calls
+      const agentClient = new ApiClient(agent!.apiKey);
+
+      // Create a dummy agent for starting the competition
+      const tradingDummyResponse = await adminClient.registerUser({
+        walletAddress: generateRandomEthAddress(),
+        name: "Trading Dummy User",
+        email: "trading-dummy@example.com",
+        agentName: "Trading Dummy Agent",
+        agentDescription: "Dummy agent for trading competition",
+        agentWalletAddress: generateRandomEthAddress(),
+      });
+      expect(tradingDummyResponse.success).toBe(true);
+      const tradingDummy = (tradingDummyResponse as UserRegistrationResponse)
+        .agent;
+
+      // Start a trading competition in sandbox mode
+      const tradingCompetition = await startTestCompetition({
+        adminClient,
+        name: `Trading Balance Test ${Date.now()}`,
+        agentIds: [tradingDummy!.id],
+        sandboxMode: true,
+      });
+      expect(tradingCompetition.success).toBe(true);
+
+      // Add our test agent to the trading competition
+      const addToTradingResponse = await adminClient.addAgentToCompetition(
+        tradingCompetition.competition.id,
+        agent!.id,
+      );
+      expect(addToTradingResponse.success).toBe(true);
+
+      // Verify the agent received standard trading balances
+      const tradingBalancesResponse = await agentClient.getBalance();
+      expect(tradingBalancesResponse.success).toBe(true);
+      const tradingBalances = (tradingBalancesResponse as BalancesResponse)
+        .balances;
+
+      // Should have USDC balances on multiple chains
+      expect(tradingBalances.length).toBeGreaterThan(0);
+      const usdcBalances = tradingBalances.filter((b) => b.symbol === "USDC");
+      expect(usdcBalances.length).toBeGreaterThan(0);
+
+      // Should have the expected USDC balances per chain
+      // eth, base, svm should have 5000 USDC
+      // polygon, arbitrum, optimism should have 200 USDC
+      const highValueChains = ["eth", "base", "svm"];
+      const lowValueChains = ["polygon", "arbitrum", "optimism"];
+
+      for (const balance of usdcBalances) {
+        if (highValueChains.includes(balance.specificChain)) {
+          expect(balance.amount).toBe(5000);
+        } else if (lowValueChains.includes(balance.specificChain)) {
+          expect(balance.amount).toBe(200);
+        }
+      }
+    });
+
+    test("should clear balances when adding agent to perpetual futures competition", async () => {
+      // Create an agent for perps testing
+      const perpsTestAgent = await adminClient.registerUser({
+        walletAddress: generateRandomEthAddress(),
+        name: "Perps Balance Test User",
+        email: "perps-balance-test@example.com",
+        agentName: "Perps Balance Test Agent",
+        agentDescription: "Agent for testing perps balance reset",
+        agentWalletAddress: generateRandomEthAddress(),
+      });
+      expect(perpsTestAgent.success).toBe(true);
+      const perpsAgent = (perpsTestAgent as UserRegistrationResponse).agent;
+      expect(perpsAgent).toBeDefined();
+
+      const perpsAgentClient = new ApiClient(perpsAgent!.apiKey);
+
+      // Create a dummy agent for starting the perps competition
+      const perpsDummyResponse = await adminClient.registerUser({
+        walletAddress: generateRandomEthAddress(),
+        name: "Perps Dummy User",
+        email: "perps-dummy@example.com",
+        agentName: "Perps Dummy Agent",
+        agentDescription: "Dummy agent for perps competition",
+        agentWalletAddress: generateRandomEthAddress(),
+      });
+      expect(perpsDummyResponse.success).toBe(true);
+      const perpsDummy = (perpsDummyResponse as UserRegistrationResponse).agent;
+
+      // Start a perpetual futures competition in sandbox mode
+      const perpsCompetition = await startPerpsTestCompetition({
+        adminClient,
+        name: `Perps Balance Test ${Date.now()}`,
+        agentIds: [perpsDummy!.id],
+        sandboxMode: true,
+      });
+      expect(perpsCompetition.success).toBe(true);
+
+      // Add our test agent to the perps competition
+      const addToPerpsResponse = await adminClient.addAgentToCompetition(
+        perpsCompetition.competition.id,
+        perpsAgent!.id,
+      );
+      expect(addToPerpsResponse.success).toBe(true);
+
+      // For perps competitions, the balance endpoint returns an error
+      const perpsBalancesResponse = await perpsAgentClient.getBalance();
+      expect(perpsBalancesResponse.success).toBe(false);
+      expect((perpsBalancesResponse as ErrorResponse).error).toContain(
+        "This endpoint is not available for perpetual futures competitions",
+      );
+
+      // Verification 1: Check perps account endpoint shows cleared balances
+      const perpsAccountResponse = await perpsAgentClient.getPerpsAccount();
+      expect(perpsAccountResponse.success).toBe(true);
+      const account = (perpsAccountResponse as PerpsAccountResponse).account;
+      expect(account).toBeDefined();
+      expect(account.availableBalance).toBe("0");
+      expect(account.totalEquity).toBe("0");
+      expect(account.marginUsed).toBe("0");
+      expect(account.totalPnl).toBe("0");
+
+      // Verification 2: Check that the agent has no perps positions (since they have no balance to trade)
+      const perpsPositionsResponse = await perpsAgentClient.getPerpsPositions();
+      expect(perpsPositionsResponse.success).toBe(true);
+      const positions = (perpsPositionsResponse as PerpsPositionsResponse)
+        .positions;
+      expect(positions).toBeDefined();
+      expect(positions.length).toBe(0);
+
+      // Additional verification: Check that the agent was successfully added to the perps competition
+      const competitionAgents = await adminClient.getCompetitionAgents(
+        perpsCompetition.competition.id,
+      );
+      expect(competitionAgents.success).toBe(true);
+      const agents = (competitionAgents as CompetitionAgentsResponse).agents;
+      expect(agents).toBeDefined();
+      expect(agents.length).toBeGreaterThan(0);
+
+      // Verify our test agent is in the competition
+      const agentIds = agents.map((a) => a.id);
+      expect(agentIds).toContain(perpsAgent!.id);
     });
   });
 

@@ -13,7 +13,6 @@ import { buildPaginationResponse } from "@/controllers/request-helpers.js";
 import { db } from "@/database/db.js";
 import { findByCompetition } from "@/database/repositories/agent-repository.js";
 import { getAllAgentRanks } from "@/database/repositories/agentscore-repository.js";
-import { resetAgentBalances } from "@/database/repositories/balance-repository.js";
 import {
   addAgentToCompetition,
   batchInsertLeaderboard,
@@ -42,8 +41,11 @@ import {
 } from "@/database/repositories/competition-repository.js";
 import {
   createPerpsCompetitionConfig,
-  getCompetitionLeaderboardSummaries,
+  deletePerpsCompetitionConfig,
+  getCompetitionTransferViolationCounts,
   getPerpsCompetitionStats,
+  getRiskAdjustedLeaderboard,
+  updatePerpsCompetitionConfig,
 } from "@/database/repositories/perps-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
 import { applySortingAndPagination, splitSortField } from "@/lib/sort.js";
@@ -95,8 +97,8 @@ export interface CreateCompetitionParams {
   rewards?: Record<number, number>;
   perpsProvider?: {
     provider: "symphony" | "hyperliquid";
-    initialCapital?: number;
-    selfFundingThreshold?: number;
+    initialCapital: number; // Required - Zod default ensures this is set
+    selfFundingThreshold: number; // Required - Zod default ensures this is set
     apiUrl?: string;
   };
 }
@@ -128,6 +130,11 @@ interface LeaderboardEntry {
   agentId: string;
   value: number; // Portfolio value in USD
   pnl: number; // Profit/Loss amount (0 if not calculated)
+  // Risk-adjusted metrics (optional, primarily for perps competitions)
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean; // Indicates if agent has risk metrics calculated
 }
 
 /**
@@ -144,6 +151,11 @@ type LeaderboardData = {
     portfolioValue: number;
     active: boolean;
     deactivationReason: string | null;
+    // Risk-adjusted metrics (primarily for perps competitions)
+    calmarRatio?: number | null;
+    simpleReturn?: number | null;
+    maxDrawdown?: number | null;
+    hasRiskMetrics?: boolean;
   }>;
   inactiveAgents: Array<{
     agentId: string;
@@ -247,6 +259,7 @@ type CompetitionDetailsData = {
       agentId: string | null;
     }>;
     votingEnabled?: boolean;
+    openForBoosting: boolean;
     userVotingInfo?: {
       canVote: boolean;
       reason?: string;
@@ -355,6 +368,25 @@ type AgentCompetitionTradesData = {
     hasMore: boolean;
   };
 };
+
+/**
+ * Leaderboard with inactive agents data structure
+ */
+interface LeaderboardWithInactiveAgents {
+  activeAgents: Array<{
+    agentId: string;
+    value: number;
+    calmarRatio?: number | null;
+    simpleReturn?: number | null;
+    maxDrawdown?: number | null;
+    hasRiskMetrics?: boolean;
+  }>;
+  inactiveAgents: Array<{
+    agentId: string;
+    value: number;
+    deactivationReason: string;
+  }>;
+}
 
 /**
  * Basic competition info for unauthenticated users
@@ -493,9 +525,9 @@ export class CompetitionService {
             provider: perpsProvider.provider,
             apiUrl: perpsProvider.apiUrl,
           },
-          initialCapital: perpsProvider.initialCapital?.toString() ?? "500.00",
+          initialCapital: perpsProvider.initialCapital.toString(),
           selfFundingThresholdUsd:
-            perpsProvider.selfFundingThreshold?.toString() ?? "0.00",
+            perpsProvider.selfFundingThreshold.toString(),
         };
 
         await createPerpsCompetitionConfig(perpsConfig, tx);
@@ -674,18 +706,7 @@ export class CompetitionService {
 
     // Process all agent additions and activations
     for (const agentId of finalAgentIds) {
-      // Handle balances based on competition type
-      if (competition.type === "trading") {
-        // Paper trading: Reset to standard balances (5k USDC per chain)
-        await this.balanceService.resetAgentBalances(agentId);
-      } else if (competition.type === "perpetual_futures") {
-        // Perps: Clear all balances to prevent confusion
-        // Pass empty Map to delete all balances without creating new ones
-        await resetAgentBalances(agentId, new Map());
-        serviceLogger.debug(
-          `[CompetitionService] Cleared balances for perps agent ${agentId}`,
-        );
-      }
+      await this.balanceService.resetAgentBalances(agentId, competition.type);
 
       // Note: Agent validation already done above, so we know agent exists and is active
 
@@ -855,13 +876,13 @@ export class CompetitionService {
    * @param competitionId The competition ID
    * @param totalAgents Total number of agents in the competition
    * @param tx Database transaction
-   * @returns Number of leaderboard entries that were saved
+   * @returns The enriched leaderboard array that was processed
    */
   private async calculateAndPersistFinalLeaderboard(
     competitionId: string,
     totalAgents: number,
     tx: DatabaseTransaction,
-  ): Promise<number> {
+  ): Promise<LeaderboardEntry[]> {
     // Get the leaderboard (calculated from final snapshots)
     const leaderboard = await this.getLeaderboard(competitionId);
 
@@ -896,15 +917,23 @@ export class CompetitionService {
       await batchInsertLeaderboard(enrichedEntries, tx);
     }
 
-    return enrichedEntries.length;
+    // Map enriched entries back to LeaderboardEntry format for return
+    return enrichedEntries.map((entry) => ({
+      agentId: entry.agentId,
+      value: entry.score, // Convert score back to value for LeaderboardEntry
+      pnl: entry.pnl,
+    }));
   }
 
   /**
    * End a competition
    * @param competitionId The competition ID
-   * @returns The updated competition
+   * @returns The updated competition and final leaderboard
    */
-  async endCompetition(competitionId: string) {
+  async endCompetition(competitionId: string): Promise<{
+    competition: SelectCompetition;
+    leaderboard: LeaderboardEntry[];
+  }> {
     // Mark as ending (active -> ending) - this returns the competition object
     let competition = await markCompetitionAsEnding(competitionId);
 
@@ -914,7 +943,9 @@ export class CompetitionService {
         throw new Error(`Competition not found: ${competitionId}`);
       }
       if (current.status === "ended") {
-        return current; // Already ended
+        // Competition already ended, get the leaderboard and return
+        const leaderboard = await this.getLeaderboard(competitionId);
+        return { competition: current, leaderboard };
       }
       if (current.status !== "ending") {
         throw new Error(
@@ -971,8 +1002,8 @@ export class CompetitionService {
     await this.configurationService.loadCompetitionSettings();
 
     // Final transaction to persist results
-    const { competition: finalCompetition, leaderboardCount } =
-      await db.transaction(async (tx) => {
+    const { competition: finalCompetition, leaderboard } = await db.transaction(
+      async (tx) => {
         // Mark as ended. This is our guard against concurrent execution - if another process is
         // ending the same competition in parallel, only one will manage to mark it as ended, and
         // the other one's transaction will fail.
@@ -984,7 +1015,7 @@ export class CompetitionService {
         }
 
         // Calculate final leaderboard, enrich with PnL data, and persist to database
-        const leaderboardCount = await this.calculateAndPersistFinalLeaderboard(
+        const leaderboard = await this.calculateAndPersistFinalLeaderboard(
           competitionId,
           competitionAgents.length,
           tx,
@@ -996,16 +1027,24 @@ export class CompetitionService {
           tx,
         );
 
-        return { competition: updated, leaderboardCount };
-      });
+        // Assign winners to rewards
+        await this.competitionRewardService.assignWinnersToRewards(
+          competitionId,
+          leaderboard,
+          tx,
+        );
+
+        return { competition: updated, leaderboard };
+      },
+    );
 
     // Log success only after transaction has committed
     serviceLogger.debug(
       `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ` +
-        `${competitionAgents.length} agents, ${leaderboardCount} leaderboard entries`,
+        `${competitionAgents.length} agents, ${leaderboard.length} leaderboard entries`,
     );
 
-    return finalCompetition;
+    return { competition: finalCompetition, leaderboard };
   }
 
   /**
@@ -1115,6 +1154,9 @@ export class CompetitionService {
     const competitionAgents = agents.map((agent) => {
       const isActive = agent.status === "active";
       const leaderboardData = leaderboardMap.get(agent.id);
+      const leaderboardEntry = leaderboard.find(
+        (entry) => entry.agentId === agent.id,
+      );
       const score = leaderboardData?.score ?? 0;
       const rank = leaderboardData?.rank ?? 0;
       const voteCount = voteCountsMap.get(agent.id) ?? 0;
@@ -1141,6 +1183,11 @@ export class CompetitionService {
         change24h: metrics.change24h,
         change24hPercent: metrics.change24hPercent,
         voteCount,
+        // Risk metrics from leaderboard (perps competitions only)
+        calmarRatio: leaderboardEntry?.calmarRatio ?? null,
+        simpleReturn: leaderboardEntry?.simpleReturn ?? null,
+        maxDrawdown: leaderboardEntry?.maxDrawdown ?? null,
+        hasRiskMetrics: leaderboardEntry?.hasRiskMetrics ?? false,
       };
     });
 
@@ -1173,11 +1220,53 @@ export class CompetitionService {
       return [];
     }
 
+    // Check competition type to determine if we need risk metrics
+    const competition = await findById(competitionId);
+
+    if (competition?.type === "perpetual_futures") {
+      // For perps: Fetch risk-adjusted leaderboard which includes risk metrics
+      const riskAdjustedLeaderboard = await getRiskAdjustedLeaderboard(
+        competitionId,
+        500, // Reasonable limit
+        0,
+      );
+
+      // Combine snapshot data with risk metrics
+      const orderedResults: LeaderboardEntry[] = [];
+
+      // Add all agents from riskAdjustedLeaderboard in their correct order
+      for (const entry of riskAdjustedLeaderboard) {
+        const snapshot = snapshots.find((s) => s.agentId === entry.agentId);
+
+        // Use snapshot value if available, otherwise use equity from risk-adjusted leaderboard
+        const portfolioValue = snapshot
+          ? snapshot.totalValue
+          : Number(entry.totalEquity) || 0;
+
+        orderedResults.push({
+          agentId: entry.agentId,
+          value: portfolioValue,
+          pnl: Number(entry.totalPnl) || 0, // Use PnL from risk-adjusted leaderboard
+          calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+          simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
+          maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+          hasRiskMetrics: entry.hasRiskMetrics,
+        });
+      }
+
+      return orderedResults;
+    }
+
+    // For paper trading: Return without risk metrics
     return snapshots
       .map((snapshot) => ({
         agentId: snapshot.agentId,
         value: snapshot.totalValue,
         pnl: 0, // PnL not available from snapshots alone
+        calmarRatio: null,
+        simpleReturn: null,
+        maxDrawdown: null,
+        hasRiskMetrics: false,
       }))
       .sort((a, b) => b.value - a.value);
   }
@@ -1194,14 +1283,27 @@ export class CompetitionService {
     const competition = await findById(competitionId);
 
     if (competition?.type === "perpetual_futures") {
-      // For perps: Use efficient single-query method to get latest account summaries
-      // Already sorted by totalEquity DESC and filtered to active agents only
-      const summaries = await getCompetitionLeaderboardSummaries(competitionId);
+      // For perps: Use a single-query method that combines risk metrics and equity
+      // This uses lateral joins to get everything in one DB query, already sorted correctly:
+      // 1. Agents with Calmar ratio (sorted by Calmar DESC)
+      // 2. Agents without Calmar ratio (sorted by equity DESC)
 
-      return summaries.map((summary) => ({
-        agentId: summary.agentId,
-        value: Number(summary.totalEquity) || 0,
-        pnl: Number(summary.totalPnl) || 0, // Perps have PnL data available
+      const riskAdjustedLeaderboard = await getRiskAdjustedLeaderboard(
+        competitionId,
+        500, // Reasonable limit - most competitions won't have more agents
+        0,
+      );
+
+      // Transform to LeaderboardEntry format, including risk metrics
+      return riskAdjustedLeaderboard.map((entry) => ({
+        agentId: entry.agentId,
+        value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility
+        pnl: Number(entry.totalPnl) || 0,
+        // Include risk-adjusted metrics
+        calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+        simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
+        maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+        hasRiskMetrics: entry.hasRiskMetrics,
       }));
     }
 
@@ -1216,6 +1318,11 @@ export class CompetitionService {
       agentId,
       value: portfolioValues.get(agentId) || 0,
       pnl: 0, // PnL not available without historical data
+      // Risk metrics not applicable for paper trading
+      calmarRatio: null,
+      simpleReturn: null,
+      maxDrawdown: null,
+      hasRiskMetrics: false,
     }));
 
     // Sort by value descending
@@ -1250,6 +1357,11 @@ export class CompetitionService {
         agentId,
         value,
         pnl,
+        // Risk metrics not available for pending competitions
+        calmarRatio: null,
+        simpleReturn: null,
+        maxDrawdown: null,
+        hasRiskMetrics: false,
       }));
   }
 
@@ -1333,14 +1445,9 @@ export class CompetitionService {
    * @param competitionId The competition ID
    * @returns Object containing active agents (with rankings) and inactive agents (with deactivation reasons)
    */
-  async getLeaderboardWithInactiveAgents(competitionId: string): Promise<{
-    activeAgents: Array<{ agentId: string; value: number }>;
-    inactiveAgents: Array<{
-      agentId: string;
-      value: number;
-      deactivationReason: string;
-    }>;
-  }> {
+  async getLeaderboardWithInactiveAgents(
+    competitionId: string,
+  ): Promise<LeaderboardWithInactiveAgents> {
     try {
       // Get active leaderboard (already filtered to active agents only)
       const activeLeaderboard = await this.getLeaderboard(competitionId);
@@ -1406,6 +1513,10 @@ export class CompetitionService {
         activeAgents: activeLeaderboard.map((entry) => ({
           agentId: entry.agentId,
           value: entry.value,
+          calmarRatio: entry.calmarRatio,
+          simpleReturn: entry.simpleReturn,
+          maxDrawdown: entry.maxDrawdown,
+          hasRiskMetrics: entry.hasRiskMetrics,
         })),
         inactiveAgents,
       };
@@ -1579,6 +1690,7 @@ export class CompetitionService {
    * @param updates The core competition fields to update
    * @param tradingConstraints Optional trading constraints to update
    * @param rewards Optional rewards to replace
+   * @param perpsProvider Optional perps provider config (required when changing to perps type)
    * @returns The updated competition with constraints and rewards
    */
   async updateCompetition(
@@ -1586,6 +1698,12 @@ export class CompetitionService {
     updates: UpdateCompetition,
     tradingConstraints?: TradingConstraintsInput,
     rewards?: Record<number, number>,
+    perpsProvider?: {
+      provider: "symphony" | "hyperliquid";
+      initialCapital: number; // Required - Zod default ensures this is set
+      selfFundingThreshold: number; // Required - Zod default ensures this is set
+      apiUrl?: string;
+    },
   ): Promise<{
     competition: SelectCompetition;
     updatedRewards: SelectCompetitionReward[];
@@ -1596,8 +1714,124 @@ export class CompetitionService {
       throw new Error(`Competition not found: ${competitionId}`);
     }
 
+    // If perpsProvider is provided but type is not, auto-set type to perpetual_futures
+    if (perpsProvider && !updates.type) {
+      updates.type = "perpetual_futures";
+    }
+
+    // Check if type is being changed
+    const isTypeChanging =
+      updates.type !== undefined && updates.type !== existingCompetition.type;
+
+    if (isTypeChanging) {
+      // Only allow type changes for pending competitions
+      if (existingCompetition.status !== "pending") {
+        throw new ApiError(
+          400,
+          `Cannot change competition type once it has started. Current status: ${existingCompetition.status}`,
+        );
+      }
+
+      // Validate perps provider is provided when converting to perps
+      if (updates.type === "perpetual_futures" && !perpsProvider) {
+        throw new ApiError(
+          400,
+          "Perps provider configuration is required when changing to perpetual futures type",
+        );
+      }
+    }
+
     // Execute all updates in a single transaction
     const result = await db.transaction(async (tx) => {
+      // Handle type conversion if needed
+      if (isTypeChanging && updates.type) {
+        const oldType = existingCompetition.type;
+        const newType = updates.type;
+
+        serviceLogger.info(
+          `[CompetitionService] Converting competition ${competitionId} from ${oldType} to ${newType}`,
+        );
+
+        if (oldType === "trading" && newType === "perpetual_futures") {
+          // Spot → Perps: Create perps config (after checking for existing)
+          // At this point we know perpsProvider exists because we validated above
+          if (!perpsProvider) {
+            throw new ApiError(
+              500,
+              "Internal error: perps provider missing despite validation",
+            );
+          }
+
+          // First, delete any existing perps config (defensive programming for data inconsistency)
+          // This handles the edge case where a "trading" competition somehow has perps config
+          const deleted = await deletePerpsCompetitionConfig(competitionId, tx);
+          if (deleted) {
+            serviceLogger.warn(
+              `[CompetitionService] Deleted unexpected existing perps config for trading competition ${competitionId}`,
+            );
+          }
+
+          const perpsConfig = {
+            competitionId,
+            dataSource: "external_api" as const,
+            dataSourceConfig: {
+              type: "external_api" as const,
+              provider: perpsProvider.provider,
+              apiUrl: perpsProvider.apiUrl,
+            },
+            initialCapital: perpsProvider.initialCapital.toString(),
+            selfFundingThresholdUsd:
+              perpsProvider.selfFundingThreshold.toString(),
+          };
+
+          await createPerpsCompetitionConfig(perpsConfig, tx);
+          serviceLogger.debug(
+            `[CompetitionService] Created perps config for converted competition ${competitionId}`,
+          );
+        } else if (oldType === "perpetual_futures" && newType === "trading") {
+          // Perps → Spot: Delete perps config using repository method
+          await deletePerpsCompetitionConfig(competitionId, tx);
+          serviceLogger.debug(
+            `[CompetitionService] Deleted perps config for converted competition ${competitionId}`,
+          );
+        }
+      } else if (
+        existingCompetition.type === "perpetual_futures" &&
+        perpsProvider
+      ) {
+        // Update perps config for existing perps competition
+        serviceLogger.info(
+          `[CompetitionService] Updating perps config for competition ${competitionId}`,
+        );
+
+        const updatedConfig = await updatePerpsCompetitionConfig(
+          competitionId,
+          {
+            dataSourceConfig: {
+              type: "external_api" as const,
+              provider: perpsProvider.provider,
+              apiUrl: perpsProvider.apiUrl,
+            },
+            initialCapital: perpsProvider.initialCapital.toString(),
+            selfFundingThresholdUsd:
+              perpsProvider.selfFundingThreshold.toString(),
+          },
+          tx,
+        );
+
+        if (!updatedConfig) {
+          serviceLogger.warn(
+            `[CompetitionService] No perps config found to update for competition ${competitionId}`,
+          );
+        } else {
+          serviceLogger.debug(
+            `[CompetitionService] Updated perps config for competition ${competitionId}: ` +
+              `threshold=${perpsProvider.selfFundingThreshold}, ` +
+              `capital=${perpsProvider.initialCapital}`,
+          );
+        }
+      }
+
       // Update the competition
       const updatedCompetition = await updateOne(competitionId, updates, tx);
 
@@ -1624,7 +1858,7 @@ export class CompetitionService {
     });
 
     serviceLogger.debug(
-      `[CompetitionManager] Updated competition: ${competitionId}`,
+      `[CompetitionService] Updated competition: ${competitionId}`,
     );
 
     return result;
@@ -2110,6 +2344,11 @@ export class CompetitionService {
             portfolioValue: entry.value,
             active: true,
             deactivationReason: null,
+            // Include risk metrics if available
+            calmarRatio: entry.calmarRatio,
+            simpleReturn: entry.simpleReturn,
+            maxDrawdown: entry.maxDrawdown,
+            hasRiskMetrics: entry.hasRiskMetrics,
           };
         },
       );
@@ -2550,6 +2789,24 @@ export class CompetitionService {
     }
   }
 
+  async competitionOpenForBoosting(competitionId: string): Promise<boolean> {
+    const competition = await this.getCompetition(competitionId);
+    if (!competition) {
+      throw new ApiError(404, "Competition not found");
+    }
+    if (competition.status !== "active" && competition.status !== "pending") {
+      return false;
+    }
+    const now = new Date();
+    if (!competition.votingStartDate || !competition.votingEndDate) {
+      return false;
+    }
+    if (now < competition.votingStartDate || now > competition.votingEndDate) {
+      return false;
+    }
+    return true;
+  }
+
   /**
    * Get competition by ID with caching and authorization
    * @param params Parameters for competition request
@@ -2570,6 +2827,7 @@ export class CompetitionService {
         rewards,
         tradingConstraints,
         votingState,
+        openForBoosting,
       ] = await Promise.all([
         // Get competition details
         this.getCompetition(params.competitionId),
@@ -2594,6 +2852,7 @@ export class CompetitionService {
               params.competitionId,
             )
           : Promise.resolve(null),
+        this.competitionOpenForBoosting(params.competitionId),
       ]);
 
       if (!competition) {
@@ -2656,6 +2915,7 @@ export class CompetitionService {
             ? votingState.canVote || votingState.info.hasVoted
             : false,
           userVotingInfo: votingState || undefined,
+          openForBoosting,
         },
       };
 
@@ -2992,6 +3252,63 @@ export class CompetitionService {
     } catch (error) {
       serviceLogger.error(
         `[CompetitionService] Error getting agent competition trades with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get transfer violation summary for a perps competition
+   * Returns only agents who have made transfers during the competition
+   * @param competitionId Competition ID
+   * @returns Array of agents with transfer counts
+   */
+  async getCompetitionTransferViolations(competitionId: string): Promise<
+    Array<{
+      agentId: string;
+      agentName: string;
+      transferCount: number;
+    }>
+  > {
+    try {
+      // 1. Verify competition exists and is perps type
+      const competition = await this.getCompetition(competitionId);
+      if (!competition) {
+        throw new ApiError(404, `Competition ${competitionId} not found`);
+      }
+
+      if (competition.type !== "perpetual_futures") {
+        throw new ApiError(
+          400,
+          `Competition ${competitionId} is not a perpetual futures competition`,
+        );
+      }
+
+      if (!competition.startDate) {
+        // No transfers can be violations if competition hasn't started
+        return [];
+      }
+
+      // 2. Get transfer violation counts with agent names from repository
+      const results = await getCompetitionTransferViolationCounts(
+        competitionId,
+        competition.startDate,
+      );
+
+      // Results already include agentName
+      if (results.length === 0) {
+        return [];
+      }
+
+      serviceLogger.info(
+        `[CompetitionService] Found ${results.length} agents with transfer violations in competition ${competitionId}`,
+      );
+
+      return results;
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionService] Error getting competition transfer violations:`,
         error,
       );
       throw error;

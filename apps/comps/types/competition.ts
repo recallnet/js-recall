@@ -36,13 +36,15 @@ export interface AgentStatus {
   };
 }
 
+export type CompetitionType = "trading" | "perpetual_futures";
+
 export interface Competition {
   id: string;
   name: string;
   description: string | null;
   externalUrl: string | null;
   imageUrl: string | null;
-  type: string;
+  type: CompetitionType;
   status: CompetitionStatus;
   crossChainTradingType: CrossChainTradingType;
   startDate: string | null;
@@ -54,12 +56,13 @@ export interface Competition {
   stats: {
     totalTrades?: number; // Only for paper trading competitions
     totalAgents: number;
-    totalVolume: number;
+    totalVolume?: number; // May not be present for all competition types
     totalVotes: number;
     uniqueTokens?: number; // Only for paper trading competitions
     totalPositions?: number; // Only for perpetual futures competitions
     averageEquity?: number; // Only for perpetual futures competitions
   };
+  openForBoosting: boolean;
   votingEnabled: boolean;
   votingStartDate: string | null;
   votingEndDate: string | null;
@@ -81,6 +84,11 @@ export interface Competition {
     rank?: number;
     totalAgents?: number;
   };
+  // Risk metrics for perpetual futures competitions
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
   rewards?: {
     rank: number;
     reward: number;

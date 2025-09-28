@@ -1,6 +1,7 @@
 /**
  * API response types and base interfaces
  */
+import type { AgentPublic, User } from "../../src/types/index.js";
 
 // Base response type for all API responses
 export interface ApiResponse {
@@ -80,24 +81,6 @@ export const ACTOR_STATUS = {
 // Actor status
 export type ActorStatus = (typeof ACTOR_STATUS)[keyof typeof ACTOR_STATUS];
 
-// User interface
-export interface User {
-  id: string;
-  walletAddress: string;
-  walletLastVerifiedAt?: string;
-  embeddedWalletAddress: string;
-  privyId: string;
-  name: string | null;
-  email: string | null;
-  isSubscribed: boolean;
-  imageUrl: string | null;
-  metadata: Record<string, unknown> | null;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  lastLoginAt: string;
-}
-
 // User metadata structure
 export interface UserMetadata {
   [key: string]: unknown;
@@ -128,19 +111,27 @@ export interface AgentTrophy {
   createdAt: string;
 }
 
-// Agent interface
-export interface Agent {
+// Extended Agent type for API responses with computed fields
+export interface AgentResponse {
+  // Base fields from database schema
   id: string;
   ownerId: string;
-  walletAddress?: string;
-  isVerified: boolean;
   name: string;
   handle: string;
+  walletAddress?: string;
+  email?: string;
   description?: string;
   imageUrl?: string;
-  email?: string;
-  apiKey?: string; // Only included in certain admin responses
+  apiKey: string;
   metadata?: AgentMetadata;
+  status: ActorStatus;
+  deactivationReason?: string;
+  deactivationDate?: string;
+  createdAt: string;
+  updatedAt: string;
+
+  // Computed/derived fields for API responses
+  isVerified: boolean;
   stats?: {
     completedCompetitions: number;
     totalTrades: number;
@@ -159,21 +150,16 @@ export interface Agent {
   skills?: string[];
   hasUnclaimedRewards?: boolean;
   trophies?: AgentTrophy[];
-  status: ActorStatus;
-  deactivationReason?: string;
-  deactivationDate?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface PublicAgentResponse {
   success: true;
-  agent: Agent;
+  agent: AgentResponse;
 }
 
 export interface AgentsGetResponse {
   success: true;
-  agents: Agent[];
+  agents: AgentResponse[];
   pagination: unknown;
 }
 
@@ -181,7 +167,7 @@ export interface AgentsGetResponse {
 export interface UserRegistrationResponse extends ApiResponse {
   success: true;
   user: User;
-  agent?: Agent;
+  agent?: AgentResponse;
 }
 
 // User profile response
@@ -191,7 +177,7 @@ export interface UserProfileResponse extends ApiResponse {
 
 // Agent profile response
 export interface AgentProfileResponse extends ApiResponse {
-  agent: Agent;
+  agent: AgentResponse;
   owner: {
     id: string;
     name?: string;
@@ -204,7 +190,7 @@ export interface AgentProfileResponse extends ApiResponse {
 export interface GetUserAgentsResponse extends ApiResponse {
   success: true;
   userId: string;
-  agents: Agent[];
+  agents: AgentResponse[];
 }
 
 // Admin user response
@@ -222,13 +208,13 @@ export interface AdminUsersListResponse extends ApiResponse {
 // Admin agent response
 export interface AdminAgentResponse extends ApiResponse {
   success: true;
-  agent: Agent & { apiKey: string }; // Include API key for admin responses
+  agent: AgentResponse & { apiKey: string }; // Include API key for admin responses
 }
 
 // Admin agents list response
 export interface AdminAgentsListResponse extends ApiResponse {
   success: true;
-  agents: Agent[];
+  agents: AgentResponse[];
 }
 
 // Agent API key response (admin endpoint)
@@ -394,6 +380,11 @@ export interface LeaderboardEntry {
   portfolioValue: number;
   active: boolean;
   deactivationReason?: string;
+  // Risk-adjusted metrics (primarily for perps competitions)
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
 }
 
 // Inactive agent entry (no rank assignment)
@@ -425,6 +416,16 @@ export interface CompetitionStatusResponse extends ApiResponse {
 export interface CreateCompetitionResponse extends ApiResponse {
   success: true;
   competition: Competition;
+}
+
+// Admin response for updating a competition
+export interface UpdateCompetitionResponse extends ApiResponse {
+  success: true;
+  competition: Competition;
+  rewards?: Array<{
+    rank: number;
+    reward: number;
+  }>;
 }
 
 // Admin response for starting a competition
@@ -469,7 +470,7 @@ export interface UserCompetitionsResponse extends ApiResponse {
 }
 
 export interface CompetitionWithAgents extends Competition {
-  agents: (Agent & { rank: number })[];
+  agents: (AgentResponse & { rank: number })[];
 }
 
 // Competition rules response
@@ -514,6 +515,11 @@ export interface CompetitionAgent {
   change24h: number; // Portfolio value change in last 24 hours (USD)
   change24hPercent: number; // 24h change as percentage
   voteCount: number; // Number of votes this agent has received
+  // Risk-adjusted metrics (primarily for perps competitions)
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
 }
 
 // Competition constraints
@@ -681,41 +687,18 @@ export interface AgentWalletVerificationResponse extends ApiResponse {
   message: string;
 }
 
-// TODO: figure out types wrt duplication in admin controller
 export interface AdminSearchUsersAndAgentsResponse {
   success: boolean;
   join: boolean;
   results: {
-    users: {
-      id: string;
-      walletAddress: string;
-      name: string | null;
-      email: string | null;
-      imageUrl: string | null;
-      metadata: unknown;
-      status: ActorStatus;
-      createdAt: Date;
-      updatedAt: Date;
-    }[];
-    agents: {
-      id: string;
-      ownerId: string;
-      walletAddress: string | null;
-      name: string;
-      description: string | null;
-      imageUrl: string | null;
-      apiKey: string;
-      metadata: unknown;
-      status: ActorStatus;
-      createdAt: Date;
-      updatedAt: Date;
-    }[];
+    users: User[];
+    agents: AgentPublic[];
   };
 }
 
 export interface AdminSearchResults {
   users: User[];
-  agents: Agent[];
+  agents: AgentPublic[];
 }
 
 export interface AdminSearchParams {
@@ -870,6 +853,11 @@ export interface EnhancedCompetition extends Competition {
     rank: number;
     totalAgents: number;
   };
+  // Risk-adjusted metrics (primarily for perps competitions)
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
 }
 
 /**
@@ -941,6 +929,19 @@ export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
 export interface LinkUserWalletResponse extends ApiResponse {
   success: true;
   user: User;
+}
+
+/**
+ * Admin response for competition transfer violations
+ */
+export interface AdminCompetitionTransferViolationsResponse
+  extends ApiResponse {
+  success: true;
+  violations: Array<{
+    agentId: string;
+    agentName: string;
+    transferCount: number;
+  }>;
 }
 
 /**
