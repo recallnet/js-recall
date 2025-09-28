@@ -76,12 +76,15 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
         >
           Info
         </TabsTrigger>
-        <TabsTrigger
-          value="rules"
-          className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:hover:bg-white data-[state=active]:hover:text-black"
-        >
-          Rules
-        </TabsTrigger>
+        {/* TODO: temporarily disable rules for perpetual futures since the `/rules` endpoint is inaccurate */}
+        {competition.type !== "perpetual_futures" && (
+          <TabsTrigger
+            value="rules"
+            className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:hover:bg-white data-[state=active]:hover:text-black"
+          >
+            Rules
+          </TabsTrigger>
+        )}
       </TabsList>
 
       <TabsContent value="info" className="border">

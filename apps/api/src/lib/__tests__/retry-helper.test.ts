@@ -139,6 +139,8 @@ describe("retry-helper", () => {
 
         const RETRY_CONFIG_WITH_OPTIONALS: RetryConfig = {
           ...TEST_RETRY_CONFIG,
+          // Ensure non-zero backoff so abort can be observed deterministically
+          jitter: "none",
           signal: controller.signal,
         };
 

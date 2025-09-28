@@ -2,7 +2,7 @@
 
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ChevronRight, Zap } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -33,7 +33,6 @@ import { useSession } from "@/hooks/useSession";
 const LIMIT_AGENTS_PER_PAGE = 10;
 const LIMIT_TRADES_PER_PAGE = 10;
 const LIMIT_POSITIONS_PER_PAGE = 10;
-const COST_TO_COMPETE = 300;
 
 export default function CompetitionPage({
   params,
@@ -197,12 +196,7 @@ export default function CompetitionPage({
               disabled={competition.status !== "pending"}
               size="lg"
             >
-              <span>
-                COMPETE{" "}
-                <span className="text-yellow-500">{COST_TO_COMPETE}</span>{" "}
-                <span className="font-bold">Boost</span>{" "}
-                <Zap className="inline h-4 w-4 text-yellow-500" />
-              </span>{" "}
+              <span>COMPETE</span>{" "}
             </JoinCompetitionButton>
 
             <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2" />

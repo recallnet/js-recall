@@ -876,13 +876,13 @@ export class CompetitionService {
    * @param competitionId The competition ID
    * @param totalAgents Total number of agents in the competition
    * @param tx Database transaction
-   * @returns Number of leaderboard entries that were saved
+   * @returns The enriched leaderboard array that was processed
    */
   private async calculateAndPersistFinalLeaderboard(
     competitionId: string,
     totalAgents: number,
     tx: DatabaseTransaction,
-  ): Promise<number> {
+  ): Promise<LeaderboardEntry[]> {
     // Get the leaderboard (calculated from final snapshots)
     const leaderboard = await this.getLeaderboard(competitionId);
 
@@ -917,15 +917,23 @@ export class CompetitionService {
       await batchInsertLeaderboard(enrichedEntries, tx);
     }
 
-    return enrichedEntries.length;
+    // Map enriched entries back to LeaderboardEntry format for return
+    return enrichedEntries.map((entry) => ({
+      agentId: entry.agentId,
+      value: entry.score, // Convert score back to value for LeaderboardEntry
+      pnl: entry.pnl,
+    }));
   }
 
   /**
    * End a competition
    * @param competitionId The competition ID
-   * @returns The updated competition
+   * @returns The updated competition and final leaderboard
    */
-  async endCompetition(competitionId: string) {
+  async endCompetition(competitionId: string): Promise<{
+    competition: SelectCompetition;
+    leaderboard: LeaderboardEntry[];
+  }> {
     // Mark as ending (active -> ending) - this returns the competition object
     let competition = await markCompetitionAsEnding(competitionId);
 
@@ -935,7 +943,9 @@ export class CompetitionService {
         throw new Error(`Competition not found: ${competitionId}`);
       }
       if (current.status === "ended") {
-        return current; // Already ended
+        // Competition already ended, get the leaderboard and return
+        const leaderboard = await this.getLeaderboard(competitionId);
+        return { competition: current, leaderboard };
       }
       if (current.status !== "ending") {
         throw new Error(
@@ -992,8 +1002,8 @@ export class CompetitionService {
     await this.configurationService.loadCompetitionSettings();
 
     // Final transaction to persist results
-    const { competition: finalCompetition, leaderboardCount } =
-      await db.transaction(async (tx) => {
+    const { competition: finalCompetition, leaderboard } = await db.transaction(
+      async (tx) => {
         // Mark as ended. This is our guard against concurrent execution - if another process is
         // ending the same competition in parallel, only one will manage to mark it as ended, and
         // the other one's transaction will fail.
@@ -1005,7 +1015,7 @@ export class CompetitionService {
         }
 
         // Calculate final leaderboard, enrich with PnL data, and persist to database
-        const leaderboardCount = await this.calculateAndPersistFinalLeaderboard(
+        const leaderboard = await this.calculateAndPersistFinalLeaderboard(
           competitionId,
           competitionAgents.length,
           tx,
@@ -1017,16 +1027,24 @@ export class CompetitionService {
           tx,
         );
 
-        return { competition: updated, leaderboardCount };
-      });
+        // Assign winners to rewards
+        await this.competitionRewardService.assignWinnersToRewards(
+          competitionId,
+          leaderboard,
+          tx,
+        );
+
+        return { competition: updated, leaderboard };
+      },
+    );
 
     // Log success only after transaction has committed
     serviceLogger.debug(
       `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ` +
-        `${competitionAgents.length} agents, ${leaderboardCount} leaderboard entries`,
+        `${competitionAgents.length} agents, ${leaderboard.length} leaderboard entries`,
     );
 
-    return finalCompetition;
+    return { competition: finalCompetition, leaderboard };
   }
 
   /**
@@ -1213,39 +1231,30 @@ export class CompetitionService {
         0,
       );
 
-      // Create a map for quick lookups
-      const riskMetricsMap = new Map(
-        riskAdjustedLeaderboard.map((entry) => [
-          entry.agentId,
-          {
-            calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
-            simpleReturn: entry.simpleReturn
-              ? Number(entry.simpleReturn)
-              : null,
-            maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
-            hasRiskMetrics: entry.hasRiskMetrics,
-          },
-        ]),
-      );
-
       // Combine snapshot data with risk metrics
-      return snapshots
-        .map((snapshot) => {
-          const riskMetrics = riskMetricsMap.get(snapshot.agentId) || {
-            calmarRatio: null,
-            simpleReturn: null,
-            maxDrawdown: null,
-            hasRiskMetrics: false,
-          };
+      const orderedResults: LeaderboardEntry[] = [];
 
-          return {
-            agentId: snapshot.agentId,
-            value: snapshot.totalValue,
-            pnl: 0, // PnL not available from snapshots alone
-            ...riskMetrics,
-          };
-        })
-        .sort((a, b) => b.value - a.value);
+      // Add all agents from riskAdjustedLeaderboard in their correct order
+      for (const entry of riskAdjustedLeaderboard) {
+        const snapshot = snapshots.find((s) => s.agentId === entry.agentId);
+
+        // Use snapshot value if available, otherwise use equity from risk-adjusted leaderboard
+        const portfolioValue = snapshot
+          ? snapshot.totalValue
+          : Number(entry.totalEquity) || 0;
+
+        orderedResults.push({
+          agentId: entry.agentId,
+          value: portfolioValue,
+          pnl: Number(entry.totalPnl) || 0, // Use PnL from risk-adjusted leaderboard
+          calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+          simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
+          maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+          hasRiskMetrics: entry.hasRiskMetrics,
+        });
+      }
+
+      return orderedResults;
     }
 
     // For paper trading: Return without risk metrics
@@ -1288,7 +1297,7 @@ export class CompetitionService {
       // Transform to LeaderboardEntry format, including risk metrics
       return riskAdjustedLeaderboard.map((entry) => ({
         agentId: entry.agentId,
-        value: Number(entry.totalEquity) || 0,
+        value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility
         pnl: Number(entry.totalPnl) || 0,
         // Include risk-adjusted metrics
         calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,

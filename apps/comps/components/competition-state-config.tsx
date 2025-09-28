@@ -42,7 +42,7 @@ export function getCompetitionStateConfig(
   if (hasVoted) {
     if (status === CompetitionStatus.Pending) {
       return {
-        subTitle: "Counting votes!",
+        subTitle: "Counting boosts!",
         description: compStartDate ? "Competition starts in..." : "",
         variant: "gray",
         untilTime: compStartDate,
@@ -51,7 +51,7 @@ export function getCompetitionStateConfig(
     }
     if (status === CompetitionStatus.Active) {
       return {
-        subTitle: "Counting votes!",
+        subTitle: "Counting boosts!",
         description: compEndDate ? "Competition ends in..." : "",
         variant: "gray",
         untilTime: compEndDate,
@@ -62,8 +62,8 @@ export function getCompetitionStateConfig(
       // NOTE: we should never get here since the banner is hidden if the
       //  comp is ended.
       return {
-        subTitle: "Votes are counted!",
-        description: "Competition ended and the votes are counted...",
+        subTitle: "Boosts are counted!",
+        description: "Competition ended and the boosts are counted...",
         variant: "gray",
         untilTime: null,
         phase: null,
@@ -187,7 +187,7 @@ export function getCompetitionStateConfig(
   // Flow #7
   if (votingStart && votingEnd === null && now >= votingStart) {
     return {
-      subTitle: "Voting is closed!",
+      subTitle: "Boosting is closed!",
       description: "",
       variant: "gray",
       untilTime: null,
@@ -199,10 +199,10 @@ export function getCompetitionStateConfig(
   if (votingEnd && now < votingEnd) {
     return {
       subTitle: "Get ready!",
-      description: "Voting closes in...",
+      description: "Boosting closes in...",
       variant: "blue",
       untilTime: votingEnd,
-      phase: "voting",
+      phase: "boosting",
     };
   }
 
@@ -210,7 +210,7 @@ export function getCompetitionStateConfig(
   if (votingEnd && now >= votingEnd) {
     if (status === CompetitionStatus.Pending) {
       return {
-        subTitle: "Voting is closed!",
+        subTitle: "Boosting is closed!",
         description: compStartDate ? "Competition starts in..." : "",
         variant: "gray",
         untilTime: compStartDate,
@@ -219,7 +219,7 @@ export function getCompetitionStateConfig(
     }
     if (status === CompetitionStatus.Active) {
       return {
-        subTitle: "Voting is closed!",
+        subTitle: "Boosting is closed!",
         description: compEndDate ? "Competition ends in..." : "",
         variant: "gray",
         untilTime: compEndDate,
