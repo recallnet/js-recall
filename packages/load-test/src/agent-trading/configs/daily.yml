@@ -1,0 +1,128 @@
+config:
+  target: "{{ $processEnvironment.API_HOST }}"
+  processor: "../processors/agent-trading-processor.ts"
+  variables:
+    usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    wethToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+  phases:
+    # Simulated daily pattern (30 minutes total for quick monitoring)
+    # Morning (5 min) - gradual increase
+    - duration: 300
+      arrivalRate: 1
+      rampTo: 6
+      name: "morning"
+
+    # Peak hours (10 min) - high activity
+    - duration: 600
+      arrivalRate: 6
+      rampTo: 10
+      name: "peak"
+
+    # Lunch dip (5 min) - reduced activity
+    - duration: 300
+      arrivalRate: 4
+      name: "lunch"
+
+    # Afternoon (5 min) - steady
+    - duration: 300
+      arrivalRate: 8
+      name: "afternoon"
+
+    # Evening (5 min) - gradual decrease
+    - duration: 300
+      arrivalRate: 8
+      rampTo: 2
+      name: "evening"
+
+before:
+  flow:
+    # Standard competition setup
+    - get:
+        url: "/api/competitions/status"
+        headers:
+          Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+        capture:
+          - json: "$.active"
+            as: "isActive"
+          - json: "$.competition.id"
+            as: "activeCompetitionId"
+    - post:
+        url: "/api/admin/competition/end"
+        headers:
+          Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+        json:
+          competitionId: "{{ activeCompetitionId }}"
+        ifTrue: "isActive"
+    - post:
+        url: "/api/admin/competition/create"
+        headers:
+          Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+        beforeRequest: "setCompetitionPayload"
+        json: {}
+        capture:
+          - json: "$.competition.id"
+            as: "competitionId"
+
+    # Create 30 agents for typical traffic
+    - loop:
+        - post:
+            beforeRequest: "generateRandomUserAndAgent"
+            url: "/api/admin/users"
+            headers:
+              Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+            json:
+              walletAddress: "{{ walletAddress }}"
+              name: "{{ userName }}"
+              email: "{{ userEmail }}"
+              agentName: "{{ agentName }}"
+              agentHandle: "{{ agentHandle }}"
+              agentWalletAddress: "{{ agentWalletAddress }}"
+            capture:
+              - json: "$.agent.id"
+                as: "agentId"
+            afterResponse: "extractUserAndAgentInfo"
+        - post:
+            url: "/api/admin/competitions/{{ competitionId }}/agents/{{ agentId }}"
+            headers:
+              Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+      count: 30
+
+    - post:
+        url: "/api/admin/competition/start"
+        headers:
+          Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+        json:
+          competitionId: "{{ competitionId }}"
+    - log: "Started typical traffic monitoring with 30 agents"
+
+scenarios:
+  # Regular trading activity
+  - name: "regular-trading"
+    weight: 70
+    flow:
+      - function: "selectRandomAgent"
+      - get:
+          url: "/api/agent/balances"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          afterResponse: "captureBalances"
+      - post:
+          url: "/api/trade/execute"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          beforeRequest: "normalTrade"
+          json: {}
+          afterResponse: "logMetrics"
+      - think: 3 # Normal pause between trades
+
+  # Monitoring checks (no trades)
+  - name: "monitoring"
+    weight: 30
+    flow:
+      - function: "healthCheck"
+      - get:
+          url: "/api/agent/balances"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          afterResponse: "logMetrics"
+      - think: 5 # Longer pause for monitoring

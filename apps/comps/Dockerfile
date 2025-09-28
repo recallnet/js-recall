@@ -7,7 +7,6 @@ RUN npm install -g pnpm typescript turbo
 COPY package.json pnpm-*.yaml .npmrc ./
 COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/typescript-config/package.json packages/typescript-config/
-COPY packages/address-utils/package.json packages/address-utils/
 COPY packages/fonts/package.json packages/fonts/
 COPY packages/ui2/package.json packages/ui2/
 COPY apps/comps/package.json apps/comps/

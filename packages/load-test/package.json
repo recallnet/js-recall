@@ -1,37 +1,34 @@
 {
   "name": "@recallnet/load-test",
   "version": "0.0.1",
-  "description": "Load testing for the RecallNet platform",
+  "description": "Agent trading load testing for the RecallNet platform",
   "license": "MIT AND Apache-2.0",
   "private": true,
   "scripts": {
-    "test:leaderboard": "artillery run --output reports/leaderboard.json --env-file .env src/leaderboard.ts",
-    "test:agent-trading": "artillery run --output reports/agent-trading.json --env-file .env src/agent-trading.ts",
-    "test:users-api": "artillery run --output reports/users-api.json --env-file .env src/users-api.ts",
-    "report:leaderboard": "npx artillery@2.0.21 report reports/leaderboard.json --output reports/leaderboard.html",
-    "report:agent-trading": "npx artillery@2.0.21 report reports/agent-trading.json --output reports/agent-trading.html",
-    "report:users-api": "npx artillery@2.0.21 report reports/users-api.json --output reports/users-api.html",
+    "analyze": "tsx src/agent-trading/report-analyzer.ts",
+    "analyze:latest": "tsx src/agent-trading/report-analyzer.ts $(ls -t reports/*.json 2>/dev/null | head -1)",
     "dev": "tsc --watch",
-    "build": "tsup",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write . --ignore-path=../../.prettierignore",
     "format:check": "prettier --check . --ignore-path=../../.prettierignore",
-    "clean": "rm -rf .turbo node_modules dist src/**/dist reports/**"
+    "clean": "rm -rf .turbo node_modules dist src/**/dist reports/*"
   },
   "dependencies": {
     "@ngneat/falso": "^8.0.2",
+    "@sentry/node": "^10.5.0",
+    "@sentry/tracing": "^7.120.4",
     "artillery": "^2.0.24",
+    "artillery-plugin-ensure": "^1.20.0",
+    "artillery-plugin-metrics-by-endpoint": "^1.20.0",
+    "artillery-plugin-publish-metrics": "^2.31.0",
+    "dotenv": "^17.2.2",
     "viem": "^2.34.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
-    "tsup": "^8.3.6",
-    "typedoc": "^0.28.1",
-    "typedoc-plugin-coverage": "^3.4.1",
-    "typedoc-plugin-markdown": "^4.6.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.7.3"
   }
 }

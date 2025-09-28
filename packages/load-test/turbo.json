@@ -2,12 +2,12 @@
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
   "tasks": {
-    "build": {
-      "env": ["HOST"]
-    },
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "lint": {
+      "env": ["AGENTS_COUNT", "API_HOST"]
     }
   }
 }

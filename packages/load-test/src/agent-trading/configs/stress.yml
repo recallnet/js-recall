@@ -1,0 +1,132 @@
+config:
+  target: "{{ $env.API_HOST }}"
+  processor: "../processors/agent-trading-processor.ts"
+  variables:
+    usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    wethToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    # Parameterized variables with baseline defaults (8 req/s, 60s)
+    testDuration: "{{ $env.TEST_DURATION || 60 }}" # Default 1 minute (baseline)
+    requestRate: "{{ $env.REQUEST_RATE || 8 }}" # Default 8 req/s (baseline)
+    tradeAmount: "{{ $env.TRADE_AMOUNT || '0.1' }}" # Default $0.10
+    testName: "{{ $env.TEST_NAME || 'stress_test' }}"
+  plugins:
+    # Dynamic thresholds based on request rate
+    ensure:
+      thresholds:
+        # P95 threshold: 1000ms for high load (>16 req/s), 800ms for moderate load
+        - "http.response_time.p95": "{{ $env.P95_THRESHOLD || ($env.REQUEST_RATE > 16 ? 1500 : 1000) }}"
+        # P99 threshold: 2000ms for high load (>16 req/s), 1500ms for moderate load
+        - "http.response_time.p99": "{{ $env.P99_THRESHOLD || ($env.REQUEST_RATE > 16 ? 3000 : 2000) }}"
+      conditions:
+        # Min throughput: 90% of target request rate
+        - expression: "http.request_rate > {{ ($env.REQUEST_RATE || 8) * 0.9 }}"
+          strict: true
+        # Max failed users: Scale with request rate (higher load = more tolerance)
+        - expression: "vusers.failed < {{ $env.MAX_FAILED_VUS || ($env.REQUEST_RATE > 16 ? 100 : 50) }}"
+          strict: true
+  phases:
+    # Single parameterized phase
+    - duration: "{{ testDuration }}"
+      arrivalRate: "{{ requestRate }}"
+      name: "{{ testName }}"
+
+before:
+  flow:
+    # 1. Check for existing competition
+    - get:
+        url: "/api/competitions/status"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        capture:
+          - json: "$.active"
+            as: "isActive"
+          - json: "$.competition.id"
+            as: "activeCompetitionId"
+    - log: "Competition check - Active: {{ isActive }}"
+
+    # 2. End existing competition if there is one
+    - post:
+        url: "/api/admin/competition/end"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        json:
+          competitionId: "{{ activeCompetitionId }}"
+        ifTrue: "isActive"
+
+    # 3. Create new competition
+    - post:
+        url: "/api/admin/competition/create"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        beforeRequest: "setCompetitionPayload"
+        json: {}
+        capture:
+          - json: "$.competition.id"
+            as: "competitionId"
+    - log: "Created competition: {{ competitionId }}"
+
+    # 4. Create agents based on AGENTS_COUNT environment variable
+    - loop:
+        - post:
+            beforeRequest: "generateRandomUserAndAgent"
+            url: "/api/admin/users"
+            headers:
+              Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+            json:
+              walletAddress: "{{ walletAddress }}"
+              name: "{{ userName }}"
+              email: "{{ userEmail }}"
+              userImageUrl: "{{ profileImageUrl }}"
+              agentName: "{{ agentName }}"
+              agentHandle: "{{ agentHandle }}"
+              agentDescription: "{{ agentDescription }}"
+              agentImageUrl: "{{ agentImageUrl }}"
+              agentWalletAddress: "{{ agentWalletAddress }}"
+            capture:
+              - json: "$.agent.id"
+                as: "agentId"
+            afterResponse: "extractUserAndAgentInfo"
+        - post:
+            url: "/api/admin/competitions/{{ competitionId }}/agents/{{ agentId }}"
+            headers:
+              Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+      count: "{{ $env.AGENTS_COUNT }}"
+
+    # 5. Start competition
+    - post:
+        url: "/api/admin/competition/start"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        json:
+          competitionId: "{{ competitionId }}"
+    - log: "Started competition {{ competitionId }} with {{ $env.AGENTS_COUNT }} agents"
+    - log: "Test config: {{ requestRate }} req/s for {{ testDuration }}s with ${{ tradeAmount }} trades"
+
+scenarios:
+  - name: "test-trading"
+    flow:
+      # Select a random agent from the pool
+      - function: "selectRandomAgent"
+      - log: "Trading as agent {{ agentId }}"
+
+      # Check balance
+      - get:
+          url: "/api/agent/balances"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          afterResponse: "trackLoadTestMetrics"
+
+      # Make a trade with parameterized amount
+      - post:
+          url: "/api/trade/execute"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+            Content-Type: "application/json"
+          json:
+            fromToken: "{{ usdcToken }}"
+            toToken: "{{ wethToken }}"
+            amount: "{{ tradeAmount }}"
+            reason: "Generic stress test trade"
+            fromChain: "EVM"
+            toChain: "EVM"
+          afterResponse: "trackLoadTestMetrics"
