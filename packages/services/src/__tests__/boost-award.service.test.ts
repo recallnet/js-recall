@@ -7,8 +7,8 @@ import { type StakesRepository } from "@recallnet/db/repositories/stakes";
 import { SelectCompetition, SelectUser } from "@recallnet/db/schema/core/types";
 import { Database, Transaction } from "@recallnet/db/types";
 
-import { BoostAwardService } from "@/services/boost-award.service.js";
-import { type UserService } from "@/services/user.service.js";
+import { BoostAwardService } from "../boost-award.service.js";
+import { type UserService } from "../user.service.js";
 
 describe("BoostAwardService", () => {
   let mockDb: MockProxy<Database>;
@@ -73,6 +73,393 @@ describe("BoostAwardService", () => {
     mockReset(mockBoostRepo);
     mockReset(mockStakesRepo);
     mockReset(mockUserService);
+  });
+
+  describe("awardForStake", () => {
+    // Helper function to create mock stake
+    const createMockStake = (
+      id: bigint,
+      amount: bigint,
+      stakedAt: Date = new Date("2024-01-01"),
+      canUnstakeAfter: Date = new Date("2024-01-02"),
+    ) => ({
+      id,
+      wallet: testWallet,
+      amount,
+      stakedAt,
+      canUnstakeAfter,
+    });
+
+    // Helper function to create mock competition
+    const createMockCompetitionPosition = (
+      id: string,
+      votingStartDate: Date,
+      votingEndDate: Date,
+    ) => ({
+      id,
+      votingStartDate,
+      votingEndDate,
+    });
+
+    // Helper function to create mock user
+    const createMockUser = (id: string = testUserId) => ({
+      id,
+      name: null,
+      walletAddress: testWallet,
+      walletLastVerifiedAt: null,
+      embeddedWalletAddress: null,
+      privyId: "privy-123",
+      email: "test@example.com",
+      isSubscribed: false,
+      imageUrl: null,
+      metadata: null,
+      status: "active" as const,
+      createdAt: new Date("2024-01-01"),
+      updatedAt: new Date("2024-01-01"),
+      lastLoginAt: null,
+    });
+
+    it("returns noop when user not found", async () => {
+      const stake = createMockStake(1n, 1000000000000000000n);
+      const competition = createMockCompetitionPosition(
+        "comp-1",
+        new Date("2024-01-15"),
+        new Date("2024-01-30"),
+      );
+
+      mockUserService.getUserByWalletAddress.mockResolvedValue(null);
+
+      const result = await service.awardForStake(stake, competition);
+
+      expect(result).toEqual({
+        type: "noop",
+        balance: 0n,
+        idemKey: expect.any(Uint8Array),
+      });
+      expect(mockBoostRepo.increase).not.toHaveBeenCalled();
+    });
+
+    it("applies 2x multiplier when staked before voting and locked through voting end", async () => {
+      const stake = createMockStake(
+        1n,
+        1000000000000000000n, // 1 ETH
+        new Date("2024-01-01"), // Before voting starts
+        new Date("2024-02-01"), // After voting ends
+      );
+      const competition = createMockCompetitionPosition(
+        "comp-1",
+        new Date("2024-01-15"), // Voting starts
+        new Date("2024-01-30"), // Voting ends
+      );
+
+      const mockBoostResult = {
+        type: "applied" as const,
+        changeId: "change-123",
+        balanceAfter: 2000000000000000000n,
+        idemKey: new Uint8Array([1, 2, 3, 4]),
+      };
+
+      mockUserService.getUserByWalletAddress.mockResolvedValue(
+        createMockUser(),
+      );
+      mockBoostRepo.increase.mockResolvedValue(mockBoostResult);
+
+      const result = await service.awardForStake(stake, competition);
+
+      expect(result).toBe(mockBoostResult);
+      expect(mockBoostRepo.increase).toHaveBeenCalledWith(
+        {
+          userId: testUserId,
+          wallet: testWallet,
+          competitionId: "comp-1",
+          amount: 2000000000000000000n, // 2x multiplier applied
+          meta: {
+            description: "Award of 2000000000000000000 based on stake 1",
+          },
+          idemKey: expect.any(Uint8Array),
+        },
+        undefined,
+      );
+    });
+
+    it("applies 1x multiplier when staked before voting but can unstake during voting", async () => {
+      const stake = createMockStake(
+        2n,
+        500000000000000000n, // 0.5 ETH
+        new Date("2024-01-01"), // Before voting starts
+        new Date("2024-01-20"), // Can unstake during voting period
+      );
+      const competition = createMockCompetitionPosition(
+        "comp-1",
+        new Date("2024-01-15"), // Voting starts
+        new Date("2024-01-30"), // Voting ends
+      );
+
+      const mockBoostResult = {
+        type: "applied" as const,
+        changeId: "change-456",
+        balanceAfter: 500000000000000000n,
+        idemKey: new Uint8Array([5, 6, 7, 8]),
+      };
+
+      mockUserService.getUserByWalletAddress.mockResolvedValue(
+        createMockUser(),
+      );
+      mockBoostRepo.increase.mockResolvedValue(mockBoostResult);
+
+      const result = await service.awardForStake(stake, competition);
+
+      expect(result).toBe(mockBoostResult);
+      expect(mockBoostRepo.increase).toHaveBeenCalledWith(
+        {
+          userId: testUserId,
+          wallet: testWallet,
+          competitionId: "comp-1",
+          amount: 500000000000000000n, // 1x multiplier applied
+          meta: {
+            description: "Award of 500000000000000000 based on stake 2",
+          },
+          idemKey: expect.any(Uint8Array),
+        },
+        undefined,
+      );
+    });
+
+    it("applies 1x multiplier when staked after voting starts", async () => {
+      const stake = createMockStake(
+        3n,
+        2000000000000000000n, // 2 ETH
+        new Date("2024-01-20"), // After voting starts
+        new Date("2024-02-01"), // After voting ends
+      );
+      const competition = createMockCompetitionPosition(
+        "comp-1",
+        new Date("2024-01-15"), // Voting starts
+        new Date("2024-01-30"), // Voting ends
+      );
+
+      const mockBoostResult = {
+        type: "applied" as const,
+        changeId: "change-789",
+        balanceAfter: 2000000000000000000n,
+        idemKey: new Uint8Array([9, 10, 11, 12]),
+      };
+
+      mockUserService.getUserByWalletAddress.mockResolvedValue(
+        createMockUser(),
+      );
+      mockBoostRepo.increase.mockResolvedValue(mockBoostResult);
+
+      const result = await service.awardForStake(stake, competition);
+
+      expect(result).toBe(mockBoostResult);
+      expect(mockBoostRepo.increase).toHaveBeenCalledWith(
+        {
+          userId: testUserId,
+          wallet: testWallet,
+          competitionId: "comp-1",
+          amount: 2000000000000000000n, // 1x multiplier applied
+          meta: {
+            description: "Award of 2000000000000000000 based on stake 3",
+          },
+          idemKey: expect.any(Uint8Array),
+        },
+        undefined,
+      );
+    });
+
+    it("generates proper idempotency key", async () => {
+      const stake = createMockStake(123n, 1000000000000000000n);
+      const competition = createMockCompetitionPosition(
+        "comp-xyz",
+        new Date("2024-01-15"),
+        new Date("2024-01-30"),
+      );
+
+      const mockBoostResult = {
+        type: "applied" as const,
+        changeId: "change-idem",
+        balanceAfter: 1000000000000000000n,
+        idemKey: new Uint8Array([13, 14, 15, 16]),
+      };
+
+      mockUserService.getUserByWalletAddress.mockResolvedValue(
+        createMockUser(),
+      );
+      mockBoostRepo.increase.mockResolvedValue(mockBoostResult);
+
+      await service.awardForStake(stake, competition);
+
+      const callArgs = mockBoostRepo.increase.mock.calls[0]?.[0];
+      expect(callArgs).toBeDefined();
+      const idemKeyString = new TextDecoder().decode(callArgs!.idemKey);
+      expect(idemKeyString).toContain("competition=comp-xyz");
+      expect(idemKeyString).toContain("stake=123");
+    });
+
+    it("passes transaction parameter to boost repository", async () => {
+      const stake = createMockStake(1n, 1000000000000000000n);
+      const competition = createMockCompetitionPosition(
+        "comp-1",
+        new Date("2024-01-15"),
+        new Date("2024-01-30"),
+      );
+      const mockTx = "mock-transaction" as unknown as Transaction;
+
+      const mockBoostResult = {
+        type: "applied" as const,
+        changeId: "change-tx",
+        balanceAfter: 1000000000000000000n,
+        idemKey: new Uint8Array([17, 18, 19, 20]),
+      };
+
+      mockUserService.getUserByWalletAddress.mockResolvedValue(
+        createMockUser(),
+      );
+      mockBoostRepo.increase.mockResolvedValue(mockBoostResult);
+
+      await service.awardForStake(stake, competition, mockTx);
+
+      expect(mockBoostRepo.increase).toHaveBeenCalledWith(
+        expect.any(Object),
+        mockTx,
+      );
+    });
+  });
+
+  describe("awardNoStake", () => {
+    it("awards boost with correct parameters", async () => {
+      const competitionId = "comp-1";
+      const userId = "user-123";
+      const wallet = "0xabcd...1234";
+      const boostAmount = 1500000000000000000n; // 1.5 ETH
+      const idemReason = "test-reason";
+
+      const mockBoostResult = {
+        type: "applied" as const,
+        changeId: "change-no-stake",
+        balanceAfter: 1500000000000000000n,
+        idemKey: new Uint8Array([21, 22, 23, 24]),
+      };
+
+      mockBoostRepo.increase.mockResolvedValue(mockBoostResult);
+
+      const result = await service.awardNoStake(
+        competitionId,
+        userId,
+        wallet,
+        boostAmount,
+        idemReason,
+      );
+
+      expect(result).toBe(mockBoostResult);
+      expect(mockBoostRepo.increase).toHaveBeenCalledWith(
+        {
+          userId,
+          wallet,
+          competitionId,
+          amount: boostAmount,
+          meta: {
+            description: `Voluntary award of ${boostAmount}`,
+          },
+          idemKey: expect.any(Uint8Array),
+        },
+        undefined,
+      );
+    });
+
+    it("generates proper idempotency key", async () => {
+      const competitionId = "comp-xyz";
+      const userId = "user-456";
+      const wallet = "0x1234...abcd";
+      const boostAmount = 500000000000000000n;
+      const idemReason = "special-award";
+
+      const mockBoostResult = {
+        type: "applied" as const,
+        changeId: "change-idem-no-stake",
+        balanceAfter: 500000000000000000n,
+        idemKey: new Uint8Array([25, 26, 27, 28]),
+      };
+
+      mockBoostRepo.increase.mockResolvedValue(mockBoostResult);
+
+      await service.awardNoStake(
+        competitionId,
+        userId,
+        wallet,
+        boostAmount,
+        idemReason,
+      );
+
+      const callArgs = mockBoostRepo.increase.mock.calls[0]?.[0];
+      expect(callArgs).toBeDefined();
+      const idemKeyString = new TextDecoder().decode(callArgs!.idemKey);
+      expect(idemKeyString).toContain("competition=comp-xyz");
+      expect(idemKeyString).toContain("reason=special-award");
+    });
+
+    it("passes transaction parameter to boost repository", async () => {
+      const competitionId = "comp-1";
+      const userId = "user-123";
+      const wallet = "0xabcd...1234";
+      const boostAmount = 1000000000000000000n;
+      const idemReason = "tx-test";
+      const mockTx = "mock-transaction-no-stake" as unknown as Transaction;
+
+      const mockBoostResult = {
+        type: "applied" as const,
+        changeId: "change-tx-no-stake",
+        balanceAfter: 1000000000000000000n,
+        idemKey: new Uint8Array([29, 30, 31, 32]),
+      };
+
+      mockBoostRepo.increase.mockResolvedValue(mockBoostResult);
+
+      await service.awardNoStake(
+        competitionId,
+        userId,
+        wallet,
+        boostAmount,
+        idemReason,
+        mockTx,
+      );
+
+      expect(mockBoostRepo.increase).toHaveBeenCalledWith(
+        expect.any(Object),
+        mockTx,
+      );
+    });
+
+    it("handles noop result type", async () => {
+      const competitionId = "comp-1";
+      const userId = "user-123";
+      const wallet = "0xabcd...1234";
+      const boostAmount = 1000000000000000000n;
+      const idemReason = "noop-test";
+
+      const mockBoostResult = {
+        type: "noop" as const,
+        balance: 2500000000000000000n,
+        idemKey: new Uint8Array([33, 34, 35, 36]),
+      };
+
+      mockBoostRepo.increase.mockResolvedValue(mockBoostResult);
+
+      const result = await service.awardNoStake(
+        competitionId,
+        userId,
+        wallet,
+        boostAmount,
+        idemReason,
+      );
+
+      expect(result).toBe(mockBoostResult);
+      expect(result.type).toBe("noop");
+      if (result.type === "noop") {
+        expect(result.balance).toBe(2500000000000000000n);
+      }
+    });
   });
 
   describe("initNoStake", () => {
@@ -303,6 +690,27 @@ describe("BoostAwardService", () => {
       const idemKeyString = new TextDecoder().decode(callArgs!.idemKey);
       expect(idemKeyString).toContain("competition=comp-1");
       expect(idemKeyString).toContain("reason=initNoStake");
+    });
+
+    it("throws error when no-stake boost amount not configured", async () => {
+      // Create service without noStakeBoostAmount
+      const serviceWithoutAmount = new BoostAwardService(
+        mockDb,
+        mockCompetitionRepo,
+        mockBoostRepo,
+        mockStakesRepo,
+        mockUserService,
+        undefined, // No boost amount configured
+      );
+
+      mockDb.transaction.mockImplementation(
+        async (callback: (tx: Transaction) => Promise<unknown>) =>
+          callback("mock-tx" as unknown as Transaction),
+      );
+
+      await expect(
+        serviceWithoutAmount.initNoStake(testUserId, testWallet),
+      ).rejects.toThrow("No-stake boost amount not configured");
     });
   });
 
