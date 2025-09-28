@@ -1,19 +1,24 @@
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { UserRepository } from "@recallnet/db/repositories/user";
+import { BoostService } from "@recallnet/services/boost";
 
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
-import { indexingLogger, repositoryLogger } from "@/lib/logger.js";
+import {
+  indexingLogger,
+  repositoryLogger,
+  serviceLogger,
+} from "@/lib/logger.js";
 import { AdminService } from "@/services/admin.service.js";
 import { AgentService } from "@/services/agent.service.js";
 import { AgentRankService } from "@/services/agentrank.service.js";
 import { BalanceService } from "@/services/balance.service.js";
 import { BoostAwardService } from "@/services/boost-award.service.js";
-import { BoostService } from "@/services/boost.service.js";
 import { CompetitionRewardService } from "@/services/competition-reward.service.js";
 import { CompetitionService } from "@/services/competition.service.js";
 import { ConfigurationService } from "@/services/configuration.service.js";
@@ -22,6 +27,7 @@ import { LeaderboardService } from "@/services/leaderboard.service.js";
 import { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "@/services/price-tracker.service.js";
+import { SimulatedTradeExecutionService } from "@/services/simulated-trade-execution.service.js";
 import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
 import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
 import { UserService } from "@/services/user.service.js";
@@ -38,6 +44,7 @@ class ServiceRegistry {
   private _balanceService: BalanceService;
   private _priceTrackerService: PriceTrackerService;
   private _tradeSimulatorService: TradeSimulatorService;
+  private _simulatedTradeExecutionService: SimulatedTradeExecutionService;
   private _competitionService: CompetitionService;
   private _userService: UserService;
   private _agentService: AgentService;
@@ -55,6 +62,7 @@ class ServiceRegistry {
   private readonly _competitionRepository: CompetitionRepository;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
+  private readonly _userRepository: UserRepository;
   private readonly _indexingService: IndexingService;
   private readonly _eventsRepository: EventsRepository;
   private readonly _eventProcessor: EventProcessor;
@@ -71,7 +79,6 @@ class ServiceRegistry {
     this._tradeSimulatorService = new TradeSimulatorService(
       this._balanceService,
       this._priceTrackerService,
-      this._portfolioSnapshotterService,
     );
 
     // Configuration service for dynamic settings
@@ -86,7 +93,7 @@ class ServiceRegistry {
     // Initialize email service (no dependencies)
     this._emailService = new EmailService();
 
-    // Initialize user and agent services (require email service)
+    // Initialize user, agent, and admin services
     this._userService = new UserService(this._emailService);
     this._agentService = new AgentService(
       this._emailService,
@@ -119,6 +126,14 @@ class ServiceRegistry {
       this._perpsDataProcessor,
     );
 
+    // Initialize simulated trade execution service with its dependencies
+    this._simulatedTradeExecutionService = new SimulatedTradeExecutionService(
+      this._competitionService,
+      this._tradeSimulatorService,
+      this._balanceService,
+      this._priceTrackerService,
+    );
+
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(this._agentService);
 
@@ -130,12 +145,16 @@ class ServiceRegistry {
       dbRead,
       repositoryLogger,
     );
+    this._userRepository = new UserRepository(db, repositoryLogger);
 
     // Initialize BoostService with its dependencies
+    // TODO: Consider the best practice for services depending on repositories and/or other services.
     this._boostService = new BoostService(
       this._boostRepository,
-      this._competitionService,
-      this._userService,
+      this._competitionRepository,
+      this._userRepository,
+      config.boost.noStakeBoostAmount,
+      serviceLogger,
     );
 
     this._boostAwardService = new BoostAwardService(
@@ -178,6 +197,10 @@ class ServiceRegistry {
 
   get tradeSimulatorService(): TradeSimulatorService {
     return this._tradeSimulatorService;
+  }
+
+  get simulatedTradeExecutionService(): SimulatedTradeExecutionService {
+    return this._simulatedTradeExecutionService;
   }
 
   get competitionService(): CompetitionService {
@@ -271,6 +294,7 @@ export {
   PortfolioSnapshotterService,
   PriceTrackerService,
   ServiceRegistry,
+  SimulatedTradeExecutionService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,

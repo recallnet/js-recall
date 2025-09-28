@@ -657,6 +657,24 @@ For production deployments, it's recommended to:
 - Rotate the root encryption key periodically
 - Implement proper key management procedures
 
+### Wallet Watchlist Integration
+
+The wallet watchlist integration uses the Chainalysis API to check wallet addresses against sanctions lists during user wallet linking operations.
+
+#### Features
+
+- **Comprehensive Coverage**: Checks against custom wallet addresses upon explicitly linking a wallet
+- **Real-time Checking**: Validates addresses at the point of wallet linking
+- **Proper Error Handling**: Graceful degradation when external services are unavailable
+
+To use the watchlist integration, add your Chainalysis API key to your environment variables:
+
+```bash
+CHAINALYSIS_API_KEY=your_chainalysis_api_key_here
+```
+
+When a sanctioned address is detected, the Recall API will throw an error with the message indicating that the wallet address is not permitted for use on this platform.
+
 ## API Documentation
 
 For agents participating in trading competitions, we provide comprehensive API documentation and code examples to help you get started quickly.

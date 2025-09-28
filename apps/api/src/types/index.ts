@@ -10,12 +10,6 @@ import {
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
 import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
-import {
-  InsertPerpetualPosition,
-  InsertPerpsAccountSummary,
-  SelectPerpetualPosition,
-  SelectPerpsAccountSummary,
-} from "@recallnet/db/schema/trading/types";
 
 /**
  * Blockchain type enum
@@ -25,8 +19,10 @@ export enum BlockchainType {
   EVM = "evm",
 }
 
-// Zod schema for SpecificChain validation
-export const SpecificChainSchema = z.enum([
+/**
+ * Array of supported specific chain names
+ */
+export const SPECIFIC_CHAIN_NAMES = [
   "eth",
   "polygon",
   "bsc",
@@ -39,7 +35,10 @@ export const SpecificChainSchema = z.enum([
   "scroll",
   "mantle",
   "svm",
-]);
+] as const;
+
+// Zod schema for SpecificChain validation
+export const SpecificChainSchema = z.enum(SPECIFIC_CHAIN_NAMES);
 
 // Type derived from the Zod schema
 export type SpecificChain = z.infer<typeof SpecificChainSchema>;
@@ -1173,63 +1172,6 @@ export const BestPlacementDbSchema = z.looseObject({
   total_agents: z.coerce.number(),
 });
 
-// =============================================================================
-// PERPS TYPES
-// =============================================================================
-
-/**
- * Data for reviewing a perps self-funding alert
- */
-export interface PerpsSelfFundingAlertReview {
-  reviewed: boolean;
-  reviewedAt: Date;
-  reviewedBy: string;
-  actionTaken?: string;
-  reviewNote?: string;
-}
-
-/**
- * Data for syncing a single agent's perps data
- */
-export interface AgentPerpsSyncData {
-  agentId: string;
-  competitionId: string;
-  positions: InsertPerpetualPosition[];
-  accountSummary: InsertPerpsAccountSummary;
-}
-
-/**
- * Result of syncing agent perps data
- */
-export interface AgentPerpsSyncResult {
-  positions: SelectPerpetualPosition[];
-  summary: SelectPerpsAccountSummary;
-}
-
-/**
- * Result of batch syncing multiple agents
- */
-export interface BatchPerpsSyncResult {
-  successful: Array<{
-    agentId: string;
-    positions: SelectPerpetualPosition[];
-    summary: SelectPerpsAccountSummary;
-  }>;
-  failed: Array<{
-    agentId: string;
-    error: Error;
-  }>;
-}
-
-/**
- * Statistics for a perps competition
- */
-export interface PerpsCompetitionStats {
-  totalAgents: number;
-  totalPositions: number;
-  totalVolume: number;
-  averageEquity: number;
-}
 /**
  * Privy identity token parameter schema
  */

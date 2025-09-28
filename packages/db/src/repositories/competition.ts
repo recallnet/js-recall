@@ -8,6 +8,7 @@ import {
   eq,
   getTableColumns,
   gt,
+  gte,
   inArray,
   isNotNull,
   lt,
@@ -172,7 +173,7 @@ export class CompetitionRepository {
    * @param id The ID to search for
    */
   async findById(id: string) {
-    const [result] = await this.#db
+    const [result] = await this.#dbRead
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
         ...getTableColumns(competitions),
@@ -1338,6 +1339,142 @@ export class CompetitionRepository {
       return await query;
     } catch (error) {
       this.#logger.error("Error in getAgentPortfolioSnapshots:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get first and last portfolio snapshots for simple return calculation
+   * This is optimized to fetch only the boundary snapshots
+   * Used for calculating simple returns: (endValue/startValue) - 1
+   * @param competitionId Competition ID
+   * @param agentId Agent ID
+   * @returns Object with first and last snapshots
+   */
+  async getFirstAndLastSnapshots(
+    competitionId: string,
+    agentId: string,
+  ): Promise<{
+    first: SelectPortfolioSnapshot | null;
+    last: SelectPortfolioSnapshot | null;
+  }> {
+    try {
+      // Get the oldest snapshot (first)
+      const firstQuery = this.#db
+        .select()
+        .from(portfolioSnapshots)
+        .where(
+          and(
+            eq(portfolioSnapshots.competitionId, competitionId),
+            eq(portfolioSnapshots.agentId, agentId),
+          ),
+        )
+        .orderBy(asc(portfolioSnapshots.timestamp))
+        .limit(1);
+
+      // Get the newest snapshot (last)
+      const lastQuery = this.#db
+        .select()
+        .from(portfolioSnapshots)
+        .where(
+          and(
+            eq(portfolioSnapshots.competitionId, competitionId),
+            eq(portfolioSnapshots.agentId, agentId),
+          ),
+        )
+        .orderBy(desc(portfolioSnapshots.timestamp))
+        .limit(1);
+
+      const [firstResult, lastResult] = await Promise.all([
+        firstQuery,
+        lastQuery,
+      ]);
+
+      return {
+        first: firstResult[0] || null,
+        last: lastResult[0] || null,
+      };
+    } catch (error) {
+      this.#logger.error("Error in getFirstAndLastSnapshots:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate maximum drawdown using SQL window functions for efficiency
+   * This avoids loading all snapshots into memory
+   *
+   * Max Drawdown = (Trough - Peak) / Peak (will be negative or 0)
+   *
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param startDate Start of calculation period
+   * @param endDate End of calculation period
+   * @returns Maximum drawdown as a decimal (e.g., -0.20 for 20% drawdown)
+   */
+  async calculateMaxDrawdownSQL(
+    agentId: string,
+    competitionId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<number> {
+    try {
+      // Build WHERE conditions
+      const conditions = [
+        eq(portfolioSnapshots.agentId, agentId),
+        eq(portfolioSnapshots.competitionId, competitionId),
+      ];
+
+      if (startDate) {
+        conditions.push(gte(portfolioSnapshots.timestamp, startDate));
+      }
+      if (endDate) {
+        conditions.push(lt(portfolioSnapshots.timestamp, endDate));
+      }
+
+      // Drizzle doesn't yet support window functions directly, so we use raw SQL
+      // This is the recommended approach for complex queries in Drizzle
+      const result = await this.#dbRead.execute<{
+        max_drawdown: number | null;
+      }>(sql`
+        WITH equity_curve AS (
+          SELECT 
+            ${portfolioSnapshots.totalValue},
+            ${portfolioSnapshots.timestamp},
+            -- Running maximum (peak) up to this point
+            MAX(${portfolioSnapshots.totalValue}) OVER (
+              ORDER BY ${portfolioSnapshots.timestamp}
+              ROWS UNBOUNDED PRECEDING
+            ) as running_peak
+          FROM ${portfolioSnapshots}
+          WHERE ${and(...conditions)}
+          ORDER BY ${portfolioSnapshots.timestamp}
+        ),
+        drawdowns AS (
+          SELECT
+            total_value,
+            running_peak,
+            -- Calculate drawdown at each point
+            CASE 
+              WHEN running_peak = 0 OR running_peak IS NULL THEN 0
+              ELSE (total_value - running_peak) / running_peak
+            END as drawdown
+          FROM equity_curve
+        )
+        SELECT 
+          COALESCE(MIN(drawdown), 0) as max_drawdown
+        FROM drawdowns
+      `);
+
+      const maxDrawdown = result.rows[0]?.max_drawdown ?? 0;
+
+      this.#logger.debug(
+        `[CompetitionRepository] Calculated max drawdown for agent ${agentId}: ${(maxDrawdown * 100).toFixed(2)}%`,
+      );
+
+      return Number(maxDrawdown);
+    } catch (error) {
+      this.#logger.error("Error in calculateMaxDrawdownSQL:", error);
       throw error;
     }
   }

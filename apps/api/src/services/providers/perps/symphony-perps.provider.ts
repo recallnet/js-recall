@@ -95,6 +95,8 @@ export interface SymphonyTransfer {
   timestamp: string;
   txHash: string;
   chainId: number;
+  // Note: Equity snapshots not available from Symphony
+  // Competition rules prohibit mid-competition transfers
 }
 
 /**
@@ -130,7 +132,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
   constructor(apiUrl?: string) {
     // Use provided URL or fall back to config/environment
-    this.baseUrl = apiUrl || "https://api.symphony.finance";
+    this.baseUrl = apiUrl || "https://api.symphony.io";
 
     // Create axios instance with defaults
     this.axiosInstance = axios.create({
@@ -188,7 +190,10 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       // If we get any response from the server (not 5xx), it's healthy
       return response.status < 500;
     } catch (error) {
-      serviceLogger.warn("[SymphonyProvider] Health check failed:", error);
+      serviceLogger.warn(
+        { error: error instanceof Error ? error.message : String(error) },
+        `[SymphonyProvider] Health check failed`,
+      );
       return false;
     }
   }
@@ -249,7 +254,10 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       await this.enforceRateLimit();
 
       serviceLogger.debug(
-        `[SymphonyProvider] Fetching account summary for ${maskedAddress}`,
+        {
+          walletAddress: maskedAddress,
+        },
+        `[SymphonyProvider] Fetching account summary`,
       );
 
       const data = await this.fetchPositionData(walletAddress);
@@ -351,8 +359,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       });
 
       serviceLogger.error(
-        `[SymphonyProvider] Error fetching account summary for ${maskedAddress}:`,
-        error,
+        {
+          walletAddress: maskedAddress,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        `[SymphonyProvider] Error fetching account summary`,
       );
       throw error;
     }
@@ -404,8 +415,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       });
 
       serviceLogger.error(
-        `[SymphonyProvider] Error fetching positions for ${maskedAddress}:`,
-        error,
+        {
+          walletAddress: maskedAddress,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        `[SymphonyProvider] Error fetching positions`,
       );
       throw error;
     }
@@ -455,6 +469,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       }
 
       // Transform to generic transfer format
+      // Note: Mid-competition transfers are now prohibited by competition rules
       const transfers: Transfer[] = response.transfers.map((t) => ({
         type: t.type,
         amount: t.amount,
@@ -483,8 +498,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       });
 
       serviceLogger.error(
-        `[SymphonyProvider] Error fetching transfers for ${maskedAddress}:`,
-        error,
+        {
+          walletAddress: maskedAddress,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        `[SymphonyProvider] Error fetching transfers`,
       );
       // Don't throw - transfer history is optional for self-funding detection
       return [];
@@ -551,25 +569,32 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
               | undefined;
             if (errorData?.status === "error") {
               serviceLogger.error(
-                `[SymphonyProvider] Client error (${status}):`,
-                `${errorData.error.message} - ${errorData.error.details}`,
+                {
+                  status,
+                  error: errorData.error.message,
+                  details: errorData.error.details,
+                },
+                `[SymphonyProvider] Client error (${status})`,
               );
             } else {
               serviceLogger.error(
-                `[SymphonyProvider] Client error (${status}):`,
-                error.response?.data,
+                {
+                  status,
+                  data: error.response?.data,
+                },
+                `[SymphonyProvider] Client error (${status})`,
               );
             }
             throw error;
           }
 
           serviceLogger.warn(
-            `[SymphonyProvider] Request failed (attempt ${attempt}/${this.MAX_RETRIES}):`,
             {
               message: error.message,
               status: error.response?.status,
               data: error.response?.data,
             },
+            `[SymphonyProvider] Request failed (attempt ${attempt}/${this.MAX_RETRIES})`,
           );
         }
 

@@ -1,7 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 
-import { UpdateCompetition } from "@recallnet/db/schema/core/types";
-
 import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { adminLogger } from "@/lib/logger.js";
@@ -28,6 +26,7 @@ import {
   AdminGetAgentParamsSchema,
   AdminGetCompetitionSnapshotsParamsSchema,
   AdminGetCompetitionSnapshotsQuerySchema,
+  AdminGetCompetitionTransferViolationsParamsSchema,
   AdminGetPerformanceReportsQuerySchema,
   AdminListAllAgentsQuerySchema,
   AdminReactivateAgentInCompetitionParamsSchema,
@@ -350,18 +349,8 @@ export function makeAdminController(services: ServiceRegistry) {
         const { competitionId } = result.data;
 
         // End the competition
-        const endedCompetition =
+        const { competition: endedCompetition, leaderboard } =
           await services.competitionService.endCompetition(competitionId);
-
-        // Get final leaderboard
-        const leaderboard =
-          await services.competitionService.getLeaderboard(competitionId);
-
-        // Assign winners to the rewards
-        await services.competitionRewardService.assignWinnersToRewards(
-          competitionId,
-          leaderboard,
-        );
 
         adminLogger.info(
           `Successfully ended competition, id: ${competitionId}`,
@@ -403,16 +392,21 @@ export function makeAdminController(services: ServiceRegistry) {
           );
         }
 
-        // Extract rewards and tradingConstraints from the validated data
-        const { rewards, tradingConstraints, ...competitionUpdates } =
-          bodyResult.data;
-        const updates = competitionUpdates as UpdateCompetition;
+        // Extract rewards, tradingConstraints, and perpsProvider from the validated data
+        const {
+          rewards,
+          tradingConstraints,
+          perpsProvider,
+          ...competitionUpdates
+        } = bodyResult.data;
+        const updates = competitionUpdates;
 
         // Check if there are any updates to apply
         if (
           Object.keys(updates).length === 0 &&
           !rewards &&
-          !tradingConstraints
+          !tradingConstraints &&
+          !perpsProvider
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -424,6 +418,7 @@ export function makeAdminController(services: ServiceRegistry) {
             updates,
             tradingConstraints,
             rewards,
+            perpsProvider,
           );
 
         // Return the updated competition
@@ -1383,7 +1378,10 @@ export function makeAdminController(services: ServiceRegistry) {
             `Resetting agent balance as part of applying sandbox mode logic for admin adding agent ${agentId} to competition ${competitionId}`,
           );
 
-          await services.balanceService.resetAgentBalances(agentId);
+          await services.balanceService.resetAgentBalances(
+            agentId,
+            competition.type,
+          );
         }
 
         // Add agent to competition using repository method
@@ -1472,6 +1470,44 @@ export function makeAdminController(services: ServiceRegistry) {
             name: result.agent?.name || "Unknown",
             apiKey: result.apiKey,
           },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get competition transfer violations
+     * Returns agents who have made transfers during the competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionTransferViolations(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        // Validate params using flatParse
+        const result = flatParse(
+          AdminGetCompetitionTransferViolationsParamsSchema,
+          req.params,
+        );
+        if (!result.success) {
+          throw new ApiError(400, `Invalid parameters: ${result.error}`);
+        }
+        const { competitionId } = result.data;
+
+        // Get transfer violations from service
+        const violations =
+          await services.competitionService.getCompetitionTransferViolations(
+            competitionId,
+          );
+
+        res.json({
+          success: true,
+          violations,
         });
       } catch (error) {
         next(error);

@@ -1,0 +1,49 @@
+{
+  "name": "@recallnet/conversions",
+  "version": "0.0.0",
+  "license": "MIT AND Apache-2.0",
+  "private": true,
+  "description": "Recall Drizzle schema and data access repositories.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/recallnet/js-recall.git",
+    "directory": "packages/conversions"
+  },
+  "homepage": "https://github.com/recallnet/js-recall#readme",
+  "type": "module",
+  "exports": {
+    "./atto-conversions": {
+      "import": {
+        "types": "./dist/atto-conversions.d.ts",
+        "default": "./dist/atto-conversions.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules dist",
+    "lint": "eslint . --max-warnings 0",
+    "docs:check": "typedoc --emit none",
+    "docs:build": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "typedoc --watch --serve",
+    "build": "tsup",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "dnum": "^2.15.0"
+  },
+  "devDependencies": {
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
+    "tsup": "^8.3.6",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
+    "typedoc-plugin-markdown": "^4.6.0",
+    "typescript": "^5.7.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
+  }
+}

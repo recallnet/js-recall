@@ -170,13 +170,13 @@ Update competition fields (excludes startDate, endDate, status)
 
 ##### Responses
 
-| Code | Description                                                                                                                           |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 200  | Competition updated successfully                                                                                                      |
-| 400  | Bad request - Missing competitionId, no valid fields provided, or attempting to update restricted fields (startDate, endDate, status) |
-| 401  | Unauthorized - Admin authentication required                                                                                          |
-| 404  | Competition not found                                                                                                                 |
-| 500  | Server error                                                                                                                          |
+| Code | Description                                                                                                                                                                                          |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200  | Competition updated successfully                                                                                                                                                                     |
+| 400  | Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures |
+| 401  | Unauthorized - Admin authentication required                                                                                                                                                         |
+| 404  | Competition not found                                                                                                                                                                                |
+| 500  | Server error                                                                                                                                                                                         |
 
 ##### Security
 
@@ -212,6 +212,39 @@ Get portfolio snapshots for a competition, optionally filtered by agent
 | 401  | Unauthorized - Admin authentication required      |
 | 404  | Competition or agent not found                    |
 | 500  | Server error                                      |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/competition/{competitionId}/transfer-violations
+
+#### GET
+
+##### Summary:
+
+Get transfer violations for a perps competition
+
+##### Description:
+
+Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                |
+| ---- | ------------------------------------------ |
+| 200  | Transfer violations retrieved successfully |
+| 400  | Competition is not a perps competition     |
+| 404  | Competition not found                      |
+| 500  | Server error                               |
 
 ##### Security
 

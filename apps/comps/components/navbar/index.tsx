@@ -1,16 +1,25 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Menu } from "lucide-react";
+import { Menu, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { PrivyAuthButton } from "@/components/privy-auth-button";
+import { useSession } from "@/hooks";
+
+const nonStakeBoostAmount = process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT
+  ? BigInt(process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT)
+  : undefined;
+
+const formattedNumber = new Intl.NumberFormat();
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
@@ -18,6 +27,8 @@ export const Navbar: React.FunctionComponent = () => {
     { label: "COMPETITIONS", href: "/competitions" },
     { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
+
+  const { isAuthenticated } = useSession();
 
   const [open, setOpen] = useState(false);
 
@@ -92,15 +103,32 @@ export const Navbar: React.FunctionComponent = () => {
           </div>
         </div>
 
-        <div
-          className={cn(
-            "flex h-full items-center border-b-2",
-            pathname === "/profile"
-              ? "border-b-yellow-500"
-              : "border-b-transparent",
+        <div className="flex h-full flex-row items-center space-x-8">
+          {isAuthenticated && nonStakeBoostAmount && (
+            <Tooltip
+              tooltipClassName="max-w-xs"
+              content="Boost available per competition. Visit any active compeition page to activate yours and start boosting agents."
+            >
+              <div className="flex flex-row items-center space-x-2 font-bold text-yellow-500">
+                <Zap className="size-4" />
+                <span>
+                  {formattedNumber.format(
+                    attoValueToNumberValue(nonStakeBoostAmount),
+                  )}
+                </span>
+              </div>
+            </Tooltip>
           )}
-        >
-          <PrivyAuthButton />
+          <div
+            className={cn(
+              "flex h-full items-center border-b-2",
+              pathname === "/profile"
+                ? "border-b-yellow-500"
+                : "border-b-transparent",
+            )}
+          >
+            <PrivyAuthButton />
+          </div>
         </div>
       </div>
     </nav>

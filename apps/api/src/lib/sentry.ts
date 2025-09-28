@@ -2,27 +2,38 @@ import * as Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 
 import { config } from "@/config/index.js";
+import {
+  createServerBeforeSend,
+  createTracesSampler,
+} from "@/lib/sentry-config.js";
 
-export function initSentry() {
+export function initSentry(options?: {
+  enableProfiling?: boolean;
+  profileSessionSampleRate?: number;
+}) {
   if (!config.sentry?.dsn) {
     console.log("Sentry DSN not configured, skipping initialization");
     return;
   }
 
+  const enableProfiling = options?.enableProfiling ?? false;
+  const integrations = [];
+
+  // Only enable profiling if explicitly enabled
+  if (enableProfiling) {
+    integrations.push(nodeProfilingIntegration());
+  }
+
   Sentry.init({
     dsn: config.sentry.dsn,
     environment: config.sentry.environment,
-    integrations: [nodeProfilingIntegration()],
-    tracesSampleRate: config.sentry.environment === "production" ? 0.1 : 1.0,
-    profilesSampleRate: config.sentry.environment === "production" ? 0.1 : 1.0,
-    beforeSend(event) {
-      // Filter out sensitive data
-      if (event.request?.headers) {
-        delete event.request.headers.authorization;
-        delete event.request.headers.cookie;
-      }
-      return event;
-    },
+    integrations,
+    tracesSampler: createTracesSampler(config.sentry),
+    beforeSend: createServerBeforeSend(config.sentry),
+    ...(enableProfiling &&
+      options?.profileSessionSampleRate !== undefined && {
+        profileSessionSampleRate: options.profileSessionSampleRate,
+      }),
   });
 
   console.log(

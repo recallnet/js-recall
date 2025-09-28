@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 
+import { createSentryConfig } from "@/lib/sentry-config.js";
 import { CrossChainTradingType, SpecificChain } from "@/types/index.js";
 
 // Simple console logging for config initialization (before full logger setup)
@@ -378,18 +379,8 @@ export const config = {
       ? parseInt(process.env.INDEXING_DELAY, 10)
       : 3000,
   },
-  // Sentry configuration
-  sentry: {
-    dsn: process.env.SENTRY_DSN,
-    environment:
-      process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
-    enabled: !!process.env.SENTRY_DSN,
-    // Database monitoring only works when Sentry is enabled
-    dbMonitoringEnabled:
-      !!process.env.SENTRY_DSN &&
-      (process.env.ENABLE_SENTRY_DB_MONITORING === "true" ||
-        process.env.NODE_ENV === "production"),
-  },
+  // Sentry configuration (imported from shared config)
+  sentry: createSentryConfig(),
   // Rewards allocation configuration
   rewards: {
     // Private key for the rewards allocator account
@@ -404,6 +395,13 @@ export const config = {
     noStakeBoostAmount: process.env.NO_STAKE_BOOST_AMOUNT
       ? BigInt(process.env.NO_STAKE_BOOST_AMOUNT)
       : undefined,
+  },
+  // Chainalysis API key
+  watchlist: {
+    chainalysisApiKey: process.env.CHAINALYSIS_API_KEY || "",
+  },
+  symphony: {
+    apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
   },
 };
 

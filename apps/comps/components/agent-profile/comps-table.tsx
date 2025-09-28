@@ -36,12 +36,14 @@ export function CompetitionTable({
 }) {
   const router = useRouter();
   const hasMore = total > (competitions?.length || 0);
-  const gridColumns = canClaim ? "grid-cols-9" : "grid-cols-8";
+  const gridColumns = canClaim
+    ? "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]"
+    : "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]";
 
   return (
     <>
       <div className="overflow-x-auto rounded border">
-        <Table className="min-w-200">
+        <Table className="min-w-[800px]">
           <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
             <TableRow className={cn("grid w-full", gridColumns)}>
               <SortableTableHeader
@@ -116,8 +118,8 @@ export function CompetitionTable({
                     onClick={() => router.push(`/competitions/${comp.id}`)}
                     className={cn("grid w-full cursor-pointer", gridColumns)}
                   >
-                    <TableCell className="flex flex-col justify-center">
-                      <span className="text-secondary-foreground truncate text-sm font-semibold">
+                    <TableCell className="flex min-w-0 flex-col justify-center">
+                      <span className="text-secondary-foreground block truncate text-sm font-semibold">
                         {comp.name}
                       </span>
                       <span
@@ -132,25 +134,27 @@ export function CompetitionTable({
                     <TableCell className="flex flex-wrap items-center gap-2">
                       {/* Future skills mapping */}
                     </TableCell>
-                    <TableCell className="text-md text-secondary-foreground flex items-center font-medium">
+                    <TableCell className="text-md text-secondary-foreground font-medium">
                       {comp.type === "perpetual_futures" ? (
-                        <div className="flex flex-col">
+                        <div className="flex h-full flex-col justify-center">
                           <span>
-                            {typeof comp.portfolioValue === "number"
-                              ? `$${comp.portfolioValue.toFixed(2)}`
+                            CR:{" "}
+                            {comp.calmarRatio !== null &&
+                            comp.calmarRatio !== undefined
+                              ? comp.calmarRatio.toFixed(2)
                               : "n/a"}
                           </span>
                           <span className="text-xs text-gray-500">
-                            Total Equity
+                            Risk-Adjusted
                           </span>
                         </div>
                       ) : (
-                        <>
+                        <div className="flex h-full items-center">
                           {typeof comp.portfolioValue === "number"
                             ? `$${comp.portfolioValue.toFixed(2)}`
                             : "n/a"}
                           <span className="ml-2 text-xs">USDC</span>
-                        </>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="w-30 flex items-center font-medium">

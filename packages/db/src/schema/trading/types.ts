@@ -40,3 +40,24 @@ export type SelectPerpsSelfFundingAlert =
   typeof defs.perpsSelfFundingAlerts.$inferSelect;
 export type InsertPerpsSelfFundingAlert =
   typeof defs.perpsSelfFundingAlerts.$inferInsert;
+
+export type SelectPerpsTransferHistory =
+  typeof defs.perpsTransferHistory.$inferSelect;
+export type InsertPerpsTransferHistory =
+  typeof defs.perpsTransferHistory.$inferInsert;
+
+export type SelectPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferSelect;
+export type InsertPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferInsert;
+
+/**
+ * Risk-adjusted leaderboard entry combining account summary and risk metrics
+ */
+export interface RiskAdjustedLeaderboardEntry {
+  agentId: string;
+  totalEquity: string;
+  totalPnl: string | null;
+  calmarRatio: string | null;
+  simpleReturn: string | null; // Simple return (endValue/startValue - 1)
+  maxDrawdown: string | null;
+  hasRiskMetrics: boolean;
+}
