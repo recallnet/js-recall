@@ -302,6 +302,13 @@
       "when": 1758645365645,
       "tag": "0042_yellow_beyonder",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1758815448858,
+      "tag": "0043_kind_gorgon",
+      "breakpoints": true
     }
   ]
 }

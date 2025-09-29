@@ -37,43 +37,59 @@ jobs:
           version: v0
           image: ${{ steps.image-name.outputs.image }}
 
-  # Note: until Boost is live, we cannot deploy Vercel automatically and need to each commit
-  # onto our Vercel-specific deployment branch. Once Boost is live, we can uncomment this code.
-  #
-  # trigger-vercel-deployment:
-  #   # Note: wait for API to deploy first to help minimize downtime. This presumes the API has
-  #   # backwards compatibility, and it's okay for the frontend to be slightly out of sync for a
-  #   # couple of minutes.
-  #   needs: trigger-api-deployment
-  #   if: ${{ github.repository_owner == 'recallnet' }}
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  #     VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  #     VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
+  trigger-vercel-deployment:
+    # Note: wait for API to deploy first to help minimize downtime. This presumes the API has
+    # backwards compatibility, and it's okay for the frontend to be slightly out of sync for a
+    # couple of minutes.
+    needs: trigger-api-deployment
+    if: ${{ github.repository_owner == 'recallnet' }}
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-  #     - name: Setup Node
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "22"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
-  #     - name: Setup pnpm
-  #       uses: pnpm/action-setup@v4
-  #       with:
-  #         version: 9.12.3 # Note: matches exact version from root `package.json`
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3 # Note: matches exact version from root `package.json`
 
-  #     - name: Install Vercel CLI
-  #       run: pnpm install --global vercel@latest
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-  #     - name: Pull Vercel env (production)
-  #       run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
-  #     - name: Build
-  #       run: vercel build --prod --token "$VERCEL_TOKEN"
+      - name: Install Dependencies
+        run: pnpm install
 
-  #     - name: Deploy to Production
-  #       run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+      - name: Build everything
+        run: pnpm build
+
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel@latest
+
+      - name: Pull Vercel env (production)
+        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+
+      - name: Build
+        run: vercel build --prod --token "$VERCEL_TOKEN"
+
+      - name: Deploy to Production
+        run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"

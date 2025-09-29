@@ -92,10 +92,10 @@ jobs:
           - Issue Title: "${{ github.event.issue.title }}"
           - Issue Description: See issue details below
 
-          CRITICAL: Always read CLAUDE.md first for project context and development guidelines.
+          CRITICAL: Always read AGENTS.md first for project context and development guidelines.
 
           TASK:
-          1. FIRST: Read CLAUDE.md to understand project structure, development commands, and coding standards
+          1. FIRST: Read AGENTS.md to understand project structure, development commands, and coding standards
           2. Get the issue details using mcp__github__get_issue
           3. Check if a PR already exists for this issue using mcp__github__list_pull_requests
           4. If a PR already exists, do not create another one - stop here
@@ -124,7 +124,7 @@ jobs:
           - Write: For creating new files
 
           WORKFLOW:
-          1. ALWAYS start by reading CLAUDE.md for project context
+          1. ALWAYS start by reading AGENTS.md for project context
           2. Get issue details and understand the problem
           3. Check for existing PRs to avoid duplicates
           4. If PR exists, stop here
@@ -136,14 +136,14 @@ jobs:
           10. Ensure the PR description explains what was fixed and how
 
           IMPORTANT:
-          - ALWAYS read CLAUDE.md first for project guidelines
+          - ALWAYS read AGENTS.md first for project guidelines
           - Only work on this specific issue
           - Check for existing PRs first to avoid duplicates
           - Create a descriptive branch name
           - Write clear commit messages
           - Reference the issue number in the PR title/body
           - Make sure the fix actually addresses the reported problem
-          - Follow the project's coding standards from CLAUDE.md
+          - Follow the project's coding standards from AGENTS.md
           - Include appropriate tests if the issue involves functionality
           - Run quality gates (lint, format, types, test) before completing
           EOF

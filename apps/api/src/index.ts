@@ -41,8 +41,18 @@ import { makeBoostController } from "./controllers/boost.controller.js";
 import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
+// Sentry configuration defaults
+const SENTRY_DEFAULTS = {
+  PROFILE_SAMPLE_RATE: 0.01, // 1% - minimal tracking by default
+} as const;
+
 // Initialize Sentry before creating the Express app
-initSentry();
+initSentry({
+  enableProfiling: process.env.ENABLE_SENTRY_PROFILING === "true",
+  profileSessionSampleRate: process.env.SENTRY_PROFILE_SAMPLE_RATE
+    ? parseFloat(process.env.SENTRY_PROFILE_SAMPLE_RATE)
+    : SENTRY_DEFAULTS.PROFILE_SAMPLE_RATE,
+});
 
 // Create Express app
 const app = express();
@@ -156,7 +166,7 @@ const priceController = makePriceController(services);
 const tradeController = makeTradeController(services);
 const userController = makeUserController(
   services,
-  config.boost.noStakeBoostAmount ? "no-stake" : "stake",
+  config.boost.noStakeBoostAmount ? false : true,
 );
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);

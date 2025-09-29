@@ -32,15 +32,20 @@ export function makeBoostController(services: ServiceRegistry) {
         const userId = ensureUuid(req.userId);
         const competitionId = ensureUuid(req.params.competitionId);
 
-        const balance = await services.boostService.getUserBoostBalance(
+        const result = await services.boostService.getUserBoostBalance(
           userId,
           competitionId,
         );
 
-        res.status(200).json({
-          success: true,
-          balance: balance.toString(),
-        });
+        if (result.isErr()) {
+          next(result.error);
+          return;
+        } else {
+          res.status(200).json({
+            success: true,
+            balance: result.value.toString(),
+          });
+        }
       } catch (error) {
         next(error);
       }
@@ -50,18 +55,22 @@ export function makeBoostController(services: ServiceRegistry) {
       try {
         const competitionId = ensureUuid(req.params.competitionId);
 
-        const boosts =
+        const result =
           await services.boostService.getAgentBoostTotals(competitionId);
 
-        res.status(200).json({
-          success: true,
-          boostTotals: Object.fromEntries(
-            Object.entries(boosts).map(([key, value]) => [
-              key,
-              value.toString(),
-            ]),
-          ),
-        });
+        if (result.isErr()) {
+          next(result.error);
+        } else {
+          res.status(200).json({
+            success: true,
+            boostTotals: Object.fromEntries(
+              Object.entries(result.value).map(([key, value]) => [
+                key,
+                value.toString(),
+              ]),
+            ),
+          });
+        }
       } catch (error) {
         next(error);
       }
@@ -76,20 +85,24 @@ export function makeBoostController(services: ServiceRegistry) {
         const userId = ensureUuid(req.userId);
         const competitionId = ensureUuid(req.params.competitionId);
 
-        const boosts = await services.boostService.getUserBoosts(
+        const result = await services.boostService.getUserBoosts(
           userId,
           competitionId,
         );
 
-        res.status(200).json({
-          success: true,
-          boosts: Object.fromEntries(
-            Object.entries(boosts).map(([key, value]) => [
-              key,
-              value.toString(),
-            ]),
-          ),
-        });
+        if (result.isErr()) {
+          next(result.error);
+        } else {
+          res.status(200).json({
+            success: true,
+            boosts: Object.fromEntries(
+              Object.entries(result.value).map(([key, value]) => [
+                key,
+                value.toString(),
+              ]),
+            ),
+          });
+        }
       } catch (error) {
         next(error);
       }
@@ -110,10 +123,14 @@ export function makeBoostController(services: ServiceRegistry) {
           idemKey,
         });
 
-        res.status(200).json({
-          success: true,
-          agentTotal: result.agentBoostTotal.total.toString(),
-        });
+        if (result.isErr()) {
+          next(result.error);
+        } else {
+          res.status(200).json({
+            success: true,
+            agentTotal: result.value.agentBoostTotal.total.toString(),
+          });
+        }
       } catch (error) {
         next(error);
       }

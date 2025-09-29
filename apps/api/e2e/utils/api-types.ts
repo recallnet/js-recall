@@ -348,9 +348,10 @@ export interface Competition {
     totalTrades?: number; // Optional - only for paper trading
     totalPositions?: number; // Optional - only for perps
     totalAgents: number;
-    totalVolume: number;
+    totalVolume?: number; // Optional - may not be present for all competition types
     totalVotes: number;
     uniqueTokens?: number; // Optional - only for paper trading
+    averageEquity?: number; // Optional - only for perps
     competitionType?: string; // Type indicator for clients
   };
   // Vote-related fields
@@ -380,6 +381,11 @@ export interface LeaderboardEntry {
   portfolioValue: number;
   active: boolean;
   deactivationReason?: string;
+  // Risk-adjusted metrics (primarily for perps competitions)
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
 }
 
 // Inactive agent entry (no rank assignment)
@@ -411,6 +417,16 @@ export interface CompetitionStatusResponse extends ApiResponse {
 export interface CreateCompetitionResponse extends ApiResponse {
   success: true;
   competition: Competition;
+}
+
+// Admin response for updating a competition
+export interface UpdateCompetitionResponse extends ApiResponse {
+  success: true;
+  competition: Competition;
+  rewards?: Array<{
+    rank: number;
+    reward: number;
+  }>;
 }
 
 // Admin response for starting a competition
@@ -500,6 +516,11 @@ export interface CompetitionAgent {
   change24h: number; // Portfolio value change in last 24 hours (USD)
   change24hPercent: number; // 24h change as percentage
   voteCount: number; // Number of votes this agent has received
+  // Risk-adjusted metrics (primarily for perps competitions)
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
 }
 
 // Competition constraints
@@ -833,6 +854,11 @@ export interface EnhancedCompetition extends Competition {
     rank: number;
     totalAgents: number;
   };
+  // Risk-adjusted metrics (primarily for perps competitions)
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  hasRiskMetrics?: boolean;
 }
 
 /**
@@ -904,6 +930,19 @@ export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
 export interface LinkUserWalletResponse extends ApiResponse {
   success: true;
   user: User;
+}
+
+/**
+ * Admin response for competition transfer violations
+ */
+export interface AdminCompetitionTransferViolationsResponse
+  extends ApiResponse {
+  success: true;
+  violations: Array<{
+    agentId: string;
+    agentName: string;
+    transferCount: number;
+  }>;
 }
 
 /**

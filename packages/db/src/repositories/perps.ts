@@ -4,6 +4,7 @@ import {
   desc,
   count as drizzleCount,
   eq,
+  gt,
   inArray,
   not,
   sql,
@@ -16,17 +17,24 @@ import {
   perpetualPositions,
   perpsAccountSummaries,
   perpsCompetitionConfig,
+  perpsRiskMetrics,
   perpsSelfFundingAlerts,
+  perpsTransferHistory,
 } from "../schema/trading/defs.js";
 import {
   InsertPerpetualPosition,
   InsertPerpsAccountSummary,
   InsertPerpsCompetitionConfig,
+  InsertPerpsRiskMetrics,
   InsertPerpsSelfFundingAlert,
+  InsertPerpsTransferHistory,
+  RiskAdjustedLeaderboardEntry,
   SelectPerpetualPosition,
   SelectPerpsAccountSummary,
   SelectPerpsCompetitionConfig,
+  SelectPerpsRiskMetrics,
   SelectPerpsSelfFundingAlert,
+  SelectPerpsTransferHistory,
 } from "../schema/trading/types.js";
 import { Database, Transaction } from "../types.js";
 
@@ -134,6 +142,75 @@ export class PerpsRepository {
       return result || null;
     } catch (error) {
       this.#logger.error("Error in getPerpsCompetitionConfig:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update perps competition configuration
+   * @param competitionId Competition ID
+   * @param updates Partial config updates
+   * @param tx Optional transaction
+   * @returns Updated configuration or null if not found
+   */
+  async updatePerpsCompetitionConfig(
+    competitionId: string,
+    updates: Partial<
+      Omit<InsertPerpsCompetitionConfig, "competitionId" | "createdAt">
+    >,
+    tx?: Transaction,
+  ): Promise<SelectPerpsCompetitionConfig | null> {
+    try {
+      const executor = tx || this.#db;
+      const [result] = await executor
+        .update(perpsCompetitionConfig)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(eq(perpsCompetitionConfig.competitionId, competitionId))
+        .returning();
+
+      if (result) {
+        this.#logger.debug(
+          `[PerpsRepository] Updated perps config for competition ${competitionId}`,
+        );
+      }
+
+      return result || null;
+    } catch (error) {
+      this.#logger.error("Error in updatePerpsCompetitionConfig:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete perps competition configuration
+   * @param competitionId Competition ID
+   * @param tx Optional transaction
+   * @returns True if deleted, false if not found
+   */
+  async deletePerpsCompetitionConfig(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<boolean> {
+    try {
+      const executor = tx || this.#db;
+      const result = await executor
+        .delete(perpsCompetitionConfig)
+        .where(eq(perpsCompetitionConfig.competitionId, competitionId));
+
+      const deleted = (result?.rowCount ?? 0) > 0;
+
+      if (deleted) {
+        this.#logger.debug(
+          `[PerpsRepository] Deleted perps config for competition ${competitionId}`,
+        );
+      }
+
+      return deleted;
+    } catch (error) {
+      this.#logger.error("Error in deletePerpsCompetitionConfig:", error);
       throw error;
     }
   }
@@ -731,8 +808,134 @@ export class PerpsRepository {
   }
 
   // =============================================================================
+  // HELPER METHODS
+  // =============================================================================
+
+  /**
+   * Get active agents subquery for a competition
+   * Reusable subquery
+   * @param competitionId Competition ID to filter by
+   * @returns Subquery for active agents
+   * @private
+   */
+  private getActiveAgentsSubquery(competitionId: string) {
+    return this.#dbRead
+      .select({
+        agentId: competitionAgents.agentId,
+      })
+      .from(competitionAgents)
+      .where(
+        and(
+          eq(competitionAgents.competitionId, competitionId),
+          eq(competitionAgents.status, "active"),
+        ),
+      )
+      .as("active_agents");
+  }
+
+  // =============================================================================
   // AGGREGATION QUERIES
   // =============================================================================
+
+  /**
+   * Get risk-adjusted leaderboard with Calmar ratio fallback to equity
+   * Combines risk metrics and account summaries in a single query
+   * @param competitionId Competition ID
+   * @param limit Optional limit for pagination
+   * @param offset Optional offset for pagination
+   * @returns Array of leaderboard entries sorted by Calmar (if available) then equity
+   */
+  async getRiskAdjustedLeaderboard(
+    competitionId: string,
+    limit = 50,
+    offset = 0,
+  ): Promise<RiskAdjustedLeaderboardEntry[]> {
+    try {
+      // Get active agents subquery
+      const activeAgents = this.getActiveAgentsSubquery(competitionId);
+
+      // Latest summary subquery for lateral join
+      const latestSummarySubquery = this.#dbRead
+        .select({
+          agentId: perpsAccountSummaries.agentId,
+          totalEquity: perpsAccountSummaries.totalEquity,
+          totalPnl: perpsAccountSummaries.totalPnl,
+          timestamp: perpsAccountSummaries.timestamp,
+        })
+        .from(perpsAccountSummaries)
+        .where(
+          and(
+            eq(perpsAccountSummaries.competitionId, competitionId),
+            sql`${perpsAccountSummaries.agentId} = ${activeAgents.agentId}`,
+          ),
+        )
+        .orderBy(desc(perpsAccountSummaries.timestamp))
+        .limit(1)
+        .as("latest_summary");
+
+      // Risk metrics subquery for lateral join
+      const riskMetricsSubquery = this.#dbRead
+        .select({
+          agentId: perpsRiskMetrics.agentId,
+          calmarRatio: perpsRiskMetrics.calmarRatio,
+          simpleReturn: perpsRiskMetrics.simpleReturn,
+          maxDrawdown: perpsRiskMetrics.maxDrawdown,
+        })
+        .from(perpsRiskMetrics)
+        .where(
+          and(
+            eq(perpsRiskMetrics.competitionId, competitionId),
+            sql`${perpsRiskMetrics.agentId} = ${activeAgents.agentId}`,
+          ),
+        )
+        .limit(1)
+        .as("risk_metrics");
+
+      // Single query with lateral joins for both summaries and risk metrics
+      const results = await this.#dbRead
+        .select({
+          agentId: activeAgents.agentId,
+          totalEquity: latestSummarySubquery.totalEquity,
+          totalPnl: latestSummarySubquery.totalPnl,
+          calmarRatio: riskMetricsSubquery.calmarRatio,
+          simpleReturn: riskMetricsSubquery.simpleReturn,
+          maxDrawdown: riskMetricsSubquery.maxDrawdown,
+        })
+        .from(activeAgents)
+        .leftJoinLateral(latestSummarySubquery, sql`true`)
+        .leftJoinLateral(riskMetricsSubquery, sql`true`)
+        .orderBy(
+          // Sort by: has risk metrics first, then by calmar ratio, then by equity
+          sql`CASE WHEN ${riskMetricsSubquery.calmarRatio} IS NOT NULL THEN 0 ELSE 1 END`,
+          desc(sql`${riskMetricsSubquery.calmarRatio}`),
+          desc(sql`${latestSummarySubquery.totalEquity}`),
+        )
+        .limit(limit)
+        .offset(offset);
+
+      // Transform to the expected type
+      const leaderboard: RiskAdjustedLeaderboardEntry[] = results
+        .filter((row) => row.totalEquity !== null) // Filter out agents without summaries
+        .map((row) => ({
+          agentId: row.agentId,
+          totalEquity: row.totalEquity || "0",
+          totalPnl: row.totalPnl,
+          calmarRatio: row.calmarRatio,
+          simpleReturn: row.simpleReturn,
+          maxDrawdown: row.maxDrawdown,
+          hasRiskMetrics: row.calmarRatio !== null,
+        }));
+
+      this.#logger.debug(
+        `[PerpsRepository] Retrieved ${leaderboard.length} risk-adjusted leaderboard entries`,
+      );
+
+      return leaderboard;
+    } catch (error) {
+      this.#logger.error("Error in getRiskAdjustedLeaderboard:", error);
+      throw error;
+    }
+  }
 
   /**
    * Get latest account summaries for all agents in a competition, sorted for leaderboard
@@ -744,18 +947,7 @@ export class PerpsRepository {
   ): Promise<SelectPerpsAccountSummary[]> {
     try {
       // Get active agents first, then use lateral join to get their latest summaries
-      const activeAgents = this.#dbRead
-        .select({
-          agentId: competitionAgents.agentId,
-        })
-        .from(competitionAgents)
-        .where(
-          and(
-            eq(competitionAgents.competitionId, competitionId),
-            eq(competitionAgents.status, "active"),
-          ),
-        )
-        .as("active_agents");
+      const activeAgents = this.getActiveAgentsSubquery(competitionId);
 
       // Create subquery for lateral join - gets the latest summary for each agent
       const latestSummarySubquery = this.#dbRead
@@ -772,7 +964,7 @@ export class PerpsRepository {
         .limit(1)
         .as("latest_summary");
 
-      // Use leftJoinLateral to efficiently get the latest summary per agent
+      // Use leftJoinLateral to get the latest summary per agent
       const results = await this.#dbRead
         .select()
         .from(activeAgents)
@@ -1006,6 +1198,353 @@ export class PerpsRepository {
       };
     } catch (error) {
       this.#logger.error("Error in getCompetitionPerpsPositions:", error);
+      throw error;
+    }
+  }
+
+  // =============================================================================
+  // TRANSFER HISTORY OPERATIONS
+  // =============================================================================
+
+  /**
+   * Save transfer history for violation detection and audit
+   * NOTE: Mid-competition transfers are PROHIBITED
+   * @param transfer Transfer data
+   * @param tx Optional transaction
+   * @returns Created transfer record
+   */
+  async saveTransferHistory(
+    transfer: InsertPerpsTransferHistory,
+    tx?: Transaction,
+  ): Promise<SelectPerpsTransferHistory> {
+    try {
+      const executor = tx || this.#db;
+      const [result] = await executor
+        .insert(perpsTransferHistory)
+        .values(transfer)
+        .returning();
+
+      if (!result) {
+        throw new Error("Failed to save transfer history");
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Saved transfer: agent=${transfer.agentId}, type=${transfer.type}, amount=${transfer.amount}`,
+      );
+
+      return result;
+    } catch (error) {
+      this.#logger.error("Error in saveTransferHistory:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch save transfers (used during sync operations)
+   * @param transfers Array of transfer records
+   * @returns Array of created transfer records
+   */
+  async batchSaveTransferHistory(
+    transfers: InsertPerpsTransferHistory[],
+  ): Promise<SelectPerpsTransferHistory[]> {
+    if (transfers.length === 0) {
+      return [];
+    }
+
+    try {
+      // Process in batches to avoid PostgreSQL query limits
+      const BATCH_SIZE = 500;
+      const allResults: SelectPerpsTransferHistory[] = [];
+
+      for (let i = 0; i < transfers.length; i += BATCH_SIZE) {
+        const batch = transfers.slice(i, i + BATCH_SIZE);
+        const results = await this.#db
+          .insert(perpsTransferHistory)
+          .values(batch)
+          .onConflictDoNothing({ target: perpsTransferHistory.txHash })
+          .returning();
+
+        allResults.push(...results);
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Batch saved ${allResults.length} transfers in ${Math.ceil(transfers.length / BATCH_SIZE)} batches`,
+      );
+
+      return allResults;
+    } catch (error) {
+      this.#logger.error("Error in batchSaveTransferHistory:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get transfer history for an agent in a competition
+   *
+   * NOTE: This method intentionally has NO LIMIT on results. While this could
+   * theoretically cause memory issues with thousands of transfers, in practice:
+   * 1. Competitions are typically 1 week long
+   * 2. Mid-competition transfers are violations - should be rare
+   * 3. Even 100 transfers would only be ~10KB
+   * 4. We need ALL transfers for violation detection and admin review
+   *
+   * If this becomes an issue in production, consider implementing pagination.
+   *
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param since Optional timestamp to get transfers after
+   * @returns Array of transfer records
+   */
+  async getAgentTransferHistory(
+    agentId: string,
+    competitionId: string,
+    since?: Date,
+  ): Promise<SelectPerpsTransferHistory[]> {
+    try {
+      const conditions = [
+        eq(perpsTransferHistory.agentId, agentId),
+        eq(perpsTransferHistory.competitionId, competitionId),
+      ];
+
+      if (since) {
+        conditions.push(
+          sql`${perpsTransferHistory.transferTimestamp} > ${since}`,
+        );
+      }
+
+      const transfers = await this.#dbRead
+        .select()
+        .from(perpsTransferHistory)
+        .where(and(...conditions))
+        .orderBy(perpsTransferHistory.transferTimestamp);
+
+      this.#logger.debug(
+        `[PerpsRepository] Retrieved ${transfers.length} transfers for agent ${agentId}`,
+      );
+
+      return transfers;
+    } catch (error) {
+      this.#logger.error("Error in getAgentTransferHistory:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get transfer violation counts for all agents in a competition with agent names
+   * Uses SQL aggregation with JOIN for efficiency - single query instead of N+1
+   * @param competitionId Competition ID
+   * @param startDate Competition start date (only count transfers after this)
+   * @returns Array of agents with transfer counts and names (only includes agents with violations)
+   */
+  async getCompetitionTransferViolationCounts(
+    competitionId: string,
+    startDate: Date,
+  ): Promise<
+    Array<{ agentId: string; agentName: string; transferCount: number }>
+  > {
+    try {
+      // Use SQL GROUP BY and COUNT with agent JOIN for aggregation
+      // Only returns agents who have transfers (violations)
+      const results = await this.#dbRead
+        .select({
+          agentId: perpsTransferHistory.agentId,
+          agentName: agents.name,
+          transferCount: drizzleCount(perpsTransferHistory.id),
+        })
+        .from(perpsTransferHistory)
+        .leftJoin(agents, eq(perpsTransferHistory.agentId, agents.id))
+        .where(
+          and(
+            eq(perpsTransferHistory.competitionId, competitionId),
+            gt(perpsTransferHistory.transferTimestamp, startDate), // Only transfers after competition start
+          ),
+        )
+        .groupBy(perpsTransferHistory.agentId, agents.name)
+        .orderBy(desc(drizzleCount(perpsTransferHistory.id))); // Order by most violations first
+
+      // Map results to ensure non-null agent names
+      const mappedResults = results.map((row) => ({
+        agentId: row.agentId,
+        agentName: row.agentName ?? "Unknown Agent",
+        transferCount: row.transferCount,
+      }));
+
+      this.#logger.debug(
+        `[PerpsRepository] Found ${mappedResults.length} agents with transfer violations in competition ${competitionId}`,
+      );
+
+      return mappedResults;
+    } catch (error) {
+      this.#logger.error(
+        "Error in getCompetitionTransferViolationCounts:",
+        error,
+      );
+      throw error;
+    }
+  }
+
+  // =============================================================================
+  // RISK METRICS OPERATIONS
+  // =============================================================================
+
+  /**
+   * Upsert risk metrics for an agent
+   * @param metrics Risk metrics to save/update
+   * @param tx Optional transaction
+   * @returns Saved risk metrics
+   */
+  async upsertRiskMetrics(
+    metrics: InsertPerpsRiskMetrics,
+    tx?: Transaction,
+  ): Promise<SelectPerpsRiskMetrics> {
+    try {
+      const executor = tx || this.#db;
+      const [result] = await executor
+        .insert(perpsRiskMetrics)
+        .values(metrics)
+        .onConflictDoUpdate({
+          target: [perpsRiskMetrics.agentId, perpsRiskMetrics.competitionId],
+          set: {
+            simpleReturn: metrics.simpleReturn,
+            calmarRatio: metrics.calmarRatio,
+            annualizedReturn: metrics.annualizedReturn,
+            maxDrawdown: metrics.maxDrawdown,
+            snapshotCount: metrics.snapshotCount,
+            calculationTimestamp: sql`CURRENT_TIMESTAMP`,
+          },
+        })
+        .returning();
+
+      if (!result) {
+        throw new Error("Failed to save risk metrics");
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Upserted risk metrics: agent=${metrics.agentId}, calmar=${metrics.calmarRatio}`,
+      );
+
+      return result;
+    } catch (error) {
+      this.#logger.error("Error in upsertRiskMetrics:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get risk metrics leaderboard for a competition
+   * @param competitionId Competition ID
+   * @param limit Optional limit
+   * @param offset Optional offset
+   * @returns Object with metrics array and total count
+   */
+  async getCompetitionRiskMetricsLeaderboard(
+    competitionId: string,
+    limit = 100,
+    offset = 0,
+  ): Promise<{
+    metrics: Array<
+      SelectPerpsRiskMetrics & {
+        agent: { id: string; name: string; imageUrl: string | null } | null;
+      }
+    >;
+    total: number;
+  }> {
+    try {
+      // Data query with agent join
+      const metricsQuery = this.#dbRead
+        .select({
+          id: perpsRiskMetrics.id,
+          agentId: perpsRiskMetrics.agentId,
+          competitionId: perpsRiskMetrics.competitionId,
+          simpleReturn: perpsRiskMetrics.simpleReturn,
+          calmarRatio: perpsRiskMetrics.calmarRatio,
+          annualizedReturn: perpsRiskMetrics.annualizedReturn,
+          maxDrawdown: perpsRiskMetrics.maxDrawdown,
+          calculationTimestamp: perpsRiskMetrics.calculationTimestamp,
+          snapshotCount: perpsRiskMetrics.snapshotCount,
+          agent: {
+            id: agents.id,
+            name: agents.name,
+            imageUrl: agents.imageUrl,
+          },
+        })
+        .from(perpsRiskMetrics)
+        .leftJoin(agents, eq(perpsRiskMetrics.agentId, agents.id))
+        .where(eq(perpsRiskMetrics.competitionId, competitionId))
+        .orderBy(desc(perpsRiskMetrics.calmarRatio))
+        .limit(limit)
+        .offset(offset);
+
+      // Count query
+      const totalQuery = this.#dbRead
+        .select({ count: drizzleCount() })
+        .from(perpsRiskMetrics)
+        .where(eq(perpsRiskMetrics.competitionId, competitionId));
+
+      const [results, total] = await Promise.all([metricsQuery, totalQuery]);
+
+      return {
+        metrics: results,
+        total: total[0]?.count ?? 0,
+      };
+    } catch (error) {
+      this.#logger.error(
+        "Error in getCompetitionRiskMetricsLeaderboard:",
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Save risk metrics for an agent
+   * @param metrics Risk metrics to save
+   * @returns Saved risk metrics
+   */
+  async saveRiskMetrics(
+    metrics: InsertPerpsRiskMetrics,
+  ): Promise<SelectPerpsRiskMetrics> {
+    return this.upsertRiskMetrics(metrics);
+  }
+
+  /**
+   * Get risk metrics for an agent across multiple competitions in a single query
+   * @param agentId Agent ID
+   * @param competitionIds Array of competition IDs
+   * @returns Map of competition ID to risk metrics
+   */
+  async getBulkAgentRiskMetrics(
+    agentId: string,
+    competitionIds: string[],
+  ): Promise<Map<string, SelectPerpsRiskMetrics>> {
+    try {
+      if (competitionIds.length === 0) {
+        return new Map();
+      }
+
+      const results = await this.#dbRead
+        .select()
+        .from(perpsRiskMetrics)
+        .where(
+          and(
+            eq(perpsRiskMetrics.agentId, agentId),
+            inArray(perpsRiskMetrics.competitionId, competitionIds),
+          ),
+        );
+
+      // Convert to Map
+      const metricsMap = new Map<string, SelectPerpsRiskMetrics>();
+      for (const metric of results) {
+        metricsMap.set(metric.competitionId, metric);
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Fetched ${results.length} risk metrics for agent ${agentId} across ${competitionIds.length} competitions`,
+      );
+
+      return metricsMap;
+    } catch (error) {
+      this.#logger.error("Error in getBulkAgentRiskMetrics:", error);
       throw error;
     }
   }

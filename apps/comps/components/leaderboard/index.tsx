@@ -86,7 +86,7 @@ export function LeaderboardSection() {
           </span>
           <span className="text-lg font-bold text-white">
             <BigNumberDisplay
-              value={leaderboard?.stats.totalVolume.toString() || ""}
+              value={(leaderboard?.stats.totalVolume ?? 0).toString()}
               decimals={0}
             />
           </span>

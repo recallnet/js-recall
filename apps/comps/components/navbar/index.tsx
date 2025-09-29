@@ -11,6 +11,7 @@ import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { PrivyAuthButton } from "@/components/privy-auth-button";
+import { useSession } from "@/hooks";
 
 import { Boost } from "./Boost";
 import { Claim } from "./Claim";
@@ -24,6 +25,8 @@ export const Navbar: React.FunctionComponent = () => {
     { label: "COMPETITIONS", href: "/competitions" },
     { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
+
+  const { isAuthenticated } = useSession();
 
   const [open, setOpen] = useState(false);
 

@@ -20,6 +20,7 @@ import {
 } from "@/database/repositories/user-repository.js";
 import { updateVotesOwner } from "@/database/repositories/vote-repository.js";
 import { serviceLogger } from "@/lib/logger.js";
+import { WalletWatchlist } from "@/lib/watchlist.js";
 import { EmailService } from "@/services/email.service.js";
 import { UserMetadata, UserSearchParams } from "@/types/index.js";
 
@@ -233,6 +234,23 @@ export class UserService {
       const currentUser = await this.getUser(user.id);
       if (!currentUser) {
         throw new Error(`User with ID ${user.id} not found`);
+      }
+
+      // Check wallet address against sanctions list if being updated
+      if (
+        user.walletAddress &&
+        user.walletAddress !== currentUser.walletAddress
+      ) {
+        // Note: this could happen if, e.g., a user tries to link a custom wallet to their account
+        const watchlist = new WalletWatchlist();
+        const isSanctioned = await watchlist.isAddressSanctioned(
+          user.walletAddress,
+        );
+        if (isSanctioned) {
+          throw new Error(
+            "This wallet address is not permitted for use on this platform",
+          );
+        }
       }
 
       // Check if another account exists with this wallet address

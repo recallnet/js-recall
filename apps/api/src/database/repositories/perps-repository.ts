@@ -28,6 +28,18 @@ export const getPerpsCompetitionConfig = createTimedRepositoryFunction(
   "getPerpsCompetitionConfig",
 );
 
+export const updatePerpsCompetitionConfig = createTimedRepositoryFunction(
+  repository.updatePerpsCompetitionConfig.bind(repository),
+  "PerpsRepository",
+  "updatePerpsCompetitionConfig",
+);
+
+export const deletePerpsCompetitionConfig = createTimedRepositoryFunction(
+  repository.deletePerpsCompetitionConfig.bind(repository),
+  "PerpsRepository",
+  "deletePerpsCompetitionConfig",
+);
+
 export const upsertPerpsPosition = createTimedRepositoryFunction(
   repository.upsertPerpsPosition.bind(repository),
   "PerpsRepository",
@@ -136,4 +148,60 @@ export const getCompetitionPerpsPositions = createTimedRepositoryFunction(
   repository.getCompetitionPerpsPositions.bind(repository),
   "PerpsRepository",
   "getCompetitionPerpsPositions",
+);
+
+export const saveTransferHistory = createTimedRepositoryFunction(
+  repository.saveTransferHistory.bind(repository),
+  "PerpsRepository",
+  "saveTransferHistory",
+);
+
+export const batchSaveTransferHistory = createTimedRepositoryFunction(
+  repository.batchSaveTransferHistory.bind(repository),
+  "PerpsRepository",
+  "batchSaveTransferHistory",
+);
+
+export const getAgentTransferHistory = createTimedRepositoryFunction(
+  repository.getAgentTransferHistory.bind(repository),
+  "PerpsRepository",
+  "getAgentTransferHistory",
+);
+
+export const getCompetitionTransferViolationCounts =
+  createTimedRepositoryFunction(
+    repository.getCompetitionTransferViolationCounts.bind(repository),
+    "PerpsRepository",
+    "getCompetitionTransferViolationCounts",
+  );
+
+export const upsertRiskMetrics = createTimedRepositoryFunction(
+  repository.upsertRiskMetrics.bind(repository),
+  "PerpsRepository",
+  "upsertRiskMetrics",
+);
+
+export const saveRiskMetrics = createTimedRepositoryFunction(
+  repository.saveRiskMetrics.bind(repository),
+  "PerpsRepository",
+  "saveRiskMetrics",
+);
+
+export const getCompetitionRiskMetricsLeaderboard =
+  createTimedRepositoryFunction(
+    repository.getCompetitionRiskMetricsLeaderboard.bind(repository),
+    "PerpsRepository",
+    "getCompetitionRiskMetricsLeaderboard",
+  );
+
+export const getRiskAdjustedLeaderboard = createTimedRepositoryFunction(
+  repository.getRiskAdjustedLeaderboard.bind(repository),
+  "PerpsRepository",
+  "getRiskAdjustedLeaderboard",
+);
+
+export const getBulkAgentRiskMetrics = createTimedRepositoryFunction(
+  repository.getBulkAgentRiskMetrics.bind(repository),
+  "PerpsRepository",
+  "getBulkAgentRiskMetrics",
 );
