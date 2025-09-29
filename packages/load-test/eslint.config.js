@@ -4,6 +4,6 @@ import { config } from "@recallnet/eslint-config/base";
 export default [
   ...config,
   {
-    ignores: ["reports/**"],
+    ignores: ["reports/**", "**/dist/**"],
   },
 ];

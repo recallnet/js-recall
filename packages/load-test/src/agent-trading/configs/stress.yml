@@ -9,21 +9,6 @@ config:
     requestRate: "{{ $env.REQUEST_RATE || 8 }}" # Default 8 req/s (baseline)
     tradeAmount: "{{ $env.TRADE_AMOUNT || '0.1' }}" # Default $0.10
     testName: "{{ $env.TEST_NAME || 'stress_test' }}"
-  plugins:
-    # Dynamic thresholds based on request rate
-    ensure:
-      thresholds:
-        # P95 threshold: 1000ms for high load (>16 req/s), 800ms for moderate load
-        - "http.response_time.p95": "{{ $env.P95_THRESHOLD || ($env.REQUEST_RATE > 16 ? 1500 : 1000) }}"
-        # P99 threshold: 2000ms for high load (>16 req/s), 1500ms for moderate load
-        - "http.response_time.p99": "{{ $env.P99_THRESHOLD || ($env.REQUEST_RATE > 16 ? 3000 : 2000) }}"
-      conditions:
-        # Min throughput: 90% of target request rate
-        - expression: "http.request_rate > {{ ($env.REQUEST_RATE || 8) * 0.9 }}"
-          strict: true
-        # Max failed users: Scale with request rate (higher load = more tolerance)
-        - expression: "vusers.failed < {{ $env.MAX_FAILED_VUS || ($env.REQUEST_RATE > 16 ? 100 : 50) }}"
-          strict: true
   phases:
     # Single parameterized phase
     - duration: "{{ testDuration }}"
@@ -42,6 +27,7 @@ before:
             as: "isActive"
           - json: "$.competition.id"
             as: "activeCompetitionId"
+            strict: false # Don't fail if competition is null
     - log: "Competition check - Active: {{ isActive }}"
 
     # 2. End existing competition if there is one

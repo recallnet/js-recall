@@ -1,4 +1,5 @@
 name: Agent Trading Load Tests
+
 permissions:
   contents: read
 
