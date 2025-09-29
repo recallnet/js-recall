@@ -704,10 +704,7 @@ export class CompetitionService {
 
     // Check if we have any agents
     if (finalAgentIds.length === 0) {
-      throw new ApiError(
-        400,
-        "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
-      );
+      throw new ApiError(400, `Cannot start competition: no registered agents`);
     }
 
     // Process all agent additions and activations
@@ -2334,15 +2331,18 @@ export class CompetitionService {
         },
         `[CompetitionManager] Successfully auto-started competition`,
       );
-      return;
     } catch (error) {
-      serviceLogger.error(
-        {
-          error: error instanceof Error ? error.message : String(error),
-        },
-        `[CompetitionManager] Error in processCompetitionStartDateChecks`,
-      );
-      throw error;
+      // Continue silently if the competition has no registered nor provided agents
+      if (
+        error instanceof ApiError &&
+        error.statusCode === 400 &&
+        error.message.includes("no registered agents")
+      ) {
+        serviceLogger.error(
+          `[CompetitionManager] No registered agents found for competition. Skipping auto-start.`,
+        );
+        return;
+      }
     }
   }
   /**

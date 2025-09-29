@@ -82,13 +82,13 @@ describe("Competition Start Date Processing", () => {
     expect(balances.balances.length).toBeGreaterThan(0);
   });
 
-  test("should not start competitions before start date or without agents", async () => {
+  test("should not start competitions before start date", async () => {
     const adminClient = createTestClient();
     const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(loginSuccess).toBe(true);
 
-    // Create a competition with a start date shortly in the future but WITHOUT agents
-    const startDate = new Date(Date.now() + 3000); // 3 seconds from now
+    // Create a competition with a start date shortly in the future
+    const startDate = new Date(Date.now() + 10000); // 10 seconds from now
     const competitionName = `Pending Start Competition ${Date.now()}`;
 
     const createResponse = await adminClient.createCompetition({
@@ -102,8 +102,34 @@ describe("Competition Start Date Processing", () => {
     const competition = (createResponse as CreateCompetitionResponse)
       .competition;
 
-    // Wait for start time to pass
-    await wait(5000);
+    const services = new ServiceRegistry();
+    await services.competitionService.processCompetitionStartDateChecks();
+
+    // Competition should still be pending
+    const stillPending = await adminClient.getCompetition(competition.id);
+    expect(stillPending.success).toBe(true);
+    expect((stillPending as CompetitionDetailResponse).competition.status).toBe(
+      "pending",
+    );
+  });
+
+  test("should not start competitions without agents", async () => {
+    const adminClient = createTestClient();
+    const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(loginSuccess).toBe(true);
+
+    // Create a competition with a start date shortly in the future but WITHOUT agents
+    const startDate = new Date(Date.now());
+    const competitionName = `Pending Start Competition`;
+    const createResponse = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Competition that should not auto-start yet",
+      sandboxMode: false,
+      startDate: startDate.toISOString(),
+    });
+    expect(createResponse.success).toBe(true);
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
 
     const services = new ServiceRegistry();
     await services.competitionService.processCompetitionStartDateChecks();
