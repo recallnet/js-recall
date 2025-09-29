@@ -267,6 +267,12 @@ export const findCompetitionsNeedingEnding = createTimedRepositoryFunction(
   "findCompetitionsNeedingEnding",
 );
 
+export const findCompetitionsNeedingStarting = createTimedRepositoryFunction(
+  repository.findCompetitionsNeedingStarting.bind(repository),
+  "CompetitionRepository",
+  "findCompetitionsNeedingStarting",
+);
+
 export const getAgentPortfolioTimeline = createTimedRepositoryFunction(
   repository.getAgentPortfolioTimeline.bind(repository),
   "CompetitionRepository",

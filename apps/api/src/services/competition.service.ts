@@ -22,6 +22,7 @@ import {
   findById,
   findByStatus,
   findCompetitionsNeedingEnding,
+  findCompetitionsNeedingStarting,
   findLeaderboardByTradingComp,
   get24hSnapshots,
   getAgentCompetitionRecord,
@@ -2260,6 +2261,107 @@ export class CompetitionService {
     } catch (error) {
       serviceLogger.error(
         `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Check and automatically start competitions that have reached their start date
+   * Conditions:
+   * - No other competition is currently active
+   * - Competition is not in sandbox mode
+   * - Competition has at least one registered agent
+   * - Process competitions by earliest startDate first
+   */
+  async processCompetitionStartDateChecks(): Promise<void> {
+    try {
+      // Do not start anything if there's already an active competition
+      const active = await findActive();
+      if (active) {
+        serviceLogger.debug(
+          `[CompetitionManager] Active competition found (${active.id}). Skipping auto-start checks`,
+        );
+        return;
+      }
+
+      const competitionsToStart = await findCompetitionsNeedingStarting();
+      if (competitionsToStart.length === 0) {
+        serviceLogger.debug(
+          "[CompetitionManager] No competitions ready to start",
+        );
+        return;
+      }
+
+      // We only support running one competition at a time, so we will not start any competitions
+      // if we find more than one. Note: This should not happen if competitions are created with
+      // the correct start dates; it's defensive.
+      if (competitionsToStart.length > 1) {
+        serviceLogger.warn(
+          `[CompetitionManager] Multiple competitions ready to start (${competitionsToStart.length}). Skipping auto-start checks`,
+        );
+        return;
+      }
+
+      // Ensure we're processing by earliest start date first (defensive, repository already orders)
+      competitionsToStart.sort((a, b) => {
+        const aTime = a.startDate ? new Date(a.startDate).getTime() : 0;
+        const bTime = b.startDate ? new Date(b.startDate).getTime() : 0;
+        return aTime - bTime;
+      });
+      serviceLogger.debug(
+        `[CompetitionManager] Found ${competitionsToStart.length} competitions ready to start`,
+      );
+
+      for (const competition of competitionsToStart) {
+        // Re-check no active competition right before attempting to start (race-safety)
+        const currentlyActive = await findActive();
+        if (currentlyActive) {
+          serviceLogger.debug(
+            `[CompetitionManager] Detected active competition (${currentlyActive.id}) during processing. Stopping further auto-start attempts`,
+          );
+          break;
+        }
+
+        // Skip sandbox competitions (defensive - repository already filters)
+        if (competition.sandboxMode) {
+          serviceLogger.debug(
+            `[CompetitionManager] Skipping sandbox competition: ${competition.name} (${competition.id})`,
+          );
+          continue;
+        }
+
+        try {
+          // Require at least one registered agent
+          const agentIds = await getCompetitionAgents(competition.id);
+          if (agentIds.length === 0) {
+            serviceLogger.debug(
+              `[CompetitionManager] Skipping competition ${competition.name} (${competition.id}) - no registered agents`,
+            );
+            continue;
+          }
+          serviceLogger.debug(
+            `[CompetitionManager] Auto-starting competition: ${competition.name} (${competition.id}) - scheduled start: ${competition.startDate?.toISOString()}`,
+          );
+
+          // Use existing start logic (idempotent). Passing pre-registered agent IDs.
+          await this.startCompetition(competition.id, agentIds);
+          serviceLogger.debug(
+            `[CompetitionManager] Successfully auto-started competition: ${competition.name} (${competition.id}) with ${agentIds.length} agents`,
+          );
+
+          // Enforce single active competition policy: stop after starting one
+          break;
+        } catch (error) {
+          serviceLogger.error(
+            `[CompetitionManager] Error auto-starting competition ${competition.id}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          // Continue to next eligible competition in case of failure
+        }
+      }
+    } catch (error) {
+      serviceLogger.error(
+        `[CompetitionManager] Error in processCompetitionStartDateChecks: ${error instanceof Error ? error : String(error)}`,
       );
       throw error;
     }
