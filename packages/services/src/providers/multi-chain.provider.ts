@@ -36,13 +36,13 @@ export class MultiChainProvider implements PriceSource {
 
     // Create the appropriate provider based on the type
     switch (config.priceProvider) {
-      case PriceProvider.DEXSCREENER:
+      case "dexscreener":
         this.priceProvider = new DexScreenerProvider(
           config.specificChainTokens,
           logger,
         );
         break;
-      case PriceProvider.COINGECKO:
+      case "coingecko":
       default:
         if (!config.apiKey) {
           throw new Error("CoinGecko API key is required");
