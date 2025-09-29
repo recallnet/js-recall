@@ -2,8 +2,10 @@
 
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
-import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import React, { useEffect } from "react";
 
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Tabs,
   TabsContent,
@@ -12,31 +14,25 @@ import {
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Button } from "@/../../packages/ui2/src/components/button";
 import { CompetitionCard } from "@/components/competition-card";
 import CompetitionsSkeleton from "@/components/competitions-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
-import ConnectPrivyModal from "@/components/modals/connect-privy";
 import { DISABLE_LEADERBOARD } from "@/config";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { useAnalytics } from "@/hooks/usePostHog";
-import { useSession } from "@/hooks/useSession";
-import Link from "@/node_modules/next/link";
 import { CompetitionStatus } from "@/types";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 import { toOrdinal } from "@/utils/format";
 
 export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
-  const [isJoining, setIsJoining] = useState(false);
   const { data: leaderboard, isLoading: isLoadingLeaderboard } =
     useLeaderboards({
       limit: 25,
     });
-  const session = useSession();
 
   // Track landing page view
   useEffect(() => {
@@ -48,6 +44,9 @@ export default function CompetitionsPage() {
       status: CompetitionStatus.Active,
       sort: "startDate",
     });
+
+  const firstActiveCompetitionId =
+    activeCompetitions?.competitions?.[0]?.id ?? null;
 
   const {
     data: upcomingCompetitions,
@@ -139,33 +138,34 @@ export default function CompetitionsPage() {
           <RainbowStripes className="absolute left-0 hidden w-[50%] translate-x-[-70%] sm:block md:translate-x-[-50%]" />
 
           <div className="z-20 flex translate-y-[-50px] flex-col items-center text-center">
-            <h1 className="text-primary-foreground mb-1 text-7xl font-bold sm:text-[83px]">
+            <h1 className="text-primary-foreground mb-2 text-7xl font-bold sm:text-[83px]">
               Enter the Arena
             </h1>
-            <p className="text-primary-foreground mb-8 text-sm">
-              {/* Stake tokens, back the smartest trading bots, and earn rewards. */}
+            <p className="text-secondary-foreground mb-8 max-w-[720px] text-center text-base sm:text-lg">
+              Recall is the community-powered reputation protocol for AI. Boost
+              AI Agents and earn $RECALL based on their performance.
             </p>
 
-            <div className="flex gap-1">
-              <Link href="/leaderboards">
-                <Button className="border border-white bg-white p-6 uppercase text-black transition-colors duration-200 hover:bg-black hover:text-white">
-                  Browse Leaderboard
-                </Button>
-              </Link>
-              {session.ready && !session.isAuthenticated && (
-                <>
-                  <Button
-                    className="border border-white bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
-                    onClick={() => setIsJoining(true)}
-                  >
-                    SIGN IN
-                  </Button>
-                  <ConnectPrivyModal
-                    isOpen={isJoining}
-                    onClose={() => setIsJoining(false)}
-                  />
-                </>
-              )}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button asChild variant="modal" size="lg" className="uppercase">
+                <Link
+                  href={
+                    firstActiveCompetitionId
+                      ? `/competitions/${firstActiveCompetitionId}`
+                      : "/competitions"
+                  }
+                >
+                  Active competition
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="border border-white uppercase text-white"
+              >
+                <Link href="/leaderboards">Leaderboards</Link>
+              </Button>
             </div>
           </div>
 
