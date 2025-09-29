@@ -38,7 +38,7 @@ export const SocialLinkCard: React.FC<SocialLinkCardProps> = ({
               alt={`${socialLink.name} icon`}
               width={24}
               height={24}
-              className="h-auto w-auto flex-shrink-0"
+              className="h-6 w-6 flex-shrink-0"
             />
             <div className="text-primary truncate pl-2 font-mono font-bold">
               {socialLink.name}
