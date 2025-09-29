@@ -23,13 +23,7 @@ export const SocialLinkCard: React.FC<SocialLinkCardProps> = ({
         href={socialLink.url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`bg-${socialLink.bg || "card"} flex h-16 flex-col justify-between rounded-md p-4 transition-all duration-200`}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.filter = "brightness(0.8)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.filter = "";
-        }}
+        className={`bg-${socialLink.bg || "card"} hover:brightness-80 flex h-16 flex-col justify-between rounded-md p-4 transition-all duration-200`}
       >
         <div className="flex items-center pl-6">
           <div className="flex min-w-0 flex-1 items-center">
