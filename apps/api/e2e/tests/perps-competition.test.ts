@@ -118,6 +118,17 @@ describe("Perps Competition", () => {
 
     expect(comp?.stats?.totalPositions).toBeDefined();
     expect(comp.stats?.totalTrades).toBeUndefined();
+
+    // Verify perps competitions include volume and average equity stats
+    expect(comp?.stats?.totalVolume).toBeDefined();
+    expect(typeof comp?.stats?.totalVolume).toBe("number");
+    // Note: totalVolume can be 0 for a new competition with no trades yet
+    expect(comp?.stats?.totalVolume).toBeGreaterThanOrEqual(0);
+
+    expect(comp?.stats?.averageEquity).toBeDefined();
+    expect(typeof comp?.stats?.averageEquity).toBe("number");
+    // Note: averageEquity can be 0 if no agents have joined yet
+    expect(comp?.stats?.averageEquity).toBeGreaterThanOrEqual(0);
   });
 
   test("should get perps positions for an agent", async () => {
@@ -1153,10 +1164,10 @@ describe("Perps Competition", () => {
     expect(typedSummaryResponse.summary.totalPositions).toBeGreaterThanOrEqual(
       0,
     );
+    // After syncing data, we should have actual trading volume and equity
+    // All test agents have positive equity (minimum 500) and some have volume
     expect(typedSummaryResponse.summary.totalVolume).toBeGreaterThanOrEqual(0);
-    expect(typedSummaryResponse.summary.averageEquity).toBeGreaterThanOrEqual(
-      0,
-    );
+    expect(typedSummaryResponse.summary.averageEquity).toBeGreaterThan(0);
     expect(typedSummaryResponse.timestamp).toBeDefined();
   });
 
