@@ -245,6 +245,7 @@ type CompetitionDetailsData = {
       uniqueTokens?: number;
       // Perps stats
       totalPositions?: number;
+      averageEquity?: number;
     };
     tradingConstraints: {
       minimumPairAgeHours: number | null;
@@ -2873,6 +2874,7 @@ export class CompetitionService {
         totalVolume?: number;
         uniqueTokens?: number;
         totalPositions?: number;
+        averageEquity?: number;
       };
 
       if (competition.type === "perpetual_futures") {
@@ -2884,6 +2886,8 @@ export class CompetitionService {
           totalAgents: competition.registeredParticipants,
           totalVotes,
           totalPositions: perpsStatsData?.totalPositions ?? 0,
+          totalVolume: perpsStatsData?.totalVolume ?? 0,
+          averageEquity: perpsStatsData?.averageEquity ?? 0,
         };
       } else {
         // For paper trading competitions, include trade metrics
