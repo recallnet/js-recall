@@ -510,13 +510,16 @@ export class LeaderboardRepository {
   }
 
   /**
-   * Get optimized global agent metrics using separate queries to avoid N+1 problem
-   * This replaces the N+1 query problem in calculateGlobalMetrics
+   * Get global agent metrics with pagination
    * Uses separate aggregation queries to avoid Cartesian product issues
-   * @returns Array of agent metrics with all required data
+   * @param params Pagination parameters (limit and offset)
+   * @returns Object containing paginated agent metrics and total count
    */
-  async getOptimizedGlobalAgentMetrics(): Promise<
-    Array<{
+  async getGlobalAgentMetrics(params: {
+    limit: number;
+    offset: number;
+  }): Promise<{
+    agents: Array<{
       id: string;
       name: string;
       handle: string;
@@ -526,12 +529,15 @@ export class LeaderboardRepository {
       score: number;
       numCompetitions: number;
       voteCount: number;
-    }>
-  > {
-    this.#logger.debug("getOptimizedGlobalAgentMetrics called");
+    }>;
+    totalCount: number;
+  }> {
+    this.#logger.debug(
+      `getGlobalAgentMetrics called with limit: ${params.limit}, offset: ${params.offset}`,
+    );
 
     try {
-      // Get all agents with their basic info and scores
+      // Get paginated agents with their basic info and scores, sorted by score descending
       const agentsWithScores = await this.#dbRead
         .select({
           id: agents.id,
@@ -543,15 +549,21 @@ export class LeaderboardRepository {
           score: agentScore.ordinal,
         })
         .from(agentScore)
-        .innerJoin(agents, eq(agentScore.agentId, agents.id));
+        .innerJoin(agents, eq(agentScore.agentId, agents.id))
+        .orderBy(desc(agentScore.ordinal))
+        .limit(params.limit)
+        .offset(params.offset);
 
       if (agentsWithScores.length === 0) {
-        return [];
+        return {
+          agents: [],
+          totalCount: 0,
+        };
       }
 
       const agentIds = agentsWithScores.map((agent) => agent.id);
 
-      // Get competition counts for all agents in one query
+      // Get competition counts for paginated agents in one query
       const competitionCounts = await this.#dbRead
         .select({
           agentId: competitionAgents.agentId,
@@ -561,7 +573,7 @@ export class LeaderboardRepository {
         .where(inArray(competitionAgents.agentId, agentIds))
         .groupBy(competitionAgents.agentId);
 
-      // Get vote counts for all agents in one query
+      // Get vote counts for paginated agents in one query
       const voteCounts = await this.#dbRead
         .select({
           agentId: votes.agentId,
@@ -580,17 +592,28 @@ export class LeaderboardRepository {
       );
 
       // Combine all data
-      const result = agentsWithScores.map((agent) => ({
+      const enrichedAgents = agentsWithScores.map((agent) => ({
         ...agent,
         numCompetitions: competitionCountMap.get(agent.id) ?? 0,
         voteCount: voteCountMap.get(agent.id) ?? 0,
       }));
 
+      // Now get the total count of all agents, needed for pagination
+      const totalCountResult = await this.#dbRead
+        .select({
+          count: drizzleCount(),
+        })
+        .from(agentScore);
+      const totalCount = totalCountResult[0]?.count ?? 0;
+
       this.#logger.debug(
-        `Retrieved ${result.length} agent metrics with optimized query`,
+        `Retrieved ${enrichedAgents.length} agent metrics with pagination from ${totalCount} total agents`,
       );
 
-      return result;
+      return {
+        agents: enrichedAgents,
+        totalCount,
+      };
     } catch (error) {
       this.#logger.error("Error in getOptimizedGlobalAgentMetrics:", error);
       throw error;

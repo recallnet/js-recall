@@ -48,5 +48,4 @@ export interface GetLeaderboardParams {
   type?: string;
   limit?: number;
   offset?: number;
-  sort?: string;
 }

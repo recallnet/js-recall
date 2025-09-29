@@ -909,7 +909,6 @@ export const LeaderboardParamsSchema = z.object({
   type: CompetitionTypeSchema.default("trading"),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
-  sort: z.string().optional().default("rank"), // Default to rank ascending
 });
 
 export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;

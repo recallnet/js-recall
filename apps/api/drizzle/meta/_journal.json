@@ -309,6 +309,13 @@
       "when": 1758815448858,
       "tag": "0043_kind_gorgon",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1759180680672,
+      "tag": "0044_bouncy_lady_vermin",
+      "breakpoints": true
     }
   ]
 }
