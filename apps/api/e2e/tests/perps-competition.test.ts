@@ -118,6 +118,15 @@ describe("Perps Competition", () => {
 
     expect(comp?.stats?.totalPositions).toBeDefined();
     expect(comp.stats?.totalTrades).toBeUndefined();
+
+    // Verify perps competitions include volume and average equity stats
+    expect(comp?.stats?.totalVolume).toBeDefined();
+    expect(typeof comp?.stats?.totalVolume).toBe("number");
+    expect(comp?.stats?.totalVolume).toBeGreaterThanOrEqual(0);
+
+    expect(comp?.stats?.averageEquity).toBeDefined();
+    expect(typeof comp?.stats?.averageEquity).toBe("number");
+    expect(comp?.stats?.averageEquity).toBeGreaterThanOrEqual(0);
   });
 
   test("should get perps positions for an agent", async () => {
