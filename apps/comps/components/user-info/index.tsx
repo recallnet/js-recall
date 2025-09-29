@@ -124,6 +124,42 @@ export default function UserInfoSection({
             onSubmit={form.handleSubmit(handleSave)}
             className="w-full space-y-4"
           >
+            {/* Username row */}
+            <div className="text-secondary-foreground flex min-h-[40px] flex-wrap items-center gap-4">
+              <span className="text-foreground w-20 font-semibold">
+                Username
+              </span>
+              {editField === "name" ? (
+                <div ref={editFieldRef} className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            className="w-full max-w-sm"
+                            autoFocus
+                            onKeyDown={handleKeyDown}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <Button>Save</Button>
+                </div>
+              ) : (
+                <>
+                  {user?.name && <span>{user.name}</span>}
+                  <SquarePen
+                    className="h-5 w-5 cursor-pointer"
+                    onClick={() => setEditField("name")}
+                  />
+                </>
+              )}
+            </div>
+
             {/* Email row (not editable) */}
             <div className="text-secondary-foreground flex min-h-[40px] flex-wrap items-center gap-4">
               <span className="text-foreground w-20 font-semibold">Email</span>
