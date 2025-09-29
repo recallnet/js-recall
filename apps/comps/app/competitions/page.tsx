@@ -3,8 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
-import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import React, { useEffect } from "react";
 
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Tabs,
   TabsContent,
@@ -13,32 +15,26 @@ import {
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Button } from "@/../../packages/ui2/src/components/button";
 import { CompetitionCard } from "@/components/competition-card";
 import CompetitionsSkeleton from "@/components/competitions-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
-import ConnectPrivyModal from "@/components/modals/connect-privy";
 import { config } from "@/config/public";
 import { getSocialLinksArray } from "@/data/social";
 import { useUserCompetitions } from "@/hooks/useCompetitions";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { useAnalytics } from "@/hooks/usePostHog";
-import { useSession } from "@/hooks/useSession";
-import Link from "@/node_modules/next/link";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 import { toOrdinal } from "@/utils/format";
 
 export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
-  const [isJoining, setIsJoining] = useState(false);
   const { data: leaderboard, isLoading: isLoadingLeaderboard } =
     useLeaderboards({
       limit: 25,
       enabled: !config.clientFlags.disableLeaderboard,
     });
-  const session = useSession();
 
   // Track landing page view
   useEffect(() => {
@@ -51,6 +47,9 @@ export default function CompetitionsPage() {
         input: { status: "active", paging: { sort: "startDate" } },
       }),
     );
+
+  const firstActiveCompetitionId =
+    activeCompetitions?.competitions?.[0]?.id ?? null;
 
   const {
     data: upcomingCompetitions,
@@ -145,33 +144,32 @@ export default function CompetitionsPage() {
           <RainbowStripes className="absolute left-0 hidden w-[50%] translate-x-[-70%] sm:block md:translate-x-[-50%]" />
 
           <div className="z-20 flex translate-y-[-50px] flex-col items-center text-center">
-            <h1 className="text-primary-foreground mb-1 text-7xl font-bold sm:text-[83px]">
+            <h1 className="text-primary-foreground mb-2 text-7xl font-bold sm:text-[83px]">
               Enter the Arena
             </h1>
-            <p className="text-primary-foreground mb-8 text-sm">
-              {/* Stake tokens, back the smartest trading bots, and earn rewards. */}
+            <p className="text-secondary-foreground mb-8 max-w-[720px] text-center text-base sm:text-lg">
+              Recall is the community-powered reputation protocol for AI. Boost
+              AI Agents and earn $RECALL based on their performance.
             </p>
 
-            <div className="flex gap-1">
-              <Link href="/leaderboards">
-                <Button className="border border-blue-500 bg-blue-500 p-6 uppercase text-white transition-colors duration-200 hover:border-white hover:bg-white hover:text-blue-500">
-                  Browse Leaderboard
-                </Button>
-              </Link>
-              {session.ready && !session.isAuthenticated && (
-                <>
-                  <Button
-                    className="border border-[#303846] bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
-                    onClick={() => setIsJoining(true)}
-                  >
-                    SIGN IN
-                  </Button>
-                  <ConnectPrivyModal
-                    isOpen={isJoining}
-                    onClose={() => setIsJoining(false)}
-                  />
-                </>
-              )}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button asChild className="border border-blue-500 bg-blue-500 p-6 uppercase text-white transition-colors duration-200 hover:border-white hover:bg-white hover:text-blue-500">
+                <Link
+                  href={
+                    firstActiveCompetitionId
+                      ? `/competitions/${firstActiveCompetitionId}`
+                      : "/competitions"
+                  }
+                >
+                  Active competition
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="border border-[#303846] bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
+              >
+                <Link href="/leaderboards">Leaderboards</Link>
+              </Button>
             </div>
           </div>
 
