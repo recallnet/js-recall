@@ -12,10 +12,22 @@
   "homepage": "https://github.com/recallnet/js-recall#readme",
   "type": "module",
   "exports": {
-    "./boost": {
+    ".": {
       "import": {
-        "types": "./dist/boost.d.ts",
-        "default": "./dist/boost.js"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./providers": {
+      "import": {
+        "types": "./dist/providers/index.d.ts",
+        "default": "./dist/providers/index.js"
+      }
+    },
+    "./lib": {
+      "import": {
+        "types": "./dist/lib/index.d.ts",
+        "default": "./dist/lib/index.js"
       }
     }
   },

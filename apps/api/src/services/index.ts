@@ -1,10 +1,43 @@
+import { AdminRepository } from "@recallnet/db/repositories/admin";
+import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
+import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
+import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
+import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 import { UserRepository } from "@recallnet/db/repositories/user";
-import { BoostService } from "@recallnet/services/boost";
+import { VoteRepository } from "@recallnet/db/repositories/vote";
+import {
+  AdminService,
+  AgentRankService,
+  AgentService,
+  BalanceService,
+  BoostAwardService,
+  BoostService,
+  CalmarRatioService,
+  CompetitionRewardService,
+  CompetitionService,
+  ConfigurationService,
+  EmailService,
+  LeaderboardService,
+  PerpsDataProcessor,
+  PortfolioSnapshotterService,
+  PriceTrackerService,
+  TradeSimulatorService,
+  TradingConstraintsService,
+  UserService,
+  VoteService,
+} from "@recallnet/services";
+import { WalletWatchlist } from "@recallnet/services/lib";
+import { MultiChainProvider } from "@recallnet/services/providers";
 
-import config from "@/config/index.js";
+import config, { features } from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
@@ -14,24 +47,6 @@ import {
   repositoryLogger,
   serviceLogger,
 } from "@/lib/logger.js";
-
-import { AdminService } from "./admin.service.js";
-import { AgentService } from "./agent.service.js";
-import { AgentRankService } from "./agentrank.service.js";
-import { BalanceService } from "./balance.service.js";
-import { BoostAwardService } from "./boost-award.service.js";
-import { CompetitionRewardService } from "./competition-reward.service.js";
-import { CompetitionService } from "./competition.service.js";
-import { ConfigurationService } from "./configuration.service.js";
-import { EmailService } from "./email.service.js";
-import { LeaderboardService } from "./leaderboard.service.js";
-import { PerpsDataProcessor } from "./perps-data-processor.service.js";
-import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
-import { PriceTrackerService } from "./price-tracker.service.js";
-import { TradeSimulatorService } from "./trade-simulator.service.js";
-import { TradingConstraintsService } from "./trading-constraints.service.js";
-import { UserService } from "./user.service.js";
-import { VoteService } from "./vote.service.js";
 
 /**
  * Service Registry
@@ -68,50 +83,178 @@ class ServiceRegistry {
   private readonly _boostAwardService: BoostAwardService;
 
   constructor() {
+    this._stakesRepository = new StakesRepository(db);
+    this._eventsRepository = new EventsRepository(db);
+    this._boostRepository = new BoostRepository(db);
+    this._userRepository = new UserRepository(db, repositoryLogger);
+    const balanceRepository = new BalanceRepository(
+      db,
+      repositoryLogger,
+      config.specificChainTokens,
+    );
+    this._competitionRepository = new CompetitionRepository(
+      db,
+      dbRead,
+      repositoryLogger,
+    );
+    const tradeRepository = new TradeRepository(
+      db,
+      repositoryLogger,
+      balanceRepository,
+    );
+    const tradingConstraintsRepository = new TradingConstraintsRepository(db);
+    const agentScoreRepository = new AgentScoreRepository(db, repositoryLogger);
+    const competitionRewardsRepository = new CompetitionRewardsRepository(
+      db,
+      repositoryLogger,
+    );
+    const agentRepository = new AgentRepository(
+      db,
+      repositoryLogger,
+      competitionRewardsRepository,
+    );
+    const voteRepository = new VoteRepository(db, repositoryLogger);
+    const agentNonceRepository = new AgentNonceRepository(db);
+    const leaderboardRepository = new LeaderboardRepository(
+      dbRead,
+      repositoryLogger,
+    );
+    const perpsRepository = new PerpsRepository(db, dbRead, repositoryLogger);
+    const adminRepository = new AdminRepository(db, repositoryLogger);
+
+    const walletWatchlist = new WalletWatchlist(
+      config.watchlist.chainalysisApiKey,
+      serviceLogger,
+    );
+
+    const multichainProvider = new MultiChainProvider(
+      config.evmChains,
+      config.specificChainTokens,
+      serviceLogger,
+    );
+
     // Initialize services in dependency order
-    this._balanceService = new BalanceService();
-    this._priceTrackerService = new PriceTrackerService();
+    this._balanceService = new BalanceService(
+      balanceRepository,
+      config.specificChainBalances,
+      config.specificChainTokens,
+      serviceLogger,
+    );
+    this._priceTrackerService = new PriceTrackerService(
+      multichainProvider,
+      config.priceTracker.maxCacheSize,
+      config.priceTracker.priceTTLMs,
+      serviceLogger,
+    );
     this._portfolioSnapshotterService = new PortfolioSnapshotterService(
       this._balanceService,
       this._priceTrackerService,
+      this._competitionRepository,
+      serviceLogger,
     );
     this._tradeSimulatorService = new TradeSimulatorService(
       this._balanceService,
       this._priceTrackerService,
-      this._portfolioSnapshotterService,
+      tradeRepository,
+      tradingConstraintsRepository,
+      config.maxTradePercentage,
+      config.tradingConstraints.defaultMinimumPairAgeHours,
+      config.tradingConstraints.defaultMinimum24hVolumeUsd,
+      config.tradingConstraints.defaultMinimumLiquidityUsd,
+      config.tradingConstraints.defaultMinimumFdvUsd,
+      features.CROSS_CHAIN_TRADING_TYPE,
+      config.specificChainTokens,
+      serviceLogger,
     );
 
     // Configuration service for dynamic settings
-    this._configurationService = new ConfigurationService();
+    this._configurationService = new ConfigurationService(
+      this._competitionRepository,
+      serviceLogger,
+    );
 
     // Initialize agent rank service (no dependencies)
-    this._agentRankService = new AgentRankService();
+    this._agentRankService = new AgentRankService(
+      agentScoreRepository,
+      this._competitionRepository,
+      serviceLogger,
+    );
 
     // Initialize vote service (no dependencies)
-    this._voteService = new VoteService();
+    this._voteService = new VoteService(
+      agentRepository,
+      this._competitionRepository,
+      voteRepository,
+      serviceLogger,
+    );
 
     // Initialize email service (no dependencies)
-    this._emailService = new EmailService();
+    this._emailService = new EmailService(
+      config.email.apiKey,
+      config.email.mailingListId,
+      config.email.baseUrl,
+      serviceLogger,
+    );
 
     // Initialize user, agent, and admin services
-    this._userService = new UserService(this._emailService);
+    this._userService = new UserService(
+      this._emailService,
+      agentRepository,
+      this._userRepository,
+      voteRepository,
+      walletWatchlist,
+      db,
+      serviceLogger,
+    );
     this._agentService = new AgentService(
       this._emailService,
       this._balanceService,
       this._priceTrackerService,
       this._userService,
+      agentRepository,
+      agentNonceRepository,
+      this._competitionRepository,
+      leaderboardRepository,
+      perpsRepository,
+      tradeRepository,
+      this._userRepository,
+      config.security.rootEncryptionKey,
+      config.api.domain,
+      serviceLogger,
     );
     this._adminService = new AdminService(
+      adminRepository,
       this._userService,
       this._agentService,
+      config.security.rootEncryptionKey,
+      serviceLogger,
     );
 
     // Initialize trading constraints service (no dependencies)
-    this._tradingConstraintsService = new TradingConstraintsService();
+    this._tradingConstraintsService = new TradingConstraintsService(
+      tradingConstraintsRepository,
+      config.tradingConstraints.defaultMinimumPairAgeHours,
+      config.tradingConstraints.defaultMinimum24hVolumeUsd,
+      config.tradingConstraints.defaultMinimumLiquidityUsd,
+      config.tradingConstraints.defaultMinimumFdvUsd,
+    );
     // Initialize core reward service (no dependencies)
-    this._competitionRewardService = new CompetitionRewardService();
+    this._competitionRewardService = new CompetitionRewardService(
+      competitionRewardsRepository,
+    );
+    const calmarRatioService = new CalmarRatioService(
+      this._competitionRepository,
+      perpsRepository,
+      serviceLogger,
+    );
     // Initialize PerpsDataProcessor before CompetitionManager (as it's a dependency)
-    this._perpsDataProcessor = new PerpsDataProcessor();
+    this._perpsDataProcessor = new PerpsDataProcessor(
+      calmarRatioService,
+      agentRepository,
+      this._competitionRepository,
+      perpsRepository,
+      serviceLogger,
+    );
 
     this._competitionService = new CompetitionService(
       this._balanceService,
@@ -124,20 +267,29 @@ class ServiceRegistry {
       this._tradingConstraintsService,
       this._competitionRewardService,
       this._perpsDataProcessor,
+      agentRepository,
+      agentScoreRepository,
+      perpsRepository,
+      this._competitionRepository,
+      db,
+      {
+        evmChains: config.evmChains,
+        maxTradePercentage: config.maxTradePercentage,
+        rateLimitingMaxRequests: config.rateLimiting.maxRequests,
+        rateLimitingWindowMs: config.rateLimiting.windowMs,
+        specificChainBalances: config.specificChainBalances,
+        onLoadCompetitionSettings: (activeCompetition) => {
+          // TODO: fill this in.
+        },
+      },
+      serviceLogger,
     );
 
     // Initialize LeaderboardService with required dependencies
-    this._leaderboardService = new LeaderboardService(this._agentService);
-
-    this._stakesRepository = new StakesRepository(db);
-    this._eventsRepository = new EventsRepository(db);
-    this._boostRepository = new BoostRepository(db);
-    this._competitionRepository = new CompetitionRepository(
-      db,
-      dbRead,
-      repositoryLogger,
+    this._leaderboardService = new LeaderboardService(
+      leaderboardRepository,
+      serviceLogger,
     );
-    this._userRepository = new UserRepository(db, repositoryLogger);
 
     // Initialize BoostService with its dependencies
     // TODO: Consider the best practice for services depending on repositories and/or other services.
