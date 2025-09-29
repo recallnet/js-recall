@@ -17,12 +17,12 @@ import { parse } from "ts-command-line-args";
 
 import { agents } from "@recallnet/db/schema/core/defs";
 import { agentScore } from "@recallnet/db/schema/ranking/defs";
-
-import { db } from "@/database/db.js";
 import {
   appendHandleSuffix,
   generateHandleFromName,
-} from "@/lib/handle-utils.js";
+} from "@recallnet/services/lib";
+
+import { db } from "@/database/db.js";
 import { logger } from "@/lib/logger.js";
 
 interface Args {

@@ -358,7 +358,11 @@ interface Config {
   rateLimitingMaxRequests: number;
   rateLimitingWindowMs: number;
   evmChains: SpecificChain[];
-  onLoadCompetitionSettings: (activeCompetition?: SelectCompetition) => void;
+  onLoadCompetitionSettings: (
+    activeCompetition?: Awaited<
+      ReturnType<typeof CompetitionRepository.prototype.findActive>
+    >,
+  ) => void;
 }
 
 /**

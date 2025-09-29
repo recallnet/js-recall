@@ -1,19 +1,20 @@
 import { NextFunction, Request, Response } from "express";
 
-import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
-import { flatParse } from "@/lib/flat-parse.js";
-import { adminLogger } from "@/lib/logger.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { ServiceRegistry } from "@/services/index.js";
 import {
   ActorStatus,
   AdminCreateAgentSchema,
   Agent,
   AgentPublic,
+  ApiError,
   User,
   toApiAgent,
   toApiUser,
-} from "@/types/index.js";
+} from "@recallnet/services/types";
+
+import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
+import { flatParse } from "@/lib/flat-parse.js";
+import { adminLogger } from "@/lib/logger.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,

@@ -1,7 +1,10 @@
 import dotenv from "dotenv";
 import path from "path";
 
-import { CrossChainTradingType, SpecificChain } from "@/types/index.js";
+import {
+  CrossChainTradingType,
+  SpecificChain,
+} from "@recallnet/services/types";
 
 // Simple console logging for config initialization (before full logger setup)
 const configLogger = {
