@@ -13,7 +13,7 @@ vi.setConfig({ testTimeout: 30_000 });
 describe("DexScreenerProvider", () => {
   let provider: DexScreenerProvider;
 
-  // Mock specificChainTokens for the constructor
+  // SpecificChainTokens for the constructor
   const specificChainTokens = {
     eth: {
       eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum

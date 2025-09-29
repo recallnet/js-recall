@@ -13,20 +13,18 @@ import {
   SymphonyPerpsProvider,
   SymphonyPositionResponse,
   SymphonyTransferResponse,
-} from "@/services/providers/perps/symphony-perps.provider.js";
+} from "../perps/symphony-perps.provider.js";
 
 // Mock axios
 vi.mock("axios");
 
-// Mock logger to avoid console noise in tests
-vi.mock("@/lib/logger.js", () => ({
-  serviceLogger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}));
+// Mock logger for the constructor
+const mockLogger = {
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+} as any;
 
 // Mock Sentry to avoid errors in tests
 vi.mock("@sentry/node", () => ({
@@ -151,7 +149,7 @@ describe("SymphonyPerpsProvider", () => {
     vi.mocked(axios.isAxiosError).mockReturnValue(false);
 
     // Create provider instance
-    provider = new SymphonyPerpsProvider();
+    provider = new SymphonyPerpsProvider(mockLogger);
   });
 
   afterEach(() => {
@@ -171,7 +169,7 @@ describe("SymphonyPerpsProvider", () => {
 
     it("should initialize with custom URL when provided", () => {
       const customUrl = "https://custom.symphony.api";
-      new SymphonyPerpsProvider(customUrl);
+      new SymphonyPerpsProvider(mockLogger, customUrl);
 
       expect(axios.create).toHaveBeenCalledWith({
         baseURL: customUrl,

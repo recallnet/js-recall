@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { PerpsProviderFactory } from "@/services/providers/perps-provider.factory.js";
-import { SymphonyPerpsProvider } from "@/services/providers/perps/symphony-perps.provider.js";
-import { PerpsProviderConfig } from "@/types/perps.js";
+import { PerpsProviderConfig } from "../../types/perps.js";
+import { PerpsProviderFactory } from "../perps-provider.factory.js";
+import { SymphonyPerpsProvider } from "../perps/symphony-perps.provider.js";
 
-// Mock logger to avoid console noise
-vi.mock("@/lib/logger.js", () => ({
-  serviceLogger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}));
+// Mock logger for the constructor
+const mockLogger = {
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+} as any;
+
+PerpsProviderFactory.logger = mockLogger;
 
 describe("PerpsProviderFactory", () => {
   describe("createProvider", () => {

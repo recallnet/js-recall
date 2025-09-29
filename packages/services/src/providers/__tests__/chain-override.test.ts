@@ -1,8 +1,12 @@
 import dotenv from "dotenv";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
-import { BlockchainType, SpecificChain } from "@/types/index.js";
+import {
+  BlockchainType,
+  SpecificChain,
+  SpecificChainTokens,
+} from "../../types/index.js";
+import { MultiChainProvider } from "../multi-chain.provider.js";
 
 // Load environment variables for API access
 dotenv.config();
@@ -10,6 +14,27 @@ dotenv.config();
 // Skip tests if NOVES_API_KEY is not set
 const apiKey = process.env.NOVES_API_KEY;
 const runTests = !!apiKey;
+
+// Mock logger for the constructor
+const mockLogger = {
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+} as any;
+
+const specificChains: SpecificChain[] = ["arbitrum", "base", "eth"];
+const specificChainTokens: SpecificChainTokens = {
+  arbitrum: {
+    arb: "0x912CE59144191C1204E64559FE8253a0e49E6548", // Arbitrum
+  },
+  base: {
+    tos: "0x532f27101965dd16442E59d40670FaF5eBB142E4", // TOSHI Token
+  },
+  eth: {
+    link: "0x514910771af9ca656af840dff83e8264ecf986ca", // Chainlink
+  },
+};
 
 // Known test tokens from different chains
 const testTokens = [
@@ -40,7 +65,11 @@ describe("Chain Override Tests", () => {
 
   beforeEach(() => {
     if (runTests) {
-      multiChainProvider = new MultiChainProvider();
+      multiChainProvider = new MultiChainProvider(
+        specificChains,
+        specificChainTokens,
+        mockLogger,
+      );
     }
   });
 
