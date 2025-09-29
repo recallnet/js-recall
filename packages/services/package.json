@@ -65,7 +65,7 @@
     "pino": "^9.7.0",
     "siwe": "^3.0.0",
     "viem": "^2.37.8",
-    "zod": "^3.25.17"
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",

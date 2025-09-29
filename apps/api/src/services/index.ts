@@ -282,7 +282,7 @@ class ServiceRegistry {
           if (activeCompetition) {
             // Override the environment-based settings with competition-specific settings
             features.CROSS_CHAIN_TRADING_TYPE =
-              activeCompetition.crossChainTradingType as CrossChainTradingType;
+              activeCompetition.crossChainTradingType;
             features.SANDBOX_MODE = activeCompetition.sandboxMode;
 
             serviceLogger.debug(

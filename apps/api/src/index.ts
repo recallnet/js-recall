@@ -2,7 +2,9 @@ import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express from "express";
 
-import { config } from "@/config/index.js";
+import { ApiError } from "@recallnet/services/types";
+
+import { config, features } from "@/config/index.js";
 import { makeAdminController } from "@/controllers/admin.controller.js";
 import { makeAgentController } from "@/controllers/agent.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
@@ -15,11 +17,11 @@ import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
 import { closeDb, migrateDb } from "@/database/db.js";
-import { apiLogger } from "@/lib/logger.js";
+import { apiLogger, serviceLogger } from "@/lib/logger.js";
 import { initSentry } from "@/lib/sentry.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
-import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
+import errorHandler from "@/middleware/errorHandler.js";
 import { loggingMiddleware } from "@/middleware/logging.middleware.js";
 import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
@@ -72,7 +74,34 @@ const services = new ServiceRegistry();
 
 // Load competition-specific configuration settings
 // TODO: Provide callback
-await services.configurationService.loadCompetitionSettings();
+await services.configurationService.loadCompetitionSettings(
+  (activeCompetition) => {
+    if (activeCompetition) {
+      // Override the environment-based settings with competition-specific settings
+      features.CROSS_CHAIN_TRADING_TYPE =
+        activeCompetition.crossChainTradingType;
+      features.SANDBOX_MODE = activeCompetition.sandboxMode;
+
+      serviceLogger.debug(
+        `[ConfigurationService] Updated competition settings from competition ${activeCompetition.id}:`,
+        {
+          crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
+          sandboxMode: features.SANDBOX_MODE,
+        },
+      );
+    } else {
+      // No active competition, keep the environment variable settings
+      features.SANDBOX_MODE = false; // Default to false when no active competition
+      serviceLogger.debug(
+        `[ConfigurationService] No active competition, using environment settings:`,
+        {
+          crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
+          sandboxMode: features.SANDBOX_MODE,
+        },
+      );
+    }
+  },
+);
 apiLogger.info("Competition-specific configuration settings loaded");
 
 // Configure middleware

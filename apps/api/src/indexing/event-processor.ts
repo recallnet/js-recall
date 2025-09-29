@@ -2,6 +2,7 @@ import type { Logger } from "pino";
 import { decodeEventLog, hexToBytes } from "viem";
 
 import type { StakesRepository } from "@recallnet/db/repositories/stakes";
+import type { BoostAwardService } from "@recallnet/services";
 
 import { db } from "@/database/db.js";
 import {
@@ -11,7 +12,6 @@ import {
 import { EVENTS } from "@/indexing/blockchain-events-config.js";
 import type { EventData } from "@/indexing/blockchain-types.js";
 import type { EventsRepository } from "@/indexing/events.repository.js";
-import type { BoostAwardService } from "@/services/boost-award.service.js";
 import type { CompetitionService } from "@/services/index.js";
 
 export { EventProcessor };

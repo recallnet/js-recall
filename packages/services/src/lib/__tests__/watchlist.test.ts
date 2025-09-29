@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { RetryConfig, RetryExhaustedError } from "@/lib/retry-helper.js";
-import { WalletWatchlist } from "@/lib/watchlist.js";
+import { RetryConfig, RetryExhaustedError } from "../retry-helper.js";
+import { WalletWatchlist } from "../watchlist.js";
 
 // Mock global fetch
 const mockFetch = vi.fn();

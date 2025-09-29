@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
+import { ApiError } from "@recallnet/services/types";
+
 import { middlewareLogger } from "@/lib/logger.js";
 
 /**
