@@ -22,6 +22,7 @@ import {
   findById,
   findByStatus,
   findCompetitionsNeedingEnding,
+  findCompetitionsNeedingStarting,
   findLeaderboardByTradingComp,
   get24hSnapshots,
   getAgentCompetitionRecord,
@@ -611,17 +612,18 @@ export class CompetitionService {
    * Validates agent IDs and returns valid and invalid lists
    * @param agentIds Array of agent IDs to validate
    * @returns List of valid agent IDs
+   * @throws ApiError if any agent IDs are invalid or inactive
    */
   private async validateAgentIds(agentIds: string[]): Promise<string[]> {
     const validAgentIds: string[] = [];
     const invalidAgentIds: string[] = [];
 
-    for (const agentId of agentIds) {
-      const agent = await this.agentService.getAgent(agentId);
-      if (!agent || agent.status !== "active") {
-        invalidAgentIds.push(agentId);
+    const agents = await this.agentService.getAgentsByIds(agentIds);
+    for (const agent of agents) {
+      if (!agentIds.includes(agent.id) || agent.status !== "active") {
+        invalidAgentIds.push(agent.id);
       } else {
-        validAgentIds.push(agentId);
+        validAgentIds.push(agent.id);
       }
     }
 
@@ -664,7 +666,7 @@ export class CompetitionService {
    */
   async startCompetition(
     competitionId: string,
-    agentIds: string[],
+    agentIds?: string[],
     tradingConstraints?: TradingConstraintsInput,
   ): Promise<StartedCompetitionResult> {
     const competition = await findById(competitionId);
@@ -685,8 +687,11 @@ export class CompetitionService {
       );
     }
 
-    // Validate provided agent IDs
-    const validAgentIds = await this.validateAgentIds(agentIds);
+    // Validate provided agent IDs, in case the caller provided `agentIds`
+    if (agentIds) {
+      // Note: this throws if any are invalid or inactive
+      await this.validateAgentIds(agentIds);
+    }
 
     // Get pre-registered agents
     const preRegisteredAgentIds =
@@ -694,15 +699,12 @@ export class CompetitionService {
 
     // Combine agent lists (remove duplicates)
     const finalAgentIds = [
-      ...new Set([...validAgentIds, ...preRegisteredAgentIds]),
+      ...new Set([...(agentIds ?? []), ...preRegisteredAgentIds]),
     ];
 
     // Check if we have any agents
     if (finalAgentIds.length === 0) {
-      throw new ApiError(
-        400,
-        "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
-      );
+      throw new ApiError(400, `Cannot start competition: no registered agents`);
     }
 
     // Process all agent additions and activations
@@ -761,7 +763,7 @@ export class CompetitionService {
     if (competition.type === "trading") {
       // Paper trading: Use portfolio snapshotter with reset balances
       serviceLogger.debug(
-        `[CompetitionService] Taking initial paper trading portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
+        `[CompetitionService] Taking initial paper trading portfolio snapshots for ${finalAgentIds.length} agents (competition still pending)`,
       );
       await this.portfolioSnapshotterService.takePortfolioSnapshots(
         competitionId,
@@ -772,7 +774,7 @@ export class CompetitionService {
     } else if (competition.type === "perpetual_futures") {
       // Perps: Sync from Symphony to get initial $500 balance state
       serviceLogger.debug(
-        `[CompetitionService] Syncing initial perps data from Symphony for ${agentIds.length} agents (competition still pending)`,
+        `[CompetitionService] Syncing initial perps data from Symphony for ${finalAgentIds.length} agents (competition still pending)`,
       );
 
       const result =
@@ -810,7 +812,7 @@ export class CompetitionService {
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
     );
     serviceLogger.debug(
-      `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
+      `[CompetitionManager] Participating agents: ${finalAgentIds.join(", ")}`,
     );
 
     // Reload competition-specific configuration settings
@@ -2265,6 +2267,84 @@ export class CompetitionService {
     }
   }
 
+  /**
+   * Check and automatically start competitions that have reached their start date
+   * Conditions:
+   * - No other competition is currently active
+   * - Competition is not in sandbox mode
+   * - Competition has at least one registered agent
+   * - Process competitions by earliest startDate first
+   */
+  async processCompetitionStartDateChecks(): Promise<void> {
+    try {
+      // Do not start anything if there's already an active competition
+      const active = await findActive();
+      if (active) {
+        serviceLogger.debug(
+          {
+            competitionId: active.id,
+            name: active.name,
+          },
+          `[CompetitionManager] Active competition found. Skipping auto-start checks`,
+        );
+        return;
+      }
+
+      const competitionsToStart = await findCompetitionsNeedingStarting();
+      if (competitionsToStart.length === 0) {
+        serviceLogger.debug(
+          "[CompetitionManager] No competitions ready to start",
+        );
+        return;
+      }
+
+      // We only support running one competition at a time, so we will not start any competitions
+      // if we find more than one. Note: This should not happen if competitions are created with
+      // the correct start dates; it's defensive.
+      const competition = competitionsToStart[0];
+      if (competitionsToStart.length > 1 || !competition) {
+        serviceLogger.warn(
+          {
+            competitions: competitionsToStart.map((c) => ({
+              id: c.id,
+              name: c.name,
+              startDate: c.startDate?.toISOString(),
+            })),
+          },
+          `[CompetitionManager] Multiple competitions ready to start. Skipping auto-start checks`,
+        );
+        return;
+      }
+      serviceLogger.debug(
+        {
+          competitionId: competition.id,
+          name: competition.name,
+          startDate: competition.startDate?.toISOString(),
+        },
+        `[CompetitionManager] Auto-starting competition`,
+      );
+      await this.startCompetition(competition.id);
+      serviceLogger.debug(
+        {
+          competitionId: competition.id,
+          name: competition.name,
+        },
+        `[CompetitionManager] Successfully auto-started competition`,
+      );
+    } catch (error) {
+      // Continue silently if the competition has no registered nor provided agents
+      if (
+        error instanceof ApiError &&
+        error.statusCode === 400 &&
+        error.message.includes("no registered agents")
+      ) {
+        serviceLogger.error(
+          `[CompetitionManager] No registered agents found for competition. Skipping auto-start.`,
+        );
+        return;
+      }
+    }
+  }
   /**
    * Get leaderboard with authorization checks
    * @param params Parameters for leaderboard request
