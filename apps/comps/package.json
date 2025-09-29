@@ -71,6 +71,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/pg": "^8.10.0",
     "@recallnet/eslint-config": "workspace:^",
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^20",
