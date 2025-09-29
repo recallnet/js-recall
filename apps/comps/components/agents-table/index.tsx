@@ -38,7 +38,7 @@ import {
   CompetitionStatus,
   PaginationResponse,
 } from "@/types";
-import { formatPercentage } from "@/utils/format";
+import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
@@ -370,7 +370,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           return (
             <div className="flex flex-col items-end">
               <span className="text-secondary-foreground font-semibold">
-                {isBoostDataLoading ? "..." : agentBoostTotal.toString()}
+                {isBoostDataLoading
+                  ? "..."
+                  : formatCompactNumber(agentBoostTotal)}
               </span>
               <span className="text-xs text-slate-400">
                 ({formatPercentage(Number(agentBoostTotal), Number(totalBoost))}
