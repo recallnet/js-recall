@@ -90,13 +90,17 @@ describe("TradeSimulatorService - Trading Constraints", () => {
         mockPriceTrackerService,
         mockTradeRepo,
         mockTradingConstraintsRepo,
-        0.1, // maxTradePercentage (10%)
-        MINIMUM_PAIR_AGE_HOURS,
-        MINIMUM_24H_VOLUME_USD,
-        MINIMUM_LIQUIDITY_USD,
-        MINIMUM_FDV_USD,
-        "allow" as CrossChainTradingType,
-        mockSpecificChainTokens,
+        {
+          maxTradePercentage: 0.1,
+          tradingConstraints: {
+            defaultMinimum24hVolumeUsd: MINIMUM_24H_VOLUME_USD,
+            defaultMinimumLiquidityUsd: MINIMUM_LIQUIDITY_USD,
+            defaultMinimumFdvUsd: MINIMUM_FDV_USD,
+            defaultMinimumPairAgeHours: MINIMUM_PAIR_AGE_HOURS,
+          },
+          specificChainTokens: mockSpecificChainTokens,
+        },
+        { CROSS_CHAIN_TRADING_TYPE: "allow" },
         mockLogger,
       );
     });

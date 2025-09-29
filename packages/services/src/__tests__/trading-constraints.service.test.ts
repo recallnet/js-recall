@@ -33,13 +33,14 @@ describe("TradingConstraintsService", () => {
     // Create repository mock
     mockTradingConstraintsRepo = mock<TradingConstraintsRepository>();
 
-    service = new TradingConstraintsService(
-      mockTradingConstraintsRepo,
-      DEFAULT_MINIMUM_PAIR_AGE_HOURS,
-      DEFAULT_MINIMUM_24H_VOLUME_USD,
-      DEFAULT_MINIMUM_LIQUIDITY_USD,
-      DEFAULT_MINIMUM_FDV_USD,
-    );
+    service = new TradingConstraintsService(mockTradingConstraintsRepo, {
+      tradingConstraints: {
+        defaultMinimum24hVolumeUsd: DEFAULT_MINIMUM_24H_VOLUME_USD,
+        defaultMinimumLiquidityUsd: DEFAULT_MINIMUM_LIQUIDITY_USD,
+        defaultMinimumFdvUsd: DEFAULT_MINIMUM_FDV_USD,
+        defaultMinimumPairAgeHours: DEFAULT_MINIMUM_PAIR_AGE_HOURS,
+      },
+    });
   });
 
   afterEach(() => {
@@ -625,10 +626,14 @@ describe("TradingConstraintsService", () => {
     it("should handle service instantiation with dependencies", () => {
       const newService = new TradingConstraintsService(
         mockTradingConstraintsRepo,
-        168,
-        100000,
-        100000,
-        1000000,
+        {
+          tradingConstraints: {
+            defaultMinimum24hVolumeUsd: 168,
+            defaultMinimumLiquidityUsd: 100000,
+            defaultMinimumFdvUsd: 100000,
+            defaultMinimumPairAgeHours: 1000000,
+          },
+        },
       );
       expect(newService).toBeInstanceOf(TradingConstraintsService);
     });

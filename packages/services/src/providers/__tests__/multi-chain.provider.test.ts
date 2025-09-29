@@ -39,8 +39,7 @@ describe("MultiChainProvider", () => {
 
   beforeEach(() => {
     provider = new MultiChainProvider(
-      evmChains,
-      specificChainTokens,
+      { evmChains, specificChainTokens },
       mockLogger,
     );
   });

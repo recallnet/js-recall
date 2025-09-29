@@ -30,6 +30,12 @@ type InitNoStakeResult = BoostDiffResult & { competitionId: string };
 
 const TEXT_ENCODER = new TextEncoder();
 
+export interface BoostAwardServiceConfig {
+  boost: {
+    noStakeBoostAmount?: bigint;
+  };
+}
+
 export class BoostAwardService {
   readonly #db: Database;
   readonly #competitionRepo: CompetitionRepository;
@@ -44,14 +50,14 @@ export class BoostAwardService {
     boostRepository: BoostRepository,
     stakesRepository: StakesRepository,
     userService: UserService,
-    noStakeBoostAmount?: bigint,
+    config: BoostAwardServiceConfig,
   ) {
     this.#db = database;
     this.#competitionRepo = competitionRepo;
     this.#boostRepository = boostRepository;
     this.#stakesRepository = stakesRepository;
     this.#userService = userService;
-    this.#noStakeBoostAmount = noStakeBoostAmount;
+    this.#noStakeBoostAmount = config.boost.noStakeBoostAmount;
   }
 
   async awardForStake(

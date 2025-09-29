@@ -60,7 +60,7 @@ describe("BoostAwardService", () => {
       mockBoostRepo,
       mockStakesRepo,
       mockUserService,
-      noStakeBoostAmount,
+      { boost: { noStakeBoostAmount } },
     );
 
     testUserId = "user-1";
@@ -700,7 +700,7 @@ describe("BoostAwardService", () => {
         mockBoostRepo,
         mockStakesRepo,
         mockUserService,
-        undefined, // No boost amount configured
+        { boost: {} }, // No boost amount configured
       );
 
       mockDb.transaction.mockImplementation(

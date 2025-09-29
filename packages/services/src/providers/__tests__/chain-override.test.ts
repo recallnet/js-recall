@@ -66,8 +66,7 @@ describe("Chain Override Tests", () => {
   beforeEach(() => {
     if (runTests) {
       multiChainProvider = new MultiChainProvider(
-        specificChains,
-        specificChainTokens,
+        { evmChains: specificChains, specificChainTokens },
         mockLogger,
       );
     }

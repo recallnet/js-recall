@@ -18,6 +18,12 @@ import { ApiError } from "./types/index.js";
 import { AdminMetadata, SearchAdminsParams } from "./types/index.js";
 import { UserService } from "./user.service.js";
 
+export interface AdminServiceConfig {
+  security: {
+    rootEncryptionKey: string;
+  };
+}
+
 /**
  * Admin Service
  * Manages admin accounts, authentication, and session management
@@ -42,7 +48,7 @@ export class AdminService {
     adminRepository: AdminRepository,
     userService: UserService,
     agentService: AgentService,
-    rootEncryptionKey: string,
+    config: AdminServiceConfig,
     logger: Logger,
   ) {
     this.apiKeyCache = new Map();
@@ -50,7 +56,7 @@ export class AdminService {
     this.adminRepository = adminRepository;
     this.userService = userService;
     this.agentService = agentService;
-    this.rootEncryptionKey = rootEncryptionKey;
+    this.rootEncryptionKey = config.security.rootEncryptionKey;
     this.logger = logger;
   }
 

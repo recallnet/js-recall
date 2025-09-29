@@ -10,6 +10,11 @@ import {
   SpecificChainTokens,
 } from "./types/index.js";
 
+export interface BalanceServiceConfig {
+  specificChainBalances: Record<SpecificChain, Record<string, number>>;
+  specificChainTokens: SpecificChainTokens;
+}
+
 /**
  * Balance Service
  * Manages token balances for agents
@@ -24,14 +29,13 @@ export class BalanceService {
 
   constructor(
     balanceRepo: BalanceRepository,
-    specificChainBalances: Record<SpecificChain, Record<string, number>>,
-    specificChainTokens: SpecificChainTokens,
+    config: BalanceServiceConfig,
     logger: Logger,
   ) {
     this.balanceCache = new Map();
     this.balanceRepo = balanceRepo;
-    this.specificChainBalances = specificChainBalances;
-    this.specificChainTokens = specificChainTokens;
+    this.specificChainBalances = config.specificChainBalances;
+    this.specificChainTokens = config.specificChainTokens;
     this.logger = logger;
   }
 

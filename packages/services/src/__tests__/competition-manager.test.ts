@@ -22,7 +22,10 @@ import { AgentService } from "../agent.service.js";
 import { AgentRankService } from "../agentrank.service.js";
 import { BalanceService } from "../balance.service.js";
 import { CompetitionRewardService } from "../competition-reward.service.js";
-import { CompetitionService } from "../competition.service.js";
+import {
+  CompetitionService,
+  CompetitionServiceConfig,
+} from "../competition.service.js";
 import { ConfigurationService } from "../configuration.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
@@ -30,16 +33,6 @@ import { TradeSimulatorService } from "../trade-simulator.service.js";
 import { TradingConstraintsService } from "../trading-constraints.service.js";
 import type { SpecificChain } from "../types/index.js";
 import { VoteService } from "../vote.service.js";
-
-// Config interface matching the service
-interface Config {
-  specificChainBalances: Record<SpecificChain, Record<string, number>>;
-  maxTradePercentage: number;
-  rateLimitingMaxRequests: number;
-  rateLimitingWindowMs: number;
-  evmChains: SpecificChain[];
-  onLoadCompetitionSettings: (activeCompetition?: any) => void;
-}
 
 describe("CompetitionService", () => {
   let competitionService: CompetitionService;
@@ -58,7 +51,7 @@ describe("CompetitionService", () => {
   let mockPerpsRepo: MockProxy<PerpsRepository>;
   let mockCompetitionRepo: MockProxy<CompetitionRepository>;
   let mockDb: MockProxy<Database>;
-  let mockConfig: MockProxy<Config>;
+  let mockConfig: MockProxy<CompetitionServiceConfig>;
   let mockLogger: MockProxy<Logger>;
 
   const mockCompetition: SelectCompetition = {
@@ -139,7 +132,7 @@ describe("CompetitionService", () => {
 
     // Create database and config mocks
     mockDb = mock<Database>();
-    mockConfig = mock<Config>();
+    mockConfig = mock<CompetitionServiceConfig>();
     mockLogger = mock<Logger>();
 
     // Setup specific mock implementations

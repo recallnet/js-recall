@@ -1,3 +1,4 @@
+import pino from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RetryConfig, RetryExhaustedError } from "../retry-helper.js";
@@ -32,23 +33,33 @@ vi.mock("@/config/index.js", () => ({
 
 describe("WatchlistService", () => {
   let watchlistService: WalletWatchlist;
+  const logger = pino.default();
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    const { config } = await import("@/config/index.js");
-    config.watchlist.chainalysisApiKey = "";
-    watchlistService = new WalletWatchlist(TEST_RETRY_CONFIG);
+    watchlistService = new WalletWatchlist(
+      { watchlist: { chainalysisApiKey: "test-api-key" } },
+      logger,
+      TEST_RETRY_CONFIG,
+    );
   });
 
   describe("isConfigured", () => {
     it("should return false when API key is not set", () => {
+      watchlistService = new WalletWatchlist(
+        { watchlist: { chainalysisApiKey: "" } },
+        logger,
+        TEST_RETRY_CONFIG,
+      );
       expect(watchlistService.isConfigured()).toBe(false);
     });
 
     it("should return true when API key is set", async () => {
-      const { config } = await import("@/config/index.js");
-      config.watchlist.chainalysisApiKey = "test-api-key";
-      watchlistService = new WalletWatchlist(TEST_RETRY_CONFIG);
+      watchlistService = new WalletWatchlist(
+        { watchlist: { chainalysisApiKey: "test-api-key" } },
+        logger,
+        TEST_RETRY_CONFIG,
+      );
       expect(watchlistService.isConfigured()).toBe(true);
     });
   });
@@ -65,16 +76,12 @@ describe("WatchlistService", () => {
   });
 
   describe("isAddressSanctioned", () => {
-    beforeEach(async () => {
-      const { config } = await import("@/config/index.js");
-      config.watchlist.chainalysisApiKey = "test-api-key";
-      watchlistService = new WalletWatchlist(TEST_RETRY_CONFIG);
-    });
-
     it("should return false when API key is not configured", async () => {
-      const { config } = await import("@/config/index.js");
-      config.watchlist.chainalysisApiKey = "";
-      watchlistService = new WalletWatchlist(TEST_RETRY_CONFIG);
+      watchlistService = new WalletWatchlist(
+        { watchlist: { chainalysisApiKey: "" } },
+        logger,
+        TEST_RETRY_CONFIG,
+      );
 
       const result = await watchlistService.isAddressSanctioned(
         "0x1234567890abcdef1234567890abcdef12345678",

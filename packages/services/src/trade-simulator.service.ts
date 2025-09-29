@@ -36,6 +36,21 @@ interface ChainOptions {
   toSpecificChain?: SpecificChain;
 }
 
+export interface TradeSimulatorServiceConfig {
+  specificChainTokens: SpecificChainTokens;
+  maxTradePercentage: number;
+  tradingConstraints: {
+    defaultMinimumPairAgeHours: number;
+    defaultMinimum24hVolumeUsd: number;
+    defaultMinimumLiquidityUsd: number;
+    defaultMinimumFdvUsd: number;
+  };
+}
+
+interface TradeSimulatorServiceFeatures {
+  CROSS_CHAIN_TRADING_TYPE: CrossChainTradingType;
+}
+
 /**
  * Trade Simulator Service
  * Executes simulated trades between tokens
@@ -47,14 +62,8 @@ export class TradeSimulatorService {
   private tradingConstraintsRepo: TradingConstraintsRepository;
   // Cache of recent trades for performance (agentId -> trades)
   private tradeCache: Map<string, SelectTrade[]>;
-  // Maximum trade percentage of portfolio value
-  private maxTradePercentage: number;
-  private defaultMinimumPairAgeHours: number;
-  private defaultMinimum24hVolumeUsd: number;
-  private defaultMinimumLiquidityUsd: number;
-  private defaultMinimumFdvUsd: number;
-  private crossChainTradingType: CrossChainTradingType;
-  private specificChainTokens: SpecificChainTokens;
+  private config: TradeSimulatorServiceConfig;
+  private features: TradeSimulatorServiceFeatures;
   private dexScreenerProvider: DexScreenerProvider;
   // Cache of trading constraints per competition
   private constraintsCache: Map<string, TradingConstraints>;
@@ -65,29 +74,19 @@ export class TradeSimulatorService {
     priceTrackerService: PriceTrackerService,
     tradeRepo: TradeRepository,
     tradingConstraintsRepo: TradingConstraintsRepository,
-    maxTradePercentage: number,
-    defaultMinimumPairAgeHours: number,
-    defaultMinimum24hVolumeUsd: number,
-    defaultMinimumLiquidityUsd: number,
-    defaultMinimumFdvUsd: number,
-    crossChainTradingType: CrossChainTradingType,
-    specificChainTokens: SpecificChainTokens,
+    config: TradeSimulatorServiceConfig,
+    features: TradeSimulatorServiceFeatures,
     logger: Logger,
   ) {
     this.balanceService = balanceService;
     this.priceTrackerService = priceTrackerService;
     this.tradeRepo = tradeRepo;
     this.tradingConstraintsRepo = tradingConstraintsRepo;
-    this.maxTradePercentage = maxTradePercentage;
-    this.defaultMinimumPairAgeHours = defaultMinimumPairAgeHours;
-    this.defaultMinimum24hVolumeUsd = defaultMinimum24hVolumeUsd;
-    this.defaultMinimumLiquidityUsd = defaultMinimumLiquidityUsd;
-    this.defaultMinimumFdvUsd = defaultMinimumFdvUsd;
-    this.crossChainTradingType = crossChainTradingType;
-    this.specificChainTokens = specificChainTokens;
+    this.config = config;
+    this.features = features;
     this.logger = logger;
     this.dexScreenerProvider = new DexScreenerProvider(
-      specificChainTokens,
+      config.specificChainTokens,
       logger,
     );
     this.tradeCache = new Map();
@@ -526,10 +525,13 @@ export class TradeSimulatorService {
     } else {
       // Fall back to default values
       constraints = {
-        minimumPairAgeHours: this.defaultMinimumPairAgeHours,
-        minimum24hVolumeUsd: this.defaultMinimum24hVolumeUsd,
-        minimumLiquidityUsd: this.defaultMinimumLiquidityUsd,
-        minimumFdvUsd: this.defaultMinimumFdvUsd,
+        minimumPairAgeHours:
+          this.config.tradingConstraints.defaultMinimumPairAgeHours,
+        minimum24hVolumeUsd:
+          this.config.tradingConstraints.defaultMinimum24hVolumeUsd,
+        minimumLiquidityUsd:
+          this.config.tradingConstraints.defaultMinimumLiquidityUsd,
+        minimumFdvUsd: this.config.tradingConstraints.defaultMinimumFdvUsd,
       };
     }
 
@@ -575,7 +577,7 @@ export class TradeSimulatorService {
       return;
     }
 
-    const isExemptToken = EXEMPT_TOKENS(this.specificChainTokens).has(
+    const isExemptToken = EXEMPT_TOKENS(this.config.specificChainTokens).has(
       priceData.token,
     );
     if (isExemptToken) {
@@ -597,9 +599,9 @@ export class TradeSimulatorService {
     // Check FDV constraint - exempt major tokens
     this.validateFdvConstraint(priceData, constraints);
 
-    const isExemptFromFdvLogging = EXEMPT_TOKENS(this.specificChainTokens).has(
-      priceData.token,
-    );
+    const isExemptFromFdvLogging = EXEMPT_TOKENS(
+      this.config.specificChainTokens,
+    ).has(priceData.token);
     this.logger
       .debug(`[TradeSimulator] Trading constraints validated for ${tokenAddress}:
       Pair Age: ${priceData.pairCreatedAt ? ((Date.now() - priceData.pairCreatedAt) / (1000 * 60 * 60)).toFixed(2) : "N/A"} hours
@@ -731,7 +733,7 @@ export class TradeSimulatorService {
    */
   private validateCrossChainTrading(chainInfo: ChainOptions): void {
     if (
-      this.crossChainTradingType === "disallowXParent" &&
+      this.features.CROSS_CHAIN_TRADING_TYPE === "disallowXParent" &&
       chainInfo.fromChain !== chainInfo.toChain
     ) {
       this.logger.debug(
@@ -744,7 +746,7 @@ export class TradeSimulatorService {
     }
 
     if (
-      this.crossChainTradingType === "disallowAll" &&
+      this.features.CROSS_CHAIN_TRADING_TYPE === "disallowAll" &&
       (chainInfo.fromChain !== chainInfo.toChain ||
         (chainInfo.fromSpecificChain &&
           chainInfo.toSpecificChain &&
@@ -927,18 +929,19 @@ export class TradeSimulatorService {
     // Calculate portfolio value to check maximum trade size (configurable percentage of portfolio)
     const portfolioValue = await this.calculatePortfolioValue(agentId);
     // TODO: maxTradePercentage should probably be a setting per comp.
-    const maxTradeValue = portfolioValue * (this.maxTradePercentage / 100);
+    const maxTradeValue =
+      portfolioValue * (this.config.maxTradePercentage / 100);
     this.logger.debug(
       `[TradeSimulator] Portfolio value: $${portfolioValue}, Max trade value: $${maxTradeValue}, Attempted trade value: $${fromValueUSD}`,
     );
 
     if (fromValueUSD > maxTradeValue) {
       this.logger.debug(
-        `[TradeSimulator] Trade exceeds maximum size: $${fromValueUSD} > $${maxTradeValue} (${this.maxTradePercentage}% of portfolio)`,
+        `[TradeSimulator] Trade exceeds maximum size: $${fromValueUSD} > $${maxTradeValue} (${this.config.maxTradePercentage}% of portfolio)`,
       );
       throw new ApiError(
         400,
-        `Trade exceeds maximum size (${this.maxTradePercentage}% of portfolio value)`,
+        `Trade exceeds maximum size (${this.config.maxTradePercentage}% of portfolio value)`,
       );
     }
   }

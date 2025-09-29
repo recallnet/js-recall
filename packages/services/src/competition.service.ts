@@ -352,17 +352,14 @@ type BasicCompetitionInfo = {
   startDate?: Date;
 };
 
-interface Config {
+export interface CompetitionServiceConfig {
+  evmChains: SpecificChain[];
   specificChainBalances: Record<SpecificChain, Record<string, number>>;
   maxTradePercentage: number;
-  rateLimitingMaxRequests: number;
-  rateLimitingWindowMs: number;
-  evmChains: SpecificChain[];
-  onLoadCompetitionSettings: (
-    activeCompetition?: Awaited<
-      ReturnType<typeof CompetitionRepository.prototype.findActive>
-    >,
-  ) => void;
+  rateLimiting: {
+    maxRequests: number;
+    windowMs: number;
+  };
 }
 
 /**
@@ -385,7 +382,7 @@ export class CompetitionService {
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
   private db: Database;
-  private config: Config;
+  private config: CompetitionServiceConfig;
   private logger: Logger;
 
   constructor(
@@ -404,7 +401,7 @@ export class CompetitionService {
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
     db: Database,
-    config: Config,
+    config: CompetitionServiceConfig,
     logger: Logger,
   ) {
     this.balanceService = balanceService;
@@ -801,12 +798,6 @@ export class CompetitionService {
       `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
     );
 
-    // Reload competition-specific configuration settings
-    await this.configurationService.loadCompetitionSettings(
-      this.config.onLoadCompetitionSettings,
-    );
-    this.logger.debug(`[CompetitionManager] Reloaded configuration settings`);
-
     return {
       ...finalCompetition,
       tradingConstraints: {
@@ -980,11 +971,6 @@ export class CompetitionService {
     // Get agents in the competition (outside transaction - they won't change)
     const competitionAgents =
       await this.competitionRepo.getCompetitionAgents(competitionId);
-
-    // Reload configuration settings (revert to environment defaults)
-    await this.configurationService.loadCompetitionSettings(
-      this.config.onLoadCompetitionSettings,
-    );
 
     // Final transaction to persist results
     const { competition: finalCompetition, leaderboardCount } =
@@ -2627,7 +2613,7 @@ export class CompetitionService {
       }
 
       const rateLimits = [
-        `${this.config.rateLimitingMaxRequests} requests per ${this.config.rateLimitingWindowMs / 1000} seconds per endpoint`,
+        `${this.config.rateLimiting.maxRequests} requests per ${this.config.rateLimiting.windowMs / 1000} seconds per endpoint`,
         "100 requests per minute for trade operations",
         "300 requests per minute for price queries",
         "30 requests per minute for balance/portfolio checks",
@@ -3137,7 +3123,7 @@ export class CompetitionService {
       }
 
       const rateLimits = [
-        `${this.config.rateLimitingMaxRequests} requests per ${this.config.rateLimitingWindowMs / 1000} seconds per endpoint`,
+        `${this.config.rateLimiting.maxRequests} requests per ${this.config.rateLimiting.windowMs / 1000} seconds per endpoint`,
         "100 requests per minute for trade operations",
         "300 requests per minute for price queries",
         "30 requests per minute for balance/portfolio checks",

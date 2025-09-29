@@ -9,6 +9,11 @@ import {
 } from "../types/index.js";
 import { DexScreenerProvider } from "./price/dexscreener.provider.js";
 
+export interface MultiChainProviderConfig {
+  evmChains: SpecificChain[];
+  specificChainTokens: SpecificChainTokens;
+}
+
 /**
  * MultiChainProvider implementation
  * Uses DexScreener API to get token prices across multiple chains
@@ -21,15 +26,11 @@ export class MultiChainProvider implements PriceSource {
   private defaultChains: SpecificChain[];
   private logger: Logger;
 
-  constructor(
-    defaultChains: SpecificChain[],
-    specificChainTokens: SpecificChainTokens,
-    logger: Logger,
-  ) {
-    this.defaultChains = defaultChains;
+  constructor(config: MultiChainProviderConfig, logger: Logger) {
+    this.defaultChains = config.evmChains;
     // Initialize the DexScreenerProvider for delegation
     this.dexScreenerProvider = new DexScreenerProvider(
-      specificChainTokens,
+      config.specificChainTokens,
       logger,
     );
     this.logger = logger;

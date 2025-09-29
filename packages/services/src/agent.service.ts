@@ -53,6 +53,15 @@ export interface EnhancedBalance extends SelectBalance {
   value?: number;
 }
 
+export interface AgentServiceConfig {
+  security: {
+    rootEncryptionKey: string;
+  };
+  api: {
+    domain: string;
+  };
+}
+
 /**
  * Agent Service
  * Manages agent registration and API key authentication
@@ -97,8 +106,7 @@ export class AgentService {
     perpsRepository: PerpsRepository,
     tradeRepository: TradeRepository,
     userRepository: UserRepository,
-    rootEncryptionKey: string,
-    apiDomain: string,
+    config: AgentServiceConfig,
     logger: Logger,
   ) {
     this.apiKeyCache = new Map();
@@ -114,8 +122,8 @@ export class AgentService {
     this.perpsRepository = perpsRepository;
     this.tradeRepository = tradeRepository;
     this.userRepository = userRepository;
-    this.rootEncryptionKey = rootEncryptionKey;
-    this.apiDomain = apiDomain;
+    this.rootEncryptionKey = config.security.rootEncryptionKey;
+    this.apiDomain = config.api.domain;
     this.logger = logger;
   }
 

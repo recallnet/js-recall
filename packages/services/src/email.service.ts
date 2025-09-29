@@ -30,6 +30,14 @@ export interface LoopsPayload {
   };
 }
 
+export interface EmailServiceConfig {
+  email: {
+    apiKey: string;
+    mailingListId: string;
+    baseUrl: string;
+  };
+}
+
 /**
  * Email Service
  * Handles sending emails through the Loops API (e.g, marketing emails)
@@ -40,15 +48,10 @@ export class EmailService {
   private readonly baseUrl: string;
   private readonly logger: Logger;
 
-  constructor(
-    apiKey: string,
-    mailingListId: string,
-    baseUrl: string,
-    logger: Logger,
-  ) {
-    this.apiKey = apiKey;
-    this.mailingListId = mailingListId;
-    this.baseUrl = baseUrl;
+  constructor(config: EmailServiceConfig, logger: Logger) {
+    this.apiKey = config.email.apiKey;
+    this.mailingListId = config.email.mailingListId;
+    this.baseUrl = config.email.baseUrl;
     this.logger = logger;
 
     if (!this.apiKey) {

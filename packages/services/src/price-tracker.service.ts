@@ -9,6 +9,13 @@ import {
   SpecificChain,
 } from "./types/index.js";
 
+export interface PriceTrackerServiceConfig {
+  priceTracker: {
+    maxCacheSize: number;
+    priceTTLMs: number;
+  };
+}
+
 /**
  * Price Tracker Service
  * Fetches and caches token prices from multiple providers
@@ -28,18 +35,17 @@ export class PriceTrackerService {
 
   constructor(
     multiChainProvider: MultiChainProvider,
-    maxCacheSize: number,
-    priceTTLMs: number,
+    config: PriceTrackerServiceConfig,
     logger: Logger,
   ) {
     // Initialize LRU caches
     this.tokenPriceCache = new LRUCache<string, PriceReport>({
-      max: maxCacheSize,
-      ttl: priceTTLMs,
+      max: config.priceTracker.maxCacheSize,
+      ttl: config.priceTracker.priceTTLMs,
     });
 
     this.chainToTokenCache = new LRUCache<string, SpecificChain>({
-      max: maxCacheSize,
+      max: config.priceTracker.maxCacheSize,
       // No TTL - chain mappings are permanent
     });
 

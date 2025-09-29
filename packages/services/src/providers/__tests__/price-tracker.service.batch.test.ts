@@ -41,14 +41,12 @@ describe("Batch Functionality Tests", () => {
 
   beforeEach(() => {
     const multiChainProvider = new MultiChainProvider(
-      specificChains,
-      specificChainTokens,
+      { evmChains: specificChains, specificChainTokens },
       mockLogger,
     );
     priceTracker = new PriceTrackerService(
       multiChainProvider,
-      10000,
-      60000,
+      { priceTracker: { maxCacheSize: 1000, priceTTLMs: 60000 } },
       mockLogger,
     );
   });

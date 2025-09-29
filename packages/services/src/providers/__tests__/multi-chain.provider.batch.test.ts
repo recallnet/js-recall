@@ -40,8 +40,7 @@ describe("Batch Functionality Tests", () => {
 
   beforeEach(() => {
     provider = new MultiChainProvider(
-      specificChains,
-      specificChainTokens,
+      { evmChains: specificChains, specificChainTokens },
       mockLogger,
     );
   });

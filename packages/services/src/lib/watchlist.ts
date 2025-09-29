@@ -41,6 +41,12 @@ function checkIsSanctioned(identification: ChainalysisIdentification): boolean {
   return category === "sanctions";
 }
 
+export interface WalletWatchlistConfig {
+  watchlist: {
+    chainalysisApiKey: string;
+  };
+}
+
 /**
  * Wallet Address Watchlist
  * Checks wallet addresses against Chainalysis sanctions list
@@ -52,11 +58,11 @@ export class WalletWatchlist {
   private logger: Logger;
 
   constructor(
-    apiKey: string,
+    config: WalletWatchlistConfig,
     logger: Logger,
     readonly retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG,
   ) {
-    this.apiKey = apiKey;
+    this.apiKey = config.watchlist.chainalysisApiKey;
     this.logger = logger;
     this.retryConfig = retryConfig;
 

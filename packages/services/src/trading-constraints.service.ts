@@ -14,6 +14,15 @@ export interface TradingConstraintsInput {
   minTradesPerDay?: number | null;
 }
 
+export interface TradingConstraintsServiceConfig {
+  tradingConstraints: {
+    defaultMinimumPairAgeHours: number;
+    defaultMinimum24hVolumeUsd: number;
+    defaultMinimumLiquidityUsd: number;
+    defaultMinimumFdvUsd: number;
+  };
+}
+
 /**
  * Service for managing trading constraints
  */
@@ -26,16 +35,16 @@ export class TradingConstraintsService {
 
   constructor(
     tradingConstraintsRepo: TradingConstraintsRepository,
-    defaultMinimumPairAgeHours: number,
-    defaultMinimum24hVolumeUsd: number,
-    defaultMinimumLiquidityUsd: number,
-    defaultMinimumFdvUsd: number,
+    config: TradingConstraintsServiceConfig,
   ) {
     this.tradingConstraintsRepo = tradingConstraintsRepo;
-    this.defaultMinimumPairAgeHours = defaultMinimumPairAgeHours;
-    this.defaultMinimum24hVolumeUsd = defaultMinimum24hVolumeUsd;
-    this.defaultMinimumLiquidityUsd = defaultMinimumLiquidityUsd;
-    this.defaultMinimumFdvUsd = defaultMinimumFdvUsd;
+    this.defaultMinimumPairAgeHours =
+      config.tradingConstraints.defaultMinimumPairAgeHours;
+    this.defaultMinimum24hVolumeUsd =
+      config.tradingConstraints.defaultMinimum24hVolumeUsd;
+    this.defaultMinimumLiquidityUsd =
+      config.tradingConstraints.defaultMinimumLiquidityUsd;
+    this.defaultMinimumFdvUsd = config.tradingConstraints.defaultMinimumFdvUsd;
   }
 
   /**

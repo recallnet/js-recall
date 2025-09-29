@@ -8,6 +8,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
@@ -87,6 +88,7 @@ class ServiceRegistry {
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
     this._userRepository = new UserRepository(db, repositoryLogger);
+    const rewardsRepository = new RewardsRepository(db, repositoryLogger);
     const balanceRepository = new BalanceRepository(
       db,
       repositoryLogger,
@@ -122,28 +124,19 @@ class ServiceRegistry {
     const perpsRepository = new PerpsRepository(db, dbRead, repositoryLogger);
     const adminRepository = new AdminRepository(db, repositoryLogger);
 
-    const walletWatchlist = new WalletWatchlist(
-      config.watchlist.chainalysisApiKey,
-      serviceLogger,
-    );
+    const walletWatchlist = new WalletWatchlist(config, serviceLogger);
 
-    const multichainProvider = new MultiChainProvider(
-      config.evmChains,
-      config.specificChainTokens,
-      serviceLogger,
-    );
+    const multichainProvider = new MultiChainProvider(config, serviceLogger);
 
     // Initialize services in dependency order
     this._balanceService = new BalanceService(
       balanceRepository,
-      config.specificChainBalances,
-      config.specificChainTokens,
+      config,
       serviceLogger,
     );
     this._priceTrackerService = new PriceTrackerService(
       multichainProvider,
-      config.priceTracker.maxCacheSize,
-      config.priceTracker.priceTTLMs,
+      config,
       serviceLogger,
     );
     this._portfolioSnapshotterService = new PortfolioSnapshotterService(
@@ -157,13 +150,8 @@ class ServiceRegistry {
       this._priceTrackerService,
       tradeRepository,
       tradingConstraintsRepository,
-      config.maxTradePercentage,
-      config.tradingConstraints.defaultMinimumPairAgeHours,
-      config.tradingConstraints.defaultMinimum24hVolumeUsd,
-      config.tradingConstraints.defaultMinimumLiquidityUsd,
-      config.tradingConstraints.defaultMinimumFdvUsd,
-      features.CROSS_CHAIN_TRADING_TYPE,
-      config.specificChainTokens,
+      config,
+      features,
       serviceLogger,
     );
 
@@ -189,12 +177,7 @@ class ServiceRegistry {
     );
 
     // Initialize email service (no dependencies)
-    this._emailService = new EmailService(
-      config.email.apiKey,
-      config.email.mailingListId,
-      config.email.baseUrl,
-      serviceLogger,
-    );
+    this._emailService = new EmailService(config, serviceLogger);
 
     // Initialize user, agent, and admin services
     this._userService = new UserService(
@@ -218,25 +201,21 @@ class ServiceRegistry {
       perpsRepository,
       tradeRepository,
       this._userRepository,
-      config.security.rootEncryptionKey,
-      config.api.domain,
+      config,
       serviceLogger,
     );
     this._adminService = new AdminService(
       adminRepository,
       this._userService,
       this._agentService,
-      config.security.rootEncryptionKey,
+      config,
       serviceLogger,
     );
 
     // Initialize trading constraints service (no dependencies)
     this._tradingConstraintsService = new TradingConstraintsService(
       tradingConstraintsRepository,
-      config.tradingConstraints.defaultMinimumPairAgeHours,
-      config.tradingConstraints.defaultMinimum24hVolumeUsd,
-      config.tradingConstraints.defaultMinimumLiquidityUsd,
-      config.tradingConstraints.defaultMinimumFdvUsd,
+      config,
     );
     // Initialize core reward service (no dependencies)
     this._competitionRewardService = new CompetitionRewardService(
@@ -272,39 +251,7 @@ class ServiceRegistry {
       perpsRepository,
       this._competitionRepository,
       db,
-      {
-        evmChains: config.evmChains,
-        maxTradePercentage: config.maxTradePercentage,
-        rateLimitingMaxRequests: config.rateLimiting.maxRequests,
-        rateLimitingWindowMs: config.rateLimiting.windowMs,
-        specificChainBalances: config.specificChainBalances,
-        onLoadCompetitionSettings: (activeCompetition) => {
-          if (activeCompetition) {
-            // Override the environment-based settings with competition-specific settings
-            features.CROSS_CHAIN_TRADING_TYPE =
-              activeCompetition.crossChainTradingType;
-            features.SANDBOX_MODE = activeCompetition.sandboxMode;
-
-            serviceLogger.debug(
-              `[ConfigurationService] Updated competition settings from competition ${activeCompetition.id}:`,
-              {
-                crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
-                sandboxMode: features.SANDBOX_MODE,
-              },
-            );
-          } else {
-            // No active competition, keep the environment variable settings
-            features.SANDBOX_MODE = false; // Default to false when no active competition
-            serviceLogger.debug(
-              `[ConfigurationService] No active competition, using environment settings:`,
-              {
-                crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
-                sandboxMode: features.SANDBOX_MODE,
-              },
-            );
-          }
-        },
-      },
+      config,
       serviceLogger,
     );
 
@@ -320,7 +267,7 @@ class ServiceRegistry {
       this._boostRepository,
       this._competitionRepository,
       this._userRepository,
-      config.boost.noStakeBoostAmount,
+      config,
       serviceLogger,
     );
 
@@ -330,10 +277,11 @@ class ServiceRegistry {
       this._boostRepository,
       this._stakesRepository,
       this._userService,
-      config.boost.noStakeBoostAmount,
+      config,
     );
     this._eventProcessor = new EventProcessor(
       db,
+      rewardsRepository,
       this._eventsRepository,
       this._stakesRepository,
       this._boostAwardService,
