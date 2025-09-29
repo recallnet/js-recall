@@ -65,6 +65,32 @@ export default function CompetitionsPage() {
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
     useUserCompetitions();
 
+  const competitionButton = React.useMemo(() => {
+    if (firstActiveCompetitionId) {
+      return {
+        href: `/competitions/${firstActiveCompetitionId}`,
+        text: "Active competition",
+        ariaLabel: "View active competition details",
+      };
+    }
+
+    const firstUpcomingId = upcomingCompetitions?.competitions?.[0]?.id;
+    if (firstUpcomingId) {
+      return {
+        href: `/competitions/${firstUpcomingId}`,
+        text: "Upcoming competition",
+        ariaLabel: "View upcoming competition details",
+      };
+    }
+
+    // Fallback to scroll to competitions section on same page
+    return {
+      href: "#competitions-section",
+      text: "Browse competitions",
+      ariaLabel: "Browse all competitions",
+    };
+  }, [firstActiveCompetitionId, upcomingCompetitions]);
+
   const carouselContent = React.useMemo(() => {
     if (isLoadingLeaderboard) return [];
 
@@ -149,13 +175,10 @@ export default function CompetitionsPage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild variant="modal" size="lg" className="uppercase">
                 <Link
-                  href={
-                    firstActiveCompetitionId
-                      ? `/competitions/${firstActiveCompetitionId}`
-                      : "/competitions"
-                  }
+                  href={competitionButton.href}
+                  aria-label={competitionButton.ariaLabel}
                 >
-                  Active competition
+                  {competitionButton.text}
                 </Link>
               </Button>
               <Button
@@ -164,7 +187,12 @@ export default function CompetitionsPage() {
                 size="lg"
                 className="border border-white uppercase text-white"
               >
-                <Link href="/leaderboards">Leaderboards</Link>
+                <Link
+                  href="/leaderboards"
+                  aria-label="View competition leaderboards"
+                >
+                  Leaderboards
+                </Link>
               </Button>
             </div>
           </div>
@@ -179,6 +207,7 @@ export default function CompetitionsPage() {
       <Tabs
         defaultValue="All"
         className="text-secondary-foreground mb-10 w-full pt-2"
+        id="competitions-section"
       >
         <TabsList className="mb-4 flex flex-wrap gap-2">
           <TabsTrigger
