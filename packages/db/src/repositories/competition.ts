@@ -2214,6 +2214,46 @@ export class CompetitionRepository {
   }
 
   /**
+   * Find competitions that need starting (pending and start_date reached)
+   * Excludes sandbox mode competitions. Results are ordered by earliest start_date first.
+   * @returns Array of competitions that should be started
+   */
+  async findCompetitionsNeedingStarting() {
+    try {
+      const now = new Date();
+      const result = await this.#db
+        .select({
+          crossChainTradingType: tradingCompetitions.crossChainTradingType,
+          ...getTableColumns(competitions),
+        })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .where(
+          and(
+            eq(competitions.status, "pending"),
+            eq(competitions.sandboxMode, false),
+            isNotNull(competitions.startDate),
+            lte(competitions.startDate, now),
+          ),
+        )
+        .orderBy(asc(competitions.startDate));
+
+      return result;
+    } catch (error) {
+      this.#logger.error(
+        {
+          error,
+        },
+        "[CompetitionRepository] Error in findCompetitionsNeedingStarting",
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Get portfolio timeline for agents in a competition
    * @param competitionId Competition ID
    * @param bucket Time bucket interval in minutes (default: 30)
