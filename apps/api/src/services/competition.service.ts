@@ -2302,13 +2302,6 @@ export class CompetitionService {
         );
         return;
       }
-
-      // Ensure we're processing by earliest start date first (defensive, repository already orders)
-      competitionsToStart.sort((a, b) => {
-        const aTime = a.startDate ? new Date(a.startDate).getTime() : 0;
-        const bTime = b.startDate ? new Date(b.startDate).getTime() : 0;
-        return aTime - bTime;
-      });
       serviceLogger.debug(
         `[CompetitionManager] Found ${competitionsToStart.length} competitions ready to start`,
       );
