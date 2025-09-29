@@ -155,7 +155,7 @@ export default function CompetitionsPage() {
               {session.ready && !session.isAuthenticated && (
                 <>
                   <Button
-                    className="border border-white bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
+                    className="border border-[#303846] bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
                     onClick={() => setIsJoining(true)}
                   >
                     SIGN IN
