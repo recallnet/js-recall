@@ -7,7 +7,6 @@
         "NOVES_API_KEY",
         "ROOT_ENCRYPTION_KEY",
         "EVM_CHAINS",
-        "COINGECKO_API_KEY",
         "INITIAL_ETH_ETH_BALANCE",
         "INITIAL_ETH_USDC_BALANCE",
         "INITIAL_ETH_USDT_BALANCE",
@@ -26,7 +25,9 @@
         "INITIAL_OPTIMISM_OP_BALANCE",
         "INITIAL_SVM_SOL_BALANCE",
         "INITIAL_SVM_USDC_BALANCE",
-        "INITIAL_SVM_USDT_BALANCE"
+        "INITIAL_SVM_USDT_BALANCE",
+        "COINGECKO_API_KEY",
+        "PRICE_PROVIDER"
       ]
     }
   }
