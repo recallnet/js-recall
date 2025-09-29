@@ -40,6 +40,7 @@ import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import { makeBoostController } from "./controllers/boost.controller.js";
+import { updateFeaturesWithCompetition } from "./lib/update-features-with-comp.js";
 import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
@@ -73,35 +74,9 @@ try {
 const services = new ServiceRegistry();
 
 // Load competition-specific configuration settings
-// TODO: Provide callback
-await services.configurationService.loadCompetitionSettings(
-  (activeCompetition) => {
-    if (activeCompetition) {
-      // Override the environment-based settings with competition-specific settings
-      features.CROSS_CHAIN_TRADING_TYPE =
-        activeCompetition.crossChainTradingType;
-      features.SANDBOX_MODE = activeCompetition.sandboxMode;
-
-      serviceLogger.debug(
-        `[ConfigurationService] Updated competition settings from competition ${activeCompetition.id}:`,
-        {
-          crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
-          sandboxMode: features.SANDBOX_MODE,
-        },
-      );
-    } else {
-      // No active competition, keep the environment variable settings
-      features.SANDBOX_MODE = false; // Default to false when no active competition
-      serviceLogger.debug(
-        `[ConfigurationService] No active competition, using environment settings:`,
-        {
-          crossChainTradingType: features.CROSS_CHAIN_TRADING_TYPE,
-          sandboxMode: features.SANDBOX_MODE,
-        },
-      );
-    }
-  },
-);
+const activeCompetition =
+  await services.competitionService.getActiveCompetition();
+updateFeaturesWithCompetition(activeCompetition);
 apiLogger.info("Competition-specific configuration settings loaded");
 
 // Configure middleware
