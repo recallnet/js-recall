@@ -55,12 +55,7 @@ export class TradingConstraintsService {
       minTradesPerDay: input.minTradesPerDay ?? null,
     };
 
-    // Only pass the transaction parameter when it's provided to keep method signatures
-    // consistent with unit test expectations that spy on repository calls.
-    if (tx) {
-      return await create(constraintsData, tx);
-    }
-    return await create(constraintsData);
+    return await create(constraintsData, tx);
   }
 
   /**
@@ -98,9 +93,7 @@ export class TradingConstraintsService {
       updateData.minTradesPerDay = input.minTradesPerDay;
     }
 
-    const result = tx
-      ? await update(competitionId, updateData, tx)
-      : await update(competitionId, updateData);
+    const result = await update(competitionId, updateData, tx);
     if (!result) {
       throw new Error(
         `Failed to update trading constraints for competition ${competitionId}`,
