@@ -1,6 +1,8 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { BlockchainType } from "@recallnet/services/types";
+
 import config from "@/config/index.js";
 import {
   AdminAgentResponse,
@@ -16,7 +18,6 @@ import {
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
-import { BlockchainType } from "@/types/index.js";
 
 // TODO: need user deactivation test
 

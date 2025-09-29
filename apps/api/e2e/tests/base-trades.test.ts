@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { features } from "@/config/index.js";
+import { MultiChainProvider } from "@recallnet/services/providers";
+import { BlockchainType, PriceReport } from "@recallnet/services/types";
+
+import config, { features } from "@/config/index.js";
 import {
   BalancesResponse,
   SpecificChain,
@@ -15,8 +18,7 @@ import {
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
-import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
-import { BlockchainType, PriceReport } from "@/types/index.js";
+import { logger } from "@/lib/logger.js";
 
 describe("Base Chain Trading", () => {
   let adminApiKey: string;
@@ -96,7 +98,11 @@ describe("Base Chain Trading", () => {
     const tokenData = [];
 
     // Initialize services for direct calls
-    const multiChainProvider = new MultiChainProvider();
+    const multiChainProvider = new MultiChainProvider(
+      config.evmChains,
+      config.specificChainTokens,
+      logger,
+    );
 
     // Get the price for each token
     for (const tokenAddress of BASE_TOKENS) {
@@ -374,7 +380,11 @@ describe("Base Chain Trading", () => {
     const targetToken = BASE_TOKENS[0]; // Just use the first Base token
 
     // Get token price to verify later using direct service call
-    const multiChainProvider = new MultiChainProvider();
+    const multiChainProvider = new MultiChainProvider(
+      config.evmChains,
+      config.specificChainTokens,
+      logger,
+    );
     const tokenPriceResponse = await multiChainProvider.getPrice(
       targetToken!,
       BlockchainType.EVM,

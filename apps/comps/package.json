@@ -68,7 +68,7 @@
     "uuid": "^9.0.0",
     "viem": "^2.28.1",
     "wagmi": "^2.15.2",
-    "zod": "^4.1.11"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:^",

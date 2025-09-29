@@ -1,7 +1,7 @@
 /**
  * API response types and base interfaces
  */
-import type { AgentPublic, User } from "../../src/types/index.js";
+import type { AgentPublic, User } from "@recallnet/services/types";
 
 // Base response type for all API responses
 export interface ApiResponse {

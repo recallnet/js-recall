@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { PriceTrackerService } from "@recallnet/services";
+import { MultiChainProvider } from "@recallnet/services/providers";
+import { BlockchainType } from "@recallnet/services/types";
+
 import config from "@/config/index.js";
 import { BalancesResponse, SnapshotResponse } from "@/e2e/utils/api-types.js";
 import {
@@ -9,9 +13,8 @@ import {
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
+import { logger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { PriceTrackerService } from "@/services/price-tracker.service.js";
-import { BlockchainType } from "@/types/index.js";
 
 const reason = "portfolio-snapshots end-to-end tests";
 
@@ -281,7 +284,17 @@ describe("Portfolio Snapshots", () => {
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
 
     // Use direct service call instead of API
-    const priceTracker = new PriceTrackerService();
+    const multiChainProvider = new MultiChainProvider(
+      config.evmChains,
+      config.specificChainTokens,
+      logger,
+    );
+    const priceTracker = new PriceTrackerService(
+      multiChainProvider,
+      config.priceTracker.maxCacheSize,
+      config.priceTracker.priceTTLMs,
+      logger,
+    );
     await priceTracker.getPrice(usdcTokenAddress);
 
     const cacheSpy = vi.spyOn(priceTracker, "getCachedPrice");

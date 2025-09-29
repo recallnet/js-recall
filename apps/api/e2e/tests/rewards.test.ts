@@ -3,6 +3,7 @@ import { MerkleTree } from "merkletreejs";
 import { hexToBytes, keccak256 } from "viem";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { competitions } from "@recallnet/db/schema/core/defs";
 import {
   rewards,
@@ -10,14 +11,14 @@ import {
   rewardsTree,
 } from "@recallnet/db/schema/voting/defs";
 import { InsertReward } from "@recallnet/db/schema/voting/types";
-
-import { db } from "@/database/db.js";
-import { insertRewards } from "@/database/repositories/rewards-repository.js";
 import {
   RewardsService,
   createFauxLeafNode,
   createLeafNode,
-} from "@/services/rewards.service.js";
+} from "@recallnet/services";
+
+import { db } from "@/database/db.js";
+import { logger } from "@/lib/logger.js";
 
 // Mock the RewardsAllocator class
 const mockRewardsAllocator = {
@@ -30,6 +31,7 @@ const mockRewardsAllocator = {
 };
 
 describe("Rewards Service", () => {
+  let rewardsRepo: RewardsRepository;
   let rewardsService: RewardsService;
   let testCompetitionId: string;
 
@@ -40,7 +42,13 @@ describe("Rewards Service", () => {
 
   beforeEach(async () => {
     // Create RewardsService with mock RewardsAllocator
-    rewardsService = new RewardsService(mockRewardsAllocator as any); // eslint-disable-line
+    rewardsRepo = new RewardsRepository(db, logger);
+    rewardsService = new RewardsService(
+      rewardsRepo,
+      mockRewardsAllocator as any,
+      db,
+      logger,
+    ); // eslint-disable-line
 
     // Create a test competition with UUID
     const competitionId = "756fddf2-d5a3-4d07-b769-109583469c88";
@@ -90,7 +98,7 @@ describe("Rewards Service", () => {
     }
 
     // Insert test rewards into database
-    await insertRewards(testRewards);
+    await rewardsRepo.insertRewards(testRewards);
 
     // Execute the allocate method with all required parameters
     await rewardsService.allocate(
@@ -188,7 +196,7 @@ describe("Rewards Service", () => {
     ];
 
     // Insert single reward
-    await insertRewards(singleReward);
+    await rewardsRepo.insertRewards(singleReward);
 
     // Execute allocate with all required parameters
     await rewardsService.allocate(
@@ -249,7 +257,7 @@ describe("Rewards Service", () => {
     );
 
     // Insert rewards and build the Merkle tree
-    await insertRewards(testRewards);
+    await rewardsRepo.insertRewards(testRewards);
     await rewardsService.allocate(
       testCompetitionId,
       testTokenAddress,
@@ -320,7 +328,7 @@ describe("Rewards Service", () => {
 
     const leafHashBuffer = createLeafNode(existingAddress, existingAmount);
 
-    await insertRewards([
+    await rewardsRepo.insertRewards([
       {
         id: crypto.randomUUID(),
         competitionId: testCompetitionId,

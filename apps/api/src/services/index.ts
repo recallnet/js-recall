@@ -422,6 +422,10 @@ class ServiceRegistry {
     return this._indexingService;
   }
 
+  get competitionRepository(): CompetitionRepository {
+    return this._competitionRepository;
+  }
+
   get stakesRepository(): StakesRepository {
     return this._stakesRepository;
   }
