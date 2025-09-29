@@ -196,7 +196,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
 
   return (
     <div className="mt-12 w-full">
-      <h2 className="mb-5 text-2xl font-bold">Positions</h2>
+      <h2 className="mb-5 text-2xl font-bold">Open Positions</h2>
       <div className="overflow-x-auto">
         <Table className="min-w-full">
           <TableHeader>
