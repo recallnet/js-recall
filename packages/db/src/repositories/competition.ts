@@ -1865,6 +1865,12 @@ export class CompetitionRepository {
 
       if (params.sort) {
         dataQuery = getSort(dataQuery, params.sort, competitionOrderByFields);
+      } else {
+        // Default sort: newest first by startDate, then by createdAt for competitions without startDate
+        dataQuery = dataQuery.orderBy(
+          desc(competitions.startDate),
+          desc(competitions.createdAt),
+        );
       }
 
       const competitionResults = await dataQuery
