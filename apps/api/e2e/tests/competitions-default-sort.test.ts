@@ -69,7 +69,7 @@ describe("Competitions default sorting", () => {
     expect(idx2).toBeLessThan(idx1);
   });
 
-  test("active competitions default to startDate DESC", async () => {
+  test("ended competitions default to startDate DESC", async () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
@@ -82,32 +82,34 @@ describe("Competitions default sorting", () => {
     // Create two competitions and start them in sequence to create distinct startDate values
     const p1 = await createTestCompetition({
       adminClient,
-      name: `Active A ${Date.now()}`,
+      name: `Ended A ${Date.now()}`,
     });
     await wait(10);
     const p2 = await createTestCompetition({
       adminClient,
-      name: `Active B ${Date.now()}`,
+      name: `Ended B ${Date.now()}`,
     });
 
-    // Start first competition
+    // Start and end first competition
     const s1 = await startExistingTestCompetition({
       adminClient,
       competitionId: p1.competition.id,
       agentIds: [agent.id],
     });
+    await adminClient.endCompetition(s1.competition.id);
 
-    await wait(20); // ensure later startDate
+    await wait(20); // ensure later startDate for the second
 
-    // Start second competition
+    // Start and end second competition
     const s2 = await startExistingTestCompetition({
       adminClient,
       competitionId: p2.competition.id,
       agentIds: [agent.id],
     });
+    await adminClient.endCompetition(s2.competition.id);
 
     const list = (await adminClient.getCompetitions(
-      "active",
+      "ended",
     )) as UpcomingCompetitionsResponse;
 
     expect(list.success).toBe(true);
@@ -119,7 +121,7 @@ describe("Competitions default sorting", () => {
     expect(idxS1).toBeGreaterThanOrEqual(0);
     expect(idxS2).toBeGreaterThanOrEqual(0);
 
-    // Default order should be newest first by startDate
+    // Default order should be newest first by startDate (s2 should come before s1)
     expect(idxS2).toBeLessThan(idxS1);
   });
 
