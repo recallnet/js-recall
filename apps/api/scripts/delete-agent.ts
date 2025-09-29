@@ -2,7 +2,6 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
-import { findAll as findAllAgents } from "@/database/repositories/agent-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 const services = new ServiceRegistry();
@@ -41,7 +40,7 @@ const colors = {
 async function listAllAgents() {
   try {
     // Get all agents - direct DB access for script
-    const agents = await findAllAgents({
+    const agents = await services.agentRepository.findAll({
       limit: 1000000,
       offset: 0,
       sort: "-createdAt",

@@ -2,11 +2,6 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
-import {
-  batchInsertLeaderboard,
-  getBoundedSnapshots,
-  getBulkAgentCompetitionRankings,
-} from "@/database/repositories/competition-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 const services = new ServiceRegistry();
@@ -54,10 +49,11 @@ async function calculateBulkAgentStats(
 > {
   try {
     // Get agent's ranking in this competition
-    const rankings = await getBulkAgentCompetitionRankings(
-      competitionId,
-      agentIds,
-    );
+    const rankings =
+      await services.competitionRepository.getBulkAgentCompetitionRankings(
+        competitionId,
+        agentIds,
+      );
     const pnlMap = new Map<
       string,
       {
@@ -83,7 +79,10 @@ async function calculateBulkAgentStats(
         continue;
       }
 
-      const snaps = await getBoundedSnapshots(competitionId, agentId);
+      const snaps = await services.competitionRepository.getBoundedSnapshots(
+        competitionId,
+        agentId,
+      );
       const newest = snaps?.newest;
       const oldest = snaps?.oldest;
       if (typeof oldest?.totalValue !== "number") {
@@ -198,7 +197,9 @@ async function backfillCompetitionPnl() {
         });
       }
       if (leaderboardEntries.length > 0) {
-        await batchInsertLeaderboard(leaderboardEntries);
+        await services.competitionRepository.batchInsertLeaderboard(
+          leaderboardEntries,
+        );
       }
     }
 

@@ -98,11 +98,7 @@ describe("Base Chain Trading", () => {
     const tokenData = [];
 
     // Initialize services for direct calls
-    const multiChainProvider = new MultiChainProvider(
-      config.evmChains,
-      config.specificChainTokens,
-      logger,
-    );
+    const multiChainProvider = new MultiChainProvider(config, logger);
 
     // Get the price for each token
     for (const tokenAddress of BASE_TOKENS) {
@@ -380,11 +376,7 @@ describe("Base Chain Trading", () => {
     const targetToken = BASE_TOKENS[0]; // Just use the first Base token
 
     // Get token price to verify later using direct service call
-    const multiChainProvider = new MultiChainProvider(
-      config.evmChains,
-      config.specificChainTokens,
-      logger,
-    );
+    const multiChainProvider = new MultiChainProvider(config, logger);
     const tokenPriceResponse = await multiChainProvider.getPrice(
       targetToken!,
       BlockchainType.EVM,

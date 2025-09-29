@@ -284,15 +284,10 @@ describe("Portfolio Snapshots", () => {
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
 
     // Use direct service call instead of API
-    const multiChainProvider = new MultiChainProvider(
-      config.evmChains,
-      config.specificChainTokens,
-      logger,
-    );
+    const multiChainProvider = new MultiChainProvider(config, logger);
     const priceTracker = new PriceTrackerService(
       multiChainProvider,
-      config.priceTracker.maxCacheSize,
-      config.priceTracker.priceTTLMs,
+      config,
       logger,
     );
     await priceTracker.getPrice(usdcTokenAddress);

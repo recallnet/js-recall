@@ -17,7 +17,6 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import * as readline from "readline";
 
-import { findAll as findAllAgents } from "@/database/repositories/agent-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 // Load environment variables
@@ -229,7 +228,7 @@ async function resetAllAgentApiKeys(): Promise<void> {
       `\n${colors.blue}${colors.bold}Loading agents from database...${colors.reset}`,
     );
     // Get all agents - direct DB access for script
-    const agents = await findAllAgents({
+    const agents = await services.agentRepository.findAll({
       limit: 1000000,
       offset: 0,
       sort: "-createdAt",

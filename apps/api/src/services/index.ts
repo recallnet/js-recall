@@ -75,6 +75,8 @@ class ServiceRegistry {
   private _perpsDataProcessor: PerpsDataProcessor;
   private _boostService: BoostService;
   private readonly _competitionRepository: CompetitionRepository;
+  private readonly _agentRepository: AgentRepository;
+  private readonly _perpsRepository: PerpsRepository;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
   private readonly _userRepository: UserRepository;
@@ -99,6 +101,15 @@ class ServiceRegistry {
       dbRead,
       repositoryLogger,
     );
+    const competitionRewardsRepository = new CompetitionRewardsRepository(
+      db,
+      repositoryLogger,
+    );
+    this._agentRepository = new AgentRepository(
+      db,
+      repositoryLogger,
+      competitionRewardsRepository,
+    );
     const tradeRepository = new TradeRepository(
       db,
       repositoryLogger,
@@ -106,22 +117,13 @@ class ServiceRegistry {
     );
     const tradingConstraintsRepository = new TradingConstraintsRepository(db);
     const agentScoreRepository = new AgentScoreRepository(db, repositoryLogger);
-    const competitionRewardsRepository = new CompetitionRewardsRepository(
-      db,
-      repositoryLogger,
-    );
-    const agentRepository = new AgentRepository(
-      db,
-      repositoryLogger,
-      competitionRewardsRepository,
-    );
     const voteRepository = new VoteRepository(db, repositoryLogger);
     const agentNonceRepository = new AgentNonceRepository(db);
     const leaderboardRepository = new LeaderboardRepository(
       dbRead,
       repositoryLogger,
     );
-    const perpsRepository = new PerpsRepository(db, dbRead, repositoryLogger);
+    this._perpsRepository = new PerpsRepository(db, dbRead, repositoryLogger);
     const adminRepository = new AdminRepository(db, repositoryLogger);
 
     const walletWatchlist = new WalletWatchlist(config, serviceLogger);
@@ -170,7 +172,7 @@ class ServiceRegistry {
 
     // Initialize vote service (no dependencies)
     this._voteService = new VoteService(
-      agentRepository,
+      this._agentRepository,
       this._competitionRepository,
       voteRepository,
       serviceLogger,
@@ -182,7 +184,7 @@ class ServiceRegistry {
     // Initialize user, agent, and admin services
     this._userService = new UserService(
       this._emailService,
-      agentRepository,
+      this._agentRepository,
       this._userRepository,
       voteRepository,
       walletWatchlist,
@@ -194,11 +196,11 @@ class ServiceRegistry {
       this._balanceService,
       this._priceTrackerService,
       this._userService,
-      agentRepository,
+      this._agentRepository,
       agentNonceRepository,
       this._competitionRepository,
       leaderboardRepository,
-      perpsRepository,
+      this._perpsRepository,
       tradeRepository,
       this._userRepository,
       config,
@@ -223,15 +225,15 @@ class ServiceRegistry {
     );
     const calmarRatioService = new CalmarRatioService(
       this._competitionRepository,
-      perpsRepository,
+      this._perpsRepository,
       serviceLogger,
     );
     // Initialize PerpsDataProcessor before CompetitionManager (as it's a dependency)
     this._perpsDataProcessor = new PerpsDataProcessor(
       calmarRatioService,
-      agentRepository,
+      this._agentRepository,
       this._competitionRepository,
-      perpsRepository,
+      this._perpsRepository,
       serviceLogger,
     );
 
@@ -246,9 +248,9 @@ class ServiceRegistry {
       this._tradingConstraintsService,
       this._competitionRewardService,
       this._perpsDataProcessor,
-      agentRepository,
+      this._agentRepository,
       agentScoreRepository,
-      perpsRepository,
+      this._perpsRepository,
       this._competitionRepository,
       db,
       config,
@@ -392,6 +394,14 @@ class ServiceRegistry {
 
   get eventsRepository(): EventsRepository {
     return this._eventsRepository;
+  }
+
+  get agentRepository(): AgentRepository {
+    return this._agentRepository;
+  }
+
+  get perpsRepository(): PerpsRepository {
+    return this._perpsRepository;
   }
 }
 
