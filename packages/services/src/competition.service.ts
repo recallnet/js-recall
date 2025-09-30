@@ -32,6 +32,7 @@ import {
   CrossChainTradingType,
   PagingParams,
   SpecificChain,
+  SpecificChainBalances,
 } from "./types/index.js";
 import { ApiError } from "./types/index.js";
 import {
@@ -354,7 +355,7 @@ type BasicCompetitionInfo = {
 
 export interface CompetitionServiceConfig {
   evmChains: SpecificChain[];
-  specificChainBalances: Record<SpecificChain, Record<string, number>>;
+  specificChainBalances: SpecificChainBalances;
   maxTradePercentage: number;
   rateLimiting: {
     maxRequests: number;

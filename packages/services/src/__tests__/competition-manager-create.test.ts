@@ -1,99 +1,150 @@
 import { randomUUID } from "crypto";
-import type { Logger } from "pino";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { MockProxy, mock, mockReset } from "vitest-mock-extended";
+import { Logger } from "pino";
+import {
+  Mock,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
+import { MockProxy, mock } from "vitest-mock-extended";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
-import type { SelectCompetitionReward } from "@recallnet/db/schema/core/types";
+import { SelectCompetitionReward } from "@recallnet/db/schema/core/types";
 import type { SelectTradingConstraints } from "@recallnet/db/schema/trading/types";
-import type { Database, Transaction } from "@recallnet/db/types";
+import { Database, Transaction } from "@recallnet/db/types";
 
-import { AgentService } from "../agent.service.js";
-import { AgentRankService } from "../agentrank.service.js";
-import { BalanceService } from "../balance.service.js";
-import { CompetitionRewardService } from "../competition-reward.service.js";
-import {
-  CompetitionService,
-  CompetitionServiceConfig,
-} from "../competition.service.js";
-import { PerpsDataProcessor } from "../perps-data-processor.service.js";
-import { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
-import { TradeSimulatorService } from "../trade-simulator.service.js";
-import { TradingConstraintsService } from "../trading-constraints.service.js";
-import { VoteService } from "../vote.service.js";
+import type { AgentService } from "../agent.service.js";
+import type { AgentRankService } from "../agentrank.service.js";
+import type { BalanceService } from "../balance.service.js";
+import type { CompetitionRewardService } from "../competition-reward.service.js";
+import { CompetitionService } from "../competition.service.js";
+import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
+import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import type { TradeSimulatorService } from "../trade-simulator.service.js";
+import type { TradingConstraintsService } from "../trading-constraints.service.js";
+import type { VoteService } from "../vote.service.js";
 
 describe("CompetitionService - createCompetition", () => {
-  let competitionService: CompetitionService;
-  let mockBalanceService: MockProxy<BalanceService>;
-  let mockTradeSimulatorService: MockProxy<TradeSimulatorService>;
-  let mockPortfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
-  let mockAgentService: MockProxy<AgentService>;
-  let mockAgentRankService: MockProxy<AgentRankService>;
-  let mockVoteService: MockProxy<VoteService>;
-  let mockTradingConstraintsService: MockProxy<TradingConstraintsService>;
-  let mockCompetitionRewardService: MockProxy<CompetitionRewardService>;
-  let mockPerpsDataProcessor: MockProxy<PerpsDataProcessor>;
-  let mockAgentRepo: MockProxy<AgentRepository>;
-  let mockAgentScoreRepo: MockProxy<AgentScoreRepository>;
-  let mockPerpsRepo: MockProxy<PerpsRepository>;
-  let mockCompetitionRepo: MockProxy<CompetitionRepository>;
+  let balanceService: MockProxy<BalanceService>;
+  let tradeSimulatorService: MockProxy<TradeSimulatorService>;
+  let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
+  let agentService: MockProxy<AgentService>;
+  let agentRankService: MockProxy<AgentRankService>;
+  let voteService: MockProxy<VoteService>;
+  let tradingConstraintsService: MockProxy<TradingConstraintsService>;
+  let competitionRewardService: MockProxy<CompetitionRewardService>;
+  let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let agentRepo: MockProxy<AgentRepository>;
+  let agentScoreRepo: MockProxy<AgentScoreRepository>;
+  let perpsRepo: MockProxy<PerpsRepository>;
+  let competitionRepo: MockProxy<CompetitionRepository>;
   let mockDb: MockProxy<Database>;
-  let mockConfig: MockProxy<CompetitionServiceConfig>;
-  let mockLogger: MockProxy<Logger>;
+  let logger: MockProxy<Logger>;
+
+  let competitionService: CompetitionService;
 
   beforeEach(() => {
-    // Reset all mocks
-    vi.clearAllMocks();
-
-    // Create all service mocks
-    mockBalanceService = mock<BalanceService>();
-    mockTradeSimulatorService = mock<TradeSimulatorService>();
-    mockPortfolioSnapshotterService = mock<PortfolioSnapshotterService>();
-    mockAgentService = mock<AgentService>();
-    mockAgentRankService = mock<AgentRankService>();
-    mockVoteService = mock<VoteService>();
-    mockTradingConstraintsService = mock<TradingConstraintsService>();
-    mockCompetitionRewardService = mock<CompetitionRewardService>();
-    mockPerpsDataProcessor = mock<PerpsDataProcessor>();
-
-    // Create repository mocks
-    mockAgentRepo = mock<AgentRepository>();
-    mockAgentScoreRepo = mock<AgentScoreRepository>();
-    mockPerpsRepo = mock<PerpsRepository>();
-    mockCompetitionRepo = mock<CompetitionRepository>();
-
-    // Create database and config mocks
+    balanceService = mock<BalanceService>();
+    tradeSimulatorService = mock<TradeSimulatorService>();
+    portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
+    agentService = mock<AgentService>();
+    agentRankService = mock<AgentRankService>();
+    voteService = mock<VoteService>();
+    tradingConstraintsService = mock<TradingConstraintsService>();
+    competitionRewardService = mock<CompetitionRewardService>();
+    perpsDataProcessor = mock<PerpsDataProcessor>();
+    agentRepo = mock<AgentRepository>();
+    agentScoreRepo = mock<AgentScoreRepository>();
+    perpsRepo = mock<PerpsRepository>();
+    competitionRepo = mock<CompetitionRepository>();
     mockDb = mock<Database>();
-    mockConfig = mock<CompetitionServiceConfig>();
-    mockLogger = mock<Logger>();
+    logger = mock<Logger>();
 
-    // Setup specific mock implementations
-    mockCompetitionRewardService.createRewards.mockResolvedValue([
+    // Setup default mock return values
+    competitionRewardService.createRewards.mockResolvedValue([
       {
-        id: randomUUID(),
-        competitionId: "",
-        rank: 1,
-        reward: 1000,
+        id: "reward1",
+        competitionId: "comp-123",
         agentId: null,
-      } as SelectCompetitionReward,
+        rank: 1,
+        reward: 5000,
+      },
+      {
+        id: "reward2",
+        competitionId: "comp-123",
+        agentId: null,
+        rank: 2,
+        reward: 2500,
+      },
+      {
+        id: "reward3",
+        competitionId: "comp-123",
+        agentId: null,
+        rank: 3,
+        reward: 1000,
+      },
     ]);
 
-    mockTradingConstraintsService.createConstraints.mockResolvedValue({
-      competitionId: "",
-      minimumPairAgeHours: 24,
-      minimum24hVolumeUsd: 10000,
-      minimumLiquidityUsd: 50000,
-      minimumFdvUsd: 100000,
-      minTradesPerDay: null,
+    tradingConstraintsService.createConstraints.mockResolvedValue({
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as SelectTradingConstraints);
+      competitionId: "comp-123",
+      minimumPairAgeHours: 48,
+      minimum24hVolumeUsd: 20000,
+      minimumLiquidityUsd: 100000,
+      minimumFdvUsd: 200000,
+      minTradesPerDay: null,
+    });
 
-    // The create method returns the created competition combined with trading competition data
-    mockCompetitionRepo.create.mockResolvedValue({
+    // Create competition manager instance with all mocked dependencies
+    competitionService = new CompetitionService(
+      balanceService,
+      tradeSimulatorService,
+      portfolioSnapshotterService,
+      agentService,
+      agentRankService,
+      voteService,
+      tradingConstraintsService,
+      competitionRewardService,
+      perpsDataProcessor,
+      agentRepo,
+      agentScoreRepo,
+      perpsRepo,
+      competitionRepo,
+      mockDb,
+      {
+        evmChains: [
+          "eth",
+          "polygon",
+          "bsc",
+          "arbitrum",
+          "base",
+          "optimism",
+          "avalanche",
+          "linea",
+        ],
+        maxTradePercentage: 25,
+        rateLimiting: {
+          windowMs: 60000,
+          maxRequests: 100,
+        },
+        specificChainBalances: {
+          eth: {
+            eth: 1,
+          },
+        },
+      },
+      logger,
+    );
+    // Mock the repository functions
+    competitionRepo.create.mockImplementation(async () => ({
+      competitionId: randomUUID(),
       id: randomUUID(),
       name: "Test Competition",
       description: "Test Description",
@@ -112,59 +163,21 @@ describe("CompetitionService - createCompetition", () => {
       maxParticipants: null,
       registeredParticipants: 0,
       sandboxMode: false,
-      // Trading competition fields
-      competitionId: randomUUID(),
       crossChainTradingType: "disallowAll",
-    });
+    }));
+  });
 
-    // Setup database transaction mock
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("should create competition atomically with all components", async () => {
+    // Setup the transaction mock to execute the callback
     mockDb.transaction.mockImplementation(async (callback) => {
       const mockTx = mock<Transaction>();
       return await callback(mockTx);
     });
 
-    // Create competition service instance with all mocked dependencies
-    competitionService = new CompetitionService(
-      mockBalanceService,
-      mockTradeSimulatorService,
-      mockPortfolioSnapshotterService,
-      mockAgentService,
-      mockAgentRankService,
-      mockVoteService,
-      mockTradingConstraintsService,
-      mockCompetitionRewardService,
-      mockPerpsDataProcessor,
-      mockAgentRepo,
-      mockAgentScoreRepo,
-      mockPerpsRepo,
-      mockCompetitionRepo,
-      mockDb,
-      mockConfig,
-      mockLogger,
-    );
-  });
-
-  afterEach(() => {
-    // Reset all mocks
-    mockReset(mockBalanceService);
-    mockReset(mockTradeSimulatorService);
-    mockReset(mockPortfolioSnapshotterService);
-    mockReset(mockAgentService);
-    mockReset(mockAgentRankService);
-    mockReset(mockVoteService);
-    mockReset(mockTradingConstraintsService);
-    mockReset(mockCompetitionRewardService);
-    mockReset(mockPerpsDataProcessor);
-    mockReset(mockAgentRepo);
-    mockReset(mockAgentScoreRepo);
-    mockReset(mockPerpsRepo);
-    mockReset(mockCompetitionRepo);
-    mockReset(mockDb);
-    mockReset(mockConfig);
-    mockReset(mockLogger);
-  });
-
-  test("should create competition atomically with all components", async () => {
     const result = await competitionService.createCompetition({
       name: "New Competition",
       description: "Test Description",
@@ -188,7 +201,7 @@ describe("CompetitionService - createCompetition", () => {
     expect(mockDb.transaction).toHaveBeenCalledTimes(1);
 
     // Verify competition was created with transaction
-    expect(mockCompetitionRepo.create).toHaveBeenCalledWith(
+    expect(competitionRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         name: "New Competition",
         description: "Test Description",
@@ -201,7 +214,7 @@ describe("CompetitionService - createCompetition", () => {
     );
 
     // Verify rewards were created with transaction
-    expect(mockCompetitionRewardService.createRewards).toHaveBeenCalledWith(
+    expect(competitionRewardService.createRewards).toHaveBeenCalledWith(
       expect.any(String), // Competition ID
       {
         1: 5000,
@@ -212,9 +225,7 @@ describe("CompetitionService - createCompetition", () => {
     );
 
     // Verify constraints were created with transaction
-    expect(
-      mockTradingConstraintsService.createConstraints,
-    ).toHaveBeenCalledWith(
+    expect(tradingConstraintsService.createConstraints).toHaveBeenCalledWith(
       expect.objectContaining({
         competitionId: expect.any(String),
         minimumPairAgeHours: 48,
@@ -234,6 +245,11 @@ describe("CompetitionService - createCompetition", () => {
   });
 
   test("should create competition without rewards", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
     const result = await competitionService.createCompetition({
       name: "No Rewards Competition",
       description: "Test without rewards",
@@ -241,16 +257,22 @@ describe("CompetitionService - createCompetition", () => {
     });
 
     expect(mockDb.transaction).toHaveBeenCalledTimes(1);
-    expect(mockCompetitionRepo.create).toHaveBeenCalled();
-    expect(mockCompetitionRewardService.createRewards).not.toHaveBeenCalled();
-    expect(mockTradingConstraintsService.createConstraints).toHaveBeenCalled();
+    expect(competitionRepo.create).toHaveBeenCalled();
+    expect(competitionRewardService.createRewards).not.toHaveBeenCalled();
+    expect(tradingConstraintsService.createConstraints).toHaveBeenCalled();
 
     expect(result.rewards).toEqual([]);
   });
 
   test("should rollback transaction when competition creation fails", async () => {
+    // Setup the transaction mock to execute the callback
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
     // Make competition creation fail
-    mockCompetitionRepo.create.mockRejectedValue(new Error("Database error"));
+    competitionRepo.create.mockRejectedValue(new Error("Database error"));
 
     await expect(
       competitionService.createCompetition({
@@ -263,15 +285,18 @@ describe("CompetitionService - createCompetition", () => {
     expect(mockDb.transaction).toHaveBeenCalledTimes(1);
 
     // Verify that rewards and constraints were not created
-    expect(mockCompetitionRewardService.createRewards).not.toHaveBeenCalled();
-    expect(
-      mockTradingConstraintsService.createConstraints,
-    ).not.toHaveBeenCalled();
+    expect(competitionRewardService.createRewards).not.toHaveBeenCalled();
+    expect(tradingConstraintsService.createConstraints).not.toHaveBeenCalled();
   });
 
   test("should rollback transaction when rewards creation fails", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
     // Make rewards creation fail
-    mockCompetitionRewardService.createRewards.mockRejectedValue(
+    competitionRewardService.createRewards!.mockRejectedValue(
       new Error("Invalid reward rank"),
     );
 
@@ -290,13 +315,18 @@ describe("CompetitionService - createCompetition", () => {
     expect(mockDb.transaction).toHaveBeenCalledTimes(1);
 
     // Verify competition was created but the whole transaction should roll back
-    expect(mockCompetitionRepo.create).toHaveBeenCalled();
-    expect(mockCompetitionRewardService.createRewards).toHaveBeenCalled();
+    expect(competitionRepo.create).toHaveBeenCalled();
+    expect(competitionRewardService.createRewards).toHaveBeenCalled();
   });
 
   test("should rollback transaction when constraints creation fails", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
     // Make constraints creation fail
-    mockTradingConstraintsService.createConstraints.mockRejectedValue(
+    tradingConstraintsService.createConstraints!.mockRejectedValue(
       new Error("Invalid constraints"),
     );
 
@@ -314,7 +344,7 @@ describe("CompetitionService - createCompetition", () => {
     expect(mockDb.transaction).toHaveBeenCalledTimes(1);
 
     // Verify competition and rewards were created but the whole transaction should roll back
-    expect(mockCompetitionRepo.create).toHaveBeenCalled();
-    expect(mockTradingConstraintsService.createConstraints).toHaveBeenCalled();
+    expect(competitionRepo.create).toHaveBeenCalled();
+    expect(tradingConstraintsService.createConstraints).toHaveBeenCalled();
   });
 });
