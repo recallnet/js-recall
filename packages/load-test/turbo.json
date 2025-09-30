@@ -7,7 +7,18 @@
       "persistent": true
     },
     "lint": {
-      "env": ["AGENTS_COUNT", "API_HOST"]
+      "env": [
+        "AGENTS_COUNT",
+        "API_HOST",
+        "ADMIN_API_KEY",
+        "SENTRY_DSN",
+        "SENTRY_SAMPLE_REQUEST",
+        "TEST_DURATION",
+        "TEST_NAME",
+        "TEST_PROFILE",
+        "REQUEST_RATE",
+        "TRADE_AMOUNT"
+      ]
     }
   }
 }

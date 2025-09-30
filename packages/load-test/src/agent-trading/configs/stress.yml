@@ -4,19 +4,26 @@ config:
   variables:
     usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
     wethToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-    # Parameterized variables with baseline defaults (8 req/s, 60s)
-    testDuration: "{{ $env.TEST_DURATION || 60 }}" # Default 1 minute (baseline)
-    requestRate: "{{ $env.REQUEST_RATE || 8 }}" # Default 8 req/s (baseline)
-    tradeAmount: "{{ $env.TRADE_AMOUNT || '0.1' }}" # Default $0.10
-    testName: "{{ $env.TEST_NAME || 'stress_test' }}"
+  plugins:
+    ensure:
+      thresholds:
+        - "http.response_time.p95": 1500
+        - "http.response_time.p99": 3000
+      conditions:
+        - expression: "vusers.failed < 100"
+          strict: true
   phases:
-    # Single parameterized phase
-    - duration: "{{ testDuration }}"
-      arrivalRate: "{{ requestRate }}"
-      name: "{{ testName }}"
+    # Parameterized phase using env vars directly (no defaults supported in phases)
+    - duration: 60 # Set via TEST_DURATION env var by CLI
+      arrivalRate: 8 # Set via REQUEST_RATE env var by CLI
+      name: "stress_test"
 
 before:
   flow:
+    # Start Sentry metrics tracking
+    - function: "startTestMetrics"
+    - function: "startSetupPhase"
+
     # 1. Check for existing competition
     - get:
         url: "/api/competitions/status"
@@ -86,14 +93,28 @@ before:
         json:
           competitionId: "{{ competitionId }}"
     - log: "Started competition {{ competitionId }} with {{ $env.AGENTS_COUNT }} agents"
-    - log: "Test config: {{ requestRate }} req/s for {{ testDuration }}s with ${{ tradeAmount }} trades"
+    - log: "Test config: {{ $env.REQUEST_RATE }} req/s for {{ $env.TEST_DURATION }}s with ${{ $env.TRADE_AMOUNT }} trades"
+
+    # Finish setup phase span
+    - function: "finishSetupPhase"
+
+after:
+  flow:
+    # Flush Sentry spans before exit
+    - function: "cleanupSentry"
 
 scenarios:
   - name: "test-trading"
     flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
+
       # Select a random agent from the pool
       - function: "selectRandomAgent"
       - log: "Trading as agent {{ agentId }}"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
 
       # Check balance
       - get:
@@ -111,8 +132,11 @@ scenarios:
           json:
             fromToken: "{{ usdcToken }}"
             toToken: "{{ wethToken }}"
-            amount: "{{ tradeAmount }}"
+            amount: "{{ $env.TRADE_AMOUNT }}"
             reason: "Generic stress test trade"
             fromChain: "EVM"
             toChain: "EVM"
           afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"

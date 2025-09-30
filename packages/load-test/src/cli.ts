@@ -192,27 +192,17 @@ function runTest(options: Options): void {
   const artilleryEnv: Record<string, string | undefined> = {
     ...process.env,
     AGENTS_COUNT: options.agents,
+    TEST_PROFILE: options.profile,
   };
 
-  // Add generic test parameters if provided
-  if (options.duration) {
-    artilleryEnv.TEST_DURATION = options.duration;
-  }
-  if (options.requestRate) {
-    artilleryEnv.REQUEST_RATE = options.requestRate;
+  // Set defaults for generic test parameters (can be overridden via options or env vars)
+  const duration = options.duration || process.env.TEST_DURATION || "60"; // Default: 1 minute
+  const requestRate = options.requestRate || process.env.REQUEST_RATE || "8"; // Default: 8 req/s
+  const tradeAmount = options.tradeAmount || process.env.TRADE_AMOUNT || "0.1"; // Default: $0.10
 
-    // Set appropriate thresholds based on request rate
-    artilleryEnv.P95_THRESHOLD = "1500";
-    artilleryEnv.P99_THRESHOLD = "3000";
-    artilleryEnv.MAX_FAILED_VUS = "100";
-
-    // Set minimum throughput to 90% of target
-    const rate = parseInt(options.requestRate);
-    artilleryEnv.MIN_THROUGHPUT = (rate * 0.9).toString();
-  }
-  if (options.tradeAmount) {
-    artilleryEnv.TRADE_AMOUNT = options.tradeAmount;
-  }
+  artilleryEnv.TEST_DURATION = duration;
+  artilleryEnv.REQUEST_RATE = requestRate;
+  artilleryEnv.TRADE_AMOUNT = tradeAmount;
 
   console.log(`
 ════════════════════════════════════════════
@@ -232,6 +222,12 @@ Config: ${profile.config}
     artilleryArgs.push("--output", reportFile);
     console.log(`Report: ${reportFile}`);
   }
+
+  // Add config overrides for parameterized values
+  artilleryArgs.push(
+    "--overrides",
+    `{ "config": { "phases": [{ "duration": ${duration}, "arrivalRate": ${requestRate}, "name": "stress_test" }] } }`,
+  );
 
   artilleryArgs.push(profile.config);
 

@@ -73,27 +73,19 @@ export async function setup() {
     const originalLeaderboardAccess =
       process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS;
 
-    // Force override with .env.test values (but don't override leaderboard setting if in leaderboard test)
+    // Determine if test needs to preserve process.env
+    const shouldUseProcessEnv =
+      isLeaderboardTest ||
+      isTradingTest ||
+      isBaseTradingTest ||
+      isRateLimiterDisabledTest;
+
+    // Force override with .env.test values
     const result = config({
       path: envTestPath,
       override: true,
-      // Only use processEnv when running the leaderboard test
-      ...(isLeaderboardTest && {
-        // Preserve our manual setting instead of loading from .env.test
-        ignoreProcessEnv: false, // This tells dotenv to use process.env as the starting point
-      }),
-      ...(isTradingTest && {
-        //
-        ignoreProcessEnv: false,
-      }),
-      ...(isBaseTradingTest && {
-        //
-        ignoreProcessEnv: false,
-      }),
-      ...(isRateLimiterDisabledTest && {
-        //
-        ignoreProcessEnv: false,
-      }),
+      // Use process.env as starting point for specific tests that need custom env vars
+      ...(shouldUseProcessEnv && { ignoreProcessEnv: false }),
     });
 
     testLogger.info(

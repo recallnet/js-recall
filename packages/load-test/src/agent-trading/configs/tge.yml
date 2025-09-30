@@ -1,5 +1,5 @@
 config:
-  target: "{{ $processEnvironment.API_HOST }}"
+  target: "{{ $env.API_HOST }}"
   processor: "../processors/agent-trading-processor.ts"
   variables:
     usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
@@ -29,23 +29,24 @@ before:
     - get:
         url: "/api/competitions/status"
         headers:
-          Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
         capture:
           - json: "$.active"
             as: "isActive"
           - json: "$.competition.id"
             as: "activeCompetitionId"
+            strict: false # Don't fail if competition is null
     - post:
         url: "/api/admin/competition/end"
         headers:
-          Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
         json:
           competitionId: "{{ activeCompetitionId }}"
         ifTrue: "isActive"
     - post:
         url: "/api/admin/competition/create"
         headers:
-          Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
         beforeRequest: "setTgeCompetitionPayload"
         json: {}
         capture:
@@ -59,7 +60,7 @@ before:
             beforeRequest: "generateRandomUserAndAgent"
             url: "/api/admin/users"
             headers:
-              Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+              Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
             json:
               walletAddress: "{{ walletAddress }}"
               name: "{{ userName }}"
@@ -74,12 +75,12 @@ before:
         - post:
             url: "/api/admin/competitions/{{ competitionId }}/agents/{{ agentId }}"
             headers:
-              Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+              Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
       count: 200
     - post:
         url: "/api/admin/competition/start"
         headers:
-          Authorization: "Bearer {{ $processEnvironment.ADMIN_API_KEY }}"
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
         json:
           competitionId: "{{ competitionId }}"
     - log: "Started TGE competition with 200 agents"

@@ -1,15 +1,23 @@
-import * as Sentry from "@sentry/node";
-
 import {
   CompetitionConfig,
   createCompetitionPayload,
   createTgeCompetitionPayload,
 } from "../utils/competition-utils.js";
 import {
-  createDisallowedCrossChainTrade,
   createMalformedTrade,
   createOverdrawnTrade,
 } from "../utils/error-patterns.js";
+import {
+  captureError,
+  flushSentry,
+  initializeSentry,
+  trackHttpRequest,
+  trackHttpRequestSpan,
+  trackScenarioExecution as trackScenarioMetric,
+  trackSetupDuration,
+  trackTestStart,
+  trackTradeFlow as trackTradeFlowMetric,
+} from "../utils/sentry-metrics.js";
 import {
   Balance,
   catchupTradePattern,
@@ -20,18 +28,17 @@ import {
 } from "../utils/trade-patterns.js";
 import { generateUserAndAgent } from "../utils/user-generator.js";
 
-// Initialize Sentry
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  environment: "perf-testing",
-  tracesSampleRate: 1.0, // Capture 100% of transactions for load testing
-  integrations: [Sentry.httpIntegration()],
-});
+// Initialize Sentry on module load
+initializeSentry();
 
 // Artillery types
 type ArtilleryContext = {
   vars: {
     users?: { userId: string; agentId: string; apiKey: string }[];
+    _testStartTime?: number;
+    _setupStartTime?: number;
+    _scenarioCount?: number;
+    _tradeFlowCount?: number;
     [key: string]: unknown;
   };
 };
@@ -39,6 +46,61 @@ type ArtilleryContext = {
 /**
  * Core Functions - Setup and Management
  */
+
+// Start test and emit metric
+export function startTestMetrics(
+  context: ArtilleryContext,
+  events: unknown,
+  done: () => void,
+) {
+  context.vars._testStartTime = Date.now();
+  trackTestStart();
+  console.log(`📊 Started load test metrics tracking`);
+  return done();
+}
+
+// Start setup phase metrics
+export function startSetupPhase(
+  context: ArtilleryContext,
+  events: unknown,
+  done: () => void,
+) {
+  context.vars._setupStartTime = Date.now();
+  console.log("🏗️  Started setup phase");
+  return done();
+}
+
+// Finish setup phase and emit duration metric
+export function finishSetupPhase(
+  context: ArtilleryContext,
+  events: unknown,
+  done: () => void,
+) {
+  const setupDuration =
+    Date.now() - ((context.vars._setupStartTime as number) || Date.now());
+  const agentsCreated =
+    (context.vars.users as { userId: string }[] | undefined)?.length || 0;
+  const competitionId = String(context.vars.competitionId || "unknown");
+
+  // Store in context.vars for scenarios to access
+  context.vars._setupDurationMs = setupDuration;
+  context.vars._agentsCreated = agentsCreated;
+
+  trackSetupDuration();
+
+  console.log(
+    `✅ Finished setup phase (${setupDuration}ms, ${agentsCreated} agents, competition: ${competitionId})`,
+  );
+
+  return done();
+}
+
+// Cleanup: Flush Sentry spans before process exits
+export async function cleanupSentry() {
+  console.log("🧹 Flushing Sentry spans...");
+  await flushSentry();
+  console.log("✅ Sentry cleanup complete");
+}
 
 // Generate random user and agent data
 export function generateRandomUserAndAgent(
@@ -142,11 +204,52 @@ export function selectRandomAgent(
   return done();
 }
 
+// Track scenario execution
+export function trackScenarioExecution(
+  context: ArtilleryContext,
+  events: unknown,
+  done: () => void,
+) {
+  const agentId = String(context.vars.agentId || "unknown");
+  trackScenarioMetric(agentId);
+  return done();
+}
+
+// Track trade flow start
+export function startTradeFlow(
+  context: ArtilleryContext,
+  events: unknown,
+  done: () => void,
+) {
+  context.vars._flowStartTime = Date.now();
+  context.vars._flowHasError = false;
+  return done();
+}
+
+// Track trade flow completion
+export function finishTradeFlow(
+  context: ArtilleryContext,
+  events: unknown,
+  done: () => void,
+) {
+  const flowDuration =
+    Date.now() - ((context.vars._flowStartTime as number) || Date.now());
+  const hasError = context.vars._flowHasError === true;
+  const agentId = String(context.vars.agentId || "unknown");
+
+  trackTradeFlowMetric(flowDuration, hasError, agentId);
+
+  delete context.vars._flowStartTime;
+  delete context.vars._flowHasError;
+
+  return done();
+}
+
 /**
  * Sentry Performance Tracking Functions
  */
 
-// Track load test metrics with proper transactions
+// Track load test metrics
 export function trackLoadTestMetrics(
   requestParams: { url?: string; method?: string; json?: unknown },
   response: {
@@ -159,107 +262,59 @@ export function trackLoadTestMetrics(
   next: () => void,
 ) {
   const statusCode = response.statusCode || 0;
+  const isError = statusCode >= 400;
+  const responseTime = response.timings?.response || 0;
 
-  // Get URL and method from requestParams (which has the correct data)
+  // Get URL and method from requestParams
   const fullUrl = requestParams?.url || "unknown";
   const method = requestParams?.method || "GET";
-
-  // Extract just the path from the full URL for cleaner span names
   const urlPath = fullUrl.replace(/^https?:\/\/[^/]+/, "") || fullUrl;
-
-  const responseTime = response.timings?.response || 0;
   const agentId = String(context.vars.agentId || "unknown");
-  const userId = String(context.vars.userId || "unknown");
 
-  // Create a Sentry transaction for this HTTP request
-  Sentry.withScope((scope) => {
-    // Set comprehensive tags
-    scope.setTag("http.status_code", statusCode);
-    scope.setTag("http.method", method);
-    scope.setTag("http.url", urlPath);
-    scope.setTag("test.framework", "artillery");
-    scope.setTag("test.agent_count", process.env.AGENTS_COUNT || "1");
-    scope.setTag("load_test.agent_id", agentId);
-    scope.setTag("load_test.user_id", userId);
+  // Track errors in flow
+  if (isError) {
+    context.vars._flowHasError = true;
+  }
 
-    // Set useful context data
-    scope.setContext("http_request", {
-      method: method,
-      url: fullUrl,
-      path: urlPath,
-      status_code: statusCode,
-      response_time_ms: responseTime,
-    });
+  // Track HTTP request metrics
+  trackHttpRequest(urlPath, method, statusCode, responseTime);
 
-    scope.setContext("load_test", {
-      agent_id: agentId,
-      user_id: userId,
-      test_framework: "artillery",
-      agent_count: parseInt(process.env.AGENTS_COUNT || "1"),
-      trades_count: parseInt(process.env.TRADES_COUNT || "1"),
-    });
+  // Sample HTTP request spans (1% or always on error)
+  trackHttpRequestSpan(
+    urlPath,
+    method,
+    statusCode,
+    responseTime,
+    agentId,
+    isError,
+    context,
+  );
 
-    // Add request body for POST requests
-    if (method === "POST" && requestParams?.json) {
-      scope.setContext("request_body", {
-        payload: requestParams.json,
-      });
+  // Log errors for debugging
+  if (isError) {
+    console.error(`🚨 HTTP ${statusCode} Error - ${method} ${urlPath}`);
+    console.error(`Agent ID: ${agentId}`);
+    if (requestParams?.json) {
+      console.error(
+        `Request Body:`,
+        JSON.stringify(requestParams.json, null, 2),
+      );
+    }
+    if (response.body) {
+      console.error(`Response Body:`, JSON.stringify(response.body, null, 2));
     }
 
-    // Create a span with proper duration using async simulation
-    Sentry.startSpan(
+    // Capture error message
+    captureError(
+      `Load Test Error: ${method} ${urlPath}`,
+      statusCode >= 500 ? "error" : "warning",
       {
-        name: `Load Test: ${method.toUpperCase()} ${urlPath}`,
-        op: "load_test.http_request",
-        attributes: {
-          "http.method": method,
-          "http.url": urlPath,
-          "http.status_code": statusCode,
-          "http.response_time_ms": responseTime,
-          "load_test.agent_id": agentId,
-          "load_test.user_id": userId,
-        },
-      },
-      async (span) => {
-        // Set span status based on HTTP status
-        if (statusCode >= 400) {
-          span.setStatus({ code: 2, message: `HTTP ${statusCode}` }); // ERROR
-
-          // Log 4xx errors for debugging
-          console.error(`🚨 HTTP ${statusCode} Error - ${method} ${urlPath}`);
-          console.error(`Agent ID: ${agentId}`);
-          if (requestParams?.json) {
-            console.error(
-              `Request Body:`,
-              JSON.stringify(requestParams.json, null, 2),
-            );
-          }
-          if (response.body) {
-            console.error(
-              `Response Body:`,
-              JSON.stringify(response.body, null, 2),
-            );
-          }
-
-          // Also capture as an error for visibility
-          Sentry.captureMessage(`Load Test Error: ${method} ${urlPath}`, {
-            level: statusCode >= 500 ? "error" : "warning",
-            tags: {
-              "http.status_code": statusCode,
-              "load_test.agent_id": agentId,
-            },
-          });
-        } else {
-          span.setStatus({ code: 1 }); // OK
-        }
-
-        // Note: Duration simulation disabled for faster testing
-        // For production, uncomment to simulate actual request duration:
-        // const duration = Math.min(responseTime, 5000);
-        // await new Promise(resolve => setTimeout(resolve, duration));
+        "http.status_code": statusCode,
+        "load_test.agent_id": agentId,
+        endpoint: urlPath,
       },
     );
-  });
+  }
 
   return next();
 }
@@ -417,17 +472,6 @@ export function malformedTrade(
   next: () => void,
 ) {
   requestParams.json = createMalformedTrade();
-  return next();
-}
-
-// Cross-chain trade when disallowed
-export function disallowedCrossChainTrade(
-  requestParams: { json: unknown },
-  context: ArtilleryContext,
-  ee: unknown,
-  next: () => void,
-) {
-  requestParams.json = createDisallowedCrossChainTrade();
   return next();
 }
 
