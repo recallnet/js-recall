@@ -1866,9 +1866,9 @@ export class CompetitionRepository {
       if (params.sort) {
         dataQuery = getSort(dataQuery, params.sort, competitionOrderByFields);
       } else {
-        // Default sort: newest first by startDate, then by createdAt for competitions without startDate
+        // Default sort: newest first by startDate (NULLs last), then by createdAt
         dataQuery = dataQuery.orderBy(
-          desc(competitions.startDate),
+          sql`${competitions.startDate} DESC NULLS LAST`,
           desc(competitions.createdAt),
         );
       }
