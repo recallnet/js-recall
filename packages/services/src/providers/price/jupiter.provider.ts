@@ -1,7 +1,12 @@
 import axios from "axios";
 import { Logger } from "pino";
 
-import { BlockchainType, PriceReport, PriceSource } from "../../types/index.js";
+import {
+  BlockchainType,
+  DexScreenerTokenInfo,
+  PriceReport,
+  PriceSource,
+} from "../../types/index.js";
 
 /**
  * Jupiter price provider implementation
@@ -29,6 +34,12 @@ export class JupiterProvider implements PriceSource {
     return "Jupiter";
   }
 
+  determineChain(tokenAddress: string): BlockchainType {
+    if (/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) {
+      return BlockchainType.EVM;
+    }
+    return BlockchainType.SVM;
+  }
   private async delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -179,5 +190,17 @@ export class JupiterProvider implements PriceSource {
       );
       return null;
     }
+  }
+
+  async getBatchPrices(
+    tokenAddresses: string[],
+    chain: BlockchainType,
+  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
+    const results = new Map<string, DexScreenerTokenInfo | null>();
+    for (const tokenAddress of tokenAddresses) {
+      const price = await this.getPrice(tokenAddress, chain);
+      results.set(tokenAddress, price);
+    }
+    return results;
   }
 }
