@@ -1564,10 +1564,16 @@ export class AgentService {
           return {
             ...baseMetrics,
             totalPositions: positionCountsMap.get(competition.id) || 0,
-            // Include risk metrics if available
-            calmarRatio: riskMetrics ? Number(riskMetrics.calmarRatio) : null,
-            simpleReturn: riskMetrics ? Number(riskMetrics.simpleReturn) : null,
-            maxDrawdown: riskMetrics ? Number(riskMetrics.maxDrawdown) : null,
+            // Include risk metrics if available (rounded for display)
+            calmarRatio: riskMetrics
+              ? Number(Number(riskMetrics.calmarRatio).toFixed(4))
+              : null,
+            simpleReturn: riskMetrics
+              ? Number(Number(riskMetrics.simpleReturn).toFixed(4))
+              : null,
+            maxDrawdown: riskMetrics
+              ? Number(Number(riskMetrics.maxDrawdown).toFixed(4))
+              : null,
             hasRiskMetrics: !!riskMetrics,
           };
         } else {

@@ -1186,10 +1186,19 @@ export class CompetitionService {
         change24h: metrics.change24h,
         change24hPercent: metrics.change24hPercent,
         voteCount,
-        // Risk metrics from leaderboard (perps competitions only)
-        calmarRatio: leaderboardEntry?.calmarRatio ?? null,
-        simpleReturn: leaderboardEntry?.simpleReturn ?? null,
-        maxDrawdown: leaderboardEntry?.maxDrawdown ?? null,
+        // Risk metrics from leaderboard (perps competitions only, rounded for display)
+        calmarRatio:
+          leaderboardEntry?.calmarRatio != null
+            ? Number(Number(leaderboardEntry.calmarRatio).toFixed(4))
+            : null,
+        simpleReturn:
+          leaderboardEntry?.simpleReturn != null
+            ? Number(Number(leaderboardEntry.simpleReturn).toFixed(4))
+            : null,
+        maxDrawdown:
+          leaderboardEntry?.maxDrawdown != null
+            ? Number(Number(leaderboardEntry.maxDrawdown).toFixed(4))
+            : null,
         hasRiskMetrics: leaderboardEntry?.hasRiskMetrics ?? false,
       };
     });
@@ -1250,9 +1259,15 @@ export class CompetitionService {
           agentId: entry.agentId,
           value: portfolioValue,
           pnl: Number(entry.totalPnl) || 0, // Use PnL from risk-adjusted leaderboard
-          calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
-          simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
-          maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+          calmarRatio: entry.calmarRatio
+            ? Number(Number(entry.calmarRatio).toFixed(4))
+            : null,
+          simpleReturn: entry.simpleReturn
+            ? Number(Number(entry.simpleReturn).toFixed(4))
+            : null,
+          maxDrawdown: entry.maxDrawdown
+            ? Number(Number(entry.maxDrawdown).toFixed(4))
+            : null,
           hasRiskMetrics: entry.hasRiskMetrics,
         });
       }
@@ -1302,10 +1317,16 @@ export class CompetitionService {
         agentId: entry.agentId,
         value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility
         pnl: Number(entry.totalPnl) || 0,
-        // Include risk-adjusted metrics
-        calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
-        simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
-        maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+        // Include risk-adjusted metrics (rounded for display)
+        calmarRatio: entry.calmarRatio
+          ? Number(Number(entry.calmarRatio).toFixed(4))
+          : null,
+        simpleReturn: entry.simpleReturn
+          ? Number(Number(entry.simpleReturn).toFixed(4))
+          : null,
+        maxDrawdown: entry.maxDrawdown
+          ? Number(Number(entry.maxDrawdown).toFixed(4))
+          : null,
         hasRiskMetrics: entry.hasRiskMetrics,
       }));
     }
@@ -1516,9 +1537,15 @@ export class CompetitionService {
         activeAgents: activeLeaderboard.map((entry) => ({
           agentId: entry.agentId,
           value: entry.value,
-          calmarRatio: entry.calmarRatio,
-          simpleReturn: entry.simpleReturn,
-          maxDrawdown: entry.maxDrawdown,
+          calmarRatio: entry.calmarRatio
+            ? Number(Number(entry.calmarRatio).toFixed(4))
+            : entry.calmarRatio,
+          simpleReturn: entry.simpleReturn
+            ? Number(Number(entry.simpleReturn).toFixed(4))
+            : entry.simpleReturn,
+          maxDrawdown: entry.maxDrawdown
+            ? Number(Number(entry.maxDrawdown).toFixed(4))
+            : entry.maxDrawdown,
           hasRiskMetrics: entry.hasRiskMetrics,
         })),
         inactiveAgents,
@@ -2305,7 +2332,7 @@ export class CompetitionService {
       if (competitionsToStart.length > 1 || !competition) {
         serviceLogger.warn(
           {
-            competitions: competitionsToStart.map((c) => ({
+            competitions: competitionsToStart.map((c: SelectCompetition) => ({
               id: c.id,
               name: c.name,
               startDate: c.startDate?.toISOString(),
@@ -2425,10 +2452,16 @@ export class CompetitionService {
             portfolioValue: entry.value,
             active: true,
             deactivationReason: null,
-            // Include risk metrics if available
-            calmarRatio: entry.calmarRatio,
-            simpleReturn: entry.simpleReturn,
-            maxDrawdown: entry.maxDrawdown,
+            // Include risk metrics if available (rounded for display)
+            calmarRatio: entry.calmarRatio
+              ? Number(Number(entry.calmarRatio).toFixed(4))
+              : null,
+            simpleReturn: entry.simpleReturn
+              ? Number(Number(entry.simpleReturn).toFixed(4))
+              : null,
+            maxDrawdown: entry.maxDrawdown
+              ? Number(Number(entry.maxDrawdown).toFixed(4))
+              : null,
             hasRiskMetrics: entry.hasRiskMetrics,
           };
         },
