@@ -112,7 +112,7 @@ describe("SimulatedTradeExecutionService", () => {
   const testFromAmount = 100;
   const testReason = "Test trade reason";
 
-  const mockActiveCompetition: Competition = {
+  const mockActiveCompetition = {
     id: testCompetitionId,
     name: "Test Competition",
     description: "Test Description",
@@ -132,7 +132,7 @@ describe("SimulatedTradeExecutionService", () => {
     sandboxMode: false,
     createdAt: new Date(),
     updatedAt: new Date(),
-  };
+  } as Competition;
 
   const mockFromPrice: PriceReport = {
     token: testFromToken,
