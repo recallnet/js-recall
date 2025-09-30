@@ -7,6 +7,7 @@ import Link from "next/link";
 import React, { useEffect } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -70,7 +71,11 @@ export default function CompetitionsPage() {
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
     useUserCompetitions();
 
+  const isCompetitionsLoading =
+    isLoadingActiveCompetitions || isLoadingUpcomingCompetitions;
+
   const competitionButton = React.useMemo(() => {
+    // Only compute when data is available - skeleton will handle loading state
     if (firstActiveCompetitionId) {
       return {
         href: `/competitions/${firstActiveCompetitionId}`,
@@ -179,14 +184,18 @@ export default function CompetitionsPage() {
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild className="border border-blue-500 bg-blue-500 p-6 uppercase text-white transition-colors duration-200 hover:border-white hover:bg-white hover:text-blue-500">
-                <Link
-                  href={competitionButton.href}
-                  aria-label={competitionButton.ariaLabel}
-                >
-                  {competitionButton.text}
-                </Link>
-              </Button>
+              {isCompetitionsLoading ? (
+                <Skeleton className="h-12 w-48 rounded-lg" />
+              ) : (
+                <Button asChild className="border border-blue-500 bg-blue-500 p-6 uppercase text-white transition-colors duration-200 hover:border-white hover:bg-white hover:text-blue-500">
+                  <Link
+                    href={competitionButton.href}
+                    aria-label={competitionButton.ariaLabel}
+                  >
+                    {competitionButton.text}
+                  </Link>
+                </Button>
+              )}
               <Button
                 asChild
                 className="border border-[#303846] bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
