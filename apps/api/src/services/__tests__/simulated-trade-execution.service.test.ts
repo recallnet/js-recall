@@ -360,10 +360,10 @@ describe("SimulatedTradeExecutionService", () => {
 
   describe("Competition Validation", () => {
     it("should reject trade when competition has ended", async () => {
-      const endedCompetition: Competition = {
+      const endedCompetition = {
         ...mockActiveCompetition,
         endDate: new Date(Date.now() - 86400000), // Yesterday
-      };
+      } as Competition;
       vi.mocked(mockCompetitionService.getCompetition!).mockResolvedValue(
         endedCompetition,
       );
@@ -420,10 +420,10 @@ describe("SimulatedTradeExecutionService", () => {
     });
 
     it("should reject trade for perpetual futures competitions", async () => {
-      const perpsCompetition: Competition = {
+      const perpsCompetition = {
         ...mockActiveCompetition,
         type: "perpetual_futures" as const,
-      };
+      } as Competition;
       vi.mocked(mockCompetitionService.getCompetition!).mockResolvedValue(
         perpsCompetition,
       );
