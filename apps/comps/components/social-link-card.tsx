@@ -23,22 +23,22 @@ export const SocialLinkCard: React.FC<SocialLinkCardProps> = ({
         href={socialLink.url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`bg-${socialLink.bg || "card"} hover:bg-card flex h-36 flex-col justify-between rounded-md p-6`}
+        className={`bg-${socialLink.bg || "card"} hover:brightness-80 flex h-16 flex-col justify-between rounded-md p-4 transition-all duration-200`}
       >
-        <div className="text-primary flex h-8 w-8 items-center justify-center">
-          <Image
-            src={socialLink.icon}
-            alt={`${socialLink.name} icon`}
-            width={24}
-            height={24}
-            className="h-auto w-auto"
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <h3 className="text-primary mt-auto font-mono text-lg font-bold">
-            {socialLink.name}
-          </h3>
-          <ArrowRightIcon className="text-primary h-5 w-5" />
+        <div className="flex items-center pl-6">
+          <div className="flex min-w-0 flex-1 items-center">
+            <Image
+              src={socialLink.icon}
+              alt={`${socialLink.name} icon`}
+              width={24}
+              height={24}
+              className="h-6 w-6 flex-shrink-0"
+            />
+            <div className="text-primary truncate pl-2 font-mono font-bold">
+              {socialLink.name}
+            </div>
+          </div>
+          <ArrowRightIcon className="text-primary ml-4 h-5 w-5 flex-shrink-0" />
         </div>
       </a>
     </Card>

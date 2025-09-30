@@ -18,8 +18,6 @@ export const JoinSwarmSection: React.FC<JoinSwarmSectionProps> = ({
 }) => {
   return (
     <section className={cn("", className)}>
-      <h2 className="mb-6 text-3xl font-bold md:text-4xl">Join the swarm</h2>
-
       <hr className="my-6" />
       <div className="place-items-around xs:grid-cols-4 grid grid-cols-2 gap-4">
         {socialLinks.map((link) => (
