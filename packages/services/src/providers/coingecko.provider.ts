@@ -1,4 +1,4 @@
-import { Coingecko } from "@coingecko/coingecko-typescript";
+import { ClientOptions, Coingecko } from "@coingecko/coingecko-typescript";
 import { Logger } from "pino";
 
 import {
@@ -15,19 +15,23 @@ import {
  */
 export interface CoinGeckoProviderConfig {
   apiKey: string;
+  mode: "pro" | "demo";
   specificChainTokens: SpecificChainTokens;
   logger: Logger;
 }
 
 export class CoinGeckoProvider implements PriceSource {
   private readonly API_KEY: string;
+  private readonly mode: "pro" | "demo";
   private readonly client: Coingecko;
-  private readonly MAX_RETRIES = 3;
-  private readonly RETRY_DELAY = 1000; // 1 second
+  private readonly MAX_RETRIES = 3; // Overrides default of 2
+  private readonly MAX_TIMEOUT = 30_000; // Overrides default of 60 seconds
   private readonly BATCH_SIZE = 100; // CoinGecko supports up to 100 tokens per batch
-  private lastRequestTime: number = 0;
-  private readonly MIN_REQUEST_INTERVAL = 100; // Rate limiting
 
+  // See the following API for a list of the possible values: https://docs.coingecko.com/reference/asset-platforms-list
+  // Note: an "asset platform" is the name of the chain. In CoinGecko's DEX APIs, there is a
+  // similar field called "network", but it uses different values. We don't use this DEX API, but
+  // it's important to note this distinction in case we ever need to in the future.
   private readonly chainMapping: Record<SpecificChain, string> = {
     eth: "ethereum",
     polygon: "polygon-pos",
@@ -47,17 +51,26 @@ export class CoinGeckoProvider implements PriceSource {
 
   constructor(config: CoinGeckoProviderConfig) {
     this.API_KEY = config.apiKey;
+    this.mode = config.mode;
     this.specificChainTokens = config.specificChainTokens;
     this.logger = config.logger;
-    // Initialize CoinGecko client with Pro API key
-    this.client = new Coingecko({
-      // TODO: handle demo vs pro mode
-      // proAPIKey: config.api.coingecko.apiKey || "",
-      // environment: "pro",
-      demoAPIKey: config.apiKey,
-      environment: "demo",
-      maxRetries: 0, // We handle retries manually
-    });
+
+    // Non-production environments use a highly rate limited "demo" API key (30 req/min)
+    const opts: ClientOptions = {
+      environment: config.mode,
+      maxRetries: this.MAX_RETRIES,
+      fetchOptions: {
+        timeout: this.MAX_TIMEOUT,
+      },
+      // Note: enable CoinGecko's native SDK logger with the environment variable `COINGECKO_LOG`
+      logger: this.logger,
+    };
+    if (this.mode === "pro") {
+      opts.proAPIKey = config.apiKey;
+    } else {
+      opts.demoAPIKey = config.apiKey;
+    }
+    this.client = new Coingecko(opts);
   }
 
   getName(): string {
@@ -87,19 +100,6 @@ export class CoinGeckoProvider implements PriceSource {
     );
   }
 
-  private async delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  private async enforceRateLimit(): Promise<void> {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    if (timeSinceLastRequest < this.MIN_REQUEST_INTERVAL) {
-      await this.delay(this.MIN_REQUEST_INTERVAL - timeSinceLastRequest);
-    }
-    this.lastRequestTime = Date.now();
-  }
-
   private isBurnAddress(tokenAddress: string): boolean {
     const normalizedAddress = tokenAddress.toLowerCase();
     if (normalizedAddress === "0x000000000000000000000000000000000000dead") {
@@ -117,79 +117,59 @@ export class CoinGeckoProvider implements PriceSource {
   private async fetchPriceDirect(
     tokenAddress: string,
     platform: string,
-    specificChain: SpecificChain,
   ): Promise<DexScreenerTokenInfo | null> {
-    this.logger.debug(
-      `[CoinGeckoProvider] Fetching price for ${tokenAddress} on ${platform}`,
-    );
+    try {
+      const data = await this.client.coins.contract.get(
+        tokenAddress.toLowerCase(),
+        { id: platform },
+      );
 
-    let retries = 0;
-    while (retries <= this.MAX_RETRIES) {
-      try {
-        // Enforce rate limiting
-        await this.enforceRateLimit();
-
-        // Use the SDK to fetch coin data by contract address
-        const data = await this.client.coins.contract.get(
-          tokenAddress.toLowerCase(),
-          { id: platform },
-        );
-
-        if (data && data.market_data) {
-          const price = data.market_data.current_price?.usd || 0;
-
-          if (price === 0 || isNaN(price)) {
-            this.logger.debug(
-              `[CoinGeckoProvider] Invalid price for ${tokenAddress} on ${platform}`,
-            );
-            return null;
-          }
-
-          // Handle symbol for stablecoins
-          let symbol = data.symbol?.toUpperCase() || "";
-          if (this.isStablecoin(tokenAddress, specificChain)) {
-            // For stablecoins, ensure we use the correct symbol
-            symbol =
-              symbol === "USDC" || price.toString().startsWith("1")
-                ? "USDC"
-                : "USDT";
-          }
-
+      if (data && data.market_data) {
+        const price = data.market_data.current_price?.usd;
+        if (!price || price === 0 || isNaN(price)) {
           this.logger.debug(
-            `[CoinGeckoProvider] Found price for ${tokenAddress}: $${price}`,
+            {
+              price,
+              tokenAddress,
+              platform,
+            },
+            `Invalid price for ${tokenAddress}`,
           );
-
-          return {
-            price,
-            symbol,
-            volume: data.market_data.total_volume?.usd
-              ? { h24: data.market_data.total_volume.usd }
-              : undefined,
-            liquidity: undefined, // CoinGecko doesn't provide direct liquidity data
-            fdv: data.market_data.fully_diluted_valuation?.usd || undefined,
-            pairCreatedAt: undefined, // Not available from CoinGecko
-          };
+          return null;
         }
-
         this.logger.debug(
-          `[CoinGeckoProvider] No valid price found for ${tokenAddress} on ${platform}`,
+          {
+            price,
+            tokenAddress,
+            platform,
+          },
+          `Found price for ${tokenAddress}`,
         );
-        return null;
-      } catch (error) {
-        this.logger.error(
-          error instanceof Error ? error.message : "Unknown error",
-          `Error fetching price from CoinGecko for ${tokenAddress} on ${platform}:`,
-        );
-
-        retries++;
-        if (retries <= this.MAX_RETRIES) {
-          await this.delay(this.RETRY_DELAY * retries); // Exponential backoff
-        }
+        return {
+          price,
+          symbol: data.symbol?.toUpperCase() || "N/A",
+          volume: { h24: data.market_data.total_volume?.usd },
+          liquidity: undefined,
+          fdv: data.market_data.fully_diluted_valuation?.usd,
+          pairCreatedAt: data.genesis_date
+            ? new Date(data.genesis_date).getTime()
+            : undefined,
+        };
       }
+    } catch (error) {
+      this.logger.error(
+        {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+        `Error fetching price for ${tokenAddress} on ${platform}:`,
+      );
     }
-
     this.logger.debug(
-      `[CoinGeckoProvider] No reliable price found for ${tokenAddress} on ${platform} after ${this.MAX_RETRIES} retries`,
+      {
+        tokenAddress,
+        platform,
+      },
+      `No valid price found for ${tokenAddress}`,
     );
     return null;
   }
@@ -201,7 +181,7 @@ export class CoinGeckoProvider implements PriceSource {
   ): Promise<PriceReport | null> {
     if (this.isBurnAddress(tokenAddress)) {
       this.logger.debug(
-        `[CoinGeckoProvider] Burn address detected: ${tokenAddress}, returning price of 0`,
+        `Burn address detected: ${tokenAddress}, returning price of 0`,
       );
       return {
         price: 0,
@@ -217,11 +197,7 @@ export class CoinGeckoProvider implements PriceSource {
       };
     }
     const platform = this.chainMapping[specificChain] || "ethereum";
-    const priceData = await this.fetchPriceDirect(
-      tokenAddress,
-      platform,
-      specificChain,
-    );
+    const priceData = await this.fetchPriceDirect(tokenAddress, platform);
     if (priceData !== null) {
       return {
         price: priceData.price,
@@ -259,9 +235,7 @@ export class CoinGeckoProvider implements PriceSource {
 
     const platform = this.chainMapping[specificChain];
     if (!platform) {
-      this.logger.error(
-        `[CoinGeckoProvider] Unsupported chain: ${specificChain}`,
-      );
+      this.logger.error(`Unsupported chain: ${specificChain}`);
       tokenAddresses.forEach((addr) => {
         results.set(addr, null);
       });
@@ -310,92 +284,22 @@ export class CoinGeckoProvider implements PriceSource {
     platform: string,
   ): Promise<Map<string, DexScreenerTokenInfo | null>> {
     const results = new Map<string, DexScreenerTokenInfo | null>();
-
-    // Normalize addresses to lowercase for the API
-    const contractAddresses = tokenAddresses
-      .map((addr) => addr.toLowerCase())
-      .join(",");
-
     this.logger.debug(
-      `[CoinGeckoProvider] Fetching batch prices for ${tokenAddresses.length} tokens on ${platform}`,
+      `Fetching batch prices for ${tokenAddresses.length} tokens on ${platform}`,
     );
 
-    let retries = 0;
-    while (retries <= this.MAX_RETRIES) {
-      try {
-        // Enforce rate limiting
-        await this.enforceRateLimit();
-
-        // Use the SDK to fetch batch token prices
-        const data = await this.client.simple.tokenPrice.getID(platform, {
-          contract_addresses: contractAddresses,
-          vs_currencies: "usd",
-          include_market_cap: true,
-          include_24hr_vol: true,
-          include_24hr_change: false,
-          include_last_updated_at: false,
-        });
-
-        // Process the response
-        // The response is a map where keys are contract addresses
-        interface TokenPriceData {
-          usd?: number;
-          usd_24h_vol?: number;
-          usd_market_cap?: number;
-        }
-        const responseData = data as Record<string, TokenPriceData>;
-
-        for (const tokenAddress of tokenAddresses) {
-          const normalizedAddr = tokenAddress.toLowerCase();
-          const tokenData = responseData[normalizedAddr];
-
-          if (tokenData && tokenData.usd !== undefined) {
-            // For batch endpoint, we only get basic price data
-            // Symbol would need to be fetched separately or cached
-            results.set(tokenAddress, {
-              price: tokenData.usd,
-              symbol: "", // Not available in batch response
-              volume: tokenData.usd_24h_vol
-                ? { h24: tokenData.usd_24h_vol }
-                : undefined,
-              liquidity: undefined,
-              fdv: tokenData.usd_market_cap || undefined,
-              pairCreatedAt: undefined,
-            });
-
-            this.logger.debug(
-              `[CoinGeckoProvider] Found batch price for ${tokenAddress}: $${tokenData.usd}`,
-            );
-          } else {
-            results.set(tokenAddress, null);
-            this.logger.debug(
-              `[CoinGeckoProvider] No price found for ${tokenAddress} in batch response`,
-            );
-          }
-        }
-
-        return results;
-      } catch (error) {
-        this.logger.error(
-          error instanceof Error ? error.message : "Unknown error",
-          `[CoinGeckoProvider] Error fetching batch prices (attempt ${retries + 1}):`,
-        );
-
-        retries++;
-        if (retries <= this.MAX_RETRIES) {
-          await this.delay(this.RETRY_DELAY * retries);
-        }
-      }
-    }
-
-    this.logger.error(
-      `[CoinGeckoProvider] Failed to fetch batch prices after ${this.MAX_RETRIES} retries`,
-    );
-
-    // Set all addresses to null on failure
-    tokenAddresses.forEach((addr) => {
-      results.set(addr, null);
+    // Fetch prices for each token individually
+    const promises = tokenAddresses.map(async (tokenAddress) => {
+      const result = await this.fetchPriceDirect(tokenAddress, platform);
+      return { tokenAddress, result };
     });
+
+    const responses = await Promise.all(promises);
+
+    // Populate results map
+    for (const { tokenAddress, result } of responses) {
+      results.set(tokenAddress, result);
+    }
 
     return results;
   }
