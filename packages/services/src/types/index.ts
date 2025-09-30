@@ -10,6 +10,10 @@ import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
 import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
 
+export * from "./sort/index.js";
+export * from "./agent-metrics.js";
+export * from "./perps.js";
+
 /**
  * Custom error class with HTTP status code
  */

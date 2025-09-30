@@ -30,13 +30,17 @@ import {
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
+  SimulatedTradeExecutionService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
   VoteService,
 } from "@recallnet/services";
 import { WalletWatchlist } from "@recallnet/services/lib";
-import { MultiChainProvider } from "@recallnet/services/providers";
+import {
+  DexScreenerProvider,
+  MultiChainProvider,
+} from "@recallnet/services/providers";
 
 import config, { features } from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
@@ -131,6 +135,11 @@ class ServiceRegistry {
 
     const multichainProvider = new MultiChainProvider(config, serviceLogger);
 
+    const dexScreenerProvider = new DexScreenerProvider(
+      config.specificChainTokens,
+      serviceLogger,
+    );
+
     // Initialize services in dependency order
     this._balanceService = new BalanceService(
       balanceRepository,
@@ -152,9 +161,6 @@ class ServiceRegistry {
       this._balanceService,
       this._priceTrackerService,
       tradeRepository,
-      tradingConstraintsRepository,
-      config,
-      features,
       serviceLogger,
     );
 
@@ -264,6 +270,12 @@ class ServiceRegistry {
       this._tradeSimulatorService,
       this._balanceService,
       this._priceTrackerService,
+      tradeRepository,
+      tradingConstraintsRepository,
+      dexScreenerProvider,
+      config,
+      features,
+      serviceLogger,
     );
 
     // Initialize LeaderboardService with required dependencies
