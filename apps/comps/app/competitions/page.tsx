@@ -6,6 +6,7 @@ import Link from "next/link";
 import React, { useEffect } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -65,7 +66,11 @@ export default function CompetitionsPage() {
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
     useUserCompetitions();
 
+  const isCompetitionsLoading =
+    isLoadingActiveCompetitions || isLoadingUpcomingCompetitions;
+
   const competitionButton = React.useMemo(() => {
+    // Only compute when data is available - skeleton will handle loading state
     if (firstActiveCompetitionId) {
       return {
         href: `/competitions/${firstActiveCompetitionId}`,
@@ -173,14 +178,18 @@ export default function CompetitionsPage() {
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild variant="modal" size="lg" className="uppercase">
-                <Link
-                  href={competitionButton.href}
-                  aria-label={competitionButton.ariaLabel}
-                >
-                  {competitionButton.text}
-                </Link>
-              </Button>
+              {isCompetitionsLoading ? (
+                <Skeleton className="h-12 w-48 rounded-lg" />
+              ) : (
+                <Button asChild variant="modal" size="lg" className="uppercase">
+                  <Link
+                    href={competitionButton.href}
+                    aria-label={competitionButton.ariaLabel}
+                  >
+                    {competitionButton.text}
+                  </Link>
+                </Button>
+              )}
               <Button
                 asChild
                 variant="outline"
