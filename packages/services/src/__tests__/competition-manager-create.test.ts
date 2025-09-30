@@ -19,7 +19,6 @@ import {
   CompetitionService,
   CompetitionServiceConfig,
 } from "../competition.service.js";
-import { ConfigurationService } from "../configuration.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { TradeSimulatorService } from "../trade-simulator.service.js";
@@ -32,7 +31,6 @@ describe("CompetitionService - createCompetition", () => {
   let mockTradeSimulatorService: MockProxy<TradeSimulatorService>;
   let mockPortfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
   let mockAgentService: MockProxy<AgentService>;
-  let mockConfigurationService: MockProxy<ConfigurationService>;
   let mockAgentRankService: MockProxy<AgentRankService>;
   let mockVoteService: MockProxy<VoteService>;
   let mockTradingConstraintsService: MockProxy<TradingConstraintsService>;
@@ -55,7 +53,6 @@ describe("CompetitionService - createCompetition", () => {
     mockTradeSimulatorService = mock<TradeSimulatorService>();
     mockPortfolioSnapshotterService = mock<PortfolioSnapshotterService>();
     mockAgentService = mock<AgentService>();
-    mockConfigurationService = mock<ConfigurationService>();
     mockAgentRankService = mock<AgentRankService>();
     mockVoteService = mock<VoteService>();
     mockTradingConstraintsService = mock<TradingConstraintsService>();
@@ -132,7 +129,6 @@ describe("CompetitionService - createCompetition", () => {
       mockTradeSimulatorService,
       mockPortfolioSnapshotterService,
       mockAgentService,
-      mockConfigurationService,
       mockAgentRankService,
       mockVoteService,
       mockTradingConstraintsService,
@@ -154,7 +150,6 @@ describe("CompetitionService - createCompetition", () => {
     mockReset(mockTradeSimulatorService);
     mockReset(mockPortfolioSnapshotterService);
     mockReset(mockAgentService);
-    mockReset(mockConfigurationService);
     mockReset(mockAgentRankService);
     mockReset(mockVoteService);
     mockReset(mockTradingConstraintsService);

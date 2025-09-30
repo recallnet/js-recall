@@ -643,6 +643,7 @@ export class PerpsDataProcessor {
 
       const provider = PerpsProviderFactory.createProvider(
         perpsConfig.dataSourceConfig,
+        this.logger,
       );
 
       this.logger.info(

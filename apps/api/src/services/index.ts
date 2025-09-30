@@ -24,7 +24,6 @@ import {
   CalmarRatioService,
   CompetitionRewardService,
   CompetitionService,
-  ConfigurationService,
   EmailService,
   LeaderboardService,
   PerpsDataProcessor,
@@ -69,7 +68,6 @@ class ServiceRegistry {
   private _userService: UserService;
   private _agentService: AgentService;
   private _adminService: AdminService;
-  private _configurationService: ConfigurationService;
   private _portfolioSnapshotterService: PortfolioSnapshotterService;
   private _leaderboardService: LeaderboardService;
   private _voteService: VoteService;
@@ -164,12 +162,6 @@ class ServiceRegistry {
       serviceLogger,
     );
 
-    // Configuration service for dynamic settings
-    this._configurationService = new ConfigurationService(
-      this._competitionRepository,
-      serviceLogger,
-    );
-
     // Initialize agent rank service (no dependencies)
     this._agentRankService = new AgentRankService(
       agentScoreRepository,
@@ -249,7 +241,6 @@ class ServiceRegistry {
       this._tradeSimulatorService,
       this._portfolioSnapshotterService,
       this._agentService,
-      this._configurationService,
       this._agentRankService,
       this._voteService,
       this._tradingConstraintsService,
@@ -365,10 +356,6 @@ class ServiceRegistry {
     return this._adminService;
   }
 
-  get configurationService(): ConfigurationService {
-    return this._configurationService;
-  }
-
   get voteService(): VoteService {
     return this._voteService;
   }
@@ -437,7 +424,6 @@ export {
   BalanceService,
   CompetitionService,
   CompetitionRewardService,
-  ConfigurationService,
   EmailService,
   LeaderboardService,
   PerpsDataProcessor,

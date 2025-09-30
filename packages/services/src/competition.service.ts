@@ -20,7 +20,6 @@ import { AgentService } from "./agent.service.js";
 import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
-import { ConfigurationService } from "./configuration.service.js";
 import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
@@ -372,7 +371,6 @@ export class CompetitionService {
   private tradeSimulatorService: TradeSimulatorService;
   private portfolioSnapshotterService: PortfolioSnapshotterService;
   private agentService: AgentService;
-  private configurationService: ConfigurationService;
   private agentRankService: AgentRankService;
   private voteService: VoteService;
   private tradingConstraintsService: TradingConstraintsService;
@@ -391,7 +389,6 @@ export class CompetitionService {
     tradeSimulatorService: TradeSimulatorService,
     portfolioSnapshotterService: PortfolioSnapshotterService,
     agentService: AgentService,
-    configurationService: ConfigurationService,
     agentRankService: AgentRankService,
     voteService: VoteService,
     tradingConstraintsService: TradingConstraintsService,
@@ -409,7 +406,6 @@ export class CompetitionService {
     this.tradeSimulatorService = tradeSimulatorService;
     this.portfolioSnapshotterService = portfolioSnapshotterService;
     this.agentService = agentService;
-    this.configurationService = configurationService;
     this.agentRankService = agentRankService;
     this.voteService = voteService;
     this.tradingConstraintsService = tradingConstraintsService;

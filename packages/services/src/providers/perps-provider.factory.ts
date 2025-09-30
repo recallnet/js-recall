@@ -1,4 +1,4 @@
-import pino from "pino";
+import { Logger } from "pino";
 
 import { IPerpsDataProvider, PerpsProviderConfig } from "../types/perps.js";
 import { SymphonyPerpsProvider } from "./perps/symphony-perps.provider.js";
@@ -7,18 +7,20 @@ import { SymphonyPerpsProvider } from "./perps/symphony-perps.provider.js";
  * Factory for creating perps data providers based on configuration
  */
 export class PerpsProviderFactory {
-  static logger = pino.default();
   /**
    * Create a perps data provider based on the configuration
    */
-  static createProvider(config: PerpsProviderConfig): IPerpsDataProvider {
-    PerpsProviderFactory.logger.info(
+  static createProvider(
+    config: PerpsProviderConfig,
+    logger: Logger,
+  ): IPerpsDataProvider {
+    logger.info(
       `[PerpsProviderFactory] Creating provider of type: ${config.type}, provider: ${config.provider}`,
     );
 
     switch (config.type) {
       case "external_api":
-        return this.createExternalApiProvider(config);
+        return PerpsProviderFactory.createExternalApiProvider(config, logger);
 
       case "onchain_indexing":
         // Placeholder for future implementation
@@ -38,10 +40,14 @@ export class PerpsProviderFactory {
    */
   private static createExternalApiProvider(
     config: PerpsProviderConfig,
+    logger: Logger,
   ): IPerpsDataProvider {
     switch (config.provider) {
       case "symphony":
-        return this.createSymphonyProvider(config.apiUrl);
+        return PerpsProviderFactory.createSymphonyProvider(
+          logger,
+          config.apiUrl,
+        );
 
       case "hyperliquid":
         // Placeholder for future implementation
@@ -55,8 +61,11 @@ export class PerpsProviderFactory {
   /**
    * Create Symphony provider instance
    */
-  private static createSymphonyProvider(apiUrl?: string): IPerpsDataProvider {
-    return new SymphonyPerpsProvider(PerpsProviderFactory.logger, apiUrl);
+  private static createSymphonyProvider(
+    logger: Logger,
+    apiUrl?: string,
+  ): IPerpsDataProvider {
+    return new SymphonyPerpsProvider(logger, apiUrl);
   }
 
   /**
@@ -64,11 +73,12 @@ export class PerpsProviderFactory {
    */
   static async validateProvider(
     provider: IPerpsDataProvider,
+    logger: Logger,
   ): Promise<boolean> {
     try {
       // Check if provider has health check method
       if (!provider.isHealthy) {
-        PerpsProviderFactory.logger.debug(
+        logger.debug(
           `[PerpsProviderFactory] Provider ${provider.getName()} does not implement health check`,
         );
         return true; // Assume healthy if no health check available
@@ -76,18 +86,18 @@ export class PerpsProviderFactory {
 
       const isHealthy = await provider.isHealthy();
       if (!isHealthy) {
-        PerpsProviderFactory.logger.warn(
+        logger.warn(
           `[PerpsProviderFactory] Provider ${provider.getName()} health check failed`,
         );
         return false;
       }
 
-      PerpsProviderFactory.logger.debug(
+      logger.debug(
         `[PerpsProviderFactory] Provider ${provider.getName()} is healthy`,
       );
       return true;
     } catch (error) {
-      PerpsProviderFactory.logger.error(
+      logger.error(
         `[PerpsProviderFactory] Provider validation error: ${error}`,
       );
       return false;

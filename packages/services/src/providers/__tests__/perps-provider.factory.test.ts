@@ -9,8 +9,6 @@ import { SymphonyPerpsProvider } from "../perps/symphony-perps.provider.js";
 // Mock logger for the constructor
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
-PerpsProviderFactory.logger = mockLogger;
-
 describe("PerpsProviderFactory", () => {
   describe("createProvider", () => {
     it("should create Symphony provider for external_api type", () => {
@@ -20,7 +18,7 @@ describe("PerpsProviderFactory", () => {
         apiUrl: "https://api.symphony.finance",
       };
 
-      const provider = PerpsProviderFactory.createProvider(config);
+      const provider = PerpsProviderFactory.createProvider(config, mockLogger);
 
       expect(provider).toBeInstanceOf(SymphonyPerpsProvider);
       expect(provider.getName()).toBe("Symphony");
@@ -32,7 +30,7 @@ describe("PerpsProviderFactory", () => {
         provider: "symphony",
       };
 
-      const provider = PerpsProviderFactory.createProvider(config);
+      const provider = PerpsProviderFactory.createProvider(config, mockLogger);
 
       expect(provider).toBeInstanceOf(SymphonyPerpsProvider);
     });
@@ -43,9 +41,9 @@ describe("PerpsProviderFactory", () => {
         provider: "hyperliquid",
       };
 
-      expect(() => PerpsProviderFactory.createProvider(config)).toThrow(
-        "Hyperliquid provider not yet implemented",
-      );
+      expect(() =>
+        PerpsProviderFactory.createProvider(config, mockLogger),
+      ).toThrow("Hyperliquid provider not yet implemented");
     });
 
     it("should throw error for unknown external API provider", () => {
@@ -54,9 +52,9 @@ describe("PerpsProviderFactory", () => {
         provider: "unknown",
       };
 
-      expect(() => PerpsProviderFactory.createProvider(config)).toThrow(
-        "Unknown external API provider: unknown",
-      );
+      expect(() =>
+        PerpsProviderFactory.createProvider(config, mockLogger),
+      ).toThrow("Unknown external API provider: unknown");
     });
 
     it("should throw error for onchain_indexing type", () => {
@@ -66,9 +64,9 @@ describe("PerpsProviderFactory", () => {
         chains: ["arbitrum"],
       };
 
-      expect(() => PerpsProviderFactory.createProvider(config)).toThrow(
-        "On-chain indexing providers not yet implemented",
-      );
+      expect(() =>
+        PerpsProviderFactory.createProvider(config, mockLogger),
+      ).toThrow("On-chain indexing providers not yet implemented");
     });
 
     it("should throw error for hybrid type", () => {
@@ -84,9 +82,9 @@ describe("PerpsProviderFactory", () => {
         },
       };
 
-      expect(() => PerpsProviderFactory.createProvider(config)).toThrow(
-        "Hybrid providers not yet implemented",
-      );
+      expect(() =>
+        PerpsProviderFactory.createProvider(config, mockLogger),
+      ).toThrow("Hybrid providers not yet implemented");
     });
 
     it("should throw error for unknown type", () => {
@@ -94,9 +92,9 @@ describe("PerpsProviderFactory", () => {
         type: "invalid_type",
       } as unknown as PerpsProviderConfig;
 
-      expect(() => PerpsProviderFactory.createProvider(config)).toThrow(
-        "Unsupported perps data source type: invalid_type",
-      );
+      expect(() =>
+        PerpsProviderFactory.createProvider(config, mockLogger),
+      ).toThrow("Unsupported perps data source type: invalid_type");
     });
   });
 
@@ -109,7 +107,10 @@ describe("PerpsProviderFactory", () => {
         getPositions: vi.fn(),
       };
 
-      const result = await PerpsProviderFactory.validateProvider(mockProvider);
+      const result = await PerpsProviderFactory.validateProvider(
+        mockProvider,
+        mockLogger,
+      );
 
       expect(result).toBe(true);
       expect(mockProvider.isHealthy).toHaveBeenCalledOnce();
@@ -123,7 +124,10 @@ describe("PerpsProviderFactory", () => {
         getPositions: vi.fn(),
       };
 
-      const result = await PerpsProviderFactory.validateProvider(mockProvider);
+      const result = await PerpsProviderFactory.validateProvider(
+        mockProvider,
+        mockLogger,
+      );
 
       expect(result).toBe(false);
       expect(mockProvider.isHealthy).toHaveBeenCalledOnce();
@@ -137,7 +141,10 @@ describe("PerpsProviderFactory", () => {
         // No isHealthy method
       };
 
-      const result = await PerpsProviderFactory.validateProvider(mockProvider);
+      const result = await PerpsProviderFactory.validateProvider(
+        mockProvider,
+        mockLogger,
+      );
 
       expect(result).toBe(true);
     });
@@ -150,7 +157,10 @@ describe("PerpsProviderFactory", () => {
         getPositions: vi.fn(),
       };
 
-      const result = await PerpsProviderFactory.validateProvider(mockProvider);
+      const result = await PerpsProviderFactory.validateProvider(
+        mockProvider,
+        mockLogger,
+      );
 
       expect(result).toBe(false);
       expect(mockProvider.isHealthy).toHaveBeenCalledOnce();
