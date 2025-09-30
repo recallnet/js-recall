@@ -76,6 +76,7 @@ export interface SimulatedTradeExecutionServiceFeatures {
 export class SimulatedTradeExecutionService {
   // Maximum percentage of portfolio that can be traded in a single transaction
   private readonly constraintsCache = new Map<string, TradingConstraints>();
+  private exemptTokens: Set<string>;
 
   constructor(
     private readonly competitionService: CompetitionService,
@@ -88,7 +89,9 @@ export class SimulatedTradeExecutionService {
     private readonly config: SimulatedTradeExecutionServiceConfig,
     private readonly features: SimulatedTradeExecutionServiceFeatures,
     private readonly logger: Logger,
-  ) {}
+  ) {
+    this.exemptTokens = EXEMPT_TOKENS(config.specificChainTokens);
+  }
 
   /**
    * Execute a simulated trade between two tokens
@@ -362,9 +365,7 @@ export class SimulatedTradeExecutionService {
       return;
     }
 
-    const isExemptToken = EXEMPT_TOKENS(this.config.specificChainTokens).has(
-      priceData.token,
-    );
+    const isExemptToken = this.exemptTokens.has(priceData.token);
     if (isExemptToken) {
       this.logger.debug(
         `[TradeSimulator] Constraint check exempted for major token: ${tokenAddress} (${priceData.specificChain})`,
@@ -384,9 +385,7 @@ export class SimulatedTradeExecutionService {
     // Check FDV constraint - exempt major tokens
     this.validateFdvConstraint(priceData, constraints);
 
-    const isExemptFromFdvLogging = EXEMPT_TOKENS(
-      this.config.specificChainTokens,
-    ).has(priceData.token);
+    const isExemptFromFdvLogging = this.exemptTokens.has(priceData.token);
     this.logger
       .debug(`[TradeSimulator] Trading constraints validated for ${tokenAddress}:
       Pair Age: ${priceData.pairCreatedAt ? ((Date.now() - priceData.pairCreatedAt) / (1000 * 60 * 60)).toFixed(2) : "N/A"} hours
