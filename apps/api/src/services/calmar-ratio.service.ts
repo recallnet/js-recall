@@ -179,7 +179,7 @@ export class CalmarRatioService {
    * Calmar = Return / |Max Drawdown|
    *
    * Note: We use raw returns
-   * for short-duration competitions
+   * for all competitions
    *
    * @param periodReturn Period return as Decimal
    * @param maxDrawdown Maximum drawdown as decimal (negative or 0)
