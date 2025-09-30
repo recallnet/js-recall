@@ -1,6 +1,5 @@
-import type { Logger } from "pino";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MockProxy, mock, mockReset } from "vitest-mock-extended";
+import { Logger } from "pino";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import type {
@@ -15,12 +14,15 @@ import type {
   Transfer,
 } from "../types/perps.js";
 
+// Mock the repository module
+vi.mock("@recallnet/db/repositories/perps");
+
 describe("PerpsMonitoringService", () => {
   let service: PerpsMonitoringService;
-  let mockProviderWithTransfers: MockProxy<IPerpsDataProvider>;
-  let mockProviderNoTransfers: MockProxy<IPerpsDataProvider>;
-  let mockPerpsRepo: MockProxy<PerpsRepository>;
-  let mockLogger: MockProxy<Logger>;
+  let mockProviderWithTransfers: IPerpsDataProvider;
+  let mockProviderNoTransfers: IPerpsDataProvider;
+  let mockPerpsRepo: PerpsRepository;
+  let mockLogger: Logger;
 
   // Sample data matching provider return types (numbers, not strings)
   const sampleAccountSummary: PerpsAccountSummary = {
@@ -68,55 +70,50 @@ describe("PerpsMonitoringService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Create service mocks
-    mockPerpsRepo = mock<PerpsRepository>();
-    mockLogger = mock<Logger>();
+    // Create mock instances
+    mockPerpsRepo = {} as PerpsRepository;
+    mockLogger = {
+      info: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+    } as unknown as Logger;
 
     // Provider WITH transfer history support
-    mockProviderWithTransfers = mock<IPerpsDataProvider>();
-    mockProviderWithTransfers.getName.mockReturnValue(
-      "TestProviderWithTransfers",
-    );
-    mockProviderWithTransfers.getAccountSummary.mockResolvedValue(
-      sampleAccountSummary,
-    );
-    mockProviderWithTransfers.getPositions.mockResolvedValue([]);
-    mockProviderWithTransfers.getTransferHistory = vi
-      .fn()
-      .mockResolvedValue([]); // Method EXISTS
+    mockProviderWithTransfers = {
+      getName: vi.fn().mockReturnValue("TestProviderWithTransfers"),
+      getAccountSummary: vi.fn().mockResolvedValue(sampleAccountSummary),
+      getPositions: vi.fn().mockResolvedValue([]),
+      getTransferHistory: vi.fn().mockResolvedValue([]), // Method EXISTS
+    };
 
     // Provider WITHOUT transfer history support
-    mockProviderNoTransfers = mock<IPerpsDataProvider>();
-    mockProviderNoTransfers.getName.mockReturnValue("TestProviderNoTransfers");
-    mockProviderNoTransfers.getAccountSummary.mockResolvedValue(
-      sampleAccountSummary,
-    );
-    mockProviderNoTransfers.getPositions.mockResolvedValue([]);
-    // NO getTransferHistory method
+    mockProviderNoTransfers = {
+      getName: vi.fn().mockReturnValue("TestProviderNoTransfers"),
+      getAccountSummary: vi.fn().mockResolvedValue(sampleAccountSummary),
+      getPositions: vi.fn().mockResolvedValue([]),
+      // NO getTransferHistory method
+    };
 
     // Default repository mocks
-    mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
-      mockCompetitionConfig,
-    );
+    mockPerpsRepo.getPerpsCompetitionConfig = vi
+      .fn()
+      .mockResolvedValue(mockCompetitionConfig);
     // Mock the new batch method to return an empty Map by default
-    mockPerpsRepo.batchGetAgentsSelfFundingAlerts.mockResolvedValue(new Map());
-    mockPerpsRepo.batchCreatePerpsSelfFundingAlerts.mockResolvedValue([]);
+    mockPerpsRepo.batchGetAgentsSelfFundingAlerts = vi
+      .fn()
+      .mockResolvedValue(new Map());
+    mockPerpsRepo.batchCreatePerpsSelfFundingAlerts = vi
+      .fn()
+      .mockResolvedValue([]);
     // Mock the new batchSaveTransferHistory method
-    mockPerpsRepo.batchSaveTransferHistory.mockResolvedValue([]);
+    mockPerpsRepo.batchSaveTransferHistory = vi.fn().mockResolvedValue([]);
 
     service = new PerpsMonitoringService(
       mockProviderWithTransfers,
       mockPerpsRepo,
       mockLogger,
     );
-  });
-
-  afterEach(() => {
-    // Reset all mocks
-    mockReset(mockProviderWithTransfers);
-    mockReset(mockProviderNoTransfers);
-    mockReset(mockPerpsRepo);
-    mockReset(mockLogger);
   });
 
   describe("constructor", () => {
@@ -274,9 +271,496 @@ describe("PerpsMonitoringService", () => {
 
         const alert = firstAgent?.alerts[0];
         if (alert) {
-          expect(alert.unexplainedAmount).toBe(0.01);
+          // The presence of an alert means it was detected
+          expect(alert).toBeDefined();
           expect(alert.detectionMethod).toBe("transfer_history");
+          expect(alert.unexplainedAmount).toBe(0.01);
+          expect(alert.evidence).toBeDefined();
+          expect(alert.evidence?.[0]?.amount).toBe(0.01);
         }
+      });
+
+      it("should detect transfers regardless of high threshold values", async () => {
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        // Any transfer is now a violation
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([
+          { ...sampleTransfer, amount: 999 }, // Any amount is prohibited
+        ]);
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          1000, // High threshold - doesn't matter for violations
+        );
+
+        expect(result.successful).toHaveLength(1);
+        expect(result.successful[0]?.alerts).toHaveLength(1); // Should detect violation
+        expect(result.successful[0]?.alerts[0]?.note).toContain(
+          "Mid-competition transfers are PROHIBITED",
+        );
+      });
+
+      it("should use pre-fetched account summaries when provided (production use case)", async () => {
+        const agents = [
+          { agentId: "agent-1", walletAddress: "0x123" },
+          { agentId: "agent-2", walletAddress: "0x456" },
+        ];
+
+        // Pre-fetched summaries from PerpsDataProcessor
+        const preFetchedSummaries = new Map<string, PerpsAccountSummary>();
+        preFetchedSummaries.set("agent-1", {
+          ...sampleAccountSummary,
+          totalEquity: 10050, // 50 unexplained (below threshold of 100)
+          totalPnl: 50, // Ensure PnL matches the equity change
+        });
+        preFetchedSummaries.set("agent-2", {
+          ...sampleAccountSummary,
+          totalEquity: 11000, // 1000 unexplained (above threshold of 100)
+          totalPnl: 0, // No PnL, so all equity increase is unexplained
+        });
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          preFetchedSummaries, // Providing pre-fetched data
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold, // 100
+        );
+
+        // Should not call getAccountSummary since we provided pre-fetched data
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).not.toHaveBeenCalled();
+
+        // Should still detect issues based on the provided summaries
+        expect(result.successful).toHaveLength(2);
+        expect(result.totalAlertsCreated).toBe(1); // Only agent-2 has unexplained amount >= threshold
+      });
+    });
+
+    describe("existing alerts handling", () => {
+      it("should skip agents with unreviewed alerts (reviewed: false)", async () => {
+        const unreviewedAlert: SelectPerpsSelfFundingAlert = {
+          id: "alert-1",
+          agentId: "agent-1",
+          competitionId: "comp-1",
+          expectedEquity: "10000",
+          actualEquity: "11000",
+          unexplainedAmount: "1000",
+          accountSnapshot: {},
+          detectionMethod: "transfer_history",
+          detectedAt: new Date(),
+          reviewed: false, // Explicitly false
+          reviewedAt: null,
+          reviewedBy: null,
+          reviewNote: null,
+          actionTaken: null,
+        };
+
+        const alertsMap = new Map<string, SelectPerpsSelfFundingAlert[]>();
+        alertsMap.set("agent-1", [unreviewedAlert]);
+        mockPerpsRepo.batchGetAgentsSelfFundingAlerts = vi
+          .fn()
+          .mockResolvedValue(alertsMap);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should not fetch account summary since agent is skipped
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).not.toHaveBeenCalled();
+        expect(result.successful[0]?.alerts).toHaveLength(0);
+      });
+
+      it("should skip agents with unreviewed alerts (reviewed: null)", async () => {
+        const unreviewedAlert: SelectPerpsSelfFundingAlert = {
+          id: "alert-1",
+          agentId: "agent-1",
+          competitionId: "comp-1",
+          expectedEquity: "10000",
+          actualEquity: "11000",
+          unexplainedAmount: "1000",
+          accountSnapshot: {},
+          detectionMethod: "balance_reconciliation",
+          detectedAt: new Date(),
+          reviewed: null, // Null is also treated as unreviewed
+          reviewedAt: null,
+          reviewedBy: null,
+          reviewNote: null,
+          actionTaken: null,
+        };
+
+        const alertsMap = new Map<string, SelectPerpsSelfFundingAlert[]>();
+        alertsMap.set("agent-1", [unreviewedAlert]);
+        mockPerpsRepo.batchGetAgentsSelfFundingAlerts = vi
+          .fn()
+          .mockResolvedValue(alertsMap);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).not.toHaveBeenCalled();
+        expect(result.successful[0]?.alerts).toHaveLength(0);
+      });
+
+      it("should process agents with all reviewed alerts", async () => {
+        const reviewedAlert: SelectPerpsSelfFundingAlert = {
+          id: "alert-1",
+          agentId: "agent-1",
+          competitionId: "comp-1",
+          expectedEquity: "10000",
+          actualEquity: "11000",
+          unexplainedAmount: "1000",
+          accountSnapshot: {},
+          detectionMethod: "transfer_history",
+          detectedAt: new Date(),
+          reviewed: true, // Reviewed
+          reviewedAt: new Date(),
+          reviewedBy: "admin-1",
+          reviewNote: "False positive",
+          actionTaken: "dismissed",
+        };
+
+        const alertsMap = new Map<string, SelectPerpsSelfFundingAlert[]>();
+        alertsMap.set("agent-1", [reviewedAlert]);
+        mockPerpsRepo.batchGetAgentsSelfFundingAlerts = vi
+          .fn()
+          .mockResolvedValue(alertsMap);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should process the agent since all alerts are reviewed
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).toHaveBeenCalledWith("0x123");
+        expect(result.successful).toHaveLength(1);
+      });
+    });
+
+    describe("Transfer history saving for violation detection", () => {
+      it("should save all transfers for violation detection and audit", async () => {
+        const transfers: Transfer[] = [
+          {
+            type: "deposit",
+            amount: 500,
+            asset: "USDC",
+            from: "0xExternal",
+            to: "0x123",
+            timestamp: new Date("2024-01-15"),
+            txHash: "0xabc",
+            chainId: 42161,
+          },
+          {
+            type: "withdraw", // Should save withdrawals too
+            amount: 200,
+            asset: "USDC",
+            from: "0x123",
+            to: "0xExternal",
+            timestamp: new Date("2024-01-16"),
+            txHash: "0xdef",
+            chainId: 137,
+          },
+        ];
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue(transfers);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should save both deposits and withdrawals for audit trail
+        expect(mockPerpsRepo.batchSaveTransferHistory).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentId: "agent-1",
+              competitionId: "comp-1",
+              type: "deposit",
+              amount: "500",
+              asset: "USDC",
+              fromAddress: "0xExternal",
+              toAddress: "0x123",
+              txHash: "0xabc",
+              chainId: 42161,
+              transferTimestamp: new Date("2024-01-15"),
+            }),
+            expect.objectContaining({
+              agentId: "agent-1",
+              competitionId: "comp-1",
+              type: "withdraw",
+              amount: "200",
+              asset: "USDC",
+              fromAddress: "0x123",
+              toAddress: "0xExternal",
+              txHash: "0xdef",
+              chainId: 137,
+              transferTimestamp: new Date("2024-01-16"),
+            }),
+          ]),
+        );
+      });
+
+      it("should handle missing txHash with fallback", async () => {
+        const transferWithoutTxHash: Transfer = {
+          type: "deposit",
+          amount: 100,
+          asset: "USDC",
+          from: "0xExternal",
+          to: "0x123",
+          timestamp: new Date("2024-01-15T10:00:00Z"),
+          // No txHash
+          chainId: 42161,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([transferWithoutTxHash]);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should create fallback txHash with agentId, timestamp, type, amount, index, and current time
+        expect(mockPerpsRepo.batchSaveTransferHistory).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              txHash: expect.stringMatching(
+                /^agent-1-2024-01-15T10:00:00\.000Z-deposit-100-0-\d+$/,
+              ), // Fallback format with unique components
+            }),
+          ]),
+        );
+      });
+
+      it("should handle missing chainId with default", async () => {
+        const transferWithoutChainId: Transfer = {
+          type: "deposit",
+          amount: 100,
+          asset: "USDC",
+          from: "0xExternal",
+          to: "0x123",
+          timestamp: new Date("2024-01-15"),
+          txHash: "0xabc",
+          // No chainId
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([transferWithoutChainId]);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should use default chainId of 0
+        expect(mockPerpsRepo.batchSaveTransferHistory).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              chainId: 0, // Default value
+            }),
+          ]),
+        );
+      });
+
+      it("should continue monitoring if transfer save fails", async () => {
+        // Mock save to fail
+        mockPerpsRepo.batchSaveTransferHistory = vi
+          .fn()
+          .mockRejectedValueOnce(new Error("Database error"));
+
+        const suspiciousTransfer: Transfer = {
+          type: "deposit",
+          amount: 500, // Above threshold
+          asset: "USDC",
+          from: "0xExternal",
+          to: "0x123",
+          timestamp: new Date("2024-01-15"),
+          txHash: "0xabc",
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([suspiciousTransfer]);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should still detect self-funding even if transfer save failed
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              detectionMethod: "transfer_history",
+              unexplainedAmount: "500",
+            }),
+          ]),
+        );
+      });
+
+      it("should not call batchSaveTransferHistory when no transfers exist", async () => {
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([]); // No transfers
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should not call save when no transfers
+        expect(mockPerpsRepo.batchSaveTransferHistory).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("transfer history detection", () => {
+      it("should detect self-funding via transfer history", async () => {
+        const suspiciousTransfer: Transfer = {
+          type: "deposit",
+          amount: 500,
+          asset: "USDC",
+          from: "0xExternal",
+          to: "0x123", // Agent's wallet
+          timestamp: new Date("2024-01-15"), // After competition start
+          txHash: "0xabc",
+          // Increased by deposit amount
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([suspiciousTransfer]);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Verify alert creation was called with correct data (strings)
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentId: "agent-1",
+              competitionId: "comp-1",
+              expectedEquity: "10000", // String
+              actualEquity: "10500", // String
+              unexplainedAmount: "500", // String
+              detectionMethod: "transfer_history",
+              reviewed: false,
+            }),
+          ]),
+        );
+
+        expect(result.totalAlertsCreated).toBe(1);
+      });
+
+      it("should handle case-insensitive wallet address matching", async () => {
+        const transfer: Transfer = {
+          type: "deposit",
+          amount: 500,
+          asset: "USDC",
+          from: "0xExternal",
+          to: "0X123", // Different case
+          timestamp: new Date("2024-01-15"),
+          txHash: "0xabc",
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([transfer]);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }]; // Lowercase
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should detect the transfer despite case difference
+        expect(result.totalAlertsCreated).toBe(1);
       });
 
       it("should ignore transfers before competition start", async () => {
@@ -286,7 +770,7 @@ describe("PerpsMonitoringService", () => {
           asset: "USDC",
           from: "0xExternal",
           to: "0x123",
-          timestamp: new Date("2023-12-31"), // Before competition start
+          timestamp: new Date("2023-12-15"), // Before competition
           txHash: "0xabc",
         };
 
@@ -537,10 +1021,12 @@ describe("PerpsMonitoringService", () => {
         ).mockResolvedValue([tinyDeposit]);
 
         // Mock config with null threshold to use default
-        mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValueOnce({
-          ...mockCompetitionConfig,
-          selfFundingThresholdUsd: null, // Will use default of 0
-        });
+        mockPerpsRepo.getPerpsCompetitionConfig = vi
+          .fn()
+          .mockResolvedValueOnce({
+            ...mockCompetitionConfig,
+            selfFundingThresholdUsd: null, // Will use default of 0
+          });
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
@@ -550,418 +1036,366 @@ describe("PerpsMonitoringService", () => {
           "comp-1",
           competitionStartDate,
           initialCapital,
-          0, // Zero threshold - any deposit
+          0, // Using default threshold for competitions
         );
 
-        expect(result.totalAlertsCreated).toBe(1);
-        expect(result.successful[0]?.alerts[0]?.unexplainedAmount).toBe(0.01);
-      });
-    });
-
-    describe("balance reconciliation", () => {
-      it("should detect equity increases beyond threshold", async () => {
-        const highEquitySummary: PerpsAccountSummary = {
-          ...sampleAccountSummary,
-          totalEquity: 11000, // 11,000 equity
-          totalPnl: 500, // 500 PnL from trading
-          // expectedEquity = 10000 + 500 = 10,500
-          // unexplainedAmount = 11000 - 10500 = 500 (above 100 threshold)
-        };
-
-        // Create summaries map
-        const summariesMap = new Map([["agent-1", highEquitySummary]]);
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          summariesMap,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        expect(result.totalAlertsCreated).toBe(1);
-        expect(result.successful[0]?.alerts[0]?.detectionMethod).toBe(
-          "balance_reconciliation",
-        );
-        expect(result.successful[0]?.alerts[0]?.unexplainedAmount).toBe(500); // Fixed calculation
-      });
-
-      it("should not flag normal trading gains", async () => {
-        const normalGainsSummary: PerpsAccountSummary = {
-          ...sampleAccountSummary,
-          totalEquity: 10050, // 50 above initial
-          totalPnl: 50, // Total PnL matches the gain
-        };
-
-        const summariesMap = new Map([["agent-1", normalGainsSummary]]);
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          summariesMap,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        // Should not create alert for normal gains (unexplained = 0)
-        expect(result.totalAlertsCreated).toBe(0);
-      });
-
-      it("should handle agents with losses correctly", async () => {
-        const lossSummary: PerpsAccountSummary = {
-          ...sampleAccountSummary,
-          totalEquity: 8000, // 2000 loss from initial capital
-          totalPnl: -2000,
-        };
-
-        const summariesMap = new Map([["agent-1", lossSummary]]);
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          summariesMap,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        // Should not flag losses as self-funding
-        expect(result.totalAlertsCreated).toBe(0);
-      });
-    });
-
-    describe("error handling", () => {
-      it("should handle provider errors gracefully", async () => {
-        vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockRejectedValue(new Error("Provider API error"));
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          undefined,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        // Service catches errors internally, so agent appears in successful with no alerts
-        expect(result.successful).toHaveLength(1);
-        expect(result.failed).toHaveLength(0);
-        expect(result.successful[0]?.alerts).toHaveLength(0);
-      });
-
-      it("should handle repository errors gracefully", async () => {
-        mockPerpsRepo.batchGetAgentsSelfFundingAlerts.mockRejectedValue(
-          new Error("Database connection failed"),
-        );
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          undefined,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        // Service catches DB errors internally, so agent appears in successful with no alerts
-        expect(result.successful).toHaveLength(1);
-        expect(result.failed).toHaveLength(0);
-        expect(result.successful[0]?.alerts).toHaveLength(0);
-      });
-
-      it("should handle partial failures in batch processing", async () => {
-        const agents = [
-          { agentId: "agent-1", walletAddress: "0x123" },
-          { agentId: "agent-2", walletAddress: "0x456" },
-        ];
-
-        // Mock provider to fail for specific agent
-        vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockImplementation((walletAddress) => {
-          if (walletAddress === "0x456") {
-            throw new Error("Agent 2 provider error");
-          }
-          return Promise.resolve([]);
-        });
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          undefined,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        // Both agents appear in successful since errors are caught internally
-        expect(result.successful).toHaveLength(2);
-        expect(result.failed).toHaveLength(0);
-      });
-    });
-
-    describe("duplicate alert prevention", () => {
-      it("should not create duplicate alerts for existing violations", async () => {
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        // Mock existing alert
-        const existingAlert: SelectPerpsSelfFundingAlert = {
-          id: "alert-1",
-          agentId: "agent-1",
-          competitionId: "comp-1",
-          detectionMethod: "transfer_history",
-          unexplainedAmount: "150",
-          note: "Existing alert",
-          evidence: [sampleTransfer],
-          accountSnapshot: sampleAccountSummary,
-          createdAt: new Date(),
-          expectedEquity: "10000",
-          actualEquity: "11150",
-          detectedAt: new Date(),
-          reviewedAt: null,
-          reviewedBy: null,
-          reviewed: false,
-          reviewNote: null,
-          actionTaken: null,
-        } as SelectPerpsSelfFundingAlert;
-
-        mockPerpsRepo.batchGetAgentsSelfFundingAlerts.mockResolvedValue(
-          new Map([["agent-1", [existingAlert]]]),
-        );
-
-        // Same transfer as existing alert
-        vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockResolvedValue([{ ...sampleTransfer, amount: 150 }]);
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          undefined,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        // Should not create new alert for existing violation
-        expect(result.totalAlertsCreated).toBe(0);
-      });
-
-      it("should create new alert when no existing alerts", async () => {
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        // No existing alerts
-        mockPerpsRepo.batchGetAgentsSelfFundingAlerts.mockResolvedValue(
-          new Map(),
-        );
-
-        // New transfer should trigger alert
-        vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockResolvedValue([{ ...sampleTransfer, amount: 200 }]);
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          undefined,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        // Should create new alert
+        // Should detect even $0.01 since default threshold is 0
         expect(result.totalAlertsCreated).toBe(1);
         expect(
           mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
         ).toHaveBeenCalledWith(
           expect.arrayContaining([
             expect.objectContaining({
-              unexplainedAmount: "200",
               detectionMethod: "transfer_history",
+              unexplainedAmount: "0.01",
+            }),
+          ]),
+        );
+      });
+
+      it("should detect multiple deposits as violations", async () => {
+        // All deposits are violations regardless of amount
+        const smallDeposits: Transfer[] = [
+          {
+            type: "deposit",
+            amount: 30, // Any amount is prohibited
+            asset: "USDC",
+            from: "0xExternal1",
+            to: "0x123",
+            timestamp: new Date("2024-01-15"),
+            txHash: "0xabc1",
+          },
+          {
+            type: "deposit",
+            amount: 40, // Any amount is prohibited
+            asset: "USDC",
+            from: "0xExternal2",
+            to: "0x123",
+            timestamp: new Date("2024-01-16"),
+            txHash: "0xabc2",
+          },
+          {
+            type: "deposit",
+            amount: 50, // Any amount is prohibited
+            asset: "USDC",
+            from: "0xExternal3",
+            to: "0x123",
+            timestamp: new Date("2024-01-17"),
+            txHash: "0xabc3",
+          },
+          // Total: 30 + 40 + 50 = 120, all are violations
+        ];
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue(smallDeposits);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should detect all deposits as violations
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              detectionMethod: "transfer_history",
+              unexplainedAmount: "120",
+              accountSnapshot: expect.objectContaining({
+                confidence: "high", // Always high confidence for violations
+                note: expect.stringMatching(
+                  /Mid-competition transfers are PROHIBITED.*3 deposit\(s\)/,
+                ),
+              }),
+            }),
+          ]),
+        );
+      });
+
+      it("should detect many deposits as violations", async () => {
+        // Many deposits - all are violations
+        const manySmallDeposits: Transfer[] = Array.from(
+          { length: 10 },
+          (_, i) => ({
+            type: "deposit" as const,
+            amount: 15, // Any amount is prohibited
+            asset: "USDC",
+            from: `0xExternal${i}`,
+            to: "0x123",
+            timestamp: new Date(`2024-01-${10 + i}`),
+            txHash: `0xabc${i}`,
+          }),
+        );
+        // Total: 10 * 15 = 150, all are violations
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue(manySmallDeposits);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should detect all deposits as violations
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              detectionMethod: "transfer_history",
+              unexplainedAmount: "150",
+              accountSnapshot: expect.objectContaining({
+                confidence: "high", // High confidence for violations
+                note: expect.stringMatching(
+                  /Mid-competition transfers are PROHIBITED.*10 deposit\(s\)/,
+                ),
+              }),
+            }),
+          ]),
+        );
+      });
+
+      it("should detect all deposits regardless of amount", async () => {
+        // Mix of large and small deposits - all are violations
+        const mixedDeposits: Transfer[] = [
+          {
+            type: "deposit",
+            amount: 200, // Any amount is prohibited
+            asset: "USDC",
+            from: "0xExternal1",
+            to: "0x123",
+            timestamp: new Date("2024-01-15"),
+            txHash: "0xabc1",
+          },
+          {
+            type: "deposit",
+            amount: 50, // Any amount is prohibited
+            asset: "USDC",
+            from: "0xExternal2",
+            to: "0x123",
+            timestamp: new Date("2024-01-16"),
+            txHash: "0xabc2",
+          },
+        ];
+
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue(mixedDeposits);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should detect all deposits as violations
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              detectionMethod: "transfer_history",
+              unexplainedAmount: "250", // Total of all deposits
+              accountSnapshot: expect.objectContaining({
+                confidence: "high", // High confidence for violations
+                note: expect.stringMatching(
+                  /Mid-competition transfers are PROHIBITED.*2 deposit\(s\)/,
+                ),
+              }),
             }),
           ]),
         );
       });
     });
 
-    describe("confidence and severity scoring", () => {
-      it("should assign high confidence to transfer history detection", async () => {
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockResolvedValue([{ ...sampleTransfer, amount: 150 }]);
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          undefined,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        expect(result.successful[0]?.alerts[0]?.confidence).toBe("high");
-        expect(result.successful[0]?.alerts[0]?.detectionMethod).toBe(
-          "transfer_history",
-        );
-      });
-
-      it("should assign medium confidence to balance reconciliation", async () => {
-        const highEquitySummary: PerpsAccountSummary = {
+    describe("balance reconciliation detection", () => {
+      it("should detect unexplained balance increase", async () => {
+        const inflatedSummary: PerpsAccountSummary = {
           ...sampleAccountSummary,
-          totalEquity: 11000, // 1000 above initial
-        };
-
-        const summariesMap = new Map([["agent-1", highEquitySummary]]);
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          summariesMap,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        expect(result.successful[0]?.alerts[0]?.confidence).toBe("medium");
-        expect(result.successful[0]?.alerts[0]?.detectionMethod).toBe(
-          "balance_reconciliation",
-        );
-      });
-
-      it("should assign critical severity for large amounts", async () => {
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        // Large transfer above critical threshold (default: 500)
-        vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockResolvedValue([{ ...sampleTransfer, amount: 1000 }]);
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          undefined,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        expect(result.successful[0]?.alerts[0]?.severity).toBe("critical");
-      });
-
-      it("should assign warning severity for smaller amounts", async () => {
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        // Small transfer below critical threshold
-        vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockResolvedValue([{ ...sampleTransfer, amount: 200 }]);
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          undefined,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        expect(result.successful[0]?.alerts[0]?.severity).toBe("warning");
-      });
-    });
-
-    describe("batch processing", () => {
-      it("should handle multiple agents efficiently", async () => {
-        const agents = [
-          { agentId: "agent-1", walletAddress: "0x111" },
-          { agentId: "agent-2", walletAddress: "0x222" },
-          { agentId: "agent-3", walletAddress: "0x333" },
-        ];
-
-        // Mock transfers for agents 1 and 3
-        vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockImplementation((walletAddress) => {
-          if (walletAddress === "0x111") {
-            return Promise.resolve([
-              { ...sampleTransfer, amount: 200, to: "0x111" },
-            ]);
-          }
-          if (walletAddress === "0x333") {
-            return Promise.resolve([
-              { ...sampleTransfer, amount: 300, to: "0x333" },
-            ]);
-          }
-          return Promise.resolve([]); // No transfers for agent-2
-        });
-
-        const result = await service.monitorAgentsWithData(
-          agents,
-          undefined,
-          "comp-1",
-          competitionStartDate,
-          initialCapital,
-          selfFundingThreshold,
-        );
-
-        expect(result.successful).toHaveLength(3);
-        expect(result.totalAlertsCreated).toBe(2); // agents 1 and 3 have violations
-
-        // Check that alerts were created correctly
-        const agent1Alerts = result.successful.find(
-          (a) => a.agentId === "agent-1",
-        )?.alerts;
-        const agent3Alerts = result.successful.find(
-          (a) => a.agentId === "agent-3",
-        )?.alerts;
-
-        expect(agent1Alerts).toHaveLength(1);
-        expect(agent3Alerts).toHaveLength(1);
-        expect(agent1Alerts?.[0]?.unexplainedAmount).toBe(200);
-        expect(agent3Alerts?.[0]?.unexplainedAmount).toBe(300);
-      });
-
-      it("should save transfer history for all agents", async () => {
-        const agents = [
-          { agentId: "agent-1", walletAddress: "0x111" },
-          { agentId: "agent-2", walletAddress: "0x222" },
-        ];
-
-        const transfer1: Transfer = { ...sampleTransfer, amount: 200 };
-        const transfer2: Transfer = {
-          ...sampleTransfer,
-          amount: 100,
-          to: "0x222",
+          totalEquity: 11000, // 1000 more than expected
+          totalPnl: 500, // Only 500 PnL
+          initialCapital: 10000,
         };
 
         vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockImplementation((walletAddress) => {
-          if (walletAddress === "0x111") {
-            return Promise.resolve([transfer1]);
-          }
-          if (walletAddress === "0x222") {
-            return Promise.resolve([transfer2]);
-          }
-          return Promise.resolve([]);
-        });
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(inflatedSummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Expected: 10000 + 500 = 10500
+        // Actual: 11000
+        // Unexplained: 500
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              expectedEquity: "10500", // String
+              actualEquity: "11000", // String
+              unexplainedAmount: "500", // String
+              detectionMethod: "balance_reconciliation",
+            }),
+          ]),
+        );
+      });
+
+      it("should handle negative unexplained amounts (absolute value)", async () => {
+        const deflatedSummary: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 9800, // 200 less than expected
+          totalPnl: 0,
+          initialCapital: 10000,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(deflatedSummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Unexplained: -200, but Math.abs used for threshold
+        // Default reconciliation threshold is 100, so this triggers
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              expectedEquity: "10000",
+              actualEquity: "9800",
+              unexplainedAmount: "-200", // Negative preserved
+              detectionMethod: "balance_reconciliation",
+            }),
+          ]),
+        );
+      });
+
+      it("should not create alert if within threshold", async () => {
+        const slightDiscrepancy: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 10550, // Only 50 more than expected
+          totalPnl: 500,
+          initialCapital: 10000,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(slightDiscrepancy);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // 50 is below default reconciliation threshold of 100
+        expect(result.totalAlertsCreated).toBe(0);
+        expect(result.successful).toHaveLength(1);
+        expect(result.failed).toHaveLength(0);
+      });
+
+      it("should handle missing optional fields with defaults", async () => {
+        const minimalSummary: PerpsAccountSummary = {
+          totalEquity: 11000,
+          // totalPnl undefined
+          // initialCapital undefined
+          accountStatus: "active",
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(minimalSummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should use 0 for missing fields
+        // Expected: 10000 + 0 = 10000
+        // Actual: 11000
+        // Unexplained: 1000
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              expectedEquity: "10000",
+              actualEquity: "11000",
+              unexplainedAmount: "1000",
+            }),
+          ]),
+        );
+      });
+
+      it("should set different confidence levels based on amount", async () => {
+        // Test high confidence (> 500 critical threshold)
+        const highDiscrepancy: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 11000, // 1000 unexplained (> 500)
+          totalPnl: 0,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(highDiscrepancy);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
         await service.monitorAgentsWithData(
           agents,
@@ -972,42 +1406,449 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should save all transfer history (called once per agent)
-        expect(mockPerpsRepo.batchSaveTransferHistory).toHaveBeenCalledTimes(2);
-
-        // Check the actual format matches what service sends
-        expect(mockPerpsRepo.batchSaveTransferHistory).toHaveBeenCalledWith(
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
           expect.arrayContaining([
             expect.objectContaining({
-              agentId: "agent-1",
-              type: "deposit", // Note: 'type' not 'transferType'
-              amount: "200",
-              competitionId: "comp-1",
-              asset: "USDC",
-              fromAddress: "0xSender",
-              toAddress: "0x123",
-              chainId: 0,
-              txHash: expect.any(String),
-              transferTimestamp: expect.any(Date),
+              accountSnapshot: expect.objectContaining({
+                confidence: "high", // High confidence for large amount
+                severity: "critical",
+              }),
+            }),
+          ]),
+        );
+
+        // Reset mock
+        mockPerpsRepo.batchCreatePerpsSelfFundingAlerts = vi.fn();
+
+        // Test medium confidence (< 500)
+        const mediumDiscrepancy: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 10200, // 200 unexplained (< 500)
+          totalPnl: 0,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(mediumDiscrepancy);
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              accountSnapshot: expect.objectContaining({
+                confidence: "medium", // Medium confidence for smaller amount
+                severity: "warning",
+              }),
+            }),
+          ]),
+        );
+      });
+
+      it("should handle zero balances correctly", async () => {
+        const zeroBalanceSummary: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 0, // Legitimate zero
+          totalPnl: -10000, // Lost all money
+          initialCapital: 10000,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(zeroBalanceSummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should detect if discrepancy exists
+        // Expected: 10000 + (-10000) = 0
+        // Actual: 0
+        // No unexplained amount
+        expect(result.totalAlertsCreated).toBe(0);
+      });
+
+      it("should handle negative balance correctly", async () => {
+        const negativeSummary: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: -500, // Negative equity (debt)
+          totalPnl: -10500,
+          initialCapital: 10000,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(negativeSummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Expected: 10000 + (-10500) = -500
+        // Actual: -500
+        // No unexplained amount
+        expect(result.totalAlertsCreated).toBe(0);
+      });
+
+      it("should detect self-funding even with negative PnL", async () => {
+        const suspiciousSummary: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 8000, // Should be 5000
+          totalPnl: -5000, // Lost money
+          initialCapital: 10000,
+        };
+
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(suspiciousSummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Expected: 10000 + (-5000) = 5000
+        // Actual: 8000
+        // Unexplained: 3000
+        expect(result.totalAlertsCreated).toBe(1);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              expectedEquity: "5000",
+              actualEquity: "8000",
+              unexplainedAmount: "3000",
             }),
           ]),
         );
       });
     });
 
+    describe("multiple detection methods", () => {
+      it("should create alerts from both detection methods", async () => {
+        // Set up transfer detection
+        const transfer: Transfer = {
+          type: "deposit",
+          amount: 300,
+          asset: "USDC",
+          from: "0xExternal",
+          to: "0x123",
+          timestamp: new Date("2024-01-15"),
+          txHash: "0xabc",
+        };
+        vi.mocked(
+          mockProviderWithTransfers.getTransferHistory!,
+        ).mockResolvedValue([transfer]);
+
+        // Set up reconciliation detection
+        const discrepancySummary: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 11000, // Unexplained increase
+          totalPnl: 500,
+        };
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(discrepancySummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should create 2 alerts
+        expect(result.totalAlertsCreated).toBe(2);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              detectionMethod: "transfer_history",
+              unexplainedAmount: "300", // From transfer
+            }),
+            expect.objectContaining({
+              detectionMethod: "balance_reconciliation",
+              unexplainedAmount: "500", // From reconciliation
+            }),
+          ]),
+        );
+      });
+    });
+
+    describe("batch processing and error handling", () => {
+      it("should handle mixed success and failure results", async () => {
+        const agents = [
+          { agentId: "agent-1", walletAddress: "0x111" },
+          { agentId: "agent-2", walletAddress: "0x222" },
+          { agentId: "agent-3", walletAddress: "0x333" },
+        ];
+
+        // Agent 1: Success
+        vi.mocked(mockProviderWithTransfers.getAccountSummary)
+          .mockResolvedValueOnce(sampleAccountSummary)
+          // Agent 2: Failure
+          .mockRejectedValueOnce(new Error("Provider timeout"))
+          // Agent 3: Success
+          .mockResolvedValueOnce(sampleAccountSummary);
+
+        mockPerpsRepo.batchGetAgentsSelfFundingAlerts = vi
+          .fn()
+          .mockImplementation(async () => {
+            // All agents have no existing alerts
+            return new Map();
+          });
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        expect(result.successful).toHaveLength(2);
+        expect(result.failed).toHaveLength(1);
+        expect(result.failed[0]).toEqual({
+          agentId: "agent-2",
+          walletAddress: "0x222",
+          alerts: [],
+          error: "Provider timeout",
+        });
+      });
+
+      it("should continue if alert creation fails", async () => {
+        vi.mocked(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).mockRejectedValue(new Error("Database error"));
+
+        // Set up to trigger an alert
+        const discrepancySummary: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 11000,
+          totalPnl: 0,
+        };
+        vi.mocked(
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(discrepancySummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should still report success for agent monitoring
+        expect(result.successful).toHaveLength(1);
+        expect(result.totalAlertsCreated).toBe(0); // Failed to create
+      });
+
+      it("should batch fetch existing alerts efficiently", async () => {
+        const agents = [
+          { agentId: "agent-1", walletAddress: "0x111" },
+          { agentId: "agent-2", walletAddress: "0x222" },
+          { agentId: "agent-3", walletAddress: "0x333" },
+        ];
+
+        await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should batch fetch alerts for all agents in one call
+        expect(
+          mockPerpsRepo.batchGetAgentsSelfFundingAlerts,
+        ).toHaveBeenCalledTimes(1);
+        expect(
+          mockPerpsRepo.batchGetAgentsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(["agent-1", "agent-2", "agent-3"], "comp-1");
+      });
+
+      it("should handle alert fetch failures gracefully", async () => {
+        vi.mocked(
+          mockPerpsRepo.batchGetAgentsSelfFundingAlerts,
+        ).mockRejectedValueOnce(new Error("DB error")); // Fail on first call
+
+        const agents = [
+          { agentId: "agent-1", walletAddress: "0x111" },
+          { agentId: "agent-2", walletAddress: "0x222" },
+          { agentId: "agent-3", walletAddress: "0x333" },
+        ];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should still process all agents (failed fetch = empty alerts)
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).toHaveBeenCalledTimes(3);
+        expect(result.successful).toHaveLength(3);
+      });
+
+      it("should handle mixed existing alerts scenario", async () => {
+        // Agent 1: Has unreviewed alert (skip)
+        const unreviewedAlert: SelectPerpsSelfFundingAlert = {
+          id: "alert-1",
+          agentId: "agent-1",
+          competitionId: "comp-1",
+          expectedEquity: "10000",
+          actualEquity: "11000",
+          unexplainedAmount: "1000",
+          accountSnapshot: {},
+          detectionMethod: "transfer_history",
+          detectedAt: new Date(),
+          reviewed: false,
+          reviewedAt: null,
+          reviewedBy: null,
+          reviewNote: null,
+          actionTaken: null,
+        };
+
+        // Agent 3: Has reviewed alert (process)
+        const reviewedAlert: SelectPerpsSelfFundingAlert = {
+          ...unreviewedAlert,
+          id: "alert-3",
+          agentId: "agent-3",
+          reviewed: true,
+          reviewedAt: new Date(),
+          reviewedBy: "admin-1",
+        };
+
+        // Mock batch alerts to return different results for the agents
+        const alertsMap = new Map<string, SelectPerpsSelfFundingAlert[]>();
+        alertsMap.set("agent-1", [unreviewedAlert]); // agent-1: unreviewed
+        alertsMap.set("agent-2", []); // agent-2: no alerts
+        alertsMap.set("agent-3", [reviewedAlert]); // agent-3: reviewed
+        mockPerpsRepo.batchGetAgentsSelfFundingAlerts = vi
+          .fn()
+          .mockResolvedValue(alertsMap);
+
+        const agents = [
+          { agentId: "agent-1", walletAddress: "0x111" },
+          { agentId: "agent-2", walletAddress: "0x222" },
+          { agentId: "agent-3", walletAddress: "0x333" },
+        ];
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        // Should only process agents 2 and 3 (agent 1 skipped)
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).toHaveBeenCalledTimes(2);
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).toHaveBeenCalledWith("0x222");
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).toHaveBeenCalledWith("0x333");
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).not.toHaveBeenCalledWith("0x111");
+        expect(result.successful).toHaveLength(3);
+      });
+
+      it("should handle account summary fetch failure for individual agent", async () => {
+        const agents = [
+          { agentId: "agent-1", walletAddress: "0x111" },
+          { agentId: "agent-2", walletAddress: "0x222" },
+        ];
+
+        vi.mocked(mockProviderWithTransfers.getAccountSummary)
+          .mockResolvedValueOnce(sampleAccountSummary) // agent-1: success
+          .mockRejectedValueOnce(new Error("Provider error")); // agent-2: failure
+
+        mockPerpsRepo.batchGetAgentsSelfFundingAlerts = vi
+          .fn()
+          .mockResolvedValue(new Map());
+
+        const result = await service.monitorAgentsWithData(
+          agents,
+          undefined,
+          "comp-1",
+          competitionStartDate,
+          initialCapital,
+          selfFundingThreshold,
+        );
+
+        expect(result.successful).toHaveLength(1);
+        expect(result.failed).toHaveLength(1);
+        expect(result.failed[0]?.agentId).toBe("agent-2");
+        expect(result.failed[0]?.error).toBe("Provider error");
+      });
+    });
+
     describe("edge cases", () => {
-      it("should handle case-insensitive address matching", async () => {
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123abc" }];
-
-        // Transfer with different case
-        const transferDifferentCase: Transfer = {
-          ...sampleTransfer,
-          to: "0x123ABC", // Different case
+      it("should handle exact threshold boundaries", async () => {
+        const exactThresholdSummary: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 10600, // Exactly 100 unexplained (equals threshold)
+          totalPnl: 500,
         };
 
         vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockResolvedValue([transferDifferentCase]);
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(exactThresholdSummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
         const result = await service.monitorAgentsWithData(
           agents,
@@ -1018,21 +1859,22 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should match despite case difference
-        expect(result.totalAlertsCreated).toBe(1);
+        // Should not create alert (threshold is >, not >=)
+        expect(result.totalAlertsCreated).toBe(0);
       });
 
-      it("should handle very large transfer amounts", async () => {
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const massiveTransfer: Transfer = {
-          ...sampleTransfer,
-          amount: 1e12, // Trillion dollars
+      it("should handle very large numbers", async () => {
+        const largeSummary: PerpsAccountSummary = {
+          ...sampleAccountSummary,
+          totalEquity: 1e15, // Very large number
+          totalPnl: 1e14,
         };
 
         vi.mocked(
-          mockProviderWithTransfers.getTransferHistory!,
-        ).mockResolvedValue([massiveTransfer]);
+          mockProviderWithTransfers.getAccountSummary,
+        ).mockResolvedValue(largeSummary);
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
         const result = await service.monitorAgentsWithData(
           agents,
@@ -1043,22 +1885,25 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
+        // Should handle large numbers correctly
         expect(result.totalAlertsCreated).toBe(1);
-        expect(result.successful[0]?.alerts[0]?.severity).toBe("critical");
-        expect(result.successful[0]?.alerts[0]?.unexplainedAmount).toBe(1e12);
+        expect(
+          mockPerpsRepo.batchCreatePerpsSelfFundingAlerts,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              actualEquity: "1000000000000000", // Converted to string
+            }),
+          ]),
+        );
       });
 
-      it("should handle zero-amount transfers", async () => {
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const zeroTransfer: Transfer = {
-          ...sampleTransfer,
-          amount: 0,
-        };
-
+      it("should handle transfer history fetch error gracefully", async () => {
         vi.mocked(
           mockProviderWithTransfers.getTransferHistory!,
-        ).mockResolvedValue([zeroTransfer]);
+        ).mockRejectedValue(new Error("API error"));
+
+        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
         const result = await service.monitorAgentsWithData(
           agents,
@@ -1066,12 +1911,62 @@ describe("PerpsMonitoringService", () => {
           "comp-1",
           competitionStartDate,
           initialCapital,
-          0, // Zero threshold
+          selfFundingThreshold,
         );
 
-        // Should create alert for zero-amount transfer (ANY transfer is violation)
-        expect(result.totalAlertsCreated).toBe(1);
+        // Should continue with reconciliation check
+        expect(mockProviderWithTransfers.getAccountSummary).toHaveBeenCalled();
+        expect(result.successful).toHaveLength(1);
       });
+    });
+  });
+
+  describe("shouldMonitorCompetition", () => {
+    it("should return false if no config found", async () => {
+      mockPerpsRepo.getPerpsCompetitionConfig = vi.fn().mockResolvedValue(null);
+
+      const result = await service.shouldMonitorCompetition("comp-1");
+      expect(result).toBe(false);
+    });
+
+    it("should return true if threshold is zero (monitor for ANY deposits)", async () => {
+      const zeroThresholdConfig: SelectPerpsCompetitionConfig = {
+        ...mockCompetitionConfig,
+        selfFundingThresholdUsd: "0",
+      };
+      mockPerpsRepo.getPerpsCompetitionConfig = vi
+        .fn()
+        .mockResolvedValue(zeroThresholdConfig);
+
+      const result = await service.shouldMonitorCompetition("comp-1");
+      expect(result).toBe(true); // Zero threshold means monitor for ANY deposits
+    });
+
+    it("should return false if threshold is missing", async () => {
+      const noThresholdConfig: SelectPerpsCompetitionConfig = {
+        ...mockCompetitionConfig,
+        selfFundingThresholdUsd: null,
+      };
+      mockPerpsRepo.getPerpsCompetitionConfig = vi
+        .fn()
+        .mockResolvedValue(noThresholdConfig);
+
+      const result = await service.shouldMonitorCompetition("comp-1");
+      expect(result).toBe(false);
+    });
+
+    it("should return true if threshold is positive", async () => {
+      const result = await service.shouldMonitorCompetition("comp-1");
+      expect(result).toBe(true);
+    });
+
+    it("should handle config fetch error", async () => {
+      mockPerpsRepo.getPerpsCompetitionConfig = vi
+        .fn()
+        .mockRejectedValue(new Error("Database error"));
+
+      const result = await service.shouldMonitorCompetition("comp-1");
+      expect(result).toBe(false);
     });
   });
 });
