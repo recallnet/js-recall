@@ -1,4 +1,4 @@
-import { Logger } from "pino";
+import pino from "pino";
 
 import { IPerpsDataProvider, PerpsProviderConfig } from "../types/perps.js";
 import { SymphonyPerpsProvider } from "./perps/symphony-perps.provider.js";
@@ -7,7 +7,7 @@ import { SymphonyPerpsProvider } from "./perps/symphony-perps.provider.js";
  * Factory for creating perps data providers based on configuration
  */
 export class PerpsProviderFactory {
-  static logger: Logger;
+  static logger = pino.default();
   /**
    * Create a perps data provider based on the configuration
    */
