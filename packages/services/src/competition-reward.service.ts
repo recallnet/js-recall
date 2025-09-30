@@ -28,7 +28,7 @@ export class CompetitionRewardService {
   async assignWinnersToRewards(
     competitionId: string,
     leaderboard: { agentId: string; value: number }[],
-    tx?: DatabaseTransaction,
+    tx?: Transaction,
   ): Promise<void> {
     await this.competitionRewardsRepo.assignWinnersToRewards(
       competitionId,

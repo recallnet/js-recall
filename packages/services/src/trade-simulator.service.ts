@@ -1,24 +1,19 @@
+import { Logger } from "pino";
+
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { SelectTrade } from "@recallnet/db/schema/trading/types";
 
-import {
-  count,
-  getAgentTrades,
-  getAgentTradesInCompetition,
-  getCompetitionTradeMetrics,
-  getCompetitionTrades,
-} from "@/database/repositories/trade-repository.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { calculateSlippage } from "@/lib/trade-utils.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { BalanceService } from "@/services/balance.service.js";
-import { BlockchainType, SpecificChain } from "@/types/index.js";
-
+import { BalanceService } from "./balance.service.js";
+import { calculateSlippage } from "./lib/trade-utils.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
+import { ApiError, BlockchainType, SpecificChain } from "./types/index.js";
 
 // Result types inferred from repository functions to ensure consistency
-type CompetitionTradesResult = Awaited<ReturnType<typeof getCompetitionTrades>>;
+type CompetitionTradesResult = Awaited<
+  ReturnType<typeof TradeRepository.prototype.getCompetitionTrades>
+>;
 type AgentTradesInCompetitionResult = Awaited<
-  ReturnType<typeof getAgentTradesInCompetition>
+  ReturnType<typeof TradeRepository.prototype.getAgentTradesInCompetition>
 >;
 
 // Interface for getTradeQuote parameters
@@ -62,15 +57,21 @@ interface TradeQuoteResult {
 export class TradeSimulatorService {
   private balanceService: BalanceService;
   private priceTrackerService: PriceTrackerService;
+  private tradeRepo: TradeRepository;
+  private logger: Logger;
   // Cache of recent trades for performance (agentId -> trades)
   private tradeCache: Map<string, SelectTrade[]>;
 
   constructor(
     balanceService: BalanceService,
     priceTrackerService: PriceTrackerService,
+    tradeRepo: TradeRepository,
+    logger: Logger,
   ) {
     this.balanceService = balanceService;
     this.priceTrackerService = priceTrackerService;
+    this.tradeRepo = tradeRepo;
+    this.logger = logger;
     this.tradeCache = new Map();
   }
 
@@ -97,7 +98,11 @@ export class TradeSimulatorService {
       }
 
       // Get from database
-      const trades = await getAgentTrades(agentId, limit, offset);
+      const trades = await this.tradeRepo.getAgentTrades(
+        agentId,
+        limit,
+        offset,
+      );
 
       // Update cache if fetching recent trades
       if (!offset && (!limit || limit <= 100)) {
@@ -106,10 +111,7 @@ export class TradeSimulatorService {
 
       return trades;
     } catch (error) {
-      serviceLogger.error(
-        `[TradeSimulator] Error getting agent trades:`,
-        error,
-      );
+      this.logger.error(`[TradeSimulator] Error getting agent trades:`, error);
       return [];
     }
   }
@@ -127,9 +129,13 @@ export class TradeSimulatorService {
     offset?: number,
   ): Promise<CompetitionTradesResult> {
     try {
-      return await getCompetitionTrades(competitionId, limit, offset);
+      return await this.tradeRepo.getCompetitionTrades(
+        competitionId,
+        limit,
+        offset,
+      );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[TradeSimulator] Error getting competition trades:`,
         error,
       );
@@ -148,9 +154,9 @@ export class TradeSimulatorService {
     uniqueTokens: number;
   }> {
     try {
-      return await getCompetitionTradeMetrics(competitionId);
+      return await this.tradeRepo.getCompetitionTradeMetrics(competitionId);
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[TradeSimulator] Error getting competition trade metrics:`,
         error,
       );
@@ -173,14 +179,14 @@ export class TradeSimulatorService {
     offset?: number,
   ): Promise<AgentTradesInCompetitionResult> {
     try {
-      return await getAgentTradesInCompetition(
+      return await this.tradeRepo.getAgentTradesInCompetition(
         competitionId,
         agentId,
         limit,
         offset,
       );
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[TradeSimulator] Error getting agent trades in competition:`,
         error,
       );
@@ -217,7 +223,7 @@ export class TradeSimulatorService {
   async calculateBulkPortfolioValues(
     agentIds: string[],
   ): Promise<Map<string, number>> {
-    serviceLogger.debug(
+    this.logger.debug(
       `[TradeSimulator] Calculating bulk portfolio values for ${agentIds.length} agents`,
     );
 
@@ -255,19 +261,19 @@ export class TradeSimulatorService {
         }
       });
 
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Successfully calculated ${portfolioValues.size} portfolio values using ${uniqueTokens.length} unique tokens`,
       );
 
       return portfolioValues;
     } catch (error) {
-      serviceLogger.error(
+      this.logger.error(
         `[TradeSimulator] Error calculating bulk portfolio values:`,
         error,
       );
 
       // Fallback to individual calculations
-      serviceLogger.debug(
+      this.logger.debug(
         `[TradeSimulator] Falling back to individual portfolio calculations`,
       );
       for (const agentId of agentIds) {
@@ -275,7 +281,7 @@ export class TradeSimulatorService {
           const value = await this.calculatePortfolioValue(agentId);
           portfolioValues.set(agentId, value);
         } catch (agentError) {
-          serviceLogger.error(
+          this.logger.error(
             `[TradeSimulator] Error calculating portfolio for agent ${agentId}:`,
             agentError,
           );
@@ -304,7 +310,7 @@ export class TradeSimulatorService {
         toSpecificChain,
       } = params;
 
-      serviceLogger.debug(`[TradeSimulator] Getting quote:
+      this.logger.debug(`[TradeSimulator] Getting quote:
         From Token: ${fromToken} (${fromChain || "auto"}, ${fromSpecificChain || "auto"})
         To Token: ${toToken} (${toChain || "auto"}, ${toSpecificChain || "auto"})
         Amount: ${amount}
@@ -330,7 +336,7 @@ export class TradeSimulatorService {
         fromPrice.price == null ||
         toPrice.price == null
       ) {
-        serviceLogger.debug(`[TradeSimulator] Missing price data:
+        this.logger.debug(`[TradeSimulator] Missing price data:
           From Token Price: ${fromPrice ? fromPrice.price : "null"}
           To Token Price: ${toPrice ? toPrice.price : "null"}
         `);
@@ -350,7 +356,7 @@ export class TradeSimulatorService {
       const toChainResult =
         toChain || this.priceTrackerService.determineChain(toToken);
 
-      serviceLogger.debug(`[TradeSimulator] Quote calculated:
+      this.logger.debug(`[TradeSimulator] Quote calculated:
         From: ${amount} ${fromPrice.symbol} @ $${fromPrice.price} = $${fromValueUSD}
         To: ${toAmount} ${toPrice.symbol} @ $${toPrice.price}
         Exchange Rate: 1 ${fromPrice.symbol} = ${exchangeRate} ${toPrice.symbol}
@@ -381,7 +387,7 @@ export class TradeSimulatorService {
         },
       };
     } catch (error) {
-      serviceLogger.error(`[TradeSimulator] Error getting trade quote:`, error);
+      this.logger.error(`[TradeSimulator] Error getting trade quote:`, error);
       throw error;
     }
   }
@@ -393,10 +399,10 @@ export class TradeSimulatorService {
   async isHealthy() {
     try {
       // Simple check to see if we can connect to the database
-      await count();
+      await this.tradeRepo.count();
       return true;
     } catch (error) {
-      serviceLogger.error("[TradeSimulator] Health check failed:", error);
+      this.logger.error("[TradeSimulator] Health check failed:", error);
       return false;
     }
   }

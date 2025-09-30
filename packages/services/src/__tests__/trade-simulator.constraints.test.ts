@@ -1,4 +1,5 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
+import pino from "pino";
 import {
   afterAll,
   beforeAll,
@@ -8,35 +9,37 @@ import {
   it,
   vi,
 } from "vitest";
+import { DeepMockProxy, mockDeep } from "vitest-mock-extended";
 
-import { config } from "@/config/index.js";
-import { serviceLogger } from "@/lib/logger.js";
-import { PriceTrackerService } from "@/services/price-tracker.service.js";
-import { SimulatedTradeExecutionService } from "@/services/simulated-trade-execution.service.js";
-import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
-import { BlockchainType, PriceReport } from "@/types/index.js";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
+import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 
-// Mock dependencies for unit tests
-vi.mock("@/services/balance.service.js");
-vi.mock("@/services/competition.service.js");
-vi.mock("@/services/price-tracker.service.js");
-vi.mock("@/services/trade-simulator.service.js");
-vi.mock("@/services/index.js");
-vi.mock("@/database/repositories/trade-repository.js", () => ({
-  create: vi.fn(),
-}));
-vi.mock("@/database/repositories/trading-constraints-repository.js", () => ({
-  findByCompetitionId: vi.fn(),
-}));
+import { BalanceService } from "../balance.service.js";
+import { CompetitionService } from "../competition.service.js";
+import {
+  PriceTrackerService,
+  PriceTrackerServiceConfig,
+} from "../price-tracker.service.js";
+import { DexScreenerProvider } from "../providers/price/dexscreener.provider.js";
+import {
+  SimulatedTradeExecutionService,
+  SimulatedTradeExecutionServiceConfig,
+  SimulatedTradeExecutionServiceFeatures,
+} from "../simulated-trade-execution.service.js";
+import { TradeSimulatorService } from "../trade-simulator.service.js";
+import {
+  BlockchainType,
+  PriceReport,
+  SpecificChainTokens,
+} from "../types/index.js";
+
+const serviceLogger = pino.default();
 
 // Trading constraint constants from config
-const MINIMUM_PAIR_AGE_HOURS =
-  config.tradingConstraints.defaultMinimumPairAgeHours;
-const MINIMUM_24H_VOLUME_USD =
-  config.tradingConstraints.defaultMinimum24hVolumeUsd;
-const MINIMUM_LIQUIDITY_USD =
-  config.tradingConstraints.defaultMinimumLiquidityUsd;
-const MINIMUM_FDV_USD = config.tradingConstraints.defaultMinimumFdvUsd;
+const MINIMUM_PAIR_AGE_HOURS = 168;
+const MINIMUM_24H_VOLUME_USD = 100000;
+const MINIMUM_LIQUIDITY_USD = 100000;
+const MINIMUM_FDV_USD = 1000000;
 
 // Default constraints object for testing
 const DEFAULT_CONSTRAINTS = {
@@ -49,12 +52,12 @@ const DEFAULT_CONSTRAINTS = {
 describe("SimulatedTradeExecutionService - Trading Constraints", () => {
   describe("Unit Tests", () => {
     let tradeExecutor: SimulatedTradeExecutionService;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let mockBalanceService: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let mockCompetitionService: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let mockPriceTracker: any;
+    let mockBalanceService: DeepMockProxy<BalanceService>;
+    let mockCompetitionService: DeepMockProxy<CompetitionService>;
+    let mockPriceTracker: DeepMockProxy<PriceTrackerService>;
+    let mockTradeRepository: DeepMockProxy<TradeRepository>;
+    let mockTradingConstraintsRepo: DeepMockProxy<TradingConstraintsRepository>;
+    let mockDexScreenerProvider: DeepMockProxy<DexScreenerProvider>;
 
     // Mock constraints used across all tests
     const mockConstraints = {
@@ -64,33 +67,83 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
       minimumFdvUsd: MINIMUM_FDV_USD,
     };
 
+    const mockSpecificChainTokens: SpecificChainTokens = {
+      eth: {
+        eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
+        usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
+        usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
+      },
+      polygon: {
+        eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Weth on Polygon
+        usdc: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // USDC on Polygon
+        usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT on Polygon
+      },
+      base: {
+        eth: "0x4200000000000000000000000000000000000006", // WETH on Base
+        usdc: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
+        usdt: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", // USDT on Base
+      },
+      svm: {
+        sol: "So11111111111111111111111111111111111111112",
+        usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        usdt: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+      },
+      arbitrum: {
+        eth: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1", // WETH on Arbitrum
+        usdc: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", // Native USDC on Arbitrum
+        usdt: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT on Arbitrum
+      },
+      optimism: {
+        eth: "0x4200000000000000000000000000000000000006", // WETH on Optimism
+        usdc: "0x7f5c764cbc14f9669b88837ca1490cca17c31607", // USDC on Optimism
+        usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58", // USDT on Optimism
+      },
+    };
+
+    const mockConfig: SimulatedTradeExecutionServiceConfig = {
+      maxTradePercentage: 0.25,
+      specificChainTokens: mockSpecificChainTokens,
+      tradingConstraints: {
+        defaultMinimumPairAgeHours: MINIMUM_PAIR_AGE_HOURS,
+        defaultMinimum24hVolumeUsd: MINIMUM_24H_VOLUME_USD,
+        defaultMinimumLiquidityUsd: MINIMUM_LIQUIDITY_USD,
+        defaultMinimumFdvUsd: MINIMUM_FDV_USD,
+      },
+    };
+
+    const mockFeatures: SimulatedTradeExecutionServiceFeatures = {
+      CROSS_CHAIN_TRADING_TYPE: "disallowAll",
+    };
+
     beforeEach(() => {
-      // Create mock implementations
-      mockBalanceService = {
-        getBalance: vi.fn(),
-        setBalanceCache: vi.fn(),
-      };
+      // Create type-safe mock implementations
+      mockBalanceService = mockDeep<BalanceService>();
+      mockCompetitionService = mockDeep<CompetitionService>();
+      mockPriceTracker = mockDeep<PriceTrackerService>();
+      mockTradeRepository = mockDeep<TradeRepository>();
+      mockTradingConstraintsRepo = mockDeep<TradingConstraintsRepository>();
+      mockDexScreenerProvider = mockDeep<DexScreenerProvider>();
 
-      mockCompetitionService = {
-        getCompetition: vi.fn(),
-        isAgentActiveInCompetition: vi.fn(),
-      };
-
-      mockPriceTracker = {
-        determineChain: vi.fn(),
-        getPrice: vi.fn(),
-      };
-
-      const mockTradeSimulatorService = {
-        calculatePortfolioValue: vi.fn(),
-      };
+      // Create TradeSimulatorService with mocked dependencies
+      const mockTradeSimulatorService = new TradeSimulatorService(
+        mockBalanceService,
+        mockPriceTracker,
+        mockTradeRepository,
+        serviceLogger,
+      );
 
       // Create SimulatedTradeExecutionService instance with mocked dependencies
       tradeExecutor = new SimulatedTradeExecutionService(
         mockCompetitionService,
-        mockTradeSimulatorService as unknown as TradeSimulatorService,
+        mockTradeSimulatorService,
         mockBalanceService,
         mockPriceTracker,
+        mockTradeRepository,
+        mockTradingConstraintsRepo,
+        mockDexScreenerProvider,
+        mockConfig,
+        mockFeatures,
+        serviceLogger,
       );
     });
 
@@ -479,20 +532,18 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           .mockResolvedValueOnce(validFromPrice)
           .mockResolvedValueOnce(invalidToPrice);
 
-        // Mock competition service responses
-        mockCompetitionService.getCompetition.mockResolvedValue({
-          id: "comp-1",
-          name: "Test Competition",
-          endDate: null,
-        });
+        // Mock competition service responses - use mockDeep to avoid complex typing
+        mockCompetitionService.getCompetition.mockResolvedValue(
+          mockDeep<any>(),
+        );
         mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(
           true,
         );
 
         await expect(
           tradeExecutor.executeTrade({
-            agentId: uuidv4(),
-            competitionId: uuidv4(),
+            agentId: randomUUID(),
+            competitionId: randomUUID(),
             fromToken: "0x1111111111111111111111111111111111111111",
             toToken: "0x2222222222222222222222222222222222222222",
             fromAmount: 100,
@@ -538,20 +589,18 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
 
         // For burn tokens, constraints should be skipped, but the trade may still fail due to mocking limitations
         // The important thing is that constraints are skipped for burn tokens
-        // Mock competition service responses
-        mockCompetitionService.getCompetition.mockResolvedValue({
-          id: "comp-1",
-          name: "Test Competition",
-          endDate: null,
-        });
+        // Mock competition service responses - use mockDeep to avoid complex typing
+        mockCompetitionService.getCompetition.mockResolvedValue(
+          mockDeep<any>(),
+        );
         mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(
           true,
         );
 
         try {
           await tradeExecutor.executeTrade({
-            agentId: uuidv4(),
-            competitionId: uuidv4(),
+            agentId: randomUUID(),
+            competitionId: randomUUID(),
             fromToken: "0x1111111111111111111111111111111111111111",
             toToken: "0x0000000000000000000000000000000000000000",
             fromAmount: 100,
@@ -618,7 +667,19 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
       originalConsoleLog = serviceLogger.debug;
       // Don't mock serviceLogger.debug so we can see the constraint data
 
-      priceTracker = new PriceTrackerService();
+      // Create PriceTrackerService with minimal mocked dependencies
+      const mockMultiChainProvider = mockDeep<any>();
+      const mockPriceTrackerConfig: PriceTrackerServiceConfig = {
+        priceTracker: {
+          maxCacheSize: 1000,
+          priceTTLMs: 60000,
+        },
+      };
+      priceTracker = new PriceTrackerService(
+        mockMultiChainProvider,
+        mockPriceTrackerConfig,
+        serviceLogger,
+      );
     });
 
     afterAll(() => {
