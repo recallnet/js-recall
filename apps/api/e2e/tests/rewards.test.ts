@@ -45,10 +45,10 @@ describe("Rewards Service", () => {
     rewardsRepo = new RewardsRepository(db, logger);
     rewardsService = new RewardsService(
       rewardsRepo,
-      mockRewardsAllocator as any,
+      mockRewardsAllocator as any, // eslint-disable-line
       db,
       logger,
-    ); // eslint-disable-line
+    );
 
     // Create a test competition with UUID
     const competitionId = "756fddf2-d5a3-4d07-b769-109583469c88";

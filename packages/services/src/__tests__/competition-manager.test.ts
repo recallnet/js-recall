@@ -16,7 +16,7 @@ import {
   InsertTradingConstraints,
   SelectTradingConstraints,
 } from "@recallnet/db/schema/trading/types";
-import type { Database } from "@recallnet/db/types";
+import type { Database, Transaction } from "@recallnet/db/types";
 
 import { AgentService } from "../agent.service.js";
 import { AgentRankService } from "../agentrank.service.js";
@@ -31,7 +31,6 @@ import { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { TradeSimulatorService } from "../trade-simulator.service.js";
 import { TradingConstraintsService } from "../trading-constraints.service.js";
-import type { SpecificChain } from "../types/index.js";
 import { VoteService } from "../vote.service.js";
 
 describe("CompetitionService", () => {
@@ -149,7 +148,7 @@ describe("CompetitionService", () => {
 
     // Setup database transaction mock
     mockDb.transaction.mockImplementation(async (callback) => {
-      const mockTx = mock<any>();
+      const mockTx = mock<Transaction>();
       return await callback(mockTx);
     });
 

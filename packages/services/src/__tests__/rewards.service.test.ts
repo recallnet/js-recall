@@ -38,6 +38,7 @@ describe("RewardsService", () => {
 
     // Setup database transaction mock
     mockDb.transaction.mockImplementation(async (callback) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mockTx = mock<any>();
       mockTx.insert = vi.fn().mockReturnThis();
       mockTx.values = vi.fn().mockResolvedValue(undefined);
@@ -453,7 +454,7 @@ describe("RewardsService", () => {
       // Create service with null allocator to test error handling
       const serviceWithoutAllocator = new RewardsService(
         mockRewardsRepo,
-        null as any,
+        mockRewardsAllocator,
         mockDb,
         mockLogger,
       );

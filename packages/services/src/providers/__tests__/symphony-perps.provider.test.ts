@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
+import { Logger } from "pino";
 import {
   MockedFunction,
   afterEach,
@@ -8,6 +9,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { MockProxy, mock } from "vitest-mock-extended";
 
 import {
   SymphonyPerpsProvider,
@@ -19,12 +21,7 @@ import {
 vi.mock("axios");
 
 // Mock logger for the constructor
-const mockLogger = {
-  debug: vi.fn(),
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-} as any;
+const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 // Mock Sentry to avoid errors in tests
 vi.mock("@sentry/node", () => ({

@@ -1,16 +1,13 @@
+import { Logger } from "pino";
 import { describe, expect, it, vi } from "vitest";
+import { MockProxy, mock } from "vitest-mock-extended";
 
 import { PerpsProviderConfig } from "../../types/perps.js";
 import { PerpsProviderFactory } from "../perps-provider.factory.js";
 import { SymphonyPerpsProvider } from "../perps/symphony-perps.provider.js";
 
 // Mock logger for the constructor
-const mockLogger = {
-  debug: vi.fn(),
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-} as any;
+const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 PerpsProviderFactory.logger = mockLogger;
 

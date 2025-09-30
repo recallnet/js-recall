@@ -1,4 +1,6 @@
+import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MockProxy, mock } from "vitest-mock-extended";
 
 import { BlockchainType, SpecificChain } from "../../types/index.js";
 import { MultiChainProvider } from "../multi-chain.provider.js";
@@ -31,12 +33,7 @@ describe("Batch Functionality Tests", () => {
   };
 
   // Mock logger for the constructor
-  const mockLogger = {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  } as any;
+  const mockLogger: MockProxy<Logger> = mock<Logger>();
 
   beforeEach(() => {
     provider = new MultiChainProvider(

@@ -2,7 +2,7 @@
  * Trade utility functions
  * Shared logic for trade-related calculations
  */
-import { SpecificChain, SpecificChainTokens } from "../types/index.js";
+import { SpecificChainTokens } from "../types/index.js";
 
 /**
  * Result of slippage calculation

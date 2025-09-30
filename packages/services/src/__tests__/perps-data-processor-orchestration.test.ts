@@ -12,10 +12,7 @@ import type {
   SelectPerpsCompetitionConfig,
 } from "@recallnet/db/schema/trading/types";
 
-import {
-  CalmarRatioService,
-  type RiskMetricsResult,
-} from "../calmar-ratio.service.js";
+import { CalmarRatioService } from "../calmar-ratio.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import { PerpsMonitoringService } from "../perps-monitoring.service.js";
 import { PerpsProviderFactory } from "../providers/perps-provider.factory.js";

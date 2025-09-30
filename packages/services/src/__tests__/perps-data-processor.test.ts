@@ -5,7 +5,6 @@ import { MockProxy, mock, mockReset } from "vitest-mock-extended";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
-import type { SelectAgent } from "@recallnet/db/schema/core/types";
 
 import { CalmarRatioService } from "../calmar-ratio.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";

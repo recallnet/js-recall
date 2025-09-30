@@ -7,12 +7,9 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
-import type {
-  SelectCompetition,
-  SelectCompetitionReward,
-} from "@recallnet/db/schema/core/types";
+import type { SelectCompetitionReward } from "@recallnet/db/schema/core/types";
 import type { SelectTradingConstraints } from "@recallnet/db/schema/trading/types";
-import type { Database } from "@recallnet/db/types";
+import type { Database, Transaction } from "@recallnet/db/types";
 
 import { AgentService } from "../agent.service.js";
 import { AgentRankService } from "../agentrank.service.js";
@@ -27,7 +24,6 @@ import { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { TradeSimulatorService } from "../trade-simulator.service.js";
 import { TradingConstraintsService } from "../trading-constraints.service.js";
-import type { SpecificChain } from "../types/index.js";
 import { VoteService } from "../vote.service.js";
 
 describe("CompetitionService - createCompetition", () => {
@@ -126,7 +122,7 @@ describe("CompetitionService - createCompetition", () => {
 
     // Setup database transaction mock
     mockDb.transaction.mockImplementation(async (callback) => {
-      const mockTx = mock<any>();
+      const mockTx = mock<Transaction>();
       return await callback(mockTx);
     });
 

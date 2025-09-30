@@ -1,5 +1,4 @@
-import { SelectCompetition } from "@recallnet/db/schema/core/types";
-import { Competition, CrossChainTradingType } from "@recallnet/services/types";
+import { CrossChainTradingType } from "@recallnet/services/types";
 
 import { features } from "@/config/index.js";
 import { logger } from "@/lib/logger.js";

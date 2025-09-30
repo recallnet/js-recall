@@ -1,14 +1,6 @@
 import { randomUUID } from "crypto";
 import pino from "pino";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { DeepMockProxy, mockDeep } from "vitest-mock-extended";
 
 import { TradeRepository } from "@recallnet/db/repositories/trade";
@@ -534,6 +526,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
 
         // Mock competition service responses - use mockDeep to avoid complex typing
         mockCompetitionService.getCompetition.mockResolvedValue(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           mockDeep<any>(),
         );
         mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(
@@ -591,6 +584,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         // The important thing is that constraints are skipped for burn tokens
         // Mock competition service responses - use mockDeep to avoid complex typing
         mockCompetitionService.getCompetition.mockResolvedValue(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           mockDeep<any>(),
         );
         mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(
@@ -668,6 +662,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
       // Don't mock serviceLogger.debug so we can see the constraint data
 
       // Create PriceTrackerService with minimal mocked dependencies
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mockMultiChainProvider = mockDeep<any>();
       const mockPriceTrackerConfig: PriceTrackerServiceConfig = {
         priceTracker: {

@@ -1,4 +1,6 @@
+import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MockProxy, mock } from "vitest-mock-extended";
 
 import { BlockchainType } from "../../types/index.js";
 import { DexScreenerProvider } from "../price/dexscreener.provider.js";
@@ -29,12 +31,7 @@ describe("Batch Functionality Tests", () => {
   };
 
   // Mock logger for the constructor
-  const mockLogger = {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  } as any;
+  const mockLogger: MockProxy<Logger> = mock<Logger>();
 
   beforeEach(() => {
     provider = new DexScreenerProvider(specificChainTokens, mockLogger);

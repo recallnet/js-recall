@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Logger } from "pino";
+import { beforeEach, describe, expect, it } from "vitest";
+import { MockProxy, mock } from "vitest-mock-extended";
 
 import {
   BlockchainType,
@@ -16,12 +18,7 @@ const apiKey = process.env.NOVES_API_KEY;
 const runTests = !!apiKey;
 
 // Mock logger for the constructor
-const mockLogger = {
-  debug: vi.fn(),
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-} as any;
+const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 const specificChains: SpecificChain[] = ["arbitrum", "base", "eth"];
 const specificChainTokens: SpecificChainTokens = {

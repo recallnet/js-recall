@@ -1,7 +1,6 @@
 import { Logger } from "pino";
 
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
-import { SelectCompetition } from "@recallnet/db/schema/core/types";
 
 /**
  * Configuration Service

@@ -6,7 +6,7 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import { VoteRepository } from "@recallnet/db/repositories/vote";
 import { SelectUser } from "@recallnet/db/schema/core/types";
-import type { Database } from "@recallnet/db/types";
+import type { Database, Transaction } from "@recallnet/db/types";
 
 import { EmailService } from "../email.service.js";
 import { WalletWatchlist } from "../lib/watchlist.js";
@@ -50,7 +50,7 @@ describe("UserService", () => {
 
       // Setup database transaction mock
       mockDb.transaction.mockImplementation(async (callback) => {
-        const mockTx = mock<any>();
+        const mockTx = mock<Transaction>();
         return await callback(mockTx);
       });
 

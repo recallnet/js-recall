@@ -4,7 +4,7 @@ import express from "express";
 
 import { ApiError } from "@recallnet/services/types";
 
-import { config, features } from "@/config/index.js";
+import { config } from "@/config/index.js";
 import { makeAdminController } from "@/controllers/admin.controller.js";
 import { makeAgentController } from "@/controllers/agent.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
@@ -17,7 +17,7 @@ import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
 import { makeVoteController } from "@/controllers/vote.controller.js";
 import { closeDb, migrateDb } from "@/database/db.js";
-import { apiLogger, serviceLogger } from "@/lib/logger.js";
+import { apiLogger } from "@/lib/logger.js";
 import { initSentry } from "@/lib/sentry.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
