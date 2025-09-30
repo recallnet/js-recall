@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { MockedObject, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type DeepMockProxy, mockDeep } from "vitest-mock-extended";
 
 import {
   SelectAdmin,
@@ -40,9 +41,9 @@ vi.mock("@/middleware/auth-helpers.js", () => ({
 }));
 
 describe("authMiddleware", () => {
-  let mockAgentService: MockedObject<AgentService>;
-  let mockUserService: MockedObject<UserService>;
-  let mockAdminService: MockedObject<AdminService>;
+  let mockAgentService: DeepMockProxy<AgentService>;
+  let mockUserService: DeepMockProxy<UserService>;
+  let mockAdminService: DeepMockProxy<AdminService>;
   let middleware: ReturnType<typeof authMiddleware>;
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
@@ -51,20 +52,10 @@ describe("authMiddleware", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
 
-    // Create mock services
-    mockAgentService = {
-      validateApiKey: vi.fn(),
-      getAgent: vi.fn(),
-    } as unknown as MockedObject<AgentService>;
-
-    mockUserService = {
-      getUserByPrivyId: vi.fn(),
-    } as unknown as MockedObject<UserService>;
-
-    mockAdminService = {
-      validateApiKey: vi.fn(),
-      getAdmin: vi.fn(),
-    } as unknown as MockedObject<AdminService>;
+    // Create mock services using vitest-mock-extended
+    mockAgentService = mockDeep<AgentService>();
+    mockUserService = mockDeep<UserService>();
+    mockAdminService = mockDeep<AdminService>();
 
     // Create middleware instance
     middleware = authMiddleware(
@@ -100,7 +91,7 @@ describe("authMiddleware", () => {
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-123",
-        claims: {} as never,
+        claims: { cr: "test", linked_accounts: [] },
       });
       mockUserService.getUserByPrivyId.mockResolvedValue({
         id: "user-123",
@@ -127,7 +118,7 @@ describe("authMiddleware", () => {
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-new",
-        claims: {} as never,
+        claims: { cr: "test", linked_accounts: [] },
       });
       mockUserService.getUserByPrivyId.mockResolvedValue(null);
       vi.mocked(isLoginEndpoint).mockReturnValue(true);
@@ -151,7 +142,7 @@ describe("authMiddleware", () => {
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-new",
-        claims: {} as never,
+        claims: { cr: "test", linked_accounts: [] },
       });
       mockUserService.getUserByPrivyId.mockResolvedValue(null);
       vi.mocked(isLoginEndpoint).mockReturnValue(false);
@@ -494,7 +485,7 @@ describe("authMiddleware", () => {
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-123",
-        claims: {} as never,
+        claims: { cr: "test", linked_accounts: [] },
       });
       mockUserService.getUserByPrivyId.mockResolvedValue({
         id: "user-123",
@@ -569,7 +560,7 @@ describe("authMiddleware", () => {
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("privy-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-abc",
-        claims: {} as never,
+        claims: { cr: "test", linked_accounts: [] },
       });
       mockUserService.getUserByPrivyId.mockResolvedValue({
         id: "user-xyz",
