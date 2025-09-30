@@ -7,12 +7,10 @@ import {
   SelectAgent,
   SelectUser,
 } from "@recallnet/db/schema/core/types";
+import { AdminService, AgentService, UserService } from "@recallnet/services";
+import { ApiError } from "@recallnet/services/types";
 
 import { authMiddleware } from "@/middleware/auth.middleware.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { AdminService } from "@/services/admin.service.js";
-import { AgentService } from "@/services/agent.service.js";
-import { UserService } from "@/services/user.service.js";
 
 // Mock dependencies
 vi.mock("@/lib/logger.js", () => {
