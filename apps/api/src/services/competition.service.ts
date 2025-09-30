@@ -1259,15 +1259,18 @@ export class CompetitionService {
           agentId: entry.agentId,
           value: portfolioValue,
           pnl: Number(entry.totalPnl) || 0, // Use PnL from risk-adjusted leaderboard
-          calmarRatio: entry.calmarRatio
-            ? Number(Number(entry.calmarRatio).toFixed(4))
-            : null,
-          simpleReturn: entry.simpleReturn
-            ? Number(Number(entry.simpleReturn).toFixed(4))
-            : null,
-          maxDrawdown: entry.maxDrawdown
-            ? Number(Number(entry.maxDrawdown).toFixed(4))
-            : null,
+          calmarRatio:
+            entry.calmarRatio != null
+              ? Number(Number(entry.calmarRatio).toFixed(4))
+              : null,
+          simpleReturn:
+            entry.simpleReturn != null
+              ? Number(Number(entry.simpleReturn).toFixed(4))
+              : null,
+          maxDrawdown:
+            entry.maxDrawdown != null
+              ? Number(Number(entry.maxDrawdown).toFixed(4))
+              : null,
           hasRiskMetrics: entry.hasRiskMetrics,
         });
       }
@@ -1318,15 +1321,18 @@ export class CompetitionService {
         value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility
         pnl: Number(entry.totalPnl) || 0,
         // Include risk-adjusted metrics (rounded for display)
-        calmarRatio: entry.calmarRatio
-          ? Number(Number(entry.calmarRatio).toFixed(4))
-          : null,
-        simpleReturn: entry.simpleReturn
-          ? Number(Number(entry.simpleReturn).toFixed(4))
-          : null,
-        maxDrawdown: entry.maxDrawdown
-          ? Number(Number(entry.maxDrawdown).toFixed(4))
-          : null,
+        calmarRatio:
+          entry.calmarRatio != null
+            ? Number(Number(entry.calmarRatio).toFixed(4))
+            : null,
+        simpleReturn:
+          entry.simpleReturn != null
+            ? Number(Number(entry.simpleReturn).toFixed(4))
+            : null,
+        maxDrawdown:
+          entry.maxDrawdown != null
+            ? Number(Number(entry.maxDrawdown).toFixed(4))
+            : null,
         hasRiskMetrics: entry.hasRiskMetrics,
       }));
     }
@@ -1537,15 +1543,18 @@ export class CompetitionService {
         activeAgents: activeLeaderboard.map((entry) => ({
           agentId: entry.agentId,
           value: entry.value,
-          calmarRatio: entry.calmarRatio
-            ? Number(Number(entry.calmarRatio).toFixed(4))
-            : entry.calmarRatio,
-          simpleReturn: entry.simpleReturn
-            ? Number(Number(entry.simpleReturn).toFixed(4))
-            : entry.simpleReturn,
-          maxDrawdown: entry.maxDrawdown
-            ? Number(Number(entry.maxDrawdown).toFixed(4))
-            : entry.maxDrawdown,
+          calmarRatio:
+            entry.calmarRatio != null
+              ? Number(Number(entry.calmarRatio).toFixed(4))
+              : entry.calmarRatio,
+          simpleReturn:
+            entry.simpleReturn != null
+              ? Number(Number(entry.simpleReturn).toFixed(4))
+              : entry.simpleReturn,
+          maxDrawdown:
+            entry.maxDrawdown != null
+              ? Number(Number(entry.maxDrawdown).toFixed(4))
+              : entry.maxDrawdown,
           hasRiskMetrics: entry.hasRiskMetrics,
         })),
         inactiveAgents,
@@ -2453,15 +2462,18 @@ export class CompetitionService {
             active: true,
             deactivationReason: null,
             // Include risk metrics if available (rounded for display)
-            calmarRatio: entry.calmarRatio
-              ? Number(Number(entry.calmarRatio).toFixed(4))
-              : null,
-            simpleReturn: entry.simpleReturn
-              ? Number(Number(entry.simpleReturn).toFixed(4))
-              : null,
-            maxDrawdown: entry.maxDrawdown
-              ? Number(Number(entry.maxDrawdown).toFixed(4))
-              : null,
+            calmarRatio:
+              entry.calmarRatio != null
+                ? Number(Number(entry.calmarRatio).toFixed(4))
+                : null,
+            simpleReturn:
+              entry.simpleReturn != null
+                ? Number(Number(entry.simpleReturn).toFixed(4))
+                : null,
+            maxDrawdown:
+              entry.maxDrawdown != null
+                ? Number(Number(entry.maxDrawdown).toFixed(4))
+                : null,
             hasRiskMetrics: entry.hasRiskMetrics,
           };
         },
