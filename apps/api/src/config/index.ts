@@ -162,19 +162,19 @@ export const config = {
   maxTradePercentage: parseInt(process.env.MAX_TRADE_PERCENTAGE || "25", 10),
   // Trading constraints configuration
   tradingConstraints: {
-    // Default minimum pair age in hours (7 days)
+    // Default minimum pair age in hours (90 days)
     defaultMinimumPairAgeHours: parseInt(
-      process.env.DEFAULT_MINIMUM_PAIR_AGE_HOURS || "168",
+      process.env.DEFAULT_MINIMUM_PAIR_AGE_HOURS || "2160",
       10,
     ),
-    // Default minimum 24h volume in USD ($100,000)
+    // Default minimum 24h volume in USD ($500,000)
     defaultMinimum24hVolumeUsd: parseInt(
-      process.env.DEFAULT_MINIMUM_24H_VOLUME_USD || "100000",
+      process.env.DEFAULT_MINIMUM_24H_VOLUME_USD || "500000",
       10,
     ),
-    // Default minimum liquidity in USD ($100,000)
+    // Default minimum liquidity in USD ($500,000)
     defaultMinimumLiquidityUsd: parseInt(
-      process.env.DEFAULT_MINIMUM_LIQUIDITY_USD || "100000",
+      process.env.DEFAULT_MINIMUM_LIQUIDITY_USD || "500000",
       10,
     ),
     // Default minimum FDV in USD ($1,000,000)
