@@ -37,7 +37,10 @@ export const Navbar: React.FunctionComponent = () => {
       <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-5 sm:px-20">
         <div className="flex items-center">
           {/* Logo */}
-          <Link href="/" className="flex items-center border-x p-1">
+          <Link
+            href="/"
+            className="flex items-center border-x p-1 transition-colors hover:bg-white/5"
+          >
             <Avatar className="h-12 w-12">
               <AvatarImage
                 src="/logo_white.svg"
@@ -56,15 +59,35 @@ export const Navbar: React.FunctionComponent = () => {
                   href={item.href}
                   key={item.href}
                   className={cn(
-                    "px-15 flex h-14 items-center justify-center border-b-2 border-r",
-                    isActive ? "border-b-yellow-500" : "border-b-transparent",
+                    "px-15 group relative flex h-14 items-center justify-center border-r transition-colors hover:bg-white/5",
                   )}
                 >
                   <span
-                    className={`font-mono text-xs font-medium tracking-widest text-white transition-colors`}
+                    className={cn(
+                      "font-mono text-xs font-medium tracking-widest text-white",
+                    )}
                   >
                     {item.label}
                   </span>
+                  {/* underline */}
+                  <span
+                    className={cn(
+                      "pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-center transform bg-[oklch(0.8188_0.1686_82.31)] transition-transform duration-300",
+                      isActive
+                        ? "scale-x-100"
+                        : "scale-x-0 group-hover:scale-x-100",
+                    )}
+                  />
+                  {/* glow */}
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "pointer-events-none absolute -bottom-[1px] left-1/2 h-5 w-44 -translate-x-1/2 transform bg-[radial-gradient(ellipse_at_center,rgba(249,183,0,0.55)_0%,rgba(249,183,0,0.35)_45%,rgba(249,183,0,0)_70%)] blur-[1px] transition-opacity duration-300",
+                      isActive
+                        ? "opacity-80"
+                        : "opacity-0 group-hover:opacity-70",
+                    )}
+                  />
                 </Link>
               );
             })}
@@ -119,15 +142,27 @@ export const Navbar: React.FunctionComponent = () => {
               </div>
             </Tooltip>
           )}
-          <div
-            className={cn(
-              "flex h-full items-center border-b-2",
-              pathname === "/profile"
-                ? "border-b-yellow-500"
-                : "border-b-transparent",
-            )}
-          >
+          <div className={cn("group relative flex h-14 items-center")}>
             <PrivyAuthButton />
+            {/* underline */}
+            <span
+              className={cn(
+                "pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-center transform bg-[oklch(0.8188_0.1686_82.31)] transition-transform duration-300",
+                pathname === "/profile"
+                  ? "scale-x-100"
+                  : "scale-x-0 group-hover:scale-x-100",
+              )}
+            />
+            {/* glow */}
+            <span
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute -bottom-[1px] left-1/2 h-5 w-44 -translate-x-1/2 transform bg-[radial-gradient(ellipse_at_center,rgba(249,183,0,0.55)_0%,rgba(249,183,0,0.35)_45%,rgba(249,183,0,0)_70%)] blur-[1px] transition-opacity duration-300",
+                pathname === "/profile"
+                  ? "opacity-80"
+                  : "opacity-0 group-hover:opacity-70",
+              )}
+            />
           </div>
         </div>
       </div>
