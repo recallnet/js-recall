@@ -1,83 +1,107 @@
-import type { Logger } from "pino";
+import { Logger } from "pino";
 import { type Hex, encodePacked, keccak256 } from "viem";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MockProxy, mock, mockReset } from "vitest-mock-extended";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type {
   SelectReward,
   SelectRewardsTree,
 } from "@recallnet/db/schema/voting/types";
-import type { Database } from "@recallnet/db/types";
+import { Database } from "@recallnet/db/types";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
 
 import { RewardsService, createLeafNode } from "../rewards.service.js";
 
+// Mock external dependencies
+vi.mock("@recallnet/db/repositories/rewards");
+vi.mock("@recallnet/staking-contracts/rewards-allocator", () => ({
+  default: vi.fn().mockImplementation(() => ({
+    allocate: vi.fn(),
+  })),
+}));
+
 describe("RewardsService", () => {
-  let service: RewardsService;
-  let mockRewardsRepo: MockProxy<RewardsRepository>;
-  let mockRewardsAllocator: MockProxy<RewardsAllocator>;
-  let mockDb: MockProxy<Database>;
-  let mockLogger: MockProxy<Logger>;
+  let mockRewardsAllocator: RewardsAllocator;
+  let mockRewardsRepo: RewardsRepository;
+  let mockDb: Database;
+  let mockLogger: Logger;
+  let mockTransaction: {
+    insert: ReturnType<typeof vi.fn>;
+    values: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Create all service mocks
-    mockRewardsRepo = mock<RewardsRepository>();
-    mockRewardsAllocator = mock<RewardsAllocator>();
-    mockDb = mock<Database>();
-    mockLogger = mock<Logger>();
+    // Create mock instances
+    mockRewardsRepo = {} as RewardsRepository;
+    mockDb = {} as Database;
+    mockLogger = {
+      info: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+    } as unknown as Logger;
 
-    // Setup mock allocator
-    mockRewardsAllocator.allocate.mockResolvedValue({
-      transactionHash: "0x1234567890abcdef1234567890abcdef12345678",
-      blockNumber: 12345n,
-      gasUsed: 100000n,
-    });
+    // Mock RewardsAllocator
+    mockRewardsAllocator = {
+      allocate: vi.fn().mockResolvedValue({
+        transactionHash: "0x1234567890abcdef1234567890abcdef12345678",
+      }),
+    } as unknown as RewardsAllocator;
 
-    // Setup database transaction mock
-    mockDb.transaction.mockImplementation(async (callback) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mockTx = mock<any>();
-      mockTx.insert = vi.fn().mockReturnThis();
-      mockTx.values = vi.fn().mockResolvedValue(undefined);
-      return await callback(mockTx);
-    });
+    // Mock database transaction
+    mockTransaction = {
+      insert: vi.fn().mockReturnThis(),
+      values: vi.fn().mockResolvedValue(undefined),
+    };
+    mockDb.transaction = vi
+      .fn()
+      .mockImplementation(
+        (callback: (tx: typeof mockTransaction) => Promise<void>) =>
+          callback(mockTransaction),
+      );
 
-    service = new RewardsService(
-      mockRewardsRepo,
-      mockRewardsAllocator,
-      mockDb,
-      mockLogger,
-    );
-  });
-
-  afterEach(() => {
-    // Reset all mocks
-    mockReset(mockRewardsRepo);
-    mockReset(mockRewardsAllocator);
-    mockReset(mockDb);
-    mockReset(mockLogger);
+    // Setup default repository mocks
+    mockRewardsRepo.insertRewards = vi.fn().mockResolvedValue([]);
+    mockRewardsRepo.getRewardsByCompetition = vi.fn().mockResolvedValue([]);
+    mockRewardsRepo.getRewardsTreeByCompetition = vi.fn().mockResolvedValue([]);
   });
 
   describe("Constructor", () => {
-    it("should initialize with provided dependencies", () => {
-      const testService = new RewardsService(
+    it("should initialize with provided RewardsAllocator", () => {
+      const service = new RewardsService(
         mockRewardsRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
       );
 
-      expect(testService).toBeInstanceOf(RewardsService);
+      expect(service).toBeInstanceOf(RewardsService);
+    });
+
+    it("should initialize with allocator successfully", () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+      expect(service).toBeInstanceOf(RewardsService);
     });
   });
 
   describe("calculateRewards", () => {
     it("should successfully calculate and insert rewards with real implementation", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        {} as RewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
       // Test the actual implementation - the calculate method returns empty array for now
-      mockRewardsRepo.insertRewards.mockResolvedValue([]);
+      vi.mocked(mockRewardsRepo.insertRewards).mockResolvedValue([]);
 
       await service.calculateRewards();
 
@@ -85,8 +109,14 @@ describe("RewardsService", () => {
     });
 
     it("should handle database constraint violations during insertion", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        {} as RewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
       const dbError = new Error("UNIQUE constraint failed");
-      mockRewardsRepo.insertRewards.mockRejectedValue(dbError);
+      vi.mocked(mockRewardsRepo.insertRewards).mockRejectedValue(dbError);
 
       await expect(service.calculateRewards()).rejects.toThrow(
         "UNIQUE constraint failed",
@@ -94,8 +124,14 @@ describe("RewardsService", () => {
     });
 
     it("should handle network timeout during calculation", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        {} as RewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
       const timeoutError = new Error("Request timeout");
-      mockRewardsRepo.insertRewards.mockRejectedValue(timeoutError);
+      vi.mocked(mockRewardsRepo.insertRewards).mockRejectedValue(timeoutError);
 
       await expect(service.calculateRewards()).rejects.toThrow(
         "Request timeout",
@@ -134,8 +170,16 @@ describe("RewardsService", () => {
         },
       ];
 
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue(mockRewards);
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
 
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
       await service.allocate(competitionId, tokenAddress, startTimestamp);
 
       // Verify blockchain allocation was called with correct parameters
@@ -148,10 +192,18 @@ describe("RewardsService", () => {
 
       // Verify database transaction was executed
       expect(mockDb.transaction).toHaveBeenCalledOnce();
+      expect(mockTransaction.insert).toHaveBeenCalledTimes(2); // tree nodes and root
     });
 
     it("should throw error when no rewards exist", async () => {
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue([]);
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue([]);
+
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
 
       await expect(
         service.allocate(competitionId, tokenAddress, startTimestamp),
@@ -184,8 +236,16 @@ describe("RewardsService", () => {
         },
       ];
 
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue(mockRewards);
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
 
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
       await service.allocate(competitionId, tokenAddress, startTimestamp);
 
       expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
@@ -211,20 +271,247 @@ describe("RewardsService", () => {
         },
       ];
 
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue(mockRewards);
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
 
-      // Mock blockchain allocation to fail
-      const blockchainError = new Error("Blockchain allocation failed");
-      mockRewardsAllocator.allocate.mockRejectedValue(blockchainError);
+      const blockchainError = new Error("Blockchain transaction failed");
+      mockRewardsAllocator.allocate = vi
+        .fn()
+        .mockRejectedValue(blockchainError);
+
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
 
       await expect(
         service.allocate(competitionId, tokenAddress, startTimestamp),
-      ).rejects.toThrow("Blockchain allocation failed");
+      ).rejects.toThrow("Blockchain transaction failed");
 
-      // Verify transaction was attempted but should rollback due to error
-      expect(mockDb.transaction).toHaveBeenCalledOnce();
+      // Verify transaction rollback - database operations should not have been called
+      expect(mockTransaction.insert).not.toHaveBeenCalled();
     });
 
+    it("should maintain transaction integrity when database operations fail", async () => {
+      const mockRewards: SelectReward[] = [
+        {
+          id: "reward-1",
+          competitionId,
+          address:
+            "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          amount: 100n,
+          leafHash: Buffer.from("hash1"),
+          claimed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
+
+      // Mock database transaction to fail after blockchain success
+      const dbError = new Error("Database constraint violation");
+      mockTransaction.insert = vi.fn().mockReturnValue({
+        values: vi.fn().mockRejectedValue(dbError),
+      });
+
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      await expect(
+        service.allocate(competitionId, tokenAddress, startTimestamp),
+      ).rejects.toThrow("Database constraint violation");
+
+      // Blockchain call should have been made but the transaction should rollback
+      expect(mockRewardsAllocator.allocate).toHaveBeenCalledOnce();
+    });
+
+    it("should verify merkle tree construction with correct faux leaf", async () => {
+      const mockRewards: SelectReward[] = [
+        {
+          id: "reward-1",
+          competitionId,
+          address:
+            "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          amount: 100n,
+          leafHash: Buffer.from(
+            createLeafNode(
+              "0x1111111111111111111111111111111111111111" as `0x${string}`,
+              100n,
+            ).slice(2),
+            "hex",
+          ),
+          claimed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
+
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+      await service.allocate(competitionId, tokenAddress, startTimestamp);
+
+      // Verify that database insert was called with tree nodes
+      expect(mockTransaction.insert).toHaveBeenCalledTimes(2); // tree nodes and root
+
+      // First call should be for tree nodes
+      const firstCall = mockTransaction.insert.mock.calls[0];
+      expect(firstCall).toBeDefined();
+
+      // Second call should be for the root
+      const secondCall = mockTransaction.insert.mock.calls[1];
+      expect(secondCall).toBeDefined();
+    });
+  });
+
+  describe("retrieveProof", () => {
+    const competitionId = "comp-123";
+    const address =
+      "0x1234567890123456789012345678901234567890" as `0x${string}`;
+    const amount = 100n;
+
+    it("should successfully retrieve and validate proof for valid reward", async () => {
+      const leafHash = createLeafNode(address, amount);
+      const siblingHash = new Uint8Array([1, 2, 3]);
+
+      // Convert hex string to Uint8Array for proper comparison
+      const leafHashBytes = new Uint8Array(
+        Buffer.from(leafHash.slice(2), "hex"),
+      );
+
+      // Calculate parent hash using proper byte arrays
+      const parentHashBytes = keccak256(
+        Buffer.concat(
+          [Buffer.from(siblingHash), Buffer.from(leafHashBytes)].sort(
+            Buffer.compare,
+          ),
+        ),
+      );
+
+      // Create a realistic tree structure where we can validate the proof
+      const mockTree: SelectRewardsTree[] = [
+        {
+          id: "node-1",
+          competitionId,
+          level: 0,
+          idx: 0,
+          hash: siblingHash, // sibling of our target leaf
+          createdAt: new Date(),
+        },
+        {
+          id: "node-2",
+          competitionId,
+          level: 0,
+          idx: 1,
+          hash: leafHashBytes, // our target leaf at position 1
+          createdAt: new Date(),
+        },
+        {
+          id: "node-3",
+          competitionId,
+          level: 1,
+          idx: 0,
+          hash: new Uint8Array(Buffer.from(parentHashBytes.slice(2), "hex")),
+          createdAt: new Date(),
+        },
+      ];
+
+      vi.mocked(mockRewardsRepo.getRewardsTreeByCompetition).mockResolvedValue(
+        mockTree,
+      );
+
+      const service = new RewardsService(
+        mockRewardsRepo,
+        {} as RewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+      const proof = await service.retrieveProof(competitionId, address, amount);
+
+      expect(proof).toBeInstanceOf(Array);
+      expect(proof.length).toBe(1); // Should have one sibling proof
+      expect(proof[0]).toEqual(siblingHash); // Should contain the sibling hash
+
+      // Verify proof can reconstruct to the parent node
+      const reconstructedParent = keccak256(
+        Buffer.concat(
+          [Buffer.from(siblingHash), Buffer.from(leafHashBytes)].sort(
+            Buffer.compare,
+          ),
+        ),
+      );
+      expect(
+        new Uint8Array(Buffer.from(reconstructedParent.slice(2), "hex")),
+      ).toEqual(mockTree[2]?.hash);
+    });
+
+    it("should throw error when reward not found in tree", async () => {
+      const mockTree: SelectRewardsTree[] = [
+        {
+          id: "node-1",
+          competitionId,
+          level: 0,
+          idx: 0,
+          hash: new Uint8Array([1, 2, 3]),
+          createdAt: new Date(),
+        },
+      ];
+
+      vi.mocked(mockRewardsRepo.getRewardsTreeByCompetition).mockResolvedValue(
+        mockTree,
+      );
+
+      const service = new RewardsService(
+        mockRewardsRepo,
+        {} as RewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      await expect(
+        service.retrieveProof(competitionId, address, amount),
+      ).rejects.toThrow(
+        `No proof found for reward (address: ${address}, amount: ${amount}) in competition ${competitionId}`,
+      );
+    });
+
+    it("should handle database errors during proof retrieval", async () => {
+      const error = new Error("Database connection failed");
+      vi.mocked(mockRewardsRepo.getRewardsTreeByCompetition).mockRejectedValue(
+        error,
+      );
+
+      const service = new RewardsService(
+        mockRewardsRepo,
+        {} as RewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      await expect(
+        service.retrieveProof(competitionId, address, amount),
+      ).rejects.toThrow("Database connection failed");
+    });
+  });
+
+  describe("Helper functions", () => {
     describe("createLeafNode", () => {
       it("should create consistent leaf hash for same inputs", () => {
         const address =
@@ -305,8 +592,16 @@ describe("RewardsService", () => {
         },
       ];
 
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue(mockRewards);
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
 
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
       await service.allocate(competitionId, tokenAddress, startTimestamp);
 
       // Verify correct total calculation with large numbers
@@ -343,8 +638,16 @@ describe("RewardsService", () => {
         },
       ];
 
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue(mockRewards);
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
 
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
       await service.allocate(competitionId, tokenAddress, startTimestamp);
 
       expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
@@ -391,8 +694,16 @@ describe("RewardsService", () => {
         },
       ];
 
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue(mockRewards);
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
 
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
       await service.allocate(competitionId, tokenAddress, startTimestamp);
 
       // Verify both rewards are counted in total
@@ -421,7 +732,16 @@ describe("RewardsService", () => {
         },
       ];
 
-      mockRewardsRepo.getRewardsTreeByCompetition.mockResolvedValue(mockTree);
+      vi.mocked(mockRewardsRepo.getRewardsTreeByCompetition).mockResolvedValue(
+        mockTree,
+      );
+
+      const service = new RewardsService(
+        mockRewardsRepo,
+        {} as RewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
 
       await expect(
         service.retrieveProof(competitionId, address, amount),
@@ -430,7 +750,7 @@ describe("RewardsService", () => {
       );
     });
 
-    it("should handle rewards without allocator", async () => {
+    it("should validate allocator existence before attempting allocation", async () => {
       const competitionId = "comp-123";
       const tokenAddress = "0x1234567890123456789012345678901234567890" as Hex;
       const startTimestamp = 1640995200;
@@ -449,181 +769,21 @@ describe("RewardsService", () => {
         },
       ];
 
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue(mockRewards);
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
 
-      // Create service with null allocator to test error handling
-      const serviceWithoutAllocator = new RewardsService(
+      // Create service without allocator
+      const service = new RewardsService(
         mockRewardsRepo,
-        mockRewardsAllocator,
+        {} as RewardsAllocator,
         mockDb,
         mockLogger,
       );
 
       await expect(
-        serviceWithoutAllocator.allocate(
-          competitionId,
-          tokenAddress,
-          startTimestamp,
-        ),
-      ).rejects.toThrow();
-    });
-  });
-
-  describe("createLeafNode utility", () => {
-    it("should create consistent leaf hash for same inputs", () => {
-      const address =
-        "0x1234567890123456789012345678901234567890" as `0x${string}`;
-      const amount = 100n;
-
-      const hash1 = createLeafNode(address, amount);
-      const hash2 = createLeafNode(address, amount);
-
-      expect(hash1).toEqual(hash2);
-      expect(typeof hash1).toBe("string");
-      expect(hash1).toMatch(/^0x[a-fA-F0-9]{64}$/); // keccak256 produces 32-byte hash as hex string
-    });
-
-    it("should create different hashes for different inputs", () => {
-      const address1 =
-        "0x1111111111111111111111111111111111111111" as `0x${string}`;
-      const address2 =
-        "0x2222222222222222222222222222222222222222" as `0x${string}`;
-      const amount = 100n;
-
-      const hash1 = createLeafNode(address1, amount);
-      const hash2 = createLeafNode(address2, amount);
-
-      expect(hash1).not.toEqual(hash2);
-    });
-
-    it("should create hash using correct ABI encoding", () => {
-      const address =
-        "0x1234567890123456789012345678901234567890" as `0x${string}`;
-      const amount = 100n;
-
-      const expectedEncoding = encodePacked(
-        ["string", "address", "uint256"],
-        ["rl", address, amount],
-      );
-      const expectedHash = keccak256(expectedEncoding);
-
-      const actualHash = createLeafNode(address, amount);
-
-      // Both should be hex strings
-      expect(actualHash).toEqual(expectedHash);
-      expect(typeof actualHash).toBe("string");
-      expect(typeof expectedHash).toBe("string");
-    });
-
-    it("should handle zero amounts correctly", () => {
-      const address =
-        "0x1234567890123456789012345678901234567890" as `0x${string}`;
-      const amount = 0n;
-
-      const hash = createLeafNode(address, amount);
-
-      expect(typeof hash).toBe("string");
-      expect(hash).toMatch(/^0x[a-fA-F0-9]{64}$/);
-
-      // Should be deterministic for zero amounts
-      const hash2 = createLeafNode(address, amount);
-      expect(hash).toEqual(hash2);
-    });
-
-    it("should handle very large amounts correctly", () => {
-      const address =
-        "0x1234567890123456789012345678901234567890" as `0x${string}`;
-      const largeAmount = BigInt("999999999999999999999999999999999999999");
-
-      const hash = createLeafNode(address, largeAmount);
-
-      expect(typeof hash).toBe("string");
-      expect(hash).toMatch(/^0x[a-fA-F0-9]{64}$/);
-
-      // Should be deterministic for large amounts
-      const hash2 = createLeafNode(address, largeAmount);
-      expect(hash).toEqual(hash2);
-    });
-  });
-
-  describe("Merkle tree operations", () => {
-    it("should handle empty rewards list", async () => {
-      const competitionId = "comp-123";
-      const tokenAddress = "0x1234567890123456789012345678901234567890" as Hex;
-      const startTimestamp = 1640995200;
-
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue([]);
-
-      await expect(
         service.allocate(competitionId, tokenAddress, startTimestamp),
-      ).rejects.toThrow("no rewards to allocate");
-
-      // Should not attempt blockchain allocation
-      expect(mockRewardsAllocator.allocate).not.toHaveBeenCalled();
-    });
-
-    it("should build merkle tree with single reward", async () => {
-      const competitionId = "comp-123";
-      const tokenAddress = "0x1234567890123456789012345678901234567890" as Hex;
-      const startTimestamp = 1640995200;
-
-      const mockRewards: SelectReward[] = [
-        {
-          id: "reward-1",
-          competitionId,
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
-          amount: 100n,
-          leafHash: Buffer.from("hash1"),
-          claimed: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
-
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue(mockRewards);
-
-      await service.allocate(competitionId, tokenAddress, startTimestamp);
-
-      expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
-        expect.any(String),
-        tokenAddress,
-        100n,
-        startTimestamp,
-      );
-
-      // Verify database operations
-      expect(mockDb.transaction).toHaveBeenCalledOnce();
-    });
-
-    it("should handle complex tree structure with many rewards", async () => {
-      const competitionId = "comp-123";
-      const tokenAddress = "0x1234567890123456789012345678901234567890" as Hex;
-      const startTimestamp = 1640995200;
-
-      // Create 8 rewards for a more complex tree
-      const mockRewards: SelectReward[] = Array.from({ length: 8 }, (_, i) => ({
-        id: `reward-${i + 1}`,
-        competitionId,
-        address: `0x${(i + 1).toString().padStart(40, "0")}` as `0x${string}`,
-        amount: BigInt((i + 1) * 100),
-        leafHash: Buffer.from(`hash${i + 1}`),
-        claimed: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
-
-      mockRewardsRepo.getRewardsByCompetition.mockResolvedValue(mockRewards);
-
-      await service.allocate(competitionId, tokenAddress, startTimestamp);
-
-      // Total: 100 + 200 + 300 + 400 + 500 + 600 + 700 + 800 = 3600
-      expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
-        expect.any(String),
-        tokenAddress,
-        3600n,
-        startTimestamp,
-      );
+      ).rejects.toThrow();
     });
   });
 });
