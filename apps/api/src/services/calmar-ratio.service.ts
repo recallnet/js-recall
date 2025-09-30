@@ -29,6 +29,7 @@ export interface RiskMetricsResult {
  */
 export class CalmarRatioService {
   private readonly DAYS_PER_YEAR = 365; // Calendar days for annualization
+  private readonly MIN_DAYS_FOR_ANNUALIZATION = 30; // Minimum period before annualizing returns
 
   /**
    * Calculate and persist Calmar Ratio with all risk metrics
@@ -177,11 +178,10 @@ export class CalmarRatioService {
 
     // Don't annualize for competitions shorter than 30 days
     // Annualization over short periods creates misleading astronomical values
-    // For 1-week competitions, we use raw return/drawdown ratio instead
-    const MIN_DAYS_FOR_ANNUALIZATION = 30;
-    if (daysInPeriod < MIN_DAYS_FOR_ANNUALIZATION) {
+    // For competitions shorter than 30 days, we use raw return/drawdown ratio instead
+    if (daysInPeriod < this.MIN_DAYS_FOR_ANNUALIZATION) {
       serviceLogger.debug(
-        `[CalmarRatio] Period too short for annualization (${daysInPeriod.toFixed(2)} days < ${MIN_DAYS_FOR_ANNUALIZATION} days). Using raw return.`,
+        `[CalmarRatio] Period too short for annualization (${daysInPeriod.toFixed(2)} days < ${this.MIN_DAYS_FOR_ANNUALIZATION} days). Using raw return.`,
       );
       return periodReturn;
     }
