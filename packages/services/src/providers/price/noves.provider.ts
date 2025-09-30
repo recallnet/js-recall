@@ -3,6 +3,7 @@ import { Logger } from "pino";
 
 import {
   BlockchainType,
+  DexScreenerTokenInfo,
   PriceReport,
   PriceSource,
   SpecificChain,
@@ -495,5 +496,18 @@ export class NovesProvider implements PriceSource {
       }
     }
     return null;
+  }
+
+  async getBatchPrices(
+    tokenAddresses: string[],
+    chain: BlockchainType,
+    specificChain: SpecificChain,
+  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
+    const results = new Map<string, DexScreenerTokenInfo | null>();
+    for (const tokenAddress of tokenAddresses) {
+      const price = await this.getPrice(tokenAddress, chain, specificChain);
+      results.set(tokenAddress, price);
+    }
+    return results;
   }
 }
