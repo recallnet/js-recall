@@ -225,8 +225,8 @@ function generateMarkdown(
   return markdown;
 }
 
-// CLI Usage
-if (require.main === module) {
+// CLI Usage - Check if this file is being run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
