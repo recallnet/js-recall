@@ -367,7 +367,8 @@ describe("SimulatedTradeExecutionService", () => {
         endDate: new Date(Date.now() - 86400000), // Yesterday
       } as Competition;
       vi.mocked(mockCompetitionService.getCompetition!).mockResolvedValue(
-        endedCompetition,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        endedCompetition as any,
       );
 
       await expect(
@@ -427,7 +428,8 @@ describe("SimulatedTradeExecutionService", () => {
         type: "perpetual_futures" as const,
       } as Competition;
       vi.mocked(mockCompetitionService.getCompetition!).mockResolvedValue(
-        perpsCompetition,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        perpsCompetition as any,
       );
 
       await expect(
