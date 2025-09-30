@@ -555,7 +555,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
           pagingParams,
         });
 
-        res.status(200).json(result);
+        res.status(200).json({
+          ...result,
+          pagination: buildPaginationResponse(
+            result.total,
+            pagingParams.limit,
+            pagingParams.offset,
+          ),
+        });
       } catch (error) {
         next(error);
       }
@@ -585,7 +592,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
             pagingParams,
           });
 
-        res.status(200).json(result);
+        res.status(200).json({
+          ...result,
+          pagination: buildPaginationResponse(
+            result.total,
+            pagingParams.limit,
+            pagingParams.offset,
+          ),
+        });
       } catch (error) {
         next(error);
       }
