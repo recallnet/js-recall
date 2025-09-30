@@ -348,9 +348,10 @@ export interface Competition {
     totalTrades?: number; // Optional - only for paper trading
     totalPositions?: number; // Optional - only for perps
     totalAgents: number;
-    totalVolume: number;
+    totalVolume?: number; // Optional - may not be present for all competition types
     totalVotes: number;
     uniqueTokens?: number; // Optional - only for paper trading
+    averageEquity?: number; // Optional - only for perps
     competitionType?: string; // Type indicator for clients
   };
   // Vote-related fields

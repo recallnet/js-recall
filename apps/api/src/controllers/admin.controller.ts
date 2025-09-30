@@ -354,22 +354,12 @@ export function makeAdminController(services: ServiceRegistry) {
         const { competitionId } = result.data;
 
         // End the competition
-        const endedCompetition =
+        const { competition: endedCompetition, leaderboard } =
           await services.competitionService.endCompetition(competitionId);
 
         const activeCompetition =
           await services.competitionService.getActiveCompetition();
         updateFeaturesWithCompetition(activeCompetition);
-
-        // Get final leaderboard
-        const leaderboard =
-          await services.competitionService.getLeaderboard(competitionId);
-
-        // Assign winners to the rewards
-        await services.competitionRewardService.assignWinnersToRewards(
-          competitionId,
-          leaderboard,
-        );
 
         adminLogger.info(
           `Successfully ended competition, id: ${competitionId}`,

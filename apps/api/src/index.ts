@@ -44,8 +44,18 @@ import { updateFeaturesWithCompetition } from "./lib/update-features-with-comp.j
 import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
+// Sentry configuration defaults
+const SENTRY_DEFAULTS = {
+  PROFILE_SAMPLE_RATE: 0.01, // 1% - minimal tracking by default
+} as const;
+
 // Initialize Sentry before creating the Express app
-initSentry();
+initSentry({
+  enableProfiling: process.env.ENABLE_SENTRY_PROFILING === "true",
+  profileSessionSampleRate: process.env.SENTRY_PROFILE_SAMPLE_RATE
+    ? parseFloat(process.env.SENTRY_PROFILE_SAMPLE_RATE)
+    : SENTRY_DEFAULTS.PROFILE_SAMPLE_RATE,
+});
 
 // Create Express app
 const app = express();

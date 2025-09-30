@@ -140,14 +140,8 @@ async function endCompetition() {
 
     // End the competition
     console.log(`\n${colors.blue}Ending competition...${colors.reset}`);
-    const endedCompetition = await services.competitionService.endCompetition(
-      activeCompetition.id,
-    );
-
-    // Get final leaderboard
-    const finalLeaderboard = await services.competitionService.getLeaderboard(
-      activeCompetition.id,
-    );
+    const { competition: endedCompetition, leaderboard: finalLeaderboard } =
+      await services.competitionService.endCompetition(activeCompetition.id);
 
     console.log(
       `\n${colors.green}✓ Competition ended successfully!${colors.reset}`,

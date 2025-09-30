@@ -38,7 +38,7 @@ import {
   CompetitionStatus,
   PaginationResponse,
 } from "@/types";
-import { formatPercentage } from "@/utils/format";
+import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
@@ -72,12 +72,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const session = useSession();
   const router = useRouter();
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  // Default sort: Calmar Ratio for perps, rank for others
-  const [sorting, setSorting] = useState<SortingState>(
-    competition.type === "perpetual_futures"
-      ? [{ id: "calmarRatio", desc: true }]
-      : [{ id: "rank", desc: false }],
-  );
+  // Default sort: Always sort by rank (backend handles Calmar-based ordering for perps)
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "rank", desc: false },
+  ]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     yourShare: session.ready && session.isAuthenticated,
   });
@@ -372,7 +370,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           return (
             <div className="flex flex-col items-end">
               <span className="text-secondary-foreground font-semibold">
-                {isBoostDataLoading ? "..." : agentBoostTotal.toString()}
+                {isBoostDataLoading
+                  ? "..."
+                  : formatCompactNumber(agentBoostTotal)}
               </span>
               <span className="text-xs text-slate-400">
                 ({formatPercentage(Number(agentBoostTotal), Number(totalBoost))}

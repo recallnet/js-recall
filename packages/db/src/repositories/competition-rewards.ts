@@ -218,11 +218,13 @@ export class CompetitionRewardsRepository {
    * Assign winners to rewards for a competition by updating agentIds based on leaderboard
    * @param competitionId The competition ID
    * @param leaderboard Array of { agentId, value } objects, index+1 = rank
+   * @param tx Optional database transaction
    * @returns void
    */
   async assignWinnersToRewards(
     competitionId: string,
     leaderboard: { agentId: string; value: number }[],
+    tx?: Transaction,
   ): Promise<void> {
     try {
       // Fetch all rewards for the competition
@@ -239,7 +241,8 @@ export class CompetitionRewardsRepository {
         })
         .filter(Boolean);
 
-      await this.#db.transaction(async (tx) => {
+      const executor = tx || this.#db;
+      await executor.transaction(async (tx) => {
         for (const update of updates) {
           if (!update) continue;
           await tx

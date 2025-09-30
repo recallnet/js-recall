@@ -212,6 +212,7 @@ type CompetitionDetailsData = {
       uniqueTokens?: number;
       // Perps stats
       totalPositions?: number;
+      averageEquity?: number;
     };
     tradingConstraints: {
       minimumPairAgeHours: number | null;
@@ -593,17 +594,18 @@ export class CompetitionService {
    * Validates agent IDs and returns valid and invalid lists
    * @param agentIds Array of agent IDs to validate
    * @returns List of valid agent IDs
+   * @throws ApiError if any agent IDs are invalid or inactive
    */
   private async validateAgentIds(agentIds: string[]): Promise<string[]> {
     const validAgentIds: string[] = [];
     const invalidAgentIds: string[] = [];
 
-    for (const agentId of agentIds) {
-      const agent = await this.agentService.getAgent(agentId);
-      if (!agent || agent.status !== "active") {
-        invalidAgentIds.push(agentId);
+    const agents = await this.agentService.getAgentsByIds(agentIds);
+    for (const agent of agents) {
+      if (!agentIds.includes(agent.id) || agent.status !== "active") {
+        invalidAgentIds.push(agent.id);
       } else {
-        validAgentIds.push(agentId);
+        validAgentIds.push(agent.id);
       }
     }
 
@@ -646,7 +648,7 @@ export class CompetitionService {
    */
   async startCompetition(
     competitionId: string,
-    agentIds: string[],
+    agentIds?: string[],
     tradingConstraints?: TradingConstraintsInput,
   ): Promise<StartedCompetitionResult> {
     const competition = await this.competitionRepo.findById(competitionId);
@@ -667,8 +669,11 @@ export class CompetitionService {
       );
     }
 
-    // Validate provided agent IDs
-    const validAgentIds = await this.validateAgentIds(agentIds);
+    // Validate provided agent IDs, in case the caller provided `agentIds`
+    if (agentIds) {
+      // Note: this throws if any are invalid or inactive
+      await this.validateAgentIds(agentIds);
+    }
 
     // Get pre-registered agents
     const preRegisteredAgentIds =
@@ -676,15 +681,12 @@ export class CompetitionService {
 
     // Combine agent lists (remove duplicates)
     const finalAgentIds = [
-      ...new Set([...validAgentIds, ...preRegisteredAgentIds]),
+      ...new Set([...(agentIds ?? []), ...preRegisteredAgentIds]),
     ];
 
     // Check if we have any agents
     if (finalAgentIds.length === 0) {
-      throw new ApiError(
-        400,
-        "Cannot start competition: no valid active agents provided in agentIds and no agents have joined the competition",
-      );
+      throw new ApiError(400, `Cannot start competition: no registered agents`);
     }
 
     // Process all agent additions and activations
@@ -746,7 +748,7 @@ export class CompetitionService {
     if (competition.type === "trading") {
       // Paper trading: Use portfolio snapshotter with reset balances
       this.logger.debug(
-        `[CompetitionService] Taking initial paper trading portfolio snapshots for ${agentIds.length} agents (competition still pending)`,
+        `[CompetitionService] Taking initial paper trading portfolio snapshots for ${finalAgentIds.length} agents (competition still pending)`,
       );
       await this.portfolioSnapshotterService.takePortfolioSnapshots(
         competitionId,
@@ -757,7 +759,7 @@ export class CompetitionService {
     } else if (competition.type === "perpetual_futures") {
       // Perps: Sync from Symphony to get initial $500 balance state
       this.logger.debug(
-        `[CompetitionService] Syncing initial perps data from Symphony for ${agentIds.length} agents (competition still pending)`,
+        `[CompetitionService] Syncing initial perps data from Symphony for ${finalAgentIds.length} agents (competition still pending)`,
       );
 
       const result =
@@ -795,7 +797,7 @@ export class CompetitionService {
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
     );
     this.logger.debug(
-      `[CompetitionManager] Participating agents: ${agentIds.join(", ")}`,
+      `[CompetitionManager] Participating agents: ${finalAgentIds.join(", ")}`,
     );
 
     return {
@@ -858,13 +860,13 @@ export class CompetitionService {
    * @param competitionId The competition ID
    * @param totalAgents Total number of agents in the competition
    * @param tx Database transaction
-   * @returns Number of leaderboard entries that were saved
+   * @returns The enriched leaderboard array that was processed
    */
   private async calculateAndPersistFinalLeaderboard(
     competitionId: string,
     totalAgents: number,
     tx: DatabaseTransaction,
-  ): Promise<number> {
+  ): Promise<LeaderboardEntry[]> {
     // Get the leaderboard (calculated from final snapshots)
     const leaderboard = await this.getLeaderboard(competitionId);
 
@@ -899,15 +901,23 @@ export class CompetitionService {
       await this.competitionRepo.batchInsertLeaderboard(enrichedEntries, tx);
     }
 
-    return enrichedEntries.length;
+    // Map enriched entries back to LeaderboardEntry format for return
+    return enrichedEntries.map((entry) => ({
+      agentId: entry.agentId,
+      value: entry.score, // Convert score back to value for LeaderboardEntry
+      pnl: entry.pnl,
+    }));
   }
 
   /**
    * End a competition
    * @param competitionId The competition ID
-   * @returns The updated competition
+   * @returns The updated competition and final leaderboard
    */
-  async endCompetition(competitionId: string) {
+  async endCompetition(competitionId: string): Promise<{
+    competition: SelectCompetition;
+    leaderboard: LeaderboardEntry[];
+  }> {
     // Mark as ending (active -> ending) - this returns the competition object
     let competition =
       await this.competitionRepo.markCompetitionAsEnding(competitionId);
@@ -918,7 +928,9 @@ export class CompetitionService {
         throw new Error(`Competition not found: ${competitionId}`);
       }
       if (current.status === "ended") {
-        return current; // Already ended
+        // Competition already ended, get the leaderboard and return
+        const leaderboard = await this.getLeaderboard(competitionId);
+        return { competition: current, leaderboard };
       }
       if (current.status !== "ending") {
         throw new Error(
@@ -973,7 +985,7 @@ export class CompetitionService {
       await this.competitionRepo.getCompetitionAgents(competitionId);
 
     // Final transaction to persist results
-    const { competition: finalCompetition, leaderboardCount } =
+    const { competition: finalCompetition, leaderboard } =
       await this.db.transaction(async (tx) => {
         // Mark as ended. This is our guard against concurrent execution - if another process is
         // ending the same competition in parallel, only one will manage to mark it as ended, and
@@ -989,7 +1001,7 @@ export class CompetitionService {
         }
 
         // Calculate final leaderboard, enrich with PnL data, and persist to database
-        const leaderboardCount = await this.calculateAndPersistFinalLeaderboard(
+        const leaderboard = await this.calculateAndPersistFinalLeaderboard(
           competitionId,
           competitionAgents.length,
           tx,
@@ -1001,16 +1013,23 @@ export class CompetitionService {
           tx,
         );
 
-        return { competition: updated, leaderboardCount };
+        // Assign winners to rewards
+        await this.competitionRewardService.assignWinnersToRewards(
+          competitionId,
+          leaderboard,
+          tx,
+        );
+
+        return { competition: updated, leaderboard };
       });
 
     // Log success only after transaction has committed
     this.logger.debug(
       `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ` +
-        `${competitionAgents.length} agents, ${leaderboardCount} leaderboard entries`,
+        `${competitionAgents.length} agents, ${leaderboard.length} leaderboard entries`,
     );
 
-    return finalCompetition;
+    return { competition: finalCompetition, leaderboard };
   }
 
   /**
@@ -1199,39 +1218,30 @@ export class CompetitionService {
           0,
         );
 
-      // Create a map for quick lookups
-      const riskMetricsMap = new Map(
-        riskAdjustedLeaderboard.map((entry) => [
-          entry.agentId,
-          {
-            calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
-            simpleReturn: entry.simpleReturn
-              ? Number(entry.simpleReturn)
-              : null,
-            maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
-            hasRiskMetrics: entry.hasRiskMetrics,
-          },
-        ]),
-      );
-
       // Combine snapshot data with risk metrics
-      return snapshots
-        .map((snapshot) => {
-          const riskMetrics = riskMetricsMap.get(snapshot.agentId) || {
-            calmarRatio: null,
-            simpleReturn: null,
-            maxDrawdown: null,
-            hasRiskMetrics: false,
-          };
+      const orderedResults: LeaderboardEntry[] = [];
 
-          return {
-            agentId: snapshot.agentId,
-            value: snapshot.totalValue,
-            pnl: 0, // PnL not available from snapshots alone
-            ...riskMetrics,
-          };
-        })
-        .sort((a, b) => b.value - a.value);
+      // Add all agents from riskAdjustedLeaderboard in their correct order
+      for (const entry of riskAdjustedLeaderboard) {
+        const snapshot = snapshots.find((s) => s.agentId === entry.agentId);
+
+        // Use snapshot value if available, otherwise use equity from risk-adjusted leaderboard
+        const portfolioValue = snapshot
+          ? snapshot.totalValue
+          : Number(entry.totalEquity) || 0;
+
+        orderedResults.push({
+          agentId: entry.agentId,
+          value: portfolioValue,
+          pnl: Number(entry.totalPnl) || 0, // Use PnL from risk-adjusted leaderboard
+          calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+          simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
+          maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+          hasRiskMetrics: entry.hasRiskMetrics,
+        });
+      }
+
+      return orderedResults;
     }
 
     // For paper trading: Return without risk metrics
@@ -1275,7 +1285,7 @@ export class CompetitionService {
       // Transform to LeaderboardEntry format, including risk metrics
       return riskAdjustedLeaderboard.map((entry) => ({
         agentId: entry.agentId,
-        value: Number(entry.totalEquity) || 0,
+        value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility
         pnl: Number(entry.totalPnl) || 0,
         // Include risk-adjusted metrics
         calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
@@ -2269,6 +2279,85 @@ export class CompetitionService {
   }
 
   /**
+   * Check and automatically start competitions that have reached their start date
+   * Conditions:
+   * - No other competition is currently active
+   * - Competition is not in sandbox mode
+   * - Competition has at least one registered agent
+   * - Process competitions by earliest startDate first
+   */
+  async processCompetitionStartDateChecks(): Promise<void> {
+    try {
+      // Do not start anything if there's already an active competition
+      const active = await this.competitionRepo.findActive();
+      if (active) {
+        this.logger.debug(
+          {
+            competitionId: active.id,
+            name: active.name,
+          },
+          `[CompetitionManager] Active competition found. Skipping auto-start checks`,
+        );
+        return;
+      }
+
+      const competitionsToStart =
+        await this.competitionRepo.findCompetitionsNeedingStarting();
+      if (competitionsToStart.length === 0) {
+        this.logger.debug(
+          "[CompetitionManager] No competitions ready to start",
+        );
+        return;
+      }
+
+      // We only support running one competition at a time, so we will not start any competitions
+      // if we find more than one. Note: This should not happen if competitions are created with
+      // the correct start dates; it's defensive.
+      const competition = competitionsToStart[0];
+      if (competitionsToStart.length > 1 || !competition) {
+        this.logger.warn(
+          {
+            competitions: competitionsToStart.map((c) => ({
+              id: c.id,
+              name: c.name,
+              startDate: c.startDate?.toISOString(),
+            })),
+          },
+          `[CompetitionManager] Multiple competitions ready to start. Skipping auto-start checks`,
+        );
+        return;
+      }
+      this.logger.debug(
+        {
+          competitionId: competition.id,
+          name: competition.name,
+          startDate: competition.startDate?.toISOString(),
+        },
+        `[CompetitionManager] Auto-starting competition`,
+      );
+      await this.startCompetition(competition.id);
+      this.logger.debug(
+        {
+          competitionId: competition.id,
+          name: competition.name,
+        },
+        `[CompetitionManager] Successfully auto-started competition`,
+      );
+    } catch (error) {
+      // Continue silently if the competition has no registered nor provided agents
+      if (
+        error instanceof ApiError &&
+        error.statusCode === 400 &&
+        error.message.includes("no registered agents")
+      ) {
+        this.logger.error(
+          `[CompetitionManager] No registered agents found for competition. Skipping auto-start.`,
+        );
+        return;
+      }
+    }
+  }
+  /**
    * Get leaderboard with authorization checks
    * @param params Parameters for leaderboard request
    * @returns Leaderboard data with proper authorization
@@ -2880,6 +2969,7 @@ export class CompetitionService {
         totalVolume?: number;
         uniqueTokens?: number;
         totalPositions?: number;
+        averageEquity?: number;
       };
 
       if (competition.type === "perpetual_futures") {
@@ -2891,6 +2981,8 @@ export class CompetitionService {
           totalAgents: competition.registeredParticipants,
           totalVotes,
           totalPositions: perpsStatsData?.totalPositions ?? 0,
+          totalVolume: perpsStatsData?.totalVolume ?? 0,
+          averageEquity: perpsStatsData?.averageEquity ?? 0,
         };
       } else {
         // For paper trading competitions, include trade metrics

@@ -1,14 +1,38 @@
 import { NextFunction, Request, Response } from "express";
+import { z } from "zod";
 
-import { calculateSlippage } from "@recallnet/services/lib";
 import {
   ApiError,
   BlockchainType,
-  SpecificChain,
+  SPECIFIC_CHAIN_NAMES,
 } from "@recallnet/services/types";
 
-import { tradeLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
+
+const GetQuoteQuerySchema = z.object({
+  fromToken: z.string().min(1, "fromToken is required"),
+  toToken: z.string().min(1, "toToken is required"),
+  amount: z
+    .string()
+    .min(1, "amount is required")
+    .transform((val) => {
+      const parsed = parseFloat(val);
+      if (isNaN(parsed) || parsed <= 0) {
+        throw new z.ZodError([
+          {
+            code: z.ZodIssueCode.custom,
+            message: "Amount must be a positive number",
+            path: ["amount"],
+          },
+        ]);
+      }
+      return parsed;
+    }),
+  fromChain: z.nativeEnum(BlockchainType).optional(),
+  fromSpecificChain: z.enum(SPECIFIC_CHAIN_NAMES).optional(),
+  toChain: z.nativeEnum(BlockchainType).optional(),
+  toSpecificChain: z.enum(SPECIFIC_CHAIN_NAMES).optional(),
+});
 
 export function makeTradeController(services: ServiceRegistry) {
   /**
@@ -67,48 +91,6 @@ export function makeTradeController(services: ServiceRegistry) {
           );
         }
 
-        tradeLogger.debug(
-          `Executing trade with competition ID: ${competitionId}`,
-        );
-
-        // Fetch the competition and check if end date has passed
-        const competition =
-          await services.competitionService.getCompetition(competitionId);
-        if (!competition) {
-          throw new ApiError(404, `Competition not found: ${competitionId}`);
-        }
-
-        // Check if this is a perps competition - paper trading only
-        if (competition.type === "perpetual_futures") {
-          throw new ApiError(
-            400,
-            "This endpoint is not available for perpetual futures competitions. " +
-              "Perpetual futures positions are managed through Symphony, not through this API.",
-          );
-        }
-
-        // Check if competition has passed its end date
-        const now = new Date();
-        if (competition.endDate !== null && now > competition.endDate) {
-          throw new ApiError(
-            400,
-            `Competition has ended. Trading is no longer allowed for competition: ${competition.name}`,
-          );
-        }
-
-        // Check if agent is registered and active in the competition
-        const isAgentActive =
-          await services.competitionService.isAgentActiveInCompetition(
-            competitionId,
-            agentId,
-          );
-        if (!isAgentActive) {
-          throw new ApiError(
-            403,
-            `Agent ${agentId} is not registered for competition ${competitionId}. Trading is not allowed.`,
-          );
-        }
-
         // Create chain options object if any chain parameters were provided
         const chainOptions =
           fromChain || fromSpecificChain || toChain || toSpecificChain
@@ -120,24 +102,18 @@ export function makeTradeController(services: ServiceRegistry) {
               }
             : undefined;
 
-        // Log chain options if provided
-        if (chainOptions) {
-          tradeLogger.debug(
-            `Using chain options: ${JSON.stringify(chainOptions)}`,
-          );
-        }
-
-        // Execute the trade with optional chain parameters
-        const trade = await services.tradeSimulatorService.executeTrade(
-          agentId,
-          competitionId,
-          fromToken,
-          toToken,
-          parsedAmount,
-          reason,
-          slippageTolerance,
-          chainOptions,
-        );
+        // Execute the trade via service
+        const trade =
+          await services.simulatedTradeExecutionService.executeTrade({
+            agentId,
+            competitionId,
+            fromToken,
+            toToken,
+            fromAmount: parsedAmount,
+            reason,
+            slippageTolerance,
+            chainOptions,
+          });
 
         // Return successful trade result
         res.status(200).json({
@@ -168,120 +144,22 @@ export function makeTradeController(services: ServiceRegistry) {
           );
         }
 
-        const {
-          fromToken,
-          toToken,
-          amount,
-          // Chain parameters
-          fromChain,
-          fromSpecificChain,
-          toChain,
-          toSpecificChain,
-        } = req.query;
+        // Parse and validate query parameters
+        const queryParams = GetQuoteQuerySchema.parse(req.query);
 
-        // Validate required parameters
-        if (!fromToken || !toToken || !amount) {
-          throw new ApiError(
-            400,
-            "Missing required parameters: fromToken, toToken, amount",
-          );
-        }
-
-        // Validate amount is a number
-        const parsedAmount = parseFloat(amount as string);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) {
-          throw new ApiError(400, "Amount must be a positive number");
-        }
-
-        // Determine chains for from/to tokens
-        let fromTokenChain: BlockchainType | undefined;
-        let fromTokenSpecificChain: SpecificChain | undefined;
-        let toTokenChain: BlockchainType | undefined;
-        let toTokenSpecificChain: SpecificChain | undefined;
-
-        // Parse chain parameters if provided
-        if (fromChain) {
-          fromTokenChain = fromChain as BlockchainType;
-        }
-        if (fromSpecificChain) {
-          fromTokenSpecificChain = fromSpecificChain as SpecificChain;
-        }
-        if (toChain) {
-          toTokenChain = toChain as BlockchainType;
-        }
-        if (toSpecificChain) {
-          toTokenSpecificChain = toSpecificChain as SpecificChain;
-        }
-
-        // Log chain information if provided
-        if (
-          fromTokenChain ||
-          fromTokenSpecificChain ||
-          toTokenChain ||
-          toTokenSpecificChain
-        ) {
-          tradeLogger.debug(`Quote with chain info:
-          From Token Chain: ${fromTokenChain || "auto"}, Specific Chain: ${fromTokenSpecificChain || "auto"}
-          To Token Chain: ${toTokenChain || "auto"}, Specific Chain: ${toTokenSpecificChain || "auto"}
-        `);
-        }
-
-        // Get token prices with chain information for better performance
-        const fromPrice = await services.priceTrackerService.getPrice(
-          fromToken as string,
-          fromTokenChain,
-          fromTokenSpecificChain,
-        );
-
-        const toPrice = await services.priceTrackerService.getPrice(
-          toToken as string,
-          toTokenChain,
-          toTokenSpecificChain,
-        );
-
-        if (
-          !fromPrice ||
-          !toPrice ||
-          fromPrice.price == null ||
-          toPrice.price == null
-        ) {
-          throw new ApiError(400, "Unable to determine price for tokens");
-        }
-
-        // Calculate the trade
-        const fromValueUSD = parsedAmount * fromPrice.price;
-
-        // Apply slippage based on trade size
-        const { effectiveFromValueUSD, slippagePercentage } =
-          calculateSlippage(fromValueUSD);
-        const toAmount = effectiveFromValueUSD / toPrice.price;
-
-        // Return quote with chain information
-        res.status(200).json({
-          fromToken,
-          toToken,
-          fromAmount: parsedAmount,
-          toAmount,
-          exchangeRate: toAmount / parsedAmount,
-          slippage: slippagePercentage,
-          tradeAmountUsd: fromValueUSD,
-          prices: {
-            fromToken: fromPrice.price,
-            toToken: toPrice.price,
-          },
-          symbols: {
-            fromTokenSymbol: fromPrice.symbol,
-            toTokenSymbol: toPrice.symbol,
-          },
-          chains: {
-            fromChain:
-              fromTokenChain ||
-              services.priceTrackerService.determineChain(fromToken as string),
-            toChain:
-              toTokenChain ||
-              services.priceTrackerService.determineChain(toToken as string),
-          },
+        // Call service method
+        const result = await services.tradeSimulatorService.getTradeQuote({
+          fromToken: queryParams.fromToken,
+          toToken: queryParams.toToken,
+          amount: queryParams.amount,
+          fromChain: queryParams.fromChain,
+          fromSpecificChain: queryParams.fromSpecificChain,
+          toChain: queryParams.toChain,
+          toSpecificChain: queryParams.toSpecificChain,
         });
+
+        // Return formatted response
+        res.status(200).json(result);
       } catch (error) {
         next(error);
       }

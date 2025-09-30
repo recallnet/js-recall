@@ -10,24 +10,6 @@ import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
 import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
 
-export * from "./sort/index.js";
-export * from "./agent-metrics.js";
-export * from "./perps.js";
-
-/**
- * Custom error class with HTTP status code
- */
-export class ApiError extends Error {
-  statusCode: number;
-
-  constructor(statusCode: number, message: string) {
-    super(message);
-    this.statusCode = statusCode;
-    this.name = this.constructor.name;
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
-
 /**
  * Blockchain type enum
  */
@@ -36,8 +18,10 @@ export enum BlockchainType {
   EVM = "evm",
 }
 
-// Zod schema for SpecificChain validation
-export const SpecificChainSchema = z.enum([
+/**
+ * Array of supported specific chain names
+ */
+export const SPECIFIC_CHAIN_NAMES = [
   "eth",
   "polygon",
   "bsc",
@@ -50,14 +34,13 @@ export const SpecificChainSchema = z.enum([
   "scroll",
   "mantle",
   "svm",
-]);
+] as const;
+
+// Zod schema for SpecificChain validation
+export const SpecificChainSchema = z.enum(SPECIFIC_CHAIN_NAMES);
 
 // Type derived from the Zod schema
 export type SpecificChain = z.infer<typeof SpecificChainSchema>;
-
-export type SpecificChainTokens = Partial<
-  Record<SpecificChain, Record<string, string>>
->;
 
 // Mapping from SpecificChain to BlockchainType
 export const chainTypeMapping: Record<SpecificChain, BlockchainType> = {
