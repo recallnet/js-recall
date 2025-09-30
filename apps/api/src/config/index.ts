@@ -335,7 +335,7 @@ export const config = {
     ),
     // Sample rate for HTTP request logs (0.0 to 1.0)
     httpSampleRate: parseFloat(process.env.HTTP_LOG_SAMPLE_RATE || "0.1"),
-    level: "silent",
+    level: process.env.LOG_LEVEL || "info",
   },
 
   // Cache configuration
