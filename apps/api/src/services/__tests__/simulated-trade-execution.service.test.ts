@@ -38,6 +38,7 @@
  *    - Trade cache update after trade
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type DeepMockProxy, mockDeep } from "vitest-mock-extended";
 
 import { SelectTrade } from "@recallnet/db/schema/trading/types";
 
@@ -97,10 +98,10 @@ vi.mock("@/services/providers/price/dexscreener.provider.js", () => ({
 
 describe("SimulatedTradeExecutionService", () => {
   let service: SimulatedTradeExecutionService;
-  let mockCompetitionService: Partial<CompetitionService>;
-  let mockTradeSimulatorService: Partial<TradeSimulatorService>;
-  let mockBalanceService: Partial<BalanceService>;
-  let mockPriceTrackerService: Partial<PriceTrackerService>;
+  let mockCompetitionService: DeepMockProxy<CompetitionService>;
+  let mockTradeSimulatorService: DeepMockProxy<TradeSimulatorService>;
+  let mockBalanceService: DeepMockProxy<BalanceService>;
+  let mockPriceTrackerService: DeepMockProxy<PriceTrackerService>;
   let mockCreateTradeWithBalances: ReturnType<typeof vi.fn>;
   let mockFindByCompetitionId: ReturnType<typeof vi.fn>;
 
@@ -201,30 +202,27 @@ describe("SimulatedTradeExecutionService", () => {
     );
     mockFindByCompetitionId = vi.mocked(constraintsRepo.findByCompetitionId);
 
-    // Setup service mocks
-    mockCompetitionService = {
-      getCompetition: vi.fn().mockResolvedValue(mockActiveCompetition),
-      isAgentActiveInCompetition: vi.fn().mockResolvedValue(true),
-    };
+    // Setup service mocks using vitest-mock-extended
+    mockCompetitionService = mockDeep<CompetitionService>();
+    mockCompetitionService.getCompetition.mockResolvedValue(
+      // @ts-expect-error - mockActiveCompetition is a partial Competition for testing
+      mockActiveCompetition,
+    );
+    mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(true);
 
-    mockTradeSimulatorService = {
-      calculatePortfolioValue: vi.fn().mockResolvedValue(50000),
-      updateTradeCache: vi.fn(),
-    };
+    mockTradeSimulatorService = mockDeep<TradeSimulatorService>();
+    mockTradeSimulatorService.calculatePortfolioValue.mockResolvedValue(50000);
 
-    mockBalanceService = {
-      getBalance: vi.fn().mockResolvedValue(1000),
-      setBalanceCache: vi.fn(),
-    };
+    mockBalanceService = mockDeep<BalanceService>();
+    mockBalanceService.getBalance.mockResolvedValue(1000);
 
-    mockPriceTrackerService = {
-      getPrice: vi.fn().mockImplementation((token: string) => {
-        if (token === testFromToken) return Promise.resolve(mockFromPrice);
-        if (token === testToToken) return Promise.resolve(mockToPrice);
-        return Promise.resolve(null);
-      }),
-      determineChain: vi.fn().mockReturnValue(BlockchainType.EVM),
-    };
+    mockPriceTrackerService = mockDeep<PriceTrackerService>();
+    mockPriceTrackerService.getPrice.mockImplementation((token: string) => {
+      if (token === testFromToken) return Promise.resolve(mockFromPrice);
+      if (token === testToToken) return Promise.resolve(mockToPrice);
+      return Promise.resolve(null);
+    });
+    mockPriceTrackerService.determineChain.mockReturnValue(BlockchainType.EVM);
 
     // Default: no custom constraints (will use defaults)
     mockFindByCompetitionId.mockResolvedValue(null);
@@ -234,10 +232,10 @@ describe("SimulatedTradeExecutionService", () => {
 
     // Create service instance
     service = new SimulatedTradeExecutionService(
-      mockCompetitionService as CompetitionService,
-      mockTradeSimulatorService as TradeSimulatorService,
-      mockBalanceService as BalanceService,
-      mockPriceTrackerService as PriceTrackerService,
+      mockCompetitionService,
+      mockTradeSimulatorService,
+      mockBalanceService,
+      mockPriceTrackerService,
     );
   });
 
@@ -366,9 +364,9 @@ describe("SimulatedTradeExecutionService", () => {
         ...mockActiveCompetition,
         endDate: new Date(Date.now() - 86400000), // Yesterday
       } as Competition;
-      vi.mocked(mockCompetitionService.getCompetition!).mockResolvedValue(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        endedCompetition as any,
+      mockCompetitionService.getCompetition.mockResolvedValue(
+        // @ts-expect-error - endedCompetition is a partial Competition for testing
+        endedCompetition,
       );
 
       await expect(
@@ -427,9 +425,9 @@ describe("SimulatedTradeExecutionService", () => {
         ...mockActiveCompetition,
         type: "perpetual_futures" as const,
       } as Competition;
-      vi.mocked(mockCompetitionService.getCompetition!).mockResolvedValue(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        perpsCompetition as any,
+      mockCompetitionService.getCompetition.mockResolvedValue(
+        // @ts-expect-error - perpsCompetition is a partial Competition for testing
+        perpsCompetition,
       );
 
       await expect(
@@ -746,16 +744,18 @@ describe("SimulatedTradeExecutionService", () => {
 
       // Update the mock to return our instance
       vi.mocked(DexScreenerModule.DexScreenerProvider).mockImplementation(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        () => mockDexScreenerInstance as any,
+        () =>
+          mockDexScreenerInstance as unknown as InstanceType<
+            typeof DexScreenerModule.DexScreenerProvider
+          >,
       );
 
       // Create new service with updated mock
       service = new SimulatedTradeExecutionService(
-        mockCompetitionService as CompetitionService,
-        mockTradeSimulatorService as TradeSimulatorService,
-        mockBalanceService as BalanceService,
-        mockPriceTrackerService as PriceTrackerService,
+        mockCompetitionService,
+        mockTradeSimulatorService,
+        mockBalanceService,
+        mockPriceTrackerService,
       );
 
       // Set toToken to have poor metrics that would normally fail
