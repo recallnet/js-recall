@@ -125,6 +125,8 @@ describe("SimulatedTradeExecutionService", () => {
     votingEndDate: null,
     joinStartDate: null,
     joinEndDate: null,
+    maxParticipants: null,
+    registeredParticipants: 0,
     status: "active" as const,
     crossChainTradingType: "allow",
     sandboxMode: false,
