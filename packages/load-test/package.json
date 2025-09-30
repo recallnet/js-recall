@@ -7,6 +7,7 @@
   "scripts": {
     "analyze": "tsx src/agent-trading/report-analyzer.ts",
     "analyze:latest": "tsx src/agent-trading/report-analyzer.ts $(ls -t reports/*.json 2>/dev/null | head -1)",
+    "analyze:consolidate": "tsx src/agent-trading/report-analyzer.ts --consolidate",
     "dev": "tsc --watch",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write . --ignore-path=../../.prettierignore",

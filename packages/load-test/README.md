@@ -25,6 +25,7 @@ cd packages/load-test
 
 # Run baseline test (8 req/s, 60 seconds, 5 agents)
 npx tsx src/cli.ts baseline
+# Displays Sentry traces link after completion (if configured)
 
 # Generate analysis report for latest test
 pnpm analyze:latest
@@ -135,12 +136,13 @@ Profiles:
   daily          Daily monitoring test
 
 Options:
-  -d, --duration N      Test duration in seconds (for stress profile)
-  -r, --rate N          Request rate per second (for stress profile)
-  -t, --trade-amount N  Trade amount in dollars (for stress profile)
-  -a, --agents N        Number of agents (default: 5)
-  --report              Save timestamped report
-  -n, --no-report       Don't save report file
+  -d, --duration N           Test duration in seconds (for stress profile)
+  -r, --rate N               Request rate per second (for stress profile)
+  -t, --trade-amount N       Trade amount in dollars (for stress profile)
+  -a, --agents N             Number of agents (default: 5)
+  --traces-sample-rate N     Sentry SDK traces sample rate 0.0-1.0 (default: 0.01)
+  --request-sample-rate N    Sentry request span sample rate 0.0-1.0 (default: 0.01)
+  -n, --no-report            Don't save report file
 ```
 
 ### Processor Functions
@@ -194,6 +196,8 @@ ADMIN_API_KEY=your_admin_key_here
 
 # Optional: Sentry observability
 SENTRY_DSN=your_sentry_dsn_here
+SENTRY_ORG=your_sentry_org_here       # For generating traces explorer links
+SENTRY_PROJECT_ID=your_project_id     # For generating traces explorer links
 SENTRY_TRACES_SAMPLE_RATE=0.01        # SDK auto-instrumentation sampling (default: 1%)
 SENTRY_SAMPLE_REQUEST=0.01            # Custom span sampling (default: 1%)
 
@@ -208,10 +212,24 @@ TEST_PROFILE=stress                    # Test profile name for tagging
 
 The load test suite integrates with Sentry for real-time observability and metrics tracking.
 
+**Automatic Test Run Tracking:**
+
+Each test run generates a unique test run ID (e.g., `baseline-20250930-102812`) and displays a Sentry traces explorer link after completion:
+
+```bash
+$ npx tsx src/cli.ts baseline
+
+✓ Test completed successfully!
+
+📊 View results in Sentry:
+   https://recallnet.sentry.io/explore/traces/?environment=perf-testing&project=...&query=test_run_id%3Abaseline-20250930-102812
+```
+
 **Searchable Span Attributes:**
 
 All HTTP request spans include searchable attributes:
 
+- `test_run_id` - Unique identifier for this specific test run
 - `load_test.agent_id` - Specific agent performing the request
 - `load_test.duration_seconds` - Test duration configuration
 - `load_test.request_rate` - Configured request rate
@@ -225,6 +243,9 @@ All HTTP request spans include searchable attributes:
 **Query Examples in Sentry:**
 
 ```
+# Find spans from specific test run
+test_run_id:baseline-20250930-102812
+
 # Find all load test spans
 has:load_test.agent_id
 
@@ -243,10 +264,21 @@ load_test.agent_id:YOUR_AGENT_ID http.status_code:>=400
 
 **Sampling Configuration:**
 
-- `SENTRY_TRACES_SAMPLE_RATE`: Controls SDK auto-instrumentation (default 1%)
-- `SENTRY_SAMPLE_REQUEST`: Controls custom span sampling (default 1%)
+Control sampling rates via environment variables or CLI flags:
+
+- `SENTRY_TRACES_SAMPLE_RATE` / `--traces-sample-rate`: SDK auto-instrumentation (default 1%)
+- `SENTRY_SAMPLE_REQUEST` / `--request-sample-rate`: Custom span sampling (default 1%)
 - Set to `1.0` for 100% sampling during debugging
+- CLI flags override environment variables
 - Errors are always captured regardless of sampling rate
+
+```bash
+# 100% sampling for debugging
+tsx src/cli.ts baseline --request-sample-rate 1.0
+
+# 10% sampling for production monitoring
+tsx src/cli.ts stress --request-sample-rate 0.1
+```
 
 ### Competition Setup
 
@@ -261,18 +293,45 @@ All tests automatically:
 
 ## Reports
 
-Tests generate JSON reports with timestamps:
+Tests generate JSON reports with timestamps in `reports/` directory.
+
+### Single Report Analysis
 
 ```bash
-# View available reports
-ls reports/
-
-# Generate analysis report from latest JSON
+# Analyze latest report
 pnpm analyze:latest
 
-# Analysis generates markdown output to console
-# JSON reports are available for external tools
+# Analyze specific report
+pnpm analyze reports/baseline-20250930-102812.json
+
+# Compare against baseline
+pnpm analyze reports/new.json reports/baseline-ref.json
 ```
+
+### Consolidated Trend Analysis
+
+Consolidate multiple reports of the **same test type** for trend analysis:
+
+```bash
+# Consolidate all baseline reports
+pnpm analyze:consolidate reports/baseline-*.json
+
+# Consolidate last 5 reports (shell command)
+tsx src/agent-trading/report-analyzer.ts --consolidate $(ls -t reports/baseline-*.json | head -5)
+```
+
+**Consolidated reports include:**
+
+- Trend indicators (↑ Degrading / → Stable / ↓ Improving)
+- Best/worst run identification
+- Statistical analysis (min/max/avg/stddev)
+- Side-by-side metrics comparison table
+- Actionable recommendations based on trends and variance
+- Individual run details with pass/fail status
+
+**Type safety:** Consolidation will error if you try to mix different test types (e.g., baseline + stress).
+
+Output: `reports/consolidated-{profile}-{date}.md`
 
 ## Performance Baselines
 
@@ -319,11 +378,13 @@ Simplified workflow with direct parameter inputs:
 
 ### Debug Mode
 
-Enable verbose logging:
+Enable full Sentry span sampling for debugging:
 
 ```bash
-DEBUG=http* npx tsx src/cli.ts baseline
+npx tsx src/cli.ts baseline --request-sample-rate 1.0 --traces-sample-rate 1.0
 ```
+
+This captures 100% of HTTP requests and traces, useful for debugging specific issues.
 
 ## Development
 
@@ -344,6 +405,9 @@ tsx src/cli.ts stress --rate 50 --duration 120 --agents 20
 
 # Custom endurance test
 tsx src/cli.ts stress --rate 5 --duration 14400 --agents 3
+
+# Debug test with 100% Sentry sampling
+tsx src/cli.ts baseline --request-sample-rate 1.0 --traces-sample-rate 1.0
 ```
 
 ## Best Practices
