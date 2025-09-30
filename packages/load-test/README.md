@@ -166,12 +166,18 @@ The consolidated processor (`agent-trading-processor.ts`) provides:
 
 - `overdrawnTrade()`: Insufficient balance attempts
 - `malformedTrade()`: Invalid request formats
-- `disallowedCrossChainTrade()`: Cross-chain when disabled
 
-**Monitoring:**
+**Monitoring & Metrics:**
 
+- `startTestMetrics()`: Initialize test-level metrics
+- `startSetupPhase()`: Track setup phase start
+- `finishSetupPhase()`: Record setup duration and metadata
+- `trackScenarioExecution()`: Track scenario execution counts
+- `startTradeFlow()`: Begin trade flow timing
+- `finishTradeFlow()`: Complete trade flow with success/failure tracking
+- `trackLoadTestMetrics()`: HTTP request performance tracking
+- `cleanupSentry()`: Flush spans before process exit
 - `healthCheck()`: Balance checks without trading
-- `trackLoadTestMetrics()`: Sentry performance tracking
 
 ## Configuration
 
@@ -186,9 +192,61 @@ API_HOST=https://api-load-test.your-domain.com
 # Admin API key for competition/agent creation
 ADMIN_API_KEY=your_admin_key_here
 
-# Optional: Sentry error tracking
+# Optional: Sentry observability
 SENTRY_DSN=your_sentry_dsn_here
+SENTRY_TRACES_SAMPLE_RATE=0.01        # SDK auto-instrumentation sampling (default: 1%)
+SENTRY_SAMPLE_REQUEST=0.01            # Custom span sampling (default: 1%)
+
+# Optional: Test configuration overrides (CLI flags take precedence)
+TEST_DURATION=60                       # Test duration in seconds
+REQUEST_RATE=8                         # Requests per second
+TRADE_AMOUNT=0.1                       # Trade amount in dollars
+TEST_PROFILE=stress                    # Test profile name for tagging
 ```
+
+### Sentry Observability
+
+The load test suite integrates with Sentry for real-time observability and metrics tracking.
+
+**Searchable Span Attributes:**
+
+All HTTP request spans include searchable attributes:
+
+- `load_test.agent_id` - Specific agent performing the request
+- `load_test.duration_seconds` - Test duration configuration
+- `load_test.request_rate` - Configured request rate
+- `load_test.trade_amount` - Trade amount per transaction
+- `load_test.setup.competition_id` - Competition ID for the test run
+- `test_profile` - Test profile name (stress, tge, daily, etc.)
+- `environment` - API host being tested
+- `agents_count` - Number of agents in the test
+- `http.method`, `http.url`, `http.status_code` - Request details
+
+**Query Examples in Sentry:**
+
+```
+# Find all load test spans
+has:load_test.agent_id
+
+# Find spans from specific test profile
+test_profile:stress
+
+# Find spans from specific competition
+load_test.setup.competition_id:YOUR_COMPETITION_ID
+
+# Find high-latency requests
+http.response_time_ms:>1000
+
+# Find errors by agent
+load_test.agent_id:YOUR_AGENT_ID http.status_code:>=400
+```
+
+**Sampling Configuration:**
+
+- `SENTRY_TRACES_SAMPLE_RATE`: Controls SDK auto-instrumentation (default 1%)
+- `SENTRY_SAMPLE_REQUEST`: Controls custom span sampling (default 1%)
+- Set to `1.0` for 100% sampling during debugging
+- Errors are always captured regardless of sampling rate
 
 ### Competition Setup
 
