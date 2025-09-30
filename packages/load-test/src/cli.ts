@@ -10,6 +10,7 @@ import * as fs from "fs";
 interface TestProfile {
   config: string;
   name: string;
+  defaultAgents: string;
 }
 
 interface Options {
@@ -20,6 +21,8 @@ interface Options {
   duration?: string;
   requestRate?: string;
   tradeAmount?: string;
+  tracesSampleRate?: string;
+  requestSampleRate?: string;
 }
 
 // Load environment variables from .env file
@@ -37,42 +40,69 @@ const profiles: Record<string, TestProfile> = {
   baseline: {
     config: "src/agent-trading/configs/stress.yml",
     name: "Baseline Performance Test (8 req/s, 1 min)",
+    defaultAgents: "5",
   },
   stress: {
     config: "src/agent-trading/configs/stress.yml",
     name: "Parameterized Stress Test",
+    defaultAgents: "5",
   },
   tge: {
     config: "src/agent-trading/configs/tge.yml",
     name: "TGE Burst Test",
+    defaultAgents: "200",
   },
   resilience: {
     config: "src/agent-trading/configs/resilience.yml",
     name: "Resilience Test",
+    defaultAgents: "50",
   },
   daily: {
     config: "src/agent-trading/configs/daily.yml",
     name: "Daily Monitoring Test",
+    defaultAgents: "30",
   },
 };
 
 // Parse command line arguments
 function parseArgs(): Options {
   const args = process.argv.slice(2);
-  const options: Options = {
-    profile: "baseline",
-    saveReport: true,
-    envFile: ".env",
-    agents: process.env.AGENTS_COUNT || "5",
-  };
+  let profile = "baseline";
+  let agentsOverride: string | undefined;
 
+  // First pass: determine profile
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (!arg) continue;
 
     // Check for profile names
     if (arg in profiles) {
+      profile = arg;
+      break;
+    }
+  }
+
+  const options: Options = {
+    profile,
+    saveReport: true,
+    envFile: ".env",
+    agents: process.env.AGENTS_COUNT || profiles[profile]?.defaultAgents || "5",
+  };
+
+  // Second pass: parse all arguments
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (!arg) continue;
+
+    // Check for profile names
+    if (arg in profiles) {
+      const selectedProfile = profiles[arg];
       options.profile = arg;
+      // Update agent count with profile default if not explicitly set via CLI
+      if (!agentsOverride && selectedProfile) {
+        options.agents =
+          process.env.AGENTS_COUNT || selectedProfile.defaultAgents;
+      }
       continue;
     }
 
@@ -97,6 +127,7 @@ function parseArgs(): Options {
       case "--agents":
         if (args[i + 1]) {
           options.agents = args[++i]!;
+          agentsOverride = options.agents; // Mark as explicitly set
         }
         break;
       case "--report":
@@ -118,6 +149,16 @@ function parseArgs(): Options {
       case "--trade-amount":
         if (args[i + 1]) {
           options.tradeAmount = args[++i]!;
+        }
+        break;
+      case "--traces-sample-rate":
+        if (args[i + 1]) {
+          options.tracesSampleRate = args[++i]!;
+        }
+        break;
+      case "--request-sample-rate":
+        if (args[i + 1]) {
+          options.requestSampleRate = args[++i]!;
         }
         break;
       default:
@@ -146,13 +187,15 @@ Profiles:
   daily          Daily monitoring test
 
 Options:
-  -n, --no-report       Don't save report file
-  -a, --agents N        Number of agents (default: 5 or AGENTS_COUNT from .env)
-  -e, --env FILE        Environment file (default: .env)
-  -d, --duration N      Test duration in seconds (for stress profile)
-  -r, --rate N          Request rate per second (for stress profile)
-  -t, --trade-amount N  Trade amount in dollars (for stress profile)
-  -h, --help            Show this help
+  -n, --no-report            Don't save report file
+  -a, --agents N             Number of agents (default: 5 or AGENTS_COUNT from .env)
+  -e, --env FILE             Environment file (default: .env)
+  -d, --duration N           Test duration in seconds (for stress profile)
+  -r, --rate N               Request rate per second (for stress profile)
+  -t, --trade-amount N       Trade amount in dollars (for stress profile)
+  --traces-sample-rate N     Sentry SDK traces sample rate 0.0-1.0 (default: 0.01)
+  --request-sample-rate N    Sentry request span sample rate 0.0-1.0 (default: 0.01)
+  -h, --help                 Show this help
 
 Examples:
   tsx src/cli.ts                            # Run baseline test (8 req/s, 1 min)
@@ -160,6 +203,7 @@ Examples:
   tsx src/cli.ts stress -d 1800 -r 16        # 30-minute test at 16 req/s
   tsx src/cli.ts stress -d 7200 -r 8         # 2-hour endurance test
   tsx src/cli.ts baseline -n                # Quick baseline test without report
+  tsx src/cli.ts baseline --request-sample-rate 1.0  # 100% span sampling
   tsx src/cli.ts tge                        # Run TGE burst test
   tsx src/cli.ts resilience                 # Run chaos engineering test
 `);
@@ -177,6 +221,26 @@ function getTimestamp(): string {
   return `${year}${month}${day}-${hours}${minutes}${seconds}`;
 }
 
+// Generate unique test run ID
+function generateTestRunId(profile: string): string {
+  const timestamp = getTimestamp();
+  return `${profile}-${timestamp}`;
+}
+
+// Generate Sentry link for test run
+function getSentryLink(testRunId: string): string | null {
+  const sentryOrg = process.env.SENTRY_ORG || "recallnet";
+  const sentryProjectId = process.env.SENTRY_PROJECT_ID;
+  const sentryDsn = process.env.SENTRY_DSN;
+
+  if (!sentryDsn || !sentryProjectId) {
+    return null;
+  }
+
+  const query = encodeURIComponent(`test_run_id:${testRunId}`);
+  return `https://${sentryOrg}.sentry.io/explore/traces/?environment=perf-testing&project=${sentryProjectId}&statsPeriod=24h&query=${query}`;
+}
+
 // Run Artillery test
 function runTest(options: Options): void {
   const profile = profiles[options.profile];
@@ -188,21 +252,31 @@ function runTest(options: Options): void {
   // Load environment variables
   loadEnv(options.envFile);
 
+  // Generate unique test run ID
+  const testRunId = generateTestRunId(options.profile);
+
   // Build environment for Artillery subprocess (isolated)
   const artilleryEnv: Record<string, string | undefined> = {
     ...process.env,
     AGENTS_COUNT: options.agents,
     TEST_PROFILE: options.profile,
+    TEST_RUN_ID: testRunId,
   };
 
   // Set defaults for generic test parameters (can be overridden via options or env vars)
   const duration = options.duration || process.env.TEST_DURATION || "60"; // Default: 1 minute
   const requestRate = options.requestRate || process.env.REQUEST_RATE || "8"; // Default: 8 req/s
   const tradeAmount = options.tradeAmount || process.env.TRADE_AMOUNT || "0.1"; // Default: $0.10
+  const tracesSampleRate =
+    options.tracesSampleRate || process.env.SENTRY_TRACES_SAMPLE_RATE || "0.01"; // Default: 1%
+  const requestSampleRate =
+    options.requestSampleRate || process.env.SENTRY_SAMPLE_REQUEST || "0.01"; // Default: 1%
 
   artilleryEnv.TEST_DURATION = duration;
   artilleryEnv.REQUEST_RATE = requestRate;
   artilleryEnv.TRADE_AMOUNT = tradeAmount;
+  artilleryEnv.SENTRY_TRACES_SAMPLE_RATE = tracesSampleRate;
+  artilleryEnv.SENTRY_SAMPLE_REQUEST = requestSampleRate;
 
   console.log(`
 ════════════════════════════════════════════
@@ -211,6 +285,7 @@ function runTest(options: Options): void {
 Target: ${process.env.API_HOST || "NOT SET"}
 Agents: ${options.agents}
 Config: ${profile.config}
+Test Run ID: ${testRunId}
 `);
 
   // Build Artillery command
@@ -248,6 +323,13 @@ Config: ${profile.config}
   artillery.on("close", (code) => {
     if (code === 0) {
       console.log("\n✓ Test completed successfully!");
+
+      // Output Sentry link if available
+      const sentryLink = getSentryLink(testRunId);
+      if (sentryLink) {
+        console.log(`\n📊 View results in Sentry:`);
+        console.log(`   ${sentryLink}\n`);
+      }
     } else {
       console.error(`\n✗ Test failed with code ${code}`);
       process.exit(code);

@@ -25,6 +25,10 @@ config:
 
 before:
   flow:
+    # Start Sentry metrics tracking
+    - function: "startTestMetrics"
+    - function: "startSetupPhase"
+
     # Competition setup for TGE
     - get:
         url: "/api/competitions/status"
@@ -54,7 +58,7 @@ before:
             as: "competitionId"
     - log: "Created TGE competition: {{ competitionId }}"
 
-    # Create 200 agents for TGE simulation
+    # Create agents for TGE simulation (configurable via AGENTS_COUNT, defaults to 200)
     - loop:
         - post:
             beforeRequest: "generateRandomUserAndAgent"
@@ -76,21 +80,35 @@ before:
             url: "/api/admin/competitions/{{ competitionId }}/agents/{{ agentId }}"
             headers:
               Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
-      count: 200
+      count: "{{ $env.AGENTS_COUNT }}"
     - post:
         url: "/api/admin/competition/start"
         headers:
           Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
         json:
           competitionId: "{{ competitionId }}"
-    - log: "Started TGE competition with 200 agents"
+    - log: "Started TGE competition with {{ $env.AGENTS_COUNT }} agents"
+
+    # Finish setup phase span
+    - function: "finishSetupPhase"
+
+after:
+  flow:
+    # Flush Sentry spans before exit
+    - function: "cleanupSentry"
 
 scenarios:
   # FOMO buyers - aggressive accumulation
   - name: "fomo-buyers"
     weight: 40
     flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
       - get:
           url: "/api/agent/balances"
           headers:
@@ -102,13 +120,24 @@ scenarios:
             Authorization: "Bearer {{ apiKey }}"
           beforeRequest: "tgeFomoTrade"
           json: {}
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
       - think: 0.5 # Quick decisions in FOMO
 
   # Whale traders - large volume
   - name: "whale-traders"
     weight: 20
     flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
       - get:
           url: "/api/agent/balances"
           headers:
@@ -120,13 +149,24 @@ scenarios:
             Authorization: "Bearer {{ apiKey }}"
           beforeRequest: "whaleTrade"
           json: {}
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
       - think: 1
 
   # Late joiners catching up
   - name: "catchup-traders"
     weight: 30
     flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
       - get:
           url: "/api/agent/balances"
           headers:
@@ -138,13 +178,24 @@ scenarios:
             Authorization: "Bearer {{ apiKey }}"
           beforeRequest: "catchupTrade"
           json: {}
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
       - think: 0.8
 
   # Panic sellers (small percentage)
   - name: "panic-sellers"
     weight: 10
     flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
       - get:
           url: "/api/agent/balances"
           headers:
@@ -157,4 +208,9 @@ scenarios:
           beforeRequest: "panicSell"
           json: {}
           ifTrue: "!skipTrade"
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
       - think: 0.3

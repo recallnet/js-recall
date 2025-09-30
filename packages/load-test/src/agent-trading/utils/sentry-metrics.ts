@@ -27,6 +27,7 @@ export function initializeSentry() {
 export function getMetricTags() {
   return {
     test_profile: process.env.TEST_PROFILE || "stress",
+    test_run_id: process.env.TEST_RUN_ID || "unknown",
     environment: process.env.API_HOST || "unknown",
     agents_count: process.env.AGENTS_COUNT || "1",
   };
@@ -224,6 +225,21 @@ export function trackHttpRequestSpan(
 // Flush Sentry to ensure spans are sent before process exits
 export async function flushSentry() {
   await Sentry.flush(2000); // Wait up to 2 seconds
+}
+
+// Generate Sentry traces explorer link for a specific test run
+export function getSentryLink(): string | null {
+  const sentryOrg = process.env.SENTRY_ORG || "recallnet";
+  const sentryProjectId = process.env.SENTRY_PROJECT_ID;
+  const testRunId = process.env.TEST_RUN_ID;
+
+  if (!process.env.SENTRY_DSN || !testRunId || !sentryProjectId) {
+    return null;
+  }
+
+  // Construct Sentry traces explorer URL
+  const query = encodeURIComponent(`test_run_id:${testRunId}`);
+  return `https://${sentryOrg}.sentry.io/explore/traces/?environment=perf-testing&project=${sentryProjectId}&statsPeriod=24h&query=${query}`;
 }
 
 export function captureError(

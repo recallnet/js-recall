@@ -36,6 +36,10 @@ config:
 
 before:
   flow:
+    # Start Sentry metrics tracking
+    - function: "startTestMetrics"
+    - function: "startSetupPhase"
+
     # Standard competition setup
     - get:
         url: "/api/competitions/status"
@@ -64,7 +68,7 @@ before:
           - json: "$.competition.id"
             as: "competitionId"
 
-    # Create 30 agents for typical traffic
+    # Create agents for typical traffic (configurable via AGENTS_COUNT, defaults to 30)
     - loop:
         - post:
             beforeRequest: "generateRandomUserAndAgent"
@@ -86,7 +90,7 @@ before:
             url: "/api/admin/competitions/{{ competitionId }}/agents/{{ agentId }}"
             headers:
               Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
-      count: 30
+      count: "{{ $env.AGENTS_COUNT }}"
 
     - post:
         url: "/api/admin/competition/start"
@@ -94,14 +98,28 @@ before:
           Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
         json:
           competitionId: "{{ competitionId }}"
-    - log: "Started typical traffic monitoring with 30 agents"
+    - log: "Started typical traffic monitoring with {{ $env.AGENTS_COUNT }} agents"
+
+    # Finish setup phase span
+    - function: "finishSetupPhase"
+
+after:
+  flow:
+    # Flush Sentry spans before exit
+    - function: "cleanupSentry"
 
 scenarios:
   # Regular trading activity
   - name: "regular-trading"
     weight: 70
     flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
       - get:
           url: "/api/agent/balances"
           headers:
@@ -113,17 +131,31 @@ scenarios:
             Authorization: "Bearer {{ apiKey }}"
           beforeRequest: "normalTrade"
           json: {}
-          afterResponse: "logMetrics"
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
       - think: 3 # Normal pause between trades
 
   # Monitoring checks (no trades)
   - name: "monitoring"
     weight: 30
     flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
       - function: "healthCheck"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
       - get:
           url: "/api/agent/balances"
           headers:
             Authorization: "Bearer {{ apiKey }}"
-          afterResponse: "logMetrics"
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
       - think: 5 # Longer pause for monitoring

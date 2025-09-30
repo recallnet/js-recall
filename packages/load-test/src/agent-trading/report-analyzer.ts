@@ -226,7 +226,8 @@ function generateMarkdown(
 }
 
 // CLI Usage - Check if this file is being run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Using require.main for CommonJS compatibility
+if (require.main === module) {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
