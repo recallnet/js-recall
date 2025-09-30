@@ -282,7 +282,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 <span className="text-secondary-foreground font-semibold">
                   {row.original.calmarRatio !== null &&
                   row.original.calmarRatio !== undefined
-                    ? row.original.calmarRatio.toFixed(2)
+                    ? Number(row.original.calmarRatio).toFixed(2)
                     : "-"}
                 </span>
               ),
@@ -301,17 +301,18 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               cell: ({ row }: { row: { original: AgentCompetition } }) => (
                 <span
                   className={`font-semibold ${
-                    row.original.simpleReturn && row.original.simpleReturn > 0
+                    row.original.simpleReturn &&
+                    Number(row.original.simpleReturn) > 0
                       ? "text-green-400"
                       : row.original.simpleReturn &&
-                          row.original.simpleReturn < 0
+                          Number(row.original.simpleReturn) < 0
                         ? "text-red-400"
                         : "text-secondary-foreground"
                   }`}
                 >
                   {row.original.simpleReturn !== null &&
                   row.original.simpleReturn !== undefined
-                    ? `${(row.original.simpleReturn * 100).toFixed(2)}%`
+                    ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
                     : "-"}
                 </span>
               ),
@@ -331,7 +332,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 <span className="font-semibold text-red-400">
                   {row.original.maxDrawdown !== null &&
                   row.original.maxDrawdown !== undefined
-                    ? `${Math.abs(row.original.maxDrawdown * 100).toFixed(2)}%`
+                    ? `${Math.abs(Number(row.original.maxDrawdown) * 100).toFixed(2)}%`
                     : "-"}
                 </span>
               ),
