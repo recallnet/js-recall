@@ -22,14 +22,12 @@ export interface RiskMetricsResult {
 
 /**
  * Service for calculating Calmar Ratio and other risk metrics
- * Calmar Ratio = Annualized Return / Max Drawdown
+ * Calmar Ratio = Return / Max Drawdown
  *
  * NOTE: Mid-competition transfers are now PROHIBITED
  * This service uses simple returns since agents cannot add/withdraw funds during competitions
  */
 export class CalmarRatioService {
-  private readonly DAYS_PER_YEAR = 365; // Calendar days for annualization
-
   /**
    * Calculate and persist Calmar Ratio with all risk metrics
    * Uses simple returns: (endValue/startValue) - 1
@@ -108,22 +106,19 @@ export class CalmarRatioService {
         `[CalmarRatio] Max drawdown calculated: ${(maxDrawdown * 100).toFixed(4)}%`,
       );
 
-      // 4. Annualize the return
-      // Use the actual snapshot period for accurate annualization
+      // 4. Process the return
+      // Calculate the period length for logging purposes
       const daysInPeriod =
         (endSnapshot.timestamp.getTime() - startSnapshot.timestamp.getTime()) /
         (1000 * 60 * 60 * 24);
-      const annualizedReturn = this.annualizeReturn(simpleReturn, daysInPeriod);
+      const periodReturn = this.processReturn(simpleReturn, daysInPeriod);
 
       serviceLogger.debug(
-        `[CalmarRatio] Annualized return: ${(annualizedReturn.toNumber() * 100).toFixed(4)}% over ${daysInPeriod.toFixed(1)} days`,
+        `[CalmarRatio] Period return: ${(periodReturn.toNumber() * 100).toFixed(4)}% over ${daysInPeriod.toFixed(1)} days`,
       );
 
       // 5. Calculate Calmar Ratio
-      const calmarRatio = this.computeCalmarRatio(
-        annualizedReturn,
-        maxDrawdown,
-      );
+      const calmarRatio = this.computeCalmarRatio(periodReturn, maxDrawdown);
 
       serviceLogger.info(
         `[CalmarRatio] Calculated metrics for agent ${agentId}: Calmar=${calmarRatio.toFixed(4)}, Return=${(simpleReturn.toNumber() * 100).toFixed(2)}%, Drawdown=${(maxDrawdown * 100).toFixed(2)}%`,
@@ -135,7 +130,7 @@ export class CalmarRatioService {
         competitionId,
         simpleReturn: simpleReturn.toFixed(8),
         calmarRatio: calmarRatio.toFixed(8),
-        annualizedReturn: annualizedReturn.toFixed(8),
+        annualizedReturn: periodReturn.toFixed(8), // DB field still named annualizedReturn for backward compatibility
         maxDrawdown: maxDrawdown.toFixed(8),
         snapshotCount: 2, // We only use first and last snapshots
       };
@@ -157,17 +152,14 @@ export class CalmarRatioService {
   }
 
   /**
-   * Annualize a return over a given period
-   * Uses compound annualization formula: (1 + r)^(365/days) - 1
+   * Process return for Calmar ratio calculation
+   * Returns raw period return
    *
    * @param periodReturn The return for the period (as Decimal)
-   * @param daysInPeriod Number of days in the period
-   * @returns Annualized return as Decimal
+   * @param daysInPeriod Number of days in the period (kept for logging)
+   * @returns Raw period return as Decimal
    */
-  private annualizeReturn(
-    periodReturn: Decimal,
-    daysInPeriod: number,
-  ): Decimal {
+  private processReturn(periodReturn: Decimal, daysInPeriod: number): Decimal {
     if (daysInPeriod <= 0) {
       serviceLogger.warn(
         `[CalmarRatio] Invalid period length: ${daysInPeriod} days`,
@@ -175,49 +167,38 @@ export class CalmarRatioService {
       return new Decimal(0);
     }
 
-    // For very short periods (< 1 day), don't annualize
-    if (daysInPeriod < 1) {
-      return periodReturn;
-    }
+    // Always return raw period return
+    serviceLogger.debug(
+      `[CalmarRatio] Using raw return for ${daysInPeriod.toFixed(2)} days period`,
+    );
 
-    const yearsInPeriod = daysInPeriod / this.DAYS_PER_YEAR;
-
-    // If period is exactly 1 year, return the period return directly
-    // This avoids pow() operation for the common case
-    if (Math.abs(yearsInPeriod - 1) < 0.0001) {
-      return periodReturn;
-    }
-
-    // Use Decimal for precise calculation
-    const onePlusReturn = new Decimal(1).plus(periodReturn);
-    const exponent = new Decimal(1).div(yearsInPeriod);
-    const annualized = onePlusReturn.pow(exponent).minus(1);
-
-    return annualized;
+    return periodReturn;
   }
 
   /**
    * Calculate Calmar Ratio with proper edge case handling
-   * Calmar = Annualized Return / |Max Drawdown|
+   * Calmar = Return / |Max Drawdown|
    *
-   * @param annualizedReturn Annualized return as Decimal
+   * Note: Using raw return/drawdown ratio
+   *
+   * @param periodReturn Period return as Decimal
    * @param maxDrawdown Maximum drawdown as decimal (negative or 0)
-   * @returns Calmar ratio as Decimal
+   * @returns Calmar ratio as Decimal (Return/Drawdown ratio)
    */
   private computeCalmarRatio(
-    annualizedReturn: Decimal,
+    periodReturn: Decimal,
     maxDrawdown: number,
   ): Decimal {
     // Handle edge cases
     if (maxDrawdown === 0) {
       // No drawdown
-      if (annualizedReturn.greaterThan(0)) {
+      if (periodReturn.greaterThan(0)) {
         // Positive return with no drawdown - cap at 100
         serviceLogger.debug(
           `[CalmarRatio] No drawdown with positive return, capping Calmar at 100`,
         );
         return new Decimal(100);
-      } else if (annualizedReturn.lessThan(0)) {
+      } else if (periodReturn.lessThan(0)) {
         // Negative return with no drawdown - shouldn't happen but handle it
         return new Decimal(-100);
       } else {
@@ -228,6 +209,6 @@ export class CalmarRatioService {
 
     // Normal case: divide return by absolute value of drawdown
     // Since drawdown is negative, we use Math.abs
-    return annualizedReturn.dividedBy(Math.abs(maxDrawdown));
+    return periodReturn.dividedBy(Math.abs(maxDrawdown));
   }
 }
