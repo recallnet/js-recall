@@ -175,8 +175,14 @@ export class CalmarRatioService {
       return new Decimal(0);
     }
 
-    // For very short periods (< 1 day), don't annualize
-    if (daysInPeriod < 1) {
+    // Don't annualize for competitions shorter than 30 days
+    // Annualization over short periods creates misleading astronomical values
+    // For 1-week competitions, we use raw return/drawdown ratio instead
+    const MIN_DAYS_FOR_ANNUALIZATION = 30;
+    if (daysInPeriod < MIN_DAYS_FOR_ANNUALIZATION) {
+      serviceLogger.debug(
+        `[CalmarRatio] Period too short for annualization (${daysInPeriod.toFixed(2)} days < ${MIN_DAYS_FOR_ANNUALIZATION} days). Using raw return.`,
+      );
       return periodReturn;
     }
 
@@ -200,9 +206,12 @@ export class CalmarRatioService {
    * Calculate Calmar Ratio with proper edge case handling
    * Calmar = Annualized Return / |Max Drawdown|
    *
-   * @param annualizedReturn Annualized return as Decimal
+   * Note: For competitions < 30 days, this is actually Return/Drawdown ratio
+   * since we don't annualize short periods to avoid distortion
+   *
+   * @param annualizedReturn Annualized return as Decimal (or raw return for short competitions)
    * @param maxDrawdown Maximum drawdown as decimal (negative or 0)
-   * @returns Calmar ratio as Decimal
+   * @returns Calmar ratio as Decimal (or Return/Drawdown ratio for short competitions)
    */
   private computeCalmarRatio(
     annualizedReturn: Decimal,
