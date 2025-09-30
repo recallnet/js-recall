@@ -1,6 +1,6 @@
-import type { Logger } from "pino";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MockProxy, mock, mockReset } from "vitest-mock-extended";
+import { Logger } from "pino";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MockProxy, mock } from "vitest-mock-extended";
 
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
@@ -10,9 +10,6 @@ import { CalmarRatioService } from "../calmar-ratio.service.js";
 
 describe("CalmarRatioService", () => {
   let service: CalmarRatioService;
-  let mockCompetitionRepo: MockProxy<CompetitionRepository>;
-  let mockPerpsRepo: MockProxy<PerpsRepository>;
-  let mockLogger: MockProxy<Logger>;
 
   // Helper to create mock competition with all required fields
   const createMockCompetition = (
@@ -72,24 +69,20 @@ describe("CalmarRatioService", () => {
     calculationTimestamp: new Date(),
   });
 
+  let mockCompeitionRepo: MockProxy<CompetitionRepository>;
+  let mockPerpsRepo: MockProxy<PerpsRepository>;
+  let mockLogger: MockProxy<Logger>;
+
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockCompetitionRepo = mock<CompetitionRepository>();
+    mockCompeitionRepo = mock<CompetitionRepository>();
     mockPerpsRepo = mock<PerpsRepository>();
     mockLogger = mock<Logger>();
-
     service = new CalmarRatioService(
-      mockCompetitionRepo,
+      mockCompeitionRepo,
       mockPerpsRepo,
       mockLogger,
     );
-  });
-
-  afterEach(() => {
-    mockReset(mockCompetitionRepo);
-    mockReset(mockPerpsRepo);
-    mockReset(mockLogger);
   });
 
   describe("calculateAndSaveCalmarRatio", () => {
@@ -104,11 +97,9 @@ describe("CalmarRatioService", () => {
       const maxDrawdown = -0.2; // 20% drawdown
       const savedMetrics = createMockSavedMetrics();
 
-      mockCompetitionRepo.findById.mockResolvedValue(competition);
-      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(snapshots);
-      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(
-        maxDrawdown,
-      );
+      mockCompeitionRepo.findById.mockResolvedValue(competition);
+      mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(snapshots);
+      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(maxDrawdown);
       mockPerpsRepo.saveRiskMetrics.mockResolvedValue(savedMetrics);
 
       const result = await service.calculateAndSaveCalmarRatio(
@@ -121,13 +112,13 @@ describe("CalmarRatioService", () => {
       expect(result.metrics.calmarRatio).toBe("3.00000000");
 
       // Verify snapshots were fetched
-      expect(mockCompetitionRepo.getFirstAndLastSnapshots).toHaveBeenCalledWith(
+      expect(mockCompeitionRepo.getFirstAndLastSnapshots).toHaveBeenCalledWith(
         competitionId,
         agentId,
       );
 
       // Verify max drawdown calculation uses snapshot dates for consistency
-      expect(mockCompetitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
+      expect(mockCompeitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
         agentId,
         competitionId,
         snapshots.first?.timestamp,
@@ -152,13 +143,13 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      mockCompetitionRepo.findById.mockResolvedValue(
+      mockCompeitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
+      mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 1500), // 50% return
       );
-      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown
+      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown
       mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
@@ -175,13 +166,13 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      mockCompetitionRepo.findById.mockResolvedValue(
+      mockCompeitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
+      mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 900), // -10% return
       );
-      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown (weird but possible)
+      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown (weird but possible)
       mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
@@ -200,11 +191,11 @@ describe("CalmarRatioService", () => {
       const startDate = new Date("2025-01-20T10:00:00Z");
       const endDate = new Date("2025-01-20T14:00:00Z"); // 4 hours
 
-      mockCompetitionRepo.findById.mockResolvedValue(
+      mockCompeitionRepo.findById.mockResolvedValue(
         createMockCompetition(startDate, endDate),
       );
       // Create custom snapshots with 4-hour gap for this test
-      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue({
+      mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue({
         first: {
           id: 1,
           agentId: "agent-456",
@@ -220,7 +211,7 @@ describe("CalmarRatioService", () => {
           timestamp: new Date("2025-01-20T14:00:00Z"), // 4 hours later
         },
       });
-      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.005); // 0.5% drawdown
+      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.005); // 0.5% drawdown
       mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
@@ -239,22 +230,22 @@ describe("CalmarRatioService", () => {
       const competitionId = "comp-123";
       const startDate = new Date("2025-01-20");
 
-      mockCompetitionRepo.findById.mockResolvedValue(
+      mockCompeitionRepo.findById.mockResolvedValue(
         createMockCompetition(startDate), // No end date
       );
 
       const mockSnapshots = createMockSnapshots(1000, 1100); // 10% return
-      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
+      mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         mockSnapshots,
       );
-      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.05);
+      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.05);
       mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
 
       // Verify max drawdown was called with snapshot dates for consistency
       // This ensures return and drawdown are calculated over the same time period
-      expect(mockCompetitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
+      expect(mockCompeitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
         agentId,
         competitionId,
         mockSnapshots.first?.timestamp, // Use first snapshot date
@@ -266,14 +257,14 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      mockCompetitionRepo.findById.mockResolvedValue(undefined);
+      mockCompeitionRepo.findById.mockResolvedValue(undefined);
 
       await expect(
         service.calculateAndSaveCalmarRatio(agentId, competitionId),
       ).rejects.toThrow(`Competition ${competitionId} not found`);
 
       expect(
-        mockCompetitionRepo.getFirstAndLastSnapshots,
+        mockCompeitionRepo.getFirstAndLastSnapshots,
       ).not.toHaveBeenCalled();
       expect(mockPerpsRepo.saveRiskMetrics).not.toHaveBeenCalled();
     });
@@ -282,7 +273,7 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      mockCompetitionRepo.findById.mockResolvedValue(
+      mockCompeitionRepo.findById.mockResolvedValue(
         createMockCompetition(null), // No start date
       );
 
@@ -295,10 +286,10 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      mockCompetitionRepo.findById.mockResolvedValue(
+      mockCompeitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue({
+      mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue({
         first: null,
         last: null,
       });
@@ -312,10 +303,10 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      mockCompetitionRepo.findById.mockResolvedValue(
+      mockCompeitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
+      mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(0, 1000), // Starting value is 0
       );
 
@@ -328,13 +319,13 @@ describe("CalmarRatioService", () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
-      mockCompetitionRepo.findById.mockResolvedValue(
+      mockCompeitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
+      mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 800), // -20% return
       );
-      mockCompetitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.25); // 25% drawdown
+      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.25); // 25% drawdown
       mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
