@@ -22,20 +22,10 @@ interface TrophyBadgeProps {
   size?: number;
 }
 
-// =================================================================
-// ONE PLACE TO SCALE & CONFIGURE
-// =================================================================
-const CONFIG = {
-  /** The default width of the badge in pixels. */
-  DEFAULT_SIZE: 64,
-  /** The thickness of the border on each side in pixels. */
-  BORDER_THICKNESS: 2,
-  /** The zoom level of the image inside the hexagon (1.0 = 100%, 1.1 = 110%). */
-  IMAGE_ZOOM: 1.2,
-  /** The aspect ratio factor to calculate height from width (55 / 64). */
-  ASPECT_RATIO_HEIGHT_FACTOR: 0.859375,
-};
-// =================================================================
+const DEFAULT_SIZE = 64;
+const BORDER_THICKNESS = 2;
+const IMAGE_ZOOM = 1.2;
+const ASPECT_RATIO_HEIGHT_FACTOR = 0.859375;
 
 const rankColors: Record<number, string> = {
   1: "bg-trophy-first",
@@ -44,9 +34,9 @@ const rankColors: Record<number, string> = {
 };
 
 const getDimensions = (size: number | undefined) => {
-  const effectiveW = size || CONFIG.DEFAULT_SIZE;
-  const effectiveH = effectiveW * CONFIG.ASPECT_RATIO_HEIGHT_FACTOR;
-  const borderThickness = CONFIG.BORDER_THICKNESS;
+  const effectiveW = size || DEFAULT_SIZE;
+  const effectiveH = effectiveW * ASPECT_RATIO_HEIGHT_FACTOR;
+  const borderThickness = BORDER_THICKNESS;
 
   const innerW = effectiveW - borderThickness * 2;
   const innerH = effectiveH - borderThickness * 2;
@@ -57,7 +47,7 @@ const getDimensions = (size: number | undefined) => {
     innerW: innerW,
     innerH: innerH,
     borderThickness: borderThickness,
-    imageZoom: CONFIG.IMAGE_ZOOM, // Pass the zoom level
+    imageZoom: IMAGE_ZOOM, // Pass the zoom level
   };
 };
 
