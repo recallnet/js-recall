@@ -141,7 +141,7 @@ export function CompetitionTable({
                             CR:{" "}
                             {comp.calmarRatio !== null &&
                             comp.calmarRatio !== undefined
-                              ? comp.calmarRatio.toFixed(2)
+                              ? Number(comp.calmarRatio).toFixed(2)
                               : "n/a"}
                           </span>
                           <span className="text-xs text-gray-500">
