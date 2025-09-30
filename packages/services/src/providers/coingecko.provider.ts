@@ -20,6 +20,10 @@ export interface CoinGeckoProviderConfig {
   logger: Logger;
 }
 
+/**
+ * CoinGecko price provider implementation
+ * Provides cryptocurrency price data using the CoinGecko API
+ */
 export class CoinGeckoProvider implements PriceSource {
   private readonly API_KEY: string;
   private readonly mode: "pro" | "demo";
@@ -49,6 +53,10 @@ export class CoinGeckoProvider implements PriceSource {
   private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
 
+  /**
+   * Creates a new CoinGecko provider instance
+   * Initializes the CoinGecko client with appropriate configuration based on environment
+   */
   constructor(config: CoinGeckoProviderConfig) {
     this.API_KEY = config.apiKey;
     this.mode = config.mode;
@@ -73,10 +81,19 @@ export class CoinGeckoProvider implements PriceSource {
     this.client = new Coingecko(opts);
   }
 
+  /**
+   * Gets the name of this price provider
+   * @returns The provider name "CoinGecko"
+   */
   getName(): string {
     return "CoinGecko";
   }
 
+  /**
+   * Determines the blockchain type based on token address format
+   * @param tokenAddress - The token contract address
+   * @returns The blockchain type (EVM or SVM)
+   */
   determineChain(tokenAddress: string): BlockchainType {
     if (!tokenAddress.startsWith("0x")) {
       return BlockchainType.SVM;
@@ -84,6 +101,12 @@ export class CoinGeckoProvider implements PriceSource {
     return BlockchainType.EVM;
   }
 
+  /**
+   * Checks if a token is a stablecoin (USDC or USDT) on the specified chain
+   * @param tokenAddress - The token contract address
+   * @param specificChain - The specific blockchain identifier
+   * @returns True if the token is a known stablecoin, false otherwise
+   */
   public isStablecoin(
     tokenAddress: string,
     specificChain: SpecificChain,
@@ -100,6 +123,11 @@ export class CoinGeckoProvider implements PriceSource {
     );
   }
 
+  /**
+   * Checks if a token address is a known burn address
+   * @param tokenAddress - The token contract address to check
+   * @returns True if the address is a burn address, false otherwise
+   */
   private isBurnAddress(tokenAddress: string): boolean {
     const normalizedAddress = tokenAddress.toLowerCase();
     if (normalizedAddress === "0x000000000000000000000000000000000000dead") {
@@ -113,6 +141,9 @@ export class CoinGeckoProvider implements PriceSource {
 
   /**
    * Fetch coin data directly using contract address and platform
+   * @param tokenAddress - The token contract address
+   * @param platform - The CoinGecko platform identifier (e.g., "ethereum", "polygon-pos")
+   * @returns Token information including price data, or null if not found
    */
   private async fetchPriceDirect(
     tokenAddress: string,
@@ -174,6 +205,13 @@ export class CoinGeckoProvider implements PriceSource {
     return null;
   }
 
+  /**
+   * Gets the current price and market data for a single token
+   * @param tokenAddress - The token contract address
+   * @param chain - The blockchain type (EVM or SVM)
+   * @param specificChain - The specific blockchain identifier
+   * @returns A price report with token information, or null if not found
+   */
   async getPrice(
     tokenAddress: string,
     chain: BlockchainType,
@@ -217,10 +255,10 @@ export class CoinGeckoProvider implements PriceSource {
 
   /**
    * Get prices for multiple tokens in batches
-   * @param tokenAddresses Array of token addresses
-   * @param chain Blockchain type
-   * @param specificChain Specific chain identifier
-   * @returns Map of token addresses to their price information
+   * @param tokenAddresses - Array of token addresses to fetch prices for
+   * @param chain - Blockchain type (EVM or SVM)
+   * @param specificChain - Specific chain identifier
+   * @returns Map of token addresses to their price information (null if not found)
    */
   async getBatchPrices(
     tokenAddresses: string[],
@@ -275,9 +313,9 @@ export class CoinGeckoProvider implements PriceSource {
 
   /**
    * Fetch prices for a batch of tokens using CoinGecko API
-   * @param tokenAddresses Array of token addresses (max 100)
-   * @param platform CoinGecko platform identifier
-   * @returns Map of token addresses to their price information
+   * @param tokenAddresses - Array of token addresses (max 100 per batch)
+   * @param platform - CoinGecko platform identifier (e.g., "ethereum", "polygon-pos")
+   * @returns Map of token addresses to their price information (null if not found)
    */
   private async fetchBatchPrices(
     tokenAddresses: string[],
