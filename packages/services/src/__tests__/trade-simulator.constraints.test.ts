@@ -1,37 +1,31 @@
 import { randomUUID } from "crypto";
-import pino from "pino";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { DeepMockProxy, mockDeep } from "vitest-mock-extended";
-
-import { TradeRepository } from "@recallnet/db/repositories/trade";
-import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
-
-import { BalanceService } from "../balance.service.js";
-import { CompetitionService } from "../competition.service.js";
+import { Logger } from "pino";
 import {
-  PriceTrackerService,
-  PriceTrackerServiceConfig,
-} from "../price-tracker.service.js";
-import { DexScreenerProvider } from "../providers/price/dexscreener.provider.js";
-import {
-  SimulatedTradeExecutionService,
-  SimulatedTradeExecutionServiceConfig,
-  SimulatedTradeExecutionServiceFeatures,
-} from "../simulated-trade-execution.service.js";
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+
+import { PriceTrackerService } from "../price-tracker.service.js";
+import { SimulatedTradeExecutionService } from "../simulated-trade-execution.service.js";
 import { TradeSimulatorService } from "../trade-simulator.service.js";
-import {
-  BlockchainType,
-  PriceReport,
-  SpecificChainTokens,
-} from "../types/index.js";
+import { BlockchainType, PriceReport } from "../types/index.js";
 
-const serviceLogger = pino.default();
+// Mock dependencies for unit tests
+vi.mock("../balance.service.js");
+vi.mock("../competition.service.js");
+vi.mock("../price-tracker.service.js");
+vi.mock("../trade-simulator.service.js");
 
-// Trading constraint constants from config
-const MINIMUM_PAIR_AGE_HOURS = 168;
-const MINIMUM_24H_VOLUME_USD = 100000;
-const MINIMUM_LIQUIDITY_USD = 100000;
-const MINIMUM_FDV_USD = 1000000;
+// Trading constraint constants (hardcoded for testing)
+const MINIMUM_PAIR_AGE_HOURS = 168; // 7 days
+const MINIMUM_24H_VOLUME_USD = 100000; // $100k
+const MINIMUM_LIQUIDITY_USD = 500000; // $500k
+const MINIMUM_FDV_USD = 1000000; // $1M
 
 // Default constraints object for testing
 const DEFAULT_CONSTRAINTS = {
@@ -42,14 +36,28 @@ const DEFAULT_CONSTRAINTS = {
 };
 
 describe("SimulatedTradeExecutionService - Trading Constraints", () => {
+  // Shared logger for all tests
+  let mockLogger: Logger;
+
+  beforeAll(() => {
+    mockLogger = {
+      info: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+    } as unknown as Logger;
+  });
+
   describe("Unit Tests", () => {
     let tradeExecutor: SimulatedTradeExecutionService;
-    let mockBalanceService: DeepMockProxy<BalanceService>;
-    let mockCompetitionService: DeepMockProxy<CompetitionService>;
-    let mockPriceTracker: DeepMockProxy<PriceTrackerService>;
-    let mockTradeRepository: DeepMockProxy<TradeRepository>;
-    let mockTradingConstraintsRepo: DeepMockProxy<TradingConstraintsRepository>;
-    let mockDexScreenerProvider: DeepMockProxy<DexScreenerProvider>;
+    let mockBalanceService: any;
+    let mockCompetitionService: any;
+    let mockPriceTracker: any;
+    let mockTradeRepo: any;
+    let mockTradingConstraintsRepo: any;
+    let mockDexScreenerProvider: any;
+    let mockConfig: any;
+    let mockFeatures: any;
 
     // Mock constraints used across all tests
     const mockConstraints = {
@@ -59,83 +67,108 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
       minimumFdvUsd: MINIMUM_FDV_USD,
     };
 
-    const mockSpecificChainTokens: SpecificChainTokens = {
-      eth: {
-        eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
-        usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
-        usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
-      },
-      polygon: {
-        eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Weth on Polygon
-        usdc: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // USDC on Polygon
-        usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT on Polygon
-      },
-      base: {
-        eth: "0x4200000000000000000000000000000000000006", // WETH on Base
-        usdc: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
-        usdt: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", // USDT on Base
-      },
-      svm: {
-        sol: "So11111111111111111111111111111111111111112",
-        usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-        usdt: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-      },
-      arbitrum: {
-        eth: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1", // WETH on Arbitrum
-        usdc: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", // Native USDC on Arbitrum
-        usdt: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT on Arbitrum
-      },
-      optimism: {
-        eth: "0x4200000000000000000000000000000000000006", // WETH on Optimism
-        usdc: "0x7f5c764cbc14f9669b88837ca1490cca17c31607", // USDC on Optimism
-        usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58", // USDT on Optimism
-      },
-    };
-
-    const mockConfig: SimulatedTradeExecutionServiceConfig = {
-      maxTradePercentage: 0.25,
-      specificChainTokens: mockSpecificChainTokens,
-      tradingConstraints: {
-        defaultMinimumPairAgeHours: MINIMUM_PAIR_AGE_HOURS,
-        defaultMinimum24hVolumeUsd: MINIMUM_24H_VOLUME_USD,
-        defaultMinimumLiquidityUsd: MINIMUM_LIQUIDITY_USD,
-        defaultMinimumFdvUsd: MINIMUM_FDV_USD,
-      },
-    };
-
-    const mockFeatures: SimulatedTradeExecutionServiceFeatures = {
-      CROSS_CHAIN_TRADING_TYPE: "disallowAll",
-    };
-
     beforeEach(() => {
-      // Create type-safe mock implementations
-      mockBalanceService = mockDeep<BalanceService>();
-      mockCompetitionService = mockDeep<CompetitionService>();
-      mockPriceTracker = mockDeep<PriceTrackerService>();
-      mockTradeRepository = mockDeep<TradeRepository>();
-      mockTradingConstraintsRepo = mockDeep<TradingConstraintsRepository>();
-      mockDexScreenerProvider = mockDeep<DexScreenerProvider>();
+      // Create mock implementations
+      mockBalanceService = {
+        getBalance: vi.fn(),
+        setBalanceCache: vi.fn(),
+      };
 
-      // Create TradeSimulatorService with mocked dependencies
-      const mockTradeSimulatorService = new TradeSimulatorService(
-        mockBalanceService,
-        mockPriceTracker,
-        mockTradeRepository,
-        serviceLogger,
-      );
+      mockCompetitionService = {
+        getCompetition: vi.fn(),
+        isAgentActiveInCompetition: vi.fn(),
+      };
+
+      mockPriceTracker = {
+        determineChain: vi.fn(),
+        getPrice: vi.fn(),
+      };
+
+      const mockTradeSimulatorService = {
+        calculatePortfolioValue: vi.fn(),
+      };
+
+      mockTradeRepo = {
+        create: vi.fn(),
+      };
+
+      mockTradingConstraintsRepo = {
+        findByCompetitionId: vi.fn(),
+      };
+
+      mockDexScreenerProvider = {
+        getTokenPairData: vi.fn(),
+        isStablecoin: vi.fn().mockImplementation((symbol: string) => {
+          // Return true for stablecoins and SOL to exempt them from FDV checks
+          return symbol === "USDC" || symbol === "SOL";
+        }),
+      };
+
+      mockConfig = {
+        specificChainTokens: {
+          eth: {
+            eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
+            usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
+            usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
+          },
+          polygon: {
+            eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Weth on Polygon
+            usdc: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // USDC on Polygon
+            usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT on Polygon
+          },
+          base: {
+            eth: "0x4200000000000000000000000000000000000006", // WETH on Base
+            usdc: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
+            usdt: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", // USDT on Base
+          },
+          svm: {
+            sol: "So11111111111111111111111111111111111111112",
+            usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            usdt: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+          },
+          arbitrum: {
+            eth: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1", // WETH on Arbitrum
+            usdc: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", // Native USDC on Arbitrum
+            usdt: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT on Arbitrum
+          },
+          optimism: {
+            eth: "0x4200000000000000000000000000000000000006", // WETH on Optimism
+            usdc: "0x7f5c764cbc14f9669b88837ca1490cca17c31607", // USDC on Optimism
+            usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58", // USDT on Optimism
+          },
+        },
+        maxTradePercentage: 25,
+        tradingConstraints: {
+          defaultMinimumPairAgeHours: MINIMUM_PAIR_AGE_HOURS,
+          defaultMinimum24hVolumeUsd: MINIMUM_24H_VOLUME_USD,
+          defaultMinimumLiquidityUsd: MINIMUM_LIQUIDITY_USD,
+          defaultMinimumFdvUsd: MINIMUM_FDV_USD,
+        },
+      };
+
+      mockFeatures = {
+        enableAdvancedValidation: true,
+      };
+
+      mockLogger = {
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+      } as unknown as Logger;
 
       // Create SimulatedTradeExecutionService instance with mocked dependencies
       tradeExecutor = new SimulatedTradeExecutionService(
         mockCompetitionService,
-        mockTradeSimulatorService,
+        mockTradeSimulatorService as unknown as TradeSimulatorService,
         mockBalanceService,
         mockPriceTracker,
-        mockTradeRepository,
+        mockTradeRepo,
         mockTradingConstraintsRepo,
         mockDexScreenerProvider,
         mockConfig,
         mockFeatures,
-        serviceLogger,
+        mockLogger,
       );
     });
 
@@ -150,7 +183,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "VALID",
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000, // 200 hours ago
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 2000000,
         };
 
@@ -175,7 +208,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "YOUNG",
           pairCreatedAt: Date.now() - 100 * 60 * 60 * 1000, // 100 hours ago
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 2000000,
         };
 
@@ -199,7 +232,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "NOTIME",
           pairCreatedAt: undefined,
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 2000000,
         };
 
@@ -223,7 +256,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "LOWVOL",
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000, // 200 hours ago
           volume: { h24: 50000 }, // Below minimum
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 2000000,
         };
 
@@ -247,7 +280,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "NOVOL",
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000, // 200 hours ago
           volume: undefined,
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 2000000,
         };
 
@@ -327,7 +360,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "LOWFDV",
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000, // 200 hours ago
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 500000, // Below minimum
         };
 
@@ -351,7 +384,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "NOFDV",
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000, // 200 hours ago
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: undefined,
         };
 
@@ -425,7 +458,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000, // 200 hours ago
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           volume: { h24: null as any },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 2000000,
         };
 
@@ -449,7 +482,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "SOL",
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000, // 200 hours ago
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: undefined, // No FDV data - but should pass due to exemption
         };
 
@@ -473,7 +506,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "USDC",
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000, // 200 hours ago
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: undefined, // No FDV data - but should pass due to exemption
         };
 
@@ -503,7 +536,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "FROM",
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000,
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 2000000,
         };
 
@@ -516,7 +549,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "INVALID",
           pairCreatedAt: Date.now() - 100 * 60 * 60 * 1000, // Too young
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 2000000,
         };
 
@@ -524,11 +557,12 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           .mockResolvedValueOnce(validFromPrice)
           .mockResolvedValueOnce(invalidToPrice);
 
-        // Mock competition service responses - use mockDeep to avoid complex typing
-        mockCompetitionService.getCompetition.mockResolvedValue(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          mockDeep<any>(),
-        );
+        // Mock competition service responses
+        mockCompetitionService.getCompetition.mockResolvedValue({
+          id: "comp-1",
+          name: "Test Competition",
+          endDate: null,
+        });
         mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(
           true,
         );
@@ -559,7 +593,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           symbol: "FROM",
           pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000,
           volume: { h24: 500000 },
-          liquidity: { usd: 200000 },
+          liquidity: { usd: 600000 },
           fdv: 2000000,
         };
 
@@ -582,11 +616,12 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
 
         // For burn tokens, constraints should be skipped, but the trade may still fail due to mocking limitations
         // The important thing is that constraints are skipped for burn tokens
-        // Mock competition service responses - use mockDeep to avoid complex typing
-        mockCompetitionService.getCompetition.mockResolvedValue(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          mockDeep<any>(),
-        );
+        // Mock competition service responses
+        mockCompetitionService.getCompetition.mockResolvedValue({
+          id: "comp-1",
+          name: "Test Competition",
+          endDate: null,
+        });
         mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(
           true,
         );
@@ -658,28 +693,19 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
 
     beforeAll(() => {
       // Keep console logging for SOL test
-      originalConsoleLog = serviceLogger.debug;
-      // Don't mock serviceLogger.debug so we can see the constraint data
+      originalConsoleLog = mockLogger.debug;
+      // Don't mock mockLogger.debug so we can see the constraint data
 
-      // Create PriceTrackerService with minimal mocked dependencies
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mockMultiChainProvider = mockDeep<any>();
-      const mockPriceTrackerConfig: PriceTrackerServiceConfig = {
-        priceTracker: {
-          maxCacheSize: 1000,
-          priceTTLMs: 60000,
-        },
-      };
       priceTracker = new PriceTrackerService(
-        mockMultiChainProvider,
-        mockPriceTrackerConfig,
-        serviceLogger,
+        {} as any, // mockMultiChainProvider
+        {} as any, // mockConfig
+        mockLogger,
       );
     });
 
     afterAll(() => {
-      // Restore serviceLogger.debug
-      serviceLogger.debug = originalConsoleLog;
+      // Restore mockLogger.debug
+      mockLogger.debug = originalConsoleLog;
     });
 
     describe("Real Token Constraint Validation", () => {
@@ -703,9 +729,9 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           expect(priceData.symbol).toBeTruthy();
 
           // Log token information for debugging
-          serviceLogger.debug(`\n--- ${token.name} Constraint Analysis ---`);
-          serviceLogger.debug(`Price: $${priceData.price}`);
-          serviceLogger.debug(`Symbol: ${priceData.symbol}`);
+          mockLogger.debug(`\n--- ${token.name} Constraint Analysis ---`);
+          mockLogger.debug(`Price: $${priceData.price}`);
+          mockLogger.debug(`Symbol: ${priceData.symbol}`);
 
           // Check individual constraints
           let constraintsPassed = 0;
@@ -716,14 +742,14 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
             const pairAgeHours =
               (Date.now() - priceData.pairCreatedAt) / (1000 * 60 * 60);
             const passesAgeCheck = pairAgeHours > MINIMUM_PAIR_AGE_HOURS;
-            serviceLogger.debug(
+            mockLogger.debug(
               `Pair Age: ${pairAgeHours.toFixed(2)} hours ${passesAgeCheck ? "✅" : "❌"}`,
             );
 
             if (passesAgeCheck) constraintsPassed++;
             else constraintsFailed++;
           } else {
-            serviceLogger.debug(`Pair Age: N/A ❌`);
+            mockLogger.debug(`Pair Age: N/A ❌`);
             constraintsFailed++;
           }
 
@@ -731,14 +757,14 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           if (priceData.volume?.h24) {
             const passesVolumeCheck =
               priceData.volume.h24 > MINIMUM_24H_VOLUME_USD;
-            serviceLogger.debug(
+            mockLogger.debug(
               `24h Volume: $${priceData.volume.h24.toLocaleString()} ${passesVolumeCheck ? "✅" : "❌"} (min: $${MINIMUM_24H_VOLUME_USD.toLocaleString()})`,
             );
 
             if (passesVolumeCheck) constraintsPassed++;
             else constraintsFailed++;
           } else {
-            serviceLogger.debug(`24h Volume: N/A ❌`);
+            mockLogger.debug(`24h Volume: N/A ❌`);
             constraintsFailed++;
           }
 
@@ -746,37 +772,37 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           if (priceData.liquidity?.usd) {
             const passesLiquidityCheck =
               priceData.liquidity.usd > MINIMUM_LIQUIDITY_USD;
-            serviceLogger.debug(
+            mockLogger.debug(
               `Liquidity: $${priceData.liquidity.usd.toLocaleString()} ${passesLiquidityCheck ? "✅" : "❌"}`,
             );
 
             if (passesLiquidityCheck) constraintsPassed++;
             else constraintsFailed++;
           } else {
-            serviceLogger.debug(`Liquidity: N/A ❌`);
+            mockLogger.debug(`Liquidity: N/A ❌`);
             constraintsFailed++;
           }
 
           // 4. FDV constraint
           if (priceData.fdv) {
             const passesFdvCheck = priceData.fdv > MINIMUM_FDV_USD;
-            serviceLogger.debug(
+            mockLogger.debug(
               `FDV: $${priceData.fdv.toLocaleString()} ${passesFdvCheck ? "✅" : "❌"}`,
             );
 
             if (passesFdvCheck) constraintsPassed++;
             else constraintsFailed++;
           } else {
-            serviceLogger.debug(`FDV: N/A ❌`);
+            mockLogger.debug(`FDV: N/A ❌`);
             constraintsFailed++;
           }
 
           // Overall assessment
           const allConstraintsMet = constraintsFailed === 0;
-          serviceLogger.debug(
+          mockLogger.debug(
             `Overall: ${allConstraintsMet ? "TRADEABLE ✅" : "NOT TRADEABLE ❌"}`,
           );
-          serviceLogger.debug(
+          mockLogger.debug(
             `Constraints passed: ${constraintsPassed}/4, failed: ${constraintsFailed}/4`,
           );
 
@@ -946,7 +972,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           expect(priceData).toHaveProperty("liquidity");
           expect(priceData).toHaveProperty("fdv");
 
-          serviceLogger.debug(
+          mockLogger.debug(
             `${token.name} - Chain: ${priceData.chain}, Specific: ${priceData.specificChain}`,
           );
         }
