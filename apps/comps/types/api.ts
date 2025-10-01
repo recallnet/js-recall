@@ -45,6 +45,7 @@ export interface GetAgentCompetitionsParams {
 
 // GET /leaderboard query parameters
 export interface GetLeaderboardParams {
+  enabled?: boolean;
   type?: string;
   limit?: number;
   offset?: number;
