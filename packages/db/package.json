@@ -359,6 +359,7 @@
   "scripts": {
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
+    "test:coverage": "vitest run --coverage",
     "clean": "rm -rf .turbo node_modules dist",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write . --ignore-path=../../.prettierignore",
@@ -381,6 +382,7 @@
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "drizzle-kit": "^0.31.1",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
