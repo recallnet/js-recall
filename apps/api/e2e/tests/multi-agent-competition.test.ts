@@ -1,6 +1,8 @@
 import axios from "axios";
 import { assert, beforeEach, describe, expect, test } from "vitest";
 
+import { BlockchainType } from "@recallnet/services/types";
+
 import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
@@ -22,7 +24,6 @@ import {
   wait,
 } from "@/e2e/utils/test-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { BlockchainType } from "@/types/index.js";
 
 describe("Multi-Agent Competition", () => {
   const services = new ServiceRegistry();

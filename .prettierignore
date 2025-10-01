@@ -12,3 +12,4 @@ packages/fonts/src/*
 **/.next
 **/.turbo
 **/coverage
+**/reports

@@ -10,7 +10,7 @@ export type BoostAllocation = {
   /** The competitor's address or identifier */
   competitor: string;
   /** The amount of boost allocated */
-  boost: number;
+  boost: bigint;
   /** The timestamp when the boost was allocated */
   timestamp: Date;
 };
@@ -54,6 +54,8 @@ export type Reward = {
 export type Placement = {
   /** The competitor's identifier */
   competitor: string;
+  /** The competitor's wallet */
+  wallet: string;
   /** The rank of the competitor */
   rank: number;
 };

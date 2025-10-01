@@ -22,12 +22,45 @@
       "exclude": ["**/*.test.tsx", "**/*.test.ts"],
       "testFramework": "vitest"
     },
+    "packages/conversions": {
+      "thresholds": {
+        "lines": 100,
+        "statements": 100,
+        "functions": 100,
+        "branches": 100
+      },
+      "include": ["src/**/*.ts"],
+      "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],
+      "testFramework": "vitest"
+    },
+    "packages/db": {
+      "thresholds": {
+        "lines": 0,
+        "statements": 0,
+        "functions": 10,
+        "branches": 10
+      },
+      "include": ["src/**/*.ts"],
+      "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],
+      "testFramework": "vitest"
+    },
     "packages/rewards": {
       "thresholds": {
         "lines": 100,
         "statements": 100,
         "functions": 100,
         "branches": 100
+      },
+      "include": ["src/**/*.ts"],
+      "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],
+      "testFramework": "vitest"
+    },
+    "packages/services": {
+      "thresholds": {
+        "lines": 30,
+        "statements": 30,
+        "functions": 60,
+        "branches": 70
       },
       "include": ["src/**/*.ts"],
       "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],

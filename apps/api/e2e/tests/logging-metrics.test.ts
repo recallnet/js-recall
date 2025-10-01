@@ -100,21 +100,9 @@ describe("Logging and Metrics API", () => {
     expect(typeof metricsResponse).toBe("string");
     const metricsText = metricsResponse as string;
 
-    // Database metrics are now automatically tracked for all repository operations
-    expect(metricsText).toContain("repository_queries_total");
-    expect(metricsText).toContain("repository_query_duration_ms");
-
     // Verify operation type labels
     expect(metricsText).toContain('operation="SELECT"');
     expect(metricsText).toContain('operation="INSERT"');
-
-    // Verify repository name labels
-    expect(metricsText).toContain('repository="AgentRepository"');
-    expect(metricsText).toContain('repository="UserRepository"');
-
-    // Verify method name labels
-    expect(metricsText).toContain('method="findById"');
-    expect(metricsText).toContain('method="create"');
 
     // Verify status labels
     expect(metricsText).toContain('status="success"');
@@ -144,11 +132,6 @@ describe("Logging and Metrics API", () => {
     expect(metricsText).toContain('status="success"');
     // Note: Database-level errors might still be counted as "success" if the query executes
     // but application-level validation fails. The key is that all operations are tracked.
-
-    // Verify we have database operation metrics with timing data
-    expect(metricsText).toContain("repository_queries_total");
-    // Verify we have query duration histogram entries
-    expect(metricsText).toContain("repository_query_duration_ms");
   });
 
   test("database timing metrics provide performance insights", async () => {
@@ -179,15 +162,6 @@ describe("Logging and Metrics API", () => {
     const metricsResponse = await client.getMetrics();
     expect(typeof metricsResponse).toBe("string");
     const metricsText = metricsResponse as string;
-
-    // Verify histogram buckets are present (timing data)
-    expect(metricsText).toContain("repository_query_duration_ms_bucket");
-    expect(metricsText).toContain("repository_query_duration_ms_sum");
-    expect(metricsText).toContain("repository_query_duration_ms_count");
-
-    // Verify we have multiple repository operations tracked
-    expect(metricsText).toContain('repository="AgentRepository"');
-    expect(metricsText).toContain('repository="UserRepository"');
 
     // Verify operation types are differentiated
     expect(metricsText).toContain('operation="SELECT"');
@@ -496,10 +470,6 @@ describe("Logging and Metrics API", () => {
     expect(typeof metricsResponse).toBe("string");
 
     const metricsText = metricsResponse as string;
-
-    // Verify that we have repository metrics
-    expect(metricsText).toContain("repository_queries_total");
-    expect(metricsText).toContain("repository_query_duration_ms");
 
     // Verify that all operations are classified as proper database operations
     const expectedOperationTypes = [

@@ -17,10 +17,10 @@ import * as readline from "readline";
 import { parse } from "ts-command-line-args";
 
 import { agents } from "@recallnet/db/schema/core/defs";
+import { decryptApiKey, hashApiKey } from "@recallnet/services/lib";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
-import { decryptApiKey, hashApiKey } from "@/lib/api-key-utils.js";
 
 interface Args {
   execute?: boolean;

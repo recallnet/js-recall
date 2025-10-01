@@ -1,9 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 
+import {
+  ApiError,
+  BlockchainType,
+  SpecificChain,
+} from "@recallnet/services/types";
+
 import { priceLogger } from "@/lib/logger.js";
-import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { BlockchainType, SpecificChain } from "@/types/index.js";
 
 export function makePriceController(services: ServiceRegistry) {
   /**

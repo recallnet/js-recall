@@ -1,8 +1,12 @@
 import dotenv from "dotenv";
 import path from "path";
 
+import {
+  CrossChainTradingType,
+  SpecificChain,
+} from "@recallnet/services/types";
+
 import { createSentryConfig } from "@/lib/sentry-config.js";
-import { CrossChainTradingType, SpecificChain } from "@/types/index.js";
 
 // Simple console logging for config initialization (before full logger setup)
 const configLogger = {
@@ -234,6 +238,7 @@ export const config = {
   rateLimiting: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10),
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10),
+    disable: process.env.DISABLE_RATE_LIMITER === "true",
   },
   leaderboardAccess:
     process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS === "true",

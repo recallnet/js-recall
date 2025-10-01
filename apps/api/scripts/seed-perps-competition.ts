@@ -57,8 +57,9 @@ import {
 } from "@recallnet/db/schema/trading/types";
 
 import { db } from "@/database/db.js";
-import * as competitionRepository from "@/database/repositories/competition-repository.js";
-import * as perpsRepository from "@/database/repositories/perps-repository.js";
+import { ServiceRegistry } from "@/services/index.js";
+
+const services = new ServiceRegistry();
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -617,7 +618,9 @@ async function seedPerpsCompetition(): Promise<void> {
           timestamp: now,
         };
 
-        await perpsRepository.createPerpsAccountSummary(accountSummary);
+        await services.perpsRepository.createPerpsAccountSummary(
+          accountSummary,
+        );
         console.log(
           `${colors.green}  ✓ Created account summary for ${testData.name}${colors.reset}`,
         );
@@ -645,7 +648,7 @@ async function seedPerpsCompetition(): Promise<void> {
         );
 
         if (positions.length > 0) {
-          await perpsRepository.batchUpsertPerpsPositions(positions);
+          await services.perpsRepository.batchUpsertPerpsPositions(positions);
           console.log(
             `${colors.green}  ✓ Created ${positions.length} positions for ${testData.name}${colors.reset}`,
           );
@@ -661,7 +664,7 @@ async function seedPerpsCompetition(): Promise<void> {
       }
 
       // Create initial portfolio snapshots
-      await competitionRepository.batchCreatePortfolioSnapshots(
+      await services.competitionRepository.batchCreatePortfolioSnapshots(
         portfolioSnapshots,
       );
       console.log(
@@ -735,7 +738,7 @@ async function seedPerpsCompetition(): Promise<void> {
         const bTime = b.timestamp?.getTime() ?? 0;
         return aTime - bTime;
       });
-      await competitionRepository.batchCreatePortfolioSnapshots(
+      await services.competitionRepository.batchCreatePortfolioSnapshots(
         additionalSnapshots,
       );
 
@@ -766,7 +769,7 @@ async function seedPerpsCompetition(): Promise<void> {
           calculationTimestamp: now,
         };
 
-        await perpsRepository.saveRiskMetrics(riskMetrics);
+        await services.perpsRepository.saveRiskMetrics(riskMetrics);
         console.log(
           `${colors.green}  ✓ Created risk metrics for ${testData.name}: Calmar=${testData.riskMetrics.calmarRatio.toFixed(2)}${colors.reset}`,
         );

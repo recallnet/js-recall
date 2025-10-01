@@ -1,10 +1,47 @@
+import { AdminRepository } from "@recallnet/db/repositories/admin";
+import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
+import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
+import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
+import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 import { UserRepository } from "@recallnet/db/repositories/user";
-import { BoostService } from "@recallnet/services/boost";
+import { VoteRepository } from "@recallnet/db/repositories/vote";
+import {
+  AdminService,
+  AgentRankService,
+  AgentService,
+  BalanceService,
+  BoostAwardService,
+  BoostService,
+  CalmarRatioService,
+  CompetitionRewardService,
+  CompetitionService,
+  EmailService,
+  LeaderboardService,
+  PerpsDataProcessor,
+  PortfolioSnapshotterService,
+  PriceTrackerService,
+  SimulatedTradeExecutionService,
+  TradeSimulatorService,
+  TradingConstraintsService,
+  UserService,
+  VoteService,
+} from "@recallnet/services";
+import { WalletWatchlist } from "@recallnet/services/lib";
+import {
+  DexScreenerProvider,
+  MultiChainProvider,
+} from "@recallnet/services/providers";
 
-import config from "@/config/index.js";
+import config, { features } from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
@@ -14,24 +51,6 @@ import {
   repositoryLogger,
   serviceLogger,
 } from "@/lib/logger.js";
-import { AdminService } from "@/services/admin.service.js";
-import { AgentService } from "@/services/agent.service.js";
-import { AgentRankService } from "@/services/agentrank.service.js";
-import { BalanceService } from "@/services/balance.service.js";
-import { BoostAwardService } from "@/services/boost-award.service.js";
-import { CompetitionRewardService } from "@/services/competition-reward.service.js";
-import { CompetitionService } from "@/services/competition.service.js";
-import { ConfigurationService } from "@/services/configuration.service.js";
-import { EmailService } from "@/services/email.service.js";
-import { LeaderboardService } from "@/services/leaderboard.service.js";
-import { PerpsDataProcessor } from "@/services/perps-data-processor.service.js";
-import { PortfolioSnapshotterService } from "@/services/portfolio-snapshotter.service.js";
-import { PriceTrackerService } from "@/services/price-tracker.service.js";
-import { SimulatedTradeExecutionService } from "@/services/simulated-trade-execution.service.js";
-import { TradeSimulatorService } from "@/services/trade-simulator.service.js";
-import { TradingConstraintsService } from "@/services/trading-constraints.service.js";
-import { UserService } from "@/services/user.service.js";
-import { VoteService } from "@/services/vote.service.js";
 
 /**
  * Service Registry
@@ -49,7 +68,6 @@ class ServiceRegistry {
   private _userService: UserService;
   private _agentService: AgentService;
   private _adminService: AdminService;
-  private _configurationService: ConfigurationService;
   private _portfolioSnapshotterService: PortfolioSnapshotterService;
   private _leaderboardService: LeaderboardService;
   private _voteService: VoteService;
@@ -60,6 +78,8 @@ class ServiceRegistry {
   private _perpsDataProcessor: PerpsDataProcessor;
   private _boostService: BoostService;
   private readonly _competitionRepository: CompetitionRepository;
+  private readonly _agentRepository: AgentRepository;
+  private readonly _perpsRepository: PerpsRepository;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
   private readonly _userRepository: UserRepository;
@@ -69,61 +89,170 @@ class ServiceRegistry {
   private readonly _boostAwardService: BoostAwardService;
 
   constructor() {
+    this._stakesRepository = new StakesRepository(db);
+    this._eventsRepository = new EventsRepository(db);
+    this._boostRepository = new BoostRepository(db);
+    this._userRepository = new UserRepository(db, repositoryLogger);
+    const rewardsRepository = new RewardsRepository(db, repositoryLogger);
+    const balanceRepository = new BalanceRepository(
+      db,
+      repositoryLogger,
+      config.specificChainTokens,
+    );
+    this._competitionRepository = new CompetitionRepository(
+      db,
+      dbRead,
+      repositoryLogger,
+    );
+    const competitionRewardsRepository = new CompetitionRewardsRepository(
+      db,
+      repositoryLogger,
+    );
+    this._agentRepository = new AgentRepository(
+      db,
+      repositoryLogger,
+      competitionRewardsRepository,
+    );
+    const tradeRepository = new TradeRepository(
+      db,
+      repositoryLogger,
+      balanceRepository,
+    );
+    const tradingConstraintsRepository = new TradingConstraintsRepository(db);
+    const agentScoreRepository = new AgentScoreRepository(db, repositoryLogger);
+    const voteRepository = new VoteRepository(db, repositoryLogger);
+    const agentNonceRepository = new AgentNonceRepository(db);
+    const leaderboardRepository = new LeaderboardRepository(
+      dbRead,
+      repositoryLogger,
+    );
+    this._perpsRepository = new PerpsRepository(db, dbRead, repositoryLogger);
+    const adminRepository = new AdminRepository(db, repositoryLogger);
+
+    const walletWatchlist = new WalletWatchlist(config, serviceLogger);
+
+    const multichainProvider = new MultiChainProvider(config, serviceLogger);
+
+    const dexScreenerProvider = new DexScreenerProvider(
+      config.specificChainTokens,
+      serviceLogger,
+    );
+
     // Initialize services in dependency order
-    this._balanceService = new BalanceService();
-    this._priceTrackerService = new PriceTrackerService();
+    this._balanceService = new BalanceService(
+      balanceRepository,
+      config,
+      serviceLogger,
+    );
+    this._priceTrackerService = new PriceTrackerService(
+      multichainProvider,
+      config,
+      serviceLogger,
+    );
     this._portfolioSnapshotterService = new PortfolioSnapshotterService(
       this._balanceService,
       this._priceTrackerService,
+      this._competitionRepository,
+      serviceLogger,
     );
     this._tradeSimulatorService = new TradeSimulatorService(
       this._balanceService,
       this._priceTrackerService,
+      tradeRepository,
+      serviceLogger,
     );
 
-    // Configuration service for dynamic settings
-    this._configurationService = new ConfigurationService();
-
     // Initialize agent rank service (no dependencies)
-    this._agentRankService = new AgentRankService();
+    this._agentRankService = new AgentRankService(
+      agentScoreRepository,
+      this._competitionRepository,
+      serviceLogger,
+    );
 
     // Initialize vote service (no dependencies)
-    this._voteService = new VoteService();
+    this._voteService = new VoteService(
+      this._agentRepository,
+      this._competitionRepository,
+      voteRepository,
+      serviceLogger,
+    );
 
     // Initialize email service (no dependencies)
-    this._emailService = new EmailService();
+    this._emailService = new EmailService(config, serviceLogger);
 
     // Initialize user, agent, and admin services
-    this._userService = new UserService(this._emailService);
+    this._userService = new UserService(
+      this._emailService,
+      this._agentRepository,
+      this._userRepository,
+      voteRepository,
+      walletWatchlist,
+      db,
+      serviceLogger,
+    );
     this._agentService = new AgentService(
       this._emailService,
       this._balanceService,
       this._priceTrackerService,
       this._userService,
+      this._agentRepository,
+      agentNonceRepository,
+      this._competitionRepository,
+      leaderboardRepository,
+      this._perpsRepository,
+      tradeRepository,
+      this._userRepository,
+      config,
+      serviceLogger,
     );
     this._adminService = new AdminService(
+      adminRepository,
       this._userService,
       this._agentService,
+      config,
+      serviceLogger,
     );
 
     // Initialize trading constraints service (no dependencies)
-    this._tradingConstraintsService = new TradingConstraintsService();
+    this._tradingConstraintsService = new TradingConstraintsService(
+      tradingConstraintsRepository,
+      config,
+    );
     // Initialize core reward service (no dependencies)
-    this._competitionRewardService = new CompetitionRewardService();
+    this._competitionRewardService = new CompetitionRewardService(
+      competitionRewardsRepository,
+    );
+    const calmarRatioService = new CalmarRatioService(
+      this._competitionRepository,
+      this._perpsRepository,
+      serviceLogger,
+    );
     // Initialize PerpsDataProcessor before CompetitionManager (as it's a dependency)
-    this._perpsDataProcessor = new PerpsDataProcessor();
+    this._perpsDataProcessor = new PerpsDataProcessor(
+      calmarRatioService,
+      this._agentRepository,
+      this._competitionRepository,
+      this._perpsRepository,
+      serviceLogger,
+    );
 
     this._competitionService = new CompetitionService(
       this._balanceService,
       this._tradeSimulatorService,
       this._portfolioSnapshotterService,
       this._agentService,
-      this._configurationService,
       this._agentRankService,
       this._voteService,
       this._tradingConstraintsService,
       this._competitionRewardService,
       this._perpsDataProcessor,
+      this._agentRepository,
+      agentScoreRepository,
+      this._perpsRepository,
+      this._competitionRepository,
+      db,
+      config,
+      serviceLogger,
     );
 
     // Initialize simulated trade execution service with its dependencies
@@ -132,20 +261,19 @@ class ServiceRegistry {
       this._tradeSimulatorService,
       this._balanceService,
       this._priceTrackerService,
+      tradeRepository,
+      tradingConstraintsRepository,
+      dexScreenerProvider,
+      config,
+      features,
+      serviceLogger,
     );
 
     // Initialize LeaderboardService with required dependencies
-    this._leaderboardService = new LeaderboardService(this._agentService);
-
-    this._stakesRepository = new StakesRepository(db);
-    this._eventsRepository = new EventsRepository(db);
-    this._boostRepository = new BoostRepository(db);
-    this._competitionRepository = new CompetitionRepository(
-      db,
-      dbRead,
-      repositoryLogger,
+    this._leaderboardService = new LeaderboardService(
+      leaderboardRepository,
+      serviceLogger,
     );
-    this._userRepository = new UserRepository(db, repositoryLogger);
 
     // Initialize BoostService with its dependencies
     // TODO: Consider the best practice for services depending on repositories and/or other services.
@@ -153,7 +281,7 @@ class ServiceRegistry {
       this._boostRepository,
       this._competitionRepository,
       this._userRepository,
-      config.boost.noStakeBoostAmount,
+      config,
       serviceLogger,
     );
 
@@ -163,10 +291,11 @@ class ServiceRegistry {
       this._boostRepository,
       this._stakesRepository,
       this._userService,
-      config.boost.noStakeBoostAmount,
+      config,
     );
     this._eventProcessor = new EventProcessor(
       db,
+      rewardsRepository,
       this._eventsRepository,
       this._stakesRepository,
       this._boostAwardService,
@@ -227,10 +356,6 @@ class ServiceRegistry {
     return this._adminService;
   }
 
-  get configurationService(): ConfigurationService {
-    return this._configurationService;
-  }
-
   get voteService(): VoteService {
     return this._voteService;
   }
@@ -259,6 +384,10 @@ class ServiceRegistry {
     return this._indexingService;
   }
 
+  get competitionRepository(): CompetitionRepository {
+    return this._competitionRepository;
+  }
+
   get stakesRepository(): StakesRepository {
     return this._stakesRepository;
   }
@@ -278,6 +407,14 @@ class ServiceRegistry {
   get eventsRepository(): EventsRepository {
     return this._eventsRepository;
   }
+
+  get agentRepository(): AgentRepository {
+    return this._agentRepository;
+  }
+
+  get perpsRepository(): PerpsRepository {
+    return this._perpsRepository;
+  }
 }
 
 export {
@@ -287,7 +424,6 @@ export {
   BalanceService,
   CompetitionService,
   CompetitionRewardService,
-  ConfigurationService,
   EmailService,
   LeaderboardService,
   PerpsDataProcessor,

@@ -2,19 +2,19 @@ import { Request } from "express";
 import qs from "qs";
 
 import { UpdateCompetitionSchema } from "@recallnet/db/schema/core/types";
-
-import { config } from "@/config/index.js";
-import { ApiError } from "@/middleware/errorHandler.js";
 import {
   AdminSearchUsersAndAgentsQuery,
   AdminSearchUsersAndAgentsQuerySchema,
   AgentCompetitionsParamsSchema,
-  AuthenticatedRequest,
+  ApiError,
   CompetitionAllowedUpdateSchema,
   PagingParamsSchema,
   PrivyIdentityTokenSchema,
   UuidSchema,
-} from "@/types/index.js";
+} from "@recallnet/services/types";
+
+import { config } from "@/config/index.js";
+import { AuthenticatedRequest } from "@/types/index.js";
 
 /**
  * Ensure the request has a user ID

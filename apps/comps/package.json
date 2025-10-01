@@ -22,9 +22,9 @@
     "@hookform/resolvers": "^4.0.0",
     "@lottiefiles/dotlottie-react": "^0.14.3",
     "@next/third-parties": "^15.3.4",
-    "@orpc/client": "^1.8.9",
-    "@orpc/server": "^1.8.9",
-    "@orpc/tanstack-query": "^1.8.9",
+    "@orpc/client": "^1.9.2",
+    "@orpc/server": "^1.9.2",
+    "@orpc/tanstack-query": "^1.9.2",
     "@privy-io/node": "^0.1.0",
     "@privy-io/react-auth": "^2.24.0",
     "@radix-ui/react-dropdown-menu": "^2.1.7",
@@ -68,7 +68,7 @@
     "uuid": "^9.0.0",
     "viem": "^2.28.1",
     "wagmi": "^2.15.2",
-    "zod": "^3.24.2"
+    "zod": "3.25.17"
   },
   "devDependencies": {
     "@types/pg": "^8.10.0",

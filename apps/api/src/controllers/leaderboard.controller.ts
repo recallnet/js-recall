@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import { LRUCache } from "lru-cache";
 
+import { ApiError, LeaderboardParamsSchema } from "@recallnet/services/types";
+
 import { config } from "@/config/index.js";
-import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { LeaderboardParamsSchema } from "@/types/index.js";
 
 import {
   checkShouldCacheResponse,
@@ -62,11 +62,9 @@ export function makeLeaderboardController(services: ServiceRegistry) {
           }
         }
 
-        // Get leaderboard data with sorting from service layer
+        // Get leaderboard data from service layer
         const result =
-          await services.leaderboardService.getGlobalLeaderboardWithSorting(
-            data,
-          );
+          await services.leaderboardService.getGlobalLeaderboard(data);
 
         const responseBody = {
           success: true,

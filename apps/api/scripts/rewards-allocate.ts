@@ -2,8 +2,17 @@ import * as dotenv from "dotenv";
 import { blue, cyan, green, red, yellow } from "kleur/colors";
 import * as path from "path";
 import { parse } from "ts-command-line-args";
+import { Hex } from "viem";
 
-import { RewardsService } from "@/services/rewards.service.js";
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { RewardsRepository } from "@recallnet/db/repositories/rewards";
+import { RewardsService } from "@recallnet/services";
+import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
+
+import config from "@/config/index.js";
+import { db } from "@/database/db.js";
+import { repositoryLogger, serviceLogger } from "@/lib/logger.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -90,8 +99,27 @@ async function allocateRewards() {
     console.log(`${blue("Token Address:")} ${yellow(args.tokenAddress)}`);
     console.log(`${blue("Start Timestamp:")} ${yellow(args.startTimestamp)}`);
 
-    // Instantiate the RewardsService (will use config-based RewardsAllocator)
-    const rewardsService = new RewardsService();
+    // Instantiate the RewardsService with all required dependencies
+    const rewardsRepo = new RewardsRepository(db, repositoryLogger);
+    const competitionRepo = new CompetitionRepository(db, db, repositoryLogger);
+    const boostRepo = new BoostRepository(db);
+
+    const { allocatorPrivateKey, contractAddress, rpcProvider } =
+      config.rewards;
+    const rewardsAllocator = new RewardsAllocator(
+      allocatorPrivateKey as Hex,
+      rpcProvider,
+      contractAddress as Hex,
+    );
+
+    const rewardsService = new RewardsService(
+      rewardsRepo,
+      competitionRepo,
+      boostRepo,
+      rewardsAllocator,
+      db,
+      serviceLogger,
+    );
 
     // Call the allocate method with all required parameters
     await rewardsService.allocate(

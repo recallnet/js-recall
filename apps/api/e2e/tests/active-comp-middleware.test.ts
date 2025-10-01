@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 
+import { BlockchainType } from "@recallnet/services/types";
+
 import { config } from "@/config/index.js";
 import { ErrorResponse } from "@/e2e/utils/api-types.js";
 import {
@@ -8,7 +10,6 @@ import {
   registerUserAndAgentAndGetClient,
   wait,
 } from "@/e2e/utils/test-helpers.js";
-import { BlockchainType } from "@/types/index.js";
 
 describe("Active Competition Middleware", () => {
   test("GET /api/price returns 403 when no active competition exists", async () => {

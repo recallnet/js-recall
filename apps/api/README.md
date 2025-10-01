@@ -247,7 +247,8 @@ To prepare your production database from scratch, **follow these steps in order*
 
 1. **Ensure your environment is configured**
 
-   - Copy `.env.example` to `.env` and fill in all required values (especially database connection details).
+   - Copy `.env.example` to `.env` and fill in all required values (especially database connection details and privy config).
+   - Some env vars of particular note to make sure to set: DATABASE_URL, PRIVY_APP_ID, PRIVY_APP_SECRET, PRIVY_JWKS_PUBLIC_KEY. Note the "Privy account management" section above has more information on configuring Privy.
    - Make sure your PostgreSQL server is running and accessible.
 
 2. **Place your baseline SQL file**

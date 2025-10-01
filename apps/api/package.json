@@ -16,6 +16,7 @@
     "build": "tsc && tsc-alias && copyfiles -u 0 './drizzle/**/*.{sql,json}' dist",
     "test": "vitest run --project unit",
     "test:watch": "vitest watch --project unit",
+    "test:integration": "vitest run --project integration",
     "test:e2e": "vitest run --project e2e",
     "test:all": "vitest run",
     "test:coverage": "vitest run --project unit --coverage",
@@ -80,6 +81,7 @@
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
     "@recallnet/services": "workspace:*",
+    "@recallnet/rewards": "workspace:*",
     "@recallnet/staking-contracts": "workspace:*",
     "@sentry/node": "^10.5.0",
     "@sentry/profiling-node": "^10.5.0",
@@ -113,7 +115,7 @@
     "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.0",
     "viem": "^2.28.1",
-    "zod": "^3.25.17"
+    "zod": "3.25.17"
   },
   "devDependencies": {
     "@elizaos/core": "^0.25.9",

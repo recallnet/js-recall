@@ -20,10 +20,12 @@ import { unionAll } from "drizzle-orm/pg-core";
 import { Logger } from "pino";
 
 import {
+  agents,
   competitionAgents,
   competitionRewards,
   competitions,
   competitionsLeaderboard,
+  users,
 } from "../schema/core/defs.js";
 // Import for enrichment functionality
 import { votes } from "../schema/core/defs.js";
@@ -2443,6 +2445,36 @@ export class CompetitionRepository {
       return competitionVoteMap;
     } catch (error) {
       this.#logger.error("Error in getBatchVoteCounts:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find leaderboard entries for a specific competition with user wallet information
+   * @param competitionId The competition ID
+   * @returns Array of leaderboard entries with user wallet addresses, sorted by rank
+   */
+  async findLeaderboardByCompetitionWithWallets(
+    competitionId: string,
+  ): Promise<
+    Array<SelectCompetitionsLeaderboard & { userWalletAddress: string }>
+  > {
+    try {
+      return await this.#dbRead
+        .select({
+          ...getTableColumns(competitionsLeaderboard),
+          userWalletAddress: users.walletAddress,
+        })
+        .from(competitionsLeaderboard)
+        .innerJoin(agents, eq(competitionsLeaderboard.agentId, agents.id))
+        .innerJoin(users, eq(agents.ownerId, users.id))
+        .where(eq(competitionsLeaderboard.competitionId, competitionId))
+        .orderBy(competitionsLeaderboard.rank);
+    } catch (error) {
+      console.error(
+        `[CompetitionRepository] Error finding leaderboard with wallets for competition ${competitionId}:`,
+        error,
+      );
       throw error;
     }
   }

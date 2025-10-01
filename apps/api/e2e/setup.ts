@@ -61,29 +61,31 @@ export async function setup() {
     (arg) => arg.includes("base-trades.test") || arg.includes("base-trades"),
   );
 
+  const isRateLimiterDisabledTest = args.some(
+    (arg) =>
+      arg.includes("rate-limiter-disabled.test") ||
+      arg.includes("rate-limiter-disabled"),
+  );
+
   if (envTestExists) {
     // Save original values for debugging
     const originalBaseUsdcBalance = process.env.INITIAL_BASE_USDC_BALANCE;
     const originalLeaderboardAccess =
       process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS;
 
-    // Force override with .env.test values (but don't override leaderboard setting if in leaderboard test)
+    // Determine if test needs to preserve process.env
+    const shouldUseProcessEnv =
+      isLeaderboardTest ||
+      isTradingTest ||
+      isBaseTradingTest ||
+      isRateLimiterDisabledTest;
+
+    // Force override with .env.test values
     const result = config({
       path: envTestPath,
       override: true,
-      // Only use processEnv when running the leaderboard test
-      ...(isLeaderboardTest && {
-        // Preserve our manual setting instead of loading from .env.test
-        ignoreProcessEnv: false, // This tells dotenv to use process.env as the starting point
-      }),
-      ...(isTradingTest && {
-        //
-        ignoreProcessEnv: false,
-      }),
-      ...(isBaseTradingTest && {
-        //
-        ignoreProcessEnv: false,
-      }),
+      // Use process.env as starting point for specific tests that need custom env vars
+      ...(shouldUseProcessEnv && { ignoreProcessEnv: false }),
     });
 
     testLogger.info(
@@ -136,6 +138,13 @@ export async function setup() {
     process.env.MAX_TRADE_PERCENTAGE = "15";
     testLogger.info(
       `MAX_TRADE_PERCENTAGE set to: ${process.env.MAX_TRADE_PERCENTAGE}`,
+    );
+  }
+
+  if (isRateLimiterDisabledTest) {
+    process.env.DISABLE_RATE_LIMITER = "true";
+    testLogger.info(
+      `DISABLE_RATE_LIMITER set to: ${process.env.DISABLE_RATE_LIMITER}`,
     );
   }
 

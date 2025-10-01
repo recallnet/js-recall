@@ -1,14 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 
-import { ApiError } from "@/middleware/errorHandler.js";
-import { ServiceRegistry } from "@/services/index.js";
 import {
   AgentFilterSchema,
-  AuthenticatedRequest,
+  ApiError,
   PagingParamsSchema,
   UpdateAgentProfileSchema,
   UuidSchema,
-} from "@/types/index.js";
+} from "@recallnet/services/types";
+
+import { ServiceRegistry } from "@/services/index.js";
+import { AuthenticatedRequest } from "@/types/index.js";
 
 import {
   ensureAgentCompetitionFilters,

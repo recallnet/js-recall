@@ -1,17 +1,14 @@
 import type { Logger } from "pino";
 import { decodeEventLog, hexToBytes } from "viem";
 
+import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type { StakesRepository } from "@recallnet/db/repositories/stakes";
+import type { BoostAwardService } from "@recallnet/services";
 
 import { db } from "@/database/db.js";
-import {
-  findCompetitionByRootHash,
-  markRewardAsClaimed,
-} from "@/database/repositories/rewards-repository.js";
 import { EVENTS } from "@/indexing/blockchain-events-config.js";
 import type { EventData } from "@/indexing/blockchain-types.js";
 import type { EventsRepository } from "@/indexing/events.repository.js";
-import type { BoostAwardService } from "@/services/boost-award.service.js";
 import type { CompetitionService } from "@/services/index.js";
 
 export { EventProcessor };
@@ -50,6 +47,7 @@ export { EventProcessor };
  * - Repository errors bubble up; the caller (IndexingService.loop) will log/retry/abort.
  */
 class EventProcessor {
+  readonly #rewardsRepository: RewardsRepository;
   readonly #eventsRepository: EventsRepository;
   readonly #stakesRepository: StakesRepository;
   readonly #logger: Logger;
@@ -59,6 +57,7 @@ class EventProcessor {
 
   constructor(
     database: typeof db,
+    rewardsRepository: RewardsRepository,
     eventsRepository: EventsRepository,
     stakesRepository: StakesRepository,
     boostAwardService: BoostAwardService,
@@ -66,6 +65,7 @@ class EventProcessor {
     logger: Logger,
   ) {
     this.#db = database;
+    this.#rewardsRepository = rewardsRepository;
     this.#eventsRepository = eventsRepository;
     this.#stakesRepository = stakesRepository;
     this.#boostAwardService = boostAwardService;
@@ -356,7 +356,8 @@ class EventProcessor {
 
     const rootHashBytes = hexToBytes(root);
 
-    const competitionId = await findCompetitionByRootHash(rootHashBytes);
+    const competitionId =
+      await this.#rewardsRepository.findCompetitionByRootHash(rootHashBytes);
     if (!competitionId) {
       this.#logger.warn(
         `No competition found for root hash ${root} in RewardClaimed event (${event.transactionHash})`,
@@ -364,7 +365,7 @@ class EventProcessor {
       return;
     }
 
-    const updatedReward = await markRewardAsClaimed(
+    const updatedReward = await this.#rewardsRepository.markRewardAsClaimed(
       competitionId,
       user,
       amount,

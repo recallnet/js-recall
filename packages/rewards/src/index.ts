@@ -83,13 +83,15 @@ export function calculateRewardsForUsers(
   for (const { user, competitor, boost, timestamp } of boostAllocations) {
     competitorTotals[competitor] = (
       competitorTotals[competitor] || new Decimal(0)
-    ).add(boost);
+    ).add(new Decimal(boost.toString()));
 
     if (!userTotals[user]) {
       userTotals[user] = {};
     }
 
-    const effectiveBoost = boostDecayFn(timestamp).times(boost);
+    const effectiveBoost = boostDecayFn(timestamp).times(
+      new Decimal(boost.toString()),
+    );
 
     userTotals[user]![competitor] = (
       userTotals[user]![competitor] || new Decimal(0)
@@ -105,6 +107,15 @@ export function calculateRewardsForUsers(
 
     for (const [competitor, effectiveBoost] of Object.entries(competitors)) {
       if (effectiveBoost.gt(0)) {
+        // This check is to avoid the case where an user has voted to a competitor that is not in the leader board,
+        // that can happend if the  competitor was disqualified or removed from the leaderboard
+        if (
+          !(competitor in prizePoolSplits) ||
+          !(competitor in competitorTotals)
+        ) {
+          continue;
+        }
+
         const split = prizePoolSplits[competitor]!;
         const totalBoost = competitorTotals[competitor]!;
         const payout = split.times(effectiveBoost).div(totalBoost);
@@ -154,10 +165,17 @@ export function calculateRewardsForCompetitors(
   );
   hook({ prizePoolSplits: prizePoolSplits });
 
+  // Build competitor to wallet mapping from leaderboard
+  const competitorToWalletMap: Record<string, string> = {};
+  for (const placement of leaderBoard) {
+    competitorToWalletMap[placement.competitor] = placement.wallet;
+  }
+
   const rewards: Reward[] = [];
   for (const [competitor, split] of Object.entries(prizePoolSplits)) {
+    const walletAddress = competitorToWalletMap[competitor]!;
     rewards.push({
-      address: competitor,
+      address: walletAddress,
       amount: BigInt(split.toFixed(0, Decimal.ROUND_DOWN)),
     });
   }

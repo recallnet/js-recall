@@ -1,0 +1,1 @@
+CREATE INDEX "idx_agent_score_ordinal" ON "agent_score" USING btree ("ordinal");

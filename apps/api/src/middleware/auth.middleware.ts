@@ -1,13 +1,12 @@
 import { NextFunction, Request, Response } from "express";
 
+import { AdminService, AgentService, UserService } from "@recallnet/services";
+import { ApiError } from "@recallnet/services/types";
+
 import { authLogger } from "@/lib/logger.js";
 import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
 import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
 import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { AdminService } from "@/services/admin.service.js";
-import { AgentService } from "@/services/agent.service.js";
-import { UserService } from "@/services/user.service.js";
 
 /**
  * Unified Authentication Middleware
