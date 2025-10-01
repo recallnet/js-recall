@@ -23,8 +23,8 @@ cp packages/load-test/.env.example packages/load-test/.env
 # Navigate to load test directory
 cd packages/load-test
 
-# Run baseline test (8 req/s, 60 seconds, 5 agents)
-npx tsx src/cli.ts baseline
+# Run default stress test (8 req/s, 60 seconds, 5 agents)
+npx tsx src/cli.ts stress
 # Displays Sentry traces link after completion (if configured)
 
 # Generate analysis report for latest test
@@ -33,73 +33,302 @@ pnpm analyze:latest
 
 ## Test Profiles
 
-### Baseline Test (60 seconds)
+The load testing suite contains **4 distinct test profiles**, each designed to validate different aspects of system behavior under various traffic patterns.
 
-Quick validation test using stress.yml with default parameters.
+### Common Structure (All Profiles)
+
+All test profiles follow the same basic structure:
+
+#### Setup Phase (before:)
+
+1. **Competition Management**:
+   - Check for existing active competition
+   - End active competition if exists
+   - Create new competition for test isolation
+
+2. **Agent Creation**:
+   - Create N agents (configurable via `AGENTS_COUNT`)
+   - Each agent gets: user account, wallet, profile, and API key
+   - Register all agents to the competition
+
+3. **Competition Start**:
+   - Start competition to enable trading
+   - All agents now active and ready
+
+#### Test Execution (scenarios:)
+
+Each virtual user (VU) executes a scenario that typically includes:
+
+- `GET /api/agent/balances` - Check current holdings
+- `POST /api/trade/execute` - Execute a trade
+- Sentry instrumentation for observability
+
+#### Teardown (after:)
+
+- Flush Sentry spans for complete observability
+- Competition remains active for post-test analysis
+
+---
+
+### 1. Stress Test
+
+**Goal**: Find system capacity limits through sustained load at configurable rates.
 
 ```bash
-npx tsx src/cli.ts baseline
-```
-
-**Parameters:** 8 req/s, 60 seconds, $0.10 trades, 5 agents
-
-### Parameterized Stress Testing
-
-Flexible load testing with custom parameters using the unified stress.yml config.
-
-```bash
+# Default (8 req/s for 60 seconds)
 npx tsx src/cli.ts stress
-# Or with custom parameters:
-npx tsx src/cli.ts stress --rate 32 --duration 300 --trade-amount 0.1 --agents 10
+
+# Custom parameters
+npx tsx src/cli.ts stress --rate 16 --duration 1800 --agents 20
 ```
 
-**Examples:**
+#### Structure
 
-- 30-minute test: `tsx src/cli.ts stress -d 1800 -r 16`
-- 2-hour endurance: `tsx src/cli.ts stress -d 7200 -r 8`
-- High stress: `tsx src/cli.ts stress -d 300 -r 32 -a 10`
+**Single parameterized phase**:
 
-### Specialized Test Profiles
+- Duration: Configurable via `--duration` (default: 60s)
+- Rate: Configurable via `--rate` (default: 8 req/s)
+- Trade Amount: Configurable via `--trade-amount` (default: $0.10)
+- Agents: Configurable via `--agents` (default: 5)
 
-#### TGE Simulation
+**Scenarios**:
 
-Simulates Token Generation Event with extreme burst patterns.
+- `test-trading` (100%): Simple GET balances → POST trade flow
+
+#### Use Cases
+
+✅ **Capacity planning** - "Can we handle 32 req/s?"
+✅ **Performance baseline** - "What's our P95 at normal load?"
+✅ **Breaking point discovery** - "Where does the system fail?"
+✅ **Regression testing** - "Did this change affect performance?"
+
+#### Examples
+
+```bash
+# Quick smoke test
+npx tsx src/cli.ts stress
+
+# Production-like load (30 min)
+npx tsx src/cli.ts stress --rate 16 --duration 1800 --agents 20
+
+# Find breaking point
+npx tsx src/cli.ts stress --rate 32 --duration 1800 --agents 20
+
+# 2-hour endurance test
+npx tsx src/cli.ts stress --rate 8 --duration 7200 --agents 10
+```
+
+#### Key Characteristics
+
+- **Parameterized**: Fully controllable via CLI
+- **Consistent**: Steady load throughout test
+- **Simple**: Single scenario type for clear interpretation
+- **Flexible**: Suitable for wide range of load levels
+
+---
+
+### 2. TGE Burst Test
+
+**Goal**: Simulate Token Generation Event - extreme burst traffic like a new token launch.
 
 ```bash
 npx tsx src/cli.ts tge
 ```
 
-**Behavior Patterns:**
+#### Structure
 
-- FOMO buyers (40%): Aggressive accumulation
-- Whale traders (20%): Large volume trades
-- Catchup traders (30%): Late joiners
-- Panic sellers (10%): Rapid exits
+**5-phase progression** simulating launch day:
 
-#### Resilience Testing
+| Phase         | Duration | Rate          | Description       |
+| ------------- | -------- | ------------- | ----------------- |
+| Pre-launch    | 60s      | 5 req/s       | Calm before storm |
+| TGE Launch    | 10s      | **100 req/s** | Massive spike!    |
+| FOMO Phase    | 300s     | 50 req/s      | Sustained FOMO    |
+| Stabilization | 120s     | 30 req/s      | Cooling down      |
+| Cooldown      | 60s      | 10 req/s      | Return to normal  |
 
-Tests error handling and recovery with intentional failures.
+**Total duration**: 9 minutes, 10 seconds
+
+**Scenarios** (weighted to simulate trader types):
+
+- `fomo-buyers` (40%): Aggressive accumulation, 0.5s think time
+- `whale-traders` (20%): Large volume trades, 1s think time
+- `catchup-traders` (30%): Late joiners, 0.8s think time
+- `panic-sellers` (10%): Emotional selling, 0.3s think time
+
+**Default Config**:
+
+- Agents: 200
+- Peak load: 100 req/s (1000+ concurrent during burst)
+- Trade patterns: Scenario-specific (FOMO vs whale vs panic)
+
+#### Use Cases
+
+✅ **Launch readiness** - "Can we survive a token launch?"
+✅ **Burst capacity** - "What happens at 100 req/s for 10 seconds?"
+✅ **Circuit breaker validation** - "Do rate limits protect us?"
+✅ **Recovery testing** - "Does system stabilize after spike?"
+
+#### Key Characteristics
+
+- **Fixed phases**: Not parameterizable (designed for specific pattern)
+- **Burst pattern**: 20x spike from baseline to peak
+- **Multi-scenario**: Different trader behaviors weighted realistically
+- **Short duration**: Quick validation (9 min) vs long endurance
+
+#### What to Expect
+
+- **Normal**: Some failures during 100 req/s burst (10s window)
+- **Success criteria**: System recovers after burst, no cascading failures
+- **Watch for**: Circuit breaker triggers, queue buildup, memory spikes
+
+---
+
+### 3. Resilience Test
+
+**Goal**: Chaos engineering - validate system handles errors, edge cases, and malicious inputs gracefully.
 
 ```bash
 npx tsx src/cli.ts resilience
 ```
 
-**Chaos Engineering Scenarios:**
+#### Structure
 
-- Normal trading (50%)
-- Overdraw attempts (20%)
-- Malformed requests (15%)
-- Rate limit testing (15%)
+**4-phase error injection**:
 
-#### Daily Traffic Pattern
+| Phase           | Duration      | Rate     | Description     |
+| --------------- | ------------- | -------- | --------------- |
+| Normal          | 300s (5 min)  | 5 req/s  | Baseline        |
+| Mixed Load      | 600s (10 min) | 10 req/s | Scale up        |
+| Error Injection | 600s (10 min) | 15 req/s | Inject chaos    |
+| Recovery        | 300s (5 min)  | 5 req/s  | Verify recovery |
 
-Simulates typical daily trading patterns for regression detection.
+**Total duration**: 30 minutes
+
+**Scenarios** (weighted to inject errors):
+
+- `normal-trading` (50%): Valid trades (control group)
+- `overdraw-attempts` (20%): Try to spend more than balance
+- `malformed-requests` (15%): Invalid JSON, missing fields
+- `rate-limit-test` (15%): 10 rapid trades in loop (intentional throttling)
+
+**Default Config**:
+
+- Agents: 50
+- Peak load: 15 req/s
+- Error injection: 50% of requests are intentionally invalid
+
+#### Use Cases
+
+✅ **Error handling** - "Do we return proper 400s?"
+✅ **Validation logic** - "Can malformed requests crash us?"
+✅ **Rate limiting** - "Does throttling work correctly?"
+✅ **System stability** - "Do errors cause cascading failures?"
+✅ **Recovery** - "Does system return to normal after chaos?"
+
+#### Key Characteristics
+
+- **Fixed phases**: 30-minute structured test
+- **Error-focused**: 50% of traffic is intentionally problematic
+- **Multi-scenario**: Each scenario tests different failure mode
+- **Recovery validation**: Final phase verifies system stabilizes
+
+#### What to Expect
+
+- **Normal**: High 4xx error rate (intentional)
+- **Success criteria**: No 5xx errors, proper 4xx responses, system doesn't crash
+- **Watch for**: Memory leaks from error handling, cascading failures
+
+---
+
+### 4. Daily Monitoring Test
+
+**Goal**: Production health check - simulate realistic daily traffic patterns for continuous monitoring.
 
 ```bash
 npx tsx src/cli.ts daily
 ```
 
-**Realistic patterns:** Morning ramp → Peak hours → Lunch dip → Afternoon → Evening decline
+#### Structure
+
+**5-phase daily cycle** (compressed to 30 min):
+
+| Phase     | Duration | Rate             | Description      |
+| --------- | -------- | ---------------- | ---------------- |
+| Morning   | 5 min    | Ramp 1→6 req/s   | Users waking up  |
+| Peak      | 10 min   | Ramp 6→10 req/s  | High activity    |
+| Lunch     | 5 min    | 4 req/s (steady) | Reduced activity |
+| Afternoon | 5 min    | 8 req/s (steady) | Busy again       |
+| Evening   | 5 min    | Ramp 8→2 req/s   | Winding down     |
+
+**Total duration**: 30 minutes (simulates 24-hour pattern)
+
+**Scenarios**:
+
+- `regular-trading` (70%): Normal GET balances → POST trade
+- `monitoring` (30%): Health checks (GET balances only, no trades)
+
+**Default Config**:
+
+- Agents: 30
+- Peak load: 10 req/s
+- Trade patterns: 70% trades, 30% monitoring
+
+#### Use Cases
+
+✅ **Daily smoke test** - "Is production healthy today?"
+✅ **Deployment validation** - "Did new deploy break anything?"
+✅ **Performance trends** - "Are we degrading over time?"
+✅ **Alerting validation** - "Do our monitors catch issues?"
+
+#### Key Characteristics
+
+- **Fixed phases**: Simulates realistic daily pattern
+- **Gradual ramps**: Uses `rampTo` for smooth transitions
+- **Monitoring focus**: 30% of traffic is non-trading (balance checks)
+- **Moderate load**: Never exceeds 10 req/s (safe for prod)
+
+#### What to Expect
+
+- **Normal**: Zero failures, P95 < 300ms consistently
+- **Success criteria**: All phases pass, no degradation over time
+- **Watch for**: Memory growth, latency creep during peaks
+
+---
+
+### Comparison Matrix
+
+| Profile        | Duration                   | Max Rate                 | Agents                   | Pattern         | Goal                 |
+| -------------- | -------------------------- | ------------------------ | ------------------------ | --------------- | -------------------- |
+| **Stress**     | Configurable (default 60s) | Configurable (default 8) | Configurable (default 5) | Sustained flat  | Find capacity limits |
+| **TGE**        | 9 min 10s                  | 100 req/s (burst)        | 200                      | Burst spike     | Launch readiness     |
+| **Resilience** | 30 min                     | 15 req/s                 | 50                       | Error injection | Chaos engineering    |
+| **Daily**      | 30 min                     | 10 req/s                 | 30                       | Daily cycle     | Production health    |
+
+---
+
+### When to Use Each Profile
+
+#### Before Deployment
+
+1. **Stress test** at expected production load → Must pass
+2. **Resilience test** to validate error handling → Must handle errors gracefully
+3. **Daily test** to establish baseline → Capture metrics
+
+#### After Deployment
+
+1. **Daily test** (continuous monitoring) → Run hourly or daily
+2. **Stress test** if performance concerns → Diagnose regressions
+
+#### Before Major Launch
+
+1. **TGE test** to prepare for spike → Must survive burst
+2. **Stress test** at 2x expected load → Capacity headroom
+
+#### During Investigation
+
+1. **Stress test** to reproduce issues → Isolate problems
+2. Vary `--rate` to find breaking point → Capacity planning
 
 ## Architecture
 
@@ -129,20 +358,20 @@ src/
 tsx src/cli.ts [profile] [options]
 
 Profiles:
-  baseline       Baseline test (8 req/s, 1 min) - uses defaults from stress.yml
-  stress         Parameterized stress test (use -r/-d/-t options)
-  tge            TGE burst simulation
-  resilience     Error injection and resilience test
-  daily          Daily monitoring test
+  stress         Parameterized stress test (default: 8 req/s, 60s, 5 agents)
+  tge            TGE burst simulation (200 agents, multi-phase)
+  resilience     Error injection and resilience test (50 agents, 30 min)
+  daily          Daily monitoring test (30 agents, 30 min)
 
 Options:
-  -d, --duration N           Test duration in seconds (for stress profile)
-  -r, --rate N               Request rate per second (for stress profile)
-  -t, --trade-amount N       Trade amount in dollars (for stress profile)
-  -a, --agents N             Number of agents (default: 5)
+  -d, --duration N           Test duration in seconds (stress only, default: 60)
+  -r, --rate N               Request rate per second (stress only, default: 8)
+  -t, --trade-amount N       Trade amount in dollars (stress only, default: 0.1)
+  -a, --agents N             Number of agents (default: profile-specific)
   --traces-sample-rate N     Sentry SDK traces sample rate 0.0-1.0 (default: 0.01)
   --request-sample-rate N    Sentry request span sample rate 0.0-1.0 (default: 0.01)
   -n, --no-report            Don't save report file
+  -h, --help                 Show help
 ```
 
 ### Processor Functions
@@ -214,15 +443,15 @@ The load test suite integrates with Sentry for real-time observability and metri
 
 **Automatic Test Run Tracking:**
 
-Each test run generates a unique test run ID (e.g., `baseline-20250930-102812`) and displays a Sentry traces explorer link after completion:
+Each test run generates a unique test run ID (e.g., `stress-20250930-102812`) and displays a Sentry traces explorer link after completion:
 
 ```bash
-$ npx tsx src/cli.ts baseline
+$ npx tsx src/cli.ts stress
 
 ✓ Test completed successfully!
 
 📊 View results in Sentry:
-   https://recallnet.sentry.io/explore/traces/?environment=perf-testing&project=...&query=test_run_id%3Abaseline-20250930-102812
+   https://recallnet.sentry.io/explore/traces/?environment=perf-testing&project=...&query=test_run_id%3Astress-20250930-102812
 ```
 
 **Searchable Span Attributes:**
@@ -244,7 +473,7 @@ All HTTP request spans include searchable attributes:
 
 ```
 # Find spans from specific test run
-test_run_id:baseline-20250930-102812
+test_run_id:stress-20250930-102812
 
 # Find all load test spans
 has:load_test.agent_id
@@ -274,10 +503,10 @@ Control sampling rates via environment variables or CLI flags:
 
 ```bash
 # 100% sampling for debugging
-tsx src/cli.ts baseline --request-sample-rate 1.0
+tsx src/cli.ts stress --request-sample-rate 1.0
 
 # 10% sampling for production monitoring
-tsx src/cli.ts stress --request-sample-rate 0.1
+tsx src/cli.ts stress --rate 16 --duration 1800 --request-sample-rate 0.1
 ```
 
 ### Competition Setup
@@ -302,10 +531,10 @@ Tests generate JSON reports with timestamps in `reports/` directory.
 pnpm analyze:latest
 
 # Analyze specific report
-pnpm analyze reports/baseline-20250930-102812.json
+pnpm analyze reports/stress-20250930-102812.json
 
 # Compare against baseline
-pnpm analyze reports/new.json reports/baseline-ref.json
+pnpm analyze reports/new.json reports/stress-baseline.json
 ```
 
 ### Consolidated Trend Analysis
@@ -313,11 +542,11 @@ pnpm analyze reports/new.json reports/baseline-ref.json
 Consolidate multiple reports of the **same test type** for trend analysis:
 
 ```bash
-# Consolidate all baseline reports
-pnpm analyze:consolidate reports/baseline-*.json
+# Consolidate all stress test reports
+pnpm analyze:consolidate reports/stress-*.json
 
 # Consolidate last 5 reports (shell command)
-tsx src/agent-trading/report-analyzer.ts --consolidate $(ls -t reports/baseline-*.json | head -5)
+tsx src/agent-trading/report-analyzer.ts --consolidate $(ls -t reports/stress-*.json | head -5)
 ```
 
 **Consolidated reports include:**
@@ -349,7 +578,7 @@ Expected performance for healthy system:
 
 Simplified workflow with direct parameter inputs:
 
-- **Daily scheduled run**: Baseline test at midnight
+- **Daily scheduled run**: Stress test at midnight (8 req/s, 60s)
 - **Manual dispatch**: Custom duration, rate, trade amount, agent count
 - **Smart defaults**: 8 req/s, 60s duration, $0.10 trades, 5 agents
 - **Report artifacts**: Automatic HTML/JSON report uploads
@@ -381,7 +610,7 @@ Simplified workflow with direct parameter inputs:
 Enable full Sentry span sampling for debugging:
 
 ```bash
-npx tsx src/cli.ts baseline --request-sample-rate 1.0 --traces-sample-rate 1.0
+npx tsx src/cli.ts stress --request-sample-rate 1.0 --traces-sample-rate 1.0
 ```
 
 This captures 100% of HTTP requests and traces, useful for debugging specific issues.
@@ -407,17 +636,19 @@ tsx src/cli.ts stress --rate 50 --duration 120 --agents 20
 tsx src/cli.ts stress --rate 5 --duration 14400 --agents 3
 
 # Debug test with 100% Sentry sampling
-tsx src/cli.ts baseline --request-sample-rate 1.0 --traces-sample-rate 1.0
+tsx src/cli.ts stress --request-sample-rate 1.0 --traces-sample-rate 1.0
 ```
 
 ## Best Practices
 
-1. **Start small**: Run baseline test first
+1. **Start small**: Run default stress test first (8 req/s for 60s)
 2. **Monitor resources**: Watch CPU/memory during tests
 3. **Incremental testing**: Use parameterized stress for gradual load increases
 4. **Clean state**: Tests handle competition cleanup automatically
-5. **Report analysis**: Always review HTML reports for patterns
+5. **Report analysis**: Always review reports for patterns
 6. **Sustainable testing**: $0.10 trade amounts prevent balance issues
+7. **Sentry monitoring**: Enable traces for debugging, use lower sampling for production
+8. **Profile selection**: Use stress for capacity, TGE for burst, resilience for chaos, daily for monitoring
 
 ## Support
 
