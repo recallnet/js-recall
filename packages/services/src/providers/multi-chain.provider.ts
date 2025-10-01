@@ -2,6 +2,7 @@ import { Logger } from "pino";
 
 import {
   BlockchainType,
+  CoinGeckoMode,
   PriceProvider,
   PriceReport,
   PriceSource,
@@ -12,9 +13,13 @@ import { CoinGeckoProvider } from "./coingecko.provider.js";
 import { DexScreenerProvider } from "./price/dexscreener.provider.js";
 
 export interface MultiChainProviderConfig {
-  apiKey?: string;
-  mode?: "pro" | "demo";
-  priceProvider: PriceProvider;
+  priceProvider: {
+    type: PriceProvider;
+    coingecko?: {
+      apiKey: string;
+      mode: CoinGeckoMode;
+    };
+  };
   evmChains: SpecificChain[];
   specificChainTokens: SpecificChainTokens;
 }
@@ -36,7 +41,7 @@ export class MultiChainProvider implements PriceSource {
     this.logger = logger;
 
     // Create the appropriate provider based on the type
-    switch (config.priceProvider) {
+    switch (config.priceProvider.type) {
       case "dexscreener":
         this.priceProvider = new DexScreenerProvider(
           config.specificChainTokens,
@@ -45,15 +50,17 @@ export class MultiChainProvider implements PriceSource {
         break;
       case "coingecko":
       default:
-        if (!config.apiKey) {
+        if (!config.priceProvider.coingecko?.apiKey) {
           throw new Error("CoinGecko API key is required");
         }
-        this.priceProvider = new CoinGeckoProvider({
-          apiKey: config.apiKey,
-          mode: config.mode || "demo",
-          specificChainTokens: config.specificChainTokens,
+        this.priceProvider = new CoinGeckoProvider(
+          {
+            ...config.priceProvider.coingecko,
+            specificChainTokens: config.specificChainTokens,
+          },
           logger,
-        });
+        );
+
         break;
     }
   }

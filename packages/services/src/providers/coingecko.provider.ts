@@ -3,6 +3,7 @@ import { Logger } from "pino";
 
 import {
   BlockchainType,
+  CoinGeckoMode,
   DexScreenerTokenInfo,
   PriceReport,
   PriceSource,
@@ -15,9 +16,8 @@ import {
  */
 export interface CoinGeckoProviderConfig {
   apiKey: string;
-  mode: "pro" | "demo";
+  mode: CoinGeckoMode;
   specificChainTokens: SpecificChainTokens;
-  logger: Logger;
 }
 
 /**
@@ -25,12 +25,12 @@ export interface CoinGeckoProviderConfig {
  * Provides cryptocurrency price data using the CoinGecko API
  */
 export class CoinGeckoProvider implements PriceSource {
-  private readonly API_KEY: string;
-  private readonly mode: "pro" | "demo";
   private readonly client: Coingecko;
   private readonly MAX_RETRIES = 3; // Overrides default of 2
   private readonly MAX_TIMEOUT = 30_000; // Overrides default of 60 seconds
   private readonly BATCH_SIZE = 100; // CoinGecko supports up to 100 tokens per batch
+  private specificChainTokens: SpecificChainTokens;
+  private logger: Logger;
 
   // See the following API for a list of the possible values: https://docs.coingecko.com/reference/asset-platforms-list
   // Note: an "asset platform" is the name of the chain. In CoinGecko's DEX APIs, there is a
@@ -50,31 +50,26 @@ export class CoinGeckoProvider implements PriceSource {
     mantle: "mantle",
     svm: "solana",
   };
-  private specificChainTokens: SpecificChainTokens;
-  private logger: Logger;
 
   /**
    * Creates a new CoinGecko provider instance
    * Initializes the CoinGecko client with appropriate configuration based on environment
    */
-  constructor(config: CoinGeckoProviderConfig) {
-    this.API_KEY = config.apiKey;
-    this.mode = config.mode;
+  constructor(config: CoinGeckoProviderConfig, logger: Logger) {
     this.specificChainTokens = config.specificChainTokens;
-    this.logger = config.logger;
+    this.logger = logger;
 
-    // Non-production environments use a highly rate limited "demo" API key (30 req/min)
+    const { apiKey, mode } = config;
     const opts: ClientOptions = {
-      environment: config.mode,
+      environment: mode,
       maxRetries: this.MAX_RETRIES,
       timeout: this.MAX_TIMEOUT,
-      // Note: enable CoinGecko's native SDK logger with the environment variable `COINGECKO_LOG`
-      logger: this.logger,
     };
-    if (this.mode === "pro") {
-      opts.proAPIKey = config.apiKey;
+    // Note: CoinGecko has different endpoints, depending on the mode (free vs. paid)
+    if (mode === "pro") {
+      opts.proAPIKey = apiKey;
     } else {
-      opts.demoAPIKey = config.apiKey;
+      opts.demoAPIKey = apiKey;
     }
     this.client = new Coingecko(opts);
   }

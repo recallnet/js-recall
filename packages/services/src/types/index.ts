@@ -170,10 +170,12 @@ export interface PriceSource {
 /**
  * Available price provider implementations
  */
-export enum PriceProvider {
-  COINGECKO = "coingecko",
-  DEXSCREENER = "dexscreener",
-}
+export type PriceProvider = "dexscreener" | "coingecko";
+
+/**
+ * CoinGecko API environment (free vs. paid plan)
+ */
+export type CoinGeckoMode = "demo" | "pro";
 
 // DexScreener API interfaces
 export interface DexScreenerToken {
