@@ -1,9 +1,9 @@
 import { config } from "dotenv";
 import { Logger } from "pino";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
-import { BlockchainType, PriceProvider } from "../../types/index.js";
+import { BlockchainType } from "../../types/index.js";
 import {
   MultiChainProvider,
   MultiChainProviderConfig,
@@ -24,26 +24,23 @@ const ethereumTokens = {
 // Mock logger for the constructor
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
-const coingeckoConfig: MultiChainProviderConfig = {
-  apiKey: process.env.COINGECKO_API_KEY,
-  priceProvider: PriceProvider.COINGECKO,
-  evmChains: ["eth"],
-  specificChainTokens: {
-    eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
-  },
-};
-
-const dexScreenerConfig: MultiChainProviderConfig = {
-  priceProvider: PriceProvider.DEXSCREENER,
-  evmChains: ["eth"],
-  specificChainTokens: {
-    eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
-  },
-};
-
 describe("MultiChainProvider Configurable", () => {
   describe("With CoinGecko Provider", () => {
     let provider: MultiChainProvider;
+    let coingeckoConfig: MultiChainProviderConfig;
+    beforeAll(() => {
+      const apiKey = process.env.COINGECKO_API_KEY!;
+      coingeckoConfig = {
+        priceProvider: {
+          type: "coingecko",
+          coingecko: { apiKey, mode: "demo" },
+        },
+        evmChains: ["eth"],
+        specificChainTokens: {
+          eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
+        },
+      };
+    });
 
     beforeEach(() => {
       provider = new MultiChainProvider(coingeckoConfig, mockLogger);
@@ -79,9 +76,15 @@ describe("MultiChainProvider Configurable", () => {
 
   describe("With DexScreener provider", () => {
     let provider: MultiChainProvider;
+    const dexScreenerConfig: MultiChainProviderConfig = {
+      priceProvider: { type: "dexscreener" },
+      evmChains: ["eth"],
+      specificChainTokens: {
+        eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
+      },
+    };
 
     beforeEach(() => {
-      process.env.PRICE_PROVIDER = PriceProvider.DEXSCREENER;
       provider = new MultiChainProvider(dexScreenerConfig, mockLogger);
     });
 
@@ -113,14 +116,24 @@ describe("MultiChainProvider Configurable", () => {
     });
   });
 
-  describe("Default Provider", () => {
-    it("should default to CoinGecko when no provider is specified", () => {
-      const provider = new MultiChainProvider(coingeckoConfig, mockLogger);
-      expect(provider.getName()).toContain("CoinGecko");
-    });
-  });
-
   describe("Chain Detection", () => {
+    const coingeckoConfig: MultiChainProviderConfig = {
+      priceProvider: {
+        type: "coingecko",
+        coingecko: { apiKey: process.env.COINGECKO_API_KEY!, mode: "demo" },
+      },
+      evmChains: ["eth"],
+      specificChainTokens: {
+        eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
+      },
+    };
+    const dexScreenerConfig: MultiChainProviderConfig = {
+      priceProvider: { type: "dexscreener" },
+      evmChains: ["eth"],
+      specificChainTokens: {
+        eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
+      },
+    };
     it("should detect chains correctly with both providers", () => {
       const coinGeckoProvider = new MultiChainProvider(
         coingeckoConfig,
