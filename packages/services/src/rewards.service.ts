@@ -6,7 +6,7 @@ import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/voting/defs";
-import { Database } from "@recallnet/db/types";
+import { Database, Transaction } from "@recallnet/db/types";
 import {
   BoostAllocation,
   BoostAllocationWindow,
@@ -25,7 +25,6 @@ export class RewardsService {
   private competitionRepository: CompetitionRepository;
   private boostRepository: BoostRepository;
   private rewardsAllocator: RewardsAllocator;
-
   private db: Database;
   private logger: Logger;
 
@@ -46,12 +45,50 @@ export class RewardsService {
   }
 
   /**
-   * Calculate rewards for a given input
+   * Calculate rewards and allocate them for a competition
+   *
+   * This method combines the reward calculation and allocation process within a single database transaction:
+   * 1. Calculates rewards using the internal calculation logic
+   * 2. Stores the calculated rewards in the database
+   * 3. Allocates the rewards by building a Merkle tree and publishing to blockchain
+   *
+   * @param competitionId The competition ID (UUID) to calculate and allocate rewards for
+   * @param startTimestamp The timestamp from which rewards can be claimed
+   * @throws Error if reward calculation fails or no rewards exist to allocate
+   */
+  public async calculateAndAllocate(
+    competitionId: string,
+    startTimestamp: number,
+  ): Promise<void> {
+    const prizePool =
+      await this.competitionRepository.getCompetitionPrizePools(competitionId);
+    if (!prizePool) {
+      throw new Error(`No prize pool found for competition ${competitionId}`);
+    }
+
+    await this.db.transaction(async (tx) => {
+      await this.calculateRewards(
+        competitionId,
+        prizePool.userPool,
+        prizePool.agentPool,
+        tx,
+      );
+      await this.allocate(competitionId, startTimestamp, tx);
+    });
+  }
+
+  /**
+   * Calculate rewards for a given competition
+   * @param competitionId The competition ID to calculate rewards for
+   * @param prizePoolUsers The prize pool amount for users
+   * @param prizePoolCompetitors The prize pool amount for competitors
+   * @param tx Optional database transaction to use for database operations
    */
   public async calculateRewards(
     competitionId: string,
     prizePoolUsers: bigint,
     prizePoolCompetitors: bigint,
+    tx?: Transaction,
   ): Promise<void> {
     try {
       const competition =
@@ -81,6 +118,7 @@ export class RewardsService {
         throw new Error("No leaderboard entries found");
       }
       const leaderBoard = leaderboardWithWallets.map((entry) => ({
+        owner: entry.ownerId,
         competitor: entry.agentId,
         wallet: entry.userWalletAddress,
         rank: entry.rank,
@@ -92,7 +130,8 @@ export class RewardsService {
       const boostAllocations: BoostAllocation[] = boostSpendingData.map(
         (entry) => {
           return {
-            user: bytesToHex(entry.wallet) as string,
+            user_id: entry.userId,
+            user_wallet: bytesToHex(entry.wallet) as string,
             competitor: entry.agentId,
             boost: -entry.deltaAmount, // Convert negative spending to positive boost
             timestamp: entry.createdAt,
@@ -108,18 +147,24 @@ export class RewardsService {
         boostAllocationWindow,
       );
 
-      // TODO: add user_id, and agent_id columns to rewards table
-      // so we can track the rewards for each user and agent
-      await this.rewardsRepo.insertRewards(
-        rewards.map((reward) => ({
-          competitionId: competitionId,
-          address: reward.address,
-          amount: reward.amount,
-          leafHash: hexToBytes(
-            createLeafNode(reward.address as Hex, reward.amount),
-          ),
-          id: crypto.randomUUID(),
-        })),
+      const rewardsToInsert = rewards.map((reward) => ({
+        userId: reward.owner,
+        agentId: reward.competitor ?? null,
+        competitionId: competitionId,
+        address: reward.address,
+        amount: reward.amount,
+        leafHash: hexToBytes(
+          createLeafNode(reward.address as Hex, reward.amount),
+        ),
+        id: crypto.randomUUID(),
+      }));
+      await runWithConcurrencyLimit(
+        rewardsToInsert,
+        1000,
+        10,
+        async (batch) => {
+          await this.rewardsRepo.insertRewards(batch, tx);
+        },
       );
     } catch (error) {
       this.logger.error("[RewardsService] Error in calculateRewards:", error);
@@ -137,17 +182,19 @@ export class RewardsService {
    * 4. Publishes the root hash to the blockchain if RewardsAllocator is available
    *
    * @param competitionId The competition ID (UUID) to allocate rewards for
-   * @param tokenAddress The ERC20 token address for this allocation
    * @param startTimestamp The timestamp from which rewards can be claimed
+   * @param tx Optional database transaction to use for database operations
    * @throws Error if no rewards exist for the specified competition
    */
   public async allocate(
     competitionId: string,
-    tokenAddress: Hex,
     startTimestamp: number,
+    tx?: Transaction,
   ): Promise<void> {
-    const rewards =
-      await this.rewardsRepo.getRewardsByCompetition(competitionId);
+    const rewards = await this.rewardsRepo.getRewardsByCompetition(
+      competitionId,
+      tx,
+    );
 
     // Build Merkle tree if we have rewards
     if (rewards.length == 0) {
@@ -201,14 +248,13 @@ export class RewardsService {
 
     const rootHash = merkleTree.getHexRoot();
 
-    await this.db.transaction(async (tx) => {
+    const executeWithTransaction = async (transaction: Transaction) => {
       this.logger.info(
         `[RewardsService] Publishing root hash ${rootHash} to blockchain for competition ${competitionId}`,
       );
 
-      const result = await this.rewardsAllocator!.allocate(
+      const result = await this.rewardsAllocator.allocate(
         rootHash as Hex,
-        tokenAddress,
         allocationAmount,
         startTimestamp,
       );
@@ -217,14 +263,23 @@ export class RewardsService {
         `[RewardsService] Successfully published root hash to blockchain. Transaction: ${result.transactionHash}`,
       );
 
-      await tx.insert(rewardsTree).values(treeNodes);
-      await tx.insert(rewardsRoots).values({
+      await runWithConcurrencyLimit(treeNodes, 1000, 10, async (batch) => {
+        await transaction.insert(rewardsTree).values(batch);
+      });
+
+      await transaction.insert(rewardsRoots).values({
         id: crypto.randomUUID(),
         competitionId: competitionId,
         rootHash: new Uint8Array(merkleTree.getRoot()),
         tx: result.transactionHash,
       });
-    });
+    };
+
+    if (tx) {
+      await executeWithTransaction(tx);
+    } else {
+      await this.db.transaction(executeWithTransaction);
+    }
 
     this.logger.debug(
       `[RewardsService] Built Merkle tree for competition ${competitionId} with ${treeNodes.length} nodes and root hash: ${rootHash}`,
@@ -366,19 +421,37 @@ export class RewardsService {
     );
 
     // in case an address is both a voter and a competitor, we need to sum the amounts
+    // while keeping the references to owner and competitor
     const rewards = [...userRewards, ...competitorRewards];
     const rewardsByAddress = rewards.reduce(
       (acc, reward) => {
-        acc[reward.address] = (acc[reward.address] || 0n) + reward.amount;
+        if (!acc[reward.address]) {
+          acc[reward.address] = [
+            reward.amount,
+            reward.owner,
+            reward.competitor,
+          ];
+          return acc;
+        }
+
+        acc[reward.address] = [
+          acc[reward.address]![0] + reward.amount,
+          reward.owner,
+          acc[reward.address]![2] ?? reward.competitor,
+        ];
         return acc;
       },
-      {} as Record<string, bigint>,
+      {} as Record<string, [bigint, string, string?]>,
     );
 
-    return Object.entries(rewardsByAddress).map(([address, amount]) => ({
-      address,
-      amount,
-    }));
+    return Object.entries(rewardsByAddress).map(
+      ([address, [amount, owner, competitor]]) => ({
+        address,
+        amount,
+        owner,
+        competitor,
+      }),
+    );
   }
 }
 
@@ -420,4 +493,46 @@ function areUint8ArraysEqual(a: Uint8Array, b: Uint8Array): boolean {
     if (a[i] !== b[i]) return false;
   }
   return true;
+}
+
+function* chunkGenerator<T>(array: T[], size: number): Generator<T[]> {
+  for (let i = 0; i < array.length; i += size) {
+    yield array.slice(i, i + size);
+  }
+}
+
+async function runWithConcurrencyLimit<T>(
+  rows: T[],
+  batchSize: number,
+  concurrency: number,
+  worker: (batch: T[]) => Promise<void>,
+): Promise<void> {
+  const iterator = chunkGenerator(rows, batchSize);
+
+  let active = 0;
+  let done = false;
+
+  return new Promise((resolve, reject) => {
+    function launchNext() {
+      const { value: batch, done: iterDone } = iterator.next();
+      if (iterDone) {
+        done = true;
+        if (active === 0) resolve();
+        return;
+      }
+
+      active++;
+      worker(batch)
+        .then(() => {
+          active--;
+          launchNext();
+          if (done && active === 0) resolve();
+        })
+        .catch(reject);
+    }
+
+    for (let i = 0; i < concurrency; i++) {
+      launchNext();
+    }
+  });
 }

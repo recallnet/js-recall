@@ -44,8 +44,6 @@ describe("Rewards API", () => {
   let testUser: TestPrivyUser;
 
   // Test constants for the allocate method
-  const testTokenAddress =
-    "0x1234567890123456789012345678901234567890" as `0x${string}`;
   const testStartTimestamp = Math.floor(Date.now() / 1000); // Current timestamp
 
   beforeEach(async () => {
@@ -91,35 +89,20 @@ describe("Rewards API", () => {
     // Create test rewards data with proper leaf hashes
     testRewards = [];
 
-    // Create first reward for the test user
-    const amount1 = BigInt(1);
-    const leafHashHex1 = createLeafNode(
+    // Create a single reward for the test user with amount 2
+    const totalAmount = BigInt(2);
+    const leafHashHex = createLeafNode(
       testUserAddress as `0x${string}`,
-      amount1,
+      totalAmount,
     );
 
     testRewards.push({
       id: crypto.randomUUID(),
       competitionId: testCompetitionId,
+      userId: user.id,
       address: testUserAddress as `0x${string}`,
-      amount: amount1,
-      leafHash: hexToBytes(leafHashHex1),
-      claimed: false,
-    });
-
-    // Create second reward for the test user
-    const amount2 = BigInt(1);
-    const leafHashHex2 = createLeafNode(
-      testUserAddress as `0x${string}`,
-      amount2,
-    );
-
-    testRewards.push({
-      id: crypto.randomUUID(),
-      competitionId: testCompetitionId,
-      address: testUserAddress as `0x${string}`,
-      amount: amount2,
-      leafHash: hexToBytes(leafHashHex2),
+      amount: totalAmount,
+      leafHash: hexToBytes(leafHashHex),
       claimed: false,
     });
 
@@ -127,11 +110,7 @@ describe("Rewards API", () => {
     await rewardsRepository.insertRewards(testRewards);
 
     // Execute the allocate method with all required parameters
-    await rewardsService.allocate(
-      testCompetitionId,
-      testTokenAddress,
-      testStartTimestamp,
-    );
+    await rewardsService.allocate(testCompetitionId, testStartTimestamp);
   });
 
   test("unauthenticated user cannot access rewards endpoints", async () => {
@@ -176,15 +155,15 @@ describe("Rewards API", () => {
       testUser.walletAddress?.toLowerCase(),
     );
     expect(Array.isArray(responseData.rewards)).toBe(true);
-    expect(responseData.rewards.length).toBe(2); // Should have exactly two rewards
+    expect(responseData.rewards.length).toBe(1); // Should have exactly one reward
 
     // Validate the reward structure for both rewards
     responseData.rewards.forEach((reward: RewardProof) => {
       expect(reward.merkleRoot).toMatch(/^0x[a-fA-F0-9]{64}$/);
       expect(typeof reward.amount).toBe("string");
-      expect(reward.amount).toBe("1"); // Each reward has amount 1
+      expect(reward.amount).toBe("2"); // Single reward has amount 2
       expect(Array.isArray(reward.proof)).toBe(true);
-      expect(reward.proof.length).toBe(2); // With 2 rewards, each proof has 1 sibling
+      expect(reward.proof.length).toBe(1); // With 1 reward + faux leaf, proof has 1 element
 
       // Validate proof format (should be hex strings)
       reward.proof.forEach((proofItem: string) => {

@@ -19,16 +19,19 @@ describe("calculate rewards for users", () => {
         competitor: "Competitor A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
       {
         competitor: "Competitor B",
         wallet: "0x2345678901234567890123456789012345678901",
         rank: 2,
+        owner: "owner-b",
       },
       {
         competitor: "Competitor C",
         wallet: "0x3456789012345678901234567890123456789012",
         rank: 3,
+        owner: "owner-c",
       },
     ];
     const window: BoostAllocationWindow = {
@@ -40,19 +43,22 @@ describe("calculate rewards for users", () => {
     const boostAllocations: BoostAllocation[] = [
       // Alice's allocations
       {
-        user: "Alice",
+        user_id: "alice-id",
+        user_wallet: "Alice",
         competitor: "Competitor A",
         boost: 100n,
         timestamp: new Date("2024-01-01T12:00:00Z"), // Day 1: decay factor 1.0
       },
       {
-        user: "Alice",
+        user_id: "alice-id",
+        user_wallet: "Alice",
         competitor: "Competitor B",
         boost: 50n,
         timestamp: new Date("2024-01-02T18:00:00Z"), // Day 2: decay factor 0.5
       },
       {
-        user: "Alice",
+        user_id: "alice-id",
+        user_wallet: "Alice",
         competitor: "Competitor C",
         boost: 75n,
         timestamp: new Date("2024-01-03T09:00:00Z"), // Day 3: decay factor 0.25
@@ -60,25 +66,29 @@ describe("calculate rewards for users", () => {
 
       // Bob's allocations
       {
-        user: "Bob",
+        user_id: "bob-id",
+        user_wallet: "Bob",
         competitor: "Competitor A",
         boost: 80n,
         timestamp: new Date("2024-01-01T15:00:00Z"), // Day 1: decay factor 1.0
       },
       {
-        user: "Bob",
+        user_id: "bob-id",
+        user_wallet: "Bob",
         competitor: "Competitor A",
         boost: 40n,
         timestamp: new Date("2024-01-02T10:00:00Z"), // Day 2: decay factor 0.5
       },
       {
-        user: "Bob",
+        user_id: "bob-id",
+        user_wallet: "Bob",
         competitor: "Competitor B",
         boost: 120n,
         timestamp: new Date("2024-01-01T20:00:00Z"), // Day 1: decay factor 1.0
       },
       {
-        user: "Bob",
+        user_id: "bob-id",
+        user_wallet: "Bob",
         competitor: "Competitor C",
         boost: 60n,
         timestamp: new Date("2024-01-04T14:00:00Z"), // Day 4: decay factor 0.125
@@ -86,19 +96,22 @@ describe("calculate rewards for users", () => {
 
       // Charlie's allocations
       {
-        user: "Charlie",
+        user_id: "charlie-id",
+        user_wallet: "Charlie",
         competitor: "Competitor B",
         boost: 90n,
         timestamp: new Date("2024-01-02T12:00:00Z"), // Day 2: decay factor 0.5
       },
       {
-        user: "Charlie",
+        user_id: "charlie-id",
+        user_wallet: "Charlie",
         competitor: "Competitor C",
         boost: 200n,
         timestamp: new Date("2024-01-01T08:00:00Z"), // Day 1: decay factor 1.0
       },
       {
-        user: "Charlie",
+        user_id: "charlie-id",
+        user_wallet: "Charlie",
         competitor: "Competitor C",
         boost: 30n,
         timestamp: new Date("2024-01-03T16:00:00Z"), // Day 3: decay factor 0.25
@@ -146,8 +159,11 @@ describe("calculate rewards for users", () => {
     const charlieReward = rewards.find((r) => r.address === "Charlie")!;
 
     expect(aliceReward.amount).eq(294551339071887017092n);
+    expect(aliceReward.owner).eq("alice-id");
     expect(bobReward.amount).eq(394543812352031530113n);
+    expect(bobReward.owner).eq("bob-id");
     expect(charlieReward.amount).eq(130663856691253951527n);
+    expect(charlieReward.owner).eq("charlie-id");
   });
 });
 
@@ -156,7 +172,13 @@ describe("calculate rewards for users", () => {
   it("should return empty array when leaderBoard is empty", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
+      {
+        user_id: "alice-id",
+        user_wallet: "Alice",
+        competitor: "A",
+        boost: 100n,
+        timestamp: new Date(),
+      },
     ];
     const window = {
       start: new Date("2024-01-01T00:00:00Z"),
@@ -179,6 +201,7 @@ describe("calculate rewards for users", () => {
         competitor: "A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
     ];
     const window = {
@@ -198,13 +221,20 @@ describe("calculate rewards for users", () => {
   it("should throw error when window end is before start", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
+      {
+        user_id: "alice-id",
+        user_wallet: "Alice",
+        competitor: "A",
+        boost: 100n,
+        timestamp: new Date(),
+      },
     ];
     const leaderBoard = [
       {
         competitor: "A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
     ];
     const window = {
@@ -225,13 +255,20 @@ describe("calculate rewards for users", () => {
   it("should throw error when prizePoolDecayRate is too low", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
+      {
+        user_id: "alice-id",
+        user_wallet: "Alice",
+        competitor: "A",
+        boost: 100n,
+        timestamp: new Date(),
+      },
     ];
     const leaderBoard = [
       {
         competitor: "A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
     ];
     const window = {
@@ -253,13 +290,20 @@ describe("calculate rewards for users", () => {
   it("should throw error when prizePoolDecayRate is too high", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
+      {
+        user_id: "alice-id",
+        user_wallet: "Alice",
+        competitor: "A",
+        boost: 100n,
+        timestamp: new Date(),
+      },
     ];
     const leaderBoard = [
       {
         competitor: "A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
     ];
     const window = {
@@ -281,13 +325,20 @@ describe("calculate rewards for users", () => {
   it("should throw error when boostTimeDecayRate is too low", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
+      {
+        user_id: "alice-id",
+        user_wallet: "Alice",
+        competitor: "A",
+        boost: 100n,
+        timestamp: new Date(),
+      },
     ];
     const leaderBoard = [
       {
         competitor: "A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
     ];
     const window = {
@@ -310,13 +361,20 @@ describe("calculate rewards for users", () => {
   it("should throw error when boostTimeDecayRate is too high", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
+      {
+        user_id: "alice-id",
+        user_wallet: "Alice",
+        competitor: "A",
+        boost: 100n,
+        timestamp: new Date(),
+      },
     ];
     const leaderBoard = [
       {
         competitor: "A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
     ];
     const window = {
@@ -343,11 +401,13 @@ describe("calculate rewards for users", () => {
         competitor: "Competitor A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
       {
         competitor: "Competitor B",
         wallet: "0x2345678901234567890123456789012345678901",
         rank: 2,
+        owner: "owner-b",
       },
     ];
     const window: BoostAllocationWindow = {
@@ -359,13 +419,15 @@ describe("calculate rewards for users", () => {
     const boostAllocations: BoostAllocation[] = [
       // Alice voted for valid competitors
       {
-        user: "Alice",
+        user_id: "alice-id",
+        user_wallet: "Alice",
         competitor: "Competitor A",
         boost: 100n,
         timestamp: new Date("2024-01-01T12:00:00Z"),
       },
       {
-        user: "Alice",
+        user_id: "alice-id",
+        user_wallet: "Alice",
         competitor: "Competitor B",
         boost: 50n,
         timestamp: new Date("2024-01-02T12:00:00Z"),
@@ -373,13 +435,15 @@ describe("calculate rewards for users", () => {
 
       // Bob voted for a valid competitor and a disqualified one
       {
-        user: "Bob",
+        user_id: "bob-id",
+        user_wallet: "Bob",
         competitor: "Competitor A",
         boost: 80n,
         timestamp: new Date("2024-01-01T12:00:00Z"),
       },
       {
-        user: "Bob",
+        user_id: "bob-id",
+        user_wallet: "Bob",
         competitor: "Disqualified Competitor", // This competitor is not in leaderboard
         boost: 120n,
         timestamp: new Date("2024-01-02T12:00:00Z"),
@@ -387,13 +451,15 @@ describe("calculate rewards for users", () => {
 
       // Charlie only voted for disqualified competitors
       {
-        user: "Charlie",
+        user_id: "charlie-id",
+        user_wallet: "Charlie",
         competitor: "Removed Competitor", // This competitor is not in leaderboard
         boost: 200n,
         timestamp: new Date("2024-01-01T12:00:00Z"),
       },
       {
-        user: "Charlie",
+        user_id: "charlie-id",
+        user_wallet: "Charlie",
         competitor: "Another Disqualified", // This competitor is not in leaderboard
         boost: 150n,
         timestamp: new Date("2024-01-02T12:00:00Z"),
@@ -458,6 +524,7 @@ describe("calculate rewards for competitors", () => {
         competitor: "A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
     ];
 
@@ -473,16 +540,19 @@ describe("calculate rewards for competitors", () => {
         competitor: "Competitor A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
       {
         competitor: "Competitor B",
         wallet: "0x2345678901234567890123456789012345678901",
         rank: 2,
+        owner: "owner-b",
       },
       {
         competitor: "Competitor C",
         wallet: "0x3456789012345678901234567890123456789012",
         rank: 3,
+        owner: "owner-c",
       },
     ];
     const rewards = calculateRewardsForCompetitors(prizePool, leaderBoard);
@@ -535,8 +605,14 @@ describe("calculate rewards for competitors", () => {
     // Rank 2: ~28.57% of prize pool = ~285.71 ETH
     // Rank 3: ~14.29% of prize pool = ~142.86 ETH
     expect(competitorAReward.amount).toBe(571428571428571428571n);
+    expect(competitorAReward.owner).toBe("owner-a");
+    expect(competitorAReward.competitor).toBe("Competitor A");
     expect(competitorBReward.amount).toBe(285714285714285714285n);
+    expect(competitorBReward.owner).toBe("owner-b");
+    expect(competitorBReward.competitor).toBe("Competitor B");
     expect(competitorCReward.amount).toBe(142857142857142857142n);
+    expect(competitorCReward.owner).toBe("owner-c");
+    expect(competitorCReward.competitor).toBe("Competitor C");
   });
 
   it("should calculate rewards correctly for 1000 ETH prize pool with ties in rankings", () => {
@@ -546,16 +622,19 @@ describe("calculate rewards for competitors", () => {
         competitor: "Competitor A",
         wallet: "0x1234567890123456789012345678901234567890",
         rank: 1,
+        owner: "owner-a",
       },
       {
         competitor: "Competitor B",
         wallet: "0x2345678901234567890123456789012345678901",
         rank: 1,
+        owner: "owner-b",
       }, // Tie for first place
       {
         competitor: "Competitor C",
         wallet: "0x3456789012345678901234567890123456789012",
         rank: 3,
+        owner: "owner-c",
       },
     ];
 
@@ -611,7 +690,13 @@ describe("calculate rewards for competitors", () => {
     // Rank 1 (tied): ~42.86% each = ~428.57 ETH each
     // Rank 3: ~14.29% = ~142.86 ETH
     expect(competitorAReward.amount).toBe(428571428571428571428n);
+    expect(competitorAReward.owner).toBe("owner-a");
+    expect(competitorAReward.competitor).toBe("Competitor A");
     expect(competitorBReward.amount).toBe(428571428571428571428n);
+    expect(competitorBReward.owner).toBe("owner-b");
+    expect(competitorBReward.competitor).toBe("Competitor B");
     expect(competitorCReward.amount).toBe(142857142857142857142n);
+    expect(competitorCReward.owner).toBe("owner-c");
+    expect(competitorCReward.competitor).toBe("Competitor C");
   });
 });

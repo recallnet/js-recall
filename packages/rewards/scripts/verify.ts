@@ -55,6 +55,7 @@ const SampleDataSchema = z.object({
       competitor: z.string(),
       rank: z.number(),
       wallet: z.string(),
+      owner: z.string(),
     }),
   ),
   window: z.object({
@@ -63,7 +64,8 @@ const SampleDataSchema = z.object({
   }),
   boostAllocations: z.array(
     z.object({
-      user: z.string(),
+      user_id: z.string(),
+      user_wallet: z.string(),
       competitor: z.string(),
       boost: z.coerce.bigint(),
       timestamp: z.coerce.date(),
@@ -101,7 +103,8 @@ async function main() {
     console.log(`Reading sample data from: ${sampleDataPath}`);
 
     const sampleDataRaw = readFileSync(sampleDataPath, "utf-8");
-    const sampleData = SampleDataSchema.parse(sampleDataRaw);
+    const sampleDataParsed = JSON.parse(sampleDataRaw);
+    const sampleData = SampleDataSchema.parse(sampleDataParsed);
 
     console.log("Sample data loaded successfully\n");
 
@@ -168,8 +171,8 @@ async function main() {
           console.log(`     User Totals (Effective Boost):`);
           Object.entries(
             value as Record<string, Record<string, unknown>>,
-          ).forEach(([user, competitors]) => {
-            console.log(`       ${user}:`);
+          ).forEach(([user_wallet, competitors]) => {
+            console.log(`       ${user_wallet}:`);
             Object.entries(competitors).forEach(([competitor, boost]) => {
               console.log(
                 `         ${competitor}: ${(boost as { toString(): string }).toString()}`,
@@ -188,9 +191,13 @@ async function main() {
         } else if (key === "rewards") {
           console.log(`     Final Rewards:`);
           (value as unknown[]).forEach((reward: unknown, idx: number) => {
-            const rewardObj = reward as { address: string; amount: bigint };
+            const rewardObj = reward as {
+              address: string;
+              amount: bigint;
+              owner: string;
+            };
             console.log(
-              `       ${idx + 1}. ${rewardObj.address}: ${formatAmount(rewardObj.amount)} WEI`,
+              `       ${idx + 1}. ${rewardObj.address} (${rewardObj.owner}): ${formatAmount(rewardObj.amount)} WEI`,
             );
           });
         }
@@ -207,9 +214,12 @@ async function main() {
       let totalDistributed = BigInt(0);
 
       rewards.forEach(
-        (reward: { address: string; amount: bigint }, index: number) => {
+        (
+          reward: { address: string; amount: bigint; owner: string },
+          index: number,
+        ) => {
           console.log(
-            `   ${index + 1}. ${reward.address}: ${formatAmount(reward.amount)} WEI`,
+            `   ${index + 1}. ${reward.address} (${reward.owner}): ${formatAmount(reward.amount)} WEI`,
           );
           totalDistributed += reward.amount;
         },

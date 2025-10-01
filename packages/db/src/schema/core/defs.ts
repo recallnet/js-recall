@@ -15,6 +15,8 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import { tokenAmount } from "../custom-types.js";
+
 export const MAX_HANDLE_LENGTH = 15;
 
 /**
@@ -460,6 +462,7 @@ export const competitionsLeaderboard = pgTable(
 
 /**
  * Rewards for top agents in a competition
+ * TODO: deprecate after TGE
  */
 export const competitionRewards = pgTable(
   "competition_rewards",
@@ -487,5 +490,27 @@ export const competitionRewards = pgTable(
     ),
     index("idx_competition_rewards_competition_id").on(table.competitionId),
     index("idx_competition_rewards_agent_id").on(table.agentId),
+  ],
+);
+
+/**
+ * Competition prize pools
+ */
+export const competitionPrizePools = pgTable(
+  "competition_prize_pools",
+  {
+    id: uuid().primaryKey().notNull(),
+    competitionId: uuid("competition_id").notNull(),
+    agentPool: tokenAmount("agent_pool").notNull(),
+    userPool: tokenAmount("user_pool").notNull(),
+  },
+  (table) => [
+    unique("competition_prize_pools_competition_id_key").on(
+      table.competitionId,
+    ),
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+    }),
   ],
 );
