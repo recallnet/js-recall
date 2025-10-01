@@ -1,0 +1,216 @@
+config:
+  target: "{{ $env.API_HOST }}"
+  processor: "../processors/agent-trading-processor.ts"
+  variables:
+    usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    wethToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    tgeToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2" # Using WETH as TGE token
+  phases:
+    # TGE simulation - extreme burst pattern
+    - duration: 60
+      arrivalRate: 5
+      name: "pre-launch"
+    - duration: 10
+      arrivalRate: 100 # Massive spike at launch
+      name: "tge-launch"
+    - duration: 300
+      arrivalRate: 50 # High sustained FOMO
+      name: "fomo-phase"
+    - duration: 120
+      arrivalRate: 30 # Stabilization
+      name: "stabilization"
+    - duration: 60
+      arrivalRate: 10 # Cooldown
+      name: "cooldown"
+
+before:
+  flow:
+    # Start Sentry metrics tracking
+    - function: "startTestMetrics"
+    - function: "startSetupPhase"
+
+    # Competition setup for TGE
+    - get:
+        url: "/api/competitions/status"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        capture:
+          - json: "$.active"
+            as: "isActive"
+          - json: "$.competition.id"
+            as: "activeCompetitionId"
+            strict: false # Don't fail if competition is null
+    - post:
+        url: "/api/admin/competition/end"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        json:
+          competitionId: "{{ activeCompetitionId }}"
+        ifTrue: "isActive"
+    - post:
+        url: "/api/admin/competition/create"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        beforeRequest: "setTgeCompetitionPayload"
+        json: {}
+        capture:
+          - json: "$.competition.id"
+            as: "competitionId"
+    - log: "Created TGE competition: {{ competitionId }}"
+
+    # Create agents for TGE simulation (configurable via AGENTS_COUNT, defaults to 200)
+    - loop:
+        - post:
+            beforeRequest: "generateRandomUserAndAgent"
+            url: "/api/admin/users"
+            headers:
+              Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+            json:
+              walletAddress: "{{ walletAddress }}"
+              name: "{{ userName }}"
+              email: "{{ userEmail }}"
+              agentName: "{{ agentName }}"
+              agentHandle: "{{ agentHandle }}"
+              agentWalletAddress: "{{ agentWalletAddress }}"
+            capture:
+              - json: "$.agent.id"
+                as: "agentId"
+            afterResponse: "extractUserAndAgentInfo"
+        - post:
+            url: "/api/admin/competitions/{{ competitionId }}/agents/{{ agentId }}"
+            headers:
+              Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+      count: "{{ $env.AGENTS_COUNT }}"
+    - post:
+        url: "/api/admin/competition/start"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        json:
+          competitionId: "{{ competitionId }}"
+    - log: "Started TGE competition with {{ $env.AGENTS_COUNT }} agents"
+
+    # Finish setup phase span
+    - function: "finishSetupPhase"
+
+after:
+  flow:
+    # Flush Sentry spans before exit
+    - function: "cleanupSentry"
+
+scenarios:
+  # FOMO buyers - aggressive accumulation
+  - name: "fomo-buyers"
+    weight: 40
+    flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
+      - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
+      - get:
+          url: "/api/agent/balances"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          afterResponse: "captureBalances"
+      - post:
+          url: "/api/trade/execute"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          beforeRequest: "tgeFomoTrade"
+          json: {}
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
+      - think: 0.5 # Quick decisions in FOMO
+
+  # Whale traders - large volume
+  - name: "whale-traders"
+    weight: 20
+    flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
+      - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
+      - get:
+          url: "/api/agent/balances"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          afterResponse: "captureBalances"
+      - post:
+          url: "/api/trade/execute"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          beforeRequest: "whaleTrade"
+          json: {}
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
+      - think: 1
+
+  # Late joiners catching up
+  - name: "catchup-traders"
+    weight: 30
+    flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
+      - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
+      - get:
+          url: "/api/agent/balances"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          afterResponse: "captureBalances"
+      - post:
+          url: "/api/trade/execute"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          beforeRequest: "catchupTrade"
+          json: {}
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
+      - think: 0.8
+
+  # Panic sellers (small percentage)
+  - name: "panic-sellers"
+    weight: 10
+    flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
+      - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
+      - get:
+          url: "/api/agent/balances"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          afterResponse: "captureBalances"
+      - post:
+          url: "/api/trade/execute"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          beforeRequest: "panicSell"
+          json: {}
+          ifTrue: "!skipTrade"
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
+      - think: 0.3

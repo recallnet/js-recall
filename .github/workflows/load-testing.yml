@@ -1,0 +1,114 @@
+name: Agent Trading Load Tests
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Daily at midnight
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: "Test duration in seconds"
+        required: false
+        default: "60"
+        type: string
+      request_rate:
+        description: "Request rate per second"
+        required: false
+        default: "8"
+        type: string
+      trade_amount:
+        description: "Trade amount in dollars"
+        required: false
+        default: "0.1"
+        type: string
+      agents_count:
+        description: "Number of agents"
+        required: false
+        default: "5"
+        type: string
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ">=20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Set test parameters
+        id: params
+        run: |
+          echo "duration=${{ github.event.inputs.duration }}" >> $GITHUB_OUTPUT
+          echo "rate=${{ github.event.inputs.request_rate }}" >> $GITHUB_OUTPUT
+          echo "test_name=Load Test (${{ github.event.inputs.request_rate }} req/s, ${{ github.event.inputs.duration }}s)" >> $GITHUB_OUTPUT
+
+      - name: Create .env file
+        working-directory: packages/load-test
+        run: |
+          echo "API_HOST=${{ secrets.PERF_API_HOST }}" >> .env
+          echo "ADMIN_API_KEY=${{ secrets.PERF_ADMIN_API_KEY }}" >> .env
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
+
+      - name: Run ${{ steps.params.outputs.test_name }}
+        id: load-test
+        working-directory: packages/load-test
+        run: |
+          npx tsx src/cli.ts stress \
+            --duration ${{ steps.params.outputs.duration }} \
+            --rate ${{ steps.params.outputs.rate }} \
+            --trade-amount ${{ github.event.inputs.trade_amount }} \
+            --agents ${{ github.event.inputs.agents_count }} \
+            --report
+        continue-on-error: true # Let ensure plugin determine pass/fail
+
+      - name: Generate HTML report
+        if: always()
+        working-directory: packages/load-test
+        run: pnpm report:latest
+
+      - name: Upload load test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-${{ github.run_number }}
+          path: |
+            packages/load-test/reports/*.html
+            packages/load-test/reports/*.json
+
+      - name: Check test result
+        if: steps.load-test.outcome == 'failure'
+        run: |
+          echo "❌ Load test failed - performance thresholds not met"
+          echo "Check the ensure plugin output above for details"
+          exit 1
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## Load Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Type**: ${{ steps.params.outputs.test_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duration**: ${{ steps.params.outputs.duration }}s" >> $GITHUB_STEP_SUMMARY
+          echo "- **Request Rate**: ${{ steps.params.outputs.rate }} req/s" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trade Amount**: \$${{ github.event.inputs.trade_amount }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Agents**: ${{ github.event.inputs.agents_count }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.load-test.outcome }}" = "success" ]; then
+            echo "- **Result**: ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Result**: ❌ FAILED" >> $GITHUB_STEP_SUMMARY
+          fi

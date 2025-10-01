@@ -1,0 +1,194 @@
+config:
+  target: "{{ $env.API_HOST }}"
+  processor: "../processors/agent-trading-processor.ts"
+  variables:
+    usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    wethToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+  phases:
+    # 30 minute resilience test with mixed patterns
+    - duration: 300
+      arrivalRate: 5
+      name: "normal"
+    - duration: 600
+      arrivalRate: 10
+      name: "mixed-load"
+    - duration: 600
+      arrivalRate: 15
+      name: "error-injection"
+    - duration: 300
+      arrivalRate: 5
+      name: "recovery"
+
+before:
+  flow:
+    # Start Sentry metrics tracking
+    - function: "startTestMetrics"
+    - function: "startSetupPhase"
+
+    # Competition setup (same as baseline)
+    - get:
+        url: "/api/competitions/status"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        capture:
+          - json: "$.active"
+            as: "isActive"
+          - json: "$.competition.id"
+            as: "activeCompetitionId"
+            strict: false # Don't fail if competition is null
+    - post:
+        url: "/api/admin/competition/end"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        json:
+          competitionId: "{{ activeCompetitionId }}"
+        ifTrue: "isActive"
+    - post:
+        url: "/api/admin/competition/create"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        beforeRequest: "setCompetitionPayload"
+        json: {}
+        capture:
+          - json: "$.competition.id"
+            as: "competitionId"
+
+    # Create agents for resilience testing (configurable via AGENTS_COUNT, defaults to 50)
+    - loop:
+        - post:
+            beforeRequest: "generateRandomUserAndAgent"
+            url: "/api/admin/users"
+            headers:
+              Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+            json:
+              walletAddress: "{{ walletAddress }}"
+              name: "{{ userName }}"
+              email: "{{ userEmail }}"
+              agentName: "{{ agentName }}"
+              agentHandle: "{{ agentHandle }}"
+              agentWalletAddress: "{{ agentWalletAddress }}"
+            capture:
+              - json: "$.agent.id"
+                as: "agentId"
+            afterResponse: "extractUserAndAgentInfo"
+        - post:
+            url: "/api/admin/competitions/{{ competitionId }}/agents/{{ agentId }}"
+            headers:
+              Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+      count: "{{ $env.AGENTS_COUNT }}"
+    - post:
+        url: "/api/admin/competition/start"
+        headers:
+          Authorization: "Bearer {{ $env.ADMIN_API_KEY }}"
+        json:
+          competitionId: "{{ competitionId }}"
+    - log: "Started resilience test with {{ $env.AGENTS_COUNT }} agents"
+
+    # Finish setup phase span
+    - function: "finishSetupPhase"
+
+after:
+  flow:
+    # Flush Sentry spans before exit
+    - function: "cleanupSentry"
+
+scenarios:
+  # Normal trading scenario
+  - name: "normal-trading"
+    weight: 50
+    flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
+      - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
+      - get:
+          url: "/api/agent/balances"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          afterResponse: "captureBalances"
+      - post:
+          url: "/api/trade/execute"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          beforeRequest: "normalTrade"
+          json: {}
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
+  # Overdraw attempts
+  - name: "overdraw-attempts"
+    weight: 20
+    flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
+      - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
+      - post:
+          url: "/api/trade/execute"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          beforeRequest: "overdrawnTrade"
+          json: {}
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
+  # Malformed requests
+  - name: "malformed-requests"
+    weight: 15
+    flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
+      - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
+      - post:
+          url: "/api/trade/execute"
+          headers:
+            Authorization: "Bearer {{ apiKey }}"
+          beforeRequest: "malformedTrade"
+          json: {}
+          afterResponse: "trackLoadTestMetrics"
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"
+
+  # Rate limit testing
+  - name: "rate-limit-test"
+    weight: 15
+    flow:
+      # Track scenario execution
+      - function: "trackScenarioExecution"
+      - function: "selectRandomAgent"
+
+      # Start trade flow timing
+      - function: "startTradeFlow"
+
+      - loop:
+          - post:
+              url: "/api/trade/execute"
+              headers:
+                Authorization: "Bearer {{ apiKey }}"
+              json:
+                fromToken: "{{ usdcToken }}"
+                toToken: "{{ wethToken }}"
+                amount: "0.1"
+                reason: "Rate limit test"
+                fromChain: "EVM"
+                toChain: "EVM"
+              afterResponse: "trackLoadTestMetrics"
+        count: 10
+
+      # Finish trade flow (emit metrics)
+      - function: "finishTradeFlow"

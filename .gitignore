@@ -57,3 +57,6 @@ apps/api/baseline/*.sql
 .DS_Store
 *.pem
 coverage/
+
+# Load test reports
+/packages/load-test/reports

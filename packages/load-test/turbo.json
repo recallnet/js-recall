@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "env": [
+        "AGENTS_COUNT",
+        "API_HOST",
+        "ADMIN_API_KEY",
+        "SENTRY_DSN",
+        "SENTRY_ORG",
+        "SENTRY_PROJECT_ID",
+        "SENTRY_TRACES_SAMPLE_RATE",
+        "SENTRY_SAMPLE_REQUEST",
+        "TEST_DURATION",
+        "TEST_NAME",
+        "TEST_PROFILE",
+        "TEST_RUN_ID",
+        "REQUEST_RATE",
+        "TRADE_AMOUNT"
+      ]
+    }
+  }
+}
