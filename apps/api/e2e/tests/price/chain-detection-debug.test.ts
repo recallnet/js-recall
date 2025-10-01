@@ -1,6 +1,11 @@
 import dotenv from "dotenv";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { PriceTrackerService } from "@recallnet/services";
+import { MultiChainProvider } from "@recallnet/services/providers";
+import { BlockchainType } from "@recallnet/services/types";
+
+import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { PriceResponse } from "@/e2e/utils/api-types.js";
 import {
@@ -8,8 +13,7 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
-import { PriceTrackerService } from "@/services/price-tracker.service.js";
-import { BlockchainType } from "@/types/index.js";
+import { logger } from "@/lib/logger.js";
 
 // Load environment variables
 dotenv.config();
@@ -55,7 +59,11 @@ describe("Chain Detection Debug", () => {
     expect(startResp.success).toBe(true);
 
     // Initialize price tracker
-    priceTracker = new PriceTrackerService();
+    priceTracker = new PriceTrackerService(
+      new MultiChainProvider(config, logger),
+      config,
+      logger,
+    );
   });
 
   describe("Local Chain Detection", () => {

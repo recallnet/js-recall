@@ -2,6 +2,8 @@ import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express from "express";
 
+import { ApiError } from "@recallnet/services/types";
+
 import { config } from "@/config/index.js";
 import { makeAdminController } from "@/controllers/admin.controller.js";
 import { makeAgentController } from "@/controllers/agent.controller.js";
@@ -19,7 +21,7 @@ import { apiLogger } from "@/lib/logger.js";
 import { initSentry } from "@/lib/sentry.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
-import errorHandler, { ApiError } from "@/middleware/errorHandler.js";
+import errorHandler from "@/middleware/errorHandler.js";
 import { loggingMiddleware } from "@/middleware/logging.middleware.js";
 import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
@@ -38,6 +40,7 @@ import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import { makeBoostController } from "./controllers/boost.controller.js";
+import { updateFeaturesWithCompetition } from "./lib/update-features-with-comp.js";
 import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
@@ -81,7 +84,9 @@ try {
 const services = new ServiceRegistry();
 
 // Load competition-specific configuration settings
-await services.configurationService.loadCompetitionSettings();
+const activeCompetition =
+  await services.competitionService.getActiveCompetition();
+updateFeaturesWithCompetition(activeCompetition);
 apiLogger.info("Competition-specific configuration settings loaded");
 
 // Configure middleware

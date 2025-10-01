@@ -1,20 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
+import { ApiError } from "@recallnet/services/types";
+
 import { middlewareLogger } from "@/lib/logger.js";
-
-/**
- * Custom error class with HTTP status code
- */
-export class ApiError extends Error {
-  statusCode: number;
-
-  constructor(statusCode: number, message: string) {
-    super(message);
-    this.statusCode = statusCode;
-    this.name = this.constructor.name;
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
 
 /**
  * Global error handler middleware

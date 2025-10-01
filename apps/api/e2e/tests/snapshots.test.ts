@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { get24hSnapshots } from "@/database/repositories/competition-repository.js";
 import {
   createTestClient,
   getAdminApiKey,
@@ -23,7 +22,10 @@ describe("get24hSnapshots Repository Function", () => {
     const competitionId = "test-competition-id";
     const agentIds: string[] = [];
 
-    const result = await get24hSnapshots(competitionId, agentIds);
+    const result = await services.competitionRepository.get24hSnapshots(
+      competitionId,
+      agentIds,
+    );
 
     expect(result).toEqual({
       earliestSnapshots: [],
@@ -71,7 +73,10 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(500);
 
     // Call the function under test
-    const result = await get24hSnapshots(competitionId, [agent1.id, agent2.id]);
+    const result = await services.competitionRepository.get24hSnapshots(
+      competitionId,
+      [agent1.id, agent2.id],
+    );
 
     expect(result).toBeDefined();
     expect(result.earliestSnapshots).toBeDefined();
@@ -134,7 +139,10 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(1000);
 
     // Call the function under test
-    const result = await get24hSnapshots(competitionId, [agent.id]);
+    const result = await services.competitionRepository.get24hSnapshots(
+      competitionId,
+      [agent.id],
+    );
 
     expect(result).toBeDefined();
     expect(result.earliestSnapshots).toBeDefined();
@@ -159,7 +167,10 @@ describe("get24hSnapshots Repository Function", () => {
       "550e8400-e29b-41d4-a716-446655440002",
     ];
 
-    const result = await get24hSnapshots(nonExistentCompetitionId, agentIds);
+    const result = await services.competitionRepository.get24hSnapshots(
+      nonExistentCompetitionId,
+      agentIds,
+    );
 
     expect(result).toEqual({
       earliestSnapshots: [],
@@ -196,7 +207,10 @@ describe("get24hSnapshots Repository Function", () => {
       "550e8400-e29b-41d4-a716-446655440003",
       "550e8400-e29b-41d4-a716-446655440004",
     ];
-    const result = await get24hSnapshots(competitionId, nonExistentAgentIds);
+    const result = await services.competitionRepository.get24hSnapshots(
+      competitionId,
+      nonExistentAgentIds,
+    );
 
     expect(result).toEqual({
       earliestSnapshots: [],
@@ -230,7 +244,10 @@ describe("get24hSnapshots Repository Function", () => {
 
     // Mix existing and non-existing agent IDs
     const mixedAgentIds = [agent.id, "550e8400-e29b-41d4-a716-446655440005"];
-    const result = await get24hSnapshots(competitionId, mixedAgentIds);
+    const result = await services.competitionRepository.get24hSnapshots(
+      competitionId,
+      mixedAgentIds,
+    );
 
     expect(result).toBeDefined();
     expect(result.earliestSnapshots).toBeDefined();
@@ -252,7 +269,10 @@ describe("get24hSnapshots Repository Function", () => {
     const agentIds: string[] = [];
 
     // The function should execute without timing-related errors
-    const result = await get24hSnapshots(competitionId, agentIds);
+    const result = await services.competitionRepository.get24hSnapshots(
+      competitionId,
+      agentIds,
+    );
 
     expect(result).toBeDefined();
     expect(typeof result).toBe("object");
@@ -299,7 +319,10 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(500);
 
     // Call the function under test
-    const result = await get24hSnapshots(competitionId, [agent.id]);
+    const result = await services.competitionRepository.get24hSnapshots(
+      competitionId,
+      [agent.id],
+    );
 
     expect(result).toBeDefined();
     expect(result.earliestSnapshots.length).toBeGreaterThan(0);

@@ -148,14 +148,14 @@ export default function CompetitionsPage() {
 
             <div className="flex gap-1">
               <Link href="/leaderboards">
-                <Button className="border border-white bg-white p-6 uppercase text-black transition-colors duration-200 hover:bg-black hover:text-white">
+                <Button className="border border-blue-500 bg-blue-500 p-6 uppercase text-white transition-colors duration-200 hover:border-white hover:bg-white hover:text-blue-500">
                   Browse Leaderboard
                 </Button>
               </Link>
               {session.ready && !session.isAuthenticated && (
                 <>
                   <Button
-                    className="border border-white bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
+                    className="border border-[#303846] bg-black p-6 text-white transition-colors duration-200 hover:bg-white hover:text-black"
                     onClick={() => setIsJoining(true)}
                   >
                     SIGN IN

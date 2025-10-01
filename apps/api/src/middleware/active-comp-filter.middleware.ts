@@ -2,11 +2,11 @@ import { eq } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 
 import { competitions } from "@recallnet/db/schema/core/defs";
+import { ApiError } from "@recallnet/services/types";
 
 import { config } from "@/config/index.js";
 import { db } from "@/database/db.js";
 import { middlewareLogger } from "@/lib/logger.js";
-import { ApiError } from "@/middleware/errorHandler.js";
 
 /**
  * Active Competition Filter Middleware

@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 
+import { AdminService } from "@recallnet/services";
+import { ApiError } from "@recallnet/services/types";
+
 import { middlewareLogger } from "@/lib/logger.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { AdminService } from "@/services/admin.service.js";
 
 /**
  * Admin Authentication Middleware

@@ -1,19 +1,20 @@
 import { NextFunction, Request, Response } from "express";
 
-import { addAgentToCompetition } from "@/database/repositories/competition-repository.js";
-import { flatParse } from "@/lib/flat-parse.js";
-import { adminLogger } from "@/lib/logger.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { ServiceRegistry } from "@/services/index.js";
 import {
   ActorStatus,
   AdminCreateAgentSchema,
   Agent,
   AgentPublic,
+  ApiError,
   User,
   toApiAgent,
   toApiUser,
-} from "@/types/index.js";
+} from "@recallnet/services/types";
+
+import { flatParse } from "@/lib/flat-parse.js";
+import { adminLogger } from "@/lib/logger.js";
+import { updateFeaturesWithCompetition } from "@/lib/update-features-with-comp.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
@@ -323,6 +324,10 @@ export function makeAdminController(services: ServiceRegistry) {
                 },
           });
 
+        const activeCompetition =
+          await services.competitionService.getActiveCompetition();
+        updateFeaturesWithCompetition(activeCompetition);
+
         // Return the started competition
         res.status(200).json({
           success: true,
@@ -351,6 +356,10 @@ export function makeAdminController(services: ServiceRegistry) {
         // End the competition
         const { competition: endedCompetition, leaderboard } =
           await services.competitionService.endCompetition(competitionId);
+
+        const activeCompetition =
+          await services.competitionService.getActiveCompetition();
+        updateFeaturesWithCompetition(activeCompetition);
 
         adminLogger.info(
           `Successfully ended competition, id: ${competitionId}`,
@@ -1386,7 +1395,10 @@ export function makeAdminController(services: ServiceRegistry) {
 
         // Add agent to competition using repository method
         try {
-          await addAgentToCompetition(competitionId, agentId);
+          await services.competitionRepository.addAgentToCompetition(
+            competitionId,
+            agentId,
+          );
         } catch (error) {
           // Handle specific error for participant limit
           if (

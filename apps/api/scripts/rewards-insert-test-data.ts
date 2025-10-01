@@ -7,12 +7,9 @@ import { hexToBytes, keccak256 } from "viem";
 
 import { competitions } from "@recallnet/db/schema/core/defs";
 import { rewards } from "@recallnet/db/schema/voting/defs";
+import { createFauxLeafNode, createLeafNode } from "@recallnet/services";
 
 import { db } from "@/database/db.js";
-import {
-  createFauxLeafNode,
-  createLeafNode,
-} from "@/services/rewards.service.js";
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });

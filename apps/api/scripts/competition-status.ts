@@ -1,12 +1,6 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-import { findAll as findAllAgents } from "@/database/repositories/agent-repository.js";
-import {
-  findAll,
-  getAgentPortfolioSnapshots,
-  getCompetitionAgents,
-} from "@/database/repositories/competition-repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 const services = new ServiceRegistry();
@@ -92,7 +86,7 @@ async function showCompetitionStatus() {
       );
 
       // Check if there are any previous competitions
-      const pastCompetitions = await findAll();
+      const pastCompetitions = await services.competitionRepository.findAll();
       const completedCompetitions = pastCompetitions.filter(
         (c) => c.status === "ended",
       );
@@ -125,10 +119,11 @@ async function showCompetitionStatus() {
     }
 
     // Get agents participating in the competition
-    const participatingAgentIds = await getCompetitionAgents(competition.id);
+    const participatingAgentIds =
+      await services.competitionRepository.getCompetitionAgents(competition.id);
 
     // Get all agents (for mapping IDs to names) - direct DB access for script
-    const allAgents = await findAllAgents({
+    const allAgents = await services.agentRepository.findAll({
       limit: 1000000,
       offset: 0,
       sort: "-createdAt",
@@ -238,10 +233,11 @@ async function showCompetitionStatus() {
 
       // Get the first snapshot for each agent in the competition
       for (const entry of sortedLeaderboard) {
-        const snapshots = await getAgentPortfolioSnapshots(
-          competition.id,
-          entry.agentId,
-        );
+        const snapshots =
+          await services.competitionRepository.getAgentPortfolioSnapshots(
+            competition.id,
+            entry.agentId,
+          );
         if (snapshots.length > 0) {
           // Sort by timestamp and get the first one (initial snapshot)
           const sortedSnapshots = snapshots.sort(

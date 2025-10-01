@@ -2,11 +2,12 @@ import { Request } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { config } from "@/config/index.js";
 import {
   checkUniqueConstraintViolation,
   checkUserUniqueConstraintViolation,
-} from "@/lib/error-utils.js";
+} from "@recallnet/services/lib";
+
+import { config } from "@/config/index.js";
 import { AuthenticatedRequest } from "@/types/index.js";
 
 import {

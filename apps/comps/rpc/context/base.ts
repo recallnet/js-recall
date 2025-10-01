@@ -15,7 +15,7 @@ import { PrivyClient } from "@privy-io/node";
 import { cookies } from "next/headers";
 
 import { Database } from "@recallnet/db/types";
-import { BoostService } from "@recallnet/services/boost";
+import { BoostService } from "@recallnet/services";
 
 /**
  * The base context object for RPC procedures. The properties included
