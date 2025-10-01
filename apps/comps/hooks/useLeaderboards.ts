@@ -14,5 +14,6 @@ export const useLeaderboards = (params: GetLeaderboardParams = {}) =>
     queryFn: async (): Promise<LeaderboardResponse> => {
       return apiClient.getGlobalLeaderboard(params);
     },
+    enabled: params.enabled !== false,
     placeholderData: (prev) => prev,
   });
