@@ -26,6 +26,7 @@ import {
 
 import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
+import { client as rpcClient } from "@/rpc/clients/client-side";
 import { User as BackendUser, UpdateProfileRequest } from "@/types";
 
 type Session = {
@@ -145,21 +146,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   } = useQuery({
     queryKey: ["user"],
     queryFn: async () => {
-      const response = await apiClient.current.getProfile();
-      if (!response.success) {
-        throw new Error("Failed to fetch user");
-      }
-      return response.user;
+      return await rpcClient.user.getProfile();
     },
     enabled: authenticated && ready && isLoginToBackendSuccess,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-    // TODO: Use a client that has better error types that include status codes.
-    // retry: (failureCount, error) => {
-    //   // Don't retry on 401/403 errors
-    //   if (error?.status === 401 || error?.status === 403) return false;
-    //   return failureCount < 3;
-    // },
+    retry: (failureCount, error) => {
+      // Don't retry on 401/403 errors (UNAUTHORIZED)
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "UNAUTHORIZED"
+      ) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
   const {
