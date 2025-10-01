@@ -4,6 +4,8 @@ import * as path from "path";
 import { parse } from "ts-command-line-args";
 import { Hex } from "viem";
 
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { RewardsService } from "@recallnet/services";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
@@ -97,8 +99,11 @@ async function allocateRewards() {
     console.log(`${blue("Token Address:")} ${yellow(args.tokenAddress)}`);
     console.log(`${blue("Start Timestamp:")} ${yellow(args.startTimestamp)}`);
 
-    // Instantiate the RewardsService (will use config-based RewardsAllocator)
+    // Instantiate the RewardsService with all required dependencies
     const rewardsRepo = new RewardsRepository(db, repositoryLogger);
+    const competitionRepo = new CompetitionRepository(db, db, repositoryLogger);
+    const boostRepo = new BoostRepository(db);
+
     const { allocatorPrivateKey, contractAddress, rpcProvider } =
       config.rewards;
     const rewardsAllocator = new RewardsAllocator(
@@ -106,8 +111,11 @@ async function allocateRewards() {
       rpcProvider,
       contractAddress as Hex,
     );
+
     const rewardsService = new RewardsService(
       rewardsRepo,
+      competitionRepo,
+      boostRepo,
       rewardsAllocator,
       db,
       serviceLogger,

@@ -15,9 +15,21 @@ describe("calculate rewards for users", () => {
     // Test parameters from testcase.md
     const prizePool = 1000n * 10n ** 18n; // 1000 ETH in WEI
     const leaderBoard: Leaderboard = [
-      { competitor: "Competitor A", rank: 1 },
-      { competitor: "Competitor B", rank: 2 },
-      { competitor: "Competitor C", rank: 3 },
+      {
+        competitor: "Competitor A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+      {
+        competitor: "Competitor B",
+        wallet: "0x2345678901234567890123456789012345678901",
+        rank: 2,
+      },
+      {
+        competitor: "Competitor C",
+        wallet: "0x3456789012345678901234567890123456789012",
+        rank: 3,
+      },
     ];
     const window: BoostAllocationWindow = {
       start: new Date("2024-01-01T00:00:00Z"),
@@ -30,19 +42,19 @@ describe("calculate rewards for users", () => {
       {
         user: "Alice",
         competitor: "Competitor A",
-        boost: 100,
+        boost: 100n,
         timestamp: new Date("2024-01-01T12:00:00Z"), // Day 1: decay factor 1.0
       },
       {
         user: "Alice",
         competitor: "Competitor B",
-        boost: 50,
+        boost: 50n,
         timestamp: new Date("2024-01-02T18:00:00Z"), // Day 2: decay factor 0.5
       },
       {
         user: "Alice",
         competitor: "Competitor C",
-        boost: 75,
+        boost: 75n,
         timestamp: new Date("2024-01-03T09:00:00Z"), // Day 3: decay factor 0.25
       },
 
@@ -50,25 +62,25 @@ describe("calculate rewards for users", () => {
       {
         user: "Bob",
         competitor: "Competitor A",
-        boost: 80,
+        boost: 80n,
         timestamp: new Date("2024-01-01T15:00:00Z"), // Day 1: decay factor 1.0
       },
       {
         user: "Bob",
         competitor: "Competitor A",
-        boost: 40,
+        boost: 40n,
         timestamp: new Date("2024-01-02T10:00:00Z"), // Day 2: decay factor 0.5
       },
       {
         user: "Bob",
         competitor: "Competitor B",
-        boost: 120,
+        boost: 120n,
         timestamp: new Date("2024-01-01T20:00:00Z"), // Day 1: decay factor 1.0
       },
       {
         user: "Bob",
         competitor: "Competitor C",
-        boost: 60,
+        boost: 60n,
         timestamp: new Date("2024-01-04T14:00:00Z"), // Day 4: decay factor 0.125
       },
 
@@ -76,19 +88,19 @@ describe("calculate rewards for users", () => {
       {
         user: "Charlie",
         competitor: "Competitor B",
-        boost: 90,
+        boost: 90n,
         timestamp: new Date("2024-01-02T12:00:00Z"), // Day 2: decay factor 0.5
       },
       {
         user: "Charlie",
         competitor: "Competitor C",
-        boost: 200,
+        boost: 200n,
         timestamp: new Date("2024-01-01T08:00:00Z"), // Day 1: decay factor 1.0
       },
       {
         user: "Charlie",
         competitor: "Competitor C",
-        boost: 30,
+        boost: 30n,
         timestamp: new Date("2024-01-03T16:00:00Z"), // Day 3: decay factor 0.25
       },
     ];
@@ -144,7 +156,7 @@ describe("calculate rewards for users", () => {
   it("should return empty array when leaderBoard is empty", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
     ];
     const window = {
       start: new Date("2024-01-01T00:00:00Z"),
@@ -162,7 +174,13 @@ describe("calculate rewards for users", () => {
 
   it("should return empty array when boostAllocations is empty", () => {
     const prizePool = 1000n * 10n ** 18n;
-    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const leaderBoard = [
+      {
+        competitor: "A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+    ];
     const window = {
       start: new Date("2024-01-01T00:00:00Z"),
       end: new Date("2024-01-05T00:00:00Z"),
@@ -180,9 +198,15 @@ describe("calculate rewards for users", () => {
   it("should throw error when window end is before start", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
     ];
-    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const leaderBoard = [
+      {
+        competitor: "A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+    ];
     const window = {
       start: new Date("2024-01-05T00:00:00Z"),
       end: new Date("2024-01-01T00:00:00Z"), // end before start
@@ -201,9 +225,15 @@ describe("calculate rewards for users", () => {
   it("should throw error when prizePoolDecayRate is too low", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
     ];
-    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const leaderBoard = [
+      {
+        competitor: "A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+    ];
     const window = {
       start: new Date("2024-01-01T00:00:00Z"),
       end: new Date("2024-01-05T00:00:00Z"),
@@ -223,9 +253,15 @@ describe("calculate rewards for users", () => {
   it("should throw error when prizePoolDecayRate is too high", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
     ];
-    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const leaderBoard = [
+      {
+        competitor: "A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+    ];
     const window = {
       start: new Date("2024-01-01T00:00:00Z"),
       end: new Date("2024-01-05T00:00:00Z"),
@@ -245,9 +281,15 @@ describe("calculate rewards for users", () => {
   it("should throw error when boostTimeDecayRate is too low", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
     ];
-    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const leaderBoard = [
+      {
+        competitor: "A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+    ];
     const window = {
       start: new Date("2024-01-01T00:00:00Z"),
       end: new Date("2024-01-05T00:00:00Z"),
@@ -268,9 +310,15 @@ describe("calculate rewards for users", () => {
   it("should throw error when boostTimeDecayRate is too high", () => {
     const prizePool = 1000n * 10n ** 18n;
     const boostAllocations = [
-      { user: "Alice", competitor: "A", boost: 100, timestamp: new Date() },
+      { user: "Alice", competitor: "A", boost: 100n, timestamp: new Date() },
     ];
-    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const leaderBoard = [
+      {
+        competitor: "A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+    ];
     const window = {
       start: new Date("2024-01-01T00:00:00Z"),
       end: new Date("2024-01-05T00:00:00Z"),
@@ -287,6 +335,113 @@ describe("calculate rewards for users", () => {
       ),
     ).toThrow("Invalid boost time decay rate");
   });
+
+  it("should handle users who voted for competitors not in leaderboard (disqualified/removed)", () => {
+    const prizePool = 1000n * 10n ** 18n; // 1000 ETH in WEI
+    const leaderBoard: Leaderboard = [
+      {
+        competitor: "Competitor A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+      {
+        competitor: "Competitor B",
+        wallet: "0x2345678901234567890123456789012345678901",
+        rank: 2,
+      },
+    ];
+    const window: BoostAllocationWindow = {
+      start: new Date("2024-01-01T00:00:00Z"),
+      end: new Date("2024-01-05T00:00:00Z"),
+    };
+
+    // Boost allocations where some users voted for competitors not in the leaderboard
+    const boostAllocations: BoostAllocation[] = [
+      // Alice voted for valid competitors
+      {
+        user: "Alice",
+        competitor: "Competitor A",
+        boost: 100n,
+        timestamp: new Date("2024-01-01T12:00:00Z"),
+      },
+      {
+        user: "Alice",
+        competitor: "Competitor B",
+        boost: 50n,
+        timestamp: new Date("2024-01-02T12:00:00Z"),
+      },
+
+      // Bob voted for a valid competitor and a disqualified one
+      {
+        user: "Bob",
+        competitor: "Competitor A",
+        boost: 80n,
+        timestamp: new Date("2024-01-01T12:00:00Z"),
+      },
+      {
+        user: "Bob",
+        competitor: "Disqualified Competitor", // This competitor is not in leaderboard
+        boost: 120n,
+        timestamp: new Date("2024-01-02T12:00:00Z"),
+      },
+
+      // Charlie only voted for disqualified competitors
+      {
+        user: "Charlie",
+        competitor: "Removed Competitor", // This competitor is not in leaderboard
+        boost: 200n,
+        timestamp: new Date("2024-01-01T12:00:00Z"),
+      },
+      {
+        user: "Charlie",
+        competitor: "Another Disqualified", // This competitor is not in leaderboard
+        boost: 150n,
+        timestamp: new Date("2024-01-02T12:00:00Z"),
+      },
+    ];
+
+    // Calculate rewards - should not throw an error
+    const rewards = calculateRewardsForUsers(
+      prizePool,
+      boostAllocations,
+      leaderBoard,
+      window,
+    );
+
+    // Verify the results structure
+    expect(rewards).toHaveLength(2); // Only Alice and Bob should get rewards
+
+    // Sort by address to ensure consistent ordering for comparison
+    const sortedRewards = rewards.sort((a, b) =>
+      a.address.localeCompare(b.address),
+    );
+
+    // Verify only users who voted for valid competitors get rewards
+    const addresses = sortedRewards.map((r) => r.address);
+    expect(addresses).toContain("Alice");
+    expect(addresses).toContain("Bob");
+    expect(addresses).not.toContain("Charlie"); // Charlie should not get rewards
+
+    // Verify that rewards were distributed (total should be positive)
+    const totalDistributed = rewards.reduce(
+      (sum, reward) => sum + reward.amount,
+      0n,
+    );
+    expect(totalDistributed).toBeGreaterThan(0n);
+    expect(totalDistributed).toBeLessThanOrEqual(prizePool);
+
+    // Verify all rewards are positive
+    rewards.forEach((reward) => {
+      expect(reward.amount).toBeGreaterThan(0n);
+    });
+
+    // Verify Alice gets more reward than Bob since Bob's boost to disqualified competitor is ignored
+    const aliceReward = rewards.find((r) => r.address === "Alice")!;
+    const bobReward = rewards.find((r) => r.address === "Bob")!;
+
+    // Alice has 100 + 50 = 150 total boost, Bob has only 80 (120 to disqualified is ignored)
+    expect(aliceReward.amount).toBeGreaterThan(bobReward.amount);
+  });
 });
 
 describe("calculate rewards for competitors", () => {
@@ -298,7 +453,13 @@ describe("calculate rewards for competitors", () => {
 
   it("should throw error when prizePoolDecayRate is invalid for competitors", () => {
     const prizePool = 1000n * 10n ** 18n;
-    const leaderBoard = [{ competitor: "A", rank: 1 }];
+    const leaderBoard = [
+      {
+        competitor: "A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+    ];
 
     expect(() =>
       calculateRewardsForCompetitors(prizePool, leaderBoard, 0.05),
@@ -308,11 +469,22 @@ describe("calculate rewards for competitors", () => {
   it("should calculate rewards correctly for 1000 ETH prize pool with 3 competitors", () => {
     const prizePool = 1000n * 10n ** 18n; // 1000 ETH in WEI
     const leaderBoard: Leaderboard = [
-      { competitor: "Competitor A", rank: 1 },
-      { competitor: "Competitor B", rank: 2 },
-      { competitor: "Competitor C", rank: 3 },
+      {
+        competitor: "Competitor A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+      {
+        competitor: "Competitor B",
+        wallet: "0x2345678901234567890123456789012345678901",
+        rank: 2,
+      },
+      {
+        competitor: "Competitor C",
+        wallet: "0x3456789012345678901234567890123456789012",
+        rank: 3,
+      },
     ];
-
     const rewards = calculateRewardsForCompetitors(prizePool, leaderBoard);
 
     // Verify the results structure
@@ -325,9 +497,9 @@ describe("calculate rewards for competitors", () => {
 
     // Verify all competitors are present
     const addresses = sortedRewards.map((r) => r.address);
-    expect(addresses).toContain("Competitor A");
-    expect(addresses).toContain("Competitor B");
-    expect(addresses).toContain("Competitor C");
+    expect(addresses).toContain("0x1234567890123456789012345678901234567890");
+    expect(addresses).toContain("0x2345678901234567890123456789012345678901");
+    expect(addresses).toContain("0x3456789012345678901234567890123456789012");
 
     // Verify that rewards were distributed (total should be approximately equal to prize pool)
     const totalDistributed = rewards.reduce(
@@ -345,13 +517,13 @@ describe("calculate rewards for competitors", () => {
 
     // Verify rank 1 gets the highest reward, rank 2 gets second highest, etc.
     const competitorAReward = rewards.find(
-      (r) => r.address === "Competitor A",
+      (r) => r.address === "0x1234567890123456789012345678901234567890",
     )!;
     const competitorBReward = rewards.find(
-      (r) => r.address === "Competitor B",
+      (r) => r.address === "0x2345678901234567890123456789012345678901",
     )!;
     const competitorCReward = rewards.find(
-      (r) => r.address === "Competitor C",
+      (r) => r.address === "0x3456789012345678901234567890123456789012",
     )!;
 
     expect(competitorAReward.amount).toBeGreaterThan(competitorBReward.amount);
@@ -370,9 +542,21 @@ describe("calculate rewards for competitors", () => {
   it("should calculate rewards correctly for 1000 ETH prize pool with ties in rankings", () => {
     const prizePool = 1000n * 10n ** 18n; // 1000 ETH in WEI
     const leaderBoard: Leaderboard = [
-      { competitor: "Competitor A", rank: 1 },
-      { competitor: "Competitor B", rank: 1 }, // Tie for first place
-      { competitor: "Competitor C", rank: 3 },
+      {
+        competitor: "Competitor A",
+        wallet: "0x1234567890123456789012345678901234567890",
+        rank: 1,
+      },
+      {
+        competitor: "Competitor B",
+        wallet: "0x2345678901234567890123456789012345678901",
+        rank: 1,
+      }, // Tie for first place
+      {
+        competitor: "Competitor C",
+        wallet: "0x3456789012345678901234567890123456789012",
+        rank: 3,
+      },
     ];
 
     const rewards = calculateRewardsForCompetitors(prizePool, leaderBoard);
@@ -387,9 +571,9 @@ describe("calculate rewards for competitors", () => {
 
     // Verify all competitors are present
     const addresses = sortedRewards.map((r) => r.address);
-    expect(addresses).toContain("Competitor A");
-    expect(addresses).toContain("Competitor B");
-    expect(addresses).toContain("Competitor C");
+    expect(addresses).toContain("0x1234567890123456789012345678901234567890");
+    expect(addresses).toContain("0x2345678901234567890123456789012345678901");
+    expect(addresses).toContain("0x3456789012345678901234567890123456789012");
 
     // Verify that rewards were distributed (total should be approximately equal to prize pool)
     const totalDistributed = rewards.reduce(
@@ -407,13 +591,13 @@ describe("calculate rewards for competitors", () => {
 
     // Verify tied competitors get equal rewards
     const competitorAReward = rewards.find(
-      (r) => r.address === "Competitor A",
+      (r) => r.address === "0x1234567890123456789012345678901234567890",
     )!;
     const competitorBReward = rewards.find(
-      (r) => r.address === "Competitor B",
+      (r) => r.address === "0x2345678901234567890123456789012345678901",
     )!;
     const competitorCReward = rewards.find(
-      (r) => r.address === "Competitor C",
+      (r) => r.address === "0x3456789012345678901234567890123456789012",
     )!;
 
     // Tied competitors should get equal rewards
