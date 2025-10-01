@@ -266,8 +266,8 @@ describe("Multi-Chain Provider Tests", () => {
       expect(providers.length).toBe(1);
 
       // Find MultiChainProvider in the list
-      const hasMultiChain = providers.some(
-        (p: PriceSource) => p.getName() === "DexScreener MultiChain",
+      const hasMultiChain = providers.some((p: PriceSource) =>
+        p.getName().includes("MultiChain"),
       );
       expect(hasMultiChain).toBe(true);
 

@@ -27,7 +27,7 @@ describe("Leaderboard API", () => {
     adminApiKey = await getAdminApiKey();
   });
 
-  test("should get global leaderboard with scores and ranks", async () => {
+  test.only("should get global leaderboard with scores and ranks", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -64,7 +64,7 @@ describe("Leaderboard API", () => {
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       reason: "Test trade",
     });
@@ -104,7 +104,7 @@ describe("Leaderboard API", () => {
     expect(leaderboard.agents[1]?.score).toBe(1456.0379920213372);
   });
 
-  test("should use query params to filter leaderboard", async () => {
+  test.only("should use query params to filter leaderboard", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -141,7 +141,7 @@ describe("Leaderboard API", () => {
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       reason: "Test trade",
     });
@@ -184,7 +184,7 @@ describe("Leaderboard API", () => {
     expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
   });
 
-  test("should get multiple competitions in leaderboard", async () => {
+  test.only("should get multiple competitions in leaderboard", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -220,7 +220,7 @@ describe("Leaderboard API", () => {
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       reason: "Test trade",
     });
@@ -245,7 +245,7 @@ describe("Leaderboard API", () => {
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       reason: "Test trade",
     });

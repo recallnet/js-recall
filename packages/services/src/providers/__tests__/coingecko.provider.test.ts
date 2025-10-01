@@ -56,6 +56,7 @@ const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 const config: CoinGeckoProviderConfig = {
   apiKey: COINGECKO_API_KEY,
+  mode: "demo",
   logger: mockLogger,
   specificChainTokens,
 };

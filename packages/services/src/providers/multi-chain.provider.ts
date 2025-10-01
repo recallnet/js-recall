@@ -13,6 +13,7 @@ import { DexScreenerProvider } from "./price/dexscreener.provider.js";
 
 export interface MultiChainProviderConfig {
   apiKey?: string;
+  mode?: "pro" | "demo";
   priceProvider: PriceProvider;
   evmChains: SpecificChain[];
   specificChainTokens: SpecificChainTokens;
@@ -49,6 +50,7 @@ export class MultiChainProvider implements PriceSource {
         }
         this.priceProvider = new CoinGeckoProvider({
           apiKey: config.apiKey,
+          mode: config.mode || "demo",
           specificChainTokens: config.specificChainTokens,
           logger,
         });

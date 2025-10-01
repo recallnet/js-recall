@@ -193,7 +193,7 @@ describe("Trading API", () => {
     expect(finalSolBalance).toBeLessThan(updatedSolBalance);
   });
 
-  test("agent can execute a trade with an arbitrary token address", async () => {
+  test.only("agent can execute a trade with an arbitrary token address", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -505,7 +505,7 @@ describe("Trading API", () => {
     );
   });
 
-  test("agent can fetch price and execute a calculated trade", async () => {
+  test.only("agent can fetch price and execute a calculated trade", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);

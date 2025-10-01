@@ -67,9 +67,7 @@ export class CoinGeckoProvider implements PriceSource {
     const opts: ClientOptions = {
       environment: config.mode,
       maxRetries: this.MAX_RETRIES,
-      fetchOptions: {
-        timeout: this.MAX_TIMEOUT,
-      },
+      timeout: this.MAX_TIMEOUT,
       // Note: enable CoinGecko's native SDK logger with the environment variable `COINGECKO_LOG`
       logger: this.logger,
     };
