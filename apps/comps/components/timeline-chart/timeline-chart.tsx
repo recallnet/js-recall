@@ -30,7 +30,6 @@ import { datesByWeek, formatDateShort } from "./utils";
  * Main TimelineChart component
  */
 export const TimelineChart: React.FC<PortfolioChartProps> = ({
-  ref,
   competition,
   agents,
   className,
@@ -461,7 +460,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   };
 
   return (
-    <div className={cn("w-full rounded-lg border", className)} ref={ref}>
+    <div className={cn("w-full rounded-lg border", className)}>
       <div className="bg-card flex items-center justify-between p-5">
         <div className="w-full">
           <h2

@@ -42,7 +42,6 @@ export default function CompetitionPage({
   const { isAuthenticated } = useSession();
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
-  const chartRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
@@ -303,7 +302,6 @@ export default function CompetitionPage({
       ) : (
         <>
           <TimelineChart
-            ref={chartRef}
             className="mt-5"
             competition={competition}
             agents={agentsData?.agents || []}
