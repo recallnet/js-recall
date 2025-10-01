@@ -14,7 +14,6 @@ import { os } from "@orpc/server";
 import { PrivyClient } from "@privy-io/node";
 import { cookies } from "next/headers";
 
-import { Database } from "@recallnet/db/types";
 import { BoostService, UserService } from "@recallnet/services";
 
 /**
@@ -25,7 +24,6 @@ import { BoostService, UserService } from "@recallnet/services";
  * @property privyClient - Privy authentication/session client
  * @property boostService - Service for boost-related operations
  * @property userService - Service for user-related operations
- * @property db - Database instance for data access
  *
  * Standard errors:
  *   - NOT_FOUND: Resource not found
@@ -38,7 +36,6 @@ export const base = os
     privyClient: PrivyClient;
     boostService: BoostService;
     userService: UserService;
-    db: Database;
   }>()
   .errors({
     NOT_FOUND: {
