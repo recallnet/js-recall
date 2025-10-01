@@ -147,7 +147,7 @@ export default function UserInfoSection({
                       </FormItem>
                     )}
                   />
-                  <Button>Save</Button>
+                  <Button type="submit">Save</Button>
                 </div>
               ) : (
                 <>
@@ -189,7 +189,7 @@ export default function UserInfoSection({
                       </FormItem>
                     )}
                   />
-                  <Button>Save</Button>
+                  <Button type="submit">Save</Button>
                 </div>
               ) : (
                 <>
