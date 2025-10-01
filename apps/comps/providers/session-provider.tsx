@@ -168,25 +168,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isPending: isLinkWalletToBackendPending,
     isError: isLinkWalletToBackendError,
     error: linkWalletToBackendError,
-  } = useMutation({
-    mutationFn: async (walletAddress: string) => {
-      const res = await apiClient.current.linkWallet({ walletAddress });
-      if (!res.success) {
-        throw new Error("Error linking wallet to server.");
-      }
-      return res.user;
-    },
-    onSuccess: () => {
-      refetchBackendUser();
-    },
-  });
+  } = useMutation(
+    tanstackClient.user.linkWallet.mutationOptions({
+      onSuccess: () => {
+        refetchBackendUser();
+      },
+    }),
+  );
 
   const { linkWallet: linkWalletInner } = useLinkAccount({
     onSuccess: async ({ linkedAccount }) => {
       const walletAddress = (
         linkedAccount as WalletWithMetadata
       ).address.toLowerCase();
-      linkWalletToBackend(walletAddress);
+      linkWalletToBackend({ walletAddress });
     },
     onError: (err) => {
       if (err === "exited_link_flow") return;

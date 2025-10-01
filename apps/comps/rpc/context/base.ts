@@ -14,7 +14,11 @@ import { os } from "@orpc/server";
 import { PrivyClient } from "@privy-io/server-auth";
 import { cookies } from "next/headers";
 
-import { BoostService, UserService } from "@recallnet/services";
+import {
+  BoostAwardService,
+  BoostService,
+  UserService,
+} from "@recallnet/services";
 
 /**
  * The base context object for RPC procedures. The properties included
@@ -23,18 +27,21 @@ import { BoostService, UserService } from "@recallnet/services";
  * @property cookies - HTTP cookies from the request (Next.js)
  * @property privyClient - Privy authentication/session client
  * @property boostService - Service for boost-related operations
+ * @property boostAwardService - Service for boost awards and staking
  * @property userService - Service for user-related operations
  *
  * Standard errors:
  *   - NOT_FOUND: Resource not found
  *   - INTERNAL: Internal server error
  *   - UNAUTHORIZED: Unauthorized access
+ *   - BAD_REQUEST: Invalid request parameters
  */
 export const base = os
   .$context<{
     cookies: Awaited<ReturnType<typeof cookies>>;
     privyClient: PrivyClient;
     boostService: BoostService;
+    boostAwardService: BoostAwardService;
     userService: UserService;
   }>()
   .errors({
@@ -45,4 +52,7 @@ export const base = os
       message: "An internal server error occurred",
     },
     UNAUTHORIZED: {},
+    BAD_REQUEST: {
+      message: "Bad request",
+    },
   });

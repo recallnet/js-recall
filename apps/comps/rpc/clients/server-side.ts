@@ -6,7 +6,7 @@ import { createRouterClient } from "@orpc/server";
 import { cookies } from "next/headers";
 
 import { privyClient } from "@/lib/privy-client";
-import { boostService, userService } from "@/lib/services";
+import { boostAwardService, boostService, userService } from "@/lib/services";
 import { router } from "@/rpc/router/index";
 
 export async function createClient() {
@@ -15,6 +15,7 @@ export async function createClient() {
       cookies: await cookies(),
       privyClient,
       boostService,
+      boostAwardService,
       userService,
     },
   });
