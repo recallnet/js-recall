@@ -7,6 +7,7 @@ import {
   specificChainTokens,
 } from "@recallnet/services/lib";
 import {
+  CoinGeckoMode,
   CrossChainTradingType,
   PriceProvider,
   SpecificChain,
@@ -136,15 +137,22 @@ export const config = {
       apiKey: process.env.NOVES_API_KEY || "",
       enabled: !!process.env.NOVES_API_KEY,
     },
-    coingecko: {
-      apiKey: process.env.COINGECKO_API_KEY || "",
-    },
-    priceProvider: (process.env.PRICE_PROVIDER || "coingecko") as PriceProvider, // Default to CoinGecko
     // Domain for API authentication and verification purposes
     domain:
       process.env.API_DOMAIN || "https://api.competitions.recall.network/",
   },
-
+  // Multichain price provider configuration (DexScreener or CoinGecko) for paper trading
+  priceProvider: {
+    // Defaults to CoinGecko
+    type: (process.env.PRICE_PROVIDER || "coingecko") as PriceProvider,
+    coingecko: {
+      apiKey: process.env.COINGECKO_API_KEY || "",
+      // Non-production environments should use a highly rate limited, free "demo" API key (30 req/min)
+      mode: (process.env.COINGECKO_MODE || process.env.NODE_ENV === "production"
+        ? "pro"
+        : "demo") as CoinGeckoMode,
+    },
+  },
   priceTracker: {
     // Maximum number of entries for the token price cache
     maxCacheSize: parseInt(process.env.PRICE_CACHE_MAX_SIZE || "10000", 10),

@@ -49,6 +49,7 @@
         "NODE_ENV",
         "NOVES_API_KEY",
         "COINGECKO_API_KEY",
+        "COINGECKO_MODE",
         "PRICE_PROVIDER",
         "API_PREFIX",
         "PORT",

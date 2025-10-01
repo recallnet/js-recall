@@ -20,7 +20,13 @@ describe("Batch Functionality Tests", () => {
 
   beforeEach(() => {
     const multiChainProvider = new MultiChainProvider(
-      { evmChains: specificChains, specificChainTokens },
+      {
+        evmChains: specificChains,
+        specificChainTokens,
+        // Note: use DexScreener since it isn't rate limited by an API key and this test isn't
+        // about testing the price provider, but the price tracker itself
+        priceProvider: { type: "dexscreener" },
+      },
       mockLogger,
     );
     priceTracker = new PriceTrackerService(
