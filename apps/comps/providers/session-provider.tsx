@@ -145,7 +145,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     refetch: refetchBackendUser,
   } = useQuery(
     tanstackClient.user.getProfile.queryOptions({
-      queryKey: ["user"],
       enabled: authenticated && ready && isLoginToBackendSuccess,
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
@@ -231,7 +230,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       await queryClient.cancelQueries({ queryKey: ["user"] });
 
       // Snapshot the previous value
-      const previousUser = queryClient.getQueryData<User>(["user"]);
+      const previousUser = queryClient.getQueryData<BackendUser>(["user"]);
 
       // Optimistically update the cache
       queryClient.setQueryData<BackendUser>(["user"], (old) => {
