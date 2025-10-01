@@ -17,6 +17,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
 
       - name: Install Node.js
         uses: actions/setup-node@v4
