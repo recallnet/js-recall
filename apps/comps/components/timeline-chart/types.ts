@@ -30,7 +30,6 @@ export interface CustomLegendProps {
 }
 
 export interface PortfolioChartProps {
-  ref?: React.RefObject<HTMLDivElement | null>;
   competition: Competition;
   agents: AgentCompetition[]; // Current page agents from parent pagination
   className?: string;
