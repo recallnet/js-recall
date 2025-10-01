@@ -15,6 +15,7 @@ describe("Allocator Error Path", () => {
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
       "http://invalid-url", // Invalid RPC to trigger failure
       "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
       Network.Hardhat,
     );
 
@@ -22,7 +23,6 @@ describe("Allocator Error Path", () => {
       () =>
         allocator.allocate(
           "0x0000000000000000000000000000000000000000000000000000000000000000", // 32-byte merkle root
-          "0x0000000000000000000000000000000000000000", // 20-byte address
           1n,
           1,
         ),
@@ -47,6 +47,7 @@ describe("Allocate Rewards", async function () {
     rewardAllocatorPrivateKey,
     network.getJsonRpcUrl(),
     rewardsContractAddress,
+    mockTokenAddress,
     Network.Hardhat,
   );
 
@@ -110,7 +111,6 @@ describe("Allocate Rewards", async function () {
       const startTimestamp = Math.floor(Date.now() / 1000);
       const allocationResult = await rewardsAllocator.allocate(
         merkleRoot,
-        mockTokenAddress,
         totalAmount,
         startTimestamp,
       );

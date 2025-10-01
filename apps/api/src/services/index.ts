@@ -1,4 +1,5 @@
 import { PrivyClient } from "@privy-io/server-auth";
+import { Hex } from "viem";
 
 import { AdminRepository } from "@recallnet/db/repositories/admin";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
@@ -31,6 +32,7 @@ import {
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
+  RewardsService,
   SimulatedTradeExecutionService,
   TradeSimulatorService,
   TradingConstraintsService,
@@ -43,6 +45,9 @@ import {
   DexScreenerProvider,
   MultiChainProvider,
 } from "@recallnet/services/providers";
+import RewardsAllocator, {
+  Network,
+} from "@recallnet/staking-contracts/rewards-allocator";
 
 import config, { features } from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
@@ -91,6 +96,9 @@ class ServiceRegistry {
   private readonly _eventProcessor: EventProcessor;
   private readonly _boostAwardService: BoostAwardService;
   private readonly _privyClient: PrivyClient;
+  private _rewardsService: RewardsService;
+  private readonly _rewardsRepository: RewardsRepository;
+  private readonly _rewardsAllocator: RewardsAllocator;
 
   constructor() {
     // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
@@ -109,7 +117,14 @@ class ServiceRegistry {
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
     this._userRepository = new UserRepository(db, repositoryLogger);
-    const rewardsRepository = new RewardsRepository(db, repositoryLogger);
+    this._rewardsRepository = new RewardsRepository(db, repositoryLogger);
+    this._rewardsAllocator = new RewardsAllocator(
+      config.rewards.allocatorPrivateKey as Hex,
+      config.rewards.rpcProvider,
+      config.rewards.contractAddress as Hex,
+      config.rewards.tokenContractAddress as Hex,
+      config.rewards.network as Network,
+    );
     const balanceRepository = new BalanceRepository(
       db,
       repositoryLogger,
@@ -309,9 +324,19 @@ class ServiceRegistry {
       this._userService,
       config,
     );
+
+    // Initialize RewardsService with its dependencies
+    this._rewardsService = new RewardsService(
+      this._rewardsRepository,
+      this._competitionRepository,
+      this._boostRepository,
+      this._rewardsAllocator,
+      db,
+      serviceLogger,
+    );
     this._eventProcessor = new EventProcessor(
       db,
-      rewardsRepository,
+      this._rewardsRepository,
       this._eventsRepository,
       this._stakesRepository,
       this._boostAwardService,
@@ -422,6 +447,10 @@ class ServiceRegistry {
 
   get eventProcessor(): EventProcessor {
     return this._eventProcessor;
+  }
+
+  get rewardsService(): RewardsService {
+    return this._rewardsService;
   }
 
   get eventsRepository(): EventsRepository {

@@ -38,11 +38,13 @@ class RewardsAllocator {
   private walletClient: WalletClient;
   private publicClient: PublicClient;
   private contractAddress: Hex;
+  private tokenAddress: Hex;
 
   constructor(
     privateKey: Hex,
     rpcProviderUrl: string,
     contractAddress: Hex,
+    tokenAddress: Hex,
     network: Network = Network.BaseSepolia,
   ) {
     const account = privateKeyToAccount(privateKey);
@@ -61,11 +63,11 @@ class RewardsAllocator {
     });
 
     this.contractAddress = contractAddress;
+    this.tokenAddress = tokenAddress;
   }
 
   async allocate(
     root: string,
-    tokenAddress: string,
     totalAmount: bigint,
     startTimestamp: number,
   ): Promise<AllocationResult> {
@@ -74,7 +76,7 @@ class RewardsAllocator {
       address: this.contractAddress,
       abi: abi,
       functionName: "addAllocation",
-      args: [root, tokenAddress, totalAmount, startTimestamp],
+      args: [root, this.tokenAddress, totalAmount, startTimestamp],
       chain: this.walletClient.chain,
     });
 

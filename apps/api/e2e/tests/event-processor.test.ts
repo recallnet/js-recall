@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { competitions } from "@recallnet/db/schema/core/defs";
+import { competitions, users } from "@recallnet/db/schema/core/defs";
 import { rewards, rewardsRoots } from "@recallnet/db/schema/voting/defs";
 
 import { db } from "@/database/db.js";
@@ -17,6 +17,7 @@ describe("EventProcessor", () => {
   let rewardId: string;
   let competitionId: string;
   let rootHashId: string;
+  let userId: string;
   let services: ServiceRegistry;
 
   beforeEach(async () => {
@@ -31,8 +32,19 @@ describe("EventProcessor", () => {
     competitionId = "a82d8ae0-6f5a-417c-a35e-e389b73f0b39";
     rewardId = "dcff1f5d-ebee-49b0-905d-9d1e8eb9767c";
     rootHashId = "d9573309-9785-44ad-8ac6-4d912a5be43c";
+    userId = "f1234567-89ab-cdef-0123-456789abcdef";
 
-    // First create a competition
+    // First create a user
+    await db.insert(users).values({
+      id: userId,
+      walletAddress: "0x00A826b7a0C21C7f3C7156C4e1Aa197a111B8233",
+      name: "Test User",
+      email: "test@example.com",
+      isSubscribed: false,
+      status: "active",
+    });
+
+    // Then create a competition
     await db.insert(competitions).values({
       id: competitionId,
       name: "Test Competition",
@@ -59,6 +71,7 @@ describe("EventProcessor", () => {
     await db.insert(rewards).values({
       id: rewardId,
       competitionId: competitionId,
+      userId: userId,
       address: "0x00A826b7a0C21C7f3C7156C4e1Aa197a111B8233",
       amount: BigInt("100000000000000000"),
       leafHash: new Uint8Array(), // it does not matter for the test
