@@ -926,7 +926,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
-        mockRewardsAllocator,
+        undefined as unknown as RewardsAllocator,
         mockDb,
         mockLogger,
       );
