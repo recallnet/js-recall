@@ -11,7 +11,7 @@
  * It also standardizes common error types for use in RPC responses.
  */
 import { os } from "@orpc/server";
-import { PrivyClient } from "@privy-io/node";
+import { PrivyClient } from "@privy-io/server-auth";
 import { cookies } from "next/headers";
 
 import { BoostService, UserService } from "@recallnet/services";

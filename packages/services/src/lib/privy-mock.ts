@@ -8,9 +8,6 @@ import type {
   WalletWithMetadata,
 } from "@privy-io/server-auth";
 
-import { config } from "@/config/index.js";
-import { authLogger } from "@/lib/logger.js";
-
 type WalletChainType =
   | "ethereum"
   | "cosmos"
@@ -24,7 +21,8 @@ type WalletChainType =
   | "solana";
 
 /**
- * Mock implementation of PrivyClient for testing
+ * Mock implementation of PrivyClient for testing.
+ * Note: This is cast to PrivyClient when used, implementing only the subset of methods we need.
  */
 export class MockPrivyClient {
   // Static map to track custom linked wallets for each privyId
@@ -52,12 +50,6 @@ export class MockPrivyClient {
     if (!existingWallets.includes(walletAddress.toLowerCase())) {
       existingWallets.push(walletAddress.toLowerCase());
       this.linkedWallets.set(privyId, existingWallets);
-      authLogger.debug(
-        `[MockPrivyClient] Linked wallet ${walletAddress} to privyId ${privyId}`,
-      );
-      authLogger.debug(
-        `[MockPrivyClient] Total linked wallets for ${privyId}: ${existingWallets.length}`,
-      );
     }
   }
 
@@ -310,20 +302,6 @@ export class MockPrivyClient {
       };
     }
 
-    authLogger.debug(`[MockPrivyClient] Created mock user: ${privyId}`);
     return mockUser;
   }
-}
-
-/**
- * Get Privy client - returns mock client in test mode
- */
-export function getPrivyClient(appId: string, appSecret: string) {
-  if (config.server.nodeEnv === "test") {
-    authLogger.debug("[getPrivyClient] Using MockPrivyClient for testing");
-    return new MockPrivyClient(appId, appSecret);
-  }
-
-  // This should never be called in test mode, but if it is, throw an error
-  throw new Error("Real PrivyClient should not be used in test mode");
 }

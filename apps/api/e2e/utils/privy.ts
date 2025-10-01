@@ -56,14 +56,6 @@ export function setupPrivyTestEnvironment(): void {
   process.env.PRIVY_JWKS_PUBLIC_KEY = TEST_PRIVY_CONFIG.jwksPublicKey;
 }
 
-/**
- * Clear linked wallets after each test to prevent test pollution
- */
-export async function clearPrivyLinkedWallets(): Promise<void> {
-  const { MockPrivyClient } = await import("@/lib/privy/mock.js");
-  MockPrivyClient.clearLinkedWallets();
-}
-
 // Default test user data
 export const defaultTestUser = {
   privyId: "did:privy:test-user-12345",

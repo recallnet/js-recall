@@ -8,8 +8,13 @@ import {
   SelectUser,
 } from "@recallnet/db/schema/core/types";
 import { AdminService, AgentService, UserService } from "@recallnet/services";
+import {
+  extractPrivyIdentityToken,
+  verifyPrivyIdentityToken,
+} from "@recallnet/services/lib";
 import { ApiError } from "@recallnet/services/types";
 
+import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 
 // Mock dependencies
@@ -25,11 +30,8 @@ vi.mock("@/lib/logger.js", () => {
   };
 });
 
-vi.mock("@/lib/privy/utils.js", () => ({
+vi.mock("@recallnet/services/lib", () => ({
   extractPrivyIdentityToken: vi.fn(),
-}));
-
-vi.mock("@/lib/privy/verify.js", () => ({
   verifyPrivyIdentityToken: vi.fn(),
 }));
 
@@ -79,13 +81,6 @@ describe("authMiddleware", () => {
 
   describe("Privy JWT Authentication", () => {
     it("should authenticate successfully with valid Privy token and existing user", async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-      const { verifyPrivyIdentityToken } = await import(
-        "@/lib/privy/verify.js"
-      );
-
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-123",
@@ -105,14 +100,6 @@ describe("authMiddleware", () => {
     });
 
     it("should allow login endpoint access for valid token without user", async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-      const { verifyPrivyIdentityToken } = await import(
-        "@/lib/privy/verify.js"
-      );
-      const { isLoginEndpoint } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-new",
@@ -128,15 +115,6 @@ describe("authMiddleware", () => {
     });
 
     it("should reject non-login endpoint access for valid token without user", async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-      const { verifyPrivyIdentityToken } = await import(
-        "@/lib/privy/verify.js"
-      );
-      const { isLoginEndpoint } = await import("@/middleware/auth-helpers.js");
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-new",
@@ -156,14 +134,6 @@ describe("authMiddleware", () => {
     });
 
     it("should fall through to API key auth when Privy token validation fails", async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-      const { verifyPrivyIdentityToken } = await import(
-        "@/lib/privy/verify.js"
-      );
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("invalid-token");
       vi.mocked(verifyPrivyIdentityToken).mockRejectedValue(
         new Error("Invalid token"),
@@ -184,11 +154,6 @@ describe("authMiddleware", () => {
     });
 
     it("should fall through to API key auth when no Privy token provided", async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
       vi.mocked(extractApiKey).mockReturnValue("agent-key");
       mockAgentService.validateApiKey.mockResolvedValue("agent-123");
@@ -206,15 +171,10 @@ describe("authMiddleware", () => {
 
   describe("Agent API Key Authentication", () => {
     beforeEach(async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
       vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
     });
 
     it("should authenticate successfully with valid agent API key", async () => {
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractApiKey).mockReturnValue("valid-agent-key");
       mockAgentService.validateApiKey.mockResolvedValue("agent-123");
       mockAgentService.getAgent.mockResolvedValue({
@@ -232,8 +192,6 @@ describe("authMiddleware", () => {
     });
 
     it("should set agentId but not userId when agent owner lookup fails", async () => {
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractApiKey).mockReturnValue("valid-agent-key");
       mockAgentService.validateApiKey.mockResolvedValue("agent-123");
       mockAgentService.getAgent.mockResolvedValue(null);
@@ -246,8 +204,6 @@ describe("authMiddleware", () => {
     });
 
     it("should fall through to admin auth when agent API key is invalid", async () => {
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractApiKey).mockReturnValue("invalid-agent-key");
       mockAgentService.validateApiKey.mockResolvedValue(null);
       mockAdminService.validateApiKey.mockResolvedValue("admin-123");
@@ -267,8 +223,6 @@ describe("authMiddleware", () => {
     });
 
     it("should fall through to admin auth when agent validation throws error", async () => {
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractApiKey).mockReturnValue("agent-key");
       mockAgentService.validateApiKey.mockRejectedValue(
         new Error("Database error"),
@@ -288,11 +242,6 @@ describe("authMiddleware", () => {
 
   describe("Admin API Key Authentication", () => {
     beforeEach(async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
       vi.mocked(extractApiKey).mockReturnValue("admin-key");
       mockAgentService.validateApiKey.mockResolvedValue(null);
@@ -373,14 +322,10 @@ describe("authMiddleware", () => {
 
   describe("Edge Cases and Error Handling", () => {
     beforeEach(async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
       vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
     });
 
     it("should return 401 when no authentication credentials provided", async () => {
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
       vi.mocked(extractApiKey).mockReturnValue(undefined);
 
       await middleware(mockReq as Request, mockRes as Response, mockNext);
@@ -393,8 +338,6 @@ describe("authMiddleware", () => {
     });
 
     it("should return 401 when all authentication methods fail", async () => {
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractApiKey).mockReturnValue("invalid-key");
       mockAgentService.validateApiKey.mockResolvedValue(null);
       mockAdminService.validateApiKey.mockResolvedValue(null);
@@ -409,10 +352,6 @@ describe("authMiddleware", () => {
     });
 
     it("should handle unexpected errors gracefully", async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-
       vi.mocked(extractPrivyIdentityToken).mockImplementation(() => {
         throw new Error("Unexpected error");
       });
@@ -423,8 +362,6 @@ describe("authMiddleware", () => {
     });
 
     it("should not expose sensitive information in error messages", async () => {
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractApiKey).mockReturnValue("secret-key-12345");
       mockAgentService.validateApiKey.mockResolvedValue(null);
       mockAdminService.validateApiKey.mockResolvedValue(null);
@@ -439,14 +376,6 @@ describe("authMiddleware", () => {
 
   describe("Authentication Fallback Chain", () => {
     it("should try Privy → Agent → Admin in sequence", async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-      const { verifyPrivyIdentityToken } = await import(
-        "@/lib/privy/verify.js"
-      );
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       // Privy fails
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("invalid-privy");
       vi.mocked(verifyPrivyIdentityToken).mockRejectedValue(
@@ -473,13 +402,6 @@ describe("authMiddleware", () => {
     });
 
     it("should stop at first successful authentication method", async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-      const { verifyPrivyIdentityToken } = await import(
-        "@/lib/privy/verify.js"
-      );
-
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-123",
@@ -499,15 +421,10 @@ describe("authMiddleware", () => {
 
   describe("Request Context Population", () => {
     beforeEach(async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
       vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
     });
 
     it("should correctly populate request context for agent authentication", async () => {
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractApiKey).mockReturnValue("agent-key");
       mockAgentService.validateApiKey.mockResolvedValue("agent-456");
       mockAgentService.getAgent.mockResolvedValue({
@@ -525,8 +442,6 @@ describe("authMiddleware", () => {
     });
 
     it("should correctly populate request context for admin authentication", async () => {
-      const { extractApiKey } = await import("@/middleware/auth-helpers.js");
-
       vi.mocked(extractApiKey).mockReturnValue("admin-key");
       mockAgentService.validateApiKey.mockResolvedValue(null);
       mockAdminService.validateApiKey.mockResolvedValue("admin-999");
@@ -548,13 +463,6 @@ describe("authMiddleware", () => {
     });
 
     it("should correctly populate request context for Privy authentication", async () => {
-      const { extractPrivyIdentityToken } = await import(
-        "@/lib/privy/utils.js"
-      );
-      const { verifyPrivyIdentityToken } = await import(
-        "@/lib/privy/verify.js"
-      );
-
       vi.mocked(extractPrivyIdentityToken).mockReturnValue("privy-token");
       vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
         privyId: "privy-abc",

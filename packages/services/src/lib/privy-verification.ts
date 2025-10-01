@@ -3,15 +3,17 @@ import type {
   PrivyClient,
 } from "@privy-io/server-auth";
 import { type JWTPayload, exportJWK, importSPKI, jwtVerify } from "jose";
+import type { Logger } from "pino";
 import { type Hex, checksumAddress } from "viem";
 
 import { SelectUser } from "@recallnet/db/schema/core/types";
-import type { UserService } from "@recallnet/services";
 
-import { config } from "@/config/index.js";
-import { authLogger } from "@/lib/logger.js";
-
-import { PRIVY_ISSUER, PrivyUserInfo, extractPrivyUserInfo } from "./utils.js";
+import type { UserService } from "../user.service.js";
+import {
+  PRIVY_ISSUER,
+  PrivyUserInfo,
+  extractPrivyUserInfo,
+} from "./privy-utils.js";
 
 /**
  * A raw Privy JWT payload.
@@ -41,29 +43,6 @@ export type PrivyIdWithClaims = {
 };
 
 /**
- * Create a Privy client instance
- * @returns PrivyClient instance (real or mock based on environment)
- */
-async function createPrivyClient(): Promise<PrivyClient> {
-  if (config.server.nodeEnv === "test") {
-    // Use dynamic import for test mode
-    const testModule = await import("./mock.js");
-    authLogger.debug("[createPrivyClient] Using MockPrivyClient for testing");
-    return new testModule.MockPrivyClient(
-      config.privy.appId,
-      config.privy.appSecret,
-    ) as unknown as PrivyClient;
-  }
-
-  // Dynamic import for production
-  const privyModule = await import("@privy-io/server-auth");
-  return new privyModule.PrivyClient(
-    config.privy.appId,
-    config.privy.appSecret,
-  );
-}
-
-/**
  * Parse the JWT payload to the Privy JWT payload, which includes a `linked_accounts` field
  * that is a string of JSON and must be converted to a Privy `LinkedAccountWithMetadata` array.
  * @param payload - The JWT payload to parse.
@@ -90,13 +69,19 @@ export function parseJwtPayloadToPrivyTypes(
  * a Privy identity token without using the Privy SDK's `getUser` method.
  *
  * @param idToken - The Privy identity token to verify.
+ * @param jwksPublicKey - The Privy JWKS public key for verification.
+ * @param appId - The Privy app ID for audience verification.
+ * @param logger - Optional logger for error logging.
  * @returns The payload of the identity token as well as the JWT payload (which includes the
  * externally linked accounts that a user has linked to their Privy account).
  */
 export async function verifyPrivyIdentityToken(
   idToken: string,
+  jwksPublicKey: string,
+  appId: string,
+  logger?: Logger,
 ): Promise<PrivyIdWithClaims> {
-  const matches = config.privy.jwksPublicKey.match(/.{1,64}/g);
+  const matches = jwksPublicKey.match(/.{1,64}/g);
   if (!matches) {
     throw new Error("Invalid JWKS public key format");
   }
@@ -109,7 +94,7 @@ ${matches.join("\n")}
   try {
     const { payload } = await jwtVerify(idToken, jwk, {
       issuer: PRIVY_ISSUER,
-      audience: config.privy.appId,
+      audience: appId,
     });
     if (!payload.sub) {
       throw new Error(
@@ -119,7 +104,7 @@ ${matches.join("\n")}
     const finalPayload = parseJwtPayloadToPrivyTypes(payload);
     return { privyId: payload.sub, claims: finalPayload };
   } catch (error) {
-    authLogger.error(
+    logger?.error(
       `Privy identity token verification failed: ${JSON.stringify(error)}`,
     );
     throw new Error("Authentication failed");
@@ -131,13 +116,14 @@ ${matches.join("\n")}
  * SDK's `getUser` method, which will first verify the identity token (locally) and then fetch user
  * data from Privy.
  * @param idToken - The Privy identity token to verify.
+ * @param privyClient - The Privy client instance to use for user lookup.
  * @returns The user profile data.
  */
 export async function verifyAndGetPrivyUserInfo(
   idToken: string,
+  privyClient: PrivyClient,
 ): Promise<PrivyUserInfo> {
-  const client = await createPrivyClient();
-  const user = await client.getUser({ idToken: idToken });
+  const user = await privyClient.getUser({ idToken: idToken });
   return extractPrivyUserInfo(user);
 }
 
@@ -160,18 +146,20 @@ export async function verifyAndGetPrivyUserInfo(
  * which ensures custom wallets don't hit flakiness with mismatched wallet addresses.
  *
  * @param identityToken - The Privy identity token to verify.
- * @param userManager - The user manager to use to create or update users.
+ * @param privyClient - The Privy client instance to use for user lookup.
+ * @param userService - The user service to use to create or update users.
  * @returns The user object.
  */
 export async function verifyPrivyIdentityTokenAndUpdateUser(
   idToken: string,
+  privyClient: PrivyClient,
   userService: UserService,
 ): Promise<SelectUser> {
   // Note: in the future, we can simply use `verifyIdentityToken` to get the `privyId`, which is
   // stored in the `users` table as `privyID`. But, since we need to account for legacy users, we
   // must refetch user information from the Privy API and update are database accordingly.
   const { privyId, name, email, embeddedWallet, customWallets } =
-    await verifyAndGetPrivyUserInfo(idToken);
+    await verifyAndGetPrivyUserInfo(idToken, privyClient);
   const embeddedWalletAddress = embeddedWallet.address;
   const now = new Date();
 
@@ -226,15 +214,19 @@ export async function verifyPrivyIdentityTokenAndUpdateUser(
 /**
  * Verify a custom linked wallet address is properly linked by the user in Privy.
  * @param idToken - The Privy identity token to verify.
+ * @param privyClient - The Privy client instance to use for user lookup.
  * @param walletAddress - The wallet address to verify.
- * @returns The custom linked wallet.
- * @throws {Error} If the custom linked wallet is not found.
+ * @returns True if the wallet is linked, false otherwise.
  */
 export async function verifyPrivyUserHasLinkedWallet(
   idToken: string,
+  privyClient: PrivyClient,
   walletAddress: string,
 ): Promise<boolean> {
-  const { customWallets } = await verifyAndGetPrivyUserInfo(idToken);
+  const { customWallets } = await verifyAndGetPrivyUserInfo(
+    idToken,
+    privyClient,
+  );
   const checksummedWalletAddress = checksumAddress(walletAddress as Hex);
   const customWallet = customWallets.find(
     (wallet) =>
